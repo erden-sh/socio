@@ -1,0 +1,67 @@
+{
+    "$schema": "../../node_modules/turbo/schema.json",
+    "extends": ["//"],
+    "tasks": {
+        "typecheck": {
+            "inputs": [
+                "$TURBO_DEFAULT$",
+                "$TURBO_ROOT$/packages/shared/src/**",
+                "$TURBO_ROOT$/packages/plugin-ui/src/**",
+                "$TURBO_ROOT$/vendor/**"
+            ],
+            "outputs": []
+        },
+        "lint": {
+            "inputs": ["$TURBO_DEFAULT$"],
+            "outputs": []
+        },
+        "test": {
+            "description": "packages/client/tests. Reaches the root only through tests/setup, whose egress guard loads the telemetry opt-out, and public/.",
+            "inputs": [
+                "$TURBO_DEFAULT$",
+                "$TURBO_ROOT$/packages/shared/src/**",
+                "$TURBO_ROOT$/packages/plugin-ui/src/**",
+                "$TURBO_ROOT$/public/**",
+                "$TURBO_ROOT$/packages/foundation/src/no-vendor-telemetry.ts",
+                "$TURBO_ROOT$/vendor/**"
+            ],
+            "outputs": []
+        },
+        "build": {
+            "description": "The pages and the planner UI, from the repository root (README.md).",
+            "inputs": [
+                "$TURBO_DEFAULT$",
+                "!tests/**",
+                "$TURBO_ROOT$/packages/shared/src/**",
+                "$TURBO_ROOT$/packages/plugin-ui/src/**",
+                "$TURBO_ROOT$/public/**",
+                "$TURBO_ROOT$/content/**",
+                "$TURBO_ROOT$/vendor/**",
+                "$TURBO_ROOT$/scripts/**",
+                "!**/node_modules/**",
+                "!.turbo/**",
+                "!**/.turbo/**",
+                "!.turbo-ci/**",
+                "!.git/**",
+                "!.env",
+                "!data/**",
+                "!.socio/**",
+                "!artifacts/**",
+                "!playwright-report/**",
+                "!test-results/**",
+                "!.react-router/**",
+                "!.copilotkit/**",
+                "!**/*.sqlite",
+                "!**/*.sqlite-shm",
+                "!**/*.sqlite-wal",
+                "!.DS_Store",
+                "!RESEARCH.md",
+                "!docs/superpowers/**",
+                "!packages/*/dist/**",
+                "!dist/**",
+                "!src/server/plugins/planner/ui/**"
+            ],
+            "outputs": ["$TURBO_ROOT$/dist/web/**", "$TURBO_ROOT$/src/server/plugins/planner/ui/**"]
+        }
+    }
+}

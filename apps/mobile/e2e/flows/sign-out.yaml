@@ -1,0 +1,93 @@
+# Signing out leaves nothing of the workspace (servers.mjs; run.mjs
+# --credentials --no-workspace-left): sign in to A, plant files in its images/
+# and attachments/ through Diagnostics, whose listing then shows them, sign out
+# from More's Account (the dev client's floating Tools button can cover Home's
+# avatar), and land on Add workspace. On iOS the app goes to the background
+# once on Home first, so the app switcher has a snapshot of the workspace. run.mjs
+# then lists the whole container from the host and fails on any workspace
+# folder left, and on iOS on any snapshot left.
+appId: ${APP_ID}
+name: sign-out
+---
+- runFlow: launch.yaml
+- runFlow:
+    file: common/add-workspace.yaml
+    env:
+      ORIGIN: ${ORIGIN_A}
+- runFlow:
+    file: common/sign-in.yaml
+    env:
+      EMAIL: ada@example.test
+      SECRET: ${PASSWORD}
+- extendedWaitUntil:
+    visible:
+      text: '.*${CHAT_A}.*'
+    timeout: 30000
+# iOS takes the app switcher's snapshot as the app goes to the background: one
+# of the workspace's Home, which the sign-out must delete (CB-356).
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - pressKey: home
+      - launchApp:
+          appId: ${APP_ID}
+          stopApp: false
+      - extendedWaitUntil:
+          visible:
+            text: '.*${CHAT_A}.*'
+          timeout: 30000
+- scrollUntilVisible:
+    element:
+      id: open-diagnostics
+    direction: DOWN
+- tapOn:
+    id: open-diagnostics
+- extendedWaitUntil:
+    visible:
+      id: diagnostics-created
+    timeout: 30000
+- scrollUntilVisible:
+    element:
+      id: diagnostics-plant
+    direction: DOWN
+- tapOn:
+    id: diagnostics-plant
+- extendedWaitUntil:
+    visible:
+      id: diagnostics-planted
+      text: 'Wrote [1-9][0-9]* files\.'
+    timeout: 20000
+# Opened again, Diagnostics lists the container with the planted files.
+- runFlow: common/back.yaml
+- tapOn:
+    id: open-diagnostics
+- extendedWaitUntil:
+    visible:
+      id: diagnostics-created
+    timeout: 30000
+- scrollUntilVisible:
+    element:
+      text: '.*/attachments/diagnostics-test\.txt.*'
+    direction: DOWN
+    timeout: 30000
+- scrollUntilVisible:
+    element:
+      text: '.*/images/diagnostics-test\.png.*'
+    direction: DOWN
+    timeout: 30000
+- takeScreenshot: sign-out-planted
+- runFlow: common/back.yaml
+# The tab bar is the system's: React Navigation's native tabs don't pass a
+# tab's testID to it, so the flow taps the label.
+- tapOn:
+    text: More
+- tapOn:
+    id: more-account
+- tapOn:
+    id: sign-out
+- extendedWaitUntil:
+    visible:
+      id: add-workspace-screen
+    timeout: 30000
+- takeScreenshot: sign-out-done

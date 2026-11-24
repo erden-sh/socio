@@ -1,0 +1,159 @@
+/*
+ * Embedded dataset views (D5). Theme tokens only, so light and dark follow
+ * without the legacy dark copy; outside the legacy layer, so these win over
+ * the document's own table styles.
+ */
+.dataset-view {
+    margin: 20px 0;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--card);
+    color: var(--card-foreground);
+    font-size: 14px;
+    line-height: 1.5;
+    overflow: hidden;
+}
+.dataset-view.selected {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+}
+.dataset-view-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+}
+.dataset-view-icon {
+    display: inline-flex;
+    color: var(--muted-foreground);
+}
+.dataset-view-heading {
+    display: grid;
+    min-width: 0;
+    flex: 1;
+}
+.dataset-view-heading strong {
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.dataset-view-heading span {
+    font-size: 12px;
+    color: var(--muted-foreground);
+}
+.dataset-view svg:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+}
+.dataset-view-body {
+    padding: 12px;
+    transition: opacity 0.15s;
+}
+.dataset-view-body[data-reloading='true'] {
+    opacity: 0.6;
+}
+.dataset-view-state {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    padding: 18px 12px;
+    border-radius: 8px;
+    background: var(--muted);
+    color: var(--muted-foreground);
+}
+.dataset-view-state[data-state='error'] {
+    color: var(--destructive);
+    background: transparent;
+    border: 1px solid var(--border);
+    margin-bottom: 8px;
+}
+.dataset-view-loading {
+    height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: var(--muted);
+    color: var(--muted-foreground);
+    animation: dataset-view-pulse 1.4s ease-in-out infinite;
+}
+@keyframes dataset-view-pulse {
+    50% {
+        opacity: 0.55;
+    }
+}
+.dataset-view-note {
+    margin: 0;
+    padding: 0 12px 10px;
+    font-size: 12px;
+    color: var(--muted-foreground);
+}
+.dataset-view-note a {
+    color: inherit;
+    text-decoration: underline;
+}
+.dataset-view-scroll {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+}
+.document-prose .dataset-view table {
+    width: 100%;
+    table-layout: auto;
+    margin: 0;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+.document-prose .dataset-view th,
+.document-prose .dataset-view td {
+    border: 0;
+    border-bottom: 1px solid var(--border);
+    min-width: 0;
+    max-width: 280px;
+    padding: 6px 10px;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.document-prose .dataset-view th {
+    background: var(--muted);
+    color: var(--foreground);
+    font-weight: 600;
+}
+.document-prose .dataset-view tbody tr:last-child td {
+    border-bottom: 0;
+}
+.document-prose .dataset-view .numeric {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+.dataset-view td .null {
+    color: var(--muted-foreground);
+}
+.dataset-view-pager {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--muted-foreground);
+}
+.dataset-view-pager button {
+    height: 28px;
+    padding: 0 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--background);
+    color: var(--foreground);
+    font-size: 13px;
+    cursor: pointer;
+}
+.dataset-view-pager button:disabled {
+    opacity: 0.5;
+    cursor: default;
+}

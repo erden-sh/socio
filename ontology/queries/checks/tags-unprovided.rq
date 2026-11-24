@@ -1,0 +1,19 @@
+# @ask     Which Effect tags that a contract.ts defines does no layer or context provide?
+# @expect  rows == 0
+# @from    audit/facts.ttl: Defines mentions in src/server/*/contract.ts, Provides mentions (Layer.succeed, Layer.effect, Layer.sync, Layer.scoped, Layer.effectContext, Context.make, Context.add, Effect.provideService, the rooms' alias helper).
+#
+# Why static tools miss it: Effect checks that a program's requirements are met only where a
+# runtime is built from it; a tag that no layer provides typechecks everywhere until some
+# program needs it. A Context.Reference has a default value, so it needs no layer.
+PREFIX prov:  <http://www.w3.org/ns/prov#>
+PREFIX rdfs:  <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX socio: <https://socio.sh/ontology/>
+SELECT ?tag ?file ?line WHERE {
+    ?t a socio:EffectTag ; socio:inContract true ; rdfs:label ?tag .
+    ?d socio:mentionOf ?t ; socio:mentionKind socio:Defines ; prov:wasDerivedFrom ?f ; socio:sourceLine ?line .
+    ?f socio:sourcePath ?file .
+    FILTER (STRENDS(?file, "/contract.ts"))
+    FILTER NOT EXISTS { ?t socio:hasDefault true . }
+    FILTER NOT EXISTS { ?p socio:mentionOf ?t ; socio:mentionKind socio:Provides . }
+}
+ORDER BY ?file ?tag

@@ -1,0 +1,96 @@
+# Socio's link domain (README.md): link.socio.sh and link-staging.socio.sh.
+#
+# The top level is for `wrangler dev --local` on a developer's machine and the test bench (behind
+# a quick tunnel). `staging` and `production` are for the deploy pipeline, which deploys them to
+# the Ingenio Ventures Cloudflare account; nothing in this repository deploys. Each serves one Worker custom domain on socio.sh, the hosts
+# `@socio/shared/device-sign-in` names (LINK_STAGING_HOST, LINK_HOST):
+#   - staging, link-staging.socio.sh: the development builds only (the public debug key);
+#   - production, link.socio.sh: the production and preview builds only (src/apps.ts, HOST_VARIANTS).
+# Nothing here names the account: no account_id (the deploy pipeline passes CLOUDFLARE_ACCOUNT_ID),
+# no zone id, no key, no token. The Worker has no secret and no binding. tests/wrangler-config.test.ts
+# holds all of this, in every environment.
+#
+# Logs, traces, Logpush and the limits are repeated in each environment, so each one reads whole.
+# Never `wrangler deploy` without `--env`: the top level is not a deployment.
+
+name = "socio-link-local"
+main = "src/index.ts"
+compatibility_date = "2026-11-01"
+# WebCrypto only: no compatibility flags, no nodejs_compat.
+
+# Wrangler's own reporting, off (with WRANGLER_SEND_METRICS=false on every script).
+send_metrics = false
+# Deploy-time upload of npm dependency metadata, which send_metrics doesn't cover.
+dependencies_instrumentation = { enabled = false }
+
+workers_dev = false
+preview_urls = false
+upload_source_maps = false
+
+# No request logs anywhere: Workers Logs, invocation logs and traces would record each request's
+# URL, whose path names a workspace host, and its headers (CF-Connecting-IP). The Worker keeps
+# nothing and logs nothing. Fragments, which hold the codes and invite tokens, never reach it.
+logpush = false
+
+[observability]
+enabled = false
+
+[observability.logs]
+enabled = false
+invocation_logs = false
+
+[observability.traces]
+enabled = false
+
+# Static pages and two JSON files: well under a millisecond of CPU each.
+[limits]
+cpu_ms = 10
+
+# ---------------------------------------------------------------------------------------------
+# Staging: the development builds' links. https://link-staging.socio.sh
+
+[env.staging]
+name = "socio-link-staging"
+# A Worker custom domain: Cloudflare makes the DNS record and the certificate on deploy.
+routes = [{ pattern = "link-staging.socio.sh", custom_domain = true }]
+# Only the custom domain serves it: a workers.dev host would answer 404 anyway (it isn't a link
+# host), but it would be one more place requests could reach.
+workers_dev = false
+preview_urls = false
+logpush = false
+
+[env.staging.observability]
+enabled = false
+
+[env.staging.observability.logs]
+enabled = false
+invocation_logs = false
+
+[env.staging.observability.traces]
+enabled = false
+
+[env.staging.limits]
+cpu_ms = 10
+
+# ---------------------------------------------------------------------------------------------
+# Production: the production and preview builds' links. https://link.socio.sh
+
+[env.production]
+name = "socio-link"
+routes = [{ pattern = "link.socio.sh", custom_domain = true }]
+workers_dev = false
+preview_urls = false
+logpush = false
+
+[env.production.observability]
+enabled = false
+
+[env.production.observability.logs]
+enabled = false
+invocation_logs = false
+
+[env.production.observability.traces]
+enabled = false
+
+[env.production.limits]
+cpu_ms = 10

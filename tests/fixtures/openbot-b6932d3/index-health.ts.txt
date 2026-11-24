@@ -1,0 +1,14 @@
+      if (url.pathname === "/health") {
+        const [profile] = profiles.summary([botId]);
+        return json({
+          status: "ok",
+          // `browser` kept as it was: it is in the published contract and start.sh reads it.
+          browser: profile?.running ?? false,
+          profile,
+          // Which Bot this computer can prove it is, when the deployment runs SPIRE. Null is a
+          // deployment without it, not a failure, and it is reported rather than omitted so the
+          // difference between "no identity here" and "identity broken" is visible.
+          identity: await identity(),
+          browserMode: BROWSER_MODE,
+          browserBackend: RUNTIME.backend,
+          browserChannel: RUNTIME.channel,

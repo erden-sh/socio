@@ -1,0 +1,154 @@
+{
+    "general": {
+        "enableAutoUpdate": false,
+        "enableAutoUpdateNotification": false,
+        "enableNotifications": false,
+        "checkpointing": {
+            "enabled": false
+        }
+    },
+    "privacy": {
+        "usageStatisticsEnabled": false
+    },
+    "telemetry": {
+        "enabled": false,
+        "logPrompts": false,
+        "traces": false
+    },
+    "security": {
+        "folderTrust": {
+            "enabled": false
+        }
+    },
+    "advanced": {
+        "ignoreLocalEnv": true
+    },
+    "admin": {
+        "mcp": {
+            "enabled": false
+        },
+        "extensions": {
+            "enabled": false
+        }
+    },
+    "tools": {
+        "exclude": ["google_web_search", "web_fetch"],
+        "disableLLMCorrection": true,
+        "shell": {
+            "enableInteractiveShell": false
+        }
+    },
+    "model": {
+        "name": "$SOCIO_GEMINI_MODEL",
+        "disableLoopDetection": true,
+        "skipNextSpeakerCheck": true
+    },
+    "modelConfigs": {
+        "customAliases": {
+            "classifier": {
+                "modelConfig": {
+                    "model": "$SOCIO_GEMINI_MODEL"
+                }
+            },
+            "prompt-completion": {
+                "modelConfig": {
+                    "model": "$SOCIO_GEMINI_MODEL"
+                }
+            },
+            "fast-ack-helper": {
+                "modelConfig": {
+                    "model": "$SOCIO_GEMINI_MODEL"
+                }
+            },
+            "edit-corrector": {
+                "modelConfig": {
+                    "model": "$SOCIO_GEMINI_MODEL"
+                }
+            },
+            "summarizer-default": {
+                "modelConfig": {
+                    "model": "$SOCIO_GEMINI_MODEL"
+                }
+            },
+            "summarizer-shell": {
+                "modelConfig": {
+                    "model": "$SOCIO_GEMINI_MODEL"
+                }
+            },
+            "web-fetch-fallback": {
+                "modelConfig": {
+                    "model": "$SOCIO_GEMINI_MODEL"
+                }
+            },
+            "loop-detection": {
+                "modelConfig": {
+                    "model": "$SOCIO_GEMINI_MODEL"
+                }
+            },
+            "loop-detection-double-check": {
+                "modelConfig": {
+                    "model": "$SOCIO_GEMINI_MODEL"
+                }
+            },
+            "llm-edit-fixer": {
+                "modelConfig": {
+                    "model": "$SOCIO_GEMINI_MODEL"
+                }
+            },
+            "next-speaker-checker": {
+                "modelConfig": {
+                    "model": "$SOCIO_GEMINI_MODEL"
+                }
+            },
+            "context-snapshotter": {
+                "modelConfig": {
+                    "model": "$SOCIO_GEMINI_MODEL"
+                }
+            },
+            "chat-compression-3-pro": {
+                "modelConfig": {
+                    "model": "$SOCIO_GEMINI_MODEL"
+                }
+            },
+            "chat-compression-3-flash": {
+                "modelConfig": {
+                    "model": "$SOCIO_GEMINI_MODEL"
+                }
+            },
+            "chat-compression-3.1-flash-lite": {
+                "modelConfig": {
+                    "model": "$SOCIO_GEMINI_MODEL"
+                }
+            },
+            "chat-compression-2.5-pro": {
+                "modelConfig": {
+                    "model": "$SOCIO_GEMINI_MODEL"
+                }
+            },
+            "chat-compression-2.5-flash": {
+                "modelConfig": {
+                    "model": "$SOCIO_GEMINI_MODEL"
+                }
+            },
+            "chat-compression-2.5-flash-lite": {
+                "modelConfig": {
+                    "model": "$SOCIO_GEMINI_MODEL"
+                }
+            },
+            "chat-compression-default": {
+                "modelConfig": {
+                    "model": "$SOCIO_GEMINI_MODEL"
+                }
+            },
+            "agent-history-provider-summarizer": {
+                "modelConfig": {
+                    "model": "$SOCIO_GEMINI_MODEL"
+                }
+            }
+        }
+    },
+    "ui": {
+        "hideTips": true,
+        "hideBanner": true
+    }
+}

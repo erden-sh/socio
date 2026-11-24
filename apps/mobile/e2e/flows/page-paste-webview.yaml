@@ -1,0 +1,47 @@
+# Pasting a picture through the WebView, on iOS: with an image on the clipboard
+# (common/copy-photo-ios.yaml) and workspace A up, the editor opens on A's
+# first-week page and the WebView's own Paste (a long press in the text, then
+# the system's Paste) is offered and tapped. Whether the DOM paste event
+# carries the picture shows as "Adding the image…" and then the block; the
+# screenshots record what iOS shows (the menu, any paste prompt).
+appId: ${APP_ID}
+name: page-paste-webview
+---
+- runFlow: common/open-page.yaml
+- tapOn:
+    id: page-edit
+- extendedWaitUntil:
+    visible:
+      id: page-editor-saved
+    timeout: 30000
+- runFlow:
+    file: common/pause.yaml
+    env:
+      MS: 2000
+- longPressOn:
+    text: '.*${LINE}.*'
+- takeScreenshot: paste-webview-selected
+# iOS shows the edit menu on a second tap on the selection.
+- runFlow:
+    when:
+      notVisible: 'Paste'
+    commands:
+      - tapOn:
+          text: '.*${LINE}.*'
+- extendedWaitUntil:
+    visible: 'Paste'
+    timeout: 10000
+- takeScreenshot: paste-webview-menu
+- tapOn: 'Paste'
+- takeScreenshot: paste-webview-tapped
+- runFlow:
+    when:
+      visible: 'Allow Paste'
+    commands:
+      - takeScreenshot: paste-webview-prompt
+      - tapOn: 'Allow Paste'
+- runFlow:
+    file: common/pause.yaml
+    env:
+      MS: 8000
+- takeScreenshot: paste-webview-result

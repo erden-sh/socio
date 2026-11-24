@@ -1,0 +1,135 @@
+# The vocabulary for Socio's code structure: workspace packages, apps, the
+# server's feature folders, their contracts and the client's modules.
+# scripts/build-repo-graph.mjs writes data/repo.ttl with it.
+@prefix owl:     <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs:    <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:     <http://www.w3.org/2001/XMLSchema#> .
+@prefix skos:    <http://www.w3.org/2004/02/skos/core#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix prov:    <http://www.w3.org/ns/prov#> .
+@prefix spdx:    <http://spdx.org/rdf/terms#> .
+@prefix schema:  <https://schema.org/> .
+@prefix socio:   <https://socio.sh/ontology/> .
+
+<https://socio.sh/ontology/code>
+    a owl:Ontology ;
+    rdfs:label "Socio code structure" ;
+    dcterms:description "Classes and properties for the parts of the Socio repository and how they relate." .
+
+socio:CodeUnit
+    a owl:Class ;
+    rdfs:label "code unit" ;
+    skos:definition "A part of the Socio repository's code: a package, an app, a server feature, a contract or a client module." ;
+    socio:module <https://socio.sh/ontology/code> .
+
+socio:Package
+    a owl:Class ;
+    rdfs:subClassOf socio:CodeUnit, spdx:Package ;
+    rdfs:label "package" ;
+    skos:definition "A pnpm workspace member: a folder with its own package.json, listed in pnpm-workspace.yaml." ;
+    socio:module <https://socio.sh/ontology/code> .
+
+socio:App
+    a owl:Class ;
+    rdfs:subClassOf socio:Package, schema:SoftwareApplication ;
+    rdfs:label "app" ;
+    skos:definition "A package under apps/ that ships on its own: the native app, the push relay, the link domain or the public site." ;
+    socio:module <https://socio.sh/ontology/code> .
+
+socio:VendoredPackage
+    a owl:Class ;
+    rdfs:subClassOf socio:Package ;
+    rdfs:label "vendored package" ;
+    skos:definition "A package copied from another project into vendor/, kept under its own license." ;
+    socio:module <https://socio.sh/ontology/code> .
+
+socio:ServerFeature
+    a owl:Class ;
+    rdfs:subClassOf socio:CodeUnit ;
+    rdfs:label "server feature" ;
+    skos:definition "A top-level folder of src/server. Other features may import only its contract.ts." ;
+    socio:module <https://socio.sh/ontology/code> .
+
+socio:Contract
+    a owl:Class ;
+    rdfs:subClassOf socio:CodeUnit ;
+    rdfs:label "contract" ;
+    skos:definition "A server feature's contract.ts: the tags, types and constants other features may know of it, with no logic." ;
+    socio:module <https://socio.sh/ontology/code> .
+
+socio:ClientModule
+    a owl:Class ;
+    rdfs:subClassOf socio:CodeUnit ;
+    rdfs:label "client module" ;
+    skos:definition "A folder of packages/client/src/modules: the screens and state of one area of the web client." ;
+    socio:module <https://socio.sh/ontology/code> .
+
+socio:Package owl:disjointWith socio:ServerFeature, socio:Contract, socio:ClientModule .
+socio:ServerFeature owl:disjointWith socio:Contract, socio:ClientModule .
+socio:Contract owl:disjointWith socio:ClientModule .
+
+socio:partOf
+    a owl:ObjectProperty ;
+    rdfs:domain socio:CodeUnit ;
+    rdfs:range socio:CodeUnit ;
+    rdfs:subPropertyOf dcterms:isPartOf ;
+    rdfs:label "part of" ;
+    skos:definition "The code unit that contains this one: a contract's feature, a feature's or module's package." ;
+    socio:module <https://socio.sh/ontology/code> .
+
+socio:dependsOn
+    a owl:ObjectProperty ;
+    rdfs:domain socio:CodeUnit ;
+    rdfs:range socio:CodeUnit ;
+    rdfs:label "depends on" ;
+    skos:definition "A code unit this one imports or lists as a dependency: a package's internal workspace dependency, or a feature importing another feature's files." ;
+    socio:module <https://socio.sh/ontology/code> .
+
+socio:implementsConcept
+    a owl:AnnotationProperty ;
+    rdfs:domain socio:CodeUnit ;
+    rdfs:range owl:Thing ;
+    rdfs:label "implements concept" ;
+    skos:definition "A domain class (from modules/domain.ttl) that this code unit implements. An annotation, so its value can be a class." ;
+    socio:module <https://socio.sh/ontology/code> .
+
+socio:featureRank
+    a owl:DatatypeProperty, owl:FunctionalProperty ;
+    rdfs:label "feature rank" ;
+    skos:definition "A feature's position in scripts/feature-ranks.json, 0 at the top. A feature may import only features with a higher rank." ;
+    rdfs:domain socio:ServerFeature ;
+    rdfs:range xsd:nonNegativeInteger ;
+    socio:module <https://socio.sh/ontology/code> .
+
+socio:hasLayer
+    a owl:DatatypeProperty, owl:FunctionalProperty ;
+    rdfs:label "has layer" ;
+    skos:definition "Whether a feature has a layer.ts, which provides its contract's tags to the composition root." ;
+    rdfs:domain socio:ServerFeature ;
+    rdfs:range xsd:boolean ;
+    socio:module <https://socio.sh/ontology/code> .
+
+socio:packageName
+    a owl:DatatypeProperty ;
+    rdfs:label "package name" ;
+    skos:definition "The name in a package's package.json." ;
+    rdfs:domain socio:Package ;
+    rdfs:range xsd:string ;
+    socio:module <https://socio.sh/ontology/code> .
+
+socio:sourcePath
+    a owl:DatatypeProperty ;
+    rdfs:label "source path" ;
+    rdfs:domain owl:Thing ;
+    skos:definition "The path of a code unit or fact, relative to the repository root." ;
+    rdfs:range xsd:string ;
+    socio:module <https://socio.sh/ontology/code> .
+
+socio:boundaryException
+    a owl:ObjectProperty ;
+    rdfs:domain socio:CodeUnit ;
+    rdfs:range socio:CodeUnit ;
+    rdfs:label "boundary exception" ;
+    skos:definition "A feature that this feature imports past its contract, as recorded in scripts/feature-boundary-baseline.json." ;
+    rdfs:subPropertyOf socio:dependsOn ;
+    socio:module <https://socio.sh/ontology/code> .

@@ -1,0 +1,57 @@
+{
+    "$schema": "./node_modules/oxfmt/configuration_schema.json",
+    "useTabs": false,
+    "tabWidth": 4,
+    "printWidth": 120,
+    "singleQuote": true,
+    "semi": true,
+    "trailingComma": "all",
+    "arrowParens": "always",
+    "endOfLine": "lf",
+    "sortPackageJson": false,
+    "sortImports": {
+        "customGroups": [
+            {
+                "groupName": "socio-workspace",
+                "elementNamePattern": ["@socio/**"]
+            }
+        ],
+        "groups": ["builtin", "external", "socio-workspace", "parent", ["sibling", "index"], "unknown"],
+        "newlinesBetween": true,
+        "sortSideEffects": false
+    },
+    "ignorePatterns": [
+        "node_modules",
+        ".vscode",
+        "dist",
+        ".turbo",
+        ".turbo-ci",
+        ".react-router",
+        "pnpm-lock.yaml",
+        "RESEARCH.md",
+        "docs/superpowers",
+        "marketing",
+        "vendor/t3code",
+        "apps/*/vendor",
+        "apps/mobile/ios",
+        "apps/mobile/android",
+        "apps/mobile/.expo",
+        "apps/mobile/deps",
+        "apps/mobile/tests/fixtures/pages-corpus",
+        "apps/push-relay/.wrangler",
+        "apps/push-relay/worker-configuration.d.ts",
+        "apps/link/.wrangler",
+        "apps/link/worker-configuration.d.ts",
+        "apps/site/.wrangler",
+        "apps/site/dist",
+        "apps/site/worker-configuration.d.ts"
+    ],
+    "overrides": [
+        {
+            "files": ["*.yml", "**/*.yml", "*.yaml", "**/*.yaml"],
+            "options": {
+                "tabWidth": 2
+            }
+        }
+    ]
+}

@@ -1,0 +1,21 @@
+#!/bin/sh
+# Runs a coding agent with the prompt's cbgw_ (write-token's file) in the one
+# variable it reads its gateway key from (CB-326): Codex's and
+# Grok Build's provider env_key, SOCIO_GATEWAY_TOKEN; Claude Code's
+# ANTHROPIC_AUTH_TOKEN; or Gemini CLI's GEMINI_API_KEY. The supervisor names
+# the variable and the command; nothing else is accepted. The token never
+# travels in the exec's argv or environment.
+set -eu
+case "${1:-}" in
+  SOCIO_GATEWAY_TOKEN|ANTHROPIC_AUTH_TOKEN|GEMINI_API_KEY) ;;
+  *) echo "not a token variable" >&2; exit 2 ;;
+esac
+name=$1
+shift
+case "${1:-}" in
+  codex|claude|gemini|/usr/local/lib/socio/grok-socio) ;;
+  *) echo "not a coding agent" >&2; exit 2 ;;
+esac
+token=$(cat /run/socio/token)
+export "$name=$token"
+exec "$@"

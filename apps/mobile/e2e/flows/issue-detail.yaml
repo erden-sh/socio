@@ -1,0 +1,74 @@
+# An issue's screen, after board-open.yaml (Ada on the Board's Open
+# column), behind chaos-proxy.mjs: the open issue shows Ben's vote and
+# comment; with the server away, a vote and a comment show at once, marked
+# "Waiting to send"; once it is back both go, once each, and the marks clear.
+# The issue is then the workspace's last screen: a cold relaunch opens on it.
+appId: ${APP_ID}
+name: issue-detail
+---
+- tapOn:
+    text: '.*A: Export the board as CSV.*'
+- extendedWaitUntil:
+    visible:
+      id: issue-title
+      text: 'A: Export the board as CSV'
+    timeout: 30000
+- assertVisible: '(Vote · 1|Vote for .*, 1 vote)'
+- takeScreenshot: issue-detail-open
+# An admin's fields push the comments below the fold.
+- scrollUntilVisible:
+    element: '.*We need this for the monthly report.*'
+    direction: DOWN
+    timeout: 30000
+- takeScreenshot: issue-detail-comment
+- runFlow:
+    file: common/proxy.yaml
+    env:
+      ACTION: down
+- scrollUntilVisible:
+    element:
+      id: issue-vote
+    direction: UP
+    timeout: 20000
+# The banner pushes the page down as it comes: tap only once it shows.
+- extendedWaitUntil:
+    visible: '.*Reconnecting.*'
+    timeout: 60000
+- tapOn:
+    id: issue-vote
+- assertVisible: '(Voted · 2|Withdraw your vote on .*, 2 votes)'
+- tapOn:
+    id: issue-composer-input
+- inputText: 'Written while the server was away'
+- tapOn:
+    id: issue-composer-send
+- hideKeyboard
+- scrollUntilVisible:
+    element: 'Waiting to send'
+    direction: DOWN
+    timeout: 20000
+- assertVisible: '.*Written while the server was away.*'
+- takeScreenshot: issue-detail-waiting
+- runFlow:
+    file: common/proxy.yaml
+    env:
+      ACTION: up
+- extendedWaitUntil:
+    notVisible: 'Waiting to send'
+    timeout: 120000
+- assertVisible: '.*Written while the server was away.*'
+- takeScreenshot: issue-detail-sent
+- scrollUntilVisible:
+    element:
+      id: issue-vote
+    direction: UP
+    timeout: 20000
+- assertVisible: '(Voted · 2|Withdraw your vote on .*, 2 votes)'
+- runFlow: common/open.yaml
+- extendedWaitUntil:
+    visible:
+      id: issue-title
+      text: 'A: Export the board as CSV'
+    timeout: 180000
+- assertVisible: '(Voted · 2|Withdraw your vote on .*, 2 votes)'
+- takeScreenshot: issue-detail-relaunched

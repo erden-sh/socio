@@ -1,0 +1,48 @@
+# A Space's library, with workspace A up (servers.mjs; run.mjs
+# --credentials): Ada signs in, opens the Spaces from Home's tile, then A's
+# Space: Recent lists its two pages, All pages shows the handbook, which opens
+# to its subpage. The Space is now the workspace's last screen;
+# space-open-offline.yaml goes on from here.
+appId: ${APP_ID}
+name: space-open
+---
+- runFlow: launch.yaml
+- runFlow:
+    file: common/add-workspace.yaml
+    env:
+      ORIGIN: ${ORIGIN_A}
+- runFlow:
+    file: common/sign-in.yaml
+    env:
+      EMAIL: ada@example.test
+      SECRET: ${PASSWORD}
+- extendedWaitUntil:
+    visible:
+      id: home-tile-spaces
+    timeout: 30000
+- tapOn:
+    id: home-tile-spaces
+- extendedWaitUntil:
+    visible:
+      text: '.*${SPACE_A}.*'
+    timeout: 30000
+- tapOn:
+    text: '.*${SPACE_A}.*'
+- extendedWaitUntil:
+    visible:
+      text: '.*${SUBPAGE_A}.*'
+    timeout: 30000
+- assertVisible:
+    text: '.*${PAGE_A}.*'
+- takeScreenshot: space-open-recent
+- tapOn:
+    text: 'All pages'
+- assertNotVisible:
+    text: '.*${SUBPAGE_A}.*'
+- tapOn:
+    id: 'space-tree-toggle-.*'
+- extendedWaitUntil:
+    visible:
+      text: '.*${SUBPAGE_A}.*'
+    timeout: 5000
+- takeScreenshot: space-open-tree

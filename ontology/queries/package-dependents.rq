@@ -1,0 +1,9 @@
+# @ask     Which workspace packages depend on @socio/shared?
+# @expect  rows >= 3
+# @from    Each package.json's dependencies that name another workspace member.
+PREFIX socio: <https://socio.sh/ontology/>
+SELECT ?dependent ?name WHERE {
+    ?package socio:packageName "@socio/shared" .
+    ?dependent socio:dependsOn ?package ; socio:packageName ?name .
+}
+ORDER BY ?name

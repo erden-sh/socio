@@ -1,0 +1,17 @@
+/*
+ * The site's stylesheet. Cascade layers, lowest first:
+ *   theme       Tailwind 4's theme variables (prefixed tw, so its names never meet ours)
+ *   components  the site's own rules (components.css), ported from the approved mockups
+ *   utilities   Tailwind utilities, written tw:pt-0 and so on in the pages, for the one-off
+ *               spacing the mockups set inline (the CSP allows no inline style)
+ * No Tailwind preflight: components.css sets its own base, as the mockups did.
+ * The tokens (tokens.css) are plain custom properties, outside any layer.
+ */
+@layer theme, components, utilities;
+
+@import 'tailwindcss/theme.css' layer(theme) prefix(tw);
+@import 'tailwindcss/utilities.css' layer(utilities) source(none);
+@source '../build';
+
+@import './tokens.css';
+@import './components.css' layer(components);

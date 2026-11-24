@@ -1,0 +1,78 @@
+# The approvals list and the top of Chats (the Inbox tab until
+# CB-455), with workspace A up (servers.mjs; run.mjs --credentials): Ada asks
+# A's marker chat for "smoke approvals", so two requests wait. Chats shows them
+# first, over the chats, and its tab's badge counts them; See all opens the list
+# (waiting, then recent decisions), where she approves one on its card. A row
+# opens the other's page, where she approves it too. A link to a request that
+# isn't there opens its page, which says so.
+appId: ${APP_ID}
+name: approvals-chats
+---
+- runFlow: chat-open.yaml
+- tapOn:
+    id: chat-composer-input
+- inputText: 'Please smoke approvals'
+- tapOn:
+    id: chat-composer-send
+- extendedWaitUntil:
+    visible:
+      id: chat-approval-bar-count
+    timeout: 60000
+- hideKeyboard
+- runFlow: common/back.yaml
+# The native tab bar's buttons carry no testID on Android: tap the label.
+- tapOn:
+    text: 'Chats'
+- extendedWaitUntil:
+    visible:
+      id: attention-approvals
+    timeout: 30000
+- assertVisible:
+    id: 'attention-approval-.*'
+- assertVisible:
+    text: 'See all approvals'
+- takeScreenshot: approvals-chats
+- tapOn:
+    id: attention-approvals-all
+- extendedWaitUntil:
+    visible:
+      text: 'Waiting for you · 2 waiting'
+    timeout: 30000
+- takeScreenshot: approvals-list
+- tapOn:
+    id: 'approval-.*-approve'
+    index: 0
+- extendedWaitUntil:
+    visible:
+      text: 'Waiting for you · 1 waiting'
+    timeout: 30000
+- assertVisible:
+    text: 'Recent decisions'
+- takeScreenshot: approvals-list-one-left
+- runFlow: common/back.yaml
+- extendedWaitUntil:
+    visible:
+      id: 'attention-approval-.*'
+    timeout: 30000
+- tapOn:
+    id: 'attention-approval-.*'
+- extendedWaitUntil:
+    visible:
+      id: approval-request
+    timeout: 30000
+- takeScreenshot: approval-page
+- tapOn:
+    id: approval-request-approve
+- extendedWaitUntil:
+    visible:
+      id: approval-request-status
+      text: 'Approved'
+    timeout: 30000
+- takeScreenshot: approval-page-approved
+# A link from outside the app, to a request the server doesn't have.
+- openLink: ${APP_SCHEME}://approvals/no-such-request
+- extendedWaitUntil:
+    visible:
+      text: 'This request isn’t there any more\.'
+    timeout: 30000
+- takeScreenshot: approval-page-gone

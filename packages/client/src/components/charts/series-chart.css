@@ -1,0 +1,64 @@
+/*
+ * The plain-SVG series chart (charts/SeriesChart.tsx): dataset views (D5)
+ * and the Operations dashboard. Light and dark come from the tokens.
+ */
+.series-chart {
+    position: relative;
+}
+.series-chart svg {
+    display: block;
+    overflow: visible;
+}
+.series-chart .grid line {
+    stroke: var(--border);
+    stroke-width: 1;
+}
+.series-chart .baseline {
+    stroke: var(--muted-foreground);
+    stroke-width: 1;
+}
+.series-chart text {
+    fill: var(--muted-foreground);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+}
+.series-chart .marks path:not(.line) {
+    fill: var(--chart-1);
+}
+.series-chart .marks path[data-active] {
+    opacity: 0.8;
+}
+.series-chart .line {
+    fill: none;
+    stroke: var(--chart-1);
+    stroke-width: 2;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+}
+.series-chart circle {
+    fill: var(--chart-1);
+    stroke: var(--card);
+    stroke-width: 2;
+}
+.series-chart .crosshair {
+    stroke: var(--muted-foreground);
+    stroke-width: 1;
+}
+.series-chart-tooltip {
+    position: absolute;
+    transform: translate(-50%, calc(-100% - 10px));
+    display: grid;
+    padding: 4px 8px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--popover);
+    color: var(--popover-foreground);
+    font-size: 12px;
+    line-height: 1.4;
+    white-space: nowrap;
+    pointer-events: none;
+    box-shadow: 0 2px 8px rgb(0 0 0 / 0.08);
+}
+.series-chart-tooltip span {
+    color: var(--muted-foreground);
+}

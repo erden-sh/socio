@@ -1,0 +1,72 @@
+# One phone's half of two devices editing one page (README, Two
+# devices), with workspace A behind this phone's chaos-proxy.mjs (run.mjs
+# --credentials --proxy-control, --env BASE LINE TEXT ENTER SHOT): A's
+# first-week page opens online and shows the base the web just wrote (${BASE}),
+# then the server goes away; Edit, a tap on ${LINE}, a new paragraph when
+# ENTER is true (else the words go on that line), ${TEXT} typed: it waits to
+# send, also after Back. page-two-settle.yaml brings it back.
+appId: ${APP_ID}
+name: page-two-offline
+---
+- runFlow: common/open-page.yaml
+- runFlow:
+    file: common/proxy.yaml
+    env:
+      ACTION: down
+# The bar's Edit: a Material button with its testID on Android, a
+# UIBarButtonItem on iOS, which carries none (CB-420), so its label there.
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn:
+          id: page-edit
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn: 'Edit'
+- extendedWaitUntil:
+    visible:
+      id: page-editor-saved
+    timeout: 30000
+- extendedWaitUntil:
+    visible:
+      text: '.*${LINE}.*'
+    timeout: 30000
+# The WebView takes a tap only once its document is up and the layout settled.
+- runFlow:
+    file: common/pause.yaml
+    env:
+      MS: 2000
+- tapOn:
+    text: '.*${LINE}.*'
+- runFlow:
+    when:
+      true: ${ENTER == 'true'}
+    commands:
+      - pressKey: Enter
+- inputText: ${TEXT}
+- extendedWaitUntil:
+    visible:
+      text: '.*${TEXT}.*'
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      text: 'Waiting to send'
+    timeout: 30000
+- takeScreenshot: ${SHOT}-waiting
+# hideKeyboard only after typing (as file-issue-offline.yaml does), and only on Android:
+# it isn't reliable on iOS, whose header Back shows over the keyboard.
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - hideKeyboard
+- runFlow: common/back.yaml
+- scrollUntilVisible:
+    element:
+      text: '.*${TEXT}.*'
+    direction: DOWN
+    timeout: 30000
+- takeScreenshot: ${SHOT}-reader

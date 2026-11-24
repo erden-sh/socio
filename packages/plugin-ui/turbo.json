@@ -1,0 +1,21 @@
+{
+    "$schema": "../../node_modules/turbo/schema.json",
+    "extends": ["//"],
+    "tasks": {
+        "typecheck": {
+            "description": "Its components import the client's through `@/`, so the client is an input.",
+            "inputs": [
+                "$TURBO_DEFAULT$",
+                "$TURBO_ROOT$/packages/shared/src/**",
+                "$TURBO_ROOT$/packages/client/src/**",
+                "$TURBO_ROOT$/vendor/**"
+            ],
+            "outputs": []
+        },
+        "lint": {
+            "description": "oxlint's import rules read the client components it imports.",
+            "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/packages/client/src/**"],
+            "outputs": []
+        }
+    }
+}

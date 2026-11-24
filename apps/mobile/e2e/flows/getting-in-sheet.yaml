@@ -1,0 +1,73 @@
+# Getting in through the system sign-in sheet: the workspace QR code's `w`
+# link, then SignIn's Continue opens the workspace's own sign-in in the sheet (Android: Chrome's Auth
+# Tab or Custom Tab; iOS: ASWebAuthenticationSession, which asks first). Ada's password there, then
+# the Continue page ("As Ada (ada@example.test)") approves, the https callback on the link host comes
+# back to this build (a verified App Link or universal link), and the app lands on A's marker chat.
+appId: ${APP_ID}
+name: getting-in-sheet
+env:
+  LINK_HOST: link-staging.socio.sh
+---
+- runFlow: launch.yaml
+- openLink:
+    link: https://${LINK_HOST}/dev/w/${HOST_A}
+    autoVerify: true
+- extendedWaitUntil:
+    visible:
+      id: confirm-workspace-continue
+    timeout: 30000
+- tapOn:
+    id: confirm-workspace-continue
+- extendedWaitUntil:
+    visible:
+      id: sign-in-continue
+    timeout: 20000
+- tapOn:
+    id: sign-in-continue
+# iOS: "“Socio Dev” Wants to Use “localhost” to Sign In".
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - extendedWaitUntil:
+          visible: 'Continue'
+          timeout: 15000
+          optional: true
+      - tapOn: 'Continue'
+# Chrome's first run, when the emulator's Chrome hasn't been opened yet.
+- runFlow:
+    when:
+      visible: 'Use without an account'
+    commands:
+      - tapOn: 'Use without an account'
+- runFlow:
+    when:
+      visible: 'No thanks'
+    commands:
+      - tapOn: 'No thanks'
+- extendedWaitUntil:
+    visible: 'Email'
+    timeout: 60000
+- takeScreenshot: sheet-web-sign-in
+- tapOn: 'Email'
+- inputText: ada@example.test
+# The keyboard covers the password field: close it first.
+- hideKeyboard
+- tapOn: 'Password'
+- inputText: ${PASSWORD}
+- pressKey: Enter
+- extendedWaitUntil:
+    visible: 'As Ada.*'
+    timeout: 30000
+- takeScreenshot: sheet-continue
+- tapOn:
+    text: 'Continue'
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 60000
+- extendedWaitUntil:
+    visible: '.*${WORKSPACE_A}.*'
+    timeout: 30000
+- takeScreenshot: sheet-home

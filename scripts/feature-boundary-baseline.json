@@ -1,0 +1,9 @@
+{
+    "$comment": "Written by `node scripts/check-feature-boundaries.mjs --write`. Entries only go.",
+    "numbers": {
+        "largestFileScc": 5,
+        "largestCrossFeatureScc": 0,
+        "largestFeatureScc": 0
+    },
+    "contractOnly": []
+}

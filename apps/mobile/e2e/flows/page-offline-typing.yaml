@@ -1,0 +1,70 @@
+# Two minutes of offline typing in one paragraph,
+# with workspace A behind chaos-proxy.mjs (run.mjs --credentials, --env BASE
+# LINE): the editor opens online on A's first-week page, the server goes
+# away, and 24 bursts of words go into one new paragraph 5 s apart. It waits
+# to send; the proxy's count is reset and the server comes back: the editor
+# says Saved, and the proxy counted one or two page saves and no page read
+# (a read comes only after a 409: no merge).
+appId: ${APP_ID}
+name: page-offline-typing
+---
+- runFlow: common/open-page.yaml
+- tapOn:
+    id: page-edit
+- extendedWaitUntil:
+    visible:
+      text: 'Saved'
+    timeout: 30000
+- extendedWaitUntil:
+    visible:
+      text: '.*${LINE}.*'
+    timeout: 30000
+- runFlow:
+    file: common/proxy.yaml
+    env:
+      ACTION: down
+- tapOn:
+    text: '.*${LINE}.*'
+- pressKey: Enter
+- repeat:
+    times: 24
+    commands:
+      - inputText: 'typed offline '
+      - runFlow:
+          file: common/pause.yaml
+          env:
+            MS: 5000
+- inputText: 'two minutes later'
+- extendedWaitUntil:
+    visible:
+      text: 'Waiting to send'
+    timeout: 30000
+- takeScreenshot: page-offline-typing-waiting
+- runFlow:
+    file: common/proxy.yaml
+    env:
+      ACTION: reset
+- runFlow:
+    file: common/proxy.yaml
+    env:
+      ACTION: up
+- extendedWaitUntil:
+    visible:
+      text: 'Saved'
+    timeout: 180000
+- takeScreenshot: page-offline-typing-saved
+- runFlow:
+    file: common/requests.yaml
+    env:
+      MAX_SAVES: 2
+      MAX_READS: 0
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - hideKeyboard
+- runFlow: common/back.yaml
+- extendedWaitUntil:
+    visible:
+      text: '.*two minutes later.*'
+    timeout: 30000

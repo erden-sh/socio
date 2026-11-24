@@ -1,0 +1,79 @@
+# Room invites and the room's menu, with workspace A up (servers.mjs;
+# run.mjs --credentials). First `act-as.mjs invite`: Ben invites Ada to his
+# own room ("A: Ben's room"). Ada signs in; the invite shows above Home's
+# Rooms and at the top of Chats (the Inbox until CB-455). Its sheet shows what joining shares before Join;
+# joining opens the room. Its menu holds the notification level (set to
+# Muted), Members and "Open in your browser".
+appId: ${APP_ID}
+name: room-invite
+---
+- runFlow: launch.yaml
+- runFlow:
+    file: common/add-workspace.yaml
+    env:
+      ORIGIN: ${ORIGIN_A}
+- runFlow:
+    file: common/sign-in.yaml
+    env:
+      EMAIL: ada@example.test
+      SECRET: ${PASSWORD}
+- extendedWaitUntil:
+    visible:
+      id: home-invites
+    timeout: 30000
+- assertVisible:
+    text: ".*A: Ben's room.*"
+- assertVisible:
+    id: home-new-room
+- takeScreenshot: room-invite-home
+- tapOn:
+    text: 'Chats'
+- extendedWaitUntil:
+    visible:
+      id: attention-invites
+    timeout: 15000
+- takeScreenshot: room-invite-chats
+- tapOn:
+    text: ".*A: Ben's room.*"
+- extendedWaitUntil:
+    visible:
+      id: room-invite-disclosure
+    timeout: 10000
+- assertVisible:
+    text: '.*Ben invited you.*'
+- takeScreenshot: room-invite-sheet
+- tapOn:
+    id: room-invite-join
+- extendedWaitUntil:
+    visible:
+      id: room-header
+    timeout: 20000
+- assertVisible:
+    text: ".*A: Ben's room.*"
+# A development client's floating Tools button sits over the menu button:
+# drag it down out of the way first (a build that carries its bundle has none).
+- runFlow:
+    when:
+      true: ${DEV_CLIENT_URL != ''}
+    commands:
+      - swipe:
+          start: 90%, 10%
+          end: 90%, 50%
+          duration: 1000
+- tapOn:
+    id: room-menu-button
+    retryTapIfNoChange: true
+- extendedWaitUntil:
+    visible:
+      id: room-notify-mentions
+    timeout: 10000
+- tapOn:
+    id: room-notify-mute
+- extendedWaitUntil:
+    visible:
+      id: room-notify-mute
+      checked: true
+    timeout: 10000
+- assertVisible:
+    id: room-menu-browser
+- takeScreenshot: room-invite-menu

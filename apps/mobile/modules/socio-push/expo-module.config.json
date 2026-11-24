@@ -1,0 +1,9 @@
+{
+    "platforms": ["apple", "android"],
+    "apple": {
+        "modules": ["SocioPushModule"]
+    },
+    "android": {
+        "modules": ["expo.modules.sociopush.SocioPushModule"]
+    }
+}

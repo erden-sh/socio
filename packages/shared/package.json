@@ -1,0 +1,25 @@
+{
+    "name": "@socio/shared",
+    "version": "0.0.0",
+    "private": true,
+    "type": "module",
+    "description": "Code and types shared by Socio's server, client and services: no imports from the app, importable by subpath (@socio/shared/rooms/rooms).",
+    "scripts": {
+        "typecheck": "pnpm -w exec tsc -p packages/shared/tsconfig.json --noEmit",
+        "lint": "pnpm -w exec oxlint packages/shared"
+    },
+    "exports": {
+        "./*": {
+            "types": "./dist/*.d.ts",
+            "default": "./dist/*.js"
+        }
+    },
+    "dependencies": {
+        "zod": "^4.6.5"
+    },
+    "devDependencies": {
+        "@ag-ui/core": "^0.0.59",
+        "@types/hast": "3.0.5"
+    },
+    "license": "SEE LICENSE IN ../../LICENSE"
+}

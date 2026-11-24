@@ -1,0 +1,9 @@
+/*
+ * The app's styles, which uniwind compiles for className (metro.config.js):
+ * Tailwind, uniwind's own utilities and variants (light, dark, ios, android,
+ * the safe areas), and the web's tokens, generated into theme.css
+ * (scripts/generate-theme.mts). Add nothing by hand that the web doesn't have.
+ */
+@import 'tailwindcss';
+@import 'uniwind';
+@import './src/theme/generated/theme.css';

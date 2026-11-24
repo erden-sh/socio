@@ -1,0 +1,102 @@
+/*
+ * The site's tokens. The light :root and the dark set are copied from the web client's
+ * packages/client/src/globals.css (:root and .dark), with the dark set under
+ * prefers-color-scheme: the site has no theme toggle and stores nothing.
+ * tests/tokens.test.ts fails if a copied value drifts from the client's.
+ * The tone shades are Tailwind 4's palette (tailwindcss/theme.css), used the way the client's
+ * shell/tones.ts uses them; the same test holds them to Tailwind's values.
+ * Site-only (no client counterpart): the canvas a step off white so cards lift, the shadows,
+ * and the strong ink for headings.
+ */
+:root {
+    --radius: 0.6rem;
+    --brand: #438c81;
+    --brand-foreground: #ffffff;
+    --background: #ffffff;
+    --foreground: #242424;
+    --card: #ffffff;
+    --card-foreground: #242424;
+    --primary: #38766d;
+    --primary-foreground: var(--brand-foreground);
+    --primary-hover: #2f665e;
+    --secondary: #f1f1f1;
+    --secondary-foreground: #242424;
+    --muted: #f1f1f1;
+    --muted-foreground: #6b6b6b;
+    --accent: #f1f1f1;
+    --destructive: #b2453a;
+    --border: #e7e7e7;
+    --input: #e7e7e7;
+    --ring: var(--brand);
+    --sidebar: #f9f9f9;
+    --sidebar-muted-foreground: #666666;
+    --user-bubble: #3d7e75;
+    --user-bubble-foreground: #ffffff;
+    --chat-link: #357360;
+
+    /* Site-only: the page canvas a step off white, so cards lift. */
+    --canvas: #fbfbfa;
+    --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.04), 0 1px 1px rgb(0 0 0 / 0.03);
+    --shadow-md: 0 1px 2px rgb(0 0 0 / 0.04), 0 8px 24px -6px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 2px 4px rgb(0 0 0 / 0.04), 0 30px 60px -20px rgb(16 40 36 / 0.28);
+    --ink-strong: #111;
+
+    /* Tailwind 4 tones (theme.css) */
+    --orange-300: oklch(83.7% 0.128 66.29);
+    --orange-500: oklch(70.5% 0.213 47.604);
+    --orange-700: oklch(55.3% 0.195 38.402);
+    --amber-300: oklch(87.9% 0.169 91.605);
+    --amber-500: oklch(76.9% 0.188 70.08);
+    --amber-700: oklch(55.5% 0.163 48.998);
+    --emerald-300: oklch(84.5% 0.143 164.978);
+    --emerald-500: oklch(69.6% 0.17 162.48);
+    --emerald-700: oklch(50.8% 0.118 165.612);
+    --sky-300: oklch(82.8% 0.111 230.318);
+    --sky-500: oklch(68.5% 0.169 237.323);
+    --sky-700: oklch(50% 0.134 242.749);
+    --indigo-300: oklch(78.5% 0.115 274.713);
+    --indigo-500: oklch(58.5% 0.233 277.117);
+    --indigo-700: oklch(45.7% 0.24 277.023);
+    --violet-300: oklch(81.1% 0.111 293.571);
+    --violet-500: oklch(60.6% 0.25 292.717);
+    --violet-700: oklch(49.1% 0.27 292.581);
+    --rose-300: oklch(81% 0.117 11.638);
+    --rose-500: oklch(64.5% 0.246 16.439);
+    --rose-700: oklch(51.4% 0.222 16.935);
+    --slate-300: oklch(86.9% 0.022 252.894);
+    --slate-500: oklch(55.4% 0.046 257.417);
+    --slate-700: oklch(37.2% 0.044 257.287);
+    color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --brand: #7cc3b6;
+        --brand-foreground: #0e1a18;
+        --primary: var(--brand);
+        --primary-hover: #8fd0c3;
+        --background: #141415;
+        --foreground: #ededed;
+        --card: #19191b;
+        --card-foreground: #ededed;
+        --secondary: #232325;
+        --secondary-foreground: #ededed;
+        --muted: #232325;
+        --muted-foreground: #a1a1a6;
+        --accent: #232325;
+        --destructive: #e5675b;
+        --border: #2c2c2f;
+        --input: #36363a;
+        --sidebar: #0f0f10;
+        --sidebar-muted-foreground: #a1a1a6;
+        --user-bubble: #3d7e75;
+        --user-bubble-foreground: #ffffff;
+        --chat-link: #83c2ac;
+
+        --canvas: #111112;
+        --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+        --shadow-md: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px -6px rgb(0 0 0 / 0.5);
+        --shadow-lg: 0 2px 4px rgb(0 0 0 / 0.4), 0 30px 60px -20px rgb(0 0 0 / 0.8);
+        --ink-strong: #fff;
+    }
+}

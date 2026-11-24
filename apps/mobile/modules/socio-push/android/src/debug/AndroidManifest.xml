@@ -1,0 +1,17 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <!--
+    Debug builds only: hands the messaging service a push from adb, with no FCM
+    (../../README.md, Debug hook). DUMP is the shell's; no app can hold it, so only adb can send.
+  -->
+  <application>
+    <receiver
+      android:name="expo.modules.sociopush.DebugPushReceiver"
+      android:exported="true"
+      android:permission="android.permission.DUMP">
+      <intent-filter>
+        <action android:name="expo.modules.sociopush.debug.SEED" />
+        <action android:name="expo.modules.sociopush.debug.PUSH" />
+      </intent-filter>
+    </receiver>
+  </application>
+</manifest>

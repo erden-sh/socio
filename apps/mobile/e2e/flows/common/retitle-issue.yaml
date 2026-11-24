@@ -1,0 +1,22 @@
+# On an issue's screen: Edit title, the title ${TITLE}, Save.
+appId: ${APP_ID}
+name: retitle-issue
+---
+- tapOn:
+    id: issue-edit-title
+- tapOn:
+    id: issue-title-field
+- eraseText: 80
+- inputText: ${TITLE}
+- extendedWaitUntil:
+    visible:
+      id: issue-title-field
+      text: ${TITLE}
+    timeout: 20000
+- tapOn:
+    id: issue-title-save
+- extendedWaitUntil:
+    visible:
+      id: issue-title
+      text: ${TITLE}
+    timeout: 10000

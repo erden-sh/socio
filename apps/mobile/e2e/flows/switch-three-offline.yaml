@@ -1,0 +1,17 @@
+# After switch-three.yaml, with every workspace server stopped (Ctrl-C
+# servers.mjs, which also removes its adb reverse rules; on a Mac, close the
+# tunnel): a cold relaunch opens B from the phone's copy alone, with nothing of
+# A or C on Home. Run it with run.mjs --servers-down, which refuses to start
+# while an origin answers or an adb reverse rule still carries one.
+appId: ${APP_ID}
+name: switch-three-offline
+---
+- runFlow: common/open.yaml
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 180000
+- runFlow:
+    file: common/only.yaml
+    env: { SHOWN: '${CHAT_B}', HIDDEN_1: '${CHAT_A}', HIDDEN_2: '${CHAT_C}' }
+- takeScreenshot: switch-three-offline

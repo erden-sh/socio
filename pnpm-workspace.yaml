@@ -1,0 +1,99 @@
+packages:
+  - '.'
+  - 'packages/*'
+  # Socio's native app (apps/mobile/AGENTS.md): a member that shares this lockfile.
+  - 'apps/mobile'
+  # Its push relay (a Cloudflare Worker): the same kind of member.
+  - 'apps/push-relay'
+  # Its link domain (a Cloudflare Worker on link.socio.sh): the same kind of member.
+  - 'apps/link'
+  # Its public site (a Cloudflare Worker with static assets on socio.sh): the same kind of member.
+  - 'apps/site'
+  # T3 Code's vendored provider core (CB-326): MIT, pinned by commit in
+  # vendor/t3code/SYNC.md, raw TypeScript. They are private, unpublished
+  # packages consumed by Socio's coding session host.
+  - 'vendor/t3code/*'
+
+# A pnpm catalog pins the versions the vendored T3 Code packages
+# (vendor/t3code/*) reference as `catalog:`. Their upstream uses a catalog at
+# these versions (effect 4.0.5 and the markdown/noble/jose pipeline `shared`
+# renders with). Socio's own code does not use `catalog:`; this exists only so
+# the vendored packages install without editing their package.json files. When
+# a vendored package is brought into use, its non-catalog deps (diff,
+# @opencode-ai/sdk, @opencode/*) are added to the root package.json instead.
+catalog:
+  effect: 4.0.5
+  '@noble/curves': 1.9.1
+  '@noble/hashes': 1.8.0
+  jose: 6.2.2
+  yaml: ^2.9.0
+  unified: ^11.0.0
+  remark-parse: ^11.0.0
+  remark-rehype: ^11.0.0
+  remark-gfm: ^4.0.0
+  remark-math: 6.0.0
+  remark-breaks: ^4.0.0
+  mdast-util-directive: 3.1.0
+  mdast-util-to-hast: ^13.2.1
+  micromark-extension-directive: 4.0.0
+  micromark-util-character: 2.1.1
+  micromark-util-types: 2.0.2
+  property-information: ^7.2.0
+  rehype-raw: ^7.0.0
+  rehype-sanitize: ^6.0.0
+  '@effect/platform-node': 4.0.5
+  '@effect/vitest': 4.0.5
+  '@effect/openapi-generator': 4.0.5
+  '@types/node': 24.12.4
+
+# Dependency settings (formerly the `pnpm` field in package.json). `$name`
+# pins a package to the version the root package.json names; `-` removes an
+# optional peer the server packages never load.
+overrides:
+  undici: ^6.29.0
+  effect: $effect
+  '@effect/platform-node': 'catalog:'
+  '@effect/platform-node-shared': $@effect/platform-node-shared
+  '@scarf/scarf': $@scarf/scarf
+  '@segment/analytics-node': $@segment/analytics-node
+  drizzle-orm>expo-sqlite: '-'
+  drizzle-orm>@cloudflare/workers-types: '-'
+  '@react-router/dev>wrangler': '-'
+  vite>terser: '-'
+  '@vitejs/plugin-react>babel-plugin-react-compiler': '-'
+  react-native-enriched-markdown>katex: '-'
+  '@10play/tentap-editor>@tiptap/core': 3.31.3
+  '@10play/tentap-editor>@tiptap/extension-blockquote': 3.31.3
+  '@10play/tentap-editor>@tiptap/extension-bold': 3.31.3
+  '@10play/tentap-editor>@tiptap/extension-code': 3.31.3
+  '@10play/tentap-editor>@tiptap/extension-code-block': 3.31.3
+  '@10play/tentap-editor>@tiptap/extension-color': 3.31.3
+  '@10play/tentap-editor>@tiptap/extension-document': 3.31.3
+  '@10play/tentap-editor>@tiptap/extension-hard-break': 3.31.3
+  '@10play/tentap-editor>@tiptap/extension-heading': 3.31.3
+  '@10play/tentap-editor>@tiptap/extension-highlight': 3.31.3
+  '@10play/tentap-editor>@tiptap/extension-horizontal-rule': 3.31.3
+  '@10play/tentap-editor>@tiptap/extension-image': 3.31.3
+  '@10play/tentap-editor>@tiptap/extension-italic': 3.31.3
+  '@10play/tentap-editor>@tiptap/extension-link': 3.31.3
+  '@10play/tentap-editor>@tiptap/extension-list': 3.31.3
+  '@10play/tentap-editor>@tiptap/extension-paragraph': 3.31.3
+  '@10play/tentap-editor>@tiptap/extension-strike': 3.31.3
+  '@10play/tentap-editor>@tiptap/extension-text': 3.31.3
+  '@10play/tentap-editor>@tiptap/extension-text-style': 3.31.3
+  '@10play/tentap-editor>@tiptap/extension-underline': 3.31.3
+  '@10play/tentap-editor>@tiptap/extensions': 3.31.3
+  '@10play/tentap-editor>@tiptap/pm': 3.31.3
+  '@10play/tentap-editor>@tiptap/react': 3.31.3
+  '@10play/tentap-editor>@tiptap/starter-kit': 3.31.3
+
+patchedDependencies:
+  '@legendapp/list@3.3.5': patches/@legendapp__list@3.3.5.patch
+  react-native-keyboard-controller@1.22.8: patches/react-native-keyboard-controller@1.22.8.patch
+
+onlyBuiltDependencies:
+  - esbuild
+
+ignoredBuiltDependencies:
+  - react-native-enriched-markdown
+  - workerd

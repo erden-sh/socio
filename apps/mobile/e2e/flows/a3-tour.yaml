@@ -1,0 +1,265 @@
+# The Board tour, after board-open.yaml (the Board and its filters), with
+# workspace A up behind chaos-proxy.mjs (servers.mjs; run.mjs --credentials),
+# a photo seeded (attach-photo.yaml's header) and one issue filed on the web
+# once the Board has counted its six (README, The Board tour):
+#   act-as.mjs web-file --text "XB3: Deleted on the web"
+# One pass over the rest of the issues, memories and schedules, with a
+# screenshot of each: the open issue's vote and comment, then an
+# admin's status change, each made with the server away and sent once it is
+# back (issue-detail.yaml, issue-admin.yaml); an issue filed offline with a
+# photo (file-issue-offline.yaml); Memories: the socio's proposal remembered,
+# a memory edited and one forgotten; Schedules: the repeating task paused and
+# resumed, and Run now refused offline (Android: airplane mode, "Needs a
+# connection"; the iOS simulator can't go offline, so with the server away
+# the request goes and the answer that never comes says so); Runs and the
+# digest's trace; Learning; Search for an issue's key and for a page. Last,
+# the web's issue is opened online (so its detail is held), then, with the
+# server away, a comment on it waits: a3-tour-unsent.yaml goes on once the
+# web has deleted it.
+appId: ${APP_ID}
+name: a3-tour
+---
+- runFlow: issue-detail.yaml
+- runFlow: issue-admin.yaml
+# Filing offline, from the Board.
+- runFlow:
+    file: common/link.yaml
+    env:
+      LINK: ${APP_SCHEME}://issues
+- extendedWaitUntil:
+    visible:
+      id: board-new-issue
+    timeout: 30000
+- runFlow: file-issue-offline.yaml
+# Memories: the socio's proposal, remembered.
+- runFlow:
+    file: common/link.yaml
+    env:
+      LINK: ${APP_SCHEME}://memories
+- extendedWaitUntil:
+    visible: '.*A: Ada reviews the board every Monday morning.*'
+    timeout: 30000
+- takeScreenshot: a3-tour-memories
+- tapOn:
+    id: 'memory-proposal-.*-approve'
+- extendedWaitUntil:
+    notVisible:
+      id: memory-proposals
+    timeout: 60000
+- scrollUntilVisible:
+    element: '.*A: Ada reviews the board every Monday morning.*'
+    direction: DOWN
+    timeout: 20000
+- takeScreenshot: a3-tour-memories-remembered
+# A memory edited, then forgotten (the newest, the one just remembered).
+- tapOn:
+    id: 'memory-[0-9a-f]{8}-[0-9a-f-]+-edit'
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: memory-edit-text
+    timeout: 10000
+- tapOn:
+    id: memory-edit-text
+# iOS puts the cursor where the tap lands: a triple tap selects the paragraph first.
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          id: memory-edit-text
+          repeat: 3
+          delay: 80
+- eraseText: 120
+- inputText: 'XB3: Ada reviews the board on Mondays.'
+- extendedWaitUntil:
+    visible:
+      id: memory-edit-text
+      text: 'XB3: Ada reviews the board on Mondays.'
+    timeout: 20000
+- takeScreenshot: a3-tour-memory-edit
+- tapOn:
+    id: memory-edit-sheet-save
+- extendedWaitUntil:
+    visible: '.*XB3: Ada reviews the board on Mondays.*'
+    timeout: 30000
+- takeScreenshot: a3-tour-memory-edited
+- tapOn:
+    id: 'memory-[0-9a-f]{8}-[0-9a-f-]+-forget'
+    index: 0
+- extendedWaitUntil:
+    visible: 'Forget this memory?'
+    timeout: 10000
+- takeScreenshot: a3-tour-memory-forget
+- tapOn: '(?i)^Forget$'
+- extendedWaitUntil:
+    notVisible: '.*XB3: Ada reviews the board on Mondays.*'
+    timeout: 60000
+- takeScreenshot: a3-tour-memory-forgotten
+# Schedules: the repeating task paused, then resumed.
+- runFlow:
+    file: common/link.yaml
+    env:
+      LINK: ${APP_SCHEME}://schedules
+- extendedWaitUntil:
+    visible:
+      id: 'schedule-.*-pause'
+    timeout: 30000
+- assertVisible: '.*A: weekly digest of the board.*'
+- takeScreenshot: a3-tour-schedules
+- tapOn:
+    id: 'schedule-.*-pause'
+- extendedWaitUntil:
+    visible:
+      id: 'schedule-.*-resume'
+    timeout: 60000
+- takeScreenshot: a3-tour-schedule-paused
+- tapOn:
+    id: 'schedule-.*-resume'
+- extendedWaitUntil:
+    visible:
+      id: 'schedule-.*-pause'
+    timeout: 60000
+- extendedWaitUntil:
+    notVisible:
+      id: 'schedule-.*-pending'
+    timeout: 60000
+# Run now is online only: refused before any request offline.
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - setAirplaneMode: enabled
+      - tapOn:
+          id: 'schedule-.*-run'
+      - extendedWaitUntil:
+          visible: '.*Needs a connection.*'
+          timeout: 30000
+      - takeScreenshot: a3-tour-run-now-offline
+      - setAirplaneMode: disabled
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - runFlow:
+          file: common/proxy.yaml
+          env:
+            ACTION: down
+      - tapOn:
+          id: 'schedule-.*-run'
+      - extendedWaitUntil:
+          visible: '.*No answer from the workspace.*'
+          timeout: 60000
+      - takeScreenshot: a3-tour-run-now-offline
+      - runFlow:
+          file: common/proxy.yaml
+          env:
+            ACTION: up
+# Runs and the digest's run, its trace read on the tap.
+- runFlow:
+    file: common/link.yaml
+    env:
+      LINK: ${APP_SCHEME}://runs
+- extendedWaitUntil:
+    visible: '.*A: digest.*'
+    timeout: 60000
+- takeScreenshot: a3-tour-runs
+- tapOn:
+    text: '.*A: digest.*'
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: run-screen
+    timeout: 10000
+- scrollUntilVisible:
+    element:
+      id: run-timeline
+    direction: DOWN
+    timeout: 60000
+- takeScreenshot: a3-tour-run-trace
+# Learning.
+- runFlow:
+    file: common/link.yaml
+    env:
+      LINK: ${APP_SCHEME}://learning
+- extendedWaitUntil:
+    visible:
+      id: learning-screen
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: '(skill-list|skills-empty)'
+    timeout: 60000
+- takeScreenshot: a3-tour-learning
+# The tab bar stays under the pages pushed in a tab: the next tab is a tap away.
+- tapOn: 'Search'
+- extendedWaitUntil:
+    visible:
+      id: search-field
+    timeout: 10000
+- tapOn:
+    id: search-field
+- inputText: 'CB-2'
+- extendedWaitUntil:
+    visible: '.*A: Export the board as CSV.*'
+    timeout: 30000
+- hideKeyboard
+- takeScreenshot: a3-tour-search-key
+- tapOn: '.*A: Export the board as CSV.*'
+- extendedWaitUntil:
+    visible:
+      id: issue-title
+      text: 'A: Export the board as CSV'
+    timeout: 30000
+- runFlow: common/back.yaml
+- extendedWaitUntil:
+    visible:
+      id: search-field
+    timeout: 10000
+- tapOn:
+    id: search-field
+- eraseText: 20
+- inputText: ${PAGE_A}
+- extendedWaitUntil:
+    visible:
+      id: 'search-page-.*'
+    timeout: 30000
+- hideKeyboard
+- takeScreenshot: a3-tour-search-page
+- tapOn:
+    id: 'search-page-.*'
+    index: 0
+- extendedWaitUntil:
+    visible: '.*How we work here.*'
+    timeout: 60000
+- takeScreenshot: a3-tour-search-page-open
+# The web's issue: held online first, then a comment on it with the server away.
+- runFlow:
+    file: common/link.yaml
+    env:
+      LINK: ${APP_SCHEME}://issues
+- runFlow:
+    file: common/open-issue.yaml
+    env:
+      COLUMN: triage
+      TITLE: 'XB3: Deleted on the web'
+- runFlow:
+    file: common/proxy.yaml
+    env:
+      ACTION: down
+- tapOn:
+    id: issue-composer-input
+- inputText: 'XB3: a comment on an issue the web deletes'
+- extendedWaitUntil:
+    visible:
+      id: issue-composer-input
+      text: 'XB3: a comment on an issue the web deletes'
+    timeout: 20000
+- tapOn:
+    id: issue-composer-send
+- hideKeyboard
+- scrollUntilVisible:
+    element: 'Waiting to send'
+    direction: DOWN
+    timeout: 20000
+- takeScreenshot: a3-tour-comment-waiting

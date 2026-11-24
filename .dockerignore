@@ -1,0 +1,32 @@
+node_modules
+dist
+packages/*/dist
+.git
+# No image reads a task cache (tests/ci-workflow.test.ts).
+.turbo
+**/.turbo
+.turbo-ci
+.env
+.env.*
+!.env.example
+# The Compose files: no image reads them.
+.docker
+data
+artifacts
+RESEARCH.md
+docs
+# The app's build reads the release notes (scripts/release-data.mjs).
+!docs/RELEASE-NOTES.md
+marketing
+# The native app (a workspace member, whose packages the overrides in
+# package.json keep out of the server's install) and its push relay: no image
+# builds or runs them.
+apps
+# Tests and their fixtures (a throwaway TLS key among them): no image builds
+# or runs them; CI runs them from the checkout.
+tests
+packages/client/tests
+*.sqlite*
+*.db*
+.claude
+**/node_modules

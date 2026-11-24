@@ -1,0 +1,13 @@
+{
+    "extends": "expo/tsconfig.base",
+    "compilerOptions": {
+        "strict": true,
+        // app.config.ts imports variant.ts by its full name: Expo loads the
+        // config with Node, which needs the extension.
+        "allowImportingTsExtensions": true,
+        "paths": {
+            "@socio/shared/*": ["../../packages/shared/src/*.ts"]
+        }
+    },
+    "include": ["**/*.ts", "**/*.tsx", "**/*.mts"]
+}

@@ -1,0 +1,14 @@
+# Back one screen: Android's back key, iOS's bar Back (the system's chevron, which UIKit labels "Back"; CB-420).
+appId: ${APP_ID}
+name: back
+---
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - back
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn: 'Back'

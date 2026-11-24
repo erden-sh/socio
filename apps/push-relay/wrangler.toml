@@ -1,0 +1,219 @@
+# Socio's push relay (README.md).
+#
+# The top level is for `wrangler dev --local` on a developer's machine: local D1, local rate
+# limiters, a loopback origin. `staging` and `production` are for the deploy pipeline, which deploys
+# them to the Ingenio Ventures Cloudflare account and fills in what is marked "deploy:" below. Each
+# serves one Worker custom domain on socio.sh:
+# push-staging.socio.sh and push.socio.sh, the hosts DEFAULT_PUSH_HOSTS names
+# (src/server/notifications/contract.ts). Nothing here names the account: no account_id (the deploy
+# pipeline passes CLOUDFLARE_ACCOUNT_ID), no zone id, no key, no token. The provider keys are secrets set
+# as Worker secrets (APNS_KEY_P8, APNS_KEY_ID, APNS_TEAM_ID, FCM_SERVICE_ACCOUNT_JSON),
+# never here. tests/wrangler-config.test.ts holds all of this.
+#
+# Vars, D1 and the rate limiters are not inherited by an environment, so each one repeats them.
+# Never `wrangler deploy` without `--env`: the top level is not a deployment.
+
+name = "socio-push-local"
+main = "src/index.ts"
+compatibility_date = "2026-11-01"
+# WebCrypto and fetch only: no compatibility flags, no nodejs_compat.
+
+# Wrangler's own reporting, off (with WRANGLER_SEND_METRICS=false on every script).
+send_metrics = false
+# Deploy-time upload of npm dependency metadata, which send_metrics doesn't cover.
+dependencies_instrumentation = { enabled = false }
+
+# The local top level is never served from workers.dev.
+workers_dev = false
+preview_urls = false
+upload_source_maps = false
+
+# No request logs anywhere: Workers Logs, invocation logs and traces record each request's URL
+# (which holds the registration id) and headers (CF-Connecting-IP), which the relay never keeps.
+logpush = false
+
+[observability]
+enabled = false
+
+[observability.logs]
+enabled = false
+invocation_logs = false
+
+[observability.traces]
+enabled = false
+
+# A cost bound on Workers Paid: a push takes about 0.5 ms of CPU, and the hourly FCM assertion
+# about 3 ms.
+[limits]
+cpu_ms = 50
+
+# The daily task: registrations not refreshed in 60 days, and old write-budget counts.
+[triggers]
+crons = ["17 3 * * *"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "socio-push-local"
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"
+
+# The quotas (src/quotas.ts, QUOTAS), per minute and per Cloudflare location.
+[[ratelimits]]
+name = "RL_REGISTRATION"
+namespace_id = "1001"
+simple = { limit = 30, period = 60 }
+
+[[ratelimits]]
+name = "RL_VAPID_KEY"
+namespace_id = "1002"
+simple = { limit = 600, period = 60 }
+
+[[ratelimits]]
+name = "RL_GLOBAL"
+namespace_id = "1003"
+simple = { limit = 10000, period = 60 }
+
+[[ratelimits]]
+name = "RL_REGISTER_CLIENT"
+namespace_id = "1004"
+simple = { limit = 20, period = 60 }
+
+[[ratelimits]]
+name = "RL_REGISTRY_GLOBAL"
+namespace_id = "1005"
+simple = { limit = 600, period = 60 }
+
+[vars]
+# Behind a quick tunnel, pass the tunnel's origin instead: --var RELAY_ORIGIN:https://<tunnel host>.
+RELAY_ORIGIN = "http://127.0.0.1:8787"
+REGISTRATION_WRITE_BUDGET = "50"
+
+# ---------------------------------------------------------------------------------------------
+# Staging: the floor session's relay. https://push-staging.socio.sh
+
+[env.staging]
+name = "socio-push-staging"
+# A Worker custom domain: Cloudflare makes the DNS record and the certificate on deploy.
+routes = [{ pattern = "push-staging.socio.sh", custom_domain = true }]
+# Only the custom domain serves it: a workers.dev host would be a second origin, which VAPID's
+# `aud` (one RELAY_ORIGIN) and the servers' host list (exact names) both refuse.
+workers_dev = false
+preview_urls = false
+logpush = false
+
+[env.staging.observability]
+enabled = false
+
+[env.staging.observability.logs]
+enabled = false
+invocation_logs = false
+
+[env.staging.observability.traces]
+enabled = false
+
+[env.staging.limits]
+cpu_ms = 50
+
+[env.staging.triggers]
+crons = ["17 3 * * *"]
+
+[[env.staging.d1_databases]]
+binding = "DB"
+database_name = "socio-push-staging"
+# deploy: the staging D1 database's id.
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"
+
+# deploy: namespace ids unique in the account (staging's apart from production's).
+[[env.staging.ratelimits]]
+name = "RL_REGISTRATION"
+namespace_id = "2001"
+simple = { limit = 30, period = 60 }
+
+[[env.staging.ratelimits]]
+name = "RL_VAPID_KEY"
+namespace_id = "2002"
+simple = { limit = 600, period = 60 }
+
+[[env.staging.ratelimits]]
+name = "RL_GLOBAL"
+namespace_id = "2003"
+simple = { limit = 10000, period = 60 }
+
+[[env.staging.ratelimits]]
+name = "RL_REGISTER_CLIENT"
+namespace_id = "2004"
+simple = { limit = 20, period = 60 }
+
+[[env.staging.ratelimits]]
+name = "RL_REGISTRY_GLOBAL"
+namespace_id = "2005"
+simple = { limit = 600, period = 60 }
+
+[env.staging.vars]
+# The VAPID audience and the endpoints' origin: the custom domain above. Changing it is a host
+# change (README, "Should the host ever change again").
+RELAY_ORIGIN = "https://push-staging.socio.sh"
+REGISTRATION_WRITE_BUDGET = "50"
+
+# ---------------------------------------------------------------------------------------------
+# Production: the relay every shipped build registers with. https://push.socio.sh
+
+[env.production]
+name = "socio-push"
+routes = [{ pattern = "push.socio.sh", custom_domain = true }]
+workers_dev = false
+preview_urls = false
+logpush = false
+
+[env.production.observability]
+enabled = false
+
+[env.production.observability.logs]
+enabled = false
+invocation_logs = false
+
+[env.production.observability.traces]
+enabled = false
+
+[env.production.limits]
+cpu_ms = 50
+
+[env.production.triggers]
+crons = ["17 3 * * *"]
+
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "socio-push"
+# deploy: the production D1 database's id.
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"
+
+[[env.production.ratelimits]]
+name = "RL_REGISTRATION"
+namespace_id = "3001"
+simple = { limit = 30, period = 60 }
+
+[[env.production.ratelimits]]
+name = "RL_VAPID_KEY"
+namespace_id = "3002"
+simple = { limit = 600, period = 60 }
+
+[[env.production.ratelimits]]
+name = "RL_GLOBAL"
+namespace_id = "3003"
+simple = { limit = 10000, period = 60 }
+
+[[env.production.ratelimits]]
+name = "RL_REGISTER_CLIENT"
+namespace_id = "3004"
+simple = { limit = 20, period = 60 }
+
+[[env.production.ratelimits]]
+name = "RL_REGISTRY_GLOBAL"
+namespace_id = "3005"
+simple = { limit = 600, period = 60 }
+
+[env.production.vars]
+RELAY_ORIGIN = "https://push.socio.sh"
+REGISTRATION_WRITE_BUDGET = "50"

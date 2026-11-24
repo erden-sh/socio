@@ -1,0 +1,53 @@
+# Approvals refuse to work offline, with
+# workspace A up: Ada asks for "smoke approvals", then airplane mode is on.
+# The bar and the cards say "Needs a connection", Approve and Deny are
+# disabled and a tap sends nothing: once back online the request still waits
+# (read again from the server), and Approve works. On an emulator airplane
+# mode doesn't cut adb reverse: the app refuses on NetInfo's word alone.
+appId: ${APP_ID}
+name: approve-offline
+---
+- runFlow: chat-open.yaml
+- tapOn:
+    id: chat-composer-input
+- inputText: 'Please smoke approvals'
+- tapOn:
+    id: chat-composer-send
+- extendedWaitUntil:
+    visible:
+      id: chat-approval-bar-count
+    timeout: 60000
+- hideKeyboard
+- setAirplaneMode: enabled
+- extendedWaitUntil:
+    visible:
+      text: 'Needs a connection'
+    timeout: 30000
+- tapOn:
+    id: chat-approval-bar-approve
+- tapOn:
+    id: chat-approval-bar-deny
+- assertVisible:
+    text: '1 of 2'
+- takeScreenshot: approve-offline-bar
+- scrollUntilVisible:
+    element:
+      id: 'chat-card-.*-notice'
+    direction: UP
+    timeout: 20000
+- takeScreenshot: approve-offline-card
+- setAirplaneMode: disabled
+- extendedWaitUntil:
+    notVisible:
+      id: chat-approval-bar-note
+    timeout: 60000
+# Nothing was decided: after a fresh read, both still wait.
+- assertVisible:
+    text: '1 of 2'
+- tapOn:
+    id: chat-approval-bar-approve
+- extendedWaitUntil:
+    notVisible:
+      id: chat-approval-bar-count
+    timeout: 30000
+- takeScreenshot: approve-offline-back

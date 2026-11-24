@@ -1,0 +1,121 @@
+# A Space's New page and page menus, with workspace A up (servers.mjs;
+# run.mjs --credentials) and a photo seeded on the device first, as for
+# attach-photo.yaml. Goes on from space-open.yaml: New page makes "Field
+# notes", which shows at once; the subpage's menu sets its cover from the
+# photo picker, then removes it and Undo puts it back; Move opens its picker
+# (the workspace's other Space, then the top or one of its pages) and Cancel
+# keeps it; the new page's Delete asks in the web's words and the row goes.
+appId: ${APP_ID}
+name: space-menus
+---
+- runFlow: space-open.yaml
+- tapOn:
+    text: 'Recent'
+- tapOn:
+    id: space-new-page
+# The title prompt: a Material dialog on Android, the system's Alert.prompt on iOS (no ids there).
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: page-new-input
+          timeout: 5000
+      - inputText: 'Field notes'
+      - takeScreenshot: space-menus-new-page
+      - tapOn:
+          id: page-new-save
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - extendedWaitUntil:
+          visible:
+            text: 'Save'
+          timeout: 5000
+      - inputText: 'Field notes'
+      - takeScreenshot: space-menus-new-page
+      - tapOn: 'Save'
+- extendedWaitUntil:
+    visible:
+      text: 'Field notes'
+    timeout: 5000
+- takeScreenshot: space-menus-created
+# The subpage's cover, from the system photo picker.
+- longPressOn:
+    text: '.*${SUBPAGE_A}.*'
+    index: 0
+- takeScreenshot: space-menus-menu
+- tapOn: 'Set cover'
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - extendedWaitUntil:
+          visible:
+            text: '(?i)Photo taken on.*'
+          timeout: 20000
+      - tapOn:
+          text: '(?i)Photo taken on.*'
+          index: 0
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - extendedWaitUntil:
+          visible:
+            text: '^Photo, .*'
+          timeout: 20000
+      - tapOn:
+          text: '^Photo, .*'
+          index: 0
+- runFlow:
+    when:
+      visible: '(?i)^(Add|Done)$'
+    commands:
+      - tapOn: '(?i)^(Add|Done)$'
+- extendedWaitUntil:
+    visible:
+      id: 'space-page-cover.*'
+    timeout: 20000
+- takeScreenshot: space-menus-cover
+- longPressOn:
+    text: '.*${SUBPAGE_A}.*'
+    index: 0
+- tapOn: 'Remove cover'
+- extendedWaitUntil:
+    visible:
+      text: 'Cover removed'
+    timeout: 5000
+- takeScreenshot: space-menus-cover-removed
+- tapOn:
+    id: undo-toast-action
+- extendedWaitUntil:
+    visible:
+      id: 'space-page-cover.*'
+    timeout: 20000
+# Move: the Space and parent picker.
+- longPressOn:
+    text: '.*${SUBPAGE_A}.*'
+    index: 0
+- tapOn: 'Move'
+- extendedWaitUntil:
+    visible:
+      id: page-move
+    timeout: 5000
+- takeScreenshot: space-menus-move
+- tapOn: 'Cancel'
+# Delete the new page, after the web's confirm.
+- longPressOn: 'Field notes'
+- tapOn: 'Delete'
+- extendedWaitUntil:
+    visible:
+      text: 'Delete “Field notes”?'
+    timeout: 5000
+- takeScreenshot: space-menus-delete
+- tapOn: 'Delete page'
+- extendedWaitUntil:
+    notVisible:
+      text: 'Field notes'
+    timeout: 10000

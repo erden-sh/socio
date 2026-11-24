@@ -1,0 +1,21 @@
+# The system's tab bar is hidden (CB-491: a chat, a room and New chat): Android by
+# Material's navigation items, iOS by its items' labels.
+appId: ${APP_ID}
+name: tab bar hidden
+---
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - extendedWaitUntil:
+          notVisible:
+            id: '.*navigation_bar_item_.*label_view'
+            text: More
+          timeout: 5000
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - extendedWaitUntil:
+          notVisible: 'More'
+          timeout: 5000

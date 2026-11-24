@@ -1,0 +1,177 @@
+/*
+ * A page's content in the editor (ProseMirror, `.document-prose`): its
+ * reading and writing typography. The page's chrome (the library, the
+ * header, the toolbar and menus) is on the shared components. The colours
+ * come from the tokens in globals.css, so dark mode needs nothing else; this
+ * file has its own layer above the legacy ones (globals.css), so the
+ * generated legacy dark copies of these rules no longer apply.
+ */
+:root {
+    --document-ink: color-mix(in oklab, var(--foreground) 88%, var(--card));
+    --document-muted: var(--muted-foreground);
+    --document-line: var(--border);
+    --document-quote: color-mix(in oklab, var(--muted-foreground) 55%, var(--card));
+    --document-block: color-mix(in oklab, var(--muted) 70%, var(--card));
+    --document-code: var(--muted);
+    --document-link: color-mix(in oklab, var(--brand) 75%, var(--foreground));
+    --document-selection: color-mix(in oklab, var(--brand) 20%, transparent);
+}
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+.document-prose {
+    outline: none;
+    min-height: 280px;
+    font-size: 16px;
+    line-height: 1.8;
+    color: var(--document-ink);
+    overflow-wrap: anywhere;
+    caret-color: var(--brand);
+}
+.document-prose p {
+    margin: 0 0 1em;
+}
+.document-prose h1 {
+    font-size: 30px;
+    line-height: 1.3;
+    margin: 1.4em 0 0.6em;
+    letter-spacing: -0.75px;
+    font-weight: 600;
+}
+.document-prose h2 {
+    font-size: 24px;
+    line-height: 1.4;
+    margin: 1.5em 0 0.65em;
+    letter-spacing: -0.4px;
+    font-weight: 600;
+}
+.document-prose h3 {
+    font-size: 19px;
+    line-height: 1.5;
+    margin: 1.4em 0 0.65em;
+    letter-spacing: -0.2px;
+    font-weight: 600;
+}
+.document-prose ul,
+.document-prose ol {
+    padding-left: 25px;
+    margin: 0 0 1em;
+}
+.document-prose li p {
+    margin-bottom: 0.3em;
+}
+.document-prose li + li {
+    margin-top: 0.25em;
+}
+.document-prose ul[data-type='taskList'] {
+    list-style: none;
+    padding: 0;
+}
+.document-prose ul[data-type='taskList'] > li {
+    display: flex;
+    align-items: flex-start;
+    gap: 11px;
+}
+.document-prose ul[data-type='taskList'] > li > label {
+    flex: 0 0 auto;
+    line-height: 1.8;
+}
+.document-prose ul[data-type='taskList'] > li > label input {
+    accent-color: var(--brand);
+    width: 15px;
+    height: 15px;
+    margin-top: 7px;
+}
+.document-prose ul[data-type='taskList'] > li > div {
+    flex: 1;
+}
+.document-prose blockquote {
+    border-left: 3px solid var(--document-quote);
+    padding: 4px 0 4px 20px;
+    margin: 20px 0;
+    color: var(--document-muted);
+}
+.document-prose blockquote p:last-child {
+    margin-bottom: 0;
+}
+.document-prose pre {
+    background: var(--document-block);
+    border: 1px solid var(--document-line);
+    border-radius: 8px;
+    padding: 17px;
+    overflow: auto;
+    font-size: 13px;
+    line-height: 1.7;
+}
+.document-prose code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    background: var(--document-code);
+    font-size: 0.86em;
+    padding: 2px 4px;
+    border-radius: 4px;
+}
+.document-prose pre code {
+    background: none;
+    padding: 0;
+}
+.document-prose hr {
+    border: 0;
+    border-top: 1px solid var(--document-line);
+    margin: 30px 0;
+}
+.document-prose a {
+    color: var(--document-link);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+}
+.document-prose table {
+    border-collapse: collapse;
+    width: 100%;
+    table-layout: fixed;
+    margin: 20px 0;
+    overflow: hidden;
+}
+.document-prose td,
+.document-prose th {
+    border: 1px solid var(--document-line);
+    min-width: 60px;
+    padding: 9px 12px;
+    vertical-align: top;
+    position: relative;
+}
+.document-prose th {
+    font-weight: 600;
+    background: var(--document-block);
+}
+.document-prose td p,
+.document-prose th p {
+    margin: 0;
+}
+.document-prose .selectedCell:after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--document-selection);
+    pointer-events: none;
+}
+.document-prose p.is-editor-empty:first-child:before {
+    content: attr(data-placeholder);
+    float: left;
+    height: 0;
+    pointer-events: none;
+    color: var(--document-muted);
+}
+@media (max-width: 700px) {
+    .document-prose {
+        font-size: 16px;
+    }
+}

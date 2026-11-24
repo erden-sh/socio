@@ -1,0 +1,45 @@
+# The claim race: another device, with only the QR code's link (read off a screen
+# share or a photo), claims it first (/web/other). It gets digits, but the web never sees them, so
+# its redeem stays not allowed; this device then opens the same link and Continue says the code was
+# already used. The web's polls held neither device's digits.
+appId: ${APP_ID}
+name: add-device-race
+---
+- runFlow: launch.yaml
+- runScript:
+    file: common/web.js
+    env:
+      METHOD: POST
+      ROUTE: /web/pair
+- evalScript: ${output.link = output.web.link}
+- runScript:
+    file: common/web.js
+    env:
+      METHOD: POST
+      ROUTE: /web/other
+- assertTrue: ${output.web.redeem === 'not_allowed_yet'}
+- evalScript: ${output.otherDigits = output.web.digits}
+- openLink:
+    link: ${output.link}
+    autoVerify: true
+- extendedWaitUntil:
+    visible:
+      id: add-device-continue
+    timeout: 30000
+- tapOn:
+    id: add-device-continue
+- extendedWaitUntil:
+    visible:
+      id: add-device-problem
+    timeout: 20000
+- assertVisible: 'This code was already used. Make a new one on your computer.'
+- assertNotVisible:
+    id: add-device-digits
+- takeScreenshot: add-device-race-used
+- runScript:
+    file: common/web.js
+    env:
+      METHOD: GET
+      ROUTE: /web/pair
+      DIGITS: ${output.otherDigits}
+- assertTrue: ${output.web.digitsSeen === false}

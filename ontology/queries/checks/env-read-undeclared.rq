@@ -1,0 +1,27 @@
+# @ask     Which environment variables does Socio's code read that no .env.example, compose file, Dockerfile or worker config declares, and no doc names?
+# @expect  rows == 0
+# @from    audit/facts.ttl: Reads mentions (env.X, env['X'], process.env.X, env: 'X' specs, renamedSetting) against Declares and Documents mentions.
+#
+# Why static tools miss it: process.env is typed as an open record, so TypeScript accepts any
+# name, and nothing ties a read to the operator-facing example file or the setup docs.
+# Scope: code that runs in Socio's processes and images. A variable code sets itself
+# (process.env.X = ..., an env object's key for a child process) counts as declared, and so
+# does a secret whose X_FILE variant is declared (the generator records that as a Declares
+# mention of X).
+# Left out: vendored code, CI and developer scripts (.github/, scripts/, the native app's e2e/, perf/ and scripts/), tests, and variables the platform
+# or a tool sets (CI, HOME, PATH, NODE_ENV, proxies, the loader's LD_*).
+PREFIX prov:  <http://www.w3.org/ns/prov#>
+PREFIX rdfs:  <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX socio: <https://socio.sh/ontology/>
+SELECT ?name (MIN(?where) AS ?firstRead) (COUNT(DISTINCT ?m) AS ?reads) WHERE {
+    ?var a socio:EnvVar ; rdfs:label ?name .
+    ?m socio:mentionOf ?var ; socio:mentionKind socio:Reads ; prov:wasDerivedFrom ?f ; socio:sourceLine ?line .
+    ?f socio:sourcePath ?file .
+    FILTER (!REGEX(?file, "^(\\.github/|scripts/|vendor/|apps/mobile/(e2e|perf|scripts)/)|(^|/)tests/"))
+    FILTER (!REGEX(?name, "^(CI|HOME|PATH|PWD|USER|SHELL|TMPDIR|TZ|LANG|NODE_ENV|NODE_OPTIONS|NODE_EXTRA_CA_CERTS|NODE_TLS_REJECT_UNAUTHORIZED|DO_NOT_TRACK|(HTTPS?|NO|ALL)_PROXY|LD_[A-Z_]+|DOCKER_HOST|HOSTNAME|TERM|VITEST.*|GITHUB_[A-Z_]+|RUNNER_[A-Z_]+)$"))
+    BIND (CONCAT(?file, ":", STR(?line)) AS ?where)
+    FILTER NOT EXISTS { ?d socio:mentionOf ?var ; socio:mentionKind socio:Declares . }
+    FILTER NOT EXISTS { ?d socio:mentionOf ?var ; socio:mentionKind socio:Documents . }
+}
+GROUP BY ?name
+ORDER BY ?name

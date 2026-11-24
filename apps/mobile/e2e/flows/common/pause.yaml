@@ -1,0 +1,10 @@
+# Waits ${MS} ms: Maestro has no sleep, so it waits that long for an element
+# that never shows, and goes on (page-offline-typing.yaml's two minutes of typing).
+appId: ${APP_ID}
+name: pause
+---
+- extendedWaitUntil:
+    visible:
+      id: 'e2e-never-shown'
+    timeout: ${MS}
+    optional: true

@@ -1,0 +1,163 @@
+{
+    "conversation": {
+        "id": "f2cea85c-a4b6-4796-a360-ee96aa105d2a",
+        "dotId": "0a3db2bd-f0aa-435f-a877-0d6c97d948bb",
+        "ownerId": "room:f2cea85c-a4b6-4796-a360-ee96aa105d2a",
+        "title": "A: launch room",
+        "createdAt": 1794188346421,
+        "learningContainerId": null,
+        "inference": null,
+        "kind": "room",
+        "renamed": true,
+        "roomRole": "admin"
+    },
+    "messages": [
+        {
+            "id": "5d655dbe-cb89-4ab9-be0b-5e83699da2fc",
+            "role": "user",
+            "content": "A: smoke context 1: what can you see from here?",
+            "author": {
+                "name": "Ada",
+                "you": true,
+                "id": "u-65f8c5f87277"
+            },
+            "at": 1794188346485
+        },
+        {
+            "id": "77b28b32-0c09-46e9-ac75-899d5691c983",
+            "role": "assistant",
+            "content": "Context smoke turn 1: done, 2 tool results read.",
+            "socioId": "0a3db2bd-f0aa-435f-a877-0d6c97d948bb",
+            "at": 1794188346584,
+            "toolCalls": [
+                {
+                    "id": "call-10-capabilities",
+                    "type": "function",
+                    "function": {
+                        "name": "capabilities",
+                        "arguments": "{}"
+                    }
+                },
+                {
+                    "id": "call-11-recall",
+                    "type": "function",
+                    "function": {
+                        "name": "recall",
+                        "arguments": "{\"ref\":\"call-10-capabilities\"}"
+                    }
+                }
+            ]
+        },
+        {
+            "id": "c4187183-36f1-435c-ace7-9427c33247df",
+            "role": "tool",
+            "content": "{\"dot\":{\"id\":\"0a3db2bd-f0aa-435f-a877-0d6c97d948bb\",\"name\":\"Sebas\"},\"actingFor\":\"the user of this conversation; everything below is theirs and for them\",\"capabilities\":[{\"id\":\"pages\",\"label\":\"Space pages\",\"enabled\":true,\"description\":\"Find, read, create and edit Markdown pages in the Spaces this socio may use: documents the team reads. search_space_pages finds pages by their title and text; move_space_page moves one to another of its Spaces. Use review_space_page in the web chat when the user wants to see a draft first, and insert_dataset_view to embed a live table or chart of one of your datasets in a page. create_space proposes a new Space the user asked for: made once they approve it (private to them, or for the whole workspace if they are an admin), and then yours to add pages to.\",\"tools\":[\"list_authorized_spaces\",\"list_space_pages\",\"search_space_pages\",\"read_space_page\",\"create_space_page\",\"edit_space_page\",\"move_space_page\",\"insert_dataset_view\",\"create_space\"],\"details\":{\"defaultSpace\":\"Everyday\",\"spaces\":[\"Everyday\"]}},{\"id\":\"computer\",\"label\":\"Computer\",\"enabled\":false,\"description\":\"This socio’s own isolated computer: a browser, workspace files and a shell. It can be stopped or destroyed at any time, so keep anything that must last in the data space (data_* and files_* tools); shell commands find a data space token in CB_DATA_TOKEN and the API in CB_DATA_URL when the operator configured it (the token lasts only while that command runs; use a job for work that lasts). On a company socio’s computer, which everyone who uses the socio shares, the token reaches only the socio’s shared dataset and folder, which everyone who uses it can see, and datasets shared with a Space, read-only; never a person’s own data (CB-227).\",\"tools\":[],\"note\":\"No computer service is configured.\"},{\"id\":\"web.research\",\"label\":\"Web research\",\"enabled\":true,\"description\":\"Search public web sources and read public pages, citing their URLs.\",\"tools\":[\"search_web\",\"read_public_page\"]},{\"id\":\"memory\",\"label\":\"Memory\",\"enabled\":true,\"description\":\"The person’s profile and the memories they approved (Memories), the ones that bear on their message given with it each turn; in a chat with other people, only what they chose to share with team chats. propose_memory suggests a new memory, used once they approve it; one they ask for about themselves, in their own chat, is saved at once. In the person’s own chats, search_episodes finds what happened in their earlier ones (decisions, results, what a chat was about); never in a chat with other people in it. Shared knowledge of the socio’s Spaces that every reader of the chat can read comes with matching messages; propose_space_memory proposes an entry or a change, used once one of the Space’s editors approves it.\",\"tools\":[\"propose_memory\",\"search_episodes\",\"propose_space_memory\"]},{\"id\":\"inline_charts\",\"label\":\"Inline charts\",\"enabled\":true,\"description\":\"Format supplied data as a bar or line chart, with a plain Markdown summary and table. Formatting does not fetch or verify data.\",\"tools\":[\"format_chart\"]},{\"id\":\"recall\",\"label\":\"Earlier in this chat\",\"enabled\":true,\"description\":\"Long conversations are kept within the model’s limits automatically: big tool results are cut to an excerpt, older ones set aside, and the oldest turns kept as notes. Nothing is deleted: recall reads any of it again, by the ref a note names or by searching words.\",\"tools\":[\"recall\"]},{\"id\":\"improvements\",\"label\":\"Improvements board\",\"enabled\":false,\"description\":\"The team’s board of issues, feature requests and improvements. Search it (open and closed items, by title and description) and read an item. When the person you act for explicitly asks: file an item (it lands in triage), vote for one as them, add their evidence to one as a comment, or edit the title or description of one of their own triage items, with the screenshots and files they shared in this conversation attached; each is recorded with you and them. For a capability you lack yourself, use request_capability instead.\",\"tools\":[],\"note\":\"An admin can turn on “File to the Improvements board” in this socio’s settings.\"},{\"id\":\"data\",\"label\":\"Data space\",\"enabled\":true,\"description\":\"Persistent datasets (SQLite): your scratch dataset, which you shape freely, plus datasets the user granted you. A personal socio’s scratch is in the user’s own data space; a company socio’s scratch is its shared dataset, the same one its jobs and computer use, which admins and the people who use the socio can see. Use it for anything that should outlive this conversation or be tracked over time; query with SQL, and show results to people with insert_dataset_view (a live table or chart in a Space page). New datasets, writes to Space-shared datasets and access changes need the user’s approval.\",\"tools\":[\"data_list\",\"data_describe\",\"data_create_table\",\"data_add_column\",\"data_insert\",\"data_upsert\",\"data_query\",\"data_create_dataset\",\"data_request_access\"],\"limits\":{\"datasetMaxMB\":100,\"userMaxMB\":1024,\"maxDatasets\":50,\"queryTimeoutSeconds\":5,\"queryMaxRows\":500,\"insertMaxRows\":1000,\"operationsPerMinute\":120},\"usage\":{\"usedMB\":0,\"datasets\":0,\"files\":0},\"details\":{\"scratch\":\"created on first use\",\"grantedDatasets\":[]},\"approvals\":[{\"capability\":\"data.create_dataset\",\"policy\":\"manual\"},{\"capability\":\"data.write_shared\",\"policy\":\"manual\"},{\"capability\":\"grant.change\",\"policy\":\"manual\"}]},{\"id\":\"files\",\"label\":\"Files\",\"enabled\":true,\"description\":\"Files in the user’s data space (exports, snapshots, notes, chat attachments), encrypted at rest. You have your own folder and any folders the user granted you; files the user attached in this conversation are readable too (see attachments). files_copy puts a readable file where your computer can reach it.\",\"tools\":[\"files_put\",\"files_get\",\"files_list\",\"files_copy\"],\"limits\":{\"fileMaxMB\":25},\"details\":{\"ownFolder\":\"dots/0a3db2bd-f0aa-435f-a877-0d6c97d948bb/\",\"grantedFolders\":[]}},{\"id\":\"attachments\",\"label\":\"Attachments\",\"enabled\":true,\"description\":\"Files the user attached in this conversation: readable without a grant (files_get with the path from the note, or attachments_list). Files elsewhere in the user’s data space need a folder grant: ask with data_request_access.\",\"tools\":[\"attachments_list\",\"attachments_view\"],\"limits\":{\"imagesShownPerTurn\":0,\"imageMaxMB\":10,\"fileMaxMB\":25},\"usage\":{\"attachments\":0,\"totalMB\":0}},{\"id\":\"apps\",\"label\":\"Mini apps\",\"enabled\":false,\"description\":\"Run a small Bun web app in your computer and publish it with app_register: the user opens it from Socio on its own address, signed in. It reads and writes the data space with its own token. Ephemeral: it runs only while your computer does. To make it last, package it (app_package) and ask the user to promote it (app_promote): it then runs in the workspace app runtime, with versioned updates (app_update). app_combine starts a new app from several.\",\"tools\":[\"app_register\",\"app_list\",\"app_logs\",\"app_unregister\",\"app_package\",\"app_promote\",\"app_update\",\"app_combine\"],\"note\":\"This socio’s computer is turned off.\",\"limits\":{\"ports\":\"3000-3999\",\"sessionHours\":12,\"requestMaxMB\":10,\"timeoutSeconds\":30,\"bundleMaxFiles\":400,\"bundleMaxMB\":8},\"usage\":{\"apps\":0,\"promoted\":0},\"details\":{\"promotion\":\"not set up here (APPS_RUNTIME_URL): apps can be packaged, not promoted\"},\"approvals\":[{\"capability\":\"app.register\",\"policy\":\"manual\"},{\"capability\":\"app.promote\",\"policy\":\"manual\"},{\"capability\":\"app.update\",\"policy\":\"manual\"}]},{\"id\":\"schedules\",\"label\":\"Schedules\",\"enabled\":true,\"description\":\"Recurring work for the user: a turn of yours with a fixed prompt (in its own conversation, on the user’s model) or one of your jobs, at a cadence (\\\"every day at 09:00\\\", cron). The user approves each new schedule unless they turned that off, and can pause or cancel it in the app; you can list, pause, resume and cancel yours.\",\"tools\":[\"schedule_create\",\"schedule_list\",\"schedule_pause\",\"schedule_resume\",\"schedule_cancel\"],\"limits\":{\"minIntervalMinutes\":15,\"maxActiveSchedulesPerUser\":20,\"timeZone\":\"UTC unless you pass the user’s IANA time zone\"},\"usage\":{\"activeSchedulesOfUser\":0,\"yours\":0},\"approvals\":[{\"capability\":\"schedule.create\",\"policy\":\"manual\"}]},{\"id\":\"goals\",\"label\":\"Goals\",\"enabled\":true,\"description\":\"Persistent goals the person gives you: you work toward each on its own cadence, in a conversation of its own, acting for that person, and record progress until you mark it done. Set one only when the person asks you to keep at something over time. If they already have a goal like it, add to it with goal_comment instead of setting another.\",\"tools\":[\"goal_set\",\"goal_list\",\"goal_comment\",\"goal_update\"],\"usage\":{\"active\":0,\"paused\":0},\"details\":{\"thisTurnsGoal\":null},\"approvals\":[{\"capability\":\"goal.set\",\"policy\":\"manual\"}]},{\"id\":\"jobs\",\"label\":\"Jobs\",\"enabled\":false,\"description\":\"Code you write (Bun main.ts or bash main.sh) saved as a job and run in your computer without the model, now or on a schedule, with a timeout. Runs reach the user’s data only through the data API with a token for that run (your scratch dataset and the datasets named in the job). Use jobs for repeated collection; use schedules with a turn for summaries that need you. Work longer than one timeout (a crawl of many items) runs until done: save the job with untilDone and the server runs it in batches, resuming from its checkpoint after any stop, until it says it is complete; job_status shows how far it got.\",\"tools\":[],\"note\":\"No computer service is configured, so jobs can’t run.\",\"limits\":{\"maxTimeoutSeconds\":900,\"computerWakeSeconds\":90,\"concurrentRunsInWorkspace\":2,\"maxJobsPerUser\":50,\"maxFiles\":20,\"maxKB\":256,\"logKBPerStream\":16,\"untilDone\":{\"triesPerItem\":3,\"retriesInARow\":5,\"maxBatches\":200}},\"usage\":{\"yours\":0,\"dataApi\":\"not configured (runs get no data token)\"},\"approvals\":[{\"capability\":\"job.save\",\"policy\":\"manual\"}]},{\"id\":\"notifications\",\"label\":\"Notifications\",\"enabled\":true,\"description\":\"Notify the person you work for (notify_user) when something needs them and they may not be watching: unattended work that finished or needs a decision, a problem you found. It goes to the channels they chose (their devices, Telegram), only while they are away from Socio.\",\"tools\":[\"notify_user\"],\"note\":\"They have no notification channel turned on yet (Account → Notifications); notify_user would only show in the app while they use it.\",\"limits\":{\"perDotDaily\":20,\"perPersonDaily\":40},\"usage\":{\"sentByYouToday\":0,\"sentToPersonToday\":0},\"details\":{\"reachable\":false}},{\"id\":\"app_access\",\"label\":\"Use apps for the person\",\"enabled\":false,\"description\":\"Ask the person you act for to let you use one of their mini apps or plugins for them (request_app_access), for one task, then end it (end_app_access). They decide on a card; write and act always wait for them.\",\"tools\":[],\"note\":\"Not available to this person yet.\",\"limits\":{\"pendingRequests\":5},\"approvals\":[{\"capability\":\"app_access_read\",\"policy\":\"manual\"},{\"capability\":\"app_access_write\",\"policy\":\"manual\"},{\"capability\":\"app_access_act\",\"policy\":\"manual\"},{\"capability\":\"app_action\",\"policy\":\"manual\"}]},{\"id\":\"coding\",\"label\":\"Coding sessions\",\"enabled\":false,\"description\":\"Run a coding agent on a listed repository for the person you act for, in a sandbox of its own (coding_start, then coding_prompt; coding_status, coding_diff, coding_open_pr, coding_stop). They approve each session on a card, every time.\",\"tools\":[],\"note\":\"Not available to this person yet.\",\"approvals\":[{\"capability\":\"coding_session_read\",\"policy\":\"manual\"},{\"capability\":\"coding_session_push\",\"policy\":\"manual\"}]}],\"identity\":{\"id\":\"web_reads\",\"title\":\"Web reads\",\"available\":true,\"identity\":\"agent\",\"tools\":[\"http_get\",\"http_json\"],\"summary\":\"Reads public URLs with http_get/http_json as a declared agent (User-Agent \\\"SocioAgent/1.0 (user-directed agent; +http://localhost:4391/agents)\\\"). Nothing identifies the user.\",\"limits\":{\"perHostPerMinute\":30,\"globalPerMinute\":300,\"maxBytes\":2000000,\"timeoutMs\":15000,\"cacheTtlSeconds\":60,\"cooldownSeconds\":900},\"stoppedHosts\":[]},\"requests\":{\"note\":\"Use request_capability when you need something no tool here can do; requests go to the workspace tracker.\",\"pending\":[],\"resolved\":[]},\"approvalPolicies\":{\"manual\":\"the user approves or denies each request\",\"auto\":\"an automatic review decides in the user’s place: it may approve, deny, or pass the request to the user\",\"bypass\":\"the action runs at once\"},\"pendingApprovals\":[],\"recentApprovals\":[]}",
+            "toolCallId": "call-10-capabilities"
+        },
+        {
+            "id": "d0767dcf-de3e-474f-b554-819726942134",
+            "role": "tool",
+            "content": "{\"ref\":\"call-10-capabilities\",\"from\":\"capabilities result\",\"totalChars\":12518,\"offset\":0,\"text\":\"{\\\"dot\\\":{\\\"id\\\":\\\"0a3db2bd-f0aa-435f-a877-0d6c97d948bb\\\",\\\"name\\\":\\\"Sebas\\\"},\\\"actingFor\\\":\\\"the user of this conversation; everything below is theirs and for them\\\",\\\"capabilities\\\":[{\\\"id\\\":\\\"pages\\\",\\\"label\\\":\\\"Space pages\\\",\\\"enabled\\\":true,\\\"description\\\":\\\"Find, read, create and edit Markdown pages in the Spaces this socio may use: documents the team reads. search_space_pages finds pages by their title and text; move_space_page moves one to another of its Spaces. Use review_space_page in the web chat when the user wants to see a draft first, and insert_dataset_view to embed a live table or chart of one of your datasets in a page. create_space proposes a new Space the user asked for: made once they approve it (private to them, or for the whole workspace if they are an admin), and then yours to add pages to.\\\",\\\"tools\\\":[\\\"list_authorized_spaces\\\",\\\"list_space_pages\\\",\\\"search_space_pages\\\",\\\"read_space_page\\\",\\\"create_space_page\\\",\\\"edit_space_page\\\",\\\"move_space_page\\\",\\\"insert_dataset_view\\\",\\\"create_space\\\"],\\\"details\\\":{\\\"defaultSpace\\\":\\\"Everyday\\\",\\\"spaces\\\":[\\\"Everyday\\\"]}},{\\\"id\\\":\\\"computer\\\",\\\"label\\\":\\\"Computer\\\",\\\"enabled\\\":false,\\\"description\\\":\\\"This socio’s own isolated computer: a browser, workspace files and a shell. It can be stopped or destroyed at any time, so keep anything that must last in the data space (data_* and files_* tools); shell commands find a data space token in CB_DATA_TOKEN and the API in CB_DATA_URL when the operator configured it (the token lasts only while that command runs; use a job for work that lasts). On a company socio’s computer, which everyone who uses the socio shares, the token reaches only the socio’s shared dataset and folder, which everyone who uses it can see, and datasets shared with a Space, read-only; never a person’s own data (CB-227).\\\",\\\"tools\\\":[],\\\"note\\\":\\\"No computer service is configured.\\\"},{\\\"id\\\":\\\"web.research\\\",\\\"label\\\":\\\"Web research\\\",\\\"enabled\\\":true,\\\"description\\\":\\\"Search public web sources and read public pages, citing their URLs.\\\",\\\"tools\\\":[\\\"search_web\\\",\\\"read_public_page\\\"]},{\\\"id\\\":\\\"memory\\\",\\\"label\\\":\\\"Memory\\\",\\\"enabled\\\":true,\\\"description\\\":\\\"The person’s profile and the memories they approved (Memories), the ones that bear on their message given with it each turn; in a chat with other people, only what they chose to share with team chats. propose_memory suggests a new memory, used once they approve it; one they ask for about themselves, in their own chat, is saved at once. In the person’s own chats, search_episodes finds what happened in their earlier ones (decisions, results, what a chat was about); never in a chat with other people in it. Shared knowledge of the socio’s Spaces that every reader of the chat can read comes with matching messages; propose_space_memory proposes an entry or a change, used once one of the Space’s editors approves it.\\\",\\\"tools\\\":[\\\"propose_memory\\\",\\\"search_episodes\\\",\\\"propose_space_memory\\\"]},{\\\"id\\\":\\\"inline_charts\\\",\\\"label\\\":\\\"Inline charts\\\",\\\"enabled\\\":true,\\\"description\\\":\\\"Format supplied data as a bar or line chart, with a plain Markdown summary and table. Formatting does not fetch or verify data.\\\",\\\"tools\\\":[\\\"format_chart\\\"]},{\\\"id\\\":\\\"recall\\\",\\\"label\\\":\\\"Earlier in this chat\\\",\\\"enabled\\\":true,\\\"description\\\":\\\"Long conversations are kept within the model’s limits automatically: big tool results are cut to an excerpt, older ones set aside, and the oldest turns kept as notes. Nothing is deleted: recall reads any of it again, by the ref a note names or by searching words.\\\",\\\"tools\\\":[\\\"recall\\\"]},{\\\"id\\\":\\\"improvements\\\",\\\"label\\\":\\\"Improvements board\\\",\\\"enabled\\\":false,\\\"description\\\":\\\"The team’s board of issues, feature requests and improvements. Search it (open and closed items, by title and description) and read an item. When the person you act for explicitly asks: file an item (it lands in triage), vote for one as them, add their evidence to one as a comment, or edit the title or description of one of their own triage items, with the screenshots and files they shared in this conversation attached; each is recorded with you and them. For a capability you lack yourself, use request_capability instead.\\\",\\\"tools\\\":[],\\\"note\\\":\\\"An admin can turn on “File to the Improvements board” in this socio’s settings.\\\"},{\\\"id\\\":\\\"data\\\",\\\"label\\\":\\\"Data space\\\",\\\"enabled\\\":true,\\\"description\\\":\\\"Persistent datasets (SQLite): your scratch dataset, which you shape freely, plus datasets the user granted you. A personal socio’s scratch is in the user’s own data space; a company socio’s scratch is its shared dataset, the same one its jobs and computer use, which admins and the people who use the socio can see. Use it for anything that should outlive this conversation or be tracked over time; query with SQL, and show results to people with insert_dataset_view (a live table or chart in a Space page). New datasets, writes to Space-shared datasets and access changes need the user’s approval.\\\",\\\"tools\\\":[\\\"data_list\\\",\\\"data_describe\\\",\\\"data_create_table\\\",\\\"data_add_column\\\",\\\"data_insert\\\",\\\"data_upsert\\\",\\\"data_query\\\",\\\"data_create_dataset\\\",\\\"data_request_access\\\"],\\\"limits\\\":{\\\"datasetMaxMB\\\":100,\\\"userMaxMB\\\":1024,\\\"maxDatasets\\\":50,\\\"queryTimeoutSeconds\\\":5,\\\"queryMaxRows\\\":500,\\\"insertMaxRows\\\":1000,\\\"operationsPerMinute\\\":120},\\\"usage\\\":{\\\"usedMB\\\":0,\\\"datasets\\\":0,\\\"files\\\":0},\\\"details\\\":{\\\"scratch\\\":\\\"created on first use\\\",\\\"grantedDatasets\\\":[]},\\\"approvals\\\":[{\\\"capability\\\":\\\"data.create_dataset\\\",\\\"policy\\\":\\\"manual\\\"},{\\\"capability\\\":\\\"data.write_shared\\\",\\\"policy\\\":\\\"manual\\\"},{\\\"capability\\\":\\\"grant.change\\\",\\\"policy\\\":\\\"manual\\\"}]},{\\\"id\\\":\\\"files\\\",\\\"label\\\":\\\"Files\\\",\\\"enabled\\\":true,\\\"description\\\":\\\"Files in the user’s data space (exports, snapshots, notes, chat attachments), encrypted at rest. You have your own folder and any folders the user granted you; files the user attached in this conversation are readable too (see attachments). files_copy puts a readable file where your computer can reach it.\\\",\\\"tools\\\":[\\\"files_put\\\",\\\"files_get\\\",\\\"files_list\\\",\\\"files_copy\\\"],\\\"limits\\\":{\\\"fileMaxMB\\\":25},\\\"details\\\":{\\\"ownFolder\\\":\\\"dots/0a3db2bd-f0aa-435f-a877-0d6c97d948bb/\\\",\\\"grantedFolders\\\":[]}},{\\\"id\\\":\\\"attachments\\\",\\\"label\\\":\\\"Attachments\\\",\\\"enabled\\\":true,\\\"description\\\":\\\"Files the user attached in this conversation: readable without a grant (files_get with the path from the note, or attachments_list). Files elsewhere in the user’s data space need a folder grant: ask with data_request_access.\\\",\\\"tools\\\":[\\\"attachments_list\\\",\\\"attachments_view\\\"],\\\"limits\\\":{\\\"imagesShownPerTurn\\\":0,\\\"imageMaxMB\\\":10,\\\"fileMaxMB\\\":25},\\\"usage\\\":{\\\"attachments\\\":0,\\\"totalMB\\\":0}},{\\\"id\\\":\\\"apps\\\",\\\"\",\"nextOffset\":6420,\"note\":\"More follows: call recall with this ref and offset 6420.\"}",
+            "toolCallId": "call-11-recall"
+        },
+        {
+            "id": "0b9ed8f6-2abc-4ce0-a60f-e57fcc524c1a",
+            "role": "user",
+            "content": "@Sebas @Manny A: plan the launch together.",
+            "author": {
+                "name": "Ada",
+                "you": true,
+                "id": "u-65f8c5f87277"
+            },
+            "at": 1794188347126
+        },
+        {
+            "id": "6768cdda-c036-4660-9469-624179af3413",
+            "role": "assistant",
+            "content": "Hello from the fake model.",
+            "socioId": "0a3db2bd-f0aa-435f-a877-0d6c97d948bb",
+            "at": 1794188347156
+        },
+        {
+            "id": "socio:room_handoff:9d4e8452-17eb-4e66-bdce-36153eaa5811",
+            "role": "user",
+            "content": "Manny answers next, as Ada asked.",
+            "handoff": {
+                "kind": "mention",
+                "from": {
+                    "id": "0a3db2bd-f0aa-435f-a877-0d6c97d948bb",
+                    "name": "Sebas"
+                },
+                "to": {
+                    "id": "e447f4ee-66ed-4090-83a4-a210908ecb67",
+                    "name": "Manny"
+                },
+                "reason": "",
+                "byName": "Ada"
+            },
+            "at": 1794188347189
+        },
+        {
+            "id": "6c76a3e0-a22f-4933-963d-aa092e9b2a5d",
+            "role": "assistant",
+            "content": "Hello from the fake model.",
+            "socioId": "e447f4ee-66ed-4090-83a4-a210908ecb67",
+            "at": 1794188347216
+        },
+        {
+            "id": "eb415b50-2a2e-4bd4-b234-7c516d47ef09",
+            "role": "user",
+            "content": "A: smoke context 2: one more look, please.",
+            "author": {
+                "name": "Ben",
+                "you": false,
+                "id": "u-5cb6335eda3f"
+            },
+            "at": 1794188347793
+        }
+    ],
+    "cursor": 5,
+    "inTurn": [],
+    "problems": [
+        {
+            "runId": "2591c194-e2a0-46ff-b11b-1b67e21bb097",
+            "after": "eb415b50-2a2e-4bd4-b234-7c516d47ef09",
+            "message": "This message used the most model tokens one message may use, so the socio stopped. Send a new message to carry on, or ask for less at a time.",
+            "roomMessage": "It used the most model tokens one message may use, so the socio stopped.",
+            "author": {
+                "name": "Ben",
+                "you": false,
+                "id": "u-5cb6335eda3f"
+            },
+            "at": 1794188347811
+        }
+    ],
+    "times": {
+        "messages": [
+            ["5d655dbe-cb89-4ab9-be0b-5e83699da2fc", 1794188346485],
+            ["77b28b32-0c09-46e9-ac75-899d5691c983", 1794188346584],
+            ["0b9ed8f6-2abc-4ce0-a60f-e57fcc524c1a", 1794188347126],
+            ["6768cdda-c036-4660-9469-624179af3413", 1794188347156],
+            ["socio:room_handoff:9d4e8452-17eb-4e66-bdce-36153eaa5811", 1794188347189],
+            ["6c76a3e0-a22f-4933-963d-aa092e9b2a5d", 1794188347216],
+            ["eb415b50-2a2e-4bd4-b234-7c516d47ef09", 1794188347793]
+        ],
+        "tools": [
+            [
+                "call-10-capabilities",
+                {
+                    "start": 1794188346512,
+                    "end": 1794188346530
+                }
+            ],
+            [
+                "call-11-recall",
+                {
+                    "start": 1794188346560,
+                    "end": 1794188346566
+                }
+            ]
+        ],
+        "reasoning": []
+    }
+}

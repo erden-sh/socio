@@ -1,0 +1,115 @@
+# The page editor, with workspace A up (servers.mjs; run.mjs
+# --credentials), after space-open.yaml: A's first-week page opens from the Space (or is
+# open already),
+# Edit opens the editor on it, words typed into the WebView save ("Saved"),
+# the toolbar makes a heading and refuses a link outside the web's
+# rule, and Back shows them in the reader. page-edit-offline.yaml goes on from here.
+appId: ${APP_ID}
+name: page-edit
+---
+- runFlow: common/open.yaml
+# The Space (after space-open.yaml), or the page itself on a second run.
+- extendedWaitUntil:
+    visible:
+      id: '(space|page)-screen'
+    timeout: 180000
+- runFlow: common/move-dev-tools.yaml
+- runFlow:
+    when:
+      visible:
+        id: space-screen
+    commands:
+      - tapOn:
+          text: '.*${SUBPAGE_A}.*'
+- extendedWaitUntil:
+    visible:
+      id: page-body
+    timeout: 30000
+- tapOn:
+    id: page-edit
+- extendedWaitUntil:
+    visible:
+      text: 'Saved'
+    timeout: 30000
+- extendedWaitUntil:
+    visible:
+      text: '.*What to read first.*'
+    timeout: 30000
+- takeScreenshot: page-edit-open
+- tapOn:
+    text: '.*What to read first.*'
+- pressKey: Enter
+- inputText: 'Typed on the phone'
+- extendedWaitUntil:
+    visible:
+      text: 'Saved'
+    timeout: 30000
+- takeScreenshot: page-edit-saved
+# The toolbar: a heading from its button, shown as on.
+- pressKey: Enter
+- tapOn:
+    id: page-editor-tool-heading2
+- inputText: 'From the toolbar'
+- assertVisible:
+    id: page-editor-tool-heading2
+    checked: true
+- takeScreenshot: page-edit-toolbar
+# The link prompt takes only the web's rule. Link is at the scrolling row's end.
+- swipe:
+    from:
+      id: page-editor-tool-orderedList
+    direction: LEFT
+- tapOn:
+    id: page-editor-tool-link
+# A Material dialog on Android, which says the refusal under its field; on iOS the
+# system's Alert.prompt, which says it in an alert whose OK asks again with the text.
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: page-editor-link-input
+          timeout: 10000
+      - inputText: 'example.com'
+      - tapOn:
+          id: page-editor-link-save
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - extendedWaitUntil:
+          visible:
+            text: 'Save'
+          timeout: 10000
+      - inputText: 'example.com'
+      - tapOn: 'Save'
+- extendedWaitUntil:
+    visible:
+      text: 'Use a public http\(s\) URL or an internal page link\.'
+    timeout: 10000
+- takeScreenshot: page-edit-link-refused
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn: 'OK'
+      - extendedWaitUntil:
+          visible:
+            text: 'example.com'
+          timeout: 10000
+- tapOn:
+    text: 'Cancel'
+- extendedWaitUntil:
+    visible:
+      text: 'Saved'
+    timeout: 30000
+- hideKeyboard
+- runFlow: common/back.yaml
+- extendedWaitUntil:
+    visible:
+      text: '.*Typed on the phone.*'
+    timeout: 30000
+- assertVisible:
+    text: '.*From the toolbar.*'
+- takeScreenshot: page-edit-reader

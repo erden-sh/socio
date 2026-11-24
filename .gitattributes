@@ -1,0 +1,3 @@
+* text=auto eol=lf
+# The page editor's round-trip corpus keeps its bytes: CRLF and trailing spaces are under test.
+apps/mobile/tests/fixtures/pages-corpus/** -text

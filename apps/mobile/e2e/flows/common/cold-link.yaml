@@ -1,0 +1,23 @@
+# After a link started the app cold: a development client shows its own launcher first (it holds
+# the link); this picks the Metro it last loaded ("Recently opened"), and the app starts with the
+# link as its initial URL. Then the dev menu closes. A build that carries its bundle has no launcher.
+appId: ${APP_ID}
+name: cold link
+---
+- runFlow:
+    when:
+      true: ${DEV_CLIENT_URL != ''}
+    commands:
+      - extendedWaitUntil:
+          visible:
+            text: 'http://localhost:.*'
+          timeout: 15000
+          optional: true
+      - runFlow:
+          when:
+            visible:
+              text: 'http://localhost:.*'
+          commands:
+            - tapOn:
+                text: 'http://localhost:.*'
+- runFlow: dev-menu.yaml

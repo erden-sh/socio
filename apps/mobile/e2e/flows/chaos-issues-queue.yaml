@@ -1,0 +1,151 @@
+# The issues' chaos subset, first half, after board-open.yaml behind
+# chaos-proxy.mjs, with Ada's three web filings made first (README, Chaos):
+#   act-as.mjs web-file --text "XB2: Gone on the web" (and "XB2: Keep mine",
+#   "XB2: Keep theirs")
+# With the server away (airplane mode: on an emulator it doesn't cut adb
+# reverse, so the proxy plays it), the phone queues a comment and a title
+# edit on the first, a title edit on the other two, and a comment on the
+# open issue. Then a force-stop, a cold relaunch still offline, Settings'
+# Clear cache and another cold relaunch: exactly the five writes still wait
+# (Diagnostics' Outbox line: queued, or unknown for a comment whose request
+# the force-stop cut, which its check settles once the server is back; five
+# in all, none refused or held). chaos-issues-settle.yaml goes on once the
+# web has deleted, retitled and signed Ada out everywhere.
+appId: ${APP_ID}
+name: chaos-issues-queue
+---
+# Each is opened once online first, so the phone holds its detail (an edit's base).
+- runFlow:
+    file: common/open-issue.yaml
+    env:
+      COLUMN: triage
+      TITLE: 'XB2: Gone on the web'
+- runFlow: common/back.yaml
+- runFlow:
+    file: common/open-issue.yaml
+    env:
+      COLUMN: triage
+      TITLE: 'XB2: Keep mine'
+- runFlow: common/back.yaml
+- runFlow:
+    file: common/open-issue.yaml
+    env:
+      COLUMN: triage
+      TITLE: 'XB2: Keep theirs'
+- runFlow: common/back.yaml
+- runFlow:
+    file: common/open-issue.yaml
+    env:
+      COLUMN: open
+      TITLE: 'A: Export the board as CSV'
+- runFlow: common/back.yaml
+- runFlow:
+    file: common/proxy.yaml
+    env:
+      ACTION: down
+- runFlow:
+    file: common/open-issue.yaml
+    env:
+      COLUMN: triage
+      TITLE: 'XB2: Gone on the web'
+- tapOn:
+    id: issue-composer-input
+- inputText: 'XB2: a comment on an issue the web deletes'
+# Typing lags under load: Send only once the box holds the whole line.
+- extendedWaitUntil:
+    visible:
+      id: issue-composer-input
+      text: 'XB2: a comment on an issue the web deletes'
+    timeout: 20000
+- tapOn:
+    id: issue-composer-send
+- scrollUntilVisible:
+    element:
+      id: issue-edit-title
+    direction: UP
+    timeout: 20000
+- runFlow:
+    file: common/retitle-issue.yaml
+    env:
+      TITLE: 'XB2: Gone, renamed on the phone'
+- takeScreenshot: chaos-issues-gone-queued
+- runFlow: common/back.yaml
+- runFlow:
+    file: common/open-issue.yaml
+    env:
+      COLUMN: triage
+      TITLE: 'XB2: Keep mine'
+- runFlow:
+    file: common/retitle-issue.yaml
+    env:
+      TITLE: 'XB2: Mine, from the phone'
+- runFlow: common/back.yaml
+- runFlow:
+    file: common/open-issue.yaml
+    env:
+      COLUMN: triage
+      TITLE: 'XB2: Keep theirs'
+- runFlow:
+    file: common/retitle-issue.yaml
+    env:
+      TITLE: 'XB2: Theirs loses'
+- runFlow: common/back.yaml
+- runFlow:
+    file: common/open-issue.yaml
+    env:
+      COLUMN: open
+      TITLE: 'A: Export the board as CSV'
+- tapOn:
+    id: issue-composer-input
+- inputText: 'XB2: waits through a 401'
+# Typing lags under load: Send only once the box holds the whole line.
+- extendedWaitUntil:
+    visible:
+      id: issue-composer-input
+      text: 'XB2: waits through a 401'
+    timeout: 20000
+- tapOn:
+    id: issue-composer-send
+- scrollUntilVisible:
+    element: 'Waiting to send'
+    direction: DOWN
+    timeout: 20000
+- takeScreenshot: chaos-issues-waiting
+# A force-stop, then a cold relaunch with the server still away.
+- runFlow: common/open.yaml
+- extendedWaitUntil:
+    visible:
+      id: issue-title
+      text: 'A: Export the board as CSV'
+    timeout: 180000
+- scrollUntilVisible:
+    element: 'Waiting to send'
+    direction: DOWN
+    timeout: 20000
+- takeScreenshot: chaos-issues-relaunched
+# Settings' Clear cache: cache.db and images go, the outbox (user.db) stays.
+- runFlow:
+    file: common/link.yaml
+    env:
+      LINK: ${APP_SCHEME}://settings
+- scrollUntilVisible:
+    element:
+      id: settings-clear-cache
+    direction: DOWN
+    timeout: 20000
+- tapOn:
+    id: settings-clear-cache
+- tapOn: '(?i)^clear( cache)?$'
+# Exactly the five writes wait, queued or unknown, whichever the force-stop left.
+- runFlow:
+    file: common/outbox-line.yaml
+    env:
+      OUTBOX: 'Outbox: (queued 5 · inflight 0 · unknown 0|queued 4 · inflight 0 · unknown 1|queued 3 · inflight 0 · unknown 2|queued 2 · inflight 0 · unknown 3|queued 1 · inflight 0 · unknown 4|queued 0 · inflight 0 · unknown 5) · held 0 · sent 0 · unsent 0'
+      SHOT: chaos-issues-cleared
+# Reopened cold after the clear, still offline: the five still wait, none sent or refused.
+- runFlow: common/open.yaml
+- runFlow:
+    file: common/outbox-line.yaml
+    env:
+      OUTBOX: 'Outbox: (queued 5 · inflight 0 · unknown 0|queued 4 · inflight 0 · unknown 1|queued 3 · inflight 0 · unknown 2|queued 2 · inflight 0 · unknown 3|queued 1 · inflight 0 · unknown 4|queued 0 · inflight 0 · unknown 5) · held 0 · sent 0 · unsent 0'
+      SHOT: chaos-issues-reopened

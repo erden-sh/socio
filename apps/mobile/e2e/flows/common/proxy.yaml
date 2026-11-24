@@ -1,0 +1,10 @@
+# Tells chaos-proxy.mjs (on its loopback control port, PROXY_CONTROL: 4459 by default) to ${ACTION}:
+# down (the server goes away: every connection reset, new ones refused), up,
+# or drop (the chat's follow streams break). Maestro sends it from the host.
+appId: ${APP_ID}
+name: proxy
+---
+- runScript:
+    file: proxy.js
+    env:
+      ACTION: ${ACTION}

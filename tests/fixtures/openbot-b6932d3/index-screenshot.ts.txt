@@ -1,0 +1,26 @@
+
+      if (url.pathname === "/screenshot" && request.method === "GET") {
+        try {
+          const target = await currentPage(botId);
+          const buffer = await target.screenshot({ type: "png" });
+          const size = target.viewportSize() ?? { width: 1280, height: 800 };
+          return json({
+            base64: buffer.toString("base64"),
+            width: size.width,
+            height: size.height,
+            capturedAt: new Date().toISOString(),
+            // Which page this is a picture of. A browser that has not been sent anywhere sits on
+            // `about:blank`, and a screenshot of that is a valid, entirely white PNG, indistinguishable
+            // from a real page to anything looking only at the bytes. The transcript needs to tell
+            // those apart to avoid presenting a blank browser as though it were a loaded page.
+            url: target.url(),
+          });
+        } catch (error) {
+          return json(
+            {
+              error:
+                error instanceof Error ? error.message : "Screenshot failed.",
+            },
+            502,
+          );
+        }

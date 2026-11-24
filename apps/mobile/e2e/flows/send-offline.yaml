@@ -1,0 +1,38 @@
+# After chat-open.yaml (or send-and-stream.yaml), with every workspace server
+# stopped (run.mjs --servers-down): the chat opens from the phone's copy, a
+# message sent offline shows at once as a pending bubble ("Waiting to send"),
+# and it is still there after a cold relaunch: durable before any request.
+# Start the servers again and it sends.
+appId: ${APP_ID}
+name: send-offline
+---
+- runFlow: common/open.yaml
+- extendedWaitUntil:
+    visible:
+      id: chat-transcript
+    timeout: 180000
+- tapOn:
+    id: chat-composer-input
+- inputText: 'Written while offline'
+- tapOn:
+    id: chat-composer-send
+- extendedWaitUntil:
+    visible:
+      text: 'Written while offline'
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      text: 'Waiting to send'
+    timeout: 60000
+- hideKeyboard
+- takeScreenshot: send-offline-waiting
+- runFlow: common/open.yaml
+- extendedWaitUntil:
+    visible:
+      id: chat-transcript
+    timeout: 180000
+- extendedWaitUntil:
+    visible:
+      text: 'Written while offline'
+    timeout: 30000
+- takeScreenshot: send-offline-relaunched

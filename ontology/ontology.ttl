@@ -1,0 +1,31 @@
+@prefix owl:     <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs:    <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix odrl:    <http://www.w3.org/ns/odrl/2/> .
+@prefix socio:   <https://socio.sh/ontology/> .
+
+<https://socio.sh/ontology/>
+    a owl:Ontology ;
+    rdfs:label "Socio ontology" ;
+    dcterms:title "Socio ontology and knowledge graph" ;
+    dcterms:description "The product domain of Socio, a vocabulary for its code structure, and a knowledge graph of the Socio repository. modules/domain.ttl holds the product concepts, modules/code.ttl the code vocabulary, data/ the graph." ;
+    dcterms:publisher <https://socio.sh/ontology/id/ingenio-ventures> ;
+    dcterms:license <https://creativecommons.org/licenses/by-nc-sa/4.0/> ;
+    rdfs:seeAlso <https://github.com/erden-sh/socio> .
+
+# Dublin Core terms used as annotations in this project. DCMI declares them as
+# plain rdf:Property; OWL needs to know how they're used.
+dcterms:title a owl:AnnotationProperty .
+dcterms:description a owl:AnnotationProperty .
+dcterms:publisher a owl:AnnotationProperty .
+dcterms:source a owl:AnnotationProperty .
+# ODRL declares leftOperand and rightOperandReference as plain rdf:Property; their values are individuals.
+odrl:leftOperand a owl:ObjectProperty .
+odrl:rightOperandReference a owl:ObjectProperty .
+
+socio:module
+    a owl:AnnotationProperty ;
+    rdfs:label "module" ;
+    rdfs:domain owl:Thing ;
+    rdfs:range owl:Thing ;
+    rdfs:comment "The module of this ontology that defines a term: <https://socio.sh/ontology/domain> or <https://socio.sh/ontology/code>. Used in place of rdfs:isDefinedBy, which Erden doesn't reason over yet." .

@@ -1,0 +1,22 @@
+# The app opens on Add workspace, as the root gate shows it with no workspace on
+# the phone. It clears the app's data first (on iOS the simulator's keychain
+# too, which outlives it), like a new install; the other flows start with it.
+# run.mjs passes APP_ID (the variant's id) and DEV_CLIENT_URL (a development
+# build's link to Metro, or empty for a build that carries its bundle).
+appId: ${APP_ID}
+name: launch
+---
+- clearState
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - clearKeychain
+- runFlow: common/open.yaml
+- runFlow: common/dev-menu.yaml
+- extendedWaitUntil:
+    visible:
+      id: add-workspace-screen
+    timeout: 180000
+- assertVisible:
+    id: add-workspace-screen

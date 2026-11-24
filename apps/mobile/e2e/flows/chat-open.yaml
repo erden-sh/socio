@@ -1,0 +1,39 @@
+# The chat screen, with workspace A up (servers.mjs; run.mjs
+# --credentials): Ada signs in, opens A's marker chat from Home, and its one
+# turn shows from the end, the socio's long answer as prose. The chat is now
+# the workspace's last screen; chat-open-offline.yaml goes on from here.
+appId: ${APP_ID}
+name: chat-open
+---
+- runFlow: launch.yaml
+- runFlow:
+    file: common/add-workspace.yaml
+    env:
+      ORIGIN: ${ORIGIN_A}
+- runFlow:
+    file: common/sign-in.yaml
+    env:
+      EMAIL: ada@example.test
+      SECRET: ${PASSWORD}
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 30000
+- extendedWaitUntil:
+    visible:
+      text: '.*${CHAT_A}.*'
+    timeout: 30000
+- tapOn:
+    text: '.*${CHAT_A}.*'
+- extendedWaitUntil:
+    visible:
+      id: chat-transcript
+    timeout: 30000
+- extendedWaitUntil:
+    visible:
+      text: '(?s).*That is the end of the long answer.*'
+    timeout: 30000
+# The bar's title: the socio and its model (CB-420).
+- assertVisible:
+    id: chat-model-picker
+- takeScreenshot: chat-open

@@ -1,0 +1,78 @@
+# Opens the app cold onto A's first-week page: the page itself when it was the
+# last screen, else from the Space's list (the Spaces tab, from Home's Spaces
+# tile when the app opens on Home). Waits until
+# the page shows ${BASE}, so the page's newest version reached the phone.
+appId: ${APP_ID}
+name: open-page
+---
+- runFlow: open.yaml
+- extendedWaitUntil:
+    visible:
+      id: '[a-z-]+-screen'
+    timeout: 180000
+- runFlow: move-dev-tools.yaml
+# A last page that is gone ("Page not found"): back out of it.
+- runFlow:
+    when:
+      visible:
+        id: page-missing
+    commands:
+      - runFlow: back.yaml
+# Another last screen (a chat): Back to its tab's root, then Home, if it isn't the Spaces tab.
+- repeat:
+    while:
+      notVisible:
+        id: '(space|page|home|spaces|chats|more|search)-screen'
+    times: 6
+    commands:
+      - runFlow: back.yaml
+- runFlow:
+    when:
+      visible:
+        id: '(chats|more|search)-screen'
+    commands:
+      - runFlow:
+          file: tab.yaml
+          env:
+            TAB: Home
+# The Spaces list (CB-459), when it was the last screen: the Space from it.
+- runFlow:
+    when:
+      visible:
+        id: spaces-screen
+    commands:
+      - tapOn:
+          text: '.*${SPACE_A}.*'
+      - extendedWaitUntil:
+          visible:
+            id: space-screen
+          timeout: 30000
+# Home when the last screen was elsewhere: the Space from its tile.
+- runFlow:
+    when:
+      visible:
+        id: home-screen
+    commands:
+      - tapOn:
+          id: home-tile-spaces
+      - extendedWaitUntil:
+          visible:
+            text: '.*${SPACE_A}.*'
+          timeout: 30000
+      - tapOn:
+          text: '.*${SPACE_A}.*'
+      - extendedWaitUntil:
+          visible:
+            id: space-screen
+          timeout: 30000
+- runFlow:
+    when:
+      visible:
+        id: space-screen
+    commands:
+      - tapOn:
+          text: '.*${SUBPAGE_A}.*'
+- extendedWaitUntil:
+    visible:
+      text: '.*${BASE}.*'
+    timeout: 60000

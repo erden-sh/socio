@@ -1,0 +1,1 @@
+A picture: ![alt text](https://example.com/a.png)

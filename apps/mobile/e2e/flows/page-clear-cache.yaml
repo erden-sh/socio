@@ -1,0 +1,41 @@
+# Clear cache with a queued save, after page-two-offline.yaml (the
+# server still away; --env TEXT): Settings' Clear cache drops cache.db, the
+# outbox (user.db) keeps the save, and a cold reopen still offline finds
+# it waiting (Diagnostics' Outbox line: one save, or two when an edit came
+# while an offline retry had the first in flight, the page save's queued row behind it;
+# none refused). page-two-settle.yaml then sends it.
+appId: ${APP_ID}
+name: page-clear-cache
+---
+- runFlow:
+    file: common/link.yaml
+    env:
+      LINK: ${APP_SCHEME}://settings
+- scrollUntilVisible:
+    element:
+      id: settings-clear-cache
+    direction: DOWN
+    timeout: 20000
+- tapOn:
+    id: settings-clear-cache
+- tapOn: '(?i)^clear( cache)?$'
+# The app starts the workspace again on an empty cache: Home first.
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 60000
+- runFlow:
+    file: common/outbox-line.yaml
+    env:
+      OUTBOX: 'Outbox: queued [0-2] · inflight [01] · unknown [01] · held 0 · sent 0 · unsent 0'
+      SHOT: page-clear-cache-cleared
+- runFlow: common/open.yaml
+- extendedWaitUntil:
+    visible:
+      id: '(home|page|space)-screen'
+    timeout: 120000
+- runFlow:
+    file: common/outbox-line.yaml
+    env:
+      OUTBOX: 'Outbox: queued [0-2] · inflight [01] · unknown [01] · held 0 · sent 0 · unsent 0'
+      SHOT: page-clear-cache-reopened

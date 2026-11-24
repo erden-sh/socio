@@ -1,0 +1,40 @@
+# A notification's tap on a cold start, Android, after chat-open.yaml
+# (so the workspace's last screen is A's marker chat, not the room) and, from
+# the host, with the app's process gone and the room's mention posted by the
+# debug hook (README, A push without FCM):
+#
+#   adb shell am force-stop <app id>      # also clears its older notifications
+#   adb shell pm grant <app id> android.permission.POST_NOTIFICATIONS   # launch.yaml's clear took it
+#   node apps/mobile/e2e/debug-push.mjs --credentials <file>
+#
+# The flow opens the shade and taps the mention: the app starts, reads the
+# tap once (socio-push's takeLaunchTap) and opens the room in the Chats tab, in
+# place of the kept chat, so Back leads to the chat list.
+# The real tap, through FCM, is a check of its own.
+appId: ${APP_ID}
+name: link-cold-room
+---
+- swipe:
+    start: 50%, 1%
+    end: 50%, 90%
+    duration: 800
+- extendedWaitUntil:
+    visible:
+      text: '.*Ben in A: launch room.*'
+    timeout: 10000
+- takeScreenshot: link-cold-room-shade
+- tapOn:
+    text: '.*Ben in A: launch room.*'
+- runFlow: common/dev-menu.yaml
+- extendedWaitUntil:
+    visible:
+      id: room-header
+    timeout: 180000
+- assertVisible:
+    text: '.*A: launch room.*'
+- takeScreenshot: link-cold-room
+- runFlow: common/back.yaml
+- extendedWaitUntil:
+    visible:
+      id: chats-screen
+    timeout: 10000

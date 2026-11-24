@@ -1,0 +1,10 @@
+# Codex for the socio-coding image (CB-326): see deployment/coding/README.md, "Pinning Codex and Claude Code".
+# The linux-x64 platform package of @openai/codex 0.166.0 (npm `latest` on 2026-11-01): the static musl binary the
+# npm launcher would pick, installed without the launcher or install scripts.
+version=0.166.0
+package=@openai/codex@0.166.0-linux-x64
+url=https://registry.npmjs.org/@openai/codex/-/codex-0.166.0-linux-x64.tgz
+sha512=0b10e6dfe0f57296c625e1eb77320da06fb7c27f4156770fe2aa5969a3589317bc88fb5124e6320899e73e8563591201bc8f6f3ca6d1a227ec312039c43694a7
+integrity=sha512-CxDm3+D1cpbGJeHrdzINoG+3wn9BVncP4qpZaaNYkxe8iPtRJOYyCJnnPoVjWRIBvI9vPKbRoifsMSA5xDaUpw==
+fetched=2026-11-01
+verified=npm registry dist.integrity equals the sha512 of the downloaded tarball; tar lists package/vendor/x86_64-unknown-linux-musl/bin/codex (0755); never run; fetched with User-Agent research-script/0.1, no credentials

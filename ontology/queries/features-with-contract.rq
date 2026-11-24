@@ -1,0 +1,10 @@
+# @ask     Which server features have a contract.ts, and which also have a layer.ts?
+# @expect  rows >= 50
+# @from    The src/server/<feature>/contract.ts and layer.ts files.
+PREFIX rdfs:  <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX socio: <https://socio.sh/ontology/>
+SELECT ?feature ?contract ?hasLayer WHERE {
+    ?c a socio:Contract ; socio:partOf ?f ; socio:sourcePath ?contract .
+    ?f rdfs:label ?feature ; socio:hasLayer ?hasLayer .
+}
+ORDER BY ?feature

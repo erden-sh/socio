@@ -1,0 +1,123 @@
+# Contributor license agreement check. Every commit author of a
+# pull request must have signed CLA.md once, by commenting
+#   I have read the CLA Document and I hereby sign the CLA
+# on a pull request. Signatures are kept in this repository, in
+# signatures/cla.json on the `cla-signatures` branch (create that branch once
+# before turning this on; it must not be protected, or the bot can't write).
+#
+# This is the one workflow that uses pull_request_target, and it is trusted
+# for the same reasons ci.yml is (SECURITY.md, "The CLA check"):
+# - it runs the workflow and action from the base branch, never the pull
+#   request's code: no checkout, no cache, nothing from the branch is run;
+# - the only third-party code is contributor-assistant/github-action, pinned
+#   by commit; the one script is written here and reads only GitHub's API;
+# - no secrets: only the job's GITHUB_TOKEN, scoped to what the action does
+#   (write the signatures file, comment on and lock the pull request, rerun
+#   its own failed run once everyone has signed);
+# - it runs on GitHub-hosted runners, like every workflow here.
+# Make it a required status check on main.
+name: CLA
+on:
+  issue_comment:
+    types: [created]
+  pull_request_target:
+    types: [opened, synchronize, reopened, closed]
+
+permissions: {}
+
+jobs:
+  cla:
+    # A comment counts only on a pull request, and only when it signs or asks
+    # for a recheck; other comments start nothing.
+    # On close, only a merged pull request runs, to lock it so the signing
+    # comments can't be edited afterward.
+    if: >-
+      (github.event_name == 'pull_request_target' &&
+      (github.event.action != 'closed' || github.event.pull_request.merged)) ||
+      (github.event.issue.pull_request &&
+      (github.event.comment.body == 'recheck' ||
+      github.event.comment.body == 'I have read the CLA Document and I hereby sign the CLA'))
+    # One run per pull request at a time, so two runs of one pull request
+    # don't race on the signatures file (the second write would fail on a
+    # stale SHA). It is set on the job, so only events that pass its `if` join
+    # the group, and an ordinary comment can't replace a signing run. The
+    # running run is never cancelled. GitHub keeps only the newest pending run
+    # per group and cancels older pending ones. No signature is lost: a sign or
+    # recheck comment, or a push, starts a run that rereads the pull request's
+    # comments and records each signer it finds. Every pull request writes the
+    # same signatures file, so if two pull requests record signatures at the
+    # same moment, one write fails on a stale SHA and its check fails; a
+    # `recheck` comment then records it. (The action reads only the
+    # first 30 comments: on a longer thread, a later signature isn't seen, and
+    # the contributor signs on a new pull request.)
+    concurrency:
+      group: cla-${{ github.event.pull_request.number || github.event.issue.number }}
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: write
+      contents: write
+      pull-requests: write
+    steps:
+      - name: CLA Assistant
+        uses: contributor-assistant/github-action@ca4a40a7d1004f18d9960b404b97e5f30a505a08 # v2.6.1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          path-to-document: ${{ github.server_url }}/${{ github.repository }}/blob/main/CLA.md
+          path-to-signatures: signatures/cla.json
+          branch: cla-signatures
+          # Never asked to sign: the repository owner's account, dependency
+          # and Actions bots, and the pull request's author when GitHub says
+          # they own the repository or are a member of its organization. Other
+          # authors of commits in that pull request still have to sign.
+          allowlist: >-
+            cbnsndwch,dependabot[bot],renovate[bot],github-actions[bot]${{
+            contains(fromJSON('["OWNER","MEMBER"]'), github.event.pull_request.author_association || github.event.issue.author_association)
+            && format(',{0}', github.event.pull_request.user.login || github.event.issue.user.login) || '' }}
+          create-file-commit-message: 'chore: create the CLA signatures file'
+          signed-commit-message: 'chore: $contributorName signed the CLA in $owner/$repo'
+          custom-notsigned-prcomment: >-
+            Thank you for your pull request. Before it can be merged, each person
+            who authored a commit in it needs to sign Ingenio Ventures Inc.'s
+            [Contributor License Agreement](${{ github.server_url }}/${{ github.repository }}/blob/main/CLA.md),
+            once, by posting the comment below.
+          custom-allsigned-prcomment: Every commit author has signed the CLA. Thank you.
+          lock-pullrequest-aftermerge: true
+      # The action names each commit by its author's GitHub account, else its
+      # committer's, else the commit's author name, and matches the allowlist
+      # by that name. So a commit with no linked author could carry an
+      # allowlisted name, or be signed for only by whoever committed it. The
+      # action also reads only a pull request's first 100 commits. Fail those
+      # cases here, whatever the action said (it runs first, so its comment
+      # still tells the author).
+      - name: Require a GitHub account for every commit's author
+        if: always() && github.event.action != 'closed'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
+        run: |
+          set -euo pipefail
+          gh api graphql --paginate \
+            -F owner="${GITHUB_REPOSITORY%%/*}" -F name="${GITHUB_REPOSITORY#*/}" -F number="$PR_NUMBER" \
+            -f query='query($owner: String!, $name: String!, $number: Int!, $endCursor: String) {
+              repository(owner: $owner, name: $name) { pullRequest(number: $number) {
+                commits(first: 100, after: $endCursor) {
+                  totalCount
+                  pageInfo { hasNextPage endCursor }
+                  nodes { commit { oid author { user { login } } } }
+                } } } }' \
+            --jq '.data.repository.pullRequest.commits | (.totalCount | tostring) as $n
+              | (.nodes[].commit | select(.author.user == null) | "unlinked " + .oid),
+                "total " + $n' > "$RUNNER_TEMP/commits.txt"
+          total=$(grep -m1 '^total ' "$RUNNER_TEMP/commits.txt" | cut -d' ' -f2)
+          if [ "$total" -gt 100 ]; then
+            echo "::error::This pull request has $total commits; the CLA check reads only 100. Squash or split it."
+            exit 1
+          fi
+          if grep -q '^unlinked ' "$RUNNER_TEMP/commits.txt"; then
+            grep '^unlinked ' "$RUNNER_TEMP/commits.txt" | cut -d' ' -f2 | sed 's/^/::error::Commit with no GitHub account: /'
+            echo "::error::Every commit's author email must belong to a GitHub account, so its author can sign the CLA."
+            exit 1
+          fi

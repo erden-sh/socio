@@ -1,0 +1,20 @@
+# The system's tab bar shows: Android by Material's navigation items, iOS by its items' labels.
+appId: ${APP_ID}
+name: tab bar shows
+---
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - assertVisible:
+          id: '.*navigation_bar_item_.*label_view'
+          text: Home
+      - assertVisible:
+          id: '.*navigation_bar_item_.*label_view'
+          text: More
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - assertVisible: 'Home'
+      - assertVisible: 'More'

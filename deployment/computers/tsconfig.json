@@ -1,0 +1,18 @@
+{
+    // The TypeScript copied into OpenBot's computer image (computer.Dockerfile),
+    // for the editor only: the root project doesn't include deployment/.
+    // principal-worker.ts imports OpenBot's ./shell and ./workspace, which
+    // exist only in the image; rootDirs resolves them to openbot/*.d.ts here.
+    "compilerOptions": {
+        "target": "ES2023",
+        "lib": ["ES2023"],
+        "module": "ESNext",
+        "moduleResolution": "Bundler",
+        "strict": true,
+        "noEmit": true,
+        "skipLibCheck": true,
+        "types": ["node"],
+        "rootDirs": [".", "./openbot"]
+    },
+    "include": ["*.ts", "openbot/*.d.ts"]
+}

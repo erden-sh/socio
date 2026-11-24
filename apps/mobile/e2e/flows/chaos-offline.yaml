@@ -1,0 +1,50 @@
+# After chat-open.yaml, behind chaos-proxy.mjs (workspace A up): the server
+# goes away, a message sent then waits on the phone, the app is killed and
+# opened again with the server still away, then the server comes back: the
+# message waited across a restart, so it asks first, and Send now
+# delivers it once and it is answered (an offline send, killed,
+# relaunched online; offline messages deliver once the servers return).
+appId: ${APP_ID}
+name: chaos-offline
+---
+- runFlow:
+    file: common/proxy.yaml
+    env:
+      ACTION: down
+- tapOn:
+    id: chat-composer-input
+- inputText: 'Sent while the server was away'
+- tapOn:
+    id: chat-composer-send
+- extendedWaitUntil:
+    visible:
+      text: 'Waiting to send'
+    timeout: 60000
+- hideKeyboard
+- takeScreenshot: chaos-offline-waiting
+- runFlow: common/open.yaml
+- extendedWaitUntil:
+    visible:
+      text: 'Sent while the server was away'
+    timeout: 120000
+- extendedWaitUntil:
+    visible:
+      text: 'Waiting to send'
+    timeout: 60000
+- takeScreenshot: chaos-offline-relaunched
+- runFlow:
+    file: common/proxy.yaml
+    env:
+      ACTION: up
+# It waited across a restart, so it asks first: Send now sends it, once.
+- extendedWaitUntil:
+    visible: 'Send now'
+    timeout: 120000
+- takeScreenshot: chaos-offline-asks
+- tapOn: 'Send now'
+- extendedWaitUntil:
+    visible: '(?s).*Hello from the fake model.*'
+    timeout: 120000
+- assertNotVisible: 'Send now'
+- assertVisible: 'Sent while the server was away'
+- takeScreenshot: chaos-offline-delivered

@@ -1,0 +1,48 @@
+# What needs attention about Spaces, at the top of the Spaces list (the owner,
+# 2026-11-20), one phone behind its chaos-proxy.mjs, after page-two-offline.yaml
+# left an edit of A's first-week page waiting and the web then changed the same
+# line (act-as.mjs web-page-write; README, Two devices). The proxy comes back:
+# the save meets the change, and the page shows at the top of the Spaces list,
+# under "Pages changed elsewhere", which the Spaces tab's badge counts; its row
+# opens the page under the conflict banner. Chats' attention section no longer
+# has it.
+appId: ${APP_ID}
+name: spaces-attention
+---
+- runFlow:
+    file: common/proxy.yaml
+    env:
+      ACTION: up
+- runFlow:
+    file: common/tab.yaml
+    env:
+      TAB: Spaces
+- extendedWaitUntil:
+    visible:
+      id: spaces-screen
+    timeout: 30000
+- extendedWaitUntil:
+    visible:
+      id: spaces-attention-pages
+    timeout: 150000
+- assertVisible: 'Pages changed elsewhere'
+- takeScreenshot: spaces-attention-list
+- tapOn:
+    id: 'spaces-attention-page-.*'
+- extendedWaitUntil:
+    visible:
+      id: page-conflict
+    timeout: 30000
+- runFlow: common/tab-bar-shows.yaml
+- takeScreenshot: spaces-attention-banner
+# Not in Chats any more.
+- runFlow:
+    file: common/tab.yaml
+    env:
+      TAB: Chats
+- extendedWaitUntil:
+    visible:
+      id: chats-screen
+    timeout: 10000
+- assertNotVisible: 'Pages changed elsewhere'
+- takeScreenshot: spaces-attention-chats

@@ -1,0 +1,37 @@
+{
+    "compilerOptions": {
+        "target": "ES2023",
+        "lib": ["ES2023", "DOM", "DOM.Iterable"],
+        "module": "ESNext",
+        "moduleResolution": "Bundler",
+        "allowImportingTsExtensions": true,
+        "jsx": "react-jsx",
+        "strict": true,
+        "noEmit": true,
+        "skipLibCheck": true,
+        "esModuleInterop": true,
+        "types": ["node", "vite/client"],
+        "paths": {
+            "@/*": ["./packages/client/src/*"],
+            "@socio/plugin-ui": ["./packages/plugin-ui/src/index.ts"],
+            "@socio/shared/*": ["./packages/shared/src/*.ts"],
+            "@socio/foundation/*": ["./packages/foundation/src/*.ts"],
+            "@socio/data/*": ["./packages/data/src/*.ts"]
+        }
+    },
+    "include": [
+        "src",
+        "packages/app-sdk",
+        "packages/shared/src",
+        "packages/foundation/src",
+        "packages/foundation/tests",
+        "packages/data/src",
+        "packages/data/tests",
+        "tests",
+        "vite.config.ts",
+        "vitest.config.ts",
+        "vitest.shared.ts",
+        "react-router.config.ts"
+    ],
+    "exclude": ["tests/integration", "tests/fixtures/seed-trace-chat.ts"]
+}

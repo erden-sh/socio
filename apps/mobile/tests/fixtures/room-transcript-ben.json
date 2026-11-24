@@ -1,0 +1,163 @@
+{
+    "conversation": {
+        "id": "f2cea85c-a4b6-4796-a360-ee96aa105d2a",
+        "dotId": "0a3db2bd-f0aa-435f-a877-0d6c97d948bb",
+        "ownerId": "room:f2cea85c-a4b6-4796-a360-ee96aa105d2a",
+        "title": "A: launch room",
+        "createdAt": 1794188346421,
+        "learningContainerId": null,
+        "inference": null,
+        "kind": "room",
+        "renamed": true,
+        "roomRole": "member"
+    },
+    "messages": [
+        {
+            "id": "5d655dbe-cb89-4ab9-be0b-5e83699da2fc",
+            "role": "user",
+            "content": "A: smoke context 1: what can you see from here?",
+            "author": {
+                "name": "Ada",
+                "you": false,
+                "id": "u-65f8c5f87277"
+            },
+            "at": 1794188346485
+        },
+        {
+            "id": "77b28b32-0c09-46e9-ac75-899d5691c983",
+            "role": "assistant",
+            "content": "Context smoke turn 1: done, 2 tool results read.",
+            "socioId": "0a3db2bd-f0aa-435f-a877-0d6c97d948bb",
+            "at": 1794188346584,
+            "toolCalls": [
+                {
+                    "id": "call-10-capabilities",
+                    "type": "function",
+                    "function": {
+                        "name": "capabilities",
+                        "arguments": "{}"
+                    }
+                },
+                {
+                    "id": "call-11-recall",
+                    "type": "function",
+                    "function": {
+                        "name": "recall",
+                        "arguments": "{\"ref\":\"call-10-capabilities\"}"
+                    }
+                }
+            ]
+        },
+        {
+            "id": "c4187183-36f1-435c-ace7-9427c33247df",
+            "role": "tool",
+            "content": "{\"withheld\":true,\"tool\":\"capabilities\",\"status\":\"ok\",\"note\":\"This result is private to the person that turn acted for, in a chat with other people. Do not guess at or repeat what it held; ask that person, or use your tools for the person you act for now.\"}",
+            "toolCallId": "call-10-capabilities"
+        },
+        {
+            "id": "d0767dcf-de3e-474f-b554-819726942134",
+            "role": "tool",
+            "content": "{\"withheld\":true,\"tool\":\"recall\",\"status\":\"ok\",\"note\":\"This result is private to the person that turn acted for, in a chat with other people. Do not guess at or repeat what it held; ask that person, or use your tools for the person you act for now.\"}",
+            "toolCallId": "call-11-recall"
+        },
+        {
+            "id": "0b9ed8f6-2abc-4ce0-a60f-e57fcc524c1a",
+            "role": "user",
+            "content": "@Sebas @Manny A: plan the launch together.",
+            "author": {
+                "name": "Ada",
+                "you": false,
+                "id": "u-65f8c5f87277"
+            },
+            "at": 1794188347126
+        },
+        {
+            "id": "6768cdda-c036-4660-9469-624179af3413",
+            "role": "assistant",
+            "content": "Hello from the fake model.",
+            "socioId": "0a3db2bd-f0aa-435f-a877-0d6c97d948bb",
+            "at": 1794188347156
+        },
+        {
+            "id": "socio:room_handoff:9d4e8452-17eb-4e66-bdce-36153eaa5811",
+            "role": "user",
+            "content": "Manny answers next, as Ada asked.",
+            "handoff": {
+                "kind": "mention",
+                "from": {
+                    "id": "0a3db2bd-f0aa-435f-a877-0d6c97d948bb",
+                    "name": "Sebas"
+                },
+                "to": {
+                    "id": "e447f4ee-66ed-4090-83a4-a210908ecb67",
+                    "name": "Manny"
+                },
+                "reason": "",
+                "byName": "Ada"
+            },
+            "at": 1794188347189
+        },
+        {
+            "id": "6c76a3e0-a22f-4933-963d-aa092e9b2a5d",
+            "role": "assistant",
+            "content": "Hello from the fake model.",
+            "socioId": "e447f4ee-66ed-4090-83a4-a210908ecb67",
+            "at": 1794188347216
+        },
+        {
+            "id": "eb415b50-2a2e-4bd4-b234-7c516d47ef09",
+            "role": "user",
+            "content": "A: smoke context 2: one more look, please.",
+            "author": {
+                "name": "Ben",
+                "you": true,
+                "id": "u-5cb6335eda3f"
+            },
+            "at": 1794188347793
+        }
+    ],
+    "cursor": 5,
+    "inTurn": [],
+    "problems": [
+        {
+            "runId": "2591c194-e2a0-46ff-b11b-1b67e21bb097",
+            "after": "eb415b50-2a2e-4bd4-b234-7c516d47ef09",
+            "message": "This message used the most model tokens one message may use, so the socio stopped. Send a new message to carry on, or ask for less at a time.",
+            "roomMessage": "It used the most model tokens one message may use, so the socio stopped.",
+            "author": {
+                "name": "Ben",
+                "you": true,
+                "id": "u-5cb6335eda3f"
+            },
+            "at": 1794188347811
+        }
+    ],
+    "times": {
+        "messages": [
+            ["5d655dbe-cb89-4ab9-be0b-5e83699da2fc", 1794188346485],
+            ["77b28b32-0c09-46e9-ac75-899d5691c983", 1794188346584],
+            ["0b9ed8f6-2abc-4ce0-a60f-e57fcc524c1a", 1794188347126],
+            ["6768cdda-c036-4660-9469-624179af3413", 1794188347156],
+            ["socio:room_handoff:9d4e8452-17eb-4e66-bdce-36153eaa5811", 1794188347189],
+            ["6c76a3e0-a22f-4933-963d-aa092e9b2a5d", 1794188347216],
+            ["eb415b50-2a2e-4bd4-b234-7c516d47ef09", 1794188347793]
+        ],
+        "tools": [
+            [
+                "call-10-capabilities",
+                {
+                    "start": 1794188346512,
+                    "end": 1794188346530
+                }
+            ],
+            [
+                "call-11-recall",
+                {
+                    "start": 1794188346560,
+                    "end": 1794188346566
+                }
+            ]
+        ],
+        "reasoning": []
+    }
+}

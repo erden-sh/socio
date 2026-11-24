@@ -1,0 +1,63 @@
+# The editor's content process killed mid-typing, with workspace A up
+# (run.mjs --credentials, --env BASE LINE): the editor opens on A's first-week
+# page, words are typed, and the flow waits 40 s while the host kills the
+# WebView's content process (iOS: the simulator's WebContent; Android:
+# the renderer, `adb shell kill` on its sandboxed process). The editor comes
+# back on its draft: the words typed before are there, more go in, and the
+# reader shows both after Back.
+appId: ${APP_ID}
+name: page-webview-killed
+---
+- runFlow: common/open-page.yaml
+- tapOn:
+    id: page-edit
+- extendedWaitUntil:
+    visible:
+      id: page-editor-saved
+    timeout: 30000
+- extendedWaitUntil:
+    visible:
+      text: '.*${LINE}.*'
+    timeout: 30000
+- runFlow:
+    file: common/pause.yaml
+    env:
+      MS: 2000
+- tapOn:
+    text: '.*${LINE}.*'
+- inputText: 'before the kill'
+- extendedWaitUntil:
+    visible:
+      text: '.*before the kill.*'
+    timeout: 10000
+- takeScreenshot: webview-killed-before
+# The host kills the content process during this wait.
+- runFlow:
+    file: common/pause.yaml
+    env:
+      MS: 40000
+- takeScreenshot: webview-killed-after
+- extendedWaitUntil:
+    visible:
+      text: '.*before the kill.*'
+    timeout: 30000
+- runFlow:
+    file: common/pause.yaml
+    env:
+      MS: 2000
+# Another line, so the new words never land inside the old ones.
+- tapOn:
+    text: '.*${BASE}.*'
+- inputText: ' after'
+- extendedWaitUntil:
+    visible:
+      text: 'Saved'
+    timeout: 30000
+- runFlow: common/back.yaml
+- scrollUntilVisible:
+    element:
+      text: '.*before the kill.*'
+    direction: DOWN
+    timeout: 30000
+- assertVisible:
+    text: '.*${BASE}.* after.*'

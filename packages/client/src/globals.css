@@ -1,0 +1,306 @@
+/*
+ * Styles entry point. Cascade layers, lowest priority first:
+ *   theme, base  Tailwind tokens and preflight
+ *   legacy       style.css: the canvas, plain elements' base rules and the
+ *                page frame (.main-content)
+ *   editor       editor.css: a page's content (its prose) on the tokens,
+ *                above the legacy rules and their generated dark copies
+ *   components, utilities  shadcn components and Tailwind utilities
+ * Legacy rules beat preflight, and utilities beat legacy, so a shadcn
+ * component wins wherever it sets a property. Legacy element selectors are
+ * scoped with :where(:not([data-slot])) so they stop at component boundaries,
+ * and styles/legacy-reset.css gives legacy views back the browser defaults
+ * that preflight removes. The legacy files share one layer so their relative
+ * order (and so the cascade between them) is exactly what it was.
+ */
+@layer theme, base, legacy, editor, components, utilities;
+
+/* Scan the client and the shared plugin UI (not docs, server, or tests). */
+@import 'tailwindcss' source('./');
+@source "../../plugin-ui";
+@import 'tw-animate-css';
+@import './styles/legacy-reset.css' layer(legacy);
+@import './style.css' layer(legacy);
+@import './modules/pages/editor.css' layer(editor);
+/* Dark mode for the legacy rules: generated. */
+@import './styles/legacy-dark.css' layer(legacy);
+
+@custom-variant dark (&:where(.dark, .dark *));
+/*
+ * Typing in a chat's composer on a touch screen, and how much room its
+ * keyboard leaves (use-visible-height.ts, CB-155): what is above the
+ * composer gives way. Tight is short too.
+ */
+@custom-variant keyboard (&:where([data-keyboard-room] *));
+@custom-variant keyboard-short (&:where([data-keyboard-room='short'] *, [data-keyboard-room='tight'] *));
+@custom-variant keyboard-tight (&:where([data-keyboard-room='tight'] *));
+
+/*
+ * Design tokens, seeded from the current chrome so nothing jumps. .dark is
+ * on <html> when the theme (packages/client/src/shell/theme.tsx) resolves to dark.
+ * Brand is the Socio mint (style.css .rail-brand span). Primary, the
+ * fill under text (buttons, badges, today in a calendar), is a darker
+ * shade of it in light, so white on it is 4.5:1 or more at rest, hovered,
+ * pressed and disabled (packages/client/tests/theme-contrast.test.ts); accents that are
+ * no text's background (rings, bars, the caret) keep the brand.
+ */
+:root {
+    --radius: 0.6rem;
+    --brand: #438c81;
+    --brand-foreground: #ffffff;
+    --background: #ffffff;
+    --foreground: #242424;
+    --card: #ffffff;
+    --card-foreground: #242424;
+    --popover: #ffffff;
+    --popover-foreground: #242424;
+    --primary: #38766d;
+    --primary-foreground: var(--brand-foreground);
+    /* Hovered and pressed: darker still. Disabled: greyed, not faded, so
+     its words stay readable. */
+    --primary-hover: #2f665e;
+    --primary-disabled: #627572;
+    --secondary: #f1f1f1;
+    --secondary-foreground: #242424;
+    --muted: #f1f1f1;
+    --muted-foreground: #6b6b6b;
+    --accent: #f1f1f1;
+    --accent-foreground: #242424;
+    --destructive: #b2453a;
+    --border: #e7e7e7;
+    --input: #e7e7e7;
+    --ring: var(--brand);
+    --chart-1: #438c81;
+    --chart-2: #7689d3;
+    --chart-3: #da5636;
+    --chart-4: #b3d2c8;
+    --chart-5: #707070;
+    --sidebar: #f9f9f9;
+    --sidebar-foreground: #242424;
+    --sidebar-primary: var(--primary);
+    --sidebar-primary-foreground: var(--brand-foreground);
+    --sidebar-accent: #f1f1f1;
+    --sidebar-accent-foreground: #242424;
+    /* The sidebar's quieter words (a chat's socio, Show all): 4.5:1 on a
+     hovered or open row too. */
+    --sidebar-muted-foreground: #666666;
+    --sidebar-border: #e7e7e7;
+    --sidebar-ring: var(--brand);
+    /* The page chrome (CB-91), for every page frame: from the app header to
+     the page's heading, and from the heading to the page's content. */
+    --page-top: 1rem;
+    --page-gap: 1.25rem;
+    /* The voice call's surface (CallView), the same in light and dark. */
+    --call-from: #367a70;
+    --call-via: #1c544c;
+    --call-to: #133d37;
+    --call-end: #da5636;
+    /* A chat (ChatTranscript.tsx): the reader's own bubble and its words;
+     the pending look of a message not with the socio yet (sending or
+     queued: a dashed outline on a lighter tint, its words in foreground);
+     links in replies, in another person's bubble and on the pending tint. */
+    --user-bubble: #3d7e75;
+    --user-bubble-foreground: #ffffff;
+    --user-bubble-pending: #e9f2f0;
+    --user-bubble-pending-border: #3d7e75;
+    --chat-link: #357360;
+    /* The line over every view while all socios are paused (AppShell.tsx). */
+    --paused-banner: #f3eee4;
+    --paused-banner-foreground: #9b865e;
+    --paused-banner-border: #eae1d0;
+}
+@media (min-width: 48rem) {
+    :root {
+        --page-top: 1.5rem;
+        --page-gap: 1.5rem;
+    }
+}
+
+.dark {
+    /* The graphite ramp (CB-308): sidebar, page, card, raised, each a step
+     lighter, so surfaces separate without heavy borders. */
+    --brand: #7cc3b6;
+    --brand-foreground: #0e1a18;
+    /* Dark ink on the mint: 9:1, and 4.5:1 or more in every state. */
+    --primary: var(--brand);
+    --primary-hover: #8fd0c3;
+    --primary-disabled: #86a09b;
+    --background: #141415;
+    --foreground: #ededed;
+    --card: #19191b;
+    --card-foreground: #ededed;
+    --popover: #19191b;
+    --popover-foreground: #ededed;
+    --secondary: #232325;
+    --secondary-foreground: #ededed;
+    --muted: #232325;
+    --muted-foreground: #a1a1a6;
+    --accent: #232325;
+    --accent-foreground: #ededed;
+    --destructive: #e5675b;
+    --border: #2c2c2f;
+    --input: #36363a;
+    --chart-1: #7cc3b6;
+    --chart-2: #95a5e6;
+    --chart-3: #ec8466;
+    --chart-4: #c9e8dd;
+    --chart-5: #a1a1a6;
+    --sidebar: #0f0f10;
+    --sidebar-foreground: #ededed;
+    --sidebar-accent: #1d1d1f;
+    --sidebar-accent-foreground: #ededed;
+    --sidebar-muted-foreground: #a1a1a6;
+    --sidebar-border: #232325;
+    /* The chat's and the paused line's colors are all set here, even where
+     dark keeps light's (the own bubble and its words), so each theme's
+     value reads in its own block. */
+    --user-bubble: #3d7e75;
+    --user-bubble-foreground: #ffffff;
+    --user-bubble-pending: #1b2b28;
+    --user-bubble-pending-border: #6cbfb1;
+    --chat-link: #83c2ac;
+    --paused-banner: #2b2924;
+    --paused-banner-foreground: #b6a077;
+    --paused-banner-border: #3b362e;
+}
+
+@theme inline {
+    /* The system stack style.css already uses; no web fonts are loaded. */
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --radius-sm: calc(var(--radius) - 4px);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) + 4px);
+    --color-brand: var(--brand);
+    --color-brand-foreground: var(--brand-foreground);
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-primary-hover: var(--primary-hover);
+    --color-primary-disabled: var(--primary-disabled);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-destructive: var(--destructive);
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+    --color-chart-1: var(--chart-1);
+    --color-chart-2: var(--chart-2);
+    --color-chart-3: var(--chart-3);
+    --color-chart-4: var(--chart-4);
+    --color-chart-5: var(--chart-5);
+    --color-sidebar: var(--sidebar);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-muted-foreground: var(--sidebar-muted-foreground);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-ring: var(--sidebar-ring);
+    --color-call-via: var(--call-via);
+    --color-call-end: var(--call-end);
+    --color-user-bubble: var(--user-bubble);
+    --color-user-bubble-foreground: var(--user-bubble-foreground);
+    --color-user-bubble-pending: var(--user-bubble-pending);
+    --color-user-bubble-pending-border: var(--user-bubble-pending-border);
+    --color-chat-link: var(--chat-link);
+    --color-paused-banner: var(--paused-banner);
+    --color-paused-banner-foreground: var(--paused-banner-foreground);
+    --color-paused-banner-border: var(--paused-banner-border);
+    /* The Dot breathes while it speaks in a call. */
+    --animate-call-breathe: call-breathe 1.5s ease-in-out infinite;
+    @keyframes call-breathe {
+        50% {
+            transform: scale(1.06) translateY(-4px);
+        }
+    }
+    /* A light passes across a running label (lib/shimmer.ts). */
+    --animate-shimmer: shimmer 2.4s linear infinite;
+    @keyframes shimmer {
+        from {
+            background-position: 100% 0;
+        }
+        to {
+            background-position: 0 0;
+        }
+    }
+}
+
+@layer base {
+    * {
+        @apply border-border outline-ring/50;
+    }
+    /*
+   * Tailwind v4's preflight gives buttons the default cursor; clickable
+   * things (sidebar items, launcher cards, icon buttons, pickers) point.
+   * Utilities such as cursor-default still win (they're a later layer).
+   */
+    button:not(:disabled),
+    select:not(:disabled),
+    [role='button']:not([aria-disabled='true']) {
+        cursor: pointer;
+    }
+    /*
+   * No shadcn body colours (bg-background text-foreground): the page colours
+   * come from style.css's :root, and in dark from styles/legacy-dark.css,
+   * which points them at the same tokens.
+   */
+    /*
+   * Inside the shell the document itself never scrolls (CB-102): the shell
+   * is as tall as what is visible (use-visible-height.ts) and its views
+   * scroll inside it. Without this an iPhone could scroll the page past
+   * the composer into blank space, and a pull at either end dragged the
+   * whole app.
+   */
+    html:has([data-slot='app-body']),
+    html:has([data-slot='app-body']) body {
+        height: 100%;
+        overflow: hidden;
+        overscroll-behavior: none;
+    }
+}
+
+/*
+ * iOS zooms in on a field whose text is under 16px when it gets focus, and
+ * in the installed app the zoom stays, so the page then scrolls sideways
+ * (CB-96). On touch screens every editable field is 16px. It is the last
+ * layer, with a selector that outranks a size utility (text-sm on a select
+ * or a rename box), because a field below 16px zooms whoever styled it; the
+ * shadcn Input and Textarea are 16px there already (text-base md:text-sm),
+ * and so is the page editor. (pointer: coarse) rather than a width: an
+ * iPhone in landscape is wider than md, and desktops keep their sizes.
+ * Fields meant to be larger (the page title) are left out.
+ */
+@layer utilities {
+    @media (pointer: coarse) {
+        :is(
+            input:not(
+                [type='checkbox'],
+                [type='radio'],
+                [type='range'],
+                [type='file'],
+                [type='hidden'],
+                [type='button'],
+                [type='submit'],
+                [type='reset'],
+                [type='image'],
+                [type='color']
+            ),
+            textarea,
+            select,
+            [contenteditable]:not([contenteditable='false'])
+        ):not(.document-title) {
+            font-size: 16px;
+        }
+    }
+}

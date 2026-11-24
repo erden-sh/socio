@@ -1,0 +1,112 @@
+import { useState } from 'react';
+
+import {
+    acceptNameSuggestion,
+    customizeNameSuggestion,
+    rejectNameSuggestion,
+    type NameSuggestion,
+} from './chat-name-suggestions';
+
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+
+/**
+ * The inline name-suggestion card (CB-292): a proposed, content-based name
+ * for a chat, with accept / reject / customize. No name is applied without
+ * explicit approval. Shown while a suggestion is pending.
+ */
+export function NameSuggestionCard({
+    threadId,
+    suggestion,
+    onApplied,
+    onSettled,
+}: {
+    threadId: string;
+    suggestion: NameSuggestion;
+    /** Called with the new title after accept/customize so the header updates. */
+    onApplied?: (title: string) => void;
+    /** Called after any settle (accept/reject/customize) to refetch state. */
+    onSettled?: () => void;
+}) {
+    const [editing, setEditing] = useState(false);
+    const [draft, setDraft] = useState(suggestion.suggestedName);
+    const [busy, setBusy] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const settle = async (work: () => Promise<unknown>, then?: () => void) => {
+        setBusy(true);
+        setError(null);
+        try {
+            await work();
+            then?.();
+            onSettled?.();
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Something went wrong.');
+            setBusy(false);
+        }
+    };
+
+    const accept = () =>
+        settle(async () => {
+            const { title } = await acceptNameSuggestion(threadId);
+            onApplied?.(title);
+        });
+
+    const reject = () => settle(() => rejectNameSuggestion(threadId));
+
+    const customize = () =>
+        settle(async () => {
+            const name = draft.trim();
+            if (!name) {
+                setError('Enter a name.');
+                return;
+            }
+            const { title } = await customizeNameSuggestion(threadId, name);
+            onApplied?.(title);
+            setEditing(false);
+        });
+
+    if (editing) {
+        return (
+            <div className={cn('flex flex-col gap-2 rounded-lg border bg-muted/40 p-3 text-sm')}>
+                <input
+                    className="w-full rounded border bg-background px-2 py-1 text-sm"
+                    value={draft}
+                    maxLength={80}
+                    onChange={(e) => setDraft(e.target.value)}
+                    disabled={busy}
+                    aria-label="Suggested chat name"
+                />
+                {error && <p className="text-destructive text-xs">{error}</p>}
+                <div className="flex gap-2">
+                    <Button size="sm" onClick={customize} disabled={busy}>
+                        Save
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => setEditing(false)} disabled={busy}>
+                        Cancel
+                    </Button>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className={cn('flex flex-col gap-2 rounded-lg border bg-muted/40 p-3 text-sm')}>
+            <p className="text-muted-foreground">
+                Suggested name for this chat: <strong className="text-foreground">{suggestion.suggestedName}</strong>
+            </p>
+            {error && <p className="text-destructive text-xs">{error}</p>}
+            <div className="flex flex-wrap gap-2">
+                <Button size="sm" onClick={accept} disabled={busy}>
+                    Accept
+                </Button>
+                <Button size="sm" variant="ghost" onClick={reject} disabled={busy}>
+                    Not now
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setEditing(true)} disabled={busy}>
+                    Customize
+                </Button>
+            </div>
+        </div>
+    );
+}

@@ -1,0 +1,87 @@
+# The Board, with workspace A up (servers.mjs; run.mjs --credentials):
+# Ada signs in and opens the Board from Home's tile, which counts the open
+# issues. Triage holds Ben's filing; the Open tab Ben's voted issue; the filter
+# sheet's High priority narrows Open to it, and is kept; won't fix shows on
+# request. The Board is now the workspace's last screen;
+# board-open-offline.yaml goes on from here.
+appId: ${APP_ID}
+name: board-open
+---
+- runFlow: launch.yaml
+- runFlow:
+    file: common/add-workspace.yaml
+    env:
+      ORIGIN: ${ORIGIN_A}
+- runFlow:
+    file: common/sign-in.yaml
+    env:
+      EMAIL: ada@example.test
+      SECRET: ${PASSWORD}
+- extendedWaitUntil:
+    visible:
+      id: home-tile-board
+      text: '.*6 open.*'
+    timeout: 60000
+- tapOn:
+    id: home-tile-board
+- extendedWaitUntil:
+    visible:
+      text: '.*A: Search misses accents.*'
+    timeout: 30000
+- assertVisible:
+    text: '6 open · 1 in progress · 1 done'
+- takeScreenshot: board-open-triage
+- tapOn:
+    id: board-column-open
+- extendedWaitUntil:
+    visible:
+      text: '.*A: Export the board as CSV.*'
+    timeout: 5000
+- tapOn:
+    id: board-filters
+- tapOn:
+    id: board-filter-priority-high
+- takeScreenshot: board-open-filters
+- tapOn:
+    id: board-filter-done
+- assertVisible:
+    text: '.*A: Export the board as CSV.*'
+- assertVisible:
+    text: 'Filters · 1'
+- tapOn:
+    id: board-filters
+- tapOn:
+    id: board-filter-wont-fix
+- tapOn:
+    id: board-filter-done
+- repeat:
+    times: 4
+    while:
+      notVisible:
+        id: board-column-wont_fix
+    commands:
+      - swipe:
+          from:
+            id: board-columns
+          direction: LEFT
+- tapOn:
+    id: board-column-wont_fix
+- assertVisible:
+    text: '.*Filters · 1.*'
+- takeScreenshot: board-open-wont-fix
+- repeat:
+    times: 4
+    while:
+      notVisible:
+        id: board-column-open
+    commands:
+      - swipe:
+          from:
+            id: board-columns
+          direction: RIGHT
+- tapOn:
+    id: board-column-open
+- extendedWaitUntil:
+    visible:
+      text: '.*A: Export the board as CSV.*'
+    timeout: 5000

@@ -1,0 +1,5 @@
+{
+    "extends": "../../tsconfig.json",
+    "include": [".", "../types", "../fixtures/seed-trace-chat.ts"],
+    "exclude": []
+}

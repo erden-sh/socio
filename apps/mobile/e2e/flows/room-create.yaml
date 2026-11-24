@@ -1,0 +1,150 @@
+# New room (CB-470), with workspace A up (servers.mjs; run.mjs --credentials):
+# Ada signs in, opens the Chats tab's compose menu (New chat / New room) and
+# makes "A: room 470" with Sebas leading, Manny asked for, and Ben and Opal
+# invited, each picked in its own sheet with search. Create opens the room in
+# the Chats tab, and her message there goes. Home's Rooms ends with New room,
+# which opens the same form (no browser).
+appId: ${APP_ID}
+name: room-create
+---
+- runFlow: launch.yaml
+- runFlow:
+    file: common/add-workspace.yaml
+    env:
+      ORIGIN: ${ORIGIN_A}
+- runFlow:
+    file: common/sign-in.yaml
+    env:
+      EMAIL: ada@example.test
+      SECRET: ${PASSWORD}
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 30000
+# Home may open the workspace's last screen as it mounts: go back to Home first. A kept
+# chat opens with no tab bar (CB-491), so Back to its list comes before the tab.
+- runFlow:
+    when:
+      visible:
+        id: chat-transcript
+    file: common/back.yaml
+- runFlow:
+    file: common/tab.yaml
+    env:
+      TAB: Home
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 15000
+# Home's Rooms: New room opens the app's form; Cancel with nothing chosen asks nothing.
+- scrollUntilVisible:
+    element:
+      id: home-new-room
+    direction: DOWN
+    centerElement: true
+    timeout: 20000
+- tapOn:
+    id: home-new-room
+- extendedWaitUntil:
+    visible:
+      id: new-room-screen
+    timeout: 10000
+- tapOn:
+    id: new-room-cancel
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 10000
+- runFlow:
+    file: common/tab.yaml
+    env:
+      TAB: Chats
+- extendedWaitUntil:
+    visible:
+      id: chats-screen
+    timeout: 15000
+# The compose button is a native menu: a UIMenu on iOS (Maestro finds iOS's bar items by label), Material's popup on Android.
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn:
+          id: chats-new-chat
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          text: Compose
+- extendedWaitUntil:
+    visible:
+      text: New room
+    timeout: 10000
+- takeScreenshot: room-create-menu
+- tapOn:
+    text: New room
+- extendedWaitUntil:
+    visible:
+      id: new-room-screen
+    timeout: 10000
+# Sebas, the default socio, leads already.
+- assertVisible:
+    text: lead
+- tapOn:
+    id: new-room-name
+- inputText: 'A: room 470'
+- takeScreenshot: room-create-form
+- tapOn:
+    id: new-room-add-socios
+- extendedWaitUntil:
+    visible:
+      id: new-room-socios-sheet
+    timeout: 10000
+- tapOn:
+    id: new-room-socios-search
+- inputText: 'man'
+- tapOn:
+    text: Manny
+- takeScreenshot: room-create-socios
+- tapOn:
+    id: new-room-socios-done
+- extendedWaitUntil:
+    visible:
+      text: 'Manny'
+    timeout: 10000
+- tapOn:
+    id: new-room-add-people
+- extendedWaitUntil:
+    visible:
+      text: Ben
+    timeout: 15000
+- tapOn:
+    text: Ben
+- tapOn:
+    text: Opal
+- takeScreenshot: room-create-people
+- tapOn:
+    id: new-room-people-done
+- extendedWaitUntil:
+    visible:
+      text: 'Opal'
+    timeout: 10000
+- takeScreenshot: room-create-filled
+- tapOn:
+    id: new-room-submit
+- extendedWaitUntil:
+    visible:
+      id: room-header
+    timeout: 30000
+- assertVisible:
+    text: '.*A: room 470.*'
+- tapOn:
+    id: room-composer-input
+- inputText: 'CB-470 from the app'
+- tapOn:
+    id: room-composer-send
+- extendedWaitUntil:
+    visible:
+      text: '.*CB-470 from the app.*'
+    timeout: 15000
+- takeScreenshot: room-create-sent

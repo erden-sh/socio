@@ -1,0 +1,10 @@
+# Tells servers.mjs (on its loopback control port, SERVERS_CONTROL: 4549 by default) to restart the
+# workspaces on their own databases, a new process each, with their clock
+# ${AHEAD} days ahead (0 puts the real clock back). Maestro sends it from the host.
+appId: ${APP_ID}
+name: servers
+---
+- runScript:
+    file: servers.js
+    env:
+      AHEAD: ${AHEAD}

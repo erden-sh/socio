@@ -1,0 +1,308 @@
+import { Bug } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router';
+import { toast } from 'sonner';
+
+import { ATTACHMENT_HINT } from '@socio/shared/issues/issue-attachment-files';
+import { areaLabel, issuePath, KIND_LABEL, PRIORITY_LABEL } from '@socio/shared/issues/issue-board';
+import {
+    ISSUE_AREAS,
+    ISSUE_KINDS,
+    ISSUE_PRIORITIES,
+    issueKey,
+    type IssueArea,
+    type IssueDetail,
+    type IssueKind,
+    type IssuePriority,
+} from '@socio/shared/issues/issue-types';
+import { MODULE_IDS } from '@socio/shared/modules';
+
+import { api } from '../../lib/api';
+import { HeaderMenuItem } from '../../shell/header-menu';
+import type { SlotProps } from '../types';
+
+import { acceptFiles, pastedFiles, uploadAll } from './attachments';
+import { AttachButton, PendingFiles } from './IssueAttachments';
+import { ComponentPicker, componentsOf, draftedComponents, useComponentOptions } from './IssueComponents';
+import { ChoiceField, Field } from './IssueFields';
+import { closeReport, notifyIssuesChanged, openReport, useReportRequest, type ReportDraft } from './report';
+
+import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { DialogReturnFocus } from '@/components/ui/return-focus';
+import { Textarea } from '@/components/ui/textarea';
+
+/**
+ * The issue area of the page: its module's, where one matches by name
+ * (Scheduled & activity's tasks are Schedules'), else Homepage on Home
+ * (`/`, which has no module of its own).
+ */
+export const areaOf = (moduleId: string | undefined, path?: string) =>
+    moduleId === MODULE_IDS.activity
+        ? 'schedules'
+        : ISSUE_AREAS.includes(moduleId as IssueArea)
+          ? (moduleId as IssueArea)
+          : path === '/'
+            ? 'homepage'
+            : undefined;
+
+/**
+ * What "Report issue" starts with on a page: its area, and the plugin its
+ * page is about (`componentsOf`).
+ */
+const pageDraft = (moduleId: string | undefined, pathname: string): ReportDraft => {
+    const components = componentsOf(pathname);
+    return { area: areaOf(moduleId, pathname), ...(components ? { components } : {}) };
+};
+
+/**
+ * "Report issue" in the header of every page but Issues' own (which has
+ * "New issue"), and the one report dialog: the title, a description, kind,
+ * priority, area, components and attachments, filed into triage. The area
+ * defaults to the page's module where one matches, the components to the
+ * plugin whose page it is. Others open it with `openReport`.
+ */
+export function ReportIssue({ moduleId }: SlotProps['header.actions']) {
+    const request = useReportRequest();
+    const { pathname } = useLocation();
+    // Kept past the request (which goes as the dialog closes), for the focus.
+    const [back, setBack] = useState<HTMLElement | null>(null);
+    useEffect(() => {
+        if (request) {
+            setBack(request.returnFocus ?? null);
+        }
+    }, [request]);
+    return (
+        <DialogReturnFocus value={back}>
+            {moduleId !== MODULE_IDS.issues && (
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    // On phones it is in the account menu (ReportIssueItem).
+                    className="max-md:hidden"
+                    aria-label="Report issue"
+                    title="Report issue"
+                    onClick={() => openReport(pageDraft(moduleId, pathname))}
+                >
+                    <Bug className="size-4.5" />
+                </Button>
+            )}
+            <Dialog
+                open={!!request}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        closeReport();
+                    }
+                }}
+            >
+                <DialogContent className="max-h-[calc(100svh-2rem)] overflow-y-auto sm:max-w-xl">
+                    {request && <ReportForm key={request.at} draft={request.draft} />}
+                </DialogContent>
+            </Dialog>
+        </DialogReturnFocus>
+    );
+}
+
+/**
+ * "Report issue" in the account menu, at every width (on phones the only
+ * one: the header has no room). The dialog is the header's (ReportIssue).
+ */
+export function ReportIssueItem({ moduleId, close }: SlotProps['account.items']) {
+    const { pathname } = useLocation();
+    return (
+        <DropdownMenuItem
+            onSelect={() => {
+                close();
+                openReport(pageDraft(moduleId, pathname));
+            }}
+        >
+            <Bug />
+            Report issue
+        </DropdownMenuItem>
+    );
+}
+
+/**
+ * "Report issue" in the phone header's ⋯ menu, on every page but Issues'
+ * own, as in the header. The dialog is the header's (ReportIssue).
+ */
+export function ReportIssueMenuItem({ moduleId }: SlotProps['header.menu']) {
+    const { pathname } = useLocation();
+    if (moduleId === MODULE_IDS.issues) {
+        return null;
+    }
+    return (
+        <HeaderMenuItem open={(from) => openReport(pageDraft(moduleId, pathname), { returnFocus: from })}>
+            <Bug />
+            Report issue
+        </HeaderMenuItem>
+    );
+}
+
+/** The form inside the report dialog; `draft` fills it in. */
+export function ReportForm({ draft }: { draft: ReportDraft }) {
+    const navigate = useNavigate();
+    const [title, setTitle] = useState(draft.title ?? '');
+    const [body, setBody] = useState(draft.body ?? '');
+    const [kind, setKind] = useState<IssueKind>(draft.kind ?? 'bug');
+    const [priority, setPriority] = useState<IssuePriority>(draft.priority ?? 'medium');
+    const [area, setArea] = useState<IssueArea | null>(draft.area ?? null);
+    // Components (CB-442): a drafted ref counts only once it is among the
+    // reader's options, so a prefill never names what they can't see.
+    const options = useComponentOptions();
+    const [picked, setPicked] = useState<string[]>();
+    const components = picked ?? draftedComponents(draft.components, options);
+    const [files, setFiles] = useState<File[]>([]);
+    const [busy, setBusy] = useState(false);
+    const addFiles = (picked: File[]) => {
+        const { accepted, refused } = acceptFiles(picked, files.length);
+        if (accepted.length) {
+            setFiles((current) => [...current, ...accepted]);
+        }
+        for (const problem of refused) {
+            toast.error(problem);
+        }
+    };
+    const submit = async () => {
+        setBusy(true);
+        try {
+            const { issue } = await api<IssueDetail>('/issues', 'POST', {
+                title: title.trim(),
+                body: body.trim(),
+                kind,
+                priority,
+                ...(area ? { area } : {}),
+                ...(components.length ? { components } : {}),
+                ...(draft.runId ? { runId: draft.runId } : {}),
+            });
+            const key = issueKey(issue.number);
+            const failed = await uploadAll(issue.number, files);
+            closeReport();
+            notifyIssuesChanged();
+            const open = {
+                label: 'Open',
+                onClick: () => void navigate(issuePath(issue.number)),
+            };
+            if (failed.length) {
+                toast.warning(`Filed ${key}, but some files were not attached`, {
+                    description: failed.join('\n'),
+                    action: open,
+                });
+            } else {
+                toast.success(`Filed ${key}`, {
+                    description: issue.title,
+                    action: open,
+                });
+            }
+        } catch (e) {
+            toast.error(e instanceof Error ? e.message : 'Could not file the issue.');
+        } finally {
+            setBusy(false);
+        }
+    };
+    return (
+        <form
+            data-slot="report-issue-form"
+            className="grid gap-4"
+            onSubmit={(e) => {
+                e.preventDefault();
+                void submit();
+            }}
+            onPaste={(e) => {
+                const pasted = pastedFiles(e.clipboardData);
+                if (!pasted.length) {
+                    return;
+                }
+                e.preventDefault();
+                addFiles(pasted);
+            }}
+        >
+            <DialogHeader>
+                <DialogTitle>Report an issue</DialogTitle>
+                <DialogDescription>
+                    It goes to the team&apos;s tracker, into triage. Paste a screenshot anywhere in this form to attach
+                    it.
+                    {draft.runId && ' It will be linked to the failed run.'}
+                </DialogDescription>
+            </DialogHeader>
+            <Field label="Title">
+                {(id) => (
+                    <Input
+                        aria-labelledby={id}
+                        placeholder="What went wrong, or what would help?"
+                        value={title}
+                        maxLength={200}
+                        required
+                        autoFocus
+                        onChange={(e) => setTitle(e.target.value)}
+                    />
+                )}
+            </Field>
+            <Field label="Description">
+                {(id) => (
+                    <Textarea
+                        aria-labelledby={id}
+                        placeholder="Steps, what you expected, what happened (optional, markdown)"
+                        value={body}
+                        rows={5}
+                        maxLength={20_000}
+                        className="max-h-72"
+                        onChange={(e) => setBody(e.target.value)}
+                    />
+                )}
+            </Field>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <ChoiceField
+                    label="Kind"
+                    value={kind}
+                    options={ISSUE_KINDS}
+                    labelOf={(value) => KIND_LABEL[value]}
+                    onChange={(value) => value && setKind(value)}
+                />
+                <ChoiceField
+                    label="Priority"
+                    value={priority}
+                    options={ISSUE_PRIORITIES}
+                    labelOf={(value) => PRIORITY_LABEL[value]}
+                    onChange={(value) => value && setPriority(value)}
+                />
+                <ChoiceField
+                    label="Area"
+                    value={area}
+                    options={ISSUE_AREAS}
+                    labelOf={areaLabel}
+                    none="No area"
+                    onChange={setArea}
+                />
+            </div>
+            <ComponentPicker value={components} onChange={setPicked} options={options} />
+            <div className="grid gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                    <AttachButton onFiles={addFiles} disabled={busy} />
+                    <span className="text-xs text-muted-foreground">{ATTACHMENT_HINT}</span>
+                </div>
+                <PendingFiles
+                    files={files}
+                    onRemove={(index) => setFiles((current) => current.filter((_, i) => i !== index))}
+                />
+            </div>
+            <DialogFooter>
+                <Button type="button" variant="outline" onClick={closeReport}>
+                    Cancel
+                </Button>
+                <Button type="submit" disabled={busy || title.trim().length < 3}>
+                    {busy ? 'Filing…' : 'File issue'}
+                </Button>
+            </DialogFooter>
+        </form>
+    );
+}

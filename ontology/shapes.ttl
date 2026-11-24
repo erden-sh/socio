@@ -1,0 +1,65 @@
+# SHACL shapes for the knowledge graph (data/). They hold the generated graph
+# to the shape the competency questions rely on.
+@prefix sh:    <http://www.w3.org/ns/shacl#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix socio: <https://socio.sh/ontology/> .
+
+# Every package has one label and one package.json name.
+socio:PackageShape a sh:NodeShape ;
+    sh:targetClass socio:Package ;
+    sh:property [ sh:path rdfs:label ; sh:datatype xsd:string ; sh:minCount 1 ; sh:maxCount 1 ] ;
+    sh:property [ sh:path socio:packageName ; sh:datatype xsd:string ; sh:minCount 1 ; sh:maxCount 1 ] ;
+    sh:property [ sh:path socio:sourcePath ; sh:datatype xsd:string ; sh:minCount 1 ; sh:maxCount 1 ] .
+
+# Every server feature has one label, one path, at most one rank, and belongs to one package.
+socio:ServerFeatureShape a sh:NodeShape ;
+    sh:targetClass socio:ServerFeature ;
+    sh:property [ sh:path rdfs:label ; sh:datatype xsd:string ; sh:minCount 1 ; sh:maxCount 1 ] ;
+    sh:property [ sh:path socio:sourcePath ; sh:datatype xsd:string ; sh:minCount 1 ; sh:maxCount 1 ] ;
+    sh:property [ sh:path socio:featureRank ; sh:datatype xsd:nonNegativeInteger ; sh:maxCount 1 ] ;
+    sh:property [ sh:path socio:hasLayer ; sh:datatype xsd:boolean ; sh:minCount 1 ; sh:maxCount 1 ] ;
+    sh:property [ sh:path socio:partOf ; sh:class socio:Package ; sh:minCount 1 ; sh:maxCount 1 ] .
+
+# A contract is part of exactly one server feature.
+socio:ContractShape a sh:NodeShape ;
+    sh:targetClass socio:Contract ;
+    sh:property [ sh:path rdfs:label ; sh:minCount 1 ; sh:maxCount 1 ] ;
+    sh:property [ sh:path socio:partOf ; sh:class socio:ServerFeature ; sh:minCount 1 ; sh:maxCount 1 ] .
+
+# A client module is part of exactly one package.
+socio:ClientModuleShape a sh:NodeShape ;
+    sh:targetClass socio:ClientModule ;
+    sh:property [ sh:path rdfs:label ; sh:minCount 1 ; sh:maxCount 1 ] ;
+    sh:property [ sh:path socio:partOf ; sh:class socio:Package ; sh:minCount 1 ; sh:maxCount 1 ] .
+
+# implementsConcept points at a class of the domain module, from a code unit.
+socio:DomainClassShape a sh:NodeShape ;
+    sh:property [ sh:path rdf:type ; sh:hasValue owl:Class ] ;
+    sh:property [ sh:path socio:module ; sh:hasValue <https://socio.sh/ontology/domain> ; sh:minCount 1 ] .
+
+socio:ImplementsConceptShape a sh:NodeShape ;
+    sh:targetSubjectsOf socio:implementsConcept ;
+    sh:class socio:CodeUnit ;
+    sh:property [ sh:path socio:implementsConcept ; sh:node socio:DomainClassShape ] .
+
+# dependsOn stays between code units.
+socio:DependsOnShape a sh:NodeShape ;
+    sh:targetSubjectsOf socio:dependsOn ;
+    sh:class socio:CodeUnit ;
+    sh:property [ sh:path socio:dependsOn ; sh:class socio:CodeUnit ] .
+
+# A mention names one thing, in one role, from one file and line.
+socio:MentionShape a sh:NodeShape ;
+    sh:targetClass socio:Mention ;
+    sh:property [ sh:path socio:mentionKind ; sh:class socio:MentionKind ; sh:minCount 1 ; sh:maxCount 1 ] ;
+    sh:property [ sh:path socio:mentionOf ; sh:minCount 1 ; sh:maxCount 1 ] ;
+    sh:property [ sh:path <http://www.w3.org/ns/prov#wasDerivedFrom> ; sh:class socio:RepoFile ; sh:minCount 1 ; sh:maxCount 1 ] ;
+    sh:property [ sh:path socio:sourceLine ; sh:datatype xsd:positiveInteger ; sh:minCount 1 ; sh:maxCount 1 ] .
+
+# A table that holds personal data has one name and is defined somewhere.
+socio:TableShape a sh:NodeShape ;
+    sh:targetClass socio:Table ;
+    sh:property [ sh:path socio:tableName ; sh:datatype xsd:string ; sh:minCount 1 ; sh:maxCount 1 ] .

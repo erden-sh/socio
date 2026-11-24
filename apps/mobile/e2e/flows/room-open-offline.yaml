@@ -1,0 +1,31 @@
+# After room-open.yaml, with every workspace server stopped (Ctrl-C
+# servers.mjs; on a Mac, close the tunnel): a cold relaunch opens on the room,
+# the workspace's last screen, its transcript and header (current names, its
+# socios) drawn from the phone's copy alone; Back leads to Home, and the room
+# opens again from its row, offline. Run it with run.mjs --servers-down.
+appId: ${APP_ID}
+name: room-open-offline
+---
+- runFlow: common/open.yaml
+- extendedWaitUntil:
+    visible:
+      id: chat-transcript
+    timeout: 180000
+- assertVisible:
+    text: 'Room · 2 people · Sebas, Manny answer · you’re an admin'
+- assertVisible:
+    text: '.*Ben’s message wasn’t answered.*'
+- takeScreenshot: room-open-offline
+- runFlow: common/back.yaml
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 10000
+- tapOn:
+    text: '.*A: launch room.*'
+- extendedWaitUntil:
+    visible:
+      id: room-header
+    timeout: 10000
+- assertVisible:
+    text: '.*Ben’s message wasn’t answered.*'

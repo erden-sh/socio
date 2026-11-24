@@ -1,0 +1,121 @@
+# The issues' chaos subset, second half, after chaos-issues-queue.yaml and, on
+# the web (README, Chaos):
+#   act-as.mjs web-delete --text "XB2: Gone on the web"
+#   act-as.mjs web-retitle --text "XB2: Keep mine" --to "XB2: Mine, changed on the web"
+#   act-as.mjs web-retitle --text "XB2: Keep theirs" --to "XB2: Theirs, changed on the web"
+#   act-as.mjs web-sign-out
+# The server comes back: the first answer is a 401 before the session's
+# expiry, so the copy locks and nothing is sent; Sign in, and the outbox
+# goes on: the comment on the open issue is sent; the deleted issue's
+# comment and edit go to the Unsent list ("You no longer have access"); both
+# retitled issues show "Couldn't save": Keep mine sends the phone's title,
+# Keep theirs keeps the web's. Then act-as.mjs issues counts each once, and
+# act-as.mjs comments finds the open issue's comment once, with no second copy.
+appId: ${APP_ID}
+name: chaos-issues-settle
+---
+- runFlow:
+    file: common/proxy.yaml
+    env:
+      ACTION: up
+- extendedWaitUntil:
+    visible:
+      id: lock-screen
+    timeout: 120000
+- takeScreenshot: chaos-issues-ended
+- tapOn:
+    id: lock-sign-in
+- runFlow:
+    file: common/sign-in.yaml
+    env:
+      EMAIL: ada@example.test
+      SECRET: ${PASSWORD}
+- runFlow:
+    file: common/outbox-line.yaml
+    env:
+      OUTBOX: 'Outbox: queued 0 · inflight 0 · unknown 0 · held 0 · sent 0 · unsent 4'
+      SHOT: chaos-issues-settled
+# The deleted issue's two writes: the Unsent list, from More's Account.
+- tapOn:
+    text: More
+- tapOn:
+    id: more-account
+- extendedWaitUntil:
+    visible:
+      id: unsent-see-all
+    timeout: 10000
+- tapOn:
+    id: unsent-see-all
+- extendedWaitUntil:
+    visible:
+      id: unsent-screen
+    timeout: 10000
+- assertVisible:
+    text: '.*You no longer have access.*'
+    index: 1
+- takeScreenshot: chaos-issues-unsent
+- runFlow: common/back.yaml
+# Keep mine, then Keep theirs, on the issues' own screens.
+- tapOn:
+    text: Home
+- tapOn:
+    id: home-tile-board
+- runFlow:
+    file: common/open-issue.yaml
+    env:
+      COLUMN: triage
+      TITLE: 'XB2: Mine, changed on the web'
+- extendedWaitUntil:
+    visible:
+      id: issue-problem-keep-mine
+    timeout: 30000
+- takeScreenshot: chaos-issues-conflict
+- tapOn:
+    id: issue-problem-keep-mine
+- extendedWaitUntil:
+    visible:
+      id: issue-title
+      text: 'XB2: Mine, from the phone'
+    timeout: 60000
+- extendedWaitUntil:
+    notVisible:
+      id: issue-problems
+    timeout: 60000
+- takeScreenshot: chaos-issues-kept-mine
+- runFlow: common/back.yaml
+- runFlow:
+    file: common/open-issue.yaml
+    env:
+      COLUMN: triage
+      TITLE: 'XB2: Theirs, changed on the web'
+- extendedWaitUntil:
+    visible:
+      id: issue-problem-keep-theirs
+    timeout: 30000
+- tapOn:
+    id: issue-problem-keep-theirs
+- extendedWaitUntil:
+    notVisible:
+      id: issue-problems
+    timeout: 30000
+- assertVisible:
+    id: issue-title
+    text: 'XB2: Theirs, changed on the web'
+- takeScreenshot: chaos-issues-kept-theirs
+- runFlow: common/back.yaml
+- runFlow:
+    file: common/open-issue.yaml
+    env:
+      COLUMN: open
+      TITLE: 'A: Export the board as CSV'
+- scrollUntilVisible:
+    element: '.*XB2: waits through a 401.*'
+    direction: DOWN
+    timeout: 30000
+- assertNotVisible: 'Waiting to send'
+- takeScreenshot: chaos-issues-comment-sent
+- runFlow:
+    file: common/outbox-line.yaml
+    env:
+      OUTBOX: 'Outbox: queued 0 · inflight 0 · unknown 0 · held 0 · sent 0 · unsent 2'
+      SHOT: chaos-issues-done

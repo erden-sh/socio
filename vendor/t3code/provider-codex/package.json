@@ -1,0 +1,23 @@
+{
+  "name": "@t3tools/provider-codex",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    "./server": {
+      "types": "./src/server/index.ts",
+      "import": "./src/server/index.ts"
+    },
+    "./server/driver": {
+      "types": "./src/server/driver.ts",
+      "import": "./src/server/driver.ts"
+    }
+  },
+  "dependencies": {
+    "@t3tools/contracts": "workspace:*",
+    "@t3tools/provider-core": "workspace:*",
+    "@t3tools/shared": "workspace:*",
+    "effect-codex-app-server": "workspace:*",
+    "effect": "catalog:"
+  }
+}

@@ -1,0 +1,3 @@
+# Mechanical reformatting commits; `git config blame.ignoreRevsFile .git-blame-ignore-revs` to skip them in blame.
+# Formatting stage 1 (oxfmt, Erden-style), 2026-11-01
+dba875569a6028109d864068279d7f95ee2264a2

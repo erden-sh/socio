@@ -1,0 +1,71 @@
+# The room screen, with workspace A up (servers.mjs; run.mjs
+# --credentials): Ada signs in and opens A's seeded room from Home. Each
+# message says who wrote it (Ada's own as "You", Ben's by name), Sebas's
+# handoff to Manny and Ben's failed turn are lines, and the header reads the
+# room's status. Its name opens the read-only Members sheet with "Manage on
+# the web". The room is now the workspace's last screen;
+# room-open-offline.yaml goes on from here.
+appId: ${APP_ID}
+name: room-open
+---
+- runFlow: launch.yaml
+- runFlow:
+    file: common/add-workspace.yaml
+    env:
+      ORIGIN: ${ORIGIN_A}
+- runFlow:
+    file: common/sign-in.yaml
+    env:
+      EMAIL: ada@example.test
+      SECRET: ${PASSWORD}
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 30000
+- extendedWaitUntil:
+    visible:
+      text: '.*A: launch room.*'
+    timeout: 30000
+- tapOn:
+    text: '.*A: launch room.*'
+- extendedWaitUntil:
+    visible:
+      id: chat-transcript
+    timeout: 30000
+- assertVisible:
+    id: room-header
+- assertVisible:
+    text: 'Room · 2 people · Sebas, Manny answer · you’re an admin'
+- scrollUntilVisible:
+    element:
+      text: 'Manny answers next, as Ada asked.'
+    direction: UP
+    timeout: 20000
+- assertVisible:
+    text: 'Manny'
+- scrollUntilVisible:
+    element:
+      text: '.*Ben’s message wasn’t answered.*'
+    direction: DOWN
+    timeout: 20000
+- assertVisible:
+    text: 'Ben'
+- takeScreenshot: room-open
+# The room's name opens Members (the socios' marks at the header's end do too;
+# a development client's floating button covers them).
+- tapOn:
+    id: room-header
+- extendedWaitUntil:
+    visible:
+      id: room-members
+    timeout: 10000
+- assertVisible:
+    text: 'Ada \(you\)'
+- assertVisible:
+    text: 'Lead'
+- assertVisible:
+    id: room-members-manage
+- takeScreenshot: room-members
+- runFlow: common/close-sheet.yaml
+- assertVisible:
+    id: room-header

@@ -1,0 +1,45 @@
+# On the sign-in screen: ${EMAIL}, the keyboard's Next, ${SECRET}, then its Go, which
+# submits like Sign in (hideKeyboard isn't reliable on iOS, and the keyboard
+# covers the button). The flow that runs it checks what follows.
+appId: ${APP_ID}
+name: sign in
+---
+- tapOn:
+    id: sign-in-email
+- eraseText: 60
+- inputText: ${EMAIL}
+# The keyboard's Next moves to the password: with the sheet and the code above the form,
+# the password field can sit under the keyboard, where a tap would land on a key.
+- pressKey: Enter
+- eraseText: 60
+- inputText: ${SECRET}
+- pressKey: Enter
+# iOS offers to save the password after a submit, in a sheet Maestro can't
+# see: while it is up the app's hierarchy reads empty. So when neither the
+# sign-in screen nor Home shows, the flow taps Not Now where the sheet puts it.
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - extendedWaitUntil:
+          notVisible:
+            id: sign-in-email
+          timeout: 6000
+          optional: true
+      - extendedWaitUntil:
+          visible:
+            id: home-screen
+          timeout: 5000
+          optional: true
+      - runFlow:
+          when:
+            notVisible:
+              id: sign-in-screen
+          commands:
+            - runFlow:
+                when:
+                  notVisible:
+                    id: home-screen
+                commands:
+                  - tapOn:
+                      point: 31%,62%

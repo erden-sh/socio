@@ -1,0 +1,26 @@
+/*
+ * Picture blocks (CB-358). Theme tokens only, so light and dark follow;
+ * outside the legacy layer, so these win over the document's own styles.
+ */
+.page-image {
+    margin: 20px 0;
+    border-radius: 10px;
+    max-width: 100%;
+}
+.page-image img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    border-radius: 10px;
+}
+.page-image.selected {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+}
+.page-image-missing {
+    padding: 14px;
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+    color: var(--muted-foreground);
+    font-size: 14px;
+}

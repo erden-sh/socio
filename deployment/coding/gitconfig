@@ -1,0 +1,25 @@
+# The coding sandbox's system Git configuration (CB-239), root-owned
+# at /etc/gitconfig. Repository access goes only through Socio's Git proxy:
+# github.com URLs are rewritten to the gateway virtual host, which the
+# egress proxy forwards with the sandbox's stamp; the credential helper
+# hands Git the prompt's cbgw_ from the token file. Every protocol but
+# plain HTTP is refused (the proxy reaches nothing else anyway).
+[url "http://gateway.socio.internal/git/"]
+	insteadOf = https://github.com/
+	insteadOf = git@github.com:
+	insteadOf = ssh://git@github.com/
+[credential "http://gateway.socio.internal"]
+	helper = /usr/local/lib/socio/git-credential-socio
+[protocol]
+	allow = never
+[protocol "http"]
+	allow = always
+[http]
+	# Large pushes go in one request (the Git proxy reads it whole).
+	postBuffer = 104857600
+[init]
+	defaultBranch = main
+[advice]
+	detachedHead = false
+[safe]
+	directory = /work/repo

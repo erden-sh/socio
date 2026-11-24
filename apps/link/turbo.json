@@ -1,0 +1,33 @@
+{
+    "$schema": "../../node_modules/turbo/schema.json",
+    "extends": ["//"],
+    "tasks": {
+        "typecheck": {
+            "description": "tsc 7.1 over the Worker and its tests, with the Workers runtime's types, and the packages/shared source its tsconfig paths map to.",
+            "inputs": [
+                "$TURBO_DEFAULT$",
+                "$TURBO_ROOT$/packages/shared/src/**",
+                "!.wrangler/**",
+                "!node_modules/**",
+                "!.turbo/**"
+            ],
+            "outputs": []
+        },
+        "lint": {
+            "inputs": ["$TURBO_DEFAULT$", "!.wrangler/**", "!node_modules/**", "!.turbo/**"],
+            "outputs": []
+        },
+        "test": {
+            "description": "The link Worker's Vitest suite, under Node. No build task: the deploy pipeline bundles the Worker when it deploys. It imports packages/shared's device-sign-in table, and holds its app ids against the app's variants (apps/mobile/variant.ts).",
+            "inputs": [
+                "$TURBO_DEFAULT$",
+                "$TURBO_ROOT$/packages/shared/src/**",
+                "$TURBO_ROOT$/apps/mobile/variant.ts",
+                "!.wrangler/**",
+                "!node_modules/**",
+                "!.turbo/**"
+            ],
+            "outputs": []
+        }
+    }
+}

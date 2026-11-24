@@ -1,0 +1,44 @@
+# Taps tab ${TAB} (Home, Chats, Spaces, More or Search) in the system's tab bar. Neither
+# system tab bar carries the tabs' testIDs, and a tab's root has the same words
+# as its large title, so Android takes the label in Material's navigation item,
+# and iOS taps the item where the glass bar draws it on a 393 pt wide iPhone.
+appId: ${APP_ID}
+name: tab
+---
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn:
+          id: '.*navigation_bar_item_.*label_view'
+          text: ${TAB}
+- runFlow:
+    when:
+      true: ${maestro.platform == 'ios' && TAB == 'Home'}
+    commands:
+      - tapOn:
+          point: 14%,94%
+- runFlow:
+    when:
+      true: ${maestro.platform == 'ios' && TAB == 'Chats'}
+    commands:
+      - tapOn:
+          point: 33%,94%
+- runFlow:
+    when:
+      true: ${maestro.platform == 'ios' && TAB == 'Spaces'}
+    commands:
+      - tapOn:
+          point: 49%,94%
+- runFlow:
+    when:
+      true: ${maestro.platform == 'ios' && TAB == 'More'}
+    commands:
+      - tapOn:
+          point: 65%,94%
+- runFlow:
+    when:
+      true: ${maestro.platform == 'ios' && TAB == 'Search'}
+    commands:
+      - tapOn:
+          point: 87%,94%

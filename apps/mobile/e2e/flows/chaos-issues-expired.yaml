@@ -1,0 +1,76 @@
+# The issues' chaos subset, the expired session, after chaos-issues-settle.yaml
+# (the open issue's screen) behind chaos-proxy.mjs: with the server away a
+# comment waits; servers.mjs restarts with its clock eight days on, past the
+# week a session lasts; the server back, its answer is the 401 of an expired
+# session: the Expired banner, and the comment still waits (writes wait for
+# sign-in); Sign in, and it is sent once: act-as.mjs comments then finds
+# exactly one copy. The real clock goes back last.
+appId: ${APP_ID}
+name: chaos-issues-expired
+---
+- runFlow:
+    file: common/proxy.yaml
+    env:
+      ACTION: down
+- scrollUntilVisible:
+    element:
+      id: issue-composer-input
+    direction: DOWN
+    timeout: 20000
+- tapOn:
+    id: issue-composer-input
+- inputText: 'XB2: waits through an expiry'
+# Typing lags under load: Send only once the box holds the whole line.
+- extendedWaitUntil:
+    visible:
+      id: issue-composer-input
+      text: 'XB2: waits through an expiry'
+    timeout: 20000
+- tapOn:
+    id: issue-composer-send
+- runFlow:
+    file: common/servers.yaml
+    env:
+      AHEAD: '8'
+- runFlow:
+    file: common/proxy.yaml
+    env:
+      ACTION: up
+# The banner heads the issue's page, above where the comment box left it.
+- scrollUntilVisible:
+    element:
+      id: session-expired
+    direction: UP
+    timeout: 120000
+- scrollUntilVisible:
+    element: 'Waiting to send'
+    direction: DOWN
+    timeout: 20000
+- takeScreenshot: chaos-issues-expired
+- scrollUntilVisible:
+    element:
+      id: session-expired
+    direction: UP
+    timeout: 20000
+- tapOn: 'Sign in'
+- runFlow:
+    file: common/sign-in.yaml
+    env:
+      EMAIL: ada@example.test
+      SECRET: ${PASSWORD}
+- extendedWaitUntil:
+    notVisible:
+      id: session-expired
+    timeout: 60000
+- extendedWaitUntil:
+    notVisible: 'Waiting to send'
+    timeout: 120000
+- scrollUntilVisible:
+    element: '.*XB2: waits through an expiry.*'
+    direction: DOWN
+    timeout: 30000
+- takeScreenshot: chaos-issues-expiry-sent
+- runFlow:
+    file: common/servers.yaml
+    env:
+      AHEAD: '0'

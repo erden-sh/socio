@@ -1,0 +1,48 @@
+# Opens the app cold, keeping its data: a development build through its link
+# to Metro (DEV_CLIENT_URL), a build that carries its bundle by launching it.
+appId: ${APP_ID}
+name: open
+---
+- runFlow:
+    when:
+      true: ${DEV_CLIENT_URL != ''}
+    commands:
+      - stopApp
+      - openLink: ${DEV_CLIENT_URL}
+      # iOS asks before a link opens an app ("Open in …?"), and a development
+      # client opened after a clear asks a second time once it has loaded
+      # the bundle: Open the first, Cancel the second (the app is up by then).
+      - runFlow:
+          when:
+            platform: iOS
+          commands:
+            - extendedWaitUntil:
+                visible:
+                  text: 'Open'
+                timeout: 10000
+                optional: true
+            - runFlow:
+                when:
+                  visible:
+                    text: 'Open'
+                commands:
+                  - tapOn:
+                      text: 'Open'
+            - extendedWaitUntil:
+                visible:
+                  text: 'Open in.*'
+                timeout: 30000
+                optional: true
+            - runFlow:
+                when:
+                  visible:
+                    text: 'Open in.*'
+                commands:
+                  - tapOn:
+                      text: 'Cancel'
+- runFlow:
+    when:
+      true: ${DEV_CLIENT_URL == ''}
+    commands:
+      - launchApp:
+          stopApp: true

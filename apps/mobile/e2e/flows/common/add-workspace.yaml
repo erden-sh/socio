@@ -1,0 +1,27 @@
+# From Add workspace to the sign-in screen of ${ORIGIN}: the first screen's
+# "Enter your workspace address", the address, then Continue on the
+# confirm screen.
+appId: ${APP_ID}
+name: add workspace
+---
+- tapOn:
+    id: first-screen-address
+- extendedWaitUntil:
+    visible:
+      id: workspace-address-screen
+    timeout: 10000
+- tapOn:
+    id: workspace-address
+- inputText: ${ORIGIN}
+- tapOn:
+    id: add-workspace-continue
+- extendedWaitUntil:
+    visible:
+      id: confirm-workspace-screen
+    timeout: 20000
+- tapOn:
+    id: confirm-workspace-continue
+- extendedWaitUntil:
+    visible:
+      id: sign-in-screen
+    timeout: 20000

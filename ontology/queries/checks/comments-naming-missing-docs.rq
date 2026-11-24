@@ -1,0 +1,26 @@
+# @ask     Which code comments name a Markdown file that doesn't exist?
+# @expect  rows == 0
+# @from    audit/facts.ttl: References mentions in comments whose path ends in .md.
+#
+# Why static tools miss it: a comment is invisible to the compiler and the linters. This is
+# the regression check for removing internal docs: a comment that still sends readers to a
+# deleted *.md. It covers every code file, tests included.
+# Left out: vendored code, whose paths name its upstream's tree, and the names of file formats
+# Socio reads and writes (a skill's SKILL.md, an ISSUES.md export, an app's COMBINE.md), and
+# paths on a line that cites another repository or a pinned upstream version (onHistoryLine).
+PREFIX prov:  <http://www.w3.org/ns/prov#>
+PREFIX rdfs:  <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX socio: <https://socio.sh/ontology/>
+SELECT ?file ?line ?path WHERE {
+    ?m socio:mentionKind socio:References ;
+       socio:inComment true ;
+       socio:writtenAs ?path ;
+       prov:wasDerivedFrom ?f ;
+       socio:sourceLine ?line .
+    ?f socio:sourcePath ?file .
+    FILTER (REGEX(?path, "\\.mdx?/?$") && !STRSTARTS(?file, "vendor/") && !CONTAINS(?file, "/vendor/"))
+    FILTER (?path NOT IN ("SKILL.md", "ISSUES.md", "COMBINE.md"))
+    FILTER NOT EXISTS { ?m socio:onHistoryLine true . }
+    FILTER NOT EXISTS { ?m socio:candidatePath ?c . ?target socio:sourcePath ?c . }
+}
+ORDER BY ?file ?line ?path

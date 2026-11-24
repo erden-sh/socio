@@ -1,0 +1,17 @@
+# @ask     Which names do layers provide as tags that no Context.Service class defines?
+# @expect  rows == 0
+# @from    audit/facts.ttl: Provides mentions without a Defines mention of the same class name.
+#
+# Why static tools miss it: TypeScript would reject a missing class, so a hit here is a tag
+# defined some other way (an alias, a re-export under another name) that the contract
+# convention doesn't account for, or an extractor gap.
+PREFIX prov:  <http://www.w3.org/ns/prov#>
+PREFIX rdfs:  <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX socio: <https://socio.sh/ontology/>
+SELECT ?tag ?file ?line WHERE {
+    ?t a socio:EffectTag ; rdfs:label ?tag .
+    ?p socio:mentionOf ?t ; socio:mentionKind socio:Provides ; prov:wasDerivedFrom ?f ; socio:sourceLine ?line .
+    ?f socio:sourcePath ?file .
+    FILTER NOT EXISTS { ?d socio:mentionOf ?t ; socio:mentionKind socio:Defines . }
+}
+ORDER BY ?tag ?file ?line

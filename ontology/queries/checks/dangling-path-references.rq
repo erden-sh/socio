@@ -1,0 +1,30 @@
+# @ask     Which repository paths named in Markdown or code comments name no file or folder?
+# @expect  rows == 0
+# @from    audit/facts.ttl: References mentions (backticked paths, Markdown links, bare paths) and the files git lists.
+#
+# Why static tools miss it: TypeScript and the linters read imports, not prose. A path in a
+# comment, a README or AGENTS.md goes stale silently when a file moves or is deleted.
+# A path resolves if any of its candidate paths (from the root, its folder, its package,
+# src/server or its feature) is a file or folder, or a path .gitignore covers. Left out:
+# vendored code (its paths name its upstream's tree), the release notes, and lines that say
+# where something was ("moved from", "ported from", "upstream"): their paths may be gone on purpose;
+# specs (docs/specs/), which name modules still to be built; and Android project paths
+# (src/main/...), which name the native project the app's config plugins generate.
+# Also left out: the names of file formats Socio reads and writes (SKILL.md, ISSUES.md,
+# COMBINE.md), which name no file of this repository.
+PREFIX prov:  <http://www.w3.org/ns/prov#>
+PREFIX rdfs:  <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX socio: <https://socio.sh/ontology/>
+SELECT ?file ?line ?path WHERE {
+    ?m socio:mentionKind socio:References ;
+       socio:writtenAs ?path ;
+       prov:wasDerivedFrom ?f ;
+       socio:sourceLine ?line .
+    ?f socio:sourcePath ?file .
+    FILTER (!STRSTARTS(?file, "vendor/") && !CONTAINS(?file, "/vendor/") && !STRSTARTS(?file, "docs/specs/"))
+    FILTER (?file != "docs/RELEASE-NOTES.md" && !STRSTARTS(?path, "src/main/"))
+    FILTER NOT EXISTS { ?m socio:inHistoryNote true . }
+    FILTER (?path NOT IN ("SKILL.md", "ISSUES.md", "COMBINE.md"))
+    FILTER NOT EXISTS { ?m socio:candidatePath ?c . ?target socio:sourcePath ?c . }
+}
+ORDER BY ?file ?line ?path

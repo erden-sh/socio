@@ -1,0 +1,31 @@
+# Opens the issue titled ${TITLE} from the Board, already showing, in its
+# column ${COLUMN} (the chip's testID suffix: triage, open, ...): the chips
+# scroll sideways, so it swipes until the column shows.
+appId: ${APP_ID}
+name: open-issue
+---
+- extendedWaitUntil:
+    visible:
+      id: board-columns
+    timeout: 30000
+- repeat:
+    times: 4
+    while:
+      notVisible:
+        id: board-column-${COLUMN}
+    commands:
+      - swipe:
+          from:
+            id: board-columns
+          direction: RIGHT
+- tapOn:
+    id: board-column-${COLUMN}
+# The Board pulls every 15 s while shown: a change on the web shows by then.
+- extendedWaitUntil:
+    visible: '.*${TITLE}.*'
+    timeout: 60000
+- tapOn: '.*${TITLE}.*'
+- extendedWaitUntil:
+    visible:
+      id: issue-title
+    timeout: 30000

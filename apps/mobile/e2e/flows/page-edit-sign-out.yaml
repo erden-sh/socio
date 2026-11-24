@@ -1,0 +1,60 @@
+# After page-edit.yaml, with workspace A up (run.mjs --credentials
+# --no-workspace-left): the editor opens on the kept page, words are typed and
+# saved, then Ada signs out from More's Account. run.mjs lists the container
+# and fails on a workspace folder, an HTTP cache entry or anything a WebView
+# kept (`webViewStorage`: app_webview, Library/WebKit).
+appId: ${APP_ID}
+name: page-edit-sign-out
+---
+- runFlow: common/open.yaml
+- extendedWaitUntil:
+    visible:
+      id: page-screen
+    timeout: 180000
+- runFlow: common/move-dev-tools.yaml
+- tapOn:
+    id: page-edit
+- extendedWaitUntil:
+    visible:
+      text: '.*Typed on the phone.*'
+    timeout: 30000
+# The WebView takes a tap only once its document is up (iOS).
+- runFlow:
+    file: common/pause.yaml
+    env:
+      MS: 2000
+- tapOn:
+    text: '.*Typed on the phone.*'
+- pressKey: Enter
+- inputText: 'Before signing out'
+- extendedWaitUntil:
+    visible:
+      text: 'Saved'
+    timeout: 30000
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - hideKeyboard
+- runFlow: common/back.yaml
+- extendedWaitUntil:
+    visible:
+      text: '.*Before signing out.*'
+    timeout: 30000
+# Home opened the kept page over itself: one Back reaches it.
+- runFlow: common/back.yaml
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 10000
+- tapOn:
+    text: More
+- tapOn:
+    id: more-account
+- tapOn:
+    id: sign-out
+- extendedWaitUntil:
+    visible:
+      id: add-workspace-screen
+    timeout: 30000
+- takeScreenshot: page-edit-sign-out-done

@@ -1,0 +1,30 @@
+# @ask     Which /api routes does the client call that no server code registers?
+# @expect  rows == 0
+# @from    audit/facts.ttl: Calls mentions in packages/client, apps/mobile, plugin-ui and app-sdk, against Registers mentions.
+#
+# Why static tools miss it: the client builds URLs as strings and the server mounts route
+# groups under prefixes; no type connects a fetch to a handler, so a renamed or removed route
+# fails only at run time (a 404). Strings in comments are left out.
+# Matching: a registration has a key under each mount prefix the server uses (each literal
+# .route() and basePath(), alone or in pairs). A reference matches when a key is equal, or
+# either side's pattern matches the other's key: {} is any one segment, and a path that ends
+# in * or … covers every path under it.
+PREFIX prov:  <http://www.w3.org/ns/prov#>
+PREFIX socio: <https://socio.sh/ontology/>
+SELECT ?key ?file ?line ?written WHERE {
+    ?m socio:mentionKind socio:Calls ; socio:routeKey ?key ; socio:writtenAs ?written ;
+       prov:wasDerivedFrom ?f ; socio:sourceLine ?line .
+    ?f socio:sourcePath ?file .
+    FILTER (?key != "/api")
+    FILTER NOT EXISTS { ?r socio:mentionKind socio:Registers ; socio:routeKey ?key . }
+    FILTER NOT EXISTS {
+        ?r socio:mentionKind socio:Registers ; socio:routePattern ?pattern .
+        FILTER (REGEX(?key, ?pattern))
+    }
+    FILTER NOT EXISTS {
+        ?m socio:routePattern ?mine .
+        ?r socio:mentionKind socio:Registers ; socio:routeKey ?other .
+        FILTER (REGEX(?other, ?mine))
+    }
+}
+ORDER BY ?key ?file ?line

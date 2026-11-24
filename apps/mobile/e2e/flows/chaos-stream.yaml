@@ -1,0 +1,43 @@
+# After chat-open.yaml, behind chaos-proxy.mjs: a slow reply streams, its
+# follow stream and then the whole server drop mid-turn (a restart), and the
+# chat catches up once it is back: the reply finishes, once.
+appId: ${APP_ID}
+name: chaos-stream
+---
+- tapOn:
+    id: chat-composer-input
+- inputText: 'Please smoke slow-stream again'
+- tapOn:
+    id: chat-composer-send
+- extendedWaitUntil:
+    visible:
+      text: '(?s).*Second 3\..*'
+    timeout: 60000
+- runFlow:
+    file: common/proxy.yaml
+    env:
+      ACTION: drop
+- extendedWaitUntil:
+    visible:
+      text: '(?s).*Second 8\..*'
+    timeout: 60000
+- runFlow:
+    file: common/proxy.yaml
+    env:
+      ACTION: down
+- takeScreenshot: chaos-stream-away
+- runFlow:
+    file: common/proxy.yaml
+    env:
+      ACTION: up
+- extendedWaitUntil:
+    visible:
+      text: '(?s).*Second 20\..*'
+    timeout: 120000
+- takeScreenshot: chaos-stream-back
+- tapOn:
+    id: chat-composer-stop
+- extendedWaitUntil:
+    visible:
+      id: chat-composer-send
+    timeout: 30000

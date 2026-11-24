@@ -1,0 +1,16 @@
+# @ask     Which flag keys does code check that FLAGS doesn't define?
+# @expect  rows == 0
+# @from    audit/facts.ttl: Reads mentions from useFlag, enabled and requireFlag calls.
+#
+# Why static tools miss it: mostly they don't: FlagKey types the calls. This catches the
+# calls that go through a plain string (a test double, a loosely typed helper).
+PREFIX prov:  <http://www.w3.org/ns/prov#>
+PREFIX rdfs:  <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX socio: <https://socio.sh/ontology/>
+SELECT ?key ?file ?line WHERE {
+    ?flag a socio:FeatureFlag ; rdfs:label ?key .
+    ?r socio:mentionOf ?flag ; socio:mentionKind socio:Reads ; prov:wasDerivedFrom ?f ; socio:sourceLine ?line .
+    ?f socio:sourcePath ?file .
+    FILTER NOT EXISTS { ?d socio:mentionOf ?flag ; socio:mentionKind socio:Defines . }
+}
+ORDER BY ?key ?file ?line

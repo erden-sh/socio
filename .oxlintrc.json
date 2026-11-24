@@ -1,0 +1,255 @@
+{
+    "$schema": "./node_modules/oxlint/configuration_schema.json",
+    "plugins": ["eslint", "typescript", "unicorn", "oxc", "react", "import"],
+    "jsPlugins": ["./scripts/lint/socio-rules.mjs"],
+    "categories": {
+        "correctness": "error"
+    },
+    "ignorePatterns": [
+        "dist/**",
+        "packages/*/dist/**",
+        "node_modules/**",
+        ".codex/**",
+        ".react-router/**",
+        "src/server/plugins/planner/ui/**",
+        "apps/*/vendor/**"
+    ],
+    "rules": {
+        "no-unused-vars": [
+            "error",
+            {
+                "argsIgnorePattern": "^_",
+                "varsIgnorePattern": "^_",
+                "destructuredArrayIgnorePattern": "^_"
+            }
+        ],
+        "typescript/no-explicit-any": "error",
+        "typescript/no-this-alias": "error",
+        "typescript/ban-ts-comment": "error",
+        "typescript/no-require-imports": "error",
+        "typescript/no-empty-object-type": "error",
+        "typescript/no-unsafe-function-type": "error",
+        "typescript/no-wrapper-object-types": "error",
+        "typescript/prefer-as-const": "error",
+        "typescript/no-namespace": "error",
+        "typescript/triple-slash-reference": "error",
+        "typescript/no-unnecessary-type-constraint": "error",
+        "typescript/no-unsafe-declaration-merging": "error",
+        "typescript/no-duplicate-enum-values": "error",
+        "typescript/no-extra-non-null-assertion": "error",
+        "typescript/no-misused-new": "error",
+        "typescript/no-non-null-asserted-optional-chain": "error",
+        "react/rules-of-hooks": "error",
+        "react/exhaustive-deps": "error",
+        "react/set-state-in-effect": "off",
+        "react/refs": "off",
+        "react/purity": "off",
+        "react/immutability": "off",
+        "react/globals": "off",
+        "react/static-components": "off",
+        "react/preserve-manual-memoization": "off",
+        "unicorn/no-useless-spread": "off",
+        "curly": ["error", "all"],
+        "import/newline-after-import": [
+            "error",
+            {
+                "count": 1,
+                "exactCount": false,
+                "considerComments": false
+            }
+        ]
+    },
+    "overrides": [
+        {
+            "files": ["src/**/*.ts", "src/**/*.tsx", "packages/shared/src/**/*.ts", "packages/foundation/**/*.ts"],
+            "rules": {
+                "no-restricted-imports": [
+                    "error",
+                    {
+                        "patterns": [
+                            {
+                                "group": ["drizzle-orm", "drizzle-orm/*"],
+                                "message": "Only @socio/data and a context\u2019s infra/ folder use Drizzle."
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "files": ["packages/client/src/**/*.ts", "packages/client/src/**/*.tsx"],
+            "rules": {
+                "no-restricted-imports": [
+                    "error",
+                    {
+                        "patterns": [
+                            {
+                                "group": ["**/server", "**/server/**", "!react-dom/server"],
+                                "message": "Client code imports server modules as types only.",
+                                "allowTypeImports": true
+                            },
+                            {
+                                "group": ["drizzle-orm", "drizzle-orm/*"],
+                                "message": "Only @socio/data and a context\u2019s infra/ folder use Drizzle."
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "files": ["packages/data/**", "src/server/**/infra/**"],
+            "rules": {
+                "no-restricted-imports": "off"
+            }
+        },
+        {
+            "files": ["packages/client/src/**/*.ts", "packages/client/src/**/*.tsx", "packages/shared/src/**/*.ts"],
+            "rules": {
+                "socio/locale": "error"
+            }
+        },
+        {
+            "files": ["apps/mobile/**", "packages/shared/src/**"],
+            "rules": {
+                "socio/hermes": "error"
+            }
+        },
+        {
+            "files": ["apps/mobile/**"],
+            "rules": {
+                "no-restricted-imports": [
+                    "error",
+                    {
+                        "patterns": [
+                            {
+                                "group": ["effect", "effect/*", "@effect/*"],
+                                "message": "No Effect in the native app (apps/mobile/AGENTS.md)."
+                            }
+                        ],
+                        "paths": [
+                            {
+                                "name": "expo-notifications",
+                                "importNames": ["getExpoPushTokenAsync"],
+                                "message": "getExpoPushTokenAsync sends the device token to Expo\u2019s push service. The app uses getDevicePushTokenAsync, and its own relay (apps/mobile/AGENTS.md)."
+                            }
+                        ]
+                    }
+                ],
+                "no-restricted-properties": [
+                    "error",
+                    {
+                        "property": "getExpoPushTokenAsync",
+                        "message": "getExpoPushTokenAsync sends the device token to Expo\u2019s push service. The app uses getDevicePushTokenAsync, and its own relay (apps/mobile/AGENTS.md)."
+                    }
+                ]
+            }
+        },
+        {
+            "files": ["apps/mobile/src/**"],
+            "rules": {
+                "no-restricted-globals": [
+                    "error",
+                    {
+                        "name": "fetch",
+                        "message": "Requests go through the app\u2019s one wrapper, src/platform/fetch.ts."
+                    }
+                ],
+                "no-restricted-properties": [
+                    "error",
+                    {
+                        "object": "globalThis",
+                        "property": "fetch",
+                        "message": "Requests go through the app\u2019s one wrapper, src/platform/fetch.ts."
+                    },
+                    {
+                        "object": "global",
+                        "property": "fetch",
+                        "message": "Requests go through the app\u2019s one wrapper, src/platform/fetch.ts."
+                    },
+                    {
+                        "object": "window",
+                        "property": "fetch",
+                        "message": "Requests go through the app\u2019s one wrapper, src/platform/fetch.ts."
+                    },
+                    {
+                        "property": "getExpoPushTokenAsync",
+                        "message": "getExpoPushTokenAsync sends the device token to Expo\u2019s push service. The app uses getDevicePushTokenAsync, and its own relay (apps/mobile/AGENTS.md)."
+                    }
+                ],
+                "no-restricted-imports": [
+                    "error",
+                    {
+                        "paths": [
+                            {
+                                "name": "expo/fetch",
+                                "message": "Requests go through the app\u2019s one wrapper, src/platform/fetch.ts.",
+                                "allowTypeImports": true
+                            },
+                            {
+                                "name": "expo-notifications",
+                                "importNames": ["getExpoPushTokenAsync"],
+                                "message": "getExpoPushTokenAsync sends the device token to Expo\u2019s push service. The app uses getDevicePushTokenAsync, and its own relay (apps/mobile/AGENTS.md)."
+                            }
+                        ],
+                        "patterns": [
+                            {
+                                "group": ["effect", "effect/*", "@effect/*"],
+                                "message": "No Effect in the native app (apps/mobile/AGENTS.md)."
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "files": ["apps/mobile/src/platform/fetch.ts"],
+            "rules": {
+                "no-restricted-globals": "off",
+                "no-restricted-properties": [
+                    "error",
+                    {
+                        "property": "getExpoPushTokenAsync",
+                        "message": "getExpoPushTokenAsync sends the device token to Expo\u2019s push service. The app uses getDevicePushTokenAsync, and its own relay (apps/mobile/AGENTS.md)."
+                    }
+                ],
+                "no-restricted-imports": [
+                    "error",
+                    {
+                        "patterns": [
+                            {
+                                "group": ["effect", "effect/*", "@effect/*"],
+                                "message": "No Effect in the native app (apps/mobile/AGENTS.md)."
+                            }
+                        ],
+                        "paths": [
+                            {
+                                "name": "expo-notifications",
+                                "importNames": ["getExpoPushTokenAsync"],
+                                "message": "getExpoPushTokenAsync sends the device token to Expo\u2019s push service. The app uses getDevicePushTokenAsync, and its own relay (apps/mobile/AGENTS.md)."
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "files": [
+                "src/server/**",
+                "packages/foundation/**",
+                "packages/data/**",
+                "src/coding-git/**",
+                "src/coding-egress/**",
+                "src/egress/**",
+                "src/apps-runtime/**",
+                "src/browser/**",
+                "src/updater/**",
+                "src/data-harness/**"
+            ],
+            "rules": {
+                "react/rules-of-hooks": "off",
+                "react/exhaustive-deps": "off"
+            }
+        }
+    ]
+}

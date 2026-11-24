@@ -1,0 +1,11 @@
+# @ask     Which server features and client modules implement each domain concept?
+# @expect  rows >= 30
+# @from    build-repo-graph.mjs links code to modules/domain.ttl through implementsConcept (FEATURE_CONCEPTS, CLIENT_MODULE_CONCEPTS).
+PREFIX rdfs:  <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX socio: <https://socio.sh/ontology/>
+SELECT ?concept ?conceptLabel ?kind ?code ?path WHERE {
+    ?code socio:implementsConcept ?concept ; a ?kind ; socio:sourcePath ?path .
+    ?concept rdfs:label ?conceptLabel .
+    VALUES ?kind { socio:ServerFeature socio:ClientModule }
+}
+ORDER BY ?conceptLabel ?path

@@ -1,0 +1,76 @@
+{
+    "$schema": "../../node_modules/turbo/schema.json",
+    "extends": ["//"],
+    "tasks": {
+        "typecheck": {
+            "description": "tsc 7.1 over the app, the packages/shared source its tsconfig paths map to, and the web's page editor that the editor bundle (editor/) imports.",
+            "inputs": [
+                "$TURBO_DEFAULT$",
+                "$TURBO_ROOT$/packages/shared/src/**",
+                "$TURBO_ROOT$/packages/client/src/modules/pages/editor/**",
+                "!dist/**",
+                "!android/**",
+                "!ios/**",
+                "!.expo/**",
+                "!node_modules/**",
+                "!.turbo/**"
+            ],
+            "outputs": []
+        },
+        "lint": {
+            "inputs": [
+                "$TURBO_DEFAULT$",
+                "!dist/**",
+                "!android/**",
+                "!ios/**",
+                "!.expo/**",
+                "!node_modules/**",
+                "!.turbo/**"
+            ],
+            "outputs": []
+        },
+        "test": {
+            "description": "The app's Vitest projects. They may import packages/shared source. Its checks also read what the app takes from the web client: its theme (globals.css, shell/tones.ts) and its modules (modules/*/module.ts*, modules/types.ts). Those are listed in one go, before the checks land, since each change to this file reruns every task. The editor tests build the page editor's bundle from the web's page editor (modules/pages/editor) and check it against the web's. The type tests read the web's type roles (Home, dot-state, WorkspacePage, ChatTranscript, editor.css, PageDocument, IssueMarkdown, IssueBoard, SpaceLibrary).",
+            "inputs": [
+                "$TURBO_DEFAULT$",
+                "$TURBO_ROOT$/packages/shared/src/**",
+                "$TURBO_ROOT$/packages/client/src/globals.css",
+                "$TURBO_ROOT$/packages/client/src/shell/tones.ts",
+                "$TURBO_ROOT$/packages/client/src/modules/*/module.ts*",
+                "$TURBO_ROOT$/packages/client/src/modules/types.ts",
+                "$TURBO_ROOT$/packages/client/src/modules/pages/editor/**",
+                "$TURBO_ROOT$/packages/client/src/shell/Home.tsx",
+                "$TURBO_ROOT$/packages/client/src/shell/dot-state.tsx",
+                "$TURBO_ROOT$/packages/client/src/views/WorkspacePage.tsx",
+                "$TURBO_ROOT$/packages/client/src/modules/chat/ChatTranscript.tsx",
+                "$TURBO_ROOT$/packages/client/src/modules/pages/editor.css",
+                "$TURBO_ROOT$/packages/client/src/modules/pages/PageDocument.tsx",
+                "$TURBO_ROOT$/packages/client/src/modules/issues/IssueMarkdown.tsx",
+                "$TURBO_ROOT$/packages/client/src/modules/issues/IssueBoard.tsx",
+                "$TURBO_ROOT$/packages/client/src/modules/spaces/SpaceLibrary.tsx",
+                "!dist/**",
+                "!android/**",
+                "!ios/**",
+                "!.expo/**",
+                "!node_modules/**",
+                "!.turbo/**"
+            ],
+            "outputs": []
+        },
+        "build": {
+            "description": "expo export, offline: the Android and iOS JavaScript bundles, which Metro builds from packages/shared source too. app.config.ts reads APP_VARIANT, so the root's strict env mode must pass it and each variant hashes apart.",
+            "inputs": [
+                "$TURBO_DEFAULT$",
+                "$TURBO_ROOT$/packages/shared/src/**",
+                "!dist/**",
+                "!android/**",
+                "!ios/**",
+                "!.expo/**",
+                "!node_modules/**",
+                "!.turbo/**"
+            ],
+            "outputs": ["dist/**"],
+            "env": ["APP_VARIANT"]
+        }
+    }
+}

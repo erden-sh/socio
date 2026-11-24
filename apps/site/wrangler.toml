@@ -1,0 +1,134 @@
+# Socio's public site (README.md): socio.sh and site-staging.socio.sh.
+#
+# A Worker with static assets. Vite builds the pages, styles, script and files into dist/
+# (`pnpm run build`, or `build:staging` for staging), and Cloudflare serves them straight from
+# the assets, with the headers in dist/_headers (src/worker/headers.ts). Only the dynamic paths
+# run the Worker first (run_worker_first): today the form endpoint, which answers that forms
+# aren't open yet; the form handler and the analytics proxy join it there.
+#
+# The top level is for `wrangler dev --local`. `staging` and `production` are for the deploy
+# pipeline, which deploys them to the Ingenio Ventures Cloudflare account; nothing in this
+# repository deploys. Nothing here names the account: no account_id (the deploy pipeline passes
+# CLOUDFLARE_ACCOUNT_ID), no zone id, no key, no token. tests/wrangler-config.test.ts holds all of
+# this, in every environment.
+#
+# Logs, traces, Logpush, the limits and the assets are repeated in each environment, so each one
+# reads whole. Never `wrangler deploy` without `--env`: the top level is not a deployment.
+
+name = "socio-site-local"
+main = "src/worker/index.ts"
+compatibility_date = "2026-11-01"
+# WebCrypto and fetch only: no compatibility flags, no nodejs_compat.
+
+# Wrangler's own reporting, off (with WRANGLER_SEND_METRICS=false on every script).
+send_metrics = false
+# Deploy-time upload of npm dependency metadata, which send_metrics doesn't cover.
+dependencies_instrumentation = { enabled = false }
+
+workers_dev = false
+preview_urls = false
+upload_source_maps = false
+
+# No request logs anywhere: Workers Logs, invocation logs and traces would record each visitor's
+# URL and headers (CF-Connecting-IP). The Worker logs nothing.
+logpush = false
+
+[build]
+command = "pnpm run build"
+
+[assets]
+directory = "dist"
+binding = "ASSETS"
+html_handling = "auto-trailing-slash"
+not_found_handling = "404-page"
+run_worker_first = ["/forms"]
+
+[observability]
+enabled = false
+
+[observability.logs]
+enabled = false
+invocation_logs = false
+
+[observability.traces]
+enabled = false
+
+[limits]
+cpu_ms = 10
+
+[vars]
+SITE_ENV = "local"
+
+# ---------------------------------------------------------------------------------------------
+# Staging: https://site-staging.socio.sh, built with build:staging (robots.txt disallows all, and
+# every response carries X-Robots-Tag: noindex).
+
+[env.staging]
+name = "socio-site-staging"
+routes = [{ pattern = "site-staging.socio.sh", custom_domain = true }]
+workers_dev = false
+preview_urls = false
+logpush = false
+
+[env.staging.build]
+command = "pnpm run build:staging"
+
+[env.staging.assets]
+directory = "dist"
+binding = "ASSETS"
+html_handling = "auto-trailing-slash"
+not_found_handling = "404-page"
+run_worker_first = ["/forms"]
+
+[env.staging.observability]
+enabled = false
+
+[env.staging.observability.logs]
+enabled = false
+invocation_logs = false
+
+[env.staging.observability.traces]
+enabled = false
+
+[env.staging.limits]
+cpu_ms = 10
+
+[env.staging.vars]
+SITE_ENV = "staging"
+
+# ---------------------------------------------------------------------------------------------
+# Production: https://socio.sh (the apex, a Worker custom domain; www redirects to it by a rule
+# the operator's IaC adds).
+
+[env.production]
+name = "socio-site"
+routes = [{ pattern = "socio.sh", custom_domain = true }]
+workers_dev = false
+preview_urls = false
+logpush = false
+
+[env.production.build]
+command = "pnpm run build"
+
+[env.production.assets]
+directory = "dist"
+binding = "ASSETS"
+html_handling = "auto-trailing-slash"
+not_found_handling = "404-page"
+run_worker_first = ["/forms"]
+
+[env.production.observability]
+enabled = false
+
+[env.production.observability.logs]
+enabled = false
+invocation_logs = false
+
+[env.production.observability.traces]
+enabled = false
+
+[env.production.limits]
+cpu_ms = 10
+
+[env.production.vars]
+SITE_ENV = "production"

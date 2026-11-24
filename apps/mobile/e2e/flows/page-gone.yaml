@@ -1,0 +1,39 @@
+# A page deleted on the web while a save waits, after
+# page-two-offline.yaml and act-as.mjs web-page-delete: back online, the save
+# goes to the Unsent list ("This page was deleted", with Save as a new page),
+# and Diagnostics' Outbox line counts it.
+appId: ${APP_ID}
+name: page-gone
+---
+- runFlow:
+    file: common/proxy.yaml
+    env:
+      ACTION: up
+- runFlow: common/open.yaml
+- extendedWaitUntil:
+    visible:
+      id: '[a-z-]+-screen'
+    timeout: 120000
+- runFlow: common/move-dev-tools.yaml
+- runFlow:
+    file: common/outbox-line.yaml
+    env:
+      OUTBOX: 'Outbox: queued 0 · inflight 0 · unknown 0 · held 0 · sent \d+ · unsent 1'
+      SHOT: page-gone-unsent
+# The Unsent list, in More's Account.
+- repeat:
+    while:
+      notVisible:
+        id: home-screen
+    times: 6
+    commands:
+      - runFlow: common/back.yaml
+- tapOn:
+    text: More
+- tapOn:
+    id: more-account
+- extendedWaitUntil:
+    visible:
+      text: '.*deleted.*'
+    timeout: 30000
+- takeScreenshot: page-gone-unsent-list

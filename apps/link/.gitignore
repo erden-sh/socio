@@ -1,0 +1,5 @@
+# What wrangler dev writes: its bundles, state and logs.
+.wrangler/
+# Local variables for wrangler dev; never committed.
+.dev.vars
+.dev.vars.*

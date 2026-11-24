@@ -1,0 +1,15 @@
+# A development client's floating Tools button sits at the top right, over the
+# header's action (the Board's New issue on iOS, FileIssue's File): drag it
+# down out of the way; it stays where it was left. Builds that carry their
+# bundle have none, so nothing moves there.
+appId: ${APP_ID}
+name: move-dev-tools
+---
+- runFlow:
+    when:
+      true: ${DEV_CLIENT_URL != ''}
+    commands:
+      - swipe:
+          start: 90%, 10%
+          end: 90%, 55%
+          duration: 1500

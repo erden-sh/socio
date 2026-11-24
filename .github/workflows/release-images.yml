@@ -1,0 +1,258 @@
+# Release images: builds Socio's images and publishes them to GHCR on every
+# release tag push. Triggered by `git push origin vX.Y.Z`; nothing fires on
+# branches (ci.yml handles those).
+#
+# Images are published under this repository's owner, as multi-platform
+# manifest lists (amd64 now, arm64 later):
+#   ghcr.io/<owner>/company-brain:<tag>             (app)
+#   ghcr.io/<owner>/company-brain-apps:<tag>        (apps-runtime)
+#   ghcr.io/<owner>/company-brain-coding-git:<tag>  (coding-git)
+#   ghcr.io/<owner>/socio-coding:<tag>              (coding sandbox)
+#   ghcr.io/<owner>/company-brain-supervisor:<tag>  (computers supervisor)
+#
+# Runtime composes pin the index digest:
+#   image: ghcr.io/<owner>/company-brain:vX.Y.Z@sha256:<index-digest>
+#
+# Runs on GitHub-hosted runners. Every build reads and writes a registry
+# layer cache in its own package, ghcr.io/<owner>/<name>:buildcache
+# (mode=max, so intermediate stages too), so the next release reuses the
+# layers of the last build that finished. `buildcache` is not a release tag:
+# verify and release only ever read <name>:<release tag>, and the update feed
+# lists only v-tags. A cache that can't be written never fails the build
+# (ignore-error=true).
+#
+# Security: only maintainers push release tags, and this workflow runs only
+# on tag pushes, never on pull requests. Each job logs in to GHCR with the
+# auto-provided GITHUB_TOKEN; no extra secret. Permissions are per job:
+# build jobs packages:write, verify packages:read, release contents:write.
+#
+# arm64 later: add linux/arm64 to --platform (with a docker/setup-qemu-action
+# step). The tag stays the same; the index gains an arm64 entry and its
+# digest changes, so composes repin the index digest once.
+name: Release images
+
+on:
+  push:
+    tags:
+      - 'v[0-9]*'
+
+# Each job asks for its own permissions; nothing by default.
+permissions: {}
+
+env:
+  REGISTRY: ghcr.io
+  OWNER: ${{ github.repository_owner }}
+
+jobs:
+  # The three root-Dockerfile targets: single Dockerfile, repo context, no
+  # external trees. Parallel; each builds one image and pushes a manifest
+  # list (amd64) to GHCR.
+  root:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read # check out the repo
+      packages: write # push the image and its build cache to ghcr.io/<owner>/<name>
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { target: app, image: company-brain }
+          - { target: apps, image: company-brain-apps, df_target: apps-runtime }
+          - { target: coding-git, image: company-brain-coding-git }
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push ${{ matrix.image }}
+        run: |
+          docker buildx build \
+            --platform linux/amd64 \
+            --target ${{ matrix.df_target || matrix.target }} \
+            --tag $REGISTRY/$OWNER/${{ matrix.image }}:${GITHUB_REF_NAME} \
+            --cache-from type=registry,ref=$REGISTRY/$OWNER/${{ matrix.image }}:buildcache \
+            --cache-to type=registry,ref=$REGISTRY/$OWNER/${{ matrix.image }}:buildcache,mode=max,ignore-error=true \
+            --build-arg APP_COMMIT=${GITHUB_SHA} \
+            --label org.opencontainers.image.revision=${GITHUB_SHA} \
+            --label org.opencontainers.image.source=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY} \
+            --push .
+
+  # The coding sandbox image. Needs pin files (deployment/coding/*.pin,
+  # committed) as build args; coding.Dockerfile fetches the pinned
+  # OpenCode/Codex/Claude-Code/Gemini-CLI/Grok and compiles grok from source.
+  # Heavier than the root targets. Tagged with the release tag only, like every
+  # other image here: all five carry the same version.
+  socio-coding:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read # check out the repo
+      packages: write # push the image and its build cache to ghcr.io/<owner>/<name>
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Read pin files
+        run: |
+          set -eu
+          pins() { awk -F= -v k="$1" '$1==k{print $2; exit}' "$2"; }
+          OC=deployment/coding/opencode.pin
+          echo "OPENCODE_VERSION=$(pins version $OC)" >> $GITHUB_ENV
+          echo "OPENCODE_SHA256=$(pins sha256 $OC)" >> $GITHUB_ENV
+          for p in codex:CODEX claude-code:CLAUDE_CODE gemini-cli:GEMINI_CLI; do
+            name="${p%%:*}"; arg="${p##*:}"
+            f="deployment/coding/$name.pin"
+            echo "${arg}_VERSION=$(pins version $f)" >> $GITHUB_ENV
+            echo "${arg}_URL=$(pins url $f)" >> $GITHUB_ENV
+            echo "${arg}_SHA512=$(pins sha512 $f)" >> $GITHUB_ENV
+          done
+          GR=deployment/coding/grok.pin
+          echo "GROK_VERSION=$(pins version $GR)" >> $GITHUB_ENV
+          echo "GROK_TAG=$(pins tag $GR)" >> $GITHUB_ENV
+          echo "GROK_COMMIT=$(pins commit $GR)" >> $GITHUB_ENV
+          echo "GROK_SOURCE_REV=$(pins source_rev $GR)" >> $GITHUB_ENV
+      - name: Build and push socio-coding
+        run: |
+          docker buildx build \
+            --platform linux/amd64 \
+            --file deployment/coding/coding.Dockerfile \
+            --tag $REGISTRY/$OWNER/socio-coding:${GITHUB_REF_NAME} \
+            --cache-from type=registry,ref=$REGISTRY/$OWNER/socio-coding:buildcache \
+            --cache-to type=registry,ref=$REGISTRY/$OWNER/socio-coding:buildcache,mode=max,ignore-error=true \
+            --build-arg OPENCODE_VERSION \
+            --build-arg OPENCODE_SHA256 \
+            --build-arg CODEX_VERSION \
+            --build-arg CODEX_URL \
+            --build-arg CODEX_SHA512 \
+            --build-arg CLAUDE_CODE_VERSION \
+            --build-arg CLAUDE_CODE_URL \
+            --build-arg CLAUDE_CODE_SHA512 \
+            --build-arg GEMINI_CLI_VERSION \
+            --build-arg GEMINI_CLI_URL \
+            --build-arg GEMINI_CLI_SHA512 \
+            --build-arg GROK_VERSION \
+            --build-arg GROK_TAG \
+            --build-arg GROK_COMMIT \
+            --build-arg GROK_SOURCE_REV \
+            --label org.opencontainers.image.revision=${GITHUB_SHA} \
+            --label org.opencontainers.image.source=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY} \
+            --push .
+
+  # The computers supervisor image. supervisor.Dockerfile uses
+  # `COPY --from=openbot`, so OpenBot (a separate repo, pinned at
+  # OPENBOT_REV in scripts/build-images.mjs) must be supplied as a named
+  # build context. Checkout OpenBot at that pinned rev into a sibling dir
+  # and pass it via --build-context openbot=…
+  supervisor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read # check out the repo
+      packages: write # push the image and its build cache to ghcr.io/<owner>/<name>
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Checkout OpenBot at pinned rev
+        run: |
+          git clone --depth 1 https://github.com/CopilotKit/OpenBot.git /tmp/openbot
+          git -C /tmp/openbot fetch --depth 1 origin b6932d31a8d6e7896c15139dfc27a6c6911deb27
+          git -C /tmp/openbot checkout b6932d31a8d6e7896c15139dfc27a6c6911deb27
+      - name: Build and push supervisor
+        run: |
+          docker buildx build \
+            --platform linux/amd64 \
+            --file deployment/computers/supervisor.Dockerfile \
+            --tag $REGISTRY/$OWNER/company-brain-supervisor:${GITHUB_REF_NAME} \
+            --cache-from type=registry,ref=$REGISTRY/$OWNER/company-brain-supervisor:buildcache \
+            --cache-to type=registry,ref=$REGISTRY/$OWNER/company-brain-supervisor:buildcache,mode=max,ignore-error=true \
+            --build-context openbot=/tmp/openbot \
+            --label org.opencontainers.image.revision=${GITHUB_SHA} \
+            --label org.opencontainers.image.source=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY} \
+            --push .
+
+  # Verify every published tag is a manifest list (index), not a
+  # single-platform manifest, so the arm64 append path stays open. Fails the
+  # workflow if any tag came back as a plain manifest. Uses .Manifest (the
+  # whole manifest JSON), since Buildx's imagetools template exposes the
+  # manifest there, not at .MediaType/.Manifests.
+  verify:
+    needs: [root, socio-coding, supervisor]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      packages: read # inspect the published tags
+    steps:
+      - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - run: |
+          set -eu
+          tags=(
+            company-brain:${GITHUB_REF_NAME}
+            company-brain-apps:${GITHUB_REF_NAME}
+            company-brain-coding-git:${GITHUB_REF_NAME}
+            socio-coding:${GITHUB_REF_NAME}
+            company-brain-supervisor:${GITHUB_REF_NAME}
+          )
+          for t in "${tags[@]}"; do
+            echo "## $t"
+            docker buildx imagetools inspect "$REGISTRY/$OWNER/$t" \
+              --format '{{json .Manifest}}' | tee /tmp/inspect
+            grep -q "image.index" /tmp/inspect || { echo "FAIL: $t is not a manifest list"; exit 1; }
+          done
+          echo "all tags are manifest lists (amd64 index)"
+
+  # Publish the GitHub release after image verification. scripts/release.mjs
+  # commits and tags locally but never publishes; this job creates the
+  # release from the tag, using the Unreleased section the release script
+  # moved into the tag's docs/RELEASE-NOTES.md as the body.
+  release:
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write # create the GitHub release
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Extract this release's notes
+        id: notes
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          # The section is "## vX.Y.Z (date)": grab from that heading to the
+          # next "## v" heading (or EOF).
+          awk -v tag="## ${GITHUB_REF_NAME} " '
+            $0 ~ "^" tag { on=1; next }
+            on && /^## v[0-9]/ && $0 !~ "^" tag { exit }
+            on { print }
+          ' docs/RELEASE-NOTES.md > /tmp/release-notes.md
+          echo "body<<EOF" >> $GITHUB_OUTPUT
+          cat /tmp/release-notes.md >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+      - uses: softprops/action-gh-release@72f2c25fcb47643c292f7107632f7a47c1df5cd8 # v3.0.3
+        with:
+          body: ${{ steps.notes.outputs.body }}
+          draft: false
+          prerelease: false

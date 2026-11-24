@@ -1,0 +1,72 @@
+# Attachments, with workspace A up (servers.mjs; run.mjs --credentials)
+# and a photo seeded on the device first:
+#   adb -s emulator-5554 push seed-photo.jpg /sdcard/Pictures/seed-photo.jpg
+#   adb -s emulator-5554 shell content call --method scan_volume --uri content://media --arg external_primary
+# (on iOS: xcrun simctl addmedia booted seed-photo.jpg)
+# Ada opens A's marker chat, picks the photo through the system photo picker
+# (no library permission), sees it in the composer's tray, sends it with a
+# line, and sees its thumbnail in the transcript: first from the phone's copy,
+# then from the server's file once the history stores the message.
+appId: ${APP_ID}
+name: attach-photo
+---
+- runFlow: chat-open.yaml
+- tapOn:
+    id: composer-attach
+- takeScreenshot: attach-photo-menu
+- tapOn:
+    id: composer-attach-photos
+# The system photo picker, the newest photo first: Android's "Photo taken on …",
+# iOS's "Photo, <date>" (seeded there with `xcrun simctl addmedia booted seed-photo.jpg`).
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - extendedWaitUntil:
+          visible:
+            text: '(?i)Photo taken on.*'
+          timeout: 20000
+      - tapOn:
+          text: '(?i)Photo taken on.*'
+          index: 0
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - extendedWaitUntil:
+          visible:
+            text: '^Photo, .*'
+          timeout: 20000
+      - tapOn:
+          text: '^Photo, .*'
+          index: 0
+- runFlow:
+    when:
+      visible: '(?i)^(Add|Done)$'
+    commands:
+      - tapOn: '(?i)^(Add|Done)$'
+- extendedWaitUntil:
+    visible:
+      id: 'composer-tray'
+    timeout: 20000
+- takeScreenshot: attach-photo-tray
+- tapOn:
+    id: chat-composer-input
+- inputText: 'Here is the photo'
+- tapOn:
+    id: chat-composer-send
+- extendedWaitUntil:
+    visible:
+      text: 'Here is the photo'
+    timeout: 10000
+# The keyboard is still up after the send (iOS's hideKeyboard isn't reliable: README).
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - hideKeyboard
+- extendedWaitUntil:
+    visible:
+      id: 'chat-picture-cbatt_.*'
+    timeout: 60000
+- takeScreenshot: attach-photo-sent

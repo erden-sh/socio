@@ -1,0 +1,166 @@
+# Each tab's own stack, with workspace A up (servers.mjs; run.mjs
+# --credentials) and its room's id as ROOM_ID (`--env ROOM_ID=<id>`, the
+# credentials file's `servers[0].room.id`): Ada signs in, opens A's marker chat
+# from Chats and the tab bar hides under it (CB-491, as Messages and Slack do);
+# Back (Android's key, iOS's bar Back) returns to the list and the bar, and so
+# does iOS's edge swipe; the Chats tab keeps its place while Home shows; and a
+# link to the room opens it in the Chats tab, over the chat list, with no tab
+# bar, whichever tab showed. Then the Spaces tab (CB-459): its
+# list, a Space and a page inside it with the tab bar under them, a re-tap back
+# to the list; and Search's field.
+appId: ${APP_ID}
+name: tab-stacks
+---
+- runFlow: launch.yaml
+- runFlow:
+    file: common/add-workspace.yaml
+    env:
+      ORIGIN: ${ORIGIN_A}
+- runFlow:
+    file: common/sign-in.yaml
+    env:
+      EMAIL: ada@example.test
+      SECRET: ${PASSWORD}
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 30000
+- runFlow:
+    file: common/tab.yaml
+    env:
+      TAB: Chats
+- extendedWaitUntil:
+    visible:
+      id: chats-screen
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      text: '.*${CHAT_A}.*'
+    timeout: 30000
+- takeScreenshot: tab-stacks-chats
+# Drilled in: the chat, with no tab bar under it (CB-491).
+- tapOn:
+    text: '.*${CHAT_A}.*'
+- extendedWaitUntil:
+    visible:
+      id: chat-transcript
+    timeout: 30000
+- runFlow: common/tab-bar-hidden.yaml
+- takeScreenshot: tab-stacks-chat-no-tab-bar
+# Back pops the tab's own stack, and the bar comes back.
+- runFlow: common/back.yaml
+- extendedWaitUntil:
+    visible:
+      id: chats-screen
+    timeout: 10000
+- runFlow: common/tab-bar-shows.yaml
+# iOS: the edge swipe goes back too.
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          text: '.*${CHAT_A}.*'
+      - extendedWaitUntil:
+          visible:
+            id: chat-transcript
+          timeout: 30000
+      - swipe:
+          start: 1%,50%
+          end: 80%,50%
+          duration: 400
+      - extendedWaitUntil:
+          visible:
+            id: chats-screen
+          timeout: 10000
+      - runFlow: common/tab-bar-shows.yaml
+# Another tab and back: Chats kept its list.
+- runFlow:
+    file: common/tab.yaml
+    env:
+      TAB: Home
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 10000
+- runFlow:
+    file: common/tab.yaml
+    env:
+      TAB: Chats
+- extendedWaitUntil:
+    visible:
+      id: chats-screen
+    timeout: 10000
+- takeScreenshot: tab-stacks-retap
+# A link to the room from Home: the room opens in the Chats tab, over the list.
+- runFlow:
+    file: common/tab.yaml
+    env:
+      TAB: Home
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 10000
+- runFlow:
+    file: common/link.yaml
+    env:
+      LINK: ${APP_SCHEME}://chats/${ROOM_ID}
+- extendedWaitUntil:
+    visible:
+      id: room-header
+    timeout: 30000
+- runFlow: common/tab-bar-hidden.yaml
+- takeScreenshot: tab-stacks-link-room
+- runFlow: common/back.yaml
+- extendedWaitUntil:
+    visible:
+      id: chats-screen
+    timeout: 10000
+- runFlow: common/tab-bar-shows.yaml
+# The Spaces tab (CB-459): the list is its root; a Space and its page push inside it, the tab bar under them.
+- runFlow:
+    file: common/tab.yaml
+    env:
+      TAB: Spaces
+- extendedWaitUntil:
+    visible:
+      id: spaces-screen
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      text: '.*${SPACE_A}.*'
+    timeout: 30000
+- takeScreenshot: tab-stacks-spaces
+- tapOn:
+    text: '.*${SPACE_A}.*'
+- extendedWaitUntil:
+    visible:
+      id: space-screen
+    timeout: 30000
+- tapOn:
+    text: '.*${PAGE_A}.*'
+- extendedWaitUntil:
+    visible:
+      id: page-screen
+    timeout: 30000
+- runFlow: common/tab-bar-shows.yaml
+- takeScreenshot: tab-stacks-page-in-tab
+# Spaces tapped again: back to the list.
+- runFlow:
+    file: common/tab.yaml
+    env:
+      TAB: Spaces
+- extendedWaitUntil:
+    visible:
+      id: spaces-screen
+    timeout: 10000
+# Search: the system's field (iOS: in the glass Search button's place).
+- runFlow:
+    file: common/tab.yaml
+    env:
+      TAB: Search
+- extendedWaitUntil:
+    visible:
+      id: search-screen
+    timeout: 10000
+- takeScreenshot: tab-stacks-search

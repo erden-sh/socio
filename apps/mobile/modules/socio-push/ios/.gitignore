@@ -1,0 +1,3 @@
+# swift test and Xcode write these beside Package.swift.
+/.build/
+/.swiftpm/

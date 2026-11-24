@@ -1,0 +1,15 @@
+# @ask     Which server features depend on a feature above them in the declared folder order?
+# @expect  rows == 0
+# @from    data/repo.ttl: dependsOn between ServerFeatures (imports from non-entry files) and featureRank (scripts/feature-ranks.json).
+#
+# Why static tools miss it: scripts/check-feature-boundaries.mjs reports these but doesn't fail
+# on them yet, and TypeScript allows any import. One row per pair of features, as that script
+# counts its "feature edges"; queries/checks/imports-against-feature-order.rq lists the files.
+PREFIX rdfs:  <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX socio: <https://socio.sh/ontology/>
+SELECT ?from ?to ?fromRank ?toRank WHERE {
+    ?a a socio:ServerFeature ; socio:dependsOn ?b ; socio:featureRank ?fromRank ; rdfs:label ?from .
+    ?b a socio:ServerFeature ; socio:featureRank ?toRank ; rdfs:label ?to .
+    FILTER (?toRank < ?fromRank)
+}
+ORDER BY ?from ?to

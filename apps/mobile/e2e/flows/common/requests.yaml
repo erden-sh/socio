@@ -1,0 +1,10 @@
+# Fails unless the app sent 1 to ${MAX_SAVES} page saves and at most
+# ${MAX_READS} page reads since chaos-proxy.mjs's count was reset (common/requests.js).
+appId: ${APP_ID}
+name: requests
+---
+- runScript:
+    file: requests.js
+    env:
+      MAX_SAVES: ${MAX_SAVES}
+      MAX_READS: ${MAX_READS}

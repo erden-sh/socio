@@ -1,0 +1,156 @@
+/*
+ * Browser defaults for legacy views (imported into the `legacy` layer, first).
+ *
+ * Tailwind's preflight (layer `base`) resets margins, borders, list styles,
+ * headings, form controls and replaced elements everywhere. style.css and
+ * editor.css were written against the browser defaults instead, so this
+ * file undoes preflight for legacy markup: `revert` rolls a property back
+ * to the user-agent value. It applies inside the legacy roots (#root and
+ * any `.legacy-view` wrapper) and stops at shadcn components, which mark
+ * every element with `data-slot`.
+ *
+ * Every selector has zero specificity (`:where`), so any legacy rule that
+ * sets the same property still wins. Delete this file with the last legacy
+ * view (WORKSPACE-SHELL step 11).
+ */
+@scope (#root, .legacy-view) to ([data-slot]) {
+    /* Inherited properties preflight sets on <html>. */
+    :where(:scope) {
+        line-height: initial;
+        tab-size: initial;
+        -webkit-text-size-adjust: initial;
+        -webkit-tap-highlight-color: initial;
+    }
+    :where(:scope, :scope *) {
+        margin: revert;
+        padding: revert;
+        border: revert;
+        outline-color: revert;
+    }
+    :where(:scope, :scope *)::before,
+    :where(:scope, :scope *)::after {
+        box-sizing: revert;
+        margin: revert;
+        padding: revert;
+        border: revert;
+    }
+    :where(:scope, :scope *)::backdrop {
+        box-sizing: revert;
+        margin: revert;
+        padding: revert;
+        border: revert;
+    }
+    :where(:scope, :scope *)::file-selector-button {
+        box-sizing: revert;
+        margin: revert;
+        padding: revert;
+        border: revert;
+        font: revert;
+        letter-spacing: revert;
+        color: revert;
+        border-radius: revert;
+        background-color: revert;
+        opacity: revert;
+        appearance: revert;
+    }
+    :where(hr) {
+        height: revert;
+        color: revert;
+    }
+    :where(abbr[title]) {
+        text-decoration: revert;
+    }
+    :where(h1, h2, h3, h4, h5, h6) {
+        font-size: revert;
+        font-weight: revert;
+    }
+    :where(a) {
+        color: revert;
+        text-decoration: revert;
+    }
+    :where(code, kbd, samp, pre) {
+        font-family: revert;
+        font-feature-settings: revert;
+        font-variation-settings: revert;
+        font-size: revert;
+    }
+    :where(small) {
+        font-size: revert;
+    }
+    :where(sub, sup) {
+        font-size: revert;
+        line-height: revert;
+        position: revert;
+        vertical-align: revert;
+        top: revert;
+        bottom: revert;
+    }
+    :where(table) {
+        text-indent: revert;
+        border-color: revert;
+        border-collapse: revert;
+    }
+    :where(progress) {
+        vertical-align: revert;
+    }
+    :where(ol, ul, menu) {
+        list-style: revert;
+    }
+    :where(img, svg, video, canvas, audio, iframe, embed, object) {
+        display: revert;
+        vertical-align: revert;
+    }
+    :where(img, video) {
+        max-width: revert;
+        height: revert;
+    }
+    :where(button, input, select, optgroup, textarea) {
+        font: revert;
+        font-feature-settings: revert;
+        font-variation-settings: revert;
+        letter-spacing: revert;
+        color: revert;
+        border-radius: revert;
+        background-color: revert;
+        opacity: revert;
+    }
+    :where(button, input:is([type='button'], [type='reset'], [type='submit'])) {
+        appearance: revert;
+    }
+    :where(select:is([multiple], [size]) optgroup) {
+        font-weight: revert;
+    }
+    :where(select:is([multiple], [size]) optgroup option) {
+        padding-inline-start: revert;
+    }
+    :where(textarea) {
+        resize: revert;
+    }
+    :where(:scope, :scope *)::placeholder {
+        opacity: revert;
+        color: revert;
+    }
+    :where(:scope, :scope *)::-webkit-search-decoration {
+        -webkit-appearance: revert;
+    }
+    :where(:scope, :scope *)::-webkit-date-and-time-value {
+        min-height: revert;
+        text-align: revert;
+    }
+    :where(:scope, :scope *)::-webkit-datetime-edit {
+        display: revert;
+        padding-block: revert;
+    }
+    :where(:scope, :scope *)::-webkit-datetime-edit-fields-wrapper {
+        padding: revert;
+    }
+    :where(:scope, :scope *)::-webkit-calendar-picker-indicator {
+        line-height: revert;
+    }
+    :where(:scope, :scope *)::-webkit-inner-spin-button {
+        height: revert;
+    }
+    :where(:scope, :scope *)::-webkit-outer-spin-button {
+        height: revert;
+    }
+}

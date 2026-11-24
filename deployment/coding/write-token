@@ -1,0 +1,19 @@
+#!/bin/sh
+# Writes the prompt's cbgw_ (on stdin) to /run/socio/token, mode 0400,
+# replacing the previous prompt's (CB-239). The supervisor checked its
+# shape; this refuses anything else as well.
+set -eu
+umask 077
+token=$(head -c 256)
+case "$token" in
+  cbgw_*) ;;
+  *) echo "not a gateway credential" >&2; exit 2 ;;
+esac
+if [ "${#token}" -ne 48 ] || printf '%s' "$token" | grep -q '[^A-Za-z0-9_-]'; then
+  echo "not a gateway credential" >&2
+  exit 2
+fi
+tmp=/run/socio/.token.$$
+printf '%s' "$token" > "$tmp"
+chmod 0400 "$tmp"
+mv -f "$tmp" /run/socio/token

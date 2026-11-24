@@ -1,0 +1,124 @@
+{
+    "runId": "r2-capture-run-1",
+    "status": "finished",
+    "startedAt": 1794145415489,
+    "finishedAt": 1794145423796,
+    "trace": {
+        "rounds": [
+            {
+                "kind": "round",
+                "round": 1,
+                "startedAt": 1794145415539,
+                "endedAt": 1794145417564,
+                "firstOutputMs": 12,
+                "stop": "tool_calls",
+                "reasoningKind": "raw"
+            },
+            {
+                "kind": "round",
+                "round": 2,
+                "startedAt": 1794145417594,
+                "endedAt": 1794145419615,
+                "firstOutputMs": 2018,
+                "stop": "tool_calls",
+                "reasoningKind": "none"
+            },
+            {
+                "kind": "round",
+                "round": 3,
+                "startedAt": 1794145419656,
+                "endedAt": 1794145421680,
+                "firstOutputMs": 2021,
+                "stop": "tool_calls",
+                "reasoningKind": "none"
+            },
+            {
+                "kind": "round",
+                "round": 4,
+                "startedAt": 1794145421778,
+                "endedAt": 1794145423792,
+                "firstOutputMs": 13,
+                "stop": "stop",
+                "reasoningKind": "raw"
+            }
+        ],
+        "tools": [
+            {
+                "kind": "tool",
+                "round": 1,
+                "name": "list_authorized_spaces",
+                "callId": "call-0-list_authorized_spaces",
+                "startedAt": 1794145417566,
+                "endedAt": 1794145417569,
+                "outcome": "ok"
+            },
+            {
+                "kind": "tool",
+                "round": 2,
+                "name": "search_space_pages",
+                "callId": "call-1-search_space_pages",
+                "startedAt": 1794145419617,
+                "endedAt": 1794145419634,
+                "outcome": "ok"
+            },
+            {
+                "kind": "tool",
+                "round": 3,
+                "name": "data_query",
+                "callId": "call-2-data_query",
+                "startedAt": 1794145421681,
+                "endedAt": 1794145421759,
+                "outcome": "error",
+                "error": "http_400"
+            }
+        ],
+        "waits": [],
+        "receivedAt": 1794145415484,
+        "trigger": {
+            "kind": "person",
+            "id": "u-93cdc01e628d"
+        },
+        "messages": [
+            {
+                "id": "r2-user-1",
+                "author": {
+                    "kind": "person",
+                    "id": "u-93cdc01e628d"
+                },
+                "at": 1794145415484
+            },
+            {
+                "id": "6fec5d39-1845-48c6-a734-dadbe406dbf4",
+                "author": {
+                    "kind": "socio",
+                    "id": "5de0221d-fe8f-4975-8220-2bd47e3aee03"
+                },
+                "at": 1794145423791
+            }
+        ],
+        "turn": {
+            "label": "Self-hosted (fake-model)",
+            "model": "fake-model",
+            "source": "shared",
+            "cap": 30
+        },
+        "end": {
+            "reason": "completed",
+            "rounds": 4,
+            "cap": 30
+        },
+        "totals": {
+            "rounds": 4,
+            "reasoningKind": "raw"
+        },
+        "cycle": {
+            "id": "4c00c081-de03-434d-960c-94a68fdcb862",
+            "kind": "private",
+            "hop": 0,
+            "actingUserId": "u-93cdc01e628d",
+            "dotId": "5de0221d-fe8f-4975-8220-2bd47e3aee03",
+            "billing": "workspace",
+            "tokens": 34436
+        }
+    }
+}

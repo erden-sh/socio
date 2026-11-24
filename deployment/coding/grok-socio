@@ -1,0 +1,49 @@
+#!/bin/sh
+# Runs Grok Build on Socio's gateway (CB-326): `grok-socio <model>
+# <grok arguments…>`, started by with-token with the prompt's cbgw_ in
+# SOCIO_GATEWAY_TOKEN. Grok Build reads a custom model's endpoint only from
+# its config.toml (its GROK_CONFIG overlay may not set one), so this writes
+# $GROK_HOME/config.toml afresh before every run: one model, `socio`, whose
+# id is the session's gateway model, on the gateway's Responses API (the
+# wire API Grok Build itself uses for xAI's models: its default_models.json
+# sets api_backend "responses"), its key from SOCIO_GATEWAY_TOKEN; update
+# checks, telemetry, feedback, memory and the online model catalog off.
+# Whatever the agent wrote there before is replaced. Convenience
+# only: the network is the enforcement (the sandbox reaches the gateway and
+# the package registries, nothing of xAI's).
+set -eu
+model=${1:-}
+case "$model" in
+  ''|[!A-Za-z0-9]*|*[!A-Za-z0-9._:-]*) echo "not a gateway model" >&2; exit 2 ;;
+esac
+[ "${#model}" -le 100 ] || { echo "not a gateway model" >&2; exit 2; }
+shift
+home=${GROK_HOME:?GROK_HOME is not set}
+umask 077
+mkdir -p "$home"
+cat >"$home/config.toml.tmp" <<EOF
+# Written by Socio for this run (grok-socio); replaced before the next one.
+[cli]
+auto_update = false
+
+[features]
+telemetry = "off"
+feedback = false
+remote_fetch = false
+
+[memory]
+enabled = false
+
+[models]
+default = "socio"
+
+[model.socio]
+model = "$model"
+name = "$model"
+base_url = "http://gateway.socio.internal/v1"
+api_backend = "responses"
+env_key = "SOCIO_GATEWAY_TOKEN"
+supports_backend_search = false
+EOF
+mv -f "$home/config.toml.tmp" "$home/config.toml"
+exec grok "$@"

@@ -1,0 +1,76 @@
+# The largest text size, after a3-tour.yaml (Ada signed in to A), with the
+# system's text set to its largest first (README, The Board tour): the Board,
+# the open issue, New issue and Memories, each screenshotted. Nothing is
+# written.
+appId: ${APP_ID}
+name: a3-large-text
+---
+- runFlow: common/open.yaml
+# Whatever screen was kept shows once the bundle has loaded.
+- extendedWaitUntil:
+    visible:
+      id: '(.*-screen|home-tiles|board-columns|issue-title)'
+    timeout: 180000
+- runFlow:
+    file: common/link.yaml
+    env:
+      LINK: ${APP_SCHEME}://issues
+# In progress since issue-admin.yaml; the Board keeps the tour's High priority.
+- extendedWaitUntil:
+    visible:
+      id: board-columns
+    timeout: 30000
+- repeat:
+    times: 6
+    while:
+      notVisible:
+        id: board-column-in_progress
+    commands:
+      - swipe:
+          from:
+            id: board-columns
+          direction: LEFT
+- tapOn:
+    id: board-column-in_progress
+- extendedWaitUntil:
+    visible: '.*A: Export the board as CSV.*'
+    timeout: 60000
+- tapOn: '.*A: Export the board as CSV.*'
+- extendedWaitUntil:
+    visible:
+      id: issue-title
+    timeout: 30000
+- takeScreenshot: a3-large-text-issue
+- scrollUntilVisible:
+    element: '.*We need this for the monthly report.*'
+    direction: DOWN
+    timeout: 60000
+- takeScreenshot: a3-large-text-issue-comments
+- runFlow: common/back.yaml
+- extendedWaitUntil:
+    visible:
+      id: board-columns
+    timeout: 10000
+- takeScreenshot: a3-large-text-board
+- runFlow: common/move-dev-tools.yaml
+- tapOn:
+    id: board-new-issue
+- extendedWaitUntil:
+    visible:
+      id: file-issue-screen
+    timeout: 10000
+- takeScreenshot: a3-large-text-file-issue
+- tapOn:
+    id: file-issue-cancel
+- runFlow:
+    file: common/link.yaml
+    env:
+      LINK: ${APP_SCHEME}://memories
+- extendedWaitUntil:
+    visible:
+      id: memories-screen
+    timeout: 30000
+- extendedWaitUntil:
+    visible: '.*Preferred name.*'
+    timeout: 30000
+- takeScreenshot: a3-large-text-memories

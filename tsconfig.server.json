@@ -1,0 +1,23 @@
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "noEmit": false,
+        "rewriteRelativeImportExtensions": true,
+        "outDir": "dist/server",
+        "rootDir": "src",
+        "module": "NodeNext",
+        "moduleResolution": "NodeNext",
+        "paths": {}
+    },
+    "include": [
+        "src/server",
+        "src/net",
+        "src/app-browser",
+        "src/coding-git",
+        "src/egress",
+        "src/apps-runtime",
+        "src/coding-egress",
+        "src/updater",
+        "src/data-harness"
+    ]
+}

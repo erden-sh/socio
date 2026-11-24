@@ -1,0 +1,9 @@
+# @ask     What is the server's feature folder order, top first?
+# @expect  rows >= 50
+# @from    scripts/feature-ranks.json: a feature may import only the features below it.
+PREFIX rdfs:  <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX socio: <https://socio.sh/ontology/>
+SELECT ?rank ?feature WHERE {
+    ?f a socio:ServerFeature ; socio:featureRank ?rank ; rdfs:label ?feature .
+}
+ORDER BY ?rank

@@ -1,0 +1,19 @@
+{
+    "compilerOptions": {
+        "target": "ES2024",
+        "lib": ["ES2024"],
+        "module": "ESNext",
+        "moduleResolution": "Bundler",
+        "strict": true,
+        "noEmit": true,
+        "skipLibCheck": true,
+        // The Workers runtime's globals (fetch, crypto.subtle, ExportedHandler), not Node's or the DOM's.
+        "types": ["@cloudflare/workers-types"],
+        // @socio/shared from its source, as the app takes it: shared's exports point at dist/,
+        // which only `pnpm run build:packages` makes. Wrangler's bundler reads these paths too.
+        "paths": {
+            "@socio/shared/*": ["../../packages/shared/src/*.ts"]
+        }
+    },
+    "include": ["src", "tests"]
+}

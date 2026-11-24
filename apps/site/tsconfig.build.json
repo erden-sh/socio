@@ -1,0 +1,16 @@
+{
+    // The build (the pages, rendered under Node by vite.config.ts), the browser script (DOM) and
+    // the tests. The Worker's source compiles here too: it uses only what both runtimes share.
+    "compilerOptions": {
+        "target": "ES2024",
+        "lib": ["ES2024", "DOM", "DOM.Iterable"],
+        "module": "ESNext",
+        "moduleResolution": "Bundler",
+        "strict": true,
+        "noEmit": true,
+        "skipLibCheck": true,
+        "allowImportingTsExtensions": true,
+        "types": ["node", "vite/client"]
+    },
+    "include": ["src", "tests", "scripts", "vite.config.ts", "vitest.config.ts"]
+}

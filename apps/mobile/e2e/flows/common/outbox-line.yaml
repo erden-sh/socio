@@ -1,0 +1,16 @@
+# Waits until Diagnostics' Outbox line (every row by state, and the refused
+# writes) reads ${OUTBOX}, then goes back.
+appId: ${APP_ID}
+name: outbox-line
+---
+- runFlow:
+    file: link.yaml
+    env:
+      LINK: ${APP_SCHEME}://diagnostics
+- extendedWaitUntil:
+    visible:
+      id: diagnostics-outbox
+      text: ${OUTBOX}
+    timeout: 120000
+- takeScreenshot: outbox-${SHOT}
+- runFlow: back.yaml

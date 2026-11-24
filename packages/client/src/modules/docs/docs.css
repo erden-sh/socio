@@ -1,0 +1,70 @@
+@import 'fumadocs-ui/style.css';
+
+/* Socio's warm canvas, system type and shared light/dark theme. No web fonts. */
+.socio-docs {
+    --color-fd-background: var(--background, #f8f7f4);
+    --color-fd-foreground: var(--foreground, #252525);
+    --color-fd-muted: var(--muted, #eeece7);
+    --color-fd-muted-foreground: var(--muted-foreground, #68665f);
+    --color-fd-card: var(--card, #fffefa);
+    --color-fd-border: var(--border, #dedbd3);
+    --color-fd-primary: var(--primary, #584e9b);
+    --color-fd-primary-foreground: var(--primary-foreground, #ffffff);
+    --color-fd-secondary: var(--secondary, #eeece7);
+    font-family: inherit;
+    min-height: 100dvh;
+    background: var(--color-fd-background);
+    color: var(--color-fd-foreground);
+}
+.socio-docs [data-toc],
+.socio-docs article {
+    font-family: inherit;
+}
+.socio-docs article {
+    max-width: 78ch;
+}
+.socio-docs pre {
+    overflow-x: auto;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    background: var(--color-fd-muted);
+}
+.socio-docs .docs-formats {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.85rem;
+    margin-bottom: 1.5rem;
+}
+/* The not-found page's way out (CB-264): a link and a search button alike. */
+.socio-docs .docs-not-found {
+    flex-wrap: wrap;
+    font-size: 0.95rem;
+}
+.socio-docs .docs-not-found :is(a, button) {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--color-fd-primary);
+    font: inherit;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+}
+.socio-docs button:focus-visible,
+.socio-docs a:focus-visible {
+    outline: 2px solid var(--color-fd-primary);
+    outline-offset: 3px;
+}
+.socio-docs table {
+    display: block;
+    overflow-x: auto;
+}
+@media (prefers-reduced-motion: reduce) {
+    .socio-docs *,
+    .socio-docs *::before,
+    .socio-docs *::after {
+        animation-duration: 0s !important;
+        transition-duration: 0s !important;
+        scroll-behavior: auto !important;
+    }
+}

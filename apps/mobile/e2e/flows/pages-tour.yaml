@@ -1,0 +1,200 @@
+# The pages tour, with workspace A behind chaos-proxy.mjs (run.mjs
+# --credentials), after space-open.yaml: the Spaces, A's library (Recent and
+# the tree), its page, the editor and its toolbar; the Space kept offline,
+# then with the connection gone (Android's airplane mode; the iOS simulator
+# can't go offline, so there the server goes away) both of its pages read from
+# the phone; then a page review from the fake model ("smoke review") edited in
+# the editor and saved with the edits. Screenshots for the app journal.
+appId: ${APP_ID}
+name: pages-tour
+---
+- runFlow:
+    file: common/link.yaml
+    env:
+      LINK: ${APP_SCHEME}://spaces
+- extendedWaitUntil:
+    visible:
+      text: '.*${SPACE_A}.*'
+    timeout: 60000
+- runFlow: common/move-dev-tools.yaml
+- takeScreenshot: tour-pages-spaces
+- tapOn:
+    text: '.*${SPACE_A}.*'
+- extendedWaitUntil:
+    visible:
+      id: space-screen
+    timeout: 30000
+- takeScreenshot: tour-pages-library
+- tapOn:
+    text: 'All pages'
+- takeScreenshot: tour-pages-tree
+- tapOn:
+    text: 'Recent'
+# Keep offline, from the Space's header.
+- tapOn:
+    id: space-keep-offline
+- takeScreenshot: tour-pages-kept
+- tapOn:
+    text: '.*${SUBPAGE_A}.*'
+- extendedWaitUntil:
+    visible:
+      id: page-body
+    timeout: 30000
+- takeScreenshot: tour-pages-page
+- tapOn:
+    id: page-edit
+- extendedWaitUntil:
+    visible:
+      text: 'Saved'
+    timeout: 30000
+- takeScreenshot: tour-pages-editor
+- runFlow: common/back.yaml
+- extendedWaitUntil:
+    visible:
+      id: page-screen
+    timeout: 10000
+- runFlow: common/back.yaml
+# Offline: the kept Space's pages come from the phone.
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - setAirplaneMode: enabled
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - runFlow:
+          file: common/proxy.yaml
+          env:
+            ACTION: down
+- runFlow: common/open.yaml
+- extendedWaitUntil:
+    visible:
+      id: space-screen
+    timeout: 180000
+- tapOn:
+    text: '.*${SUBPAGE_A}.*'
+- extendedWaitUntil:
+    visible:
+      id: page-body
+    timeout: 30000
+- assertNotVisible:
+    id: page-no-body
+- takeScreenshot: tour-pages-offline-subpage
+# The handbook through the subpage's crumb.
+- tapOn:
+    id: 'page-crumb-.*'
+- extendedWaitUntil:
+    visible:
+      text: '.*How we work here.*'
+    timeout: 30000
+- takeScreenshot: tour-pages-offline-handbook
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - setAirplaneMode: disabled
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - runFlow:
+          file: common/proxy.yaml
+          env:
+            ACTION: up
+# A page review, edited, then saved with the edits.
+# Back to the Spaces tab's list (CB-459), then to Chats.
+- repeat:
+    while:
+      notVisible:
+        id: '(home|spaces)-screen'
+    times: 6
+    commands:
+      - runFlow: common/back.yaml
+- tapOn: 'Chats'
+- extendedWaitUntil:
+    visible:
+      text: '.*${CHAT_A}.*'
+    timeout: 60000
+- tapOn:
+    text: '.*${CHAT_A}.*'
+- extendedWaitUntil:
+    visible:
+      id: chat-composer-input
+    timeout: 30000
+# With the keyboard up the composer's Send sits under the dev client's
+# floating Tools button: drag it to the left edge first.
+- runFlow:
+    when:
+      true: ${DEV_CLIENT_URL != ''}
+    commands:
+      - swipe:
+          start: 90%, 55%
+          end: 6%, 40%
+          duration: 1500
+# The dev client may show its menu after the offline relaunch: close it.
+- runFlow:
+    when:
+      visible:
+        text: 'Go home'
+    commands:
+      - runFlow:
+          when:
+            platform: Android
+          commands:
+            - back
+      - runFlow:
+          when:
+            platform: iOS
+          commands:
+            - swipe:
+                start: 50%, 50%
+                end: 50%, 98%
+- tapOn:
+    id: chat-composer-input
+- inputText: 'Please smoke review a page'
+- tapOn:
+    id: chat-composer-send
+- extendedWaitUntil:
+    visible: 'Ready for your review'
+    timeout: 60000
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - hideKeyboard
+- tapOn: 'Review'
+- extendedWaitUntil:
+    visible:
+      id: page-review-edit
+    timeout: 30000
+- tapOn:
+    id: page-review-edit
+- extendedWaitUntil:
+    visible:
+      id: page-editor-body
+    timeout: 30000
+- takeScreenshot: tour-pages-review-editor
+- tapOn:
+    id: page-editor-body
+- inputText: ' Edited in the review'
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - hideKeyboard
+- runFlow: common/back.yaml
+- extendedWaitUntil:
+    visible:
+      id: page-review-save
+    timeout: 30000
+- assertVisible:
+    text: '.*Edited in the review.*'
+- takeScreenshot: tour-pages-review-edited
+- tapOn:
+    id: page-review-save
+- extendedWaitUntil:
+    visible: 'Saved to your Space'
+    timeout: 60000
+- takeScreenshot: tour-pages-review-saved

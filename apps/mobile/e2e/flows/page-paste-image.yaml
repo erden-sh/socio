@@ -1,0 +1,87 @@
+# Pasting a picture into a page (CB-358), with workspace A up
+# (servers.mjs; run.mjs --credentials), after space-open.yaml, with an image
+# already on the phone's clipboard (Maestro copies only text: copy a screenshot
+# first, e.g. Photos' Copy): Edit opens the editor, the toolbar's Paste image is
+# on, its tap uploads the picture to Ada's Files and makes it an image of the
+# Space, the block shows at the cursor and saves ("Saved to your Files" the
+# first time), and Back shows the picture in the reader.
+appId: ${APP_ID}
+name: page-paste-image
+---
+- runFlow: common/open.yaml
+- extendedWaitUntil:
+    visible:
+      id: '(space|page)-screen'
+    timeout: 180000
+- runFlow: common/move-dev-tools.yaml
+- runFlow:
+    when:
+      visible:
+        id: space-screen
+    commands:
+      - tapOn:
+          text: '.*${SUBPAGE_A}.*'
+- extendedWaitUntil:
+    visible:
+      id: page-body
+    timeout: 30000
+- tapOn:
+    id: page-edit
+- extendedWaitUntil:
+    visible:
+      text: 'Saved'
+    timeout: 30000
+- extendedWaitUntil:
+    visible:
+      text: '.*What to read first.*'
+    timeout: 30000
+# The WebView takes a tap only once its document is up (iOS).
+- runFlow:
+    file: common/pause.yaml
+    env:
+      MS: 2000
+# The cursor after the first block.
+- tapOn:
+    text: '.*What to read first.*'
+# Paste image is after Add link, at the scrolling row's end.
+- swipe:
+    from:
+      id: page-editor-tool-orderedList
+    direction: LEFT
+- extendedWaitUntil:
+    visible:
+      id: page-editor-tool-pasteImage
+      enabled: true
+    timeout: 15000
+- takeScreenshot: page-paste-toolbar
+- tapOn:
+    id: page-editor-tool-pasteImage
+- waitForAnimationToEnd:
+    timeout: 3000
+- extendedWaitUntil:
+    notVisible:
+      text: 'Adding the image…'
+    timeout: 60000
+# Nothing was refused, and the page saved with the block.
+- assertNotVisible:
+    text: 'The image couldn’t be added\. Try again\.'
+- extendedWaitUntil:
+    visible:
+      text: 'Saved'
+    timeout: 30000
+- hideKeyboard
+- takeScreenshot: page-paste-editor
+# The first image saved to Files says so, once per workspace.
+- runFlow:
+    when:
+      visible:
+        text: 'Saved to your Files'
+    commands:
+      - tapOn:
+          text: 'OK'
+- runFlow: common/back.yaml
+- extendedWaitUntil:
+    visible:
+      id: page-picture
+    timeout: 60000
+- takeScreenshot: page-paste-reader

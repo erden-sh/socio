@@ -1,0 +1,24 @@
+# A revoked device, after a flow that signed Ada in to A (add-device.yaml):
+# Ada signs it out with erase on the web (/web/erase, Settings → Account's "Sign out and erase");
+# the app's next request gets 401 device_revoked and its copy is wiped in silence: no question, no
+# lock screen, and Add workspace shows (no workspace left). Run it with run.mjs --no-workspace-left.
+appId: ${APP_ID}
+name: device-erased
+---
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 30000
+- runScript:
+    file: common/web.js
+    env:
+      METHOD: POST
+      ROUTE: /web/erase
+- assertTrue: ${output.web.erased.length >= 1}
+- extendedWaitUntil:
+    visible:
+      id: add-workspace-screen
+    timeout: 60000
+- assertNotVisible:
+    id: lock-screen
+- takeScreenshot: device-erased

@@ -1,0 +1,11 @@
+# Claude Code for the socio-coding image (CB-326): see deployment/coding/README.md, "Pinning Codex and Claude Code".
+# The pin follows npm's `stable` dist-tag (owner decision, 2026-11-01), not `latest`. The linux-x64 platform package of
+# @anthropic-ai/claude-code 2.1.309 (npm `stable` on 2026-11-01; `latest` was 2.1.316): the native binary the npm package's
+# install script would copy, installed without that script.
+version=2.1.309
+package=@anthropic-ai/claude-code-linux-x64@2.1.309
+url=https://registry.npmjs.org/@anthropic-ai/claude-code-linux-x64/-/claude-code-linux-x64-2.1.309.tgz
+sha512=dfa0fa90c0b47d67562f0040f1761a2534935c45afc3429cdd6418aad7ab89e283b699487d4b04e63bab640622961cce785fae34bf52367e03930850994ad132
+integrity=sha512-36D6kMC0fWdWLwBA8XYaJTSTXEWvw0Kc3WQYqterieKDtplIfUsE5jurZAYilhzOeF+uNL9SNn4DkwhQmUrRMg==
+fetched=2026-11-01
+verified=npm dist-tags.stable is 2.1.309; registry dist.integrity equals the sha512 of the downloaded tarball; tar lists package/claude (0755); never run; fetched with User-Agent research-script/0.1, no credentials

@@ -1,0 +1,111 @@
+# An admin's fields, after board-open.yaml (Ada, an admin, on the
+# Board's Open column), behind chaos-proxy.mjs: the open issue shows its
+# fields as rows that open sheets. Online, the assignee sheet reads who can be
+# assigned. With the server away, a status change shows at once, marked
+# "Waiting to send", and the assignee sheet shows the last list with "Needs a
+# connection". Once the server is back the change goes and the mark clears;
+# a cold relaunch shows the server's new status.
+appId: ${APP_ID}
+name: issue-admin
+---
+- tapOn:
+    text: '.*A: Export the board as CSV.*'
+- extendedWaitUntil:
+    visible:
+      id: issue-title
+      text: 'A: Export the board as CSV'
+    timeout: 30000
+- scrollUntilVisible:
+    element:
+      id: issue-admin-resolution
+    direction: DOWN
+    timeout: 20000
+- assertVisible:
+    id: issue-admin-status
+    text: '.*Status, Open.*'
+- takeScreenshot: issue-admin-fields
+- tapOn:
+    id: issue-admin-assigneeId
+- extendedWaitUntil:
+    visible:
+      id: issue-admin-choice-assigneeId-none
+    timeout: 10000
+- extendedWaitUntil:
+    visible: 'Ben'
+    timeout: 30000
+- assertNotVisible: 'Cy'
+- takeScreenshot: issue-admin-assignees
+- tapOn:
+    id: issue-admin-done
+- runFlow:
+    file: common/proxy.yaml
+    env:
+      ACTION: down
+- tapOn:
+    id: issue-admin-status
+- takeScreenshot: issue-admin-status-sheet
+- tapOn:
+    id: issue-admin-choice-status-in_progress
+- assertVisible:
+    id: issue-admin-status
+    text: '.*Status, In progress, Waiting to send.*'
+# "Waiting to send" under the title pushes the rows down, the assignee's
+# under the composer, which iOS's hierarchy still counts as visible.
+- scrollUntilVisible:
+    element:
+      id: issue-admin-resolution
+    direction: DOWN
+    timeout: 20000
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - swipe:
+          start: 50%, 60%
+          end: 50%, 35%
+- tapOn:
+    id: issue-admin-assigneeId
+- extendedWaitUntil:
+    visible: '.*Needs a connection · Saved.*'
+    timeout: 30000
+- assertVisible: 'Ben'
+- takeScreenshot: issue-admin-assignees-offline
+- tapOn:
+    id: issue-admin-done
+- assertVisible:
+    id: issue-admin-status
+    text: '.*Status, In progress, Waiting to send.*'
+- scrollUntilVisible:
+    element:
+      id: issue-status
+    direction: UP
+    timeout: 20000
+- assertVisible: 'Waiting to send'
+- takeScreenshot: issue-admin-waiting
+- runFlow:
+    file: common/proxy.yaml
+    env:
+      ACTION: up
+- extendedWaitUntil:
+    notVisible: 'Waiting to send'
+    timeout: 120000
+- scrollUntilVisible:
+    element:
+      id: issue-admin-status
+      text: '^Status, In progress$'
+    direction: DOWN
+    timeout: 20000
+- takeScreenshot: issue-admin-sent
+- runFlow: common/open.yaml
+- extendedWaitUntil:
+    visible:
+      id: issue-title
+      text: 'A: Export the board as CSV'
+    timeout: 180000
+- scrollUntilVisible:
+    element:
+      id: issue-admin-status
+      text: '^Status, In progress$'
+    direction: DOWN
+    timeout: 20000
+- takeScreenshot: issue-admin-relaunched

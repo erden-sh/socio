@@ -1,0 +1,5 @@
+# What wrangler dev writes: local D1, the rate limiter's state, its logs and bundles.
+.wrangler/
+# Local secrets for wrangler dev (provider keys); never committed.
+.dev.vars
+.dev.vars.*

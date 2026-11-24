@@ -1,0 +1,144 @@
+/*
+ * The legacy stylesheet: what is left after the views moved to shadcn and
+ * Tailwind (CB-95, CB-98). Delete a rule with its last user, then
+ * regenerate styles/legacy-dark.css
+ * (`pnpm exec vitest run tests/integration/legacy-dark.test.ts -u`).
+ *
+ * Base: the canvas, and element rules for markup without data-slot (plain
+ * elements in the views, which Tailwind utilities override). They are
+ * scoped with :where(:not([data-slot])) so they stop at shadcn
+ * components; :where keeps their specificity unchanged. The font size
+ * sits on body, not :root, so rem units (Tailwind, shadcn) stay 16px.
+ */
+:root {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    color: #333641;
+    background: #fff;
+    font-synthesis: none;
+    font-weight: 400;
+    /* The ink and rules of plain elements, on the shadcn tokens. */
+    --ink: var(--foreground);
+    --line: var(--border);
+}
+* {
+    box-sizing: border-box;
+}
+body {
+    margin: 0;
+    font-size: 14px;
+}
+button:where(:not([data-slot])),
+input:where(:not([data-slot])),
+textarea:where(:not([data-slot])),
+select:where(:not([data-slot])) {
+    font: inherit;
+}
+button:where(:not([data-slot])),
+a:where(:not([data-slot])),
+input:where(:not([data-slot])),
+textarea:where(:not([data-slot])),
+select:where(:not([data-slot])) {
+    -webkit-tap-highlight-color: transparent;
+}
+button:where(:not([data-slot])) {
+    cursor: pointer;
+    color: inherit;
+}
+button:where(:not([data-slot])):disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+a:where(:not([data-slot])) {
+    color: inherit;
+    text-decoration: none;
+}
+button:where(:not([data-slot])) {
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    background: white;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 9px 13px;
+    transition:
+        background 0.15s,
+        transform 0.15s;
+}
+button:where(:not([data-slot])):hover:not(:disabled) {
+    background: #f4f4f9;
+}
+button:where(:not([data-slot])):focus-visible,
+a:where(:not([data-slot])):focus-visible,
+input:where(:not([data-slot])):focus-visible,
+textarea:where(:not([data-slot])):focus-visible {
+    outline: 3px solid #b8c4fa;
+    outline-offset: 3px;
+}
+button:where(:not([data-slot])):active:not(:disabled) {
+    transform: translateY(1px);
+}
+/*
+ * Selects get only the ink here, not the box below (CB-258): every select
+ * is styled with utilities, and the box's block padding, under a fixed
+ * height, clipped the chosen value. Their font is inherited (above), and
+ * focus is theirs to show.
+ */
+select:where(:not([data-slot])) {
+    color: var(--ink);
+}
+input:where(:not([data-slot])),
+textarea:where(:not([data-slot])) {
+    width: 100%;
+    border: 1px solid #dedee6;
+    border-radius: 9px;
+    padding: 12px;
+    background: #fff;
+    color: var(--ink);
+    outline: none;
+}
+textarea:where(:not([data-slot])) {
+    resize: vertical;
+    line-height: 1.65;
+}
+p:where(:not([data-slot])) {
+    line-height: 1.7;
+}
+h1:where(:not([data-slot])),
+h2:where(:not([data-slot])),
+h3:where(:not([data-slot])),
+p:where(:not([data-slot])) {
+    margin-top: 0;
+}
+h1:where(:not([data-slot])),
+h2:where(:not([data-slot])),
+h3:where(:not([data-slot])) {
+    font-weight: 550;
+    letter-spacing: -0.04em;
+}
+/* The centred page frame (.main-content) of the pages that keep one: the
+   connect screens and Not found. Workspace pages use WorkspacePage (CB-220). */
+.main-content {
+    max-width: 1090px;
+    margin: 0 auto;
+    padding: var(--page-top) 54px 36px;
+}
+@media (max-width: 1150px) {
+    .main-content {
+        padding: var(--page-top) 32px 45px;
+    }
+}
+@media (max-width: 700px) {
+    .main-content {
+        padding: var(--page-top) 22px 27px;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *:before,
+    *:after {
+        animation: none !important;
+        transition: none !important;
+        scroll-behavior: auto !important;
+    }
+}

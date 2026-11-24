@@ -1,0 +1,557 @@
+Third-party notices
+====================
+
+Socio is Copyright (c) 2026 Ingenio Ventures Inc., under the Sustainable
+Use License in LICENSE. The components below keep their own licenses. Socio
+started from OpenDots (https://github.com/CopilotKit/OpenDots, MIT,
+Copyright (c) Atai Barkai) at commit 565bf78; that code stays under MIT and
+its notice is kept in LICENSE. The computer services come from OpenBot
+(https://github.com/CopilotKit/OpenBot, MIT, Copyright (c) 2026 CopilotKit);
+its license is deployment/computers/LICENSE.openbot.
+
+Socio, Socio.sh, Erden, and Erden.sh are trademarks of Ingenio Ventures
+Inc.
+
+The coding session host (CB-326) runs provider packages vendored from T3
+Code (https://github.com/pingdotgg/t3code, MIT, Copyright (c) 2026 T3 Tools
+Inc), pinned by commit in vendor/t3code/SYNC.md. The T3 MIT license is kept
+at vendor/t3code/LICENSE. The native app's guard tests come from T3 Code
+too: apps/mobile/vendor/t3code, pinned by commit in its own SYNC.md, with the
+same license beside them. The socio/hermes lint rule in
+scripts/lint/socio-rules.mjs is ported from T3 Code's, and the push relay's
+APNs and FCM clients from T3 Code's relay (section 15).
+
+The issue tracker and agent-dispatch tooling (src/server/issues/**,
+src/server/dispatch/**, packages/client/src/modules/issues/**,
+packages/foundation/src/issues/**, packages/shared/src/issues/**) were
+ported from tooling by Sergio Leon, https://cbnsndwch.io, and are used
+under the Sustainable Use License.
+
+Socio keeps its own theme. The planner calendar, the composer, and the
+Plugins catalog adapt layout and interaction from the projects below.
+Each entry names the source, the license, and the files in this
+repository that derive from it.
+
+Mixpost (inovector/mixpost, MIT) is a design reference only. It is a Vue
+application, and no Mixpost source was copied. The composer uses its
+arrangement: editor on the left, live preview on the right, account
+avatars along the top, actions in a bottom bar.
+https://github.com/inovector/mixpost
+
+AGPL and GPL projects (including Postiz and the coss.com ui root) were
+not used.
+
+
+1. big-calendar
+---------------
+
+Source: https://github.com/lramos33/big-calendar
+Copyright (c) 2025 Leonardo Ramos
+License: MIT
+
+Derived files:
+
+- packages/plugin-ui/src/calendar-model.ts
+  (groupEvents / getEventBlockStyle from src/calendar/helpers.ts)
+- packages/plugin-ui/src/WeekGrid.tsx
+  (week time grid and current-time line)
+- packages/plugin-ui/src/Calendar.tsx
+  (drag between days and 15-minute slots)
+- packages/plugin-ui/src/MiniMonth.tsx
+- packages/plugin-ui/src/AvatarFilter.tsx
+  (user-select.tsx, mapped onto accounts)
+- packages/plugin-ui/src/EventChip.tsx
+  (colored and dot badge variants from month-event-badge.tsx)
+
+MIT License
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+2. Shoutrrr
+-----------
+
+Source: https://github.com/coollabsio/shoutrrr
+Copyright Shoutrrr contributors
+License: Apache-2.0 (http://www.apache.org/licenses/LICENSE-2.0)
+
+Derived files:
+
+- packages/plugin-ui/src/EventChip.tsx
+  (resources/js/components/posts/calendar/post-chip.tsx)
+- packages/plugin-ui/src/MonthGrid.tsx
+  (resources/js/components/posts/calendar/month-grid.tsx)
+- packages/plugin-ui/src/WeekGrid.tsx
+  (resources/js/components/posts/calendar/week-grid.tsx)
+- packages/plugin-ui/src/AgendaList.tsx
+  (resources/js/components/posts/calendar/agenda-list.tsx)
+- packages/plugin-ui/src/EditorShell.tsx
+  (resources/js/components/compose/composer.tsx)
+- packages/client/src/plugins/planner/thread.ts
+  (resources/js/lib/compose/section-split.ts, used by x-preview.ts)
+- packages/client/src/plugins/planner/Editor.tsx
+  (composer-toolbar.tsx, platform-preview-panel.tsx, queue-preview.tsx,
+   and resources/js/lib/compose/x-preview.ts)
+
+The derived files are licensed under the Apache License, Version 2.0.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+
+3. react-tweet
+--------------
+
+Source: https://github.com/vercel/react-tweet
+Copyright (c) Vercel, Inc.
+License: MIT
+
+Derived files:
+
+- packages/plugin-ui/src/PreviewCard.tsx
+- packages/plugin-ui/src/preview.css
+  (the .tweet-card rules; packages/react-tweet twitter-theme components)
+- packages/client/src/plugins/planner/Preview.tsx
+  (planner text inside the shared card frame)
+
+The preview draws an X post. It does not call X. Publishing stays an
+intent link opened by the person using Socio.
+
+MIT License
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+4. Cal.diy app store
+--------------------
+
+Source: https://github.com/calcom/cal.diy
+Copyright (c) Cal.com, Inc.
+License: MIT
+Paths used as the model: apps/web/modules/apps and packages/app-store
+Live reference: https://cal.com/apps
+
+Derived files:
+
+- packages/plugin-ui/src/catalog.tsx
+  (category cards, app cards, app detail, installed card frame)
+- packages/client/src/modules/plugins/PluginsPage.tsx
+  (store page: search, Popular and Recently added, screenshots,
+  permissions, install, and the Installed tab's enable and scale)
+
+MIT License
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+5. shadcn-admin
+---------------
+
+Source: https://github.com/satnaing/shadcn-admin
+Copyright (c) Sat Naing
+License: MIT
+
+Derived files:
+
+- packages/plugin-ui/src/catalog.tsx
+  (empty-state spacing and type)
+- packages/client/src/plugins/planner/App.tsx
+  (empty plan spacing)
+
+No command-palette source was copied. Socio already has its own palette.
+
+
+6. CopilotKit SQLite runner
+---------------------------
+
+Source: https://github.com/CopilotKit/CopilotKit
+(@copilotkit/sqlite-runner 1.75.0, SqliteAgentRunner)
+Copyright (c) Atai Barkai
+License: MIT
+
+Derived files:
+
+- src/server/turns/local-runner.ts
+  (durable AG-UI run storage on node:sqlite; the changes are listed in the
+  file's header)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+7. grill-me
+-----------
+
+Source: https://github.com/mattpocock/skills
+(skills/productivity/grill-me and skills/productivity/grilling, commit
+5beb35b040e3de97e54fa9e386d7e42d15c295c2)
+Copyright (c) 2026 Matt Pocock
+License: MIT
+
+Derived files:
+
+- src/server/skills/grill-me.ts
+  (the /grill-me chat skill's instructions)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+8. T3 Code (native app)
+-----------------------
+
+Source: https://github.com/pingdotgg/t3code (commit 240446e2d9)
+Copyright (c) 2026 T3 Tools Inc.
+License: MIT
+
+Derived files:
+
+- apps/mobile/modules/socio-device/src/protected-data.ts
+  (apps/mobile/src/lib/protectedData.ts, rewritten on socio-device)
+- apps/mobile/tests/socio-device/protected-data.test.ts
+  (the scenarios and mocks of apps/mobile/src/lib/protectedData.test.ts)
+- apps/mobile/modules/socio-device/ios/SocioDeviceModule.swift, its
+  BackgroundGrace class (apps/mobile/modules/t3-native-controls/ios/
+  T3BackgroundGraceSubscriber.swift, rewritten to hold the task only while
+  the outbox has a request in flight)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+9. T3 Code (native app config plugins)
+--------------------------------------
+
+Source: https://github.com/pingdotgg/t3code (commit 240446e2d9)
+Copyright (c) 2026 T3 Tools Inc.
+License: MIT
+
+Vendored files (apps/mobile/vendor/t3code/SYNC.md lists what changed in each):
+
+- apps/mobile/vendor/t3code/plugins/withAndroidGradleHeap.cjs
+- apps/mobile/vendor/t3code/plugins/withAndroidModernAlertDialog.cjs
+- apps/mobile/vendor/t3code/plugins/withAndroidModernPopupMenu.cjs
+- apps/mobile/vendor/t3code/plugins/withAndroidPredictiveBackCompat.cjs
+- apps/mobile/vendor/t3code/plugins/withoutIosPersonalTeamCapabilities.cjs
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+10. T3 Code (native app theme generator)
+----------------------------------------
+
+Source: https://github.com/pingdotgg/t3code (commit 240446e2d9)
+Copyright (c) 2026 T3 Tools Inc.
+License: MIT
+
+Derived files:
+
+- apps/mobile/scripts/theme/color.mts
+  (the OKLab to sRGB conversion, the flattening of a translucent color over
+  a surface and themeColorWithContrast of apps/mobile/src/lib/mobileTheme.ts)
+- apps/mobile/scripts/generate-theme.mts
+  (the @layer theme/@variant layout, the atomic write and --check of
+  apps/mobile/scripts/generate-uniwind-themes.mts, and the selected-row
+  correction of withVisibleSelection in
+  apps/mobile/src/lib/mobileThemeVariables.ts)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+11. T3 Code (native app navigation theme)
+-----------------------------------------
+
+Source: https://github.com/pingdotgg/t3code (commit 240446e2d9)
+Copyright (c) 2026 T3 Tools Inc.
+License: MIT
+
+Derived files:
+
+- apps/mobile/src/theme/navigation-theme.ts
+  (the React Navigation theme built from the theme's mobile roles, with the
+  dark flag native-stack reads, of apps/mobile/src/lib/useMobileNavigationTheme.ts)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+12. T3 Code (native app sync triggers)
+--------------------------------------
+
+Source: https://github.com/pingdotgg/t3code (commit 240446e2d9)
+Copyright (c) 2026 T3 Tools Inc.
+License: MIT
+
+Derived files:
+
+- apps/mobile/src/sync/triggers.ts
+  (isAppForeground of apps/mobile/src/lib/appState.ts, the 10 s return of
+  mobileApplicationActiveWakeup in
+  apps/mobile/src/connection/app-state-wakeups.ts, and networkPathChanges
+  of apps/mobile/src/connection/platform.ts)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+13. T3 Code (native app dependency patches)
+-------------------------------------------
+
+Source: https://github.com/pingdotgg/t3code (commit 240446e2d9, patches/)
+Copyright (c) 2026 T3 Tools Inc.
+License: MIT
+
+Vendored files, unchanged (apps/mobile/vendor/t3code/SYNC.md lists them):
+
+- patches/@legendapp__list@3.3.5.patch
+- patches/react-native-keyboard-controller@1.22.8.patch
+
+The patched packages keep their own licenses (@legendapp/list and
+react-native-keyboard-controller are MIT).
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+14. react-native-enriched-markdown (T3 Code's fork, native app)
+---------------------------------------------------------------
+
+Source: https://github.com/pingdotgg/enriched-markdown (branch fork/t3-mobile,
+commit 29ddd424), from https://github.com/software-mansion/enriched-markdown
+Copyright (c) 2025 Software Mansion
+License: MIT
+
+Vendored file: apps/mobile/deps/react-native-enriched-markdown-1.2.0-t3.16-29ddd424-grammars.tgz,
+T3 Code's packed tarball with the tree-sitter runtime (MIT, Copyright (c) 2018
+Max Brunsfeld) and its default grammars added under cpp/highlight/vendor/
+(apps/mobile/deps/README.md). Each grammar keeps its license file beside it in
+the tarball; all are MIT.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+15. T3 Code (push relay)
+------------------------
+
+Source: https://github.com/pingdotgg/t3code (commit 549d182aaa,
+infra/relay/src/agentActivity/)
+Copyright (c) 2026 T3 Tools Inc.
+License: MIT
+
+Derived files (vendor/t3code/SYNC.md lists what changed in each):
+
+- apps/push-relay/src/apns-jwt.ts (apnsJwt.ts)
+- apps/push-relay/src/apns-provider-tokens.ts (ApnsProviderTokens.ts)
+- apps/push-relay/src/apns-client.ts (ApnsClient.ts, the alert request)
+- apps/push-relay/src/fcm-assertion-signer.ts (FcmAssertionSigner.ts)
+- apps/push-relay/src/fcm-client.ts (FcmClient.ts)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

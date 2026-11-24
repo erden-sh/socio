@@ -1,0 +1,25 @@
+{
+    "name": "@socio/data",
+    "version": "0.0.0",
+    "private": true,
+    "type": "module",
+    "description": "Socio's SQLite layer: opening and pragmas, the unit of work, column helpers, the migration runner and the backup it takes first.",
+    "scripts": {
+        "typecheck": "pnpm -w exec tsc -p packages/data/tsconfig.json --noEmit",
+        "lint": "pnpm -w exec oxlint packages/data"
+    },
+    "exports": {
+        "./*": {
+            "types": "./dist/*.d.ts",
+            "default": "./dist/*.js"
+        }
+    },
+    "dependencies": {
+        "drizzle-orm": "1.0.0-rc.4"
+    },
+    "devDependencies": {
+        "@types/node": "^26.6.3",
+        "vitest": "^4.1.11"
+    },
+    "license": "SEE LICENSE IN ../../LICENSE"
+}

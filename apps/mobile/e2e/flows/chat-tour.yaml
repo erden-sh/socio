@@ -1,0 +1,201 @@
+# The chat tour, with workspace A up behind chaos-proxy.mjs (servers.mjs
+# --no-rooms, which run.mjs checks; run.mjs --credentials): one pass over
+# the chats, with a screenshot of each.
+# Ada opens A's marker chat, reacts to its reply, answers two page reviews
+# (Save, then Skip, no Edit), archives the chat from Chats,
+# then every other chat there (servers.mjs seeds more, such as the repeating
+# task's "A: digest"), so the list is empty and Home is the first run with the
+# default socio (first-run.ts shows it only then), starts a new chat with
+# the server away (the offline new chat: a local id, "Waiting to send"),
+# watches it send and run once the server is back, opens its trace with
+# Advanced mode off, turns Advanced mode on in Settings, opens Technical
+# details, the trace again with Advanced on, and Diagnostics. Last, the
+# session states: servers.mjs restarts the workspace with its clock
+# eight days on, past the week a session lasts, so its next answer is the 401
+# of an expired session; the Expired banner's Sign in signs Ada in again, and
+# the real clock comes back. Needs servers.mjs's control port (4549) too.
+appId: ${APP_ID}
+name: chat-tour
+---
+- runFlow: chat-open.yaml
+# A reaction on the stored reply.
+- tapOn: 'Good reply'
+- extendedWaitUntil:
+    visible: 'Good reply'
+    timeout: 10000
+- takeScreenshot: tour-reaction
+# A page review, saved.
+- tapOn:
+    id: chat-composer-input
+- inputText: 'Please smoke review a page'
+- tapOn:
+    id: chat-composer-send
+- extendedWaitUntil:
+    visible: 'Ready for your review'
+    timeout: 60000
+- hideKeyboard
+- takeScreenshot: tour-review-card
+- tapOn: 'Review'
+- extendedWaitUntil:
+    visible:
+      id: page-review-save
+    timeout: 30000
+- waitForAnimationToEnd
+- takeScreenshot: tour-review-sheet
+- tapOn:
+    id: page-review-save
+- extendedWaitUntil:
+    visible: 'Saved to your Space'
+    timeout: 60000
+- takeScreenshot: tour-review-saved
+# Another, skipped.
+- tapOn:
+    id: chat-composer-input
+- inputText: 'One more smoke review please'
+- tapOn:
+    id: chat-composer-send
+- extendedWaitUntil:
+    visible: 'Ready for your review'
+    timeout: 60000
+- hideKeyboard
+- tapOn: 'Review'
+- extendedWaitUntil:
+    visible:
+      id: page-review-skip
+    timeout: 30000
+- tapOn:
+    id: page-review-skip
+- extendedWaitUntil:
+    visible: 'Review ended'
+    timeout: 60000
+- takeScreenshot: tour-review-skipped
+# Archive from Chats: the marker chat, then every other chat the list
+# holds, until it reads "No chats yet." Then Home is the first run.
+- runFlow: common/back.yaml
+- tapOn: 'Chats'
+- extendedWaitUntil:
+    visible:
+      id: chats-screen
+    timeout: 10000
+- longPressOn: '.*${CHAT_A}.*'
+- tapOn: 'Archive'
+- extendedWaitUntil:
+    visible: 'Chat archived'
+    timeout: 10000
+- takeScreenshot: tour-archived
+- runFlow: common/archive-all.yaml
+- takeScreenshot: tour-chats-empty
+- tapOn: 'Home'
+- extendedWaitUntil:
+    visible:
+      id: first-run
+    timeout: 30000
+- takeScreenshot: tour-first-run
+# The offline new chat: written with the server away.
+- runFlow:
+    file: common/proxy.yaml
+    env:
+      ACTION: down
+- tapOn:
+    id: first-run-composer-input
+- inputText: 'Please smoke trace for me'
+# The composer rides above the keyboard.
+- takeScreenshot: tour-first-run-composer
+- tapOn:
+    id: first-run-composer-send
+- extendedWaitUntil:
+    visible: 'Waiting to send'
+    timeout: 60000
+# No hideKeyboard: the chat opened and the keyboard went with the first run, and on
+# Android hideKeyboard with no keyboard up presses Back.
+- takeScreenshot: tour-offline-new-chat
+- runFlow:
+    file: common/proxy.yaml
+    env:
+      ACTION: up
+# The trace turn takes about 8 s once the chat exists.
+- extendedWaitUntil:
+    visible: 'Worked for.*'
+    timeout: 120000
+- takeScreenshot: tour-trace-row
+- tapOn: 'Worked for.*'
+- extendedWaitUntil:
+    visible:
+      id: turn-trace
+    timeout: 10000
+- takeScreenshot: tour-trace
+- runFlow: common/close-sheet.yaml
+# Settings over the chat, by its link: Advanced mode on, then Technical details.
+- runFlow:
+    file: common/link.yaml
+    env:
+      LINK: ${APP_SCHEME}://settings
+- extendedWaitUntil:
+    visible:
+      id: settings-screen
+    timeout: 10000
+- tapOn:
+    id: settings-advanced-switch
+- takeScreenshot: tour-settings
+- tapOn:
+    id: settings-technical-details
+- extendedWaitUntil:
+    visible:
+      id: technical-details-screen
+    timeout: 10000
+- takeScreenshot: tour-technical-details
+- runFlow: common/back.yaml
+- runFlow: common/back.yaml
+# The trace with Advanced mode on: each step opens to its details.
+- tapOn: 'Worked for.*'
+- extendedWaitUntil:
+    visible:
+      id: turn-trace-advanced
+    timeout: 10000
+- takeScreenshot: tour-trace-advanced
+- runFlow: common/close-sheet.yaml
+# Diagnostics (development and preview builds).
+- runFlow:
+    file: common/link.yaml
+    env:
+      LINK: ${APP_SCHEME}://diagnostics
+- extendedWaitUntil:
+    visible:
+      id: diagnostics-screen
+    timeout: 10000
+- takeScreenshot: tour-diagnostics
+# The session states: a real 401 after the session's expiry.
+- runFlow: common/back.yaml
+- runFlow:
+    file: common/servers.yaml
+    env:
+      AHEAD: '8'
+- extendedWaitUntil:
+    visible:
+      id: session-expired
+    timeout: 60000
+- takeScreenshot: tour-session-expired
+- tapOn: 'Sign in'
+- extendedWaitUntil:
+    visible:
+      id: sign-in-screen
+    timeout: 10000
+- takeScreenshot: tour-sign-in-again
+- runFlow:
+    file: common/sign-in.yaml
+    env:
+      EMAIL: ada@example.test
+      SECRET: ${PASSWORD}
+- extendedWaitUntil:
+    notVisible:
+      id: sign-in-screen
+    timeout: 30000
+- extendedWaitUntil:
+    notVisible:
+      id: session-expired
+    timeout: 30000
+- takeScreenshot: tour-signed-in-again
+- runFlow:
+    file: common/servers.yaml
+    env:
+      AHEAD: '0'

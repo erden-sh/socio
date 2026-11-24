@@ -1,0 +1,482 @@
+# Socio's product domain: the concepts people meet in the app, as OWL classes
+# and properties. Derived from docs/*.md, content/docs, src/server/*/contract.ts
+# and packages/shared/src. Every class and property here carries
+# socio:module <https://socio.sh/ontology/domain>, which the shapes use to
+# tell a domain concept from a code thing.
+@prefix owl:     <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs:    <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:     <http://www.w3.org/2001/XMLSchema#> .
+@prefix skos:    <http://www.w3.org/2004/02/skos/core#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix foaf:    <http://xmlns.com/foaf/0.1/> .
+@prefix prov:    <http://www.w3.org/ns/prov#> .
+@prefix org:     <http://www.w3.org/ns/org#> .
+@prefix dcat:    <http://www.w3.org/ns/dcat#> .
+@prefix dpv:     <https://w3id.org/dpv/owl#> .
+@prefix socio:   <https://socio.sh/ontology/> .
+
+<https://socio.sh/ontology/domain>
+    a owl:Ontology ;
+    rdfs:label "Socio product domain" ;
+    dcterms:description "Socio's product concepts: workspaces, people, socios, conversations, pages, the Improvements board, scheduled work, memory, data, plugins, mini apps, computers, coding sessions, integrations, notifications and the audit." .
+
+# ── Annotations ──────────────────────────────────────────────────────────
+
+socio:personalDataCategory
+    a owl:AnnotationProperty ;
+    rdfs:label "personal data category" ;
+    skos:definition "Which kind of DPV personal data the things of a class hold. The value is a subclass of dpv:PersonalData. It annotates the class, not each individual, so it adds nothing to reasoning." ;
+    rdfs:seeAlso dpv:hasPersonalData ;
+    rdfs:domain owl:Thing ;
+    rdfs:range dpv:PersonalData ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+# ── Workspace, people and roles ──────────────────────────────────────────
+
+socio:Workspace
+    a owl:Class ;
+    rdfs:label "workspace" ;
+    skos:definition "One running Socio: the shared place where a team's people and socios chat, write pages, track work and keep data. A workspace is software a team uses, not the team itself." ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+socio:Person
+    a owl:Class ;
+    rdfs:subClassOf foaf:Person ;
+    rdfs:label "person" ;
+    skos:definition "A human who signs in to a workspace, with an account, a role, and their own chats, memories and files." ;
+    socio:personalDataCategory dpv:IdentifyingPersonalData, dpv:ProvidedPersonalData ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+socio:WorkspaceRole
+    a owl:Class ;
+    rdfs:subClassOf org:Role ;
+    rdfs:label "workspace role" ;
+    skos:definition "What a person may do in the whole workspace. There are two: admin and member." ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+socio:AdminRole
+    a owl:NamedIndividual, socio:WorkspaceRole ;
+    rdfs:label "admin" ;
+    skos:definition "The role that manages the workspace: its settings, people, workspace socios, plugins and features. Admins are editors of every Space." ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+socio:MemberRole
+    a owl:NamedIndividual, socio:WorkspaceRole ;
+    rdfs:label "member" ;
+    skos:definition "The everyday role: a member chats, writes pages, files issues and makes personal socios and private Spaces." ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+
+socio:PersonGroup
+    a owl:Class ;
+    rdfs:subClassOf foaf:Group ;
+    rdfs:label "group" ;
+    skos:definition "A set of people that admins give permissions beyond their role, such as running code." ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+socio:ServiceAccount
+    a owl:Class ;
+    rdfs:subClassOf prov:SoftwareAgent ;
+    rdfs:label "service account" ;
+    skos:definition "A non-human account that a program outside the workspace uses to call its API, with its own keys and scopes." ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+# ── Socios ───────────────────────────────────────────────────────────────
+
+socio:Socio
+    a owl:Class ;
+    rdfs:subClassOf prov:SoftwareAgent ;
+    rdfs:label "socio" ;
+    skos:definition "An AI assistant with a name, a Soul, the Spaces it may use and optional tools. It works for the person who talks to it, with that person's access and approvals." ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+socio:PersonalSocio
+    a owl:Class ;
+    rdfs:subClassOf socio:Socio ;
+    rdfs:label "personal socio" ;
+    skos:definition "A socio only its owner uses. New socios are personal." ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+socio:WorkspaceSocio
+    a owl:Class ;
+    rdfs:subClassOf socio:Socio ;
+    rdfs:label "workspace socio" ;
+    skos:definition "A socio an admin shared with the workspace, so everyone allowed can use it. Rooms use workspace socios." ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+socio:PersonalSocio owl:disjointWith socio:WorkspaceSocio .
+
+socio:Soul
+    a owl:Class ;
+    rdfs:subClassOf prov:Entity ;
+    rdfs:label "Soul" ;
+    skos:definition "A socio's persona: its role and standing instructions, and optionally its voice, values and working style. Every save is a new version." ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+# ── Conversations and work ───────────────────────────────────────────────
+
+socio:Conversation
+    a owl:Class ;
+    rdfs:subClassOf prov:Entity ;
+    rdfs:label "conversation" ;
+    skos:definition "A thread of messages between people and a socio." ;
+    socio:personalDataCategory dpv:ProvidedPersonalData ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+socio:Chat
+    a owl:Class ;
+    rdfs:subClassOf socio:Conversation ;
+    rdfs:label "chat" ;
+    skos:definition "A conversation between one person and one socio. Its history belongs to that person." ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+socio:Room
+    a owl:Class ;
+    rdfs:subClassOf socio:Conversation ;
+    rdfs:label "room" ;
+    skos:definition "One conversation for several people and a workspace socio: everyone reads the same messages and writes to the same socio. A chat can be shared as a room." ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+socio:Message
+    a owl:Class ;
+    rdfs:subClassOf prov:Entity ;
+    rdfs:label "message" ;
+    skos:definition "One entry in a conversation, written by a person or by a socio." ;
+    socio:personalDataCategory dpv:ProvidedPersonalData ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+socio:WorkCycle
+    a owl:Class ;
+    rdfs:subClassOf prov:Activity ;
+    rdfs:label "work cycle" ;
+    skos:definition "One person's message and everything it leads to: model rounds, tools, waits for approvals and handoffs to other socios." ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+socio:Turn
+    a owl:Class ;
+    rdfs:subClassOf prov:Activity ;
+    rdfs:label "turn" ;
+    skos:definition "One socio's step of a work cycle: it reads the conversation, calls the model and tools, and writes a reply. Turns record who started them." ;
+    socio:personalDataCategory dpv:ObservedPersonalData ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+socio:ApprovalRequest
+    a owl:Class ;
+    rdfs:subClassOf prov:Entity ;
+    rdfs:label "approval request" ;
+    skos:definition "An action a socio proposes before it acts, tied to that action, the socio and the person it acts for, which a person approves or denies." ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+# ── Spaces, pages and the board ──────────────────────────────────────────
+
+socio:Space
+    a owl:Class ;
+    rdfs:subClassOf prov:Entity ;
+    rdfs:label "Space" ;
+    skos:definition "A shared library of pages, for the whole workspace or only its people. Socios use only the Spaces they were given." ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+socio:Page
+    a owl:Class ;
+    rdfs:subClassOf foaf:Document, prov:Entity ;
+    rdfs:label "page" ;
+    skos:definition "A shared document in a Space, with its revision history and the conversations people have beside it." ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+socio:Issue
+    a owl:Class ;
+    rdfs:subClassOf prov:Entity ;
+    rdfs:label "issue" ;
+    skos:definition "An item on the Improvements board: a bug, feature request or other change, with a stable key, a status, comments, votes and files. People and socios file them." ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+# ── Scheduled work ───────────────────────────────────────────────────────
+
+socio:ScheduledWork
+    a owl:Class ;
+    rdfs:subClassOf prov:Entity ;
+    rdfs:label "scheduled work" ;
+    skos:definition "Work a socio does for a person without a new message each time: a schedule, a goal or a job." ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+socio:Schedule
+    a owl:Class ;
+    rdfs:subClassOf socio:ScheduledWork ;
+    rdfs:label "schedule" ;
+    skos:definition "A fixed prompt a socio runs at a cadence, in its own conversation." ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+socio:Goal
+    a owl:Class ;
+    rdfs:subClassOf socio:ScheduledWork ;
+    rdfs:label "goal" ;
+    skos:definition "An ongoing outcome a socio works toward over time, recording its progress." ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+socio:Job
+    a owl:Class ;
+    rdfs:subClassOf socio:ScheduledWork ;
+    rdfs:label "job" ;
+    skos:definition "Saved code a socio's computer runs, without asking the model for each step." ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+# ── Memory ───────────────────────────────────────────────────────────────
+
+socio:Memory
+    a owl:Class ;
+    rdfs:subClassOf prov:Entity ;
+    rdfs:label "memory" ;
+    skos:definition "One sentence a person keeps for socios to know about them, added by the person or proposed by a socio and approved by the person. Private by default." ;
+    socio:personalDataCategory dpv:ProvidedPersonalData, dpv:InferredPersonalData ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+socio:Profile
+    a owl:Class ;
+    rdfs:subClassOf prov:Entity ;
+    rdfs:label "profile" ;
+    skos:definition "What a person writes about themselves for socios: preferred name, pronouns, role and team, time zone, language and how they like answers." ;
+    socio:personalDataCategory dpv:ProvidedPersonalData ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+socio:Episode
+    a owl:Class ;
+    rdfs:subClassOf prov:Entity ;
+    rdfs:label "episode" ;
+    skos:definition "One fact a person's earlier chat kept, such as a decision or an open question, recalled in their later chats." ;
+    socio:personalDataCategory dpv:DerivedPersonalData ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+socio:SpaceMemory
+    a owl:Class ;
+    rdfs:subClassOf prov:Entity ;
+    rdfs:label "Space memory" ;
+    skos:definition "What a Space keeps for socios to know, shared with everyone who can see the Space." ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+# ── Data ─────────────────────────────────────────────────────────────────
+
+socio:DataSpace
+    a owl:Class ;
+    rdfs:subClassOf prov:Entity ;
+    rdfs:label "data space" ;
+    skos:definition "A person's own store of files, folders and datasets, apart from the workspace's database. Chat attachments go here." ;
+    socio:personalDataCategory dpv:ProvidedPersonalData ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+socio:Dataset
+    a owl:Class ;
+    rdfs:subClassOf dcat:Dataset ;
+    rdfs:label "dataset" ;
+    skos:definition "Tabular data in a data space that socios can query and people can inspect and export." ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+socio:MediaFile
+    a owl:Class ;
+    rdfs:subClassOf prov:Entity ;
+    rdfs:label "file" ;
+    skos:definition "A file in a data space: an upload, a chat attachment or something a socio saved." ;
+    socio:personalDataCategory dpv:ProvidedPersonalData ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+# ── Extensions ───────────────────────────────────────────────────────────
+
+socio:Plugin
+    a owl:Class ;
+    rdfs:subClassOf prov:Entity ;
+    rdfs:label "plugin" ;
+    skos:definition "A feature an admin installs from the workspace's catalog, either as its own service or bundled into Socio, such as the calendar." ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+socio:MiniApp
+    a owl:Class ;
+    rdfs:subClassOf prov:Entity ;
+    rdfs:label "mini app" ;
+    skos:definition "A small web app a socio builds. It runs on the socio's computer while in development and on the workspace's app runtime once published." ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+socio:Computer
+    a owl:Class ;
+    rdfs:subClassOf prov:Entity ;
+    rdfs:label "computer" ;
+    skos:definition "A socio's own container, with its files, browser and shell, whose permissions start disabled and are saved per socio." ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+socio:CodingSession
+    a owl:Class ;
+    rdfs:subClassOf prov:Activity ;
+    rdfs:label "coding session" ;
+    skos:definition "A coding agent a socio runs in a sandbox on a listed repository, which the person can watch, steer, approve and roll back. Its model exchanges are logged." ;
+    socio:personalDataCategory dpv:ObservedPersonalData ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+# ── Integrations, notifications and the audit ────────────────────────────
+
+socio:Integration
+    a owl:Class ;
+    rdfs:subClassOf prov:Entity ;
+    rdfs:label "integration" ;
+    skos:definition "A connection between the workspace and an outside service or agent: a Telegram link, a connected agent, a custom domain." ;
+    socio:personalDataCategory dpv:IdentifyingPersonalData ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+socio:ConnectedAgent
+    a owl:Class ;
+    rdfs:subClassOf socio:Integration ;
+    rdfs:label "connected agent" ;
+    skos:definition "An agent outside Socio that a person lets act in the workspace for them, through the workspace's own tool server." ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+socio:TelegramLink
+    a owl:Class ;
+    rdfs:subClassOf socio:Integration ;
+    rdfs:label "Telegram link" ;
+    skos:definition "A person's Telegram account linked to their workspace account, for direct messages and team topics." ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+socio:Notification
+    a owl:Class ;
+    rdfs:subClassOf prov:Entity ;
+    rdfs:label "notification" ;
+    skos:definition "A notice a socio sends the person it works for, delivered to the channels that person turned on unless they are using the app right now." ;
+    socio:personalDataCategory dpv:ProvidedPersonalData ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+socio:AuditEntry
+    a owl:Class ;
+    rdfs:subClassOf prov:Activity ;
+    rdfs:label "audit entry" ;
+    skos:definition "A recorded action: who did what to which thing, and when. Actors are people, socios, the system or the command line." ;
+    socio:personalDataCategory dpv:ObservedPersonalData ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+# ── Properties ───────────────────────────────────────────────────────────
+
+socio:memberOf
+    a owl:ObjectProperty ;
+    rdfs:label "member of" ;
+    skos:definition "The workspace a person belongs to." ;
+    rdfs:domain socio:Person ;
+    rdfs:range socio:Workspace ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+socio:hasRole
+    a owl:ObjectProperty, owl:FunctionalProperty ;
+    rdfs:label "has role" ;
+    skos:definition "A person's one workspace role." ;
+    rdfs:domain socio:Person ;
+    rdfs:range socio:WorkspaceRole ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+socio:inGroup
+    a owl:ObjectProperty ;
+    rdfs:label "in group" ;
+    skos:definition "A group a person is in." ;
+    rdfs:domain socio:Person ;
+    rdfs:range socio:PersonGroup ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+socio:ownedBy
+    a owl:ObjectProperty ;
+    rdfs:label "owned by" ;
+    skos:definition "The person a thing belongs to: their chat, personal socio, memory, files or scheduled work." ;
+    rdfs:domain owl:Thing ;
+    rdfs:range socio:Person ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+socio:hasSoul
+    a owl:ObjectProperty ;
+    rdfs:label "has Soul" ;
+    skos:definition "A socio's Soul." ;
+    rdfs:domain socio:Socio ;
+    rdfs:range socio:Soul ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+socio:mayUseSpace
+    a owl:ObjectProperty ;
+    rdfs:label "may use Space" ;
+    skos:definition "A Space a socio was given." ;
+    rdfs:domain socio:Socio ;
+    rdfs:range socio:Space ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+socio:inConversation
+    a owl:ObjectProperty, owl:FunctionalProperty ;
+    rdfs:label "in conversation" ;
+    skos:definition "The conversation a message is part of." ;
+    rdfs:domain socio:Message ;
+    rdfs:range socio:Conversation ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+socio:partOfCycle
+    a owl:ObjectProperty, owl:FunctionalProperty ;
+    rdfs:label "part of cycle" ;
+    skos:definition "The work cycle a turn is a step of." ;
+    rdfs:subPropertyOf dcterms:isPartOf ;
+    rdfs:domain socio:Turn ;
+    rdfs:range socio:WorkCycle ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+socio:startedBy
+    a owl:ObjectProperty ;
+    rdfs:label "started by" ;
+    skos:definition "The message that started a work cycle." ;
+    rdfs:subPropertyOf prov:used ;
+    rdfs:domain socio:WorkCycle ;
+    rdfs:range socio:Message ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+socio:inSpace
+    a owl:ObjectProperty ;
+    rdfs:label "in Space" ;
+    skos:definition "The Space a page, memory, dataset, file or mini app is in or shared with." ;
+    rdfs:domain prov:Entity ;
+    rdfs:range socio:Space ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+socio:inDataSpace
+    a owl:ObjectProperty ;
+    rdfs:label "in data space" ;
+    skos:definition "The data space a dataset or file is kept in." ;
+    rdfs:domain prov:Entity ;
+    rdfs:range socio:DataSpace ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+socio:assignedTo
+    a owl:ObjectProperty ;
+    rdfs:label "assigned to" ;
+    skos:definition "The socio that does a piece of scheduled work." ;
+    rdfs:domain socio:ScheduledWork ;
+    rdfs:range socio:Socio ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+socio:computerOf
+    a owl:ObjectProperty, owl:FunctionalProperty ;
+    rdfs:label "computer of" ;
+    skos:definition "The socio a computer belongs to: a socio's id determines its computer." ;
+    rdfs:domain socio:Computer ;
+    rdfs:range socio:Socio ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+socio:notifies
+    a owl:ObjectProperty ;
+    rdfs:label "notifies" ;
+    skos:definition "The person a notification is for." ;
+    rdfs:domain socio:Notification ;
+    rdfs:range socio:Person ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+socio:auditTarget
+    a owl:ObjectProperty ;
+    rdfs:label "audit target" ;
+    skos:definition "The thing an audit entry is about." ;
+    rdfs:domain socio:AuditEntry ;
+    rdfs:range owl:Thing ;
+    socio:module <https://socio.sh/ontology/domain> .
+
+socio:approvalFor
+    a owl:ObjectProperty ;
+    rdfs:label "approval for" ;
+    skos:definition "The turn whose proposed action an approval request holds." ;
+    rdfs:domain socio:ApprovalRequest ;
+    rdfs:range socio:Turn ;
+    socio:module <https://socio.sh/ontology/domain> .

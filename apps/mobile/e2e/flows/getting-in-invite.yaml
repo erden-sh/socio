@@ -1,0 +1,55 @@
+# Getting in by an invite opened right after install: the app cleared (launch.yaml,
+# like a new install) and stopped, then the invite link starts it cold. Join, the set-password form
+# (the email the invite went to, a new password twice), then the shell: Home's first run (no chats yet).
+# INVITE_LINK and INVITE_EMAIL come from `act-as.mjs web-invite` (a made-up person; servers.mjs is
+# plain http, so the server makes no link-domain link there and act-as builds the development build's
+# `https://<link host>/dev/i/<host>#t=<token>` with shared's appLink). On an emulator that can't verify
+# the link host, approve it for the app first (README, Getting in). A development client started by a
+# link shows its launcher; common/cold-link.yaml picks the Metro it last loaded, which hands the link
+# to the app as its initial URL, as a store build's cold start would.
+appId: ${APP_ID}
+name: getting-in-invite
+env:
+  NEW_PASSWORD: x5a-invite-Password-1
+---
+- runFlow: launch.yaml
+- stopApp
+- openLink:
+    link: ${INVITE_LINK}
+    autoVerify: true
+- runFlow: common/cold-link.yaml
+- extendedWaitUntil:
+    visible:
+      id: invite-join
+    timeout: 120000
+- assertVisible:
+    id: invite-title
+    text: 'Join ${WORKSPACE_A}.*'
+- assertVisible:
+    id: invite-host
+- takeScreenshot: invite-join
+- tapOn:
+    id: invite-join
+- extendedWaitUntil:
+    visible:
+      id: invite-email
+    timeout: 20000
+- tapOn:
+    id: invite-email
+- inputText: ${INVITE_EMAIL}
+# The keyboard's Next moves on to each field below, which the keyboard may cover.
+- pressKey: Enter
+- runFlow: common/no-strong-password.yaml
+- inputText: ${NEW_PASSWORD}
+- pressKey: Enter
+- runFlow: common/no-strong-password.yaml
+- inputText: ${NEW_PASSWORD}
+- takeScreenshot: invite-password
+# The repeat's Go submits, as "Set password and join" does (the button can sit under the keyboard).
+- pressKey: Enter
+# A new person has no chats yet: Home is the first run, New chat with the default socio.
+- extendedWaitUntil:
+    visible:
+      id: first-run-composer
+    timeout: 60000
+- takeScreenshot: invite-home

@@ -1,0 +1,24 @@
+# From the shell: the workspace drawer's Add a workspace, then ${ORIGIN} and
+# Ada's sign-in, which opens the new workspace's Home.
+appId: ${APP_ID}
+name: add another workspace
+---
+- tapOn:
+    id: open-workspaces
+- tapOn:
+    id: drawer-add-workspace
+- extendedWaitUntil:
+    visible:
+      id: add-workspace-screen
+    timeout: 20000
+- runFlow:
+    file: add-workspace.yaml
+- runFlow:
+    file: sign-in.yaml
+    env:
+      EMAIL: ada@example.test
+      SECRET: ${PASSWORD}
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 30000

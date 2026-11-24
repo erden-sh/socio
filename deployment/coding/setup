@@ -1,0 +1,54 @@
+#!/bin/sh
+# A coding session's setup (CB-239 step 4): clone or fetch the
+# repository through the Git proxy and check out the session branch from
+# base.  setup <owner/name> <base> <branch>  (validated by the supervisor;
+# never interpolated into a shell string).
+#
+# The workspace volume outlives the sandbox, so whatever the agent or a
+# dependency left in .git (hooks, an fsmonitor, filter or diff drivers,
+# includes, aliases) must not run here: the repository's
+# own config is replaced with a known one and its hooks and info (planted
+# attributes such as `* -diff`) removed before any Git
+# command touches the work tree, and every command runs with hooks,
+# fsmonitor and any attributes file off. The global config (HOME is the
+# agent's /tmp/home) is never read; the root-owned /etc/gitconfig, with the
+# gateway URL rewrite and credential helper, is.
+set -eu
+export GIT_CONFIG_GLOBAL=/dev/null
+repository=$1
+base=$2
+branch=$3
+dir=/work/repo
+url="https://github.com/$repository.git"
+git_safe() {
+  git -c core.hooksPath=/dev/null -c core.fsmonitor=false -c core.pager=cat \
+    -c diff.external= -c core.attributesFile=/dev/null \
+    -c protocol.allow=never -c protocol.http.allow=always "$@"
+}
+mkdir -p "$HOME"
+if [ -d "$dir/.git" ]; then
+  cat > "$dir/.git/config" <<CONFIG
+[core]
+	repositoryformatversion = 0
+	filemode = true
+	bare = false
+[remote "origin"]
+	url = $url
+	fetch = +refs/heads/*:refs/remotes/origin/*
+CONFIG
+  rm -rf "$dir/.git/hooks" "$dir/.git/info"
+  git_safe -C "$dir" fetch --prune --no-tags origin
+else
+  rm -rf "$dir"
+  git_safe clone --no-checkout --no-tags "$url" "$dir"
+  rm -rf "$dir/.git/hooks" "$dir/.git/info"
+fi
+# The session branch is new: one the
+# remote already has (a restored database, a second instance) is never
+# reset here and force-pushed over. Exit 3 says so to Socio.
+if git_safe -C "$dir" rev-parse --verify --quiet "refs/remotes/origin/$branch" >/dev/null; then
+  echo "setup: the session branch already exists on the remote" >&2
+  exit 3
+fi
+git_safe -C "$dir" checkout --force -B "$branch" "refs/remotes/origin/$base"
+git_safe -C "$dir" rev-parse HEAD

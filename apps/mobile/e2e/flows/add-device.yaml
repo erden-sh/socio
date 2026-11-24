@@ -1,0 +1,59 @@
+# Add a device, on servers.mjs --dev-links --codes: Ada on the web makes a QR
+# code (the control port's /web/pair, polled every 2 s as the page does); the app opens its link,
+# Continue claims it and shows the 6 digits; the test types them on the web (/web/confirm, the
+# page's confirm) and the app signs in on A's marker chat. The web's polls never held the digits.
+appId: ${APP_ID}
+name: add-device
+---
+- runFlow: launch.yaml
+- runScript:
+    file: common/web.js
+    env:
+      METHOD: POST
+      ROUTE: /web/pair
+- openLink:
+    link: ${output.web.link}
+    autoVerify: true
+- extendedWaitUntil:
+    visible:
+      id: add-device-continue
+    timeout: 30000
+- assertVisible:
+    id: add-device-host
+- takeScreenshot: add-device-start
+- tapOn:
+    id: add-device-continue
+- extendedWaitUntil:
+    visible:
+      id: add-device-digits
+    timeout: 20000
+- assertVisible:
+    id: add-device-instruction
+    text: 'Type this code on your computer to sign in'
+- assertVisible: 'Sign in to ${WORKSPACE_A} as Ada.*'
+- takeScreenshot: add-device-digits
+- copyTextFrom:
+    id: add-device-digits
+- evalScript: ${output.digits = maestro.copiedText}
+- runScript:
+    file: common/web.js
+    env:
+      METHOD: GET
+      ROUTE: /web/pair
+      DIGITS: ${output.digits}
+- assertTrue: ${output.web.digitsSeen === false}
+- runScript:
+    file: common/web.js
+    env:
+      METHOD: POST
+      ROUTE: /web/confirm
+      DIGITS: ${output.digits}
+- assertTrue: ${output.web.state === 'allowed'}
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 60000
+- extendedWaitUntil:
+    visible: '.*${WORKSPACE_A}.*'
+    timeout: 30000
+- takeScreenshot: add-device-home

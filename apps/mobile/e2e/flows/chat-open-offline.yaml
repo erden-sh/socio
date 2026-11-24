@@ -1,0 +1,27 @@
+# After chat-open.yaml, with every workspace server stopped (Ctrl-C
+# servers.mjs; on a Mac, close the tunnel): a cold relaunch opens on the chat,
+# the workspace's last screen, its transcript drawn from the phone's copy
+# alone; Back leads to Home, and the chat opens again from its row, offline.
+# Run it with run.mjs --servers-down.
+appId: ${APP_ID}
+name: chat-open-offline
+---
+- runFlow: common/open.yaml
+- extendedWaitUntil:
+    visible:
+      id: chat-transcript
+    timeout: 180000
+- assertVisible:
+    text: '(?s).*That is the end of the long answer.*'
+- takeScreenshot: chat-open-offline
+- runFlow: common/back.yaml
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 10000
+- tapOn:
+    text: '.*${CHAT_A}.*'
+- extendedWaitUntil:
+    visible:
+      text: '(?s).*That is the end of the long answer.*'
+    timeout: 10000

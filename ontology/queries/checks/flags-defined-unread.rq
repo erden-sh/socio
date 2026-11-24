@@ -1,0 +1,16 @@
+# @ask     Which feature flags are defined in FLAGS but read nowhere?
+# @expect  rows == 0
+# @from    audit/facts.ttl: Defines mentions in packages/shared/src/flags.ts, Reads mentions in code.
+#
+# Why static tools miss it: FlagKey is a union type, so TypeScript rejects an unknown key but
+# says nothing about a key nobody checks any more: a dead flag that still shows in Settings.
+# A flag with `tools` counts as read: those tools exist only while it is on.
+PREFIX prov:  <http://www.w3.org/ns/prov#>
+PREFIX rdfs:  <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX socio: <https://socio.sh/ontology/>
+SELECT ?key ?line WHERE {
+    ?flag a socio:FeatureFlag ; rdfs:label ?key .
+    ?d socio:mentionOf ?flag ; socio:mentionKind socio:Defines ; socio:sourceLine ?line .
+    FILTER NOT EXISTS { ?r socio:mentionOf ?flag ; socio:mentionKind socio:Reads . }
+}
+ORDER BY ?key

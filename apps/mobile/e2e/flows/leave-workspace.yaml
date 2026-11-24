@@ -1,0 +1,100 @@
+# Leave workspace (CB-383; servers.mjs, run.mjs --credentials, --env LEAVE):
+# Ada, A's only admin, sees the row off with the server's reason under it and
+# signs out; Ben, a member, gets the row, opens the question and cancels, and
+# the row is still there. With LEAVE=true he leaves: the app erases the copy
+# and lands on Add workspace (with --no-workspace-left, run.mjs then fails on
+# any of A's folder left). Ben can leave once per servers.mjs run, so a second
+# run (another appearance) passes LEAVE=false.
+appId: ${APP_ID}
+name: leave-workspace
+---
+- runFlow: launch.yaml
+- runFlow:
+    file: common/add-workspace.yaml
+    env:
+      ORIGIN: ${ORIGIN_A}
+- runFlow:
+    file: common/sign-in.yaml
+    env:
+      EMAIL: ada@example.test
+      SECRET: ${PASSWORD}
+- extendedWaitUntil:
+    visible:
+      text: '.*${CHAT_A}.*'
+    timeout: 30000
+# The tab bar is the system's: the flow taps the label.
+- tapOn:
+    text: More
+- tapOn:
+    id: more-account
+- extendedWaitUntil:
+    visible:
+      id: leave-workspace-note
+      text: 'You are this workspace’s only admin.*'
+    timeout: 20000
+- takeScreenshot: leave-refused
+- tapOn:
+    id: sign-out
+- extendedWaitUntil:
+    visible:
+      id: add-workspace-screen
+    timeout: 30000
+- runFlow:
+    file: common/add-workspace.yaml
+    env:
+      ORIGIN: ${ORIGIN_A}
+- runFlow:
+    file: common/sign-in.yaml
+    env:
+      EMAIL: ben@example.test
+      SECRET: ${PASSWORD}
+# Ben's Home: A's marker chat is Ada's own, so the room he joined shows instead.
+- extendedWaitUntil:
+    visible:
+      text: '.*A: launch room.*'
+    timeout: 30000
+- tapOn:
+    text: More
+- tapOn:
+    id: more-account
+- extendedWaitUntil:
+    visible:
+      id: leave-workspace
+      enabled: true
+    timeout: 20000
+- assertNotVisible:
+    id: leave-workspace-note
+- takeScreenshot: leave-row
+- tapOn:
+    id: leave-workspace
+- extendedWaitUntil:
+    visible:
+      text: 'Leave ${WORKSPACE_A}\?'
+    timeout: 10000
+- assertVisible:
+    text: 'You’ll be signed out on every device and lose access\. What you shared stays with the team\. An admin can let you back in\.'
+- takeScreenshot: leave-confirm
+- tapOn:
+    text: Cancel
+- assertVisible:
+    id: account-sheet
+- assertVisible:
+    id: leave-workspace
+- runFlow:
+    when:
+      true: ${LEAVE == 'true'}
+    commands:
+      - tapOn:
+          id: leave-workspace
+      - extendedWaitUntil:
+          visible:
+            text: 'Leave ${WORKSPACE_A}\?'
+          timeout: 10000
+      # The alert's destructive button (Android's positive one), not the row behind it.
+      - tapOn:
+          id: android:id/button1
+      - extendedWaitUntil:
+          visible:
+            id: add-workspace-screen
+          timeout: 30000
+      - takeScreenshot: leave-done

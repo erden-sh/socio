@@ -1,0 +1,14 @@
+# @ask     Which domain classes hold personal data but name no table that stores them?
+# @expect  rows == 0
+# @from    modules/domain.ttl (personalDataCategory) and CONCEPT_TABLES in scripts/build-repo-graph.mjs (storedIn).
+#
+# Why static tools miss it: the link from a product concept to its tables lives in people's
+# heads; this keeps the hand-kept map complete, so the deletion check covers every concept.
+PREFIX prov:  <http://www.w3.org/ns/prov#>
+PREFIX rdfs:  <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX socio: <https://socio.sh/ontology/>
+SELECT DISTINCT ?concept WHERE {
+    ?c socio:personalDataCategory ?cat ; rdfs:label ?concept .
+    FILTER NOT EXISTS { ?c socio:storedIn ?t . ?t socio:tableName ?name . ?d socio:mentionOf ?t ; socio:mentionKind socio:Defines . }
+}
+ORDER BY ?concept

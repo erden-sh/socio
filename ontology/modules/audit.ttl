@@ -1,0 +1,269 @@
+# The vocabulary for cross-file facts: where the repository mentions a path,
+# an environment variable, a feature flag, an HTTP route, an Effect tag or a
+# database table, and in what role. scripts/build-repo-graph.mjs writes them
+# to audit/facts.ttl (and, for the tables that hold personal data, to
+# data/repo.ttl); the checks in queries/checks/ join them.
+@prefix owl:     <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs:    <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:     <http://www.w3.org/2001/XMLSchema#> .
+@prefix skos:    <http://www.w3.org/2004/02/skos/core#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix prov:    <http://www.w3.org/ns/prov#> .
+@prefix socio:   <https://socio.sh/ontology/> .
+
+<https://socio.sh/ontology/audit>
+    a owl:Ontology ;
+    rdfs:label "Socio cross-file facts" ;
+    dcterms:description "Mentions of paths, environment variables, feature flags, routes, Effect tags and tables, with the file and line each comes from." .
+
+# ── Things that are mentioned ────────────────────────────────────────────
+
+socio:RepoFile
+    a owl:Class ;
+    rdfs:subClassOf prov:Entity ;
+    rdfs:label "repository file" ;
+    skos:definition "A file git tracks in the Socio repository, or a folder that holds one." ;
+    socio:module <https://socio.sh/ontology/audit> .
+
+socio:EnvVar
+    a owl:Class ;
+    rdfs:label "environment variable" ;
+    skos:definition "A setting a Socio process reads from its environment." ;
+    socio:module <https://socio.sh/ontology/audit> .
+
+socio:FeatureFlag
+    a owl:Class ;
+    rdfs:label "feature flag" ;
+    skos:definition "A flag declared in packages/shared/src/flags.ts, by its key." ;
+    socio:module <https://socio.sh/ontology/audit> .
+
+socio:Route
+    a owl:Class ;
+    rdfs:label "HTTP route" ;
+    skos:definition "An HTTP path, its parameters written as {}, as the server registers it or as the client and docs name it." ;
+    socio:module <https://socio.sh/ontology/audit> .
+
+socio:EffectTag
+    a owl:Class ;
+    rdfs:label "Effect tag" ;
+    skos:definition "A Context.Service class: a service other code asks for and a layer provides, by its class name." ;
+    socio:module <https://socio.sh/ontology/audit> .
+
+socio:Table
+    a owl:Class ;
+    rdfs:label "database table" ;
+    skos:definition "A SQLite table of Socio's own database." ;
+    socio:module <https://socio.sh/ontology/audit> .
+
+socio:EnvNameTemplate
+    a owl:Class ;
+    rdfs:label "environment name template" ;
+    skos:definition "A setting's name the code composes from parts, as a regular expression: `${name}_DAILY` is ^[A-Z0-9_]*_DAILY$." ;
+    socio:module <https://socio.sh/ontology/audit> .
+
+socio:namePattern
+    a owl:DatatypeProperty, owl:FunctionalProperty ;
+    rdfs:label "name pattern" ;
+    skos:definition "The regular expression of an environment name template." ;
+    rdfs:domain socio:EnvNameTemplate ;
+    rdfs:range xsd:string ;
+    socio:module <https://socio.sh/ontology/audit> .
+
+socio:EnvVar owl:disjointWith socio:EnvNameTemplate,  socio:FeatureFlag, socio:Route, socio:EffectTag, socio:Table, socio:RepoFile .
+socio:FeatureFlag owl:disjointWith socio:Route, socio:EffectTag, socio:Table, socio:RepoFile .
+socio:Route owl:disjointWith socio:EffectTag, socio:Table, socio:RepoFile .
+socio:EffectTag owl:disjointWith socio:Table, socio:RepoFile .
+socio:Table owl:disjointWith socio:RepoFile .
+
+# ── Mentions ─────────────────────────────────────────────────────────────
+
+socio:Mention
+    a owl:Class ;
+    rdfs:subClassOf prov:Entity ;
+    rdfs:label "mention" ;
+    skos:definition "One place in one file that names a thing, in one role (its kind), with the line it is on." ;
+    socio:module <https://socio.sh/ontology/audit> .
+
+socio:MentionKind
+    a owl:Class ;
+    rdfs:label "mention kind" ;
+    skos:definition "The role a mention plays: it declares, defines, names, reads, documents, registers, calls, provides, references, imports, deletes or retains the thing." ;
+    socio:module <https://socio.sh/ontology/audit> .
+
+socio:Declares a owl:NamedIndividual, socio:MentionKind ; rdfs:label "declares" ;
+    skos:definition "Sets a default or an example value: .env.example, a compose file, a worker's configuration." .
+socio:Defines a owl:NamedIndividual, socio:MentionKind ; rdfs:label "defines" ;
+    skos:definition "Brings the thing into being in code: a flag in FLAGS, a tag's class, a table's CREATE TABLE." .
+socio:Reads a owl:NamedIndividual, socio:MentionKind ; rdfs:label "reads" ;
+    skos:definition "Code that uses the thing's value: an environment read, a flag check." .
+socio:Documents a owl:NamedIndividual, socio:MentionKind ; rdfs:label "documents" ;
+    skos:definition "Prose in a Markdown file that names the thing." .
+socio:Registers a owl:NamedIndividual, socio:MentionKind ; rdfs:label "registers" ;
+    skos:definition "Server code that answers a route." .
+socio:Calls a owl:NamedIndividual, socio:MentionKind ; rdfs:label "calls" ;
+    skos:definition "Client code that requests a route." .
+socio:Provides a owl:NamedIndividual, socio:MentionKind ; rdfs:label "provides" ;
+    skos:definition "A layer or context that supplies a tag's service." .
+socio:References a owl:NamedIndividual, socio:MentionKind ; rdfs:label "references" ;
+    skos:definition "A comment or Markdown text that names a repository path." .
+socio:Imports a owl:NamedIndividual, socio:MentionKind ; rdfs:label "imports" ;
+    skos:definition "A module import from one server feature into another." .
+socio:Deletes a owl:NamedIndividual, socio:MentionKind ; rdfs:label "deletes" ;
+    skos:definition "Code that deletes rows of a table, or marks them deleted." .
+socio:Names a owl:NamedIndividual, socio:MentionKind ; rdfs:label "names" ;
+    skos:definition "A plain string in code that reads the environment: a setting's name, the end of one it composes, or a template of one. Weaker than reads." .
+socio:Retains a owl:NamedIndividual, socio:MentionKind ; rdfs:label "retains" ;
+    skos:definition "The purge's list of rows that stay, by design, when the record they name is purged: attribution and audit." .
+
+
+socio:mentionOf
+    a owl:ObjectProperty, owl:FunctionalProperty ;
+    rdfs:label "mention of" ;
+    skos:definition "The thing a mention names." ;
+    rdfs:domain socio:Mention ;
+    rdfs:range owl:Thing ;
+    socio:module <https://socio.sh/ontology/audit> .
+
+socio:mentionKind
+    a owl:ObjectProperty, owl:FunctionalProperty ;
+    rdfs:label "mention kind" ;
+    skos:definition "The role of a mention." ;
+    rdfs:domain socio:Mention ;
+    rdfs:range socio:MentionKind ;
+    socio:module <https://socio.sh/ontology/audit> .
+
+socio:sourceLine
+    a owl:DatatypeProperty, owl:FunctionalProperty ;
+    rdfs:label "source line" ;
+    skos:definition "The 1-based line of the mention in the file it was derived from (prov:wasDerivedFrom)." ;
+    rdfs:domain socio:Mention ;
+    rdfs:range xsd:positiveInteger ;
+    socio:module <https://socio.sh/ontology/audit> .
+
+socio:inComment
+    a owl:DatatypeProperty, owl:FunctionalProperty ;
+    rdfs:label "in comment" ;
+    skos:definition "Whether the mention is in a code comment rather than in Markdown." ;
+    rdfs:domain socio:Mention ;
+    rdfs:range xsd:boolean ;
+    socio:module <https://socio.sh/ontology/audit> .
+
+socio:writtenAs
+    a owl:DatatypeProperty ;
+    rdfs:label "written as" ;
+    skos:definition "The text of the mention as the file has it." ;
+    rdfs:domain socio:Mention ;
+    rdfs:range xsd:string ;
+    socio:module <https://socio.sh/ontology/audit> .
+
+socio:candidatePath
+    a owl:DatatypeProperty ;
+    rdfs:label "candidate path" ;
+    skos:definition "A repository path a path reference may mean: from the root, from its own folder, its package, src/server or its feature. It resolves when a file or folder has one of them as its path." ;
+    rdfs:domain socio:Mention ;
+    rdfs:range xsd:string ;
+    socio:module <https://socio.sh/ontology/audit> .
+
+socio:routeKey
+    a owl:DatatypeProperty ;
+    rdfs:label "route key" ;
+    skos:definition "A route's path with each parameter written {}. A registration has one per mount prefix it may sit under; a {a,b} segment gives one per choice." ;
+    rdfs:domain socio:Mention ;
+    rdfs:range xsd:string ;
+    socio:module <https://socio.sh/ontology/audit> .
+
+socio:routePattern
+    a owl:DatatypeProperty ;
+    rdfs:label "route pattern" ;
+    skos:definition "A route key as a regular expression: {} matches any one segment, and a key that ends in * or … also matches any path under it. A registration matches a reference when either's pattern matches the other's key." ;
+    rdfs:domain socio:Mention ;
+    rdfs:range xsd:string ;
+    socio:module <https://socio.sh/ontology/audit> .
+
+socio:httpMethod
+    a owl:DatatypeProperty ;
+    rdfs:label "HTTP method" ;
+    skos:definition "The method of a route registration or documented route, uppercase." ;
+    rdfs:domain socio:Mention ;
+    rdfs:range xsd:string ;
+    socio:module <https://socio.sh/ontology/audit> .
+
+socio:inContract
+    a owl:DatatypeProperty, owl:FunctionalProperty ;
+    rdfs:label "in contract" ;
+    skos:definition "Whether a tag is defined in a feature's contract.ts." ;
+    rdfs:domain socio:EffectTag ;
+    rdfs:range xsd:boolean ;
+    socio:module <https://socio.sh/ontology/audit> .
+
+socio:softDeleteColumn
+    a owl:DatatypeProperty ;
+    rdfs:label "soft-delete column" ;
+    skos:definition "A column that marks a row deleted without removing it (deletedAt, deleted_at, forgottenAt)." ;
+    rdfs:domain socio:Table ;
+    rdfs:range xsd:string ;
+    socio:module <https://socio.sh/ontology/audit> .
+
+socio:tableName
+    a owl:DatatypeProperty, owl:FunctionalProperty ;
+    rdfs:label "table name" ;
+    skos:definition "A table's SQL name." ;
+    rdfs:domain socio:Table ;
+    rdfs:range xsd:string ;
+    socio:module <https://socio.sh/ontology/audit> .
+
+socio:storedIn
+    a owl:AnnotationProperty ;
+    rdfs:label "stored in" ;
+    skos:definition "A table that holds the things of a domain class. An annotation on the class, kept by hand in the generator." ;
+    rdfs:domain owl:Thing ;
+    rdfs:range socio:Table ;
+    socio:module <https://socio.sh/ontology/audit> .
+
+socio:inFeature
+    a owl:ObjectProperty, owl:FunctionalProperty ;
+    rdfs:label "in feature" ;
+    skos:definition "The server feature a file of src/server belongs to: its top-level folder." ;
+    rdfs:domain socio:RepoFile ;
+    rdfs:range socio:ServerFeature ;
+    socio:module <https://socio.sh/ontology/audit> .
+
+socio:isEntryFile
+    a owl:DatatypeProperty, owl:FunctionalProperty ;
+    rdfs:label "is entry file" ;
+    skos:definition "Whether a file of src/server starts a process or composes the server, as scripts/check-feature-boundaries.mjs lists them; entry files may import anything." ;
+    rdfs:domain socio:RepoFile ;
+    rdfs:range xsd:boolean ;
+    socio:module <https://socio.sh/ontology/audit> .
+
+socio:hasDefault
+    a owl:DatatypeProperty, owl:FunctionalProperty ;
+    rdfs:label "has default" ;
+    skos:definition "Whether a tag is a Context.Reference, whose default value serves when no layer provides it." ;
+    rdfs:domain socio:EffectTag ;
+    rdfs:range xsd:boolean ;
+    socio:module <https://socio.sh/ontology/audit> .
+
+socio:inHistoryNote
+    a owl:DatatypeProperty, owl:FunctionalProperty ;
+    rdfs:label "in history note" ;
+    skos:definition "Whether a path reference is on a line that says where something was or came from (moved, formerly, ported, adapted, upstream), so the path may be gone on purpose." ;
+    rdfs:domain socio:Mention ;
+    rdfs:range xsd:boolean ;
+    socio:module <https://socio.sh/ontology/audit> .
+
+socio:gitIgnored
+    a owl:DatatypeProperty, owl:FunctionalProperty ;
+    rdfs:label "git ignored" ;
+    skos:definition "Whether a path is one .gitignore covers: it exists only where it was built or generated." ;
+    rdfs:domain socio:RepoFile ;
+    rdfs:range xsd:boolean ;
+    socio:module <https://socio.sh/ontology/audit> .
+
+socio:onHistoryLine
+    a owl:DatatypeProperty, owl:FunctionalProperty ;
+    rdfs:label "on history line" ;
+    skos:definition "Whether a path reference's own line, or the next, has one of the history words of socio:inHistoryNote: a narrower test, for checks that must stay strict." ;
+    rdfs:domain socio:Mention ;
+    rdfs:range xsd:boolean ;
+    socio:module <https://socio.sh/ontology/audit> .

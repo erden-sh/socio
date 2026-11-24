@@ -1,0 +1,44 @@
+/*
+ * Generated from style.css
+ * by scripts/lib/legacy-dark.ts: dark mode for the legacy views. Do not
+ * edit; after changing a legacy stylesheet, regenerate with
+ *   pnpm exec vitest run tests/integration/legacy-dark.test.ts -u
+ */
+
+/* style.css */
+:root.dark {
+    color: var(--foreground);
+    background: var(--background);
+    --ink: var(--foreground);
+    --line: var(--border);
+}
+.dark button:where(:not([data-slot])) {
+    color: inherit;
+}
+.dark a:where(:not([data-slot])) {
+    color: inherit;
+    text-decoration: none;
+}
+.dark button:where(:not([data-slot])) {
+    border: 1px solid var(--line);
+    background: var(--card);
+}
+.dark button:where(:not([data-slot])):hover:not(:disabled) {
+    background: #252527;
+}
+.dark button:where(:not([data-slot])):focus-visible,
+.dark a:where(:not([data-slot])):focus-visible,
+.dark input:where(:not([data-slot])):focus-visible,
+.dark textarea:where(:not([data-slot])):focus-visible {
+    outline: 3px solid #b8c4fa;
+}
+.dark select:where(:not([data-slot])) {
+    color: var(--ink);
+}
+.dark input:where(:not([data-slot])),
+.dark textarea:where(:not([data-slot])) {
+    border: 1px solid #39393d;
+    background: var(--card);
+    color: var(--ink);
+    outline: none;
+}

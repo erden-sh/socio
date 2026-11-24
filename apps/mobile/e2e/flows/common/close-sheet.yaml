@@ -1,0 +1,18 @@
+# Closes the trace sheet (opened at 0.6 of the window): Android's back key,
+# on iOS a swipe down from its grabber (a sheet has no Back).
+appId: ${APP_ID}
+name: close-sheet
+---
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - back
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - swipe:
+          start: 50%,42%
+          end: 50%,98%
+      - waitForAnimationToEnd

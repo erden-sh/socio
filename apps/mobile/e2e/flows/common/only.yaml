@@ -1,0 +1,17 @@
+# Home shows ${SHOWN}'s marker chat, and neither ${HIDDEN_1}'s nor ${HIDDEN_2}'s
+# (a switch must leave nothing of the other workspaces).
+appId: ${APP_ID}
+name: only one workspace
+---
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 30000
+- extendedWaitUntil:
+    visible:
+      text: '.*${SHOWN}.*'
+    timeout: 30000
+- assertNotVisible:
+    text: '.*${HIDDEN_1}.*'
+- assertNotVisible:
+    text: '.*${HIDDEN_2}.*'

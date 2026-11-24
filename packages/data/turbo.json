@@ -1,0 +1,14 @@
+{
+    "$schema": "../../node_modules/turbo/schema.json",
+    "extends": ["//"],
+    "tasks": {
+        "typecheck": {
+            "inputs": ["$TURBO_DEFAULT$"],
+            "outputs": []
+        },
+        "lint": {
+            "inputs": ["$TURBO_DEFAULT$"],
+            "outputs": []
+        }
+    }
+}

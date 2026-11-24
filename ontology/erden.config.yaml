@@ -1,0 +1,35 @@
+schemaVersion: 1
+canonicalIri: 'https://socio.sh/ontology/'
+alias: '@erden/socio'
+ownedIriPrefixes:
+  - 'https://socio.sh/ontology/'
+title: 'Socio ontology and knowledge graph'
+description: 'The product domain of Socio (workspaces, people, socios, chats, rooms, pages, the Improvements board, schedules, memory, data, plugins, mini apps, computers and coding sessions), a vocabulary for its code structure, and a knowledge graph of the Socio repository generated from its sources.'
+registry: 'https://registry.erden.sh'
+sources:
+  ontology:
+    - 'ontology.ttl'
+    - 'modules'
+    - 'data'
+  shapes:
+    - 'shapes.ttl'
+  competencyQuestions:
+    - 'queries/features-implementing-concept.rq'
+    - 'queries/package-dependents.rq'
+    - 'queries/personal-data-concepts.rq'
+    - 'queries/feature-order.rq'
+    - 'queries/features-with-contract.rq'
+    - 'queries/checks/features-against-order.rq'
+    - 'queries/checks/personal-data-without-deletion.rq'
+    - 'queries/checks/personal-data-unmapped.rq'
+dependencies:
+  '@erden/dcat': '*'
+  '@erden/dcmi-terms': '*'
+  '@erden/dpv': '*'
+  '@erden/foaf': '*'
+  '@erden/odrl': '*'
+  '@erden/org': '*'
+  '@erden/prov-o': '*'
+  '@erden/schema-org': '^30.1.0'
+  '@erden/skos': '*'
+  '@erden/spdx': '*'

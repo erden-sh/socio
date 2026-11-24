@@ -1,0 +1,203 @@
+# CI for every branch, run as untrusted code (CB-32): coding agents write
+# branches, and any branch's tests can do anything.
+# SECURITY.md ("CI runs untrusted code") has the threat model. In short:
+# - the token can only read, and checkout doesn't keep it; no secrets;
+#   never pull_request_target; every action is pinned by commit;
+# - the runner itself runs nothing the branch controls: only checkout,
+#   a copy of the checkout to $RUNNER_TEMP/src (without .git), the task cache's
+#   restore and save, and the scripts in .github/ci. Containers mount only
+#   that copy, never the workspace, whose .git checkout's post step uses
+#   on the runner; their output can't issue workflow commands;
+# - the test job fetches two commits, so a trusted script can read main's
+#   feature boundary baseline from the first parent into the copy
+#   (.github/ci/reference-baseline.sh); the branch can't write that commit;
+# - `pnpm install --frozen-lockfile --ignore-scripts --ignore-pnpmfile`
+#   runs in a container on an internal Docker network whose only way out is
+#   .github/ci/egress-proxy.mjs, which allows registry.npmjs.org:443 and
+#   nothing else (Node 26.13.0, the latest LTS, and pnpm 10.15.0 are baked
+#   into the CI image, CB-183);
+# - install scripts, format, lint, typecheck, tests and the build run in a
+#   container with `--network none`;
+# - the task cache: a push to main writes it and never reads it, a pull
+#   request reads it and never saves it (.github/ci/turbo.sh,
+#   .github/ci/turbo-cache.sh); tests/ci-workflow.test.ts holds that.
+# - it runs on GitHub-hosted runners (runs-on: ubuntu-latest), a fresh VM
+#   per job; .github/ci/runner-check.sh stops the job unless the host has
+#   Docker 26+ and nothing listening beyond loopback.
+# This file and .github/ci are trusted: coding sessions' pushes never
+# change .github/ (coding-git refuses it, and Socio's GitHub App has no
+# `workflows` permission).
+name: CI
+# On push to main: run CI (direct commits to main, no PR). On PR branches:
+# run only on pull_request, not push — otherwise pushing to a branch with
+# an open PR fires both events and doubles every check.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, synchronize, reopened]
+permissions:
+  contents: read
+
+# One run per ref at a time. On a PR branch a new push cancels the run in
+# progress: its result no longer matters. On main it doesn't: a main run
+# warms the task cache PRs read, and merges land in bursts, so cancelling
+# threw away dozens of part-finished runs a day. A main run in progress
+# finishes; of the pushes that queue behind it, GitHub keeps only the
+# newest pending run and cancels the others before they take a runner.
+# Group by ref so main pushes and PR pushes are independent groups.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    # A cold cache on a GitHub-hosted runner takes about 15 minutes.
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Docker 26+ and nothing listening beyond loopback, or stop (SECURITY.md).
+      - name: Check the runner
+        run: bash .github/ci/runner-check.sh
+      - name: Copy the checkout out of the workspace
+        run: |
+          mkdir -p "$RUNNER_TEMP/src"
+          tar --exclude=./.git --exclude=./.turbo-ci -C "$GITHUB_WORKSPACE" -cf - . | tar -C "$RUNNER_TEMP/src" -xf -
+      # Pull requests read main's task cache and never save (SECURITY.md).
+      # Into a directory no container mounts, and before any container has run.
+      # A slow or missing cache only costs a real run.
+      - name: Restore the task cache (pull requests)
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        timeout-minutes: 3
+        env:
+          SEGMENT_DOWNLOAD_TIMEOUT_MINS: '2'
+        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: ${{ runner.temp }}/turbo-cache
+          key: turbo-v1-check-${{ github.sha }}
+          restore-keys: turbo-v1-check-
+      - name: Put the restored cache in the copy (pull requests)
+        if: github.event_name == 'pull_request'
+        run: bash .github/ci/turbo-cache.sh import
+      - name: Build the CI image
+        run: docker build --pull --tag ci-box .github/ci
+      # Downloads only, from registry.npmjs.org through the proxy, on the
+      # internal network; no package's (or the project's) scripts run.
+      - name: Install dependencies without their scripts
+        run: bash .github/ci/install.sh
+      # From here on the branch's code runs, with no network, on the copy.
+      - name: Install scripts (no network)
+        run: |
+          bash .github/ci/box.sh pnpm rebuild
+          bash .github/ci/box.sh node vendor/check-stubs.cjs
+      # oxfmt, oxlint and tsc per package, as cached tasks (scripts/turbo.mjs).
+      - name: Format, lint and typecheck (no network)
+        run: 'bash .github/ci/turbo.sh check'
+      - name: Build (no network)
+        run: 'bash .github/ci/turbo.sh build'
+      # The model-free UI smoke (CB-316): a built server with mock auth and
+      # the scripted fake model, both loopback, in the no-network box. The
+      # browser is baked into the CI image. Runs the scenarios that need no
+      # live model; fails the CI run on any smoke failure.
+      - name: UI smoke (no network)
+        run: 'bash .github/ci/box.sh bash .github/ci/smoke.sh'
+      # Only a push to main saves, and only if every step above passed. The
+      # script keeps regular files with cache-entry names and nothing else.
+      - name: Take the task cache out of the copy (main)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: bash .github/ci/turbo-cache.sh export
+      - name: Save the task cache (main)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        continue-on-error: true
+        timeout-minutes: 3
+        uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: ${{ runner.temp }}/turbo-cache
+          key: turbo-v1-check-${{ github.sha }}
+
+  # Tests run sharded across parallel jobs. The suite is 578 files / ~4700
+  # tests, many heavy integration tests; a single 2-core job couldn't finish
+  # in 30 min. Each shard runs 1/4 of the files in its own container with 4
+  # fork workers; the four shards finish in ~12 min wall-clock instead of
+  # ~45 min serial. The shard is passed via the --shard N/4 CLI flag, to each
+  # bucket in turn (--concurrency=1 keeps one Vitest at a time on these two
+  # cores); the flag is in each task's hash and the shard in the cache key, so
+  # shards cache separately. The pool config (forks, maxWorkers: 4) is in
+  # vitest.shared.ts.
+  test:
+    runs-on: ubuntu-latest
+    # Each shard takes about 15 minutes on a GitHub-hosted runner with a cold cache.
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      # Two commits: the first parent is main, whose feature boundary baseline
+      # the change's may only shrink from (.github/ci/reference-baseline.sh).
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      # Docker 26+ and nothing listening beyond loopback, or stop (SECURITY.md).
+      - name: Check the runner
+        run: bash .github/ci/runner-check.sh
+      - name: Copy the checkout out of the workspace
+        run: |
+          mkdir -p "$RUNNER_TEMP/src"
+          tar --exclude=./.git --exclude=./.turbo-ci -C "$GITHUB_WORKSPACE" -cf - . | tar -C "$RUNNER_TEMP/src" -xf -
+      # main's baseline, read from the checkout's .git on the runner before any
+      # container has run, into the copy's .ci-reference/ (which it empties
+      # first): the copy has no .git, and the branch can't write main's commit.
+      - name: Put main's feature boundary baseline in the copy
+        run: bash .github/ci/reference-baseline.sh
+      # Pull requests read main's task cache and never save (SECURITY.md).
+      # Into a directory no container mounts, and before any container has run.
+      # A slow or missing cache only costs a real run.
+      - name: Restore the task cache (pull requests)
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        timeout-minutes: 3
+        env:
+          SEGMENT_DOWNLOAD_TIMEOUT_MINS: '2'
+        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: ${{ runner.temp }}/turbo-cache
+          key: turbo-v1-test-shard${{ matrix.shard }}-${{ github.sha }}
+          restore-keys: turbo-v1-test-shard${{ matrix.shard }}-
+      - name: Put the restored cache in the copy (pull requests)
+        if: github.event_name == 'pull_request'
+        run: bash .github/ci/turbo-cache.sh import
+      - name: Build the CI image
+        run: docker build --pull --tag ci-box .github/ci
+      - name: Install dependencies without their scripts
+        run: bash .github/ci/install.sh
+      - name: Install scripts (no network)
+        run: |
+          bash .github/ci/box.sh pnpm rebuild
+          bash .github/ci/box.sh node vendor/check-stubs.cjs
+      - name: Tests (sharded, no network)
+        env:
+          DO_NOT_TRACK: '1'
+          SHARD_INDEX: ${{ matrix.shard }}
+          # The profile production's app-browser uses, so the Chromium sandbox
+          # tests run here. A trusted copy: deployment/ is the branch's.
+          BOX_SECCOMP_PROFILE: .github/ci/chromium-seccomp.json
+        run: 'bash .github/ci/turbo.sh test --concurrency=1 -- --shard=$SHARD_INDEX/4'
+      # Only a push to main saves, and only if every step above passed. The
+      # script keeps regular files with cache-entry names and nothing else.
+      - name: Take the task cache out of the copy (main)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: bash .github/ci/turbo-cache.sh export
+      - name: Save the task cache (main)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        continue-on-error: true
+        timeout-minutes: 3
+        uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: ${{ runner.temp }}/turbo-cache
+          key: turbo-v1-test-shard${{ matrix.shard }}-${{ github.sha }}

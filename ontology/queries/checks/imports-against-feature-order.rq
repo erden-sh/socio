@@ -1,0 +1,18 @@
+# @ask     Which imports between server features point up the declared folder order?
+# @expect  rows == 0
+# @from    audit/facts.ttl: Imports mentions from non-entry files of src/server, and scripts/feature-ranks.json (featureRank in data/repo.ttl).
+#
+# Why static tools miss it: scripts/check-feature-boundaries.mjs reports these but doesn't fail
+# on them yet. One row per pair of files, as that script counts its "imports point up it".
+PREFIX prov:  <http://www.w3.org/ns/prov#>
+PREFIX rdfs:  <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX socio: <https://socio.sh/ontology/>
+SELECT DISTINCT ?from ?to ?fromFeature ?toFeature WHERE {
+    ?m socio:mentionKind socio:Imports ; socio:mentionOf ?t ; prov:wasDerivedFrom ?f .
+    ?f socio:sourcePath ?from ; socio:inFeature ?a ; socio:isEntryFile false .
+    ?t socio:sourcePath ?to ; socio:inFeature ?b .
+    ?a socio:featureRank ?ra ; rdfs:label ?fromFeature .
+    ?b socio:featureRank ?rb ; rdfs:label ?toFeature .
+    FILTER (?rb < ?ra)
+}
+ORDER BY ?from ?to

@@ -1,0 +1,133 @@
+{
+    "runs": [
+        {
+            "seq": 2,
+            "prev": null,
+            "runId": "r2-capture-run-1",
+            "status": "finished",
+            "startedAt": 1794145415489,
+            "finishedAt": 1794145423796,
+            "messages": [
+                {
+                    "id": "r2-user-1",
+                    "role": "user",
+                    "content": "smoke trace: show me the work",
+                    "metadata": {
+                        "socioSender": "u-93cdc01e628d",
+                        "socioSenderName": "Ada"
+                    }
+                },
+                {
+                    "id": "openai-compatible-1794145415551-qai5kpwfagk",
+                    "role": "reasoning",
+                    "content": "Working out the steps. "
+                },
+                {
+                    "id": "6fec5d39-1845-48c6-a734-dadbe406dbf4",
+                    "role": "assistant",
+                    "toolCalls": [
+                        {
+                            "id": "call-0-list_authorized_spaces",
+                            "type": "function",
+                            "function": {
+                                "name": "list_authorized_spaces",
+                                "arguments": "{}"
+                            }
+                        },
+                        {
+                            "id": "call-1-search_space_pages",
+                            "type": "function",
+                            "function": {
+                                "name": "search_space_pages",
+                                "arguments": "{\"query\":\"export\"}"
+                            }
+                        },
+                        {
+                            "id": "call-2-data_query",
+                            "type": "function",
+                            "function": {
+                                "name": "data_query",
+                                "arguments": "{\"sql\":\"SELECT week, SUM(revenue)\\nFROM weekly_sales\\nGROUP BY week\"}"
+                            }
+                        }
+                    ],
+                    "metadata": {
+                        "socioDot": "5de0221d-fe8f-4975-8220-2bd47e3aee03"
+                    },
+                    "content": "Traced: two lookups, and a query that failed."
+                },
+                {
+                    "id": "0515afc8-7018-433d-9195-9da704920264",
+                    "toolCallId": "call-0-list_authorized_spaces",
+                    "role": "tool",
+                    "content": "[{\"id\":\"329de4d4-b34c-4b00-a652-4af9cee6f5a3\",\"name\":\"Everyday\",\"description\":\"A little space for your day.\",\"createdAt\":1794145351936}]"
+                },
+                {
+                    "id": "e7fb7c55-c94b-488b-ac1d-882744739d5e",
+                    "toolCallId": "call-1-search_space_pages",
+                    "role": "tool",
+                    "content": "{\"results\":[],\"corrected\":null,\"more\":false}"
+                },
+                {
+                    "id": "8ae83604-0330-487f-a4b7-846c30d629fb",
+                    "toolCallId": "call-2-data_query",
+                    "role": "tool",
+                    "content": "{\"error\":\"The query failed: no such table: weekly_sales\",\"code\":\"http_400\"}"
+                },
+                {
+                    "id": "openai-compatible-1794145421791-wym31vumkbm",
+                    "role": "reasoning",
+                    "content": "Working out the steps. "
+                }
+            ],
+            "times": {
+                "messages": [
+                    ["r2-user-1", 1794145415514],
+                    ["6fec5d39-1845-48c6-a734-dadbe406dbf4", 1794145423790]
+                ],
+                "tools": [
+                    [
+                        "call-0-list_authorized_spaces",
+                        {
+                            "start": 1794145417560,
+                            "end": 1794145417572
+                        }
+                    ],
+                    [
+                        "call-1-search_space_pages",
+                        {
+                            "start": 1794145419612,
+                            "end": 1794145419635
+                        }
+                    ],
+                    [
+                        "call-2-data_query",
+                        {
+                            "start": 1794145421677,
+                            "end": 1794145421760
+                        }
+                    ]
+                ],
+                "reasoning": [
+                    [
+                        "openai-compatible-1794145415551-qai5kpwfagk",
+                        {
+                            "start": 1794145415552,
+                            "end": 1794145417562
+                        }
+                    ],
+                    [
+                        "openai-compatible-1794145421791-wym31vumkbm",
+                        {
+                            "start": 1794145421791,
+                            "end": 1794145423790
+                        }
+                    ]
+                ]
+            },
+            "light": {},
+            "size": 2284
+        }
+    ],
+    "more": false
+}

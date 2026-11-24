@@ -1,0 +1,100 @@
+# Settings → Notifications on workspace A (servers.mjs; run.mjs
+# --credentials): the test notification's link opens the screen; a channel's
+# content is saved and set back (the whole map, PATCH /api/preferences); the
+# show-text switch; "Hide my presence in rooms"; the test, which says what it
+# reached.
+appId: ${APP_ID}
+name: notifications
+---
+- runFlow: launch.yaml
+- runFlow:
+    file: common/add-workspace.yaml
+    env:
+      ORIGIN: ${ORIGIN_A}
+- runFlow:
+    file: common/sign-in.yaml
+    env:
+      EMAIL: ada@example.test
+      SECRET: ${PASSWORD}
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 30000
+# Settings shows the row to the screen while a workspace is open.
+- runFlow:
+    file: common/link.yaml
+    env:
+      LINK: ${APP_SCHEME}://settings
+- extendedWaitUntil:
+    visible:
+      id: settings-notifications-screen
+    timeout: 10000
+- takeScreenshot: notifications-settings-row
+- tapOn:
+    id: settings-notifications-screen
+- extendedWaitUntil:
+    visible:
+      id: notifications-channel-push
+    timeout: 20000
+- takeScreenshot: notifications-screen
+- runFlow: common/back.yaml
+- runFlow: common/back.yaml
+# The test notification's link.
+- runFlow:
+    file: common/link.yaml
+    env:
+      LINK: ${APP_SCHEME}://settings/notifications
+- extendedWaitUntil:
+    visible:
+      id: notifications-channel-push
+    timeout: 20000
+# Push shows only who needs you, then the message again.
+- tapOn:
+    id: notifications-channel-push-private
+- extendedWaitUntil:
+    visible:
+      id: notifications-channel-push-private
+      checked: true
+    timeout: 10000
+- tapOn:
+    id: notifications-channel-push-message
+- extendedWaitUntil:
+    visible:
+      id: notifications-channel-push-message
+      checked: true
+    timeout: 10000
+- tapOn:
+    id: notifications-show-text
+- assertVisible:
+    id: notifications-show-text
+    checked: false
+- tapOn:
+    id: notifications-show-text
+- assertVisible:
+    id: notifications-show-text
+    checked: true
+- scrollUntilVisible:
+    element:
+      id: notifications-send-test
+- tapOn:
+    id: notifications-hide-presence
+- extendedWaitUntil:
+    visible:
+      id: notifications-hide-presence
+      checked: true
+    timeout: 10000
+- tapOn:
+    id: notifications-hide-presence
+- extendedWaitUntil:
+    visible:
+      id: notifications-hide-presence
+      checked: false
+    timeout: 10000
+- tapOn:
+    id: notifications-send-test
+# The answer shows under the button, past the screen's end.
+- scrollUntilVisible:
+    element:
+      id: notifications-test-result
+    timeout: 20000
+- takeScreenshot: notifications-test-sent

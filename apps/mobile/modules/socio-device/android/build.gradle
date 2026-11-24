@@ -1,0 +1,27 @@
+// Socio's local Expo module (../README.md). Autolinking finds it in
+// apps/mobile/modules; Expo's Gradle plugin sets the SDK versions and Kotlin.
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'expo.modules.sociodevice'
+version = '0.1.0'
+
+android {
+  namespace "expo.modules.sociodevice"
+  defaultConfig {
+    versionCode 1
+    versionName '0.1.0'
+  }
+}
+
+// Chrome's Auth Tab (androidx.browser 1.9) for the system sign-in sheet (AuthTab.kt), and
+// the activity result registry it launches through. Both non-transitive: the app resolves browser's
+// own dependencies (activity, core) to its newer versions (expo-web-browser already brings browser
+// 1.6, which Gradle raises to 1.9), and resolving them for this module alone needs versions an
+// offline Gradle cache may lack.
+dependencies {
+  implementation("androidx.browser:browser:1.9.0") { transitive = false }
+  compileOnly("androidx.activity:activity:1.10.1") { transitive = false }
+}

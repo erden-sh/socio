@@ -1,0 +1,146 @@
+# Socio's local stack. Compose resolves relative paths against this folder
+# (.docker/), so build contexts are `..`. Run it from the repository root
+# with the repository's .env (Compose otherwise looks for .docker/.env):
+#   docker compose --env-file .env -f .docker/compose.yml up --build -d
+services:
+  app:
+    build:
+      context: ..
+      target: app
+    ports:
+      - '127.0.0.1:4310:4310'
+    environment:
+      APP_ORIGIN: ${APP_ORIGIN:-http://localhost:4310}
+      OWNER_ID: ${OWNER_ID:-company-brain-owner}
+      # The container binds 0.0.0.0, and mock auth runs on loopback only:
+      # sign in with Better Auth. Create the first account with
+      # docker compose --env-file .env -f .docker/compose.yml exec app node dist/server/server/auth/auth-cli.js create-user …
+      AUTH_PROVIDER: betterauth
+      AUTH_FIRST_ADMIN_EMAIL: ${AUTH_FIRST_ADMIN_EMAIL:-}
+      AUTH_FIRST_ADMIN_LINK: ${AUTH_FIRST_ADMIN_LINK:-}
+      # Former names of the two above (CB-390), read for two releases.
+      AUTH_OPERATOR_EMAIL: ${AUTH_OPERATOR_EMAIL:-}
+      AUTH_OPERATOR_LINK: ${AUTH_OPERATOR_LINK:-}
+      SESSION_SECRET: ${SESSION_SECRET:?Set a 24+ character SESSION_SECRET in .env}
+      # Seals files and stored credentials (CB-62): openssl rand -hex 32.
+      # Unset: a key from SESSION_SECRET.
+      DATA_ENCRYPTION_KEY: ${DATA_ENCRYPTION_KEY:-}
+      # Scheduled backups (CB-63) on their own volume; /app isn't writable.
+      BACKUP_DIR: /backups
+      BACKUP_INTERVAL_HOURS: ${BACKUP_INTERVAL_HOURS:-24}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_POLLING: ${TELEGRAM_POLLING:-}
+      TELEGRAM_ALLOWED_CHAT_IDS: ${TELEGRAM_ALLOWED_CHAT_IDS:-}
+      TELEGRAM_DOT_ID: ${TELEGRAM_DOT_ID:-}
+      DO_NOT_TRACK: '1'
+      COPILOTKIT_TELEMETRY_SAMPLE_RATE: '0'
+      COPILOTKIT_TELEMETRY_DISABLED: 'true'
+      VOICE_API_KEY: ${VOICE_API_KEY:-}
+      VOICE_MODEL: ${VOICE_MODEL:-}
+      VOICE_NAME: ${VOICE_NAME:-marin}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
+      MODEL_MAX_COMPLETION_TOKENS: ${MODEL_MAX_COMPLETION_TOKENS:-}
+      MODEL_ACCEPTS_IMAGES: ${MODEL_ACCEPTS_IMAGES:-}
+      MODEL_MAX_IMAGES: ${MODEL_MAX_IMAGES:-}
+      TITLE_MODEL_OPTIONS: ${TITLE_MODEL_OPTIONS:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-}
+      WEB_SEARCH_PROVIDER: ${WEB_SEARCH_PROVIDER:-parallel}
+      PARALLEL_API_KEY: ${PARALLEL_API_KEY:-}
+      # The app browser (CB-232, dark): set APP_BROWSER_URL to
+      # http://app-browser:4360 with the app-browser profile on.
+      APP_BROWSER_URL: ${APP_BROWSER_URL:-}
+      APP_BROWSER_SECRET: ${APP_BROWSER_SECRET:-}
+      # Its internal apps listener takes connections from app-browser-link
+      # only (CB-232).
+      APPS_INTERNAL_PORT: '4312'
+      APPS_INTERNAL_SUBNET: ${APP_BROWSER_SUBNET:-10.212.1.0/24}
+      # CB-239: coding-git (profile coding) at http://coding-git:4350,
+      # with the secret the two share. Empty: pushes and extraction are off.
+      CODING_GIT_URL: ${CODING_GIT_URL:-}
+      CODING_GIT_SECRET: ${CODING_GIT_SECRET:-}
+    volumes:
+      - company-brain-data:/data
+      - company-brain-backups:/backups
+    networks:
+      - app-browser-link
+      - app-egress
+      # CB-239: the app reaches coding-git (with the `coding` profile).
+      - coding-git-link
+    init: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+  # Delegated app sessions (CB-232; dark, profile app-browser): one
+  # sandboxed Chromium per person + socio + grant, each worker its own
+  # user, locked to one app and reaching nothing but the app. Its seccomp
+  # profile lets Chromium's sandbox make the user namespaces it needs
+  # (src/app-browser/deploy-spec.ts; tests/app-browser-spec.test.ts).
+  app-browser:
+    profiles: [app-browser]
+    build:
+      context: ..
+      target: app-browser
+    environment:
+      APP_BROWSER_SECRET: ${APP_BROWSER_SECRET:-}
+      # The app's internal apps listener (CB-232).
+      APP_BROWSER_UPSTREAM: http://app:4312
+    networks:
+      - app-browser-link
+    init: true
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp:size=512m
+    security_opt:
+      - no-new-privileges:true
+      - seccomp=../deployment/app-browser/seccomp.json
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETUID
+      - SETGID
+      - KILL
+  # CB-239: push inspection and extraction, dark until the
+  # coding flags are on. Its only network is internal and shared with the
+  # app alone: no route out, no GitHub credential. Set CODING_GIT_URL and
+  # CODING_GIT_SECRET on the app too.
+  coding-git:
+    profiles: [coding]
+    build:
+      context: ..
+      target: coding-git
+    environment:
+      CODING_GIT_SECRET: ${CODING_GIT_SECRET:-}
+    networks:
+      - coding-git-link
+    volumes:
+      - coding-git-data:/srv/coding-git
+    init: true
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    mem_limit: 2g
+    pids_limit: 256
+networks:
+  # The app and the app browser only: no way out. A fixed subnet: the
+  # app's APPS_INTERNAL_SUBNET (another default than the swarm overlay's).
+  app-browser-link:
+    internal: true
+    ipam:
+      config:
+        - subnet: ${APP_BROWSER_SUBNET:-10.212.1.0/24}
+  coding-git-link:
+    internal: true
+  app-egress:
+volumes:
+  company-brain-data:
+  company-brain-backups:
+  coding-git-data:

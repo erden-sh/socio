@@ -1,0 +1,10 @@
+# A sign-in code by email, on servers.mjs --codes: workspace A sends its codes
+# by email to the SMTP sink (its admin turned email links on). common/sign-in-code.yaml.
+appId: ${APP_ID}
+name: getting-in-email
+---
+- runFlow:
+    file: common/sign-in-code.yaml
+    env:
+      LETTER: A
+      CHANNEL: email

@@ -1,0 +1,24 @@
+# The store is encrypted on the device (a device check, no server):
+# Diagnostics makes a scratch store, closes it, opens it again on a connection
+# of its own and reads each file back. Both files must show cipher_status 1 and
+# a first page that isn't SQLite's plain header.
+appId: ${APP_ID}
+name: store-encrypted
+---
+- runFlow: launch.yaml
+- tapOn:
+    id: open-diagnostics
+- extendedWaitUntil:
+    visible:
+      id: diagnostics-created
+    timeout: 30000
+- assertVisible:
+    id: diagnostics-file-diagnostics/cache.db
+    text: '.*cipher_status 1,.*header not SQLite.s \(passes\).*'
+- assertVisible:
+    id: diagnostics-file-diagnostics/user.db
+    text: '.*cipher_status 1,.*header not SQLite.s \(passes\).*'
+- assertVisible:
+    id: diagnostics-scratch-deleted
+    text: '.*Deleted afterwards: yes.*'
+- takeScreenshot: store-encrypted

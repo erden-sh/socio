@@ -1,0 +1,15 @@
+{
+    // The Worker alone, with the Workers runtime's types. The build, the browser script and the
+    // tests are tsconfig.build.json's.
+    "compilerOptions": {
+        "target": "ES2024",
+        "lib": ["ES2024"],
+        "module": "ESNext",
+        "moduleResolution": "Bundler",
+        "strict": true,
+        "noEmit": true,
+        "skipLibCheck": true,
+        "types": ["@cloudflare/workers-types"]
+    },
+    "include": ["src/worker"]
+}

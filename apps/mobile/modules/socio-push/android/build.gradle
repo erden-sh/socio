@@ -1,0 +1,47 @@
+// Socio's push keys and decryptor (../README.md). Autolinking finds it in
+// apps/mobile/modules; Expo's Gradle plugin sets the SDK versions and Kotlin.
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'expo.modules.sociopush'
+version = '0.1.0'
+
+android {
+  namespace "expo.modules.sociopush"
+  defaultConfig {
+    versionCode 1
+    versionName '0.1.0'
+  }
+  // The JVM unit test reads ../vectors.json, which iOS's XCTest reads too.
+  testOptions {
+    // Robolectric (PushNotifierTest) reads the manifest and resources.
+    unitTests.includeAndroidResources = true
+    unitTests.all {
+      systemProperty 'socioPush.vectors', file('../vectors.json').absolutePath
+    }
+  }
+}
+
+dependencies {
+  // The messaging service extends expo-notifications' and posts through androidx, at the
+  // versions expo-notifications 58.1.8 brings, so Gradle resolves no second copy. Expo 58 links
+  // expo-notifications as its prebuilt AAR (local-maven-repo) unless the app builds it from source.
+  if (findProject(':expo-notifications') != null) {
+    implementation project(':expo-notifications')
+  } else {
+    implementation 'host.exp.exponent:expo.modules.notifications:58.1.8'
+  }
+  implementation 'com.google.firebase:firebase-messaging:25.0.1'
+  implementation 'androidx.core:core:1.17.0'
+  implementation 'androidx.lifecycle:lifecycle-process:2.9.3'
+
+  // JVM unit tests only (`:socio-push:testDebugUnitTest`, README.md). org.json is
+  // a stub on the plain JVM, so the test reads the vectors with the real one.
+  testImplementation 'junit:junit:4.13.2'
+  testImplementation 'org.json:json:20250517'
+  // T3 Code's pattern for the service (vendor/t3code/SYNC.md). Robolectric runs SDK 34 at most on
+  // JDK 17, the JDK the app builds with.
+  testImplementation 'org.robolectric:robolectric:4.16.1'
+}

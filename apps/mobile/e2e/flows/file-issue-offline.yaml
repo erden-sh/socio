@@ -1,0 +1,69 @@
+# Filing offline makes exactly one issue, after
+# board-open.yaml behind chaos-proxy.mjs, with a photo seeded: with the server
+# away (the proxy's down: airplane mode on an emulator doesn't cut adb
+# reverse, README), an issue with a photo is filed; it shows at once as CB-?,
+# "Waiting to send", and stays so through a force-stop and a cold relaunch
+# still offline; once the server is back it gets its number and the photo.
+# Then count it on the server: exactly one issue with this title and one
+# attachment (README, The flows).
+appId: ${APP_ID}
+name: file-issue-offline
+---
+- runFlow:
+    file: common/proxy.yaml
+    env:
+      ACTION: down
+# The dev client's Tools button sits over New issue on iOS, and over File on both.
+- runFlow: common/move-dev-tools.yaml
+- tapOn:
+    id: board-new-issue
+- extendedWaitUntil:
+    visible:
+      id: file-issue-screen
+    timeout: 10000
+- tapOn:
+    id: file-issue-title
+- inputText: 'FI: Filed while the server was away'
+# Only after typing: on Android, hideKeyboard with no keyboard up presses Back.
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      id: composer-attach-photos
+    direction: DOWN
+    timeout: 10000
+- tapOn:
+    id: composer-attach-photos
+- runFlow: common/pick-photo.yaml
+- extendedWaitUntil:
+    visible:
+      id: composer-tray
+    timeout: 20000
+- tapOn:
+    id: file-issue-submit
+- extendedWaitUntil:
+    visible: 'Waiting to send'
+    timeout: 10000
+- assertVisible: '^CB-\?$'
+- takeScreenshot: file-issue-offline-waiting
+- runFlow: common/open.yaml
+- extendedWaitUntil:
+    visible:
+      id: issue-title
+      text: 'FI: Filed while the server was away'
+    timeout: 180000
+- assertVisible: '^CB-\?$'
+- assertVisible: 'Waiting to send'
+- takeScreenshot: file-issue-offline-relaunched
+- runFlow:
+    file: common/proxy.yaml
+    env:
+      ACTION: up
+- extendedWaitUntil:
+    visible: '^CB-[0-9]+$'
+    timeout: 120000
+- extendedWaitUntil:
+    visible:
+      id: 'issue-picture-.*'
+    timeout: 120000
+- assertNotVisible: 'Waiting to send'
+- takeScreenshot: file-issue-offline-sent

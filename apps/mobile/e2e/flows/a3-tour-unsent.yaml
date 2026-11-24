@@ -1,0 +1,30 @@
+# The Board tour, second part, after a3-tour.yaml and the web's delete:
+#   act-as.mjs web-delete --text "XB3: Deleted on the web"
+# The server comes back: the comment written offline on the deleted issue
+# meets a 404 and goes to the Unsent list ("You no longer have access"),
+# which More's Account shows; Diagnostics' Outbox line counts it.
+appId: ${APP_ID}
+name: a3-tour-unsent
+---
+- runFlow:
+    file: common/proxy.yaml
+    env:
+      ACTION: up
+- runFlow:
+    file: common/outbox-line.yaml
+    env:
+      OUTBOX: '.*unsent 1$'
+      SHOT: a3-tour-unsent
+# The tab bar stays under the pages pushed in a tab: the next tab is a tap away.
+- tapOn:
+    text: More
+- tapOn:
+    id: more-account
+# One unsent write shows in the Account sheet itself (See all comes past two).
+- extendedWaitUntil:
+    visible:
+      text: '.*You no longer have access.*'
+    timeout: 10000
+- assertVisible:
+    text: '.*XB3: a comment on an issue the web deletes.*'
+- takeScreenshot: a3-tour-unsent-list

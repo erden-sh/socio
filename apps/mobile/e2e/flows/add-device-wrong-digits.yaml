@@ -1,0 +1,70 @@
+# Three wrong digits end the pairing: this device claims and shows its 6 digits;
+# the web types other digits three times (/web/confirm with WRONG, two tries left, then one, then
+# denied), and the device stops waiting with the words for it, never signed in.
+appId: ${APP_ID}
+name: add-device-wrong-digits
+---
+- runFlow: launch.yaml
+- runScript:
+    file: common/web.js
+    env:
+      METHOD: POST
+      ROUTE: /web/pair
+- openLink:
+    link: ${output.web.link}
+    autoVerify: true
+- extendedWaitUntil:
+    visible:
+      id: add-device-continue
+    timeout: 30000
+- tapOn:
+    id: add-device-continue
+- extendedWaitUntil:
+    visible:
+      id: add-device-digits
+    timeout: 20000
+- copyTextFrom:
+    id: add-device-digits
+- evalScript: ${output.digits = maestro.copiedText}
+- runScript:
+    file: common/web.js
+    env:
+      METHOD: POST
+      ROUTE: /web/confirm
+      DIGITS: ${output.digits}
+      WRONG: 'true'
+- assertTrue: ${output.web.triesLeft === 2}
+- runScript:
+    file: common/web.js
+    env:
+      METHOD: POST
+      ROUTE: /web/confirm
+      DIGITS: ${output.digits}
+      WRONG: 'true'
+- assertTrue: ${output.web.triesLeft === 1}
+- assertVisible:
+    id: add-device-digits
+- runScript:
+    file: common/web.js
+    env:
+      METHOD: POST
+      ROUTE: /web/confirm
+      DIGITS: ${output.digits}
+      WRONG: 'true'
+- assertTrue: ${output.web.state === 'denied'}
+- extendedWaitUntil:
+    visible:
+      id: add-device-problem
+    timeout: 20000
+- assertVisible: 'Your computer didn.t confirm this sign-in.*'
+- assertNotVisible:
+    id: add-device-digits
+- takeScreenshot: add-device-wrong-digits
+# The right digits now get nowhere either.
+- runScript:
+    file: common/web.js
+    env:
+      METHOD: POST
+      ROUTE: /web/confirm
+      DIGITS: ${output.digits}
+- assertTrue: ${output.web.state !== 'allowed'}

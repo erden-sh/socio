@@ -1,0 +1,15 @@
+{
+    "name": "@scarf/scarf",
+    "version": "0.0.0-noop",
+    "description": "Socio's do-nothing stand-in for @scarf/scarf: no postinstall, no install report.",
+    "private": true,
+    "license": "SEE LICENSE IN ../../LICENSE",
+    "author": {
+        "name": "Ingenio Ventures Inc."
+    },
+    "main": "index.cjs",
+    "files": [
+        "index.cjs"
+    ],
+    "socioNoop": true
+}

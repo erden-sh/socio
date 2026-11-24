@@ -1,0 +1,45 @@
+# Approvals in a chat, with workspace A up (servers.mjs; run.mjs
+# --credentials): Ada opens A's marker chat and asks for "smoke approvals",
+# which makes the fake model ask to create two datasets: two cards and the
+# bar above the composer ("1 of 2"). She approves the first from the bar and
+# the second on its card; the socio then carries on in the chat.
+appId: ${APP_ID}
+name: approve
+---
+- runFlow: chat-open.yaml
+- tapOn:
+    id: chat-composer-input
+- inputText: 'Please smoke approvals'
+- tapOn:
+    id: chat-composer-send
+- extendedWaitUntil:
+    visible:
+      id: chat-approval-bar-count
+    timeout: 60000
+- assertVisible:
+    text: '1 of 2'
+- hideKeyboard
+- takeScreenshot: approve-bar
+- tapOn:
+    id: chat-approval-bar-approve
+# The first is decided: one request waits, so the count goes and the bar stays.
+- extendedWaitUntil:
+    notVisible:
+      id: chat-approval-bar-count
+    timeout: 30000
+- assertVisible:
+    id: chat-approval-bar
+- assertVisible:
+    text: 'Approved\. The socio carries on once you decide the other request from this turn\.'
+- takeScreenshot: approve-one-left
+- tapOn:
+    id: 'chat-card-.*-approve'
+- extendedWaitUntil:
+    notVisible:
+      id: chat-approval-bar
+    timeout: 30000
+- extendedWaitUntil:
+    visible:
+      text: 'Approved\. The socio carried on in the chat\.'
+    timeout: 60000
+- takeScreenshot: approve-carried-on

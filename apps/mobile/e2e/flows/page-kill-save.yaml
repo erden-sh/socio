@@ -1,0 +1,60 @@
+# A kill mid-save, then a relaunch online, with workspace A behind
+# chaos-proxy.mjs (run.mjs --credentials, --env BASE LINE TEXT): the editor
+# opens online on A's first-week page, ${TEXT} goes into a new paragraph, the
+# proxy holds every answer (stall), so the save reaches the server and the
+# app never hears back ("Saving…"); the app is killed there. With the proxy
+# up again it reopens cold: the page shows ${TEXT} once, with no banner and no
+# write left but sent ones. The script then checks the server holds ${TEXT}
+# exactly once (act-as.mjs web-page --expect).
+appId: ${APP_ID}
+name: page-kill-save
+---
+- runFlow: common/open-page.yaml
+- tapOn:
+    id: page-edit
+- extendedWaitUntil:
+    visible:
+      text: 'Saved'
+    timeout: 30000
+- extendedWaitUntil:
+    visible:
+      text: '.*${LINE}.*'
+    timeout: 30000
+- tapOn:
+    text: '.*${LINE}.*'
+- pressKey: Enter
+- runFlow:
+    file: common/proxy.yaml
+    env:
+      ACTION: stall
+- inputText: ${TEXT}
+- runFlow:
+    file: common/pause.yaml
+    env:
+      MS: 4000
+- assertVisible:
+    text: 'Saving…'
+- takeScreenshot: page-kill-save-saving
+- stopApp
+- runFlow:
+    file: common/proxy.yaml
+    env:
+      ACTION: up
+- runFlow: common/open.yaml
+- extendedWaitUntil:
+    visible:
+      id: '(page|page-editor)-screen'
+    timeout: 180000
+- runFlow: common/move-dev-tools.yaml
+- extendedWaitUntil:
+    visible:
+      text: '.*${TEXT}.*'
+    timeout: 60000
+- runFlow:
+    file: common/outbox-line.yaml
+    env:
+      OUTBOX: 'Outbox: queued 0 · inflight 0 · unknown 0 · held 0 · sent \d+ · unsent 0'
+      SHOT: page-kill-save
+- assertNotVisible:
+    id: page-conflict
+- takeScreenshot: page-kill-save-relaunched

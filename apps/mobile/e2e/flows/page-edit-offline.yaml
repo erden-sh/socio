@@ -1,0 +1,43 @@
+# After page-edit.yaml, with every workspace server stopped (run.mjs
+# --servers-down): the kept page opens from the phone's copy, Edit opens the
+# editor on it, words typed wait ("Waiting to send"), and after Back and Edit
+# again they are still there.
+appId: ${APP_ID}
+name: page-edit-offline
+---
+- runFlow: common/open.yaml
+- extendedWaitUntil:
+    visible:
+      id: page-screen
+    timeout: 180000
+- runFlow: common/move-dev-tools.yaml
+- tapOn:
+    id: page-edit
+- extendedWaitUntil:
+    visible:
+      text: '.*Typed on the phone.*'
+    timeout: 30000
+- tapOn:
+    text: '.*Typed on the phone.*'
+- pressKey: Enter
+- inputText: 'Written offline'
+- extendedWaitUntil:
+    visible:
+      text: 'Waiting to send'
+    timeout: 30000
+- takeScreenshot: page-edit-offline-waiting
+- hideKeyboard
+- runFlow: common/back.yaml
+- extendedWaitUntil:
+    visible:
+      id: page-screen
+    timeout: 10000
+- tapOn:
+    id: page-edit
+- extendedWaitUntil:
+    visible:
+      text: '.*Written offline.*'
+    timeout: 30000
+- assertVisible:
+    text: 'Waiting to send'
+- takeScreenshot: page-edit-offline-reopened

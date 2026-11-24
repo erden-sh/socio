@@ -1,0 +1,34 @@
+# @ask     Which settings do .env.example, a worker config or the docs set, that no code, compose file, script or test reads?
+# @expect  rows == 0
+# @from    audit/facts.ttl: Declares and Documents (NAME= in docs/ and content/docs) mentions with no Reads or Names mention.
+#
+# Why static tools miss it: an example file or a doc can keep a setting after the code that
+# read it is gone; nothing compiles .env.example or the docs against the code.
+# A setting counts as read when code reads it, names it in a file that reads the environment,
+# composes it (a template such as ${name}_DAILY, or a prefix plus a name it passes, such as
+# get('CLIENT_ID')), or reads X when the setting is X_FILE (a secret read from a file): the
+# generator records each of those as a Names mention of the full name, where the code composes it.
+# Dockerfiles' ENV and ARG, the compose files' environment (which configures the services,
+# some of them other projects' images), the READMEs of the native app, the workers and the
+# coding image, and Turborepo's TURBO_* set or describe other tools' settings, so they are
+# left out. Reads in tests count: a knob only a test reads is still read.
+PREFIX prov:  <http://www.w3.org/ns/prov#>
+PREFIX rdfs:  <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX socio: <https://socio.sh/ontology/>
+SELECT ?name ?firstMention WHERE {
+    {
+        SELECT ?var ?name (MIN(?where) AS ?firstMention) WHERE {
+            ?var a socio:EnvVar ; rdfs:label ?name .
+            ?m socio:mentionOf ?var ; socio:mentionKind ?k ; prov:wasDerivedFrom ?f ; socio:sourceLine ?line .
+            ?f socio:sourcePath ?file .
+            VALUES ?k { socio:Declares socio:Documents }
+            FILTER (REGEX(?file, "(^|/)\\.env\\.example$|wrangler\\.toml$|^content/docs/")
+                    || (STRSTARTS(?file, "docs/") && !STRSTARTS(?file, "docs/specs/") && ?file != "docs/RELEASE-NOTES.md"))
+            BIND (CONCAT(?file, ":", STR(?line)) AS ?where)
+        }
+        GROUP BY ?var ?name
+    }
+    FILTER (!STRSTARTS(?name, "TURBO_"))
+    FILTER NOT EXISTS { ?r socio:mentionOf ?var ; socio:mentionKind ?rk . VALUES ?rk { socio:Reads socio:Names } }
+}
+ORDER BY ?name

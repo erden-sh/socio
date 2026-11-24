@@ -1,0 +1,44 @@
+# Signing in to workspace A (servers.mjs; run.mjs --credentials): a wrong
+# password and the deactivated account each keep the sign-in screen with their
+# own words, then Ada's sign-in opens the shell on A's marker chat.
+appId: ${APP_ID}
+name: sign-in
+---
+- runFlow: launch.yaml
+- runFlow:
+    file: common/add-workspace.yaml
+    env:
+      ORIGIN: ${ORIGIN_A}
+- runFlow:
+    file: common/sign-in.yaml
+    env:
+      EMAIL: ada@example.test
+      SECRET: not-the-password
+- extendedWaitUntil:
+    visible:
+      text: "That email and password don't match.*"
+    timeout: 20000
+- runFlow:
+    file: common/sign-in.yaml
+    env:
+      EMAIL: cy@example.test
+      SECRET: ${PASSWORD}
+- extendedWaitUntil:
+    visible:
+      text: 'This account is deactivated.*'
+    timeout: 20000
+- takeScreenshot: sign-in-deactivated
+- runFlow:
+    file: common/sign-in.yaml
+    env:
+      EMAIL: ada@example.test
+      SECRET: ${PASSWORD}
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 30000
+- extendedWaitUntil:
+    visible:
+      text: '.*${CHAT_A}.*'
+    timeout: 30000
+- takeScreenshot: sign-in-home

@@ -1,0 +1,16 @@
+# @ask     Which tables that hold personal data does the purge keep by design, and why?
+# @expect  rows >= 0
+# @from    data/repo.ttl: Retains mentions from `history(...)` in src/server/purge/references.ts.
+#
+# Not a failure: attribution and audit rows stay when the person they name is purged, naming an
+# id that no longer resolves. Listed so the retention is a visible decision, not an accident.
+PREFIX prov:  <http://www.w3.org/ns/prov#>
+PREFIX rdfs:  <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX socio: <https://socio.sh/ontology/>
+SELECT DISTINCT ?concept ?table ?line WHERE {
+    ?c socio:personalDataCategory ?cat ; socio:storedIn ?t ; rdfs:label ?concept .
+    ?t socio:tableName ?table .
+    ?r socio:mentionOf ?t ; socio:mentionKind socio:Retains ; socio:sourceLine ?line .
+    FILTER NOT EXISTS { ?d socio:mentionOf ?t ; socio:mentionKind socio:Deletes . }
+}
+ORDER BY ?table ?concept

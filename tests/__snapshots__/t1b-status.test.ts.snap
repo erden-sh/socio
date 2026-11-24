@@ -1,0 +1,158 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`reports this status with a data key and backups 1`] = `
+{
+  "adminSetup": "{
+  "dataKey": {
+    "configured": true,
+    "legacy": 0,
+    "previous": 0,
+    "unknown": 0,
+    "keyId": "f0969afde439034d"
+  },
+  "backup": {
+    "directory": "/backups",
+    "keep": 14,
+    "intervalHours": 24,
+    "running": false,
+    "lastAt": "2026-11-07T00:00:00.000Z"
+  },
+  "datasetFiles": {
+    "missing": 0,
+    "ids": []
+  }
+}",
+  "dataKeyStatus": "{
+  "configured": true,
+  "legacy": 0,
+  "previous": 0,
+  "unknown": 0,
+  "keyId": "f0969afde439034d"
+}",
+  "health": "{
+  "ok": true,
+  "model": false,
+  "storage": "local",
+  "dataKey": "ok",
+  "dataKeyId": "f0969afde439034d",
+  "legacySealed": 0,
+  "datasetFiles": {
+    "missing": 0
+  },
+  "litestream": "off"
+}",
+  "setup": "{
+  "model": false,
+  "voice": false,
+  "voiceBackend": "cloud",
+  "voiceCloud": false,
+  "voiceSpeech": false,
+  "transcription": false,
+  "transcriptionStreaming": false,
+  "telegram": "not_configured",
+  "missing": [
+    "OPENAI_BASE_URL",
+    "OPENAI_API_KEY",
+    "OPENAI_MODEL"
+  ],
+  "inference": {
+    "available": false,
+    "byoAllowed": false
+  },
+  "storage": "local"
+}",
+  "setupForAlice": "{
+  "model": false,
+  "voice": false,
+  "voiceBackend": "cloud",
+  "voiceCloud": false,
+  "voiceSpeech": false,
+  "transcription": false,
+  "transcriptionStreaming": false,
+  "telegram": "not_configured",
+  "missing": [
+    "OPENAI_BASE_URL",
+    "OPENAI_API_KEY",
+    "OPENAI_MODEL"
+  ],
+  "inference": {
+    "available": false,
+    "byoAllowed": false
+  },
+  "storage": "local"
+}",
+}
+`;
+
+exports[`reports this status without a data key or backups 1`] = `
+{
+  "adminSetup": "{
+  "dataKey": {
+    "configured": false,
+    "legacy": 0,
+    "previous": 0,
+    "unknown": 0
+  },
+  "datasetFiles": {
+    "missing": 0,
+    "ids": []
+  }
+}",
+  "dataKeyStatus": "{
+  "configured": false,
+  "legacy": 0,
+  "previous": 0,
+  "unknown": 0
+}",
+  "health": "{
+  "ok": true,
+  "model": false,
+  "storage": "local",
+  "dataKey": "not_set",
+  "legacySealed": 0,
+  "datasetFiles": {
+    "missing": 0
+  }
+}",
+  "setup": "{
+  "model": false,
+  "voice": false,
+  "voiceBackend": "cloud",
+  "voiceCloud": false,
+  "voiceSpeech": false,
+  "transcription": false,
+  "transcriptionStreaming": false,
+  "telegram": "not_configured",
+  "missing": [
+    "OPENAI_BASE_URL",
+    "OPENAI_API_KEY",
+    "OPENAI_MODEL"
+  ],
+  "inference": {
+    "available": false,
+    "byoAllowed": false
+  },
+  "storage": "local"
+}",
+  "setupForAlice": "{
+  "model": false,
+  "voice": false,
+  "voiceBackend": "cloud",
+  "voiceCloud": false,
+  "voiceSpeech": false,
+  "transcription": false,
+  "transcriptionStreaming": false,
+  "telegram": "not_configured",
+  "missing": [
+    "OPENAI_BASE_URL",
+    "OPENAI_API_KEY",
+    "OPENAI_MODEL"
+  ],
+  "inference": {
+    "available": false,
+    "byoAllowed": false
+  },
+  "storage": "local"
+}",
+}
+`;

@@ -1,0 +1,42 @@
+# The room's composer, with workspace A up (servers.mjs; run.mjs
+# --credentials): Ada opens A's seeded room (room-open.yaml), types "@" (people and
+# socios list over the box), then "be", picks Ben, then names Manny, and sends. No
+# line under the box says who answers (CB-491), named or not. Her message shows; Manny's turn says
+# so in the pill. Afterwards `act-as.mjs read --text "RM3a from the app"`
+# reads it as Ben and fails unless the server recorded the mention of him.
+appId: ${APP_ID}
+name: room-send
+---
+- runFlow: room-open.yaml
+- assertNotVisible:
+    id: room-composer-line
+- tapOn:
+    id: room-composer-input
+- inputText: 'RM3a from the app, @'
+- extendedWaitUntil:
+    visible:
+      id: room-mentions
+    timeout: 10000
+- assertVisible:
+    text: 'socio · lead'
+- takeScreenshot: room-send-mentions
+- inputText: 'be'
+- assertNotVisible:
+    text: 'socio · lead'
+- tapOn:
+    id: room-mention-person-Ben
+- inputText: 'and @Manny please look'
+- assertNotVisible:
+    id: room-composer-line
+- takeScreenshot: room-send-composer
+- tapOn:
+    id: room-composer-send
+- extendedWaitUntil:
+    visible:
+      text: '(?s).*RM3a from the app, @Ben and @Manny please look.*'
+    timeout: 15000
+- extendedWaitUntil:
+    notVisible:
+      id: room-composer-stop
+    timeout: 60000
+- takeScreenshot: room-send-sent

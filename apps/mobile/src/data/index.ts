@@ -1,0 +1,213 @@
+// The device store: the SQLite files, their
+// schemas and migrations, workspaces, keys, the wipe, and committing a sign-in.
+// Its tests run it under Node, so nothing here imports React Native or Expo,
+// through another file either: the platform hands it a driver
+// (tests/dependency-graph.test.ts).
+export {
+    type DbFile,
+    isBusy,
+    resultCode,
+    type SqlConnection,
+    type SqlDriver,
+    SqlError,
+    SQLITE_BUSY,
+    SQLITE_CORRUPT,
+    SQLITE_LOCKED,
+    SQLITE_NOTADB,
+    type SqlParams,
+    type SqlRow,
+    type SqlRunResult,
+    type SqlStatements,
+    type SqlValue,
+} from './driver';
+export {
+    createCacheSchema,
+    latestVersion,
+    migrateUserDb,
+    UPDATE_TO_SEND,
+    type UserDbState,
+    userVersion,
+} from './migrate';
+export {
+    type CommitJar,
+    type CommitOptions,
+    type CommitStep,
+    commitSignIn,
+    type CommittedSignIn,
+    NEW_WORKSPACE_STEPS,
+    SAME_PERSON_STEPS,
+    SignInCommitError,
+    type SignInToCommit,
+} from './commit';
+export {
+    type CacheDb,
+    openCacheDb,
+    openEncrypted,
+    type OpenedFile,
+    type OpenFailure,
+    openUserDb,
+    StoreOpenError,
+    type UserDb,
+} from './open';
+export { CACHE_DB, CACHE_SCHEMA, type CacheSchema, type Migration, USER_DB, USER_MIGRATIONS } from './schema';
+export {
+    createKeys,
+    INDEX_KEY,
+    type Keys,
+    type KeySlot,
+    type KeyStore,
+    newDbKey,
+    newInstallId,
+    type RandomBytes,
+    REGISTRY_KEY,
+    WORKSPACE_KEYS,
+    type WorkspaceKey,
+    workspaceKeyName,
+    workspaceKeyNames,
+    workspaceOfKey,
+} from './keys';
+export {
+    ATTACHMENTS_DIR,
+    type FileSystem,
+    FileSystemMismatchError,
+    type Hasher,
+    IMAGES_DIR,
+    isWorkspaceId,
+    joinPath,
+    REGISTRY_DB,
+    registryFile,
+    STORE_DIR,
+    storeDirectory,
+    workspaceDirectories,
+    workspaceId,
+    type WorkspaceLayout,
+    workspaceLayout,
+} from './layout';
+export {
+    checkPerson,
+    countUnsentItems,
+    decidePerson,
+    type PersonCheck,
+    type PersonCheckInput,
+    type PreviousPerson,
+    type SignInAnswer,
+    type UnsentCounter,
+} from './person-check';
+export { cachePaths, cacheSize, type SizeOf } from './cache-size';
+export {
+    type Appearance,
+    APPEARANCES,
+    DEFAULT_DEVICE_SETTINGS,
+    type DeviceSettings,
+    type NewWorkspace,
+    NO_PUSH,
+    openRegistry,
+    type PushDevice,
+    type PushRow,
+    type Registry,
+    REGISTRY_MIGRATIONS,
+    RegistryError,
+    type ServerVersionRow,
+    type SessionRow,
+    type WipeReason,
+    type WorkspaceManifestRow,
+    type WorkspaceRow,
+    type WorkspaceSummary,
+    type WorkspaceState,
+} from './registry';
+export {
+    enforceLeases,
+    type EnforcedLeases,
+    type EnforceLeasesOptions,
+    LEASE_LOCK_MS,
+    LEASE_WIPE_MS,
+    leaseDue,
+    leaseLockAt,
+    leaseWipeAt,
+} from './lease';
+export { type LaunchCell, type LaunchReport, madeStore, type OpenedStore, openStore, type StoreDeps } from './store';
+export {
+    CacheKeyMissingError,
+    clearCache,
+    resumeWipes,
+    type Store,
+    type StorePush,
+    type TrackedDriver,
+    trackConnections,
+    wipe,
+    type WipedWorkspace,
+    WipeIncompleteError,
+    type WipeOptions,
+    type WipeStep,
+} from './wipe';
+export {
+    commitLogo,
+    discardStagedLogos,
+    type LogoFiles,
+    type LogoSource,
+    logoSource,
+    STAGING_DIR,
+    type StagedLogo,
+    stageLogo,
+    type StageLogoOptions,
+    stagingDirectory,
+} from './logo';
+export {
+    formatPushRevocation,
+    isPushRevocationKey,
+    isRelayOrigin,
+    parsePushRevocation,
+    PUSH_REVOCATION_PREFIX,
+    PUSH_SUBSCRIPTIONS_PATH,
+    type PushRevocation,
+    pushRevocationName,
+    recordPushRevocation,
+} from './push-revocation';
+export {
+    type SignInFlowDeps,
+    type SignInOutcome,
+    type SignInRequest,
+    signInAndCommit,
+    type StageSignIn,
+} from './sign-in-flow';
+export {
+    createSheetFlow,
+    SHEET_PENDING_KEY,
+    SHEET_PENDING_MS,
+    type SheetFlow,
+    type SheetRefusal,
+    type SheetTake,
+    type TakenSheet,
+} from './sheet-flow';
+export {
+    createRevokedWipes,
+    type RevokedEnd,
+    type RevokedWipeDeps,
+    type RevokedWipesDeps,
+    wipeRevoked,
+} from './revoked';
+export {
+    formatRevocation,
+    isRevocationKey,
+    parseRevocation,
+    type PendingRevocation,
+    REVOCATION_PREFIX,
+    revoke,
+    type RevokeDeps,
+    retryRevocations,
+    type SignedOut,
+    type SignOutDeps,
+    type SignOutStep,
+    signOutWorkspace,
+    unsubscribePush,
+} from './sign-out';
+export {
+    ATTACHMENTS_PROTECTION,
+    type FileProtectionLevel,
+    IMAGES_PROTECTION,
+    prepareAttachmentsFolder,
+    prepareImagesFolder,
+    prepareWorkspaceFolders,
+    type SetFileProtection,
+    type WorkspaceFilesDeps,
+} from './workspace-files';

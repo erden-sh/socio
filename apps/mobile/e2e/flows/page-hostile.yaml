@@ -1,0 +1,27 @@
+# A hostile page's egress (iOS's half of the editor's check), with workspace
+# A up and a listener on the host's ${LISTEN_PORT} (README, Two devices): the
+# page's Markdown (written with act-as.mjs web-page-write) points an image, an
+# image tag, an iframe, a script, a link and a style at the listener. The page
+# opens in the reader and then in the editor, which stays open 10 s; the
+# listener must have seen no request.
+appId: ${APP_ID}
+name: page-hostile
+---
+- runFlow: common/open-page.yaml
+- takeScreenshot: page-hostile-reader
+- tapOn:
+    id: page-edit
+- extendedWaitUntil:
+    visible:
+      id: page-editor-saved
+    timeout: 30000
+- runFlow:
+    file: common/pause.yaml
+    env:
+      MS: 10000
+- takeScreenshot: page-hostile-editor
+- runFlow: common/back.yaml
+- extendedWaitUntil:
+    visible:
+      id: page-screen
+    timeout: 10000

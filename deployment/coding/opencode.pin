@@ -1,0 +1,9 @@
+# OpenCode for the socio-coding image (CB-239): see deployment/coding/README.md, "Pinning OpenCode".
+# 2.2.0, not 2.1.4: v2.1.4 is a tag with no published GitHub release (its archive URL answers 404);
+# v2.2.0 is the latest published 2.x release (2026-10-27). Owner's choice, 2026-10-28.
+version=2.2.0
+asset=opencode-linux-x64.tar.gz
+sha256=6d597970a8cc448f1b9a9f645532584b339dd3ab9583bb5f063f13d83e54768f
+url=https://github.com/anomalyco/opencode/releases/download/v2.2.0/opencode-linux-x64.tar.gz
+fetched=2026-10-28
+verified=GitHub release v2.2.0 asset digest equals sha256sum of the downloaded archive; tar lists one regular file, opencode (0755, root); never run; fetched with User-Agent research-script/0.1, no credentials

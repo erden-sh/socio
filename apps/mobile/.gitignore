@@ -1,0 +1,29 @@
+# Native projects: `expo prebuild` generates them from app.config.ts and the
+# config plugins (continuous native generation), so they are never committed.
+/android/
+/ios/
+# What Gradle builds of a local native module (modules/) leave beside its source.
+/modules/*/android/build/
+
+# Expo and Metro
+.expo/
+dist/
+expo-env.d.ts
+.metro-health-check*
+
+node_modules/
+
+# Signing: keystores, certificates, keys and profiles live in the secrets store.
+*.jks
+*.keystore
+*.p8
+*.p12
+*.key
+*.pem
+*.mobileprovision
+*.cer
+*.certSigningRequest
+
+# Firebase's project config: read at prebuild from GOOGLE_SERVICES_JSON (plugins/push.ts), never committed.
+google-services.json
+GoogleService-Info.plist

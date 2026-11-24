@@ -1,0 +1,26 @@
+# On Chats: archives every chat the list shows, one row at a time (a row's
+# testID is `chat-<server id>`), until it reads "No chats yet." A room has no
+# Archive (long-press.ts), so the list must hold none: servers.mjs --no-rooms,
+# which run.mjs asks for chat-tour.yaml (NO_ROOMS_FLOWS).
+appId: ${APP_ID}
+name: archive every chat
+---
+- assertNotVisible:
+    text: '.*, room(, .*)?'
+- repeat:
+    times: 10
+    while:
+      visible:
+        id: 'chat-[0-9a-f-]{36}'
+    commands:
+      - longPressOn:
+          id: 'chat-[0-9a-f-]{36}'
+          index: 0
+      - tapOn: 'Archive'
+      - extendedWaitUntil:
+          visible: 'Chat archived'
+          timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: chats-empty
+    timeout: 10000

@@ -1,0 +1,75 @@
+# Filing an issue with a photo, after
+# board-open.yaml (Ada on the Board) with workspace A up and a photo seeded
+# (attach-photo.yaml's header): New issue opens the form on the web's
+# defaults; a title, High priority and the photo from the system picker; File
+# lands on the issue under CB-?, which becomes its number once the server has
+# it, with the photo among its attachments; the Board lists it in Triage.
+appId: ${APP_ID}
+name: file-issue-photo
+---
+# The dev client's Tools button sits over New issue on iOS, and over File on both.
+- runFlow: common/move-dev-tools.yaml
+- tapOn:
+    id: board-new-issue
+- extendedWaitUntil:
+    visible:
+      id: file-issue-screen
+    timeout: 10000
+- assertVisible:
+    id: file-issue-kind-bug
+    checked: true
+- assertVisible:
+    id: file-issue-priority-medium
+    checked: true
+- takeScreenshot: file-issue-photo-empty
+- tapOn:
+    id: file-issue-title
+- inputText: 'FI: Export button does nothing'
+- hideKeyboard
+- tapOn:
+    id: file-issue-priority-high
+- scrollUntilVisible:
+    element:
+      id: composer-attach-photos
+    direction: DOWN
+    timeout: 10000
+- tapOn:
+    id: composer-attach-photos
+- runFlow: common/pick-photo.yaml
+- extendedWaitUntil:
+    visible:
+      id: composer-tray
+    timeout: 20000
+- takeScreenshot: file-issue-photo-filled
+- tapOn:
+    id: file-issue-submit
+- extendedWaitUntil:
+    visible:
+      id: issue-title
+      text: 'FI: Export button does nothing'
+    timeout: 10000
+- extendedWaitUntil:
+    visible: '^CB-[0-9]+$'
+    timeout: 60000
+- extendedWaitUntil:
+    visible:
+      id: 'issue-picture-.*'
+    timeout: 60000
+- takeScreenshot: file-issue-photo-filed
+- runFlow: common/back.yaml
+- repeat:
+    times: 4
+    while:
+      notVisible:
+        id: board-column-triage
+    commands:
+      - swipe:
+          from:
+            id: board-columns
+          direction: RIGHT
+- tapOn:
+    id: board-column-triage
+- extendedWaitUntil:
+    visible: '.*FI: Export button does nothing.*'
+    timeout: 10000
+- takeScreenshot: file-issue-photo-board

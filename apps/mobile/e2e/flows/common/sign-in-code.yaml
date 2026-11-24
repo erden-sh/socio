@@ -1,0 +1,67 @@
+# A sign-in code, on servers.mjs --codes: workspace ${LETTER} sends codes by
+# ${CHANNEL} (A by email to the SMTP sink, B by Telegram to the fake Bot API, as the manifest says).
+# The address, then "Email me a code" or "Send a code to my Telegram", Ada's email, Send code; the
+# code is read from what the workspace sent (code.js, the control port's /web/outbox) and typed in
+# with its dash; Sign in lands on the workspace's Home.
+appId: ${APP_ID}
+name: sign-in code
+---
+- runFlow: ../launch.yaml
+- runFlow:
+    file: add-workspace.yaml
+    env:
+      ORIGIN: "${LETTER == 'A' ? ORIGIN_A : ORIGIN_B}"
+- extendedWaitUntil:
+    visible:
+      id: sign-in-code
+      text: "${CHANNEL == 'email' ? 'Email me a code' : 'Send a code to my Telegram'}"
+    timeout: 20000
+- tapOn:
+    id: sign-in-code
+- extendedWaitUntil:
+    visible:
+      id: sign-in-code-email
+    timeout: 10000
+# The screen's field can take the first keys before it has focus: type until it holds the email.
+- retry:
+    maxRetries: 2
+    commands:
+      - tapOn:
+          id: sign-in-code-email
+      - eraseText: 40
+      - inputText: ada@example.test
+      - assertVisible:
+          id: sign-in-code-email
+          text: 'ada@example.test'
+- runScript:
+    file: code.js
+    env:
+      LETTER: ${LETTER}
+      CHANNEL: ${CHANNEL}
+      MODE: count
+# The keyboard's Send: the button can sit under the keyboard.
+- pressKey: Enter
+- extendedWaitUntil:
+    visible:
+      id: sign-in-code-field
+    timeout: 20000
+- takeScreenshot: code-sent-${CHANNEL}
+- runScript:
+    file: code.js
+    env:
+      LETTER: ${LETTER}
+      CHANNEL: ${CHANNEL}
+      MODE: wait
+      BEFORE: ${output.codes}
+- tapOn:
+    id: sign-in-code-field
+- inputText: ${output.code}
+- pressKey: Enter
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 30000
+- extendedWaitUntil:
+    visible: ".*${LETTER == 'A' ? WORKSPACE_A : WORKSPACE_B}.*"
+    timeout: 30000
+- takeScreenshot: code-home-${CHANNEL}

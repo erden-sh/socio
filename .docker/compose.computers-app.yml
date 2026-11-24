@@ -1,0 +1,41 @@
+# Overlay for an app running in Compose instead of on the host.
+# Use after compose.yml and compose.computers.yml, in that order:
+#   docker compose --env-file .env -f .docker/compose.yml -f .docker/compose.computers.yml \
+#     -f .docker/compose.computers-app.yml ...
+services:
+  app:
+    environment:
+      COMPUTER_SUPERVISOR_URL: http://computer-supervisor:4300
+      COMPUTER_SUPERVISOR_TOKEN: ${COMPUTER_SUPERVISOR_TOKEN:?Set COMPUTER_SUPERVISOR_TOKEN in .env}
+      COMPUTER_TOKEN: ${COMPUTER_TOKEN:?Set COMPUTER_TOKEN in .env}
+      COMPUTER_NAMESPACE: ${COMPUTER_NAMESPACE:-company-brain}
+      COMPUTER_DISK_USAGE_URL: http://computer-disk-usage:4301
+      # The coding gateway listener (CB-239), off while the secret is
+      # empty; GATEWAY_SUBNET is the coding-gateway network's fixed subnet
+      # (CODING_GATEWAY_SUBNET, .docker/compose.computers.yml).
+      CODING_EGRESS_SECRET: ${CODING_EGRESS_SECRET:-}
+      GATEWAY_SUBNET: ${CODING_GATEWAY_SUBNET:-10.214.0.0/24}
+      # Where coding sessions read a sandbox's refused hosts (CB-239):
+      # the coding egress proxy's diagnostics port.
+      CODING_EGRESS_DIAGNOSTICS_URL: http://coding-egress:3129
+    networks:
+      - computer-control
+      - computers
+      # The coding gateway listener's only callers (CB-239).
+      - coding-gateway
+  computer-supervisor:
+    # Container-run apps use service DNS; no host supervisor port is needed.
+    ports: !reset []
+    environment:
+      # Computers join the network the app is on, so the app reaches them.
+      COMPUTER_NETWORK: ${COMPUTER_NAMESPACE:-company-brain}-computers
+  computer-disk-usage:
+    ports: !reset []
+networks:
+  computer-control:
+    internal: true
+  computers:
+    name: ${COMPUTER_NAMESPACE:-company-brain}-computers
+  coding-gateway:
+    name: ${COMPUTER_NAMESPACE:-company-brain}-coding-gateway
+    internal: true

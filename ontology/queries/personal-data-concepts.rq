@@ -1,0 +1,11 @@
+# @ask     Which domain concepts hold personal data, and of which DPV category?
+# @expect  rows >= 12
+# @from    modules/domain.ttl annotates each class with socio:personalDataCategory, a subclass of dpv:PersonalData.
+PREFIX rdfs:  <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX skos:  <http://www.w3.org/2004/02/skos/core#>
+PREFIX socio: <https://socio.sh/ontology/>
+SELECT ?concept ?label ?category ?categoryLabel WHERE {
+    ?concept socio:personalDataCategory ?category ; rdfs:label ?label .
+    OPTIONAL { ?category skos:prefLabel ?categoryLabel }
+}
+ORDER BY ?label ?categoryLabel

@@ -1,0 +1,26 @@
+{
+    "$schema": "../../node_modules/turbo/schema.json",
+    "extends": ["//"],
+    "tasks": {
+        "typecheck": {
+            "description": "tsc 7.1 over the Worker and its tests, with the Workers runtime's types.",
+            "inputs": ["$TURBO_DEFAULT$", "!.wrangler/**", "!node_modules/**", "!.turbo/**"],
+            "outputs": []
+        },
+        "lint": {
+            "inputs": ["$TURBO_DEFAULT$", "!.wrangler/**", "!node_modules/**", "!.turbo/**"],
+            "outputs": []
+        },
+        "test": {
+            "description": "The relay's Vitest suite, under Node with fakes for D1, the rate limiter and the providers. No build task: the deploy pipeline bundles the Worker when it deploys (README.md). It reads the server's notifications contract, whose DEFAULT_PUSH_HOSTS must name wrangler.toml's hosts.",
+            "inputs": [
+                "$TURBO_DEFAULT$",
+                "$TURBO_ROOT$/src/server/notifications/contract.ts",
+                "!.wrangler/**",
+                "!node_modules/**",
+                "!.turbo/**"
+            ],
+            "outputs": []
+        }
+    }
+}

@@ -1,0 +1,102 @@
+# The Board's sideways swipe (CB-468), with workspace A up (servers.mjs;
+# run.mjs --credentials): Ada signs in and opens the Board on Triage. A swipe
+# left on the cards turns to Open, then Ready, each chip chosen in turn; a
+# swipe right goes back to Open; a vertical drag scrolls and keeps the column;
+# a chip still chooses. On iOS a swipe from the left edge is still Back.
+appId: ${APP_ID}
+name: board-swipe
+---
+- runFlow: launch.yaml
+- runFlow:
+    file: common/add-workspace.yaml
+    env:
+      ORIGIN: ${ORIGIN_A}
+- runFlow:
+    file: common/sign-in.yaml
+    env:
+      EMAIL: ada@example.test
+      SECRET: ${PASSWORD}
+- extendedWaitUntil:
+    visible:
+      id: home-tile-board
+    timeout: 60000
+- tapOn:
+    id: home-tile-board
+- extendedWaitUntil:
+    visible:
+      id: board-column-triage
+      selected: true
+    timeout: 30000
+- takeScreenshot: board-swipe-triage
+# Left on the cards: the next column.
+- swipe:
+    start: 85%, 75%
+    end: 15%, 75%
+    duration: 400
+- extendedWaitUntil:
+    visible:
+      text: '.*A: Export the board as CSV.*'
+    timeout: 5000
+- assertVisible:
+    id: board-column-open
+    selected: true
+- takeScreenshot: board-swipe-open
+- swipe:
+    start: 85%, 75%
+    end: 15%, 75%
+    duration: 400
+- extendedWaitUntil:
+    visible:
+      text: '.*A: Shorter onboarding.*'
+    timeout: 5000
+- assertVisible:
+    id: board-column-ready
+    selected: true
+# Right: back to the previous one.
+- swipe:
+    start: 20%, 75%
+    end: 90%, 75%
+    duration: 400
+- extendedWaitUntil:
+    visible:
+      text: '.*A: Export the board as CSV.*'
+    timeout: 5000
+- assertVisible:
+    id: board-column-open
+    selected: true
+# A vertical drag scrolls the list and keeps the column.
+- swipe:
+    start: 50%, 80%
+    end: 50%, 40%
+    duration: 400
+- swipe:
+    start: 50%, 40%
+    end: 50%, 80%
+    duration: 400
+- assertVisible:
+    id: board-column-open
+    selected: true
+# The chips still choose.
+- tapOn:
+    id: board-column-triage
+- extendedWaitUntil:
+    visible:
+      id: board-column-triage
+      selected: true
+    timeout: 5000
+- assertNotVisible:
+    text: '.*A: Export the board as CSV.*'
+- takeScreenshot: board-swipe-chip
+# iOS: a swipe from the left edge is still Back, to Home.
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - swipe:
+          start: 1%, 60%
+          end: 80%, 60%
+          duration: 400
+      - extendedWaitUntil:
+          visible:
+            id: home-tile-board
+          timeout: 5000

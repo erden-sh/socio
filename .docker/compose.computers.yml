@@ -1,0 +1,152 @@
+# OpenBot services pinned to the source revision reviewed for this template.
+# Build both images; only the supervisor is started directly. It creates one
+# computer per socio, with separate named volumes for files and browser profiles.
+services:
+  # The upstream computer image, unchanged. Build it before computer-image.
+  computer-upstream:
+    profiles: [build-computers]
+    image: company-brain-computer:b6932d3
+    build:
+      context: https://github.com/CopilotKit/OpenBot.git#b6932d31a8d6e7896c15139dfc27a6c6911deb27
+      dockerfile: agent-computer/Dockerfile
+    command: ['true']
+  # The upstream image with the browser time limits (CB-125).
+  computer-image:
+    profiles: [build-computers]
+    image: company-brain-computer:b6932d3-isolated-v2
+    build:
+      context: ..
+      dockerfile: deployment/computers/computer.Dockerfile
+    command: ['true']
+  computer-supervisor:
+    image: company-brain-supervisor:b6932d3-dot-auth-isolated-v2
+    build:
+      context: ..
+      dockerfile: deployment/computers/supervisor.Dockerfile
+      additional_contexts:
+        openbot: https://github.com/CopilotKit/OpenBot.git#b6932d31a8d6e7896c15139dfc27a6c6911deb27
+    ports:
+      - '127.0.0.1:4312:4300'
+    environment:
+      PORT: '4300'
+      SUPERVISOR_TOKEN: ${COMPUTER_SUPERVISOR_TOKEN:?Set COMPUTER_SUPERVISOR_TOKEN in .env}
+      COMPUTER_TOKEN: ${COMPUTER_TOKEN:?Set COMPUTER_TOKEN in .env}
+      COMPUTER_NAMESPACE: ${COMPUTER_NAMESPACE:-company-brain}
+      COMPUTER_IMAGE: company-brain-computer:b6932d3-isolated-v2
+      COMPUTER_BROWSER_MODE: headless
+      COMPUTER_NETWORK: ''
+      COMPUTER_MEMORY_BYTES: ${COMPUTER_MEMORY_BYTES:-2147483648}
+      COMPUTER_RUNTIME: ${COMPUTER_RUNTIME:-}
+      # Coding sandboxes (CB-239): off until CODING_SANDBOX_IMAGE names
+      # the socio-coding image by local image ID (sha256:…) or digest (deployment/coding/README.md).
+      CODING_SANDBOX_IMAGE: ${CODING_SANDBOX_IMAGE:-}
+      CODING_SANDBOX_SUBNETS: ${CODING_SANDBOX_SUBNETS:-10.213.0.0/16}
+      CODING_SANDBOX_MAX: ${CODING_SANDBOX_MAX:-8}
+      CODING_SANDBOX_MAX_CPUS: ${CODING_SANDBOX_MAX_CPUS:-2}
+      CODING_SANDBOX_MAX_MEMORY_BYTES: ${CODING_SANDBOX_MAX_MEMORY_BYTES:-4294967296}
+      CODING_SANDBOX_MAX_PIDS: ${CODING_SANDBOX_MAX_PIDS:-512}
+      CODING_PROMPT_MAX_SECONDS: ${CODING_PROMPT_MAX_SECONDS:-1200}
+      CODING_EGRESS_MODE: virtual-hosts
+    volumes:
+      - ${ENGINE_SOCKET:-/var/run/docker.sock}:/var/run/docker.sock
+    networks:
+      - computer-control
+    init: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'bun',
+          '-e',
+          "const r = await fetch('http://localhost:4300/health'); const j = await r.json(); process.exit(r.ok && j.docker ? 0 : 1)",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+  # The computers' disk usage through a read-only Docker proxy (CB-197):
+  # two fixed GETs, answers limited to this namespace's computers. Set
+  # COMPUTER_DISK_USAGE_URL=http://127.0.0.1:4313 for a host-run app.
+  computer-disk-usage:
+    image: company-brain-supervisor:b6932d3-dot-auth-isolated-v2
+    command: ['bun', 'disk-usage-proxy.mjs']
+    ports:
+      - '127.0.0.1:4313:4301'
+    environment:
+      DISK_USAGE_TOKEN: ${COMPUTER_SUPERVISOR_TOKEN:?Set COMPUTER_SUPERVISOR_TOKEN in .env}
+      DISK_USAGE_NAMESPACE: ${COMPUTER_NAMESPACE:-company-brain}
+      BUN_RUNTIME_TRANSPILER_CACHE_PATH: '0'
+    volumes:
+      - ${ENGINE_SOCKET:-/var/run/docker.sock}:/var/run/docker.sock
+    networks:
+      - computer-control
+    user: root
+    read_only: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+  # The coding sandbox image (CB-239), run by the supervisor by digest.
+  # OPENCODE_SHA256 pins the OpenCode archive (the sha256 in
+  # deployment/coding/opencode.pin); the build fails without it.
+  coding-image:
+    profiles: [build-computers]
+    image: socio-coding:${OPENCODE_VERSION:-2.2.0}
+    build:
+      context: ..
+      dockerfile: deployment/coding/coding.Dockerfile
+      args:
+        OPENCODE_VERSION: ${OPENCODE_VERSION:-2.2.0}
+        OPENCODE_SHA256: ${OPENCODE_SHA256:-}
+    command: ['true']
+  # The coding sandboxes' only way out (CB-239): the gateway route to the
+  # app's internal gateway listener, and read-only registry virtual hosts.
+  # No CONNECT. The supervisor finds it by its label and connects it to each
+  # sandbox's internal network. Only with the `coding` profile.
+  coding-egress:
+    profiles: [coding]
+    image: company-brain-coding-egress:latest
+    build:
+      context: ..
+      target: coding-egress
+    labels:
+      socio.coding-egress: ${COMPUTER_NAMESPACE:-company-brain}
+    environment:
+      CODING_EGRESS_SECRET: ${CODING_EGRESS_SECRET:?Set CODING_EGRESS_SECRET in .env}
+      CODING_GATEWAY_UPSTREAM: ${CODING_GATEWAY_UPSTREAM:-http://app:4340}
+      CODING_EGRESS_MODE: virtual-hosts
+      # The coding-gateway network's subnet (diagnostics source check).
+      CODING_EGRESS_DIAGNOSTICS_SUBNET: ${CODING_GATEWAY_SUBNET:-10.214.0.0/24}
+    networks:
+      - coding-gateway
+      - coding-outbound
+    user: node
+    read_only: true
+    init: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    # It joins many sandbox networks: it must never route between them.
+    sysctls:
+      net.ipv4.ip_forward: '0'
+networks:
+  computer-control:
+    # Host-run apps reach the supervisor through its loopback-only published port.
+    driver: bridge
+  # The app's gateway listener and the coding egress proxy (CB-239).
+  coding-gateway:
+    name: ${COMPUTER_NAMESPACE:-company-brain}-coding-gateway
+    internal: true
+    # A fixed subnet: the app's GATEWAY_SUBNET and the egress proxy's
+    # diagnostics check (CODING_GATEWAY_SUBNET; another default than the
+    # sandboxes' 10.213.0.0/16 and the app browser's 10.212.x).
+    ipam:
+      config:
+        - subnet: ${CODING_GATEWAY_SUBNET:-10.214.0.0/24}
+  # The coding egress proxy's route to the registries.
+  coding-outbound:
+    driver: bridge

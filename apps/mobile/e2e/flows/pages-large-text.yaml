@@ -1,0 +1,58 @@
+# The pages at the largest text, with the system's text at its
+# largest, after page-two-offline.yaml and a web edit of the same line
+# (act-as.mjs web-page-write), the server still away behind chaos-proxy.mjs:
+# A's library, its page, the editor, then, back online, the conflict banner,
+# each screenshotted. RESOLVE then keeps theirs, so the page is clean again.
+appId: ${APP_ID}
+name: pages-large-text
+---
+- runFlow:
+    file: common/link.yaml
+    env:
+      LINK: ${APP_SCHEME}://spaces
+- extendedWaitUntil:
+    visible:
+      text: '.*${SPACE_A}.*'
+    timeout: 60000
+- runFlow: common/move-dev-tools.yaml
+- tapOn:
+    text: '.*${SPACE_A}.*'
+- extendedWaitUntil:
+    visible:
+      id: space-screen
+    timeout: 30000
+- takeScreenshot: large-pages-library
+- tapOn:
+    text: 'Recent'
+- tapOn:
+    text: '.*${SUBPAGE_A}.*'
+- extendedWaitUntil:
+    visible:
+      id: page-screen
+    timeout: 30000
+- takeScreenshot: large-pages-page
+- tapOn:
+    id: page-edit
+- extendedWaitUntil:
+    visible:
+      id: page-editor-save-line
+    timeout: 30000
+- takeScreenshot: large-pages-editor
+- runFlow: common/back.yaml
+- runFlow:
+    file: common/proxy.yaml
+    env:
+      ACTION: up
+- runFlow: common/open.yaml
+- extendedWaitUntil:
+    visible:
+      id: page-conflict
+    timeout: 120000
+- takeScreenshot: large-pages-banner
+- tapOn:
+    id: page-conflict-theirs
+- tapOn: 'Discard'
+- extendedWaitUntil:
+    notVisible:
+      id: page-conflict
+    timeout: 60000

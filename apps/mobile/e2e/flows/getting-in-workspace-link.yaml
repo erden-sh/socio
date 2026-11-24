@@ -1,0 +1,47 @@
+# Getting in by the workspace's QR code: the `w` link a colleague's Get the app
+# shows (`https://<link host>/dev/w/<host>`) opens Confirm with workspace A filled in; Continue, then
+# Ada's password, lands on A's marker chat. LINK_HOST is the development build's.
+appId: ${APP_ID}
+name: getting-in-workspace-link
+env:
+  LINK_HOST: link-staging.socio.sh
+---
+- runFlow: launch.yaml
+- openLink:
+    link: https://${LINK_HOST}/dev/w/${HOST_A}
+    autoVerify: true
+- extendedWaitUntil:
+    visible:
+      id: confirm-workspace-screen
+    timeout: 30000
+- assertVisible: ${WORKSPACE_A}
+- assertVisible:
+    id: workspace-host
+- takeScreenshot: w-link-confirm
+- tapOn:
+    id: confirm-workspace-continue
+- extendedWaitUntil:
+    visible:
+      id: sign-in-screen
+    timeout: 20000
+# The manifest's ways: the sheet's Continue, the code by this workspace's channel, the password.
+- extendedWaitUntil:
+    visible:
+      id: sign-in-continue
+    timeout: 20000
+- assertVisible:
+    id: sign-in-code
+- takeScreenshot: w-link-sign-in
+- runFlow:
+    file: common/sign-in.yaml
+    env:
+      EMAIL: ada@example.test
+      SECRET: ${PASSWORD}
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 30000
+- extendedWaitUntil:
+    visible: '.*${WORKSPACE_A}.*'
+    timeout: 30000
+- takeScreenshot: w-link-home

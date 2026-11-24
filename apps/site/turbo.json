@@ -1,0 +1,58 @@
+{
+    "$schema": "../../node_modules/turbo/schema.json",
+    "extends": ["//"],
+    "tasks": {
+        "typecheck": {
+            "description": "tsc 7.1 over the Worker (the Workers runtime's types), and over the build, the browser script and the tests (Node and the DOM).",
+            "inputs": ["$TURBO_DEFAULT$", "!dist/**", "!.wrangler/**", "!node_modules/**", "!.turbo/**"],
+            "outputs": []
+        },
+        "lint": {
+            "inputs": ["$TURBO_DEFAULT$", "!dist/**", "!.wrangler/**", "!node_modules/**", "!.turbo/**"],
+            "outputs": []
+        },
+        "test": {
+            "description": "The site's Vitest suite, under Node. It builds the site itself (into a temporary directory), so it doesn't wait on build. It reads what the site copies or states from elsewhere: the client's tokens (globals.css), tones (shell/tones.ts) and character art (locals/art), and the facts the legal pages state (the session cookie in better-auth.ts and host-cookies.ts, the relay's registration expiry, the phone's lease), the outside model endpoint (inference/openai-compatible.ts) the self-host copy accounts for, removal's refusal and transfer (purge/person.ts, auth/accounts.ts), and the menu labels the pages name (the app's More, Account, Settings and Sign out; the web's user menu, Settings, People and Deactivate).",
+            "inputs": [
+                "$TURBO_DEFAULT$",
+                "$TURBO_ROOT$/packages/client/src/globals.css",
+                "$TURBO_ROOT$/packages/client/src/style.css",
+                "$TURBO_ROOT$/packages/client/src/shell/tones.ts",
+                "$TURBO_ROOT$/packages/client/src/locals/art/**",
+                "$TURBO_ROOT$/src/server/auth/better-auth.ts",
+                "$TURBO_ROOT$/src/server/auth/host-cookies.ts",
+                "$TURBO_ROOT$/src/server/inference/openai-compatible.ts",
+                "$TURBO_ROOT$/src/server/purge/person.ts",
+                "$TURBO_ROOT$/src/server/auth/accounts.ts",
+                "$TURBO_ROOT$/apps/push-relay/src/registrations.ts",
+                "$TURBO_ROOT$/apps/mobile/src/data/lease.ts",
+                "$TURBO_ROOT$/apps/mobile/src/navigation/tabs.ts",
+                "$TURBO_ROOT$/apps/mobile/src/screens/more.tsx",
+                "$TURBO_ROOT$/apps/mobile/src/screens/account.tsx",
+                "$TURBO_ROOT$/apps/mobile/src/screens/settings.tsx",
+                "$TURBO_ROOT$/apps/mobile/src/shell/modules.ts",
+                "$TURBO_ROOT$/packages/client/src/components/nav-user.tsx",
+                "$TURBO_ROOT$/packages/client/src/components/app-sidebar.tsx",
+                "$TURBO_ROOT$/packages/client/src/modules/settings/sections.ts",
+                "$TURBO_ROOT$/packages/client/src/modules/settings/people/PersonPage.route.tsx",
+                "!dist/**",
+                "!.wrangler/**",
+                "!node_modules/**",
+                "!.turbo/**"
+            ],
+            "outputs": []
+        },
+        "build": {
+            "description": "vite build: the pages (rendered from src/build), the stylesheet (Tailwind 4), the browser script, the character art (from the client's, cream tiles stripped) and the site's files, into dist/ for wrangler's assets.",
+            "inputs": [
+                "$TURBO_ROOT$/packages/client/src/locals/art/**",
+                "$TURBO_DEFAULT$",
+                "!dist/**",
+                "!.wrangler/**",
+                "!node_modules/**",
+                "!.turbo/**"
+            ],
+            "outputs": ["dist/**"]
+        }
+    }
+}

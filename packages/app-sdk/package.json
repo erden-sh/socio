@@ -1,0 +1,22 @@
+{
+    "name": "@socio/app-sdk",
+    "version": "0.0.0",
+    "private": true,
+    "type": "module",
+    "description": "Socio mini app SDK (CB-232): verifies the x-cb-actor envelope, authorizes actions by tier, consumes action approvals and calls the data API on behalf of the request's person or socio.",
+    "scripts": {
+        "typecheck": "pnpm -w exec tsc -p packages/app-sdk/tsconfig.json --noEmit",
+        "lint": "pnpm -w exec oxlint packages/app-sdk"
+    },
+    "exports": {
+        ".": "./src/index.ts",
+        "./backup": "./src/backup.ts",
+        "./backup-check": "./src/backup-check.ts",
+        "./check": "./src/check.ts",
+        "./webhooks": "./src/webhooks.ts"
+    },
+    "license": "SEE LICENSE IN ../../LICENSE",
+    "author": {
+        "name": "Ingenio Ventures Inc."
+    }
+}

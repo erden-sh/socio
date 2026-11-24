@@ -1,0 +1,28 @@
+{
+    "name": "@socio/plugin-ui",
+    "version": "0.0.0",
+    "private": true,
+    "type": "module",
+    "description": "Shared UI for Socio plugin apps: calendar, editor shell, preview frame, catalog cards, page shell, and the iframe bridge.",
+    "scripts": {
+        "typecheck": "pnpm -w exec tsc -p packages/plugin-ui/tsconfig.json --noEmit",
+        "lint": "pnpm -w exec oxlint packages/plugin-ui"
+    },
+    "exports": {
+        ".": "./src/index.ts",
+        "./plugin.css": "./src/plugin.css",
+        "./preview.css": "./src/preview.css"
+    },
+    "dependencies": {
+        "@socio/shared": "workspace:*"
+    },
+    "peerDependencies": {
+        "lucide-react": "^1.48.0",
+        "react": "^19.3.0",
+        "react-dom": "^19.3.0"
+    },
+    "license": "SEE LICENSE IN ../../LICENSE",
+    "author": {
+        "name": "Ingenio Ventures Inc."
+    }
+}

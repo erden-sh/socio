@@ -1,0 +1,11 @@
+# Grok Build (`grok`, xAI's official coding agent) for the socio-coding image (CB-326), built from its Apache-2.0
+# source (owner decision, 2026-11-01): see deployment/coding/README.md, "Pinning Gemini CLI and Grok Build". coding.Dockerfile's
+# grok-build stage fetches this commit by its id, checks it, SOURCE_REV and the version, compiles it and copies only the binary.
+# No `tag`: github.com/xai-org/grok-build publishes no tags or releases (a periodic sync of xAI's monorepo), so the commit is
+# the pin. Its version is behind xAI's downloadable binary (x.ai/cli/stable said 1.0.70 on 2026-11-01).
+version=1.0.45
+repository=https://github.com/xai-org/grok-build
+commit=2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8
+source_rev=559751fdcec02d413e4c57c8832ab275e4f44980
+fetched=2026-11-01
+verified=main's head on 2026-11-01 (synced 2026-09-29; no tags or releases); its source read, never built or run: crates/codegen/xai-grok-version (lockstepped) is 1.0.45, SOURCE_REV as above, LICENSE Apache-2.0, rust-toolchain 1.94.0; fetched with User-Agent research-script/0.1, no credentials

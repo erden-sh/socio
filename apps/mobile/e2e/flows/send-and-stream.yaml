@@ -1,0 +1,55 @@
+# Sending, with workspace A up (servers.mjs; run.mjs --credentials):
+# Ada opens A's marker chat, sends a message that asks the fake model for a
+# slow stream, and the reply streams under the status pill while Send is Stop.
+# A message typed during the turn queues (steering) and shows as a pending
+# bubble, then Stop ends the turn and the composer is Send again.
+appId: ${APP_ID}
+name: send-and-stream
+---
+- runFlow: chat-open.yaml
+- tapOn:
+    id: chat-composer-input
+- inputText: 'Please smoke slow-stream for me'
+- takeScreenshot: send-and-stream-composer
+- tapOn:
+    id: chat-composer-send
+- extendedWaitUntil:
+    visible:
+      text: '(?s).*Please smoke slow-stream for me.*'
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: chat-composer-stop
+    timeout: 30000
+- extendedWaitUntil:
+    visible:
+      text: '(?s).*Second 2\..*'
+    timeout: 30000
+- takeScreenshot: send-and-stream-streaming
+- tapOn:
+    id: chat-composer-input
+- inputText: 'And one more thing'
+- tapOn:
+    id: chat-composer-send
+- extendedWaitUntil:
+    visible:
+      text: 'And one more thing'
+    timeout: 10000
+- takeScreenshot: send-and-stream-queued
+# iOS's hideKeyboard fails here (README); the Stop button shows above the keyboard there.
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - hideKeyboard
+- extendedWaitUntil:
+    visible:
+      id: chat-composer-stop
+    timeout: 10000
+- tapOn:
+    id: chat-composer-stop
+- extendedWaitUntil:
+    visible:
+      id: chat-composer-send
+    timeout: 30000
+- takeScreenshot: send-and-stream-stopped

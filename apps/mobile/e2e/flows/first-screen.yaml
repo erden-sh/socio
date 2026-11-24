@@ -1,0 +1,65 @@
+# Add workspace's first screen, Android, against servers.mjs: the three
+# ways in, in order (the invite, the QR code from Socio on a computer, the
+# address), and no list of workspaces; the address opens the address screen;
+# then a Get the app link (`https://<link host>/dev/w/<host>`) lands on Confirm
+# with workspace A filled in, its host shown; a second link for a host with no
+# workspace, sent over Confirm, goes back to the first screen (never a second
+# copy of it) and shows that host with its refusal. LINK_HOST is the development
+# build's (SOCIO_LINK_HOST at prebuild, link-staging.socio.sh by default). The
+# emulator can't verify that host, so approve it for the app first, or Chrome
+# opens the link:
+#
+#   adb shell pm set-app-links --package com.ingenioventures.socio.dev 2 link-staging.socio.sh
+appId: ${APP_ID}
+name: first-screen
+env:
+  LINK_HOST: link-staging.socio.sh
+---
+- runFlow: launch.yaml
+- assertVisible:
+    id: first-screen-invite
+    text: '.*Open your invite link.*'
+- assertVisible:
+    id: first-screen-qr
+    text: '.*Scan the QR code from Socio on a computer.*'
+- assertVisible:
+    id: first-screen-address
+- assertNotVisible:
+    id: first-screen-link
+- takeScreenshot: first-screen
+- tapOn:
+    id: first-screen-address
+- extendedWaitUntil:
+    visible:
+      id: workspace-address-screen
+    timeout: 10000
+- runFlow: common/back.yaml
+- extendedWaitUntil:
+    visible:
+      id: add-workspace-screen
+    timeout: 10000
+# A Get the app link while the app runs.
+- openLink:
+    link: https://${LINK_HOST}/dev/w/${HOST_A}
+    autoVerify: true
+- extendedWaitUntil:
+    visible:
+      id: confirm-workspace-screen
+    timeout: 30000
+- assertVisible:
+    id: workspace-host
+- assertVisible: ${WORKSPACE_A}
+- takeScreenshot: first-screen-w-link
+# Another link over Confirm: back to the first screen, the host and its refusal.
+- openLink:
+    link: https://${LINK_HOST}/dev/w/localhost:4399
+    autoVerify: true
+- extendedWaitUntil:
+    visible:
+      id: first-screen-link-line
+      text: '.*reach this address.*'
+    timeout: 30000
+- assertVisible:
+    id: first-screen-link-host
+    text: 'localhost:4399'
+- takeScreenshot: first-screen-w-link-refused

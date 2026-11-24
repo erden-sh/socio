@@ -1,0 +1,26 @@
+# iOS: puts the newest photo on the clipboard through Photos' Copy (Maestro
+# copies only text), for a paste (page-paste-webview.yaml). Seed it first:
+# xcrun simctl addmedia <udid> seed-photo.jpg.
+appId: com.apple.mobileslideshow
+name: copy-photo-ios
+---
+- launchApp:
+    appId: com.apple.mobileslideshow
+    stopApp: true
+- runFlow:
+    when:
+      visible: 'Continue'
+    commands:
+      - tapOn: 'Continue'
+- extendedWaitUntil:
+    visible:
+      text: '^Photo, .*'
+    timeout: 30000
+- longPressOn:
+    text: '^Photo, .*'
+    index: 0
+- extendedWaitUntil:
+    visible: 'Copy'
+    timeout: 10000
+- tapOn: 'Copy'
+- stopApp: com.apple.mobileslideshow

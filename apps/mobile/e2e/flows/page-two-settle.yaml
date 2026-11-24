@@ -1,0 +1,81 @@
+# One phone coming back after page-two-offline.yaml (--env EXPECT
+# OUTBOX SHOT WAIT_FOR (a text the page shows once it opens), and RESULT: saved, merged or conflict; RESOLVE: mine, theirs or
+# none). The proxy is up and the app reopens cold onto the page: its save goes.
+#   saved:    nothing changed meanwhile; the page shows ${EXPECT}.
+#   merged:   the other phone saved other lines first: the merge is clean, the
+#             page shows ${EXPECT} (both phones' lines; the toast, "Merged with
+#             changes made elsewhere", is screenshotted when it is still up).
+#   conflict: the other phone saved the same line first: the banner ("This
+#             page changed elsewhere") with this phone's version in Unsent;
+#             RESOLVE mine replaces theirs after the confirm, theirs discards
+#             this phone's after the confirm; the page then shows ${EXPECT}.
+# Then Diagnostics' Outbox line reads ${OUTBOX}. The script checks the server's
+# copy (act-as.mjs web-page --expect).
+appId: ${APP_ID}
+name: page-two-settle
+---
+- runFlow:
+    file: common/proxy.yaml
+    env:
+      ACTION: up
+# Cold, onto the page (through Home's Spaces tile when the app opens there,
+# after a Clear cache): it shows ${EXPECT} or, in a conflict, theirs.
+- runFlow:
+    file: common/open-page.yaml
+    env:
+      BASE: ${WAIT_FOR}
+- runFlow:
+    when:
+      true: ${RESULT == 'merged'}
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: page-toast
+          timeout: 30000
+          optional: true
+      - takeScreenshot: ${SHOT}-toast
+- runFlow:
+    when:
+      true: ${RESULT == 'conflict'}
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: page-conflict
+          timeout: 90000
+      - assertVisible:
+          text: '.*This page changed elsewhere.*'
+      - takeScreenshot: ${SHOT}-banner
+      - runFlow:
+          file: common/outbox-line.yaml
+          env:
+            OUTBOX: '.*unsent 1$'
+            SHOT: ${SHOT}-unsent
+      - runFlow:
+          when:
+            true: ${RESOLVE == 'mine'}
+          commands:
+            - tapOn:
+                id: page-conflict-mine
+            - tapOn: 'Replace'
+      - runFlow:
+          when:
+            true: ${RESOLVE == 'theirs'}
+          commands:
+            - tapOn:
+                id: page-conflict-theirs
+            - tapOn: 'Discard'
+      - extendedWaitUntil:
+          notVisible:
+            id: page-conflict
+          timeout: 60000
+- scrollUntilVisible:
+    element:
+      text: '.*${EXPECT}.*'
+    direction: DOWN
+    timeout: 90000
+- takeScreenshot: ${SHOT}-settled
+- runFlow:
+    file: common/outbox-line.yaml
+    env:
+      OUTBOX: ${OUTBOX}
+      SHOT: ${SHOT}

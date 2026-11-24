@@ -1,0 +1,48 @@
+# After board-open.yaml, with every workspace server stopped (Ctrl-C
+# servers.mjs): a cold relaunch opens on the Board, the workspace's last
+# screen, from the phone's copy alone, on the column and filter it kept; the
+# search narrows what the phone holds; Back leads to Home. Run it with run.mjs
+# --servers-down.
+appId: ${APP_ID}
+name: board-open-offline
+---
+- runFlow: common/open.yaml
+- extendedWaitUntil:
+    visible:
+      id: board-screen
+    timeout: 180000
+- extendedWaitUntil:
+    visible:
+      text: '.*A: Export the board as CSV.*'
+    timeout: 10000
+- assertVisible:
+    text: 'Filters · 1'
+- assertVisible:
+    text: '6 open · 1 in progress · 1 done'
+- takeScreenshot: board-open-offline
+- tapOn:
+    id: board-column-triage
+- assertNotVisible:
+    text: '.*A: Search misses accents.*'
+- tapOn:
+    id: board-filters
+- tapOn:
+    id: board-filter-clear
+- tapOn:
+    id: board-filter-done
+- extendedWaitUntil:
+    visible:
+      text: '.*A: Search misses accents.*'
+    timeout: 5000
+- tapOn:
+    id: board-search
+- inputText: accents
+- hideKeyboard
+- assertVisible:
+    text: '1 of 8'
+- takeScreenshot: board-open-offline-search
+- runFlow: common/back.yaml
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 10000

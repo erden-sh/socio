@@ -1,0 +1,10 @@
+# A sign-in code by telegram, on servers.mjs --codes: workspace B sends its codes
+# by telegram to the fake Telegram Ada linked (no email links there). common/sign-in-code.yaml.
+appId: ${APP_ID}
+name: getting-in-telegram
+---
+- runFlow:
+    file: common/sign-in-code.yaml
+    env:
+      LETTER: B
+      CHANNEL: telegram

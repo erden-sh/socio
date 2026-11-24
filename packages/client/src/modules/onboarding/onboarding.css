@@ -1,0 +1,58 @@
+.socio-tour {
+    box-sizing: border-box;
+    max-width: min(360px, calc(100vw - 24px));
+    background: var(--card);
+    color: var(--card-foreground);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-family: inherit;
+}
+.socio-tour .driver-popover-title,
+.socio-tour .driver-popover-description,
+.socio-tour .driver-popover-progress-text {
+    color: inherit;
+    font-family: inherit;
+}
+.socio-tour .driver-popover-footer button,
+.socio-tour-links button {
+    min-height: 44px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--secondary);
+    color: var(--secondary-foreground);
+    text-shadow: none;
+    font-family: inherit;
+    font-size: 14px;
+}
+.socio-tour .driver-popover-close-btn {
+    min-width: 44px;
+    min-height: 44px;
+    color: inherit;
+}
+.socio-tour a {
+    color: var(--primary);
+    text-decoration: underline;
+}
+.socio-tour-links {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: 12px;
+}
+.socio-tour-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+}
+.socio-tour :focus-visible {
+    outline: 3px solid var(--ring);
+    outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+    .driver-overlay,
+    .driver-popover {
+        transition: none !important;
+        animation: none !important;
+    }
+}

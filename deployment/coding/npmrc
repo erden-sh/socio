@@ -1,0 +1,10 @@
+# npm and pnpm in the coding sandbox (CB-239):
+# the registry is the egress proxy's read-only virtual host for
+# registry.npmjs.org. npm's replace-registry-host (default "npmjs")
+# points lockfile tarball URLs there too. Publishing fails: the proxy
+# accepts GET and HEAD only and passes no credentials.
+registry=http://npm.registry.socio.internal/
+replace-registry-host=npmjs
+audit=false
+fund=false
+update-notifier=false

@@ -1,0 +1,44 @@
+node_modules/
+dist/
+# The planner's built client. `pnpm planner:ui` (and `pnpm build`) writes it.
+src/server/plugins/planner/ui/
+# Turborepo's logs in each package, and CI's copy of its cache (scripts/turbo.mjs)
+.turbo/
+.turbo-ci/
+# React Router's generated route types
+.react-router/
+.env
+.env.*
+!.env.example
+.socio/
+artifacts/
+playwright-report/
+test-results/
+docs/superpowers/
+RESEARCH.md
+.DS_Store
+
+data/
+# …but not the data layer's code (CB-110), nor a data/ folder inside the apps
+# (the native app and its push relay), where it holds code, not databases.
+!packages/data/
+!apps/**/data/
+# The ontology's knowledge graph is Turtle, not a database.
+!ontology/data/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+
+# Local hosted-project selection
+.copilotkit/
+
+# Agent state stays local (Claude Code worktrees and settings). Shared agent
+# instructions live in AGENTS.md and .agents/; .claude/skills and CLAUDE.md
+# are symlinks to them for Claude Code.
+.claude/*
+!.claude/skills
+
+# Erden's installed layers (erden install); erden.lock is committed.
+ontology/.erden/
+# The checks' facts (pnpm ontology:graph): large, and regenerated from the tree.
+ontology/audit/

@@ -1,0 +1,85 @@
+# Socio as a software project: who publishes it, its repository and its
+# license. Hand-written; data/repo.ttl is the generated part of the graph.
+@prefix rdfs:    <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix skos:    <http://www.w3.org/2004/02/skos/core#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix foaf:    <http://xmlns.com/foaf/0.1/> .
+@prefix org:     <http://www.w3.org/ns/org#> .
+@prefix odrl:    <http://www.w3.org/ns/odrl/2/> .
+@prefix schema:  <https://schema.org/> .
+@prefix socio:   <https://socio.sh/ontology/> .
+@prefix sid:     <https://socio.sh/ontology/id/> .
+
+sid:socio
+    a foaf:Project, schema:SoftwareSourceCode ;
+    rdfs:label "Socio" ;
+    dcterms:title "Socio" ;
+    dcterms:description "Your team's workspace, with AI socios: chat, rooms, pages, a board and approvals in one place, on the web and on your phone." ;
+    dcterms:publisher sid:ingenio-ventures ;
+    dcterms:license sid:sustainable-use-license ;
+    foaf:homepage <https://socio.sh> ;
+    dcterms:source <https://github.com/erden-sh/socio> ;
+    socio:sourcePath "." .
+
+sid:ingenio-ventures
+    a org:FormalOrganization ;
+    rdfs:label "Ingenio Ventures Inc." ;
+    skos:prefLabel "Ingenio Ventures Inc." .
+
+<https://github.com/erden-sh/socio>
+    rdfs:label "erden-sh/socio" ;
+    dcterms:description "The Socio source repository." .
+
+# The Sustainable Use License 1.0 (LICENSE), as an ODRL policy. A summary of
+# its grant and limits, not a substitute for the license text.
+sid:sustainable-use-license
+    a dcterms:LicenseDocument, odrl:Set ;
+    rdfs:label "Sustainable Use License 1.0" ;
+    dcterms:source <https://github.com/erden-sh/socio/blob/main/LICENSE> ;
+    odrl:permission sid:sul-use-and-modify, sid:sul-distribute ;
+    odrl:prohibition sid:sul-no-sale .
+
+sid:sul-use-and-modify
+    a odrl:Permission ;
+    rdfs:label "use and modify for internal business or non-commercial purposes" ;
+    odrl:target sid:socio ;
+    odrl:assigner sid:ingenio-ventures ;
+    odrl:action odrl:use, odrl:modify ;
+    odrl:constraint sid:sul-internal-or-non-commercial .
+
+sid:sul-distribute
+    a odrl:Permission ;
+    rdfs:label "distribute free of charge for non-commercial purposes" ;
+    odrl:target sid:socio ;
+    odrl:assigner sid:ingenio-ventures ;
+    odrl:action odrl:distribute ;
+    odrl:constraint sid:sul-non-commercial .
+
+sid:sul-no-sale
+    a odrl:Prohibition ;
+    rdfs:label "no selling or commercial hosting" ;
+    odrl:target sid:socio ;
+    odrl:assigner sid:ingenio-ventures ;
+    odrl:action odrl:sell, odrl:commercialize .
+
+sid:sul-internal-or-non-commercial
+    a odrl:Constraint ;
+    odrl:leftOperand odrl:purpose ;
+    odrl:operator odrl:isAnyOf ;
+    odrl:rightOperandReference sid:purpose-internal-business, sid:purpose-non-commercial .
+
+sid:sul-non-commercial
+    a odrl:Constraint ;
+    odrl:leftOperand odrl:purpose ;
+    odrl:operator odrl:eq ;
+    odrl:rightOperandReference sid:purpose-non-commercial .
+
+sid:purpose-internal-business
+    a skos:Concept ;
+    skos:prefLabel "internal business use" ;
+    skos:definition "Use for the licensee's own internal business purposes." .
+
+sid:purpose-non-commercial
+    a skos:Concept ;
+    skos:prefLabel "non-commercial or personal use" ;
+    skos:definition "Use, or distribution free of charge, for non-commercial or personal purposes." .

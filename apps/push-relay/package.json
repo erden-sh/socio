@@ -1,0 +1,23 @@
+{
+    "name": "@socio/push-relay",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "description": "Socio's push relay: a Cloudflare Worker that forwards end-to-end encrypted Web Push to APNs and FCM. Registrations, the Web Push receiver, quotas, and the APNs and FCM clients.",
+    "scripts": {
+        "dev": "cross-env WRANGLER_SEND_METRICS=false DO_NOT_TRACK=1 WRANGLER_HIDE_BANNER=true wrangler dev --local",
+        "migrate:local": "cross-env WRANGLER_SEND_METRICS=false DO_NOT_TRACK=1 WRANGLER_HIDE_BANNER=true wrangler d1 migrations apply DB --local",
+        "typecheck": "pnpm -w exec tsc -p apps/push-relay/tsconfig.json --noEmit",
+        "lint": "pnpm -w exec oxlint apps/push-relay",
+        "test": "cross-env DO_NOT_TRACK=1 vitest run"
+    },
+    "devDependencies": {
+        "@cloudflare/workers-types": "5.20261108.1",
+        "wrangler": "4.158.0"
+    },
+    "engines": {
+        "node": ">=26.13.0 <27",
+        "pnpm": ">=10.15 <11"
+    },
+    "license": "SEE LICENSE IN ../../LICENSE"
+}

@@ -1,0 +1,24 @@
+# @ask     Which tables that hold personal data have no deletion path: no soft-delete column and no code that deletes their rows?
+# @expect  rows <= 1
+# @from    modules/domain.ttl (personalDataCategory), data/repo.ttl (storedIn, Table, softDeleteColumn, Deletes mentions).
+#
+# The goal is 0 rows; the bound holds today's count (coding_sessions: the purge refuses a
+# person with any session row, and nothing deletes one), so a new gap fails the check.
+#
+# Why static tools miss it: deletion is a property of the whole codebase (a migration's column,
+# a store's DELETE, the purge's reference list), not of any one file, and no test asks it for
+# every table. Tables the purge keeps by design (`history` in src/server/purge/references.ts:
+# attribution and audit) are left out; personal-data-retained.rq lists them.
+PREFIX skos:  <http://www.w3.org/2004/02/skos/core#>
+PREFIX prov:  <http://www.w3.org/ns/prov#>
+PREFIX rdfs:  <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX socio: <https://socio.sh/ontology/>
+SELECT ?concept ?table ?category WHERE {
+    ?c socio:personalDataCategory ?cat ; socio:storedIn ?t ; rdfs:label ?concept .
+    ?t socio:tableName ?table .
+    BIND (STRAFTER(STR(?cat), "#") AS ?category)
+    FILTER NOT EXISTS { ?t socio:softDeleteColumn ?column . }
+    FILTER NOT EXISTS { ?d socio:mentionOf ?t ; socio:mentionKind socio:Deletes . }
+    FILTER NOT EXISTS { ?d socio:mentionOf ?t ; socio:mentionKind socio:Retains . }
+}
+ORDER BY ?table ?concept

@@ -1,0 +1,33 @@
+# Picks the newest photo in the system photo picker, opened by the caller
+# (seeded as in attach-photo.yaml's header): Android's "Photo taken on …",
+# iOS's "Photo, <date>", then Add or Done where the picker asks.
+appId: ${APP_ID}
+name: pick-photo
+---
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - extendedWaitUntil:
+          visible:
+            text: '(?i)Photo taken on.*'
+          timeout: 20000
+      - tapOn:
+          text: '(?i)Photo taken on.*'
+          index: 0
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - extendedWaitUntil:
+          visible:
+            text: '^Photo, .*'
+          timeout: 20000
+      - tapOn:
+          text: '^Photo, .*'
+          index: 0
+- runFlow:
+    when:
+      visible: '(?i)^(Add|Done)$'
+    commands:
+      - tapOn: '(?i)^(Add|Done)$'
