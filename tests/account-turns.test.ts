@@ -40,6 +40,13 @@ const timing = { leaseMs: 300, waitMs: 5000, pollMs: 5 };
 
 describe('account turns', () => {
     it('runs one process’s turn only after the other’s, and lets go of the lease', async () => {
+        // A fake clock, as in the takeover test below: the holder's renewals and the waiter's tries run
+        // in clock order, however loaded the machine is. With real timers, an event-loop stall longer
+        // than the renewal gap let the lease run out, and the waiter rightly took it over.
+        vi.useFakeTimers({
+            now: 1_000_000,
+            toFake: ['Date', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'],
+        });
         const open = database();
         const one = open();
         const a = new AccountTurns(() => one, timing);
@@ -51,12 +58,17 @@ describe('account turns', () => {
             await new Promise<void>((resolve) => (release = resolve));
             order.push('a end');
         });
-        await vi.waitFor(() => expect(order).toEqual(['a start']));
-        const second = b.run('acc', async () => void order.push('b'));
-        // Past the lease's own length: the holder renews it while it works.
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        await vi.advanceTimersByTimeAsync(0);
         expect(order).toEqual(['a start']);
+        const second = b.run('acc', async () => void order.push('b'));
+        // Well past the lease's own length: the holder renews it while it works.
+        await vi.advanceTimersByTimeAsync(3 * timing.leaseMs);
+        expect(order).toEqual(['a start']);
+        const lease = one.prepare('SELECT expiresAt FROM auth_device_turn').get() as { expiresAt: number };
+        expect(lease.expiresAt).toBeGreaterThan(Date.now());
         release();
+        // The waiter's next try (they back off to at most 200 ms apart) takes the freed lease.
+        await vi.advanceTimersByTimeAsync(250);
         await Promise.all([first, second]);
         expect(order).toEqual(['a start', 'a end', 'b']);
         expect(one.prepare('SELECT count(*) AS n FROM auth_device_turn').get()).toEqual({ n: 0 });
