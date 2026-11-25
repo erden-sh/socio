@@ -21,8 +21,8 @@ const flip = (text: string) => `${text.slice(0, 10)}${text[10] === 'A' ? 'B' : '
 const bodyOf = async (request: Request) => Buffer.from(await request.clone().arrayBuffer()).toString('base64url');
 
 describe('the Web Push receiver', () => {
-    it('is driven by the root’s web-push 3.6.7', () => {
-        expect(webpushVersion).toBe('3.6.7');
+    it('is driven by the root’s web-push 4.0.0', () => {
+        expect(webpushVersion).toBe('4.0.0');
     });
 
     it('forwards a push from the bound key to APNs, ciphertext untouched, with no collapse id', async () => {

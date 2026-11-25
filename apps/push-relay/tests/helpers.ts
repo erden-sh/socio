@@ -4,7 +4,7 @@ import { createHash, createECDH, randomBytes } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 
-import webpush from 'web-push';
+import * as webpush from 'web-push';
 
 import type { Providers } from '../src/providers';
 import { QUOTAS, rateLimitQuotas } from '../src/quotas';
@@ -129,7 +129,7 @@ export function phoneKeys() {
 
 export const topicOf = (tag: string) => createHash('sha256').update(tag).digest('base64url').slice(0, 32);
 
-/** web-push 3.6.7 exactly as src/server/notifications/push.ts calls it. */
+/** web-push 4.0.0 exactly as src/server/notifications/push.ts calls it. */
 export function pushRequest(server: Server, endpoint: string, payload: string, tag?: string) {
     const details = webpush.generateRequestDetails({ endpoint, keys: phoneKeys() }, payload, {
         vapidDetails: { subject: 'https://socio.invalid', publicKey: server.publicKey, privateKey: server.privateKey },
