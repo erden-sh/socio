@@ -362,8 +362,8 @@ importers:
         specifier: 0.3.293
         version: 0.3.293(@anthropic-ai/sdk@0.132.0(zod@4.6.5))(@modelcontextprotocol/sdk@1.31.0(@cfworker/json-schema@4.1.1)(zod@4.6.5))(zod@4.6.5)
       '@erden-sh/cli':
-        specifier: 0.2.1
-        version: 0.2.1
+        specifier: 0.2.2
+        version: 0.2.2
       '@openai/codex':
         specifier: 0.161.0
         version: 0.161.0
@@ -2161,38 +2161,38 @@ packages:
   '@epic-web/invariant@1.0.0':
     resolution: {integrity: sha512-lrTPqgvfFQtR/eY/qkIzp98OGdNJu0m5ji3q/nJI8v3SXkRKEnWiOxMmbvcSoAIzv/cGiuvRy57k4suKQSAdwA==}
 
-  '@erden-sh/cli-darwin-arm64@0.2.1':
-    resolution: {integrity: sha512-SD1S/fz9nbJXB3GTnnrwTStHwZS7eQjWyaZs34cmW0U4G0D1UmKOtWOIncJz3V6NKn/Xg4NIqFrkErDvx3/zuQ==}
+  '@erden-sh/cli-darwin-arm64@0.2.2':
+    resolution: {integrity: sha512-s7Nm3iZXC2W8waB7LF5WkHKCglHErGTZc4FeJ/jZUp/bvyh2brqhQyZMcs0MrTYouYCLek8W0cFT1NNNONGivA==}
     cpu: [arm64]
     os: [darwin]
 
-  '@erden-sh/cli-linux-arm64-musl@0.2.1':
-    resolution: {integrity: sha512-LYSt5gZQjvLx5562TSgEKgXxTTUY/8kcxHRbCWjaqk3ixtwdl9MiTAshAjz/BSS1BcN3b6aHn0jrLtZjghdfCw==}
+  '@erden-sh/cli-linux-arm64-musl@0.2.2':
+    resolution: {integrity: sha512-lkTMBMbssb1+P8h2KQ/LuC0/SeKC3oo4v1P2CoSRtyRekuLQNvcr+FQj14y0chY43std17zuZhmUSNiUMzIrKA==}
     cpu: [arm64]
     os: [linux]
 
-  '@erden-sh/cli-linux-arm64@0.2.1':
-    resolution: {integrity: sha512-zaoFrXeurigbcUcjQ5Ejl5mAs8UWqKOD+Bwz3yK+zTddGKczqHKtoKthqxEwyfe31G5aT4lhHgQ9g+VVQJfnYQ==}
+  '@erden-sh/cli-linux-arm64@0.2.2':
+    resolution: {integrity: sha512-1V8eTHkVffDLXL2coAr+U46EtsmdaozdNPLionOAwPu/eShx0KQqy2PY216rbd/fWBEINFovQKUvl9nS+WGp2w==}
     cpu: [arm64]
     os: [linux]
 
-  '@erden-sh/cli-linux-x64-musl@0.2.1':
-    resolution: {integrity: sha512-lN5aey+TF0zgzpZlyqOdPdPAgW+IKLHBcMWQQkqV4rhsI2fr4q2KSywqlraLzPTxhneFVwbsf6iuNBA6BnL7xw==}
+  '@erden-sh/cli-linux-x64-musl@0.2.2':
+    resolution: {integrity: sha512-V06ucmmF7TwM6ELBbFsQm4dbiIQIpREreHj05jmglNi6jz8A9d5rYK7gHM3JLfIFdSd2hVzWdN5ZV8nRbzhcIg==}
     cpu: [x64]
     os: [linux]
 
-  '@erden-sh/cli-linux-x64@0.2.1':
-    resolution: {integrity: sha512-bqyWp7uIrax0CUz1jGY7gDaJY534DsaDcUL10QBpjDpT4NdN5sE40P0x9YdGO358pWvHlniOukxi4EaRUMvChQ==}
+  '@erden-sh/cli-linux-x64@0.2.2':
+    resolution: {integrity: sha512-Z1rja+hjJBq1XSXRN26JA+gWm+QnZuzurvgRCR4jAEV6nQsTn7OGjG2MGzAyYidNHDnp/wBo8mql+yl5taC4UQ==}
     cpu: [x64]
     os: [linux]
 
-  '@erden-sh/cli-win32-x64@0.2.1':
-    resolution: {integrity: sha512-qj9v5ZmC97+0vwOXfMRu6VRQxyyN1xkcGSF1oYXQ+eRujF6ORW7RmII/yAmIVEL5aViXEaGQcdsOsfzDI/lnhQ==}
+  '@erden-sh/cli-win32-x64@0.2.2':
+    resolution: {integrity: sha512-pOnZNECKRr8fxsBKuDlQ1QMQaNX7mwscLMSD4ThzBk3wgf6Glk1tigjrQ7XFAHjWYpJDvkNkeRWiUjRh3mjf4w==}
     cpu: [x64]
     os: [win32]
 
-  '@erden-sh/cli@0.2.1':
-    resolution: {integrity: sha512-RF8FsKHusOslaOGCD+q02+ALbnBB8QiCF79EfQoo0Z77Izhv60rgVVeh707JDPKeGTRTxZ6sgnxpIrQT4TOdVQ==}
+  '@erden-sh/cli@0.2.2':
+    resolution: {integrity: sha512-SMeianQGBQog6SyjdYCaP/uVhEx4z/buE1iy/u90p3rYFxhDxOOdtXyuae7EYVHev5LDhnzhgvwp4bIuSfXo0g==}
     engines: {node: '>=18'}
     hasBin: true
 
@@ -11704,32 +11704,32 @@ snapshots:
 
   '@epic-web/invariant@1.0.0': {}
 
-  '@erden-sh/cli-darwin-arm64@0.2.1':
+  '@erden-sh/cli-darwin-arm64@0.2.2':
     optional: true
 
-  '@erden-sh/cli-linux-arm64-musl@0.2.1':
+  '@erden-sh/cli-linux-arm64-musl@0.2.2':
     optional: true
 
-  '@erden-sh/cli-linux-arm64@0.2.1':
+  '@erden-sh/cli-linux-arm64@0.2.2':
     optional: true
 
-  '@erden-sh/cli-linux-x64-musl@0.2.1':
+  '@erden-sh/cli-linux-x64-musl@0.2.2':
     optional: true
 
-  '@erden-sh/cli-linux-x64@0.2.1':
+  '@erden-sh/cli-linux-x64@0.2.2':
     optional: true
 
-  '@erden-sh/cli-win32-x64@0.2.1':
+  '@erden-sh/cli-win32-x64@0.2.2':
     optional: true
 
-  '@erden-sh/cli@0.2.1':
+  '@erden-sh/cli@0.2.2':
     optionalDependencies:
-      '@erden-sh/cli-darwin-arm64': 0.2.1
-      '@erden-sh/cli-linux-arm64': 0.2.1
-      '@erden-sh/cli-linux-arm64-musl': 0.2.1
-      '@erden-sh/cli-linux-x64': 0.2.1
-      '@erden-sh/cli-linux-x64-musl': 0.2.1
-      '@erden-sh/cli-win32-x64': 0.2.1
+      '@erden-sh/cli-darwin-arm64': 0.2.2
+      '@erden-sh/cli-linux-arm64': 0.2.2
+      '@erden-sh/cli-linux-arm64-musl': 0.2.2
+      '@erden-sh/cli-linux-x64': 0.2.2
+      '@erden-sh/cli-linux-x64-musl': 0.2.2
+      '@erden-sh/cli-win32-x64': 0.2.2
 
   '@esbuild/aix-ppc64@0.28.2':
     optional: true
