@@ -493,8 +493,8 @@ importers:
         specifier: 12.0.1
         version: 12.0.1(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.88.1(@babel/core@7.29.7))(@types/react@19.3.2)(react@19.3.0))(react@19.3.0)
       '@react-native-menu/menu':
-        specifier: 2.1.2
-        version: 2.1.2(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.88.1(@babel/core@7.29.7))(@types/react@19.3.2)(react@19.3.0))(react@19.3.0)
+        specifier: 2.3.4
+        version: 2.3.4(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.88.1(@babel/core@7.29.7))(@types/react@19.3.2)(react@19.3.0))(react@19.3.0)
       '@react-native-segmented-control/segmented-control':
         specifier: 2.5.7
         version: 2.5.7(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.88.1(@babel/core@7.29.7))(@types/react@19.3.2)(react@19.3.0))(react@19.3.0)
@@ -4452,8 +4452,8 @@ packages:
       react: '*'
       react-native: '>=0.59'
 
-  '@react-native-menu/menu@2.1.2':
-    resolution: {integrity: sha512-Am/1HMt21CL+jr/fLTDWCddAUQYpMe8NpVSZrEbITXEMOaNxQqfNGApkuOY72hjV92aR7L7OHuqXLaqrlXZfOA==}
+  '@react-native-menu/menu@2.3.4':
+    resolution: {integrity: sha512-u4OJLbxTOM3UPjTH6coTEhM0GfNgfJ2CGnt2Kj1uWkxfS+MkHTBi1JYc8rjhR+qE47/59shjHGci9MFWtQcscQ==}
     peerDependencies:
       react: '*'
       react-native: '*'
@@ -14552,7 +14552,7 @@ snapshots:
       react: 19.3.0
       react-native: 0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.88.1(@babel/core@7.29.7))(@types/react@19.3.2)(react@19.3.0)
 
-  '@react-native-menu/menu@2.1.2(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.88.1(@babel/core@7.29.7))(@types/react@19.3.2)(react@19.3.0))(react@19.3.0)':
+  '@react-native-menu/menu@2.3.4(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.88.1(@babel/core@7.29.7))(@types/react@19.3.2)(react@19.3.0))(react@19.3.0)':
     dependencies:
       react: 19.3.0
       react-native: 0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.88.1(@babel/core@7.29.7))(@types/react@19.3.2)(react@19.3.0)
