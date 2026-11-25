@@ -50,7 +50,9 @@ catalog:
 # pins a package to the version the root package.json names; `-` removes an
 # optional peer the server packages never load.
 overrides:
-  undici: ^6.29.1
+  # A floor, not a pin: undici 7 and 8 users (jsdom, @effect/platform-node,
+  # wrangler, miniflare) keep the version they ask for.
+  'undici@<6.29.1': ^6.29.1
   '@hono/node-server@<1.19.18': ^1.19.18
   '@modelcontextprotocol/sdk@<1.32.0': ^1.32.2
   'body-parser@<2.4.0': ^2.4.0
