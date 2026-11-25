@@ -56,13 +56,16 @@ describe("the page editor's TipTap", () => {
     it('loads Markdown the web’s way, reads it back, and sends no update', () => {
         const { editor, onUpdate } = makeEditor();
         const markdown = '# Notes\n\nA **bold**, *italic* and `code` line.\n\n- [ ] Open\n- [x] Done';
-        expect(load(editor, markdown)).toBe(`${markdown}\n\n`);
+        // The page's own text: opening rewrites nothing, not even the editor's trailing paragraph.
+        expect(load(editor, markdown)).toBe(markdown);
         expect(onUpdate).not.toHaveBeenCalled();
     });
 
-    it('reads simple HTML as its Markdown, as the web does', () => {
+    it('reads simple HTML as its Markdown, as the web does, and keeps it as written until it is edited', () => {
         const { editor } = makeEditor();
-        expect(load(editor, '<p>Hello <strong>there</strong></p>')).toBe('Hello **there**');
+        const html = '<p>Hello <strong>there</strong></p>';
+        expect(load(editor, html)).toBe(html);
+        expect(editor.getMarkdown()).toBe('Hello **there**');
     });
 
     it('writes back each atom’s exact fence', () => {

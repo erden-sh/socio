@@ -15,7 +15,7 @@ import { DatasetViewBlock } from './DatasetViewBlock';
 import { EditorLoading } from './EditorLoading';
 import { EmbedCardNode } from './embed-card-node';
 import { EmbedCardBlock } from './EmbedCardBlock';
-import { documentExtensions } from './markdown';
+import { documentExtensions, preservedMarkdown } from './markdown';
 import { PageImageNode } from './page-image-node';
 import { PageImageBlock } from './PageImageBlock';
 import { SlashCommands } from './slash-commands';
@@ -76,6 +76,9 @@ export default function RichEditor({
     const notice = useRef(onNotice);
     notice.current = onNotice;
     const emitted = useRef(value);
+    // The Markdown the editor last loaded: what an edit keeps of it, untouched blocks byte for byte.
+    const source = useRef<string | null>(null);
+    source.current ??= simpleHtmlToMarkdown(value);
     const editor = useEditor({
         extensions: [
             ...documentExtensions().map((extension) => LIVE_NODES[extension.name] ?? extension),
@@ -86,7 +89,7 @@ export default function RichEditor({
             SlashCommands,
         ],
         // Simple HTML reads as its Markdown; the page keeps its text until an edit.
-        content: simpleHtmlToMarkdown(value),
+        content: source.current,
         contentType: 'markdown',
         immediatelyRender: false,
         editorProps: {
@@ -144,8 +147,12 @@ export default function RichEditor({
                 return false;
             },
         },
+        // Reads the source against the document as loaded, so the first edit doesn't have to.
+        onCreate: ({ editor }) => {
+            preservedMarkdown(editor, source.current ?? '');
+        },
         onUpdate: ({ editor }) => {
-            const markdown = editor.getMarkdown();
+            const markdown = preservedMarkdown(editor, source.current ?? '');
             emitted.current = markdown;
             change.current(markdown);
         },
@@ -169,10 +176,12 @@ export default function RichEditor({
     useEffect(() => {
         if (editor && value !== emitted.current) {
             emitted.current = value;
-            editor.commands.setContent(simpleHtmlToMarkdown(value), {
+            source.current = simpleHtmlToMarkdown(value);
+            editor.commands.setContent(source.current, {
                 contentType: 'markdown',
                 emitUpdate: false,
             });
+            preservedMarkdown(editor, source.current);
         }
     }, [editor, value]);
     if (!editor) {

@@ -428,7 +428,7 @@ describe("the page editor's bridge", () => {
         expect(block().querySelector('img')?.getAttribute('src')).toBe(uri);
         expect(block().querySelector('img')?.getAttribute('alt')).toBe('A diagram');
         // The picture is drawing only: the page still writes its fence.
-        expect(editor.getMarkdown()).toBe(of('socio-loaded')[0]?.payload.markdown);
+        expect(of('socio-loaded')[0]?.payload.markdown).toBe(fence);
         expect(editor.getMarkdown().trim()).toBe(fence);
     });
 

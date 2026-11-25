@@ -2747,9 +2747,11 @@ The page editor writes back what the web writes:
 
 - **The goldens are the web's output, never the input.** `tests/editor/web-path.ts` runs RichEditor's own
   path under jsdom (the web's `documentExtensions()`, `@tiptap/markdown`, `simpleHtmlToMarkdown`, then
-  `getMarkdown()`; no React views or slash menu, which write nothing). TipTap re-pads tables and adds
-  `\n\n` after a last block that isn't a paragraph (StarterKit's trailing node, appended at the first
-  transaction) on the web too, so those are in the goldens.
+  `preservedMarkdown()`; no React views or slash menu, which write nothing). Both sides write through
+  `preservedMarkdown` (the web's `markdown.ts`): every top-level block the person didn't change keeps the
+  source's bytes (CRLF, blank lines and the trailing newline too), and only edited, added or moved blocks
+  are written by the serializer, so a golden is the stored text and an edit's golden differs from it only
+  where the edit is. StarterKit's trailing paragraph writes nothing.
 - **The corpus** is `tests/fixtures/pages-corpus/` (every token `inspectMarkdown` allows, lists, tables,
   every fence kind and atom, simple HTML, CRLF, trailing spaces, Unicode, source-mode documents, and
   `*-canonical.md`, the web's own form of the rest). Its bytes are kept: `.gitattributes` marks it `-text`

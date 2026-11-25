@@ -26,7 +26,11 @@ import type { Transaction } from '@tiptap/pm/state';
 import type { PageImage } from '@socio/shared/page-image';
 import { simpleHtmlToMarkdown } from '@socio/shared/text/simple-html';
 
-import { inspectMarkdown } from '../../../packages/client/src/modules/pages/editor/markdown';
+import {
+    changedRuns,
+    inspectMarkdown,
+    preservedMarkdown,
+} from '../../../packages/client/src/modules/pages/editor/markdown';
 import {
     ACTIVE_NAMES,
     CHANGE_THROTTLE_MS,
@@ -88,74 +92,8 @@ const COMMANDS: Record<EditorCommand, (editor: Editor) => boolean> = {
     redo: (editor) => editor.chain().focus().redo().run(),
 };
 
-/** Past this many cells, the blocks between the common ends are one changed run. */
-const BLOCK_DIFF_MAX_CELLS = 1_000_000;
-
-/** A run of top-level blocks that differs: `a` children [aFrom, aTo) became `b` children [bFrom, bTo). */
-interface Run {
-    aFrom: number;
-    aTo: number;
-    bFrom: number;
-    bTo: number;
-}
-
-/** The runs of top-level blocks that differ, by the longest common subsequence of equal blocks. */
-export function changedRuns(a: ProseMirrorNode, b: ProseMirrorNode): Run[] {
-    const n = a.childCount;
-    const m = b.childCount;
-    let head = 0;
-    while (head < n && head < m && a.child(head).eq(b.child(head))) {
-        head += 1;
-    }
-    let tail = 0;
-    while (tail < n - head && tail < m - head && a.child(n - 1 - tail).eq(b.child(m - 1 - tail))) {
-        tail += 1;
-    }
-    const rows = n - head - tail;
-    const cols = m - head - tail;
-    if (rows === 0 && cols === 0) {
-        return [];
-    }
-    if (rows === 0 || cols === 0 || rows * cols > BLOCK_DIFF_MAX_CELLS) {
-        return [{ aFrom: head, aTo: n - tail, bFrom: head, bTo: m - tail }];
-    }
-    // lengths[i][j]: the common subsequence of a[head+i..] and b[head+j..].
-    const lengths = Array.from({ length: rows + 1 }, () => new Uint32Array(cols + 1));
-    for (let i = rows - 1; i >= 0; i -= 1) {
-        for (let j = cols - 1; j >= 0; j -= 1) {
-            lengths[i]![j] = a.child(head + i).eq(b.child(head + j))
-                ? lengths[i + 1]![j + 1]! + 1
-                : Math.max(lengths[i + 1]![j]!, lengths[i]![j + 1]!);
-        }
-    }
-    const runs: Run[] = [];
-    let i = 0;
-    let j = 0;
-    let open: Run | null = null;
-    while (i < rows || j < cols) {
-        if (i < rows && j < cols && a.child(head + i).eq(b.child(head + j))) {
-            if (open) {
-                runs.push(open);
-                open = null;
-            }
-            i += 1;
-            j += 1;
-            continue;
-        }
-        open ??= { aFrom: head + i, aTo: head + i, bFrom: head + j, bTo: head + j };
-        if (j < cols && (i === rows || lengths[i]![j + 1]! >= lengths[i + 1]![j]!)) {
-            j += 1;
-            open.bTo = head + j;
-        } else {
-            i += 1;
-            open.aTo = head + i;
-        }
-    }
-    if (open) {
-        runs.push(open);
-    }
-    return runs;
-}
+// The block diff is the web's (markdown.ts), shared with `preservedMarkdown`.
+export { changedRuns };
 
 /** Where each top-level child starts, and the end. */
 const childStarts = (node: ProseMirrorNode) => {
@@ -273,6 +211,8 @@ export class PageSession {
     private readonly clearTimer: (timer: unknown) => void;
     private readonly cleanup: (() => void)[] = [];
     private readonly title: TitleField | null;
+    /** The Markdown last loaded or merged in: what an edit keeps of it, untouched blocks byte for byte. */
+    private source = '';
 
     constructor(
         private readonly editor: Editor,
@@ -427,6 +367,7 @@ export class PageSession {
         this.cancelChange();
         this.pendingReplace = null;
         const safety = inspectMarkdown(markdown);
+        this.source = simpleHtmlToMarkdown(markdown);
         const readBack = loadMarkdown(this.editor, markdown);
         this.version += 1;
         this.sentVersion = this.version;
@@ -471,7 +412,8 @@ export class PageSession {
             this.answerReplace(replace.ifVersion, false);
             return;
         }
-        const json = this.editor.markdown!.parse(simpleHtmlToMarkdown(replace.markdown));
+        this.source = simpleHtmlToMarkdown(replace.markdown);
+        const json = this.editor.markdown!.parse(this.source);
         const next = this.editor.schema.nodeFromJSON(json);
         const tr = minimalReplace(this.editor, next);
         if (tr) {
@@ -481,13 +423,18 @@ export class PageSession {
         this.answerReplace(replace.ifVersion, true);
     }
 
+    /** The document as Markdown, the source's own text kept where the person didn't change it (the web's way). */
+    private markdown() {
+        return preservedMarkdown(this.editor, this.source);
+    }
+
     /** Answers a replace with what the editor holds now; native then has this version's text. */
     private answerReplace(ifVersion: number, applied: boolean) {
         this.cancelChange();
         this.sentVersion = this.version;
         this.post({
             type: 'socio-replaced',
-            payload: { ifVersion, applied, markdown: this.editor.getMarkdown(), version: this.version },
+            payload: { ifVersion, applied, markdown: this.markdown(), version: this.version },
         });
         this.publishState();
     }
@@ -543,7 +490,7 @@ export class PageSession {
         }
         this.sentVersion = this.version;
         this.lastSentAt = this.now();
-        this.post({ type: 'socio-change', payload: { markdown: this.editor.getMarkdown(), version: this.version } });
+        this.post({ type: 'socio-change', payload: { markdown: this.markdown(), version: this.version } });
         this.publishState();
     }
 

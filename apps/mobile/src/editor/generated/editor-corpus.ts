@@ -14,7 +14,7 @@ export const EDITOR_CORPUS: readonly CorpusDocument[] = [
         name: 'atoms-last.md',
         markdown:
             'Before the picture.\n\n```image\n{\n  "id": "cbemb_fedcba9876543210",\n  "alt": "A diagram",\n  "width": 640,\n  "height": 480\n}\n```',
-        golden: 'Before the picture.\n\n```image\n{\n  "id": "cbemb_fedcba9876543210",\n  "alt": "A diagram",\n  "width": 640,\n  "height": 480\n}\n```\n\n',
+        golden: 'Before the picture.\n\n```image\n{\n  "id": "cbemb_fedcba9876543210",\n  "alt": "A diagram",\n  "width": 640,\n  "height": 480\n}\n```',
         supported: true,
         reason: null,
         edited: 'Before the picture.\n\n```image\n{\n  "id": "cbemb_fedcba9876543210",\n  "alt": "A diagram",\n  "width": 640,\n  "height": 480\n}\n```\n\nTyped on the phone.',
@@ -23,28 +23,28 @@ export const EDITOR_CORPUS: readonly CorpusDocument[] = [
         name: 'atoms.md',
         markdown:
             '## Blocks\n\n```embed\n{\n  "url": "https://example.com/post/1",\n  "kind": "post",\n  "fetchedAt": "2026-10-27T12:00:00.000Z",\n  "provider": "Example",\n  "author": "Some One",\n  "handle": "@someone",\n  "text": "Text with \\u0060\\u0060\\u0060 fences\\u0060 and \\"quotes\\"",\n  "media": [\n    {\n      "kind": "image",\n      "id": "cbemb_0123456789abcdef",\n      "alt": "A chart"\n    }\n  ]\n}\n```\n\n```dataset-view\n{\n  "datasetId": "ds_1",\n  "query": "select status, count(*) from issues group by 1",\n  "display": "bar",\n  "params": {}\n}\n```\n\n```image\n{\n  "id": "cbemb_fedcba9876543210",\n  "alt": "A diagram",\n  "width": 640,\n  "height": 480\n}\n```\n\nAfter the blocks.',
-        golden: '## Blocks\n\n```embed\n{\n  "url": "https://example.com/post/1",\n  "kind": "post",\n  "fetchedAt": "2026-10-27T12:00:00.000Z",\n  "provider": "Example",\n  "author": "Some One",\n  "handle": "@someone",\n  "text": "Text with \\u0060\\u0060\\u0060 fences\\u0060 and \\"quotes\\"",\n  "media": [\n    {\n      "kind": "image",\n      "id": "cbemb_0123456789abcdef",\n      "alt": "A chart"\n    }\n  ]\n}\n```\n\n```dataset-view\n{\n  "datasetId": "ds_1",\n  "query": "select status, count(*) from issues group by 1",\n  "display": "bar"\n}\n```\n\n```image\n{\n  "id": "cbemb_fedcba9876543210",\n  "alt": "A diagram",\n  "width": 640,\n  "height": 480\n}\n```\n\nAfter the blocks.',
+        golden: '## Blocks\n\n```embed\n{\n  "url": "https://example.com/post/1",\n  "kind": "post",\n  "fetchedAt": "2026-10-27T12:00:00.000Z",\n  "provider": "Example",\n  "author": "Some One",\n  "handle": "@someone",\n  "text": "Text with \\u0060\\u0060\\u0060 fences\\u0060 and \\"quotes\\"",\n  "media": [\n    {\n      "kind": "image",\n      "id": "cbemb_0123456789abcdef",\n      "alt": "A chart"\n    }\n  ]\n}\n```\n\n```dataset-view\n{\n  "datasetId": "ds_1",\n  "query": "select status, count(*) from issues group by 1",\n  "display": "bar",\n  "params": {}\n}\n```\n\n```image\n{\n  "id": "cbemb_fedcba9876543210",\n  "alt": "A diagram",\n  "width": 640,\n  "height": 480\n}\n```\n\nAfter the blocks.',
         supported: true,
         reason: null,
-        edited: '## Blocks\n\n```embed\n{\n  "url": "https://example.com/post/1",\n  "kind": "post",\n  "fetchedAt": "2026-10-27T12:00:00.000Z",\n  "provider": "Example",\n  "author": "Some One",\n  "handle": "@someone",\n  "text": "Text with \\u0060\\u0060\\u0060 fences\\u0060 and \\"quotes\\"",\n  "media": [\n    {\n      "kind": "image",\n      "id": "cbemb_0123456789abcdef",\n      "alt": "A chart"\n    }\n  ]\n}\n```\n\n```dataset-view\n{\n  "datasetId": "ds_1",\n  "query": "select status, count(*) from issues group by 1",\n  "display": "bar"\n}\n```\n\n```image\n{\n  "id": "cbemb_fedcba9876543210",\n  "alt": "A diagram",\n  "width": 640,\n  "height": 480\n}\n```\n\nAfter the blocks.Typed on the phone.',
+        edited: '## Blocks\n\n```embed\n{\n  "url": "https://example.com/post/1",\n  "kind": "post",\n  "fetchedAt": "2026-10-27T12:00:00.000Z",\n  "provider": "Example",\n  "author": "Some One",\n  "handle": "@someone",\n  "text": "Text with \\u0060\\u0060\\u0060 fences\\u0060 and \\"quotes\\"",\n  "media": [\n    {\n      "kind": "image",\n      "id": "cbemb_0123456789abcdef",\n      "alt": "A chart"\n    }\n  ]\n}\n```\n\n```dataset-view\n{\n  "datasetId": "ds_1",\n  "query": "select status, count(*) from issues group by 1",\n  "display": "bar",\n  "params": {}\n}\n```\n\n```image\n{\n  "id": "cbemb_fedcba9876543210",\n  "alt": "A diagram",\n  "width": 640,\n  "height": 480\n}\n```\n\nAfter the blocks.Typed on the phone.',
     },
     {
         name: 'blockquote.md',
         markdown:
             '> One line\n\n> Two\n> lines\n\n> Outer\n>\n> > Inner\n\n> - A list\n> - In a quote\n\n> # A heading in a quote\n>\n> Text.\n',
-        golden: '> One line\n\n> Two\n> lines\n\n> Outer\n>\n> > Inner\n\n> - A list\n> - In a quote\n\n> # A heading in a quote\n>\n> Text.\n\n',
+        golden: '> One line\n\n> Two\n> lines\n\n> Outer\n>\n> > Inner\n\n> - A list\n> - In a quote\n\n> # A heading in a quote\n>\n> Text.\n',
         supported: true,
         reason: null,
-        edited: '> One line\n\n> Two\n> lines\n\n> Outer\n>\n> > Inner\n\n> - A list\n> - In a quote\n\n> # A heading in a quote\n>\n> Text.\n\nTyped on the phone.',
+        edited: '> One line\n\n> Two\n> lines\n\n> Outer\n>\n> > Inner\n\n> - A list\n> - In a quote\n\n> # A heading in a quote\n>\n> Text.\n\nTyped on the phone.\n',
     },
     {
         name: 'code-canonical.md',
         markdown:
             '```\nplain fence\n```\n\n```ts\nconst a: number = 1;\nconsole.log(`${a}`);\n```\n\n```python\nprint("tilde fence")\n```\n\n```md\n```\nnested fence\n```\n```\n\n```\nindented code\nsecond line\n```\n\n```js title="x.js"\nmeta = true;\n```\n\n```\n\n  blank lines and indents\n\n```\n\n',
-        golden: '```\nplain fence\n```\n\n```ts\nconst a: number = 1;\nconsole.log(`${a}`);\n```\n\n```python\nprint("tilde fence")\n```\n\n```md\n\n```\n\nnested fence\n\n```\n\n```\n\n```\nindented code\nsecond line\n```\n\n```js title="x.js"\nmeta = true;\n```\n\n```\n\n  blank lines and indents\n\n```\n\n',
+        golden: '```\nplain fence\n```\n\n```ts\nconst a: number = 1;\nconsole.log(`${a}`);\n```\n\n```python\nprint("tilde fence")\n```\n\n```md\n```\nnested fence\n```\n```\n\n```\nindented code\nsecond line\n```\n\n```js title="x.js"\nmeta = true;\n```\n\n```\n\n  blank lines and indents\n\n```\n\n',
         supported: true,
         reason: null,
-        edited: '```\nplain fence\n```\n\n```ts\nconst a: number = 1;\nconsole.log(`${a}`);\n```\n\n```python\nprint("tilde fence")\n```\n\n```md\n\n```\n\nnested fence\n\n```\n\n```\n\n```\nindented code\nsecond line\n```\n\n```js title="x.js"\nmeta = true;\n```\n\n```\n\n  blank lines and indents\n\n```\n\nTyped on the phone.',
+        edited: '```\nplain fence\n```\n\n```ts\nconst a: number = 1;\nconsole.log(`${a}`);\n```\n\n```python\nprint("tilde fence")\n```\n\n```md\n```\nnested fence\n```\n```\n\n```\nindented code\nsecond line\n```\n\n```js title="x.js"\nmeta = true;\n```\n\n```\n\n  blank lines and indents\n\n```\n\nTyped on the phone.',
     },
     {
         name: 'code.md',
@@ -58,20 +58,20 @@ export const EDITOR_CORPUS: readonly CorpusDocument[] = [
     {
         name: 'crlf.md',
         markdown: '# Windows\r\n\r\nLine one\r\nline two\r\n\r\n- Item\r\n- Item two\r\n\r\n```\r\ncode\r\n```\r\n',
-        golden: '# Windows\n\nLine one\nline two\n\n- Item\n- Item two\n\n```\ncode\n```\n\n',
+        golden: '# Windows\r\n\r\nLine one\r\nline two\r\n\r\n- Item\r\n- Item two\r\n\r\n```\r\ncode\r\n```\r\n',
         supported: true,
         reason: null,
-        edited: '# Windows\n\nLine one\nline two\n\n- Item\n- Item two\n\n```\ncode\n```\n\nTyped on the phone.',
+        edited: '# Windows\r\n\r\nLine one\r\nline two\r\n\r\n- Item\r\n- Item two\r\n\r\n```\r\ncode\r\n```\r\n\r\nTyped on the phone.\r\n',
     },
     { name: 'empty.md', markdown: '', golden: '', supported: true, reason: null, edited: 'Typed on the phone.' },
     {
         name: 'headings.md',
         markdown:
             '# One\n\nText under one.\n\n## Two\n\n### Three\n\nSetext one\n==========\n\nSetext two\n----------\n\n#Not a heading\n',
-        golden: '# One\n\nText under one.\n\n## Two\n\n### Three\n\n# Setext one\n\n## Setext two\n\n#Not a heading',
+        golden: '# One\n\nText under one.\n\n## Two\n\n### Three\n\nSetext one\n==========\n\nSetext two\n----------\n\n#Not a heading\n',
         supported: true,
         reason: null,
-        edited: '# One\n\nText under one.\n\n## Two\n\n### Three\n\n# Setext one\n\n## Setext two\n\n#Not a headingTyped on the phone.',
+        edited: '# One\n\nText under one.\n\n## Two\n\n### Three\n\nSetext one\n==========\n\nSetext two\n----------\n\n#Not a headingTyped on the phone.\n',
     },
     {
         name: 'inline-canonical.md',
@@ -86,19 +86,19 @@ export const EDITOR_CORPUS: readonly CorpusDocument[] = [
         name: 'inline.md',
         markdown:
             'Plain, **strong**, __strong too__, *em*, _em too_, ***both***, ~~struck~~ and `code`, plus `` a ` tick ``.\n\nA [link](https://example.com/a?b=c&d=e "Title"), a [page link](/#/spaces/s1/pages/p1), an autolink <https://example.com> and a bare https://example.com/bare.\n\nEscapes: \\* \\_ \\` \\# \\[ \\] \\\\ and 2 \\< 3 \\> 1.\n\nA hard break with a backslash\\\nand one with two spaces  \nend.\n\nNested **bold with *italic* inside** and *italic with **bold** inside*.\n',
-        golden: 'Plain, **strong**, **strong too**, *em*, *em too*, ***both***, ~~struck~~ and `code`, plus ``a ` tick``.\n\nA [link](https://example.com/a?b=c&d=e "Title"), a [page link](/#/spaces/s1/pages/p1), an autolink [https://example.com](https://example.com) and a bare [https://example.com/bare](https://example.com/bare).\n\nEscapes: \\* \\_ \\` # \\[ \\] \\\\ and 2 &lt; 3 &gt; 1.\n\nA hard break with a backslash  \nand one with two spaces  \nend.\n\nNested **bold with *italic* inside** and *italic with **bold** inside*.',
+        golden: 'Plain, **strong**, __strong too__, *em*, _em too_, ***both***, ~~struck~~ and `code`, plus `` a ` tick ``.\n\nA [link](https://example.com/a?b=c&d=e "Title"), a [page link](/#/spaces/s1/pages/p1), an autolink <https://example.com> and a bare https://example.com/bare.\n\nEscapes: \\* \\_ \\` \\# \\[ \\] \\\\ and 2 \\< 3 \\> 1.\n\nA hard break with a backslash\\\nand one with two spaces  \nend.\n\nNested **bold with *italic* inside** and *italic with **bold** inside*.\n',
         supported: true,
         reason: null,
-        edited: 'Plain, **strong**, **strong too**, *em*, *em too*, ***both***, ~~struck~~ and `code`, plus ``a ` tick``.\n\nA [link](https://example.com/a?b=c&d=e "Title"), a [page link](/#/spaces/s1/pages/p1), an autolink [https://example.com](https://example.com) and a bare [https://example.com/bare](https://example.com/bare).\n\nEscapes: \\* \\_ \\` # \\[ \\] \\\\ and 2 &lt; 3 &gt; 1.\n\nA hard break with a backslash  \nand one with two spaces  \nend.\n\nNested **bold with *italic* inside** and *italic with **bold** inside*.Typed on the phone.',
+        edited: 'Plain, **strong**, __strong too__, *em*, _em too_, ***both***, ~~struck~~ and `code`, plus `` a ` tick ``.\n\nA [link](https://example.com/a?b=c&d=e "Title"), a [page link](/#/spaces/s1/pages/p1), an autolink <https://example.com> and a bare https://example.com/bare.\n\nEscapes: \\* \\_ \\` \\# \\[ \\] \\\\ and 2 \\< 3 \\> 1.\n\nA hard break with a backslash\\\nand one with two spaces  \nend.\n\nNested **bold with *italic* inside** and *italic with **bold** inside*.Typed on the phone.\n',
     },
     {
         name: 'lists-canonical.md',
         markdown:
             '- One\n- Two\n  - Two a\n  - Two b\n    - Deep\n- Three\n\n- Star bullet\n- Another\n\n- Plus bullet\n\n3. Starts at three\n4. Four\n5. Paren\n6. Second\n\n- Loose item\n- With a gap\n- Item with a paragraph\n\n  Second paragraph of the item.\n\n1. Ordered\n   - Mixed child\n   - Another\n2. Back\n\n',
-        golden: '- One\n- Two\n  - Two a\n  - Two b\n    - Deep\n- Three\n- Star bullet\n- Another\n- Plus bullet\n\n3. Starts at three\n4. Four\n5. Paren\n6. Second\n\n- Loose item\n- With a gap\n- Item with a paragraph\n\n  Second paragraph of the item.\n\n1. Ordered\n   - Mixed child\n   - Another\n2. Back\n\n',
+        golden: '- One\n- Two\n  - Two a\n  - Two b\n    - Deep\n- Three\n\n- Star bullet\n- Another\n\n- Plus bullet\n\n3. Starts at three\n4. Four\n5. Paren\n6. Second\n\n- Loose item\n- With a gap\n- Item with a paragraph\n\n  Second paragraph of the item.\n\n1. Ordered\n   - Mixed child\n   - Another\n2. Back\n\n',
         supported: true,
         reason: null,
-        edited: '- One\n- Two\n  - Two a\n  - Two b\n    - Deep\n- Three\n- Star bullet\n- Another\n- Plus bullet\n\n3. Starts at three\n4. Four\n5. Paren\n6. Second\n\n- Loose item\n- With a gap\n- Item with a paragraph\n\n  Second paragraph of the item.\n\n1. Ordered\n   - Mixed child\n   - Another\n2. Back\n\nTyped on the phone.',
+        edited: '- One\n- Two\n  - Two a\n  - Two b\n    - Deep\n- Three\n\n- Star bullet\n- Another\n\n- Plus bullet\n\n3. Starts at three\n4. Four\n5. Paren\n6. Second\n\n- Loose item\n- With a gap\n- Item with a paragraph\n\n  Second paragraph of the item.\n\n1. Ordered\n   - Mixed child\n   - Another\n2. Back\n\nTyped on the phone.',
     },
     {
         name: 'lists.md',
@@ -120,10 +120,10 @@ export const EDITOR_CORPUS: readonly CorpusDocument[] = [
     {
         name: 'rules-and-breaks.md',
         markdown: 'Above.\n\n---\n\nBetween.\n\n***\n\n___\n\nBelow.\n\n\n\n\nAfter many blank lines.\n',
-        golden: 'Above.\n\n---\n\nBetween.\n\n---\n\n---\n\nBelow.\n\n\n\nAfter many blank lines.',
+        golden: 'Above.\n\n---\n\nBetween.\n\n***\n\n___\n\nBelow.\n\n\n\n\nAfter many blank lines.\n',
         supported: true,
         reason: null,
-        edited: 'Above.\n\n---\n\nBetween.\n\n---\n\n---\n\nBelow.\n\n\n\nAfter many blank lines.Typed on the phone.',
+        edited: 'Above.\n\n---\n\nBetween.\n\n***\n\n___\n\nBelow.\n\n\n\n\nAfter many blank lines.Typed on the phone.\n',
     },
     {
         name: 'simple-html.md',
@@ -211,19 +211,19 @@ export const EDITOR_CORPUS: readonly CorpusDocument[] = [
         name: 'structures.md',
         markdown:
             '# Project\n\nA **bold**, *italic*, ~~done~~ and `code` sentence.\n\n- First\n  - Nested\n\n1. Ordered\n2. Second\n\n- [ ] Open\n- [x] Complete\n\n> A quoted thought\n\n```ts\nconst value = "<safe>";\n```\n\n---\n\n| Name | Status |\n| --- | --- |\n| A | Ready |\n\n[Page](/#/spaces/space/pages/page)',
-        golden: '# Project\n\nA **bold**, *italic*, ~~done~~ and `code` sentence.\n\n- First\n  - Nested\n\n1. Ordered\n2. Second\n\n- [ ] Open\n- [x] Complete\n\n> A quoted thought\n\n```ts\nconst value = "<safe>";\n```\n\n---\n\n\n| Name | Status |\n| ---- | ------ |\n| A    | Ready  |\n\n\n[Page](/#/spaces/space/pages/page)',
+        golden: '# Project\n\nA **bold**, *italic*, ~~done~~ and `code` sentence.\n\n- First\n  - Nested\n\n1. Ordered\n2. Second\n\n- [ ] Open\n- [x] Complete\n\n> A quoted thought\n\n```ts\nconst value = "<safe>";\n```\n\n---\n\n| Name | Status |\n| --- | --- |\n| A | Ready |\n\n[Page](/#/spaces/space/pages/page)',
         supported: true,
         reason: null,
-        edited: '# Project\n\nA **bold**, *italic*, ~~done~~ and `code` sentence.\n\n- First\n  - Nested\n\n1. Ordered\n2. Second\n\n- [ ] Open\n- [x] Complete\n\n> A quoted thought\n\n```ts\nconst value = "<safe>";\n```\n\n---\n\n\n| Name | Status |\n| ---- | ------ |\n| A    | Ready  |\n\n\n[Page](/#/spaces/space/pages/page)Typed on the phone.',
+        edited: '# Project\n\nA **bold**, *italic*, ~~done~~ and `code` sentence.\n\n- First\n  - Nested\n\n1. Ordered\n2. Second\n\n- [ ] Open\n- [x] Complete\n\n> A quoted thought\n\n```ts\nconst value = "<safe>";\n```\n\n---\n\n| Name | Status |\n| --- | --- |\n| A | Ready |\n\n[Page](/#/spaces/space/pages/page)Typed on the phone.',
     },
     {
         name: 'tables-canonical.md',
         markdown:
             '| Left                        | Center | Right |\n| :--------------------------- | :------: | -----: |\n| a                           | **b**  | `c`   |\n| [link](https://example.com) | ~~d~~  | *e*   |\n\n\nBetween tables.\n\n\n| A   | B   |\n| --- | --- |\n| 1   | 2   |\n\n',
-        golden: '\n| Left                        | Center | Right |\n| :--------------------------- | :------: | -----: |\n| a                           | **b**  | `c`   |\n| [link](https://example.com) | ~~d~~  | *e*   |\n\n\nBetween tables.\n\n\n| A   | B   |\n| --- | --- |\n| 1   | 2   |\n\n\n',
+        golden: '| Left                        | Center | Right |\n| :--------------------------- | :------: | -----: |\n| a                           | **b**  | `c`   |\n| [link](https://example.com) | ~~d~~  | *e*   |\n\n\nBetween tables.\n\n\n| A   | B   |\n| --- | --- |\n| 1   | 2   |\n\n',
         supported: true,
         reason: null,
-        edited: '\n| Left                        | Center | Right |\n| :--------------------------- | :------: | -----: |\n| a                           | **b**  | `c`   |\n| [link](https://example.com) | ~~d~~  | *e*   |\n\n\nBetween tables.\n\n\n| A   | B   |\n| --- | --- |\n| 1   | 2   |\n\n\nTyped on the phone.',
+        edited: '| Left                        | Center | Right |\n| :--------------------------- | :------: | -----: |\n| a                           | **b**  | `c`   |\n| [link](https://example.com) | ~~d~~  | *e*   |\n\n\nBetween tables.\n\n\n| A   | B   |\n| --- | --- |\n| 1   | 2   |\n\nTyped on the phone.',
     },
     {
         name: 'tables.md',
@@ -256,16 +256,16 @@ export const EDITOR_CORPUS: readonly CorpusDocument[] = [
         name: 'trailing-spaces.md',
         markdown:
             'Trailing space \nTwo spaces  \nThree spaces   \nTab\t\n\n- Item with space \n\n   \n\nLast line with spaces   ',
-        golden: 'Trailing space \nTwo spaces  \nThree spaces  \nTab\t\n\n- Item with space\n\n\n\nLast line with spaces   ',
+        golden: 'Trailing space \nTwo spaces  \nThree spaces   \nTab\t\n\n- Item with space \n\n   \n\nLast line with spaces   ',
         supported: true,
         reason: null,
-        edited: 'Trailing space \nTwo spaces  \nThree spaces  \nTab\t\n\n- Item with space\n\n\n\nLast line with spaces   Typed on the phone.',
+        edited: 'Trailing space \nTwo spaces  \nThree spaces   \nTab\t\n\n- Item with space \n\n   \n\nLast line with spaces   Typed on the phone.',
     },
     {
         name: 'unicode.md',
         markdown:
             '### Notas — 日本語 ✓\n\nCafé, naïve, 👩🏽‍💻 and 中文 in one line; an escaped \\*star\\* and a [link](https://example.com/a?b=c&d=e).\n\n> Quote with **bold *and italic***\n\n3. Third\n4. Fourth\n\nمرحبا بالعالم and עברית, é combining, ​zero width, 🇺🇾 flag, 𝔘𝔫𝔦𝔠𝔬𝔡𝔢.\n\n- [ ] Task with `code`',
-        golden: '### Notas — 日本語 ✓\n\nCafé, naïve, 👩🏽‍💻 and 中文 in one line; an escaped \\*star\\* and a [link](https://example.com/a?b=c&d=e).\n\n> Quote with **bold *and italic***\n\n3. Third\n4. Fourth\n\nمرحبا بالعالم and עברית, é combining, ​zero width, 🇺🇾 flag, 𝔘𝔫𝔦𝔠𝔬𝔡𝔢.\n\n- [ ] Task with `code`\n\n',
+        golden: '### Notas — 日本語 ✓\n\nCafé, naïve, 👩🏽‍💻 and 中文 in one line; an escaped \\*star\\* and a [link](https://example.com/a?b=c&d=e).\n\n> Quote with **bold *and italic***\n\n3. Third\n4. Fourth\n\nمرحبا بالعالم and עברית, é combining, ​zero width, 🇺🇾 flag, 𝔘𝔫𝔦𝔠𝔬𝔡𝔢.\n\n- [ ] Task with `code`',
         supported: true,
         reason: null,
         edited: '### Notas — 日本語 ✓\n\nCafé, naïve, 👩🏽‍💻 and 中文 in one line; an escaped \\*star\\* and a [link](https://example.com/a?b=c&d=e).\n\n> Quote with **bold *and italic***\n\n3. Third\n4. Fourth\n\nمرحبا بالعالم and עברית, é combining, ​zero width, 🇺🇾 flag, 𝔘𝔫𝔦𝔠𝔬𝔡𝔢.\n\n- [ ] Task with `code`\n\nTyped on the phone.',

@@ -4,13 +4,18 @@ import { Markdown } from '@tiptap/markdown';
 
 import { simpleHtmlToMarkdown } from '@socio/shared/text/simple-html';
 
-import { documentExtensions, inspectMarkdown } from '../../../../packages/client/src/modules/pages/editor/markdown';
+import {
+    documentExtensions,
+    inspectMarkdown,
+    preservedMarkdown,
+} from '../../../../packages/client/src/modules/pages/editor/markdown';
 import { CORPUS_EDIT_TEXT } from '../../src/editor/corpus';
 
 // The web's page editor, as RichEditor.tsx runs it: the web's document
 // extensions with
 // `@tiptap/markdown` and its placeholder, the stored page read as Markdown
-// through `simpleHtmlToMarkdown`, and `getMarkdown()` back. Left out: the
+// through `simpleHtmlToMarkdown`, and `preservedMarkdown` back (RichEditor's
+// `onUpdate`: the source's own text for every block not edited). Left out: the
 // atoms' React views and the slash menu, which draw and suggest but never
 // change what is written. Used under jsdom by tests/editor/roundtrip.test.ts
 // and, built by Vite, in Playwright's browsers by scripts/roundtrip-browsers.mts.
@@ -25,12 +30,12 @@ import { CORPUS_EDIT_TEXT } from '../../src/editor/corpus';
 export interface WebAnswer {
     /**
      * The stored text, unchanged, for a page `inspectMarkdown` refuses (source mode). Otherwise
-     * `getMarkdown()` once the editor that opened on the page (RichEditor's `content`) has had its
+     * `preservedMarkdown` once the editor that opened on the page (RichEditor's `content`) has had its
      * first transaction, a click's: plugins append theirs only then (StarterKit's trailing
      * paragraph after a last block that isn't one, which writes `\n\n`).
      */
     readonly markdown: string;
-    /** `getMarkdown()` after the web's later load (RichEditor's `setContent(…, { contentType: 'markdown' })`). */
+    /** `preservedMarkdown` after the web's later load (RichEditor's `setContent(…, { contentType: 'markdown' })`). */
     readonly reloaded: string;
     readonly supported: boolean;
     readonly reason: string | null;
@@ -70,6 +75,7 @@ export function webRoundTrip(stored: string, element?: HTMLElement): WebAnswer {
  */
 export function richRoundTrip(stored: string, element?: HTMLElement): WebAnswer {
     let updates = 0;
+    const source = simpleHtmlToMarkdown(stored);
     const editor = new Editor({
         // A mounted editor, as the web's: an unmounted one skips the plugins' appended transactions.
         element: element ?? document.createElement('div'),
@@ -78,7 +84,7 @@ export function richRoundTrip(stored: string, element?: HTMLElement): WebAnswer 
             Markdown,
             Placeholder.configure({ placeholder: 'Start writing, or type / for blocks…' }),
         ],
-        content: simpleHtmlToMarkdown(stored),
+        content: source,
         contentType: 'markdown',
         onUpdate: () => {
             updates += 1;
@@ -88,14 +94,14 @@ export function richRoundTrip(stored: string, element?: HTMLElement): WebAnswer 
         // Nothing sent while the page opens; the first transaction may (the web saves its trailing paragraph).
         const openUpdates = updates;
         editor.view.dispatch(editor.state.tr);
-        const markdown = editor.getMarkdown();
-        editor.commands.setContent(simpleHtmlToMarkdown(stored), { contentType: 'markdown', emitUpdate: false });
-        const reloaded = editor.getMarkdown();
+        const markdown = preservedMarkdown(editor, source);
+        editor.commands.setContent(source, { contentType: 'markdown', emitUpdate: false });
+        const reloaded = preservedMarkdown(editor, source);
         editor.commands.focus('end');
         editor.chain().focus().insertContent(CORPUS_EDIT_TEXT, { parseOptions: editor.options.parseOptions }).run();
-        const edited = editor.getMarkdown();
+        const edited = preservedMarkdown(editor, source);
         editor.commands.undo();
-        const undone = editor.getMarkdown();
+        const undone = preservedMarkdown(editor, source);
         return {
             markdown,
             reloaded,
