@@ -52,11 +52,11 @@ concurrency:
 
 jobs:
   check:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2604
     # A cold cache on a GitHub-hosted runner takes about 15 minutes.
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: useblacksmith/checkout@v1 # v7.0.1
         with:
           persist-credentials: false
       # Docker 26+ and nothing listening beyond loopback, or stop (SECURITY.md).
@@ -129,7 +129,7 @@ jobs:
   # shards cache separately. The pool config (forks, maxWorkers: 4) is in
   # vitest.shared.ts.
   test:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2604
     # Each shard takes about 15 minutes on a GitHub-hosted runner with a cold cache.
     timeout-minutes: 30
     strategy:
@@ -139,7 +139,7 @@ jobs:
     steps:
       # Two commits: the first parent is main, whose feature boundary baseline
       # the change's may only shrink from (.github/ci/reference-baseline.sh).
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: useblacksmith/checkout@v1 # v7.0.1
         with:
           persist-credentials: false
           fetch-depth: 2
