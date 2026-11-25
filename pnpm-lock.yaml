@@ -589,8 +589,8 @@ importers:
         specifier: 58.1.0
         version: 58.1.0(expo@58.0.26)(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.88.1(@babel/core@7.29.7))(@types/react@19.3.2)(react@19.3.0))
       lucide-react-native:
-        specifier: 1.70.0
-        version: 1.70.0(@types/react@19.3.2)(react-native-svg@15.16.0(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.88.1(@babel/core@7.29.7))(@types/react@19.3.2)(react@19.3.0))(react@19.3.0))(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.88.1(@babel/core@7.29.7))(@types/react@19.3.2)(react@19.3.0))(react@19.3.0)
+        specifier: 1.80.0
+        version: 1.80.0(@types/react@19.3.2)(react-native-svg@15.16.0(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.88.1(@babel/core@7.29.7))(@types/react@19.3.2)(react@19.3.0))(react@19.3.0))(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.88.1(@babel/core@7.29.7))(@types/react@19.3.2)(react@19.3.0))(react@19.3.0)
       react:
         specifier: 19.3.0
         version: 19.3.0
@@ -628,8 +628,8 @@ importers:
         specifier: 0.13.0
         version: 0.13.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.1(@babel/core@7.29.7))(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.88.1(@babel/core@7.29.7))(@types/react@19.3.2)(react@19.3.0))(react@19.3.0)
       uniwind:
-        specifier: 1.13.2
-        version: 1.13.2(@expo/metro-config@58.0.23(expo@58.0.26)(typescript@7.1.0-beta))(metro-cache@0.87.1)(metro-transform-worker@0.87.1)(metro@0.87.1)(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.88.1(@babel/core@7.29.7))(@types/react@19.3.2)(react@19.3.0))(react@19.3.0)(tailwindcss@4.3.5)
+        specifier: 1.14.0
+        version: 1.14.0(@expo/metro-config@58.0.23(expo@58.0.26)(typescript@7.1.0-beta))(metro-cache@0.87.1)(metro-transform-worker@0.87.1)(metro@0.87.1)(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.88.1(@babel/core@7.29.7))(@types/react@19.3.2)(react@19.3.0))(react@19.3.0)(tailwindcss@4.3.5)
     devDependencies:
       '@ag-ui/core':
         specifier: 0.0.59
@@ -8289,8 +8289,8 @@ packages:
   lru-cache@5.1.1:
     resolution: {integrity: sha512-KpNARQA3Iwv+jTA0utUVVbrh+Jlrr1Fv0e56GGzAFOXN7dk/FviaDW8LHmK52DlcH4WP2n6gI8vN1aesBFgo9w==}
 
-  lucide-react-native@1.70.0:
-    resolution: {integrity: sha512-bMzx3uFYTeylYdV9PNAzwfHxzzWEKP8FCiNcTTMwA4LsYMoRbtH2DiIjMHFuFCFXlVWumQjBNFG7/Stssn7Z7A==}
+  lucide-react-native@1.80.0:
+    resolution: {integrity: sha512-FjJT+bW4NuNJE2RgbnhIDGXGpgzjpGJuxk/Ajhtb2MAmXCrjgMbQiH656Z37z8DfzMYzBwH62DTwAu2jsIgTOg==}
     peerDependencies:
       '@types/react': '*'
       react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
@@ -10232,8 +10232,8 @@ packages:
   unist-util-visit@5.1.0:
     resolution: {integrity: sha512-m+vIdyeCOpdr/QeQCu2EzxX/ohgS8KbnPDgFni4dQsfSCtpz8UqDyY5GjRru8PDKuYn7Fq19j1CQ+nJSsGKOzg==}
 
-  uniwind@1.13.2:
-    resolution: {integrity: sha512-9huLBRBtZkVbKG8UZoJEo6ubX/R7oVj8zTORdq8c+lfOpjWlEjAS04FaqShuaecgEfO+oqSraxQ+mWgtsu6BqQ==}
+  uniwind@1.14.0:
+    resolution: {integrity: sha512-/BPPRlsV3Nvs9rQs2WCdzU28xmL9fzjWN+M3zsYviLcNYAtB00GSx59sN2TlTonWSU8I+H3xf2txrIT4OaGxCA==}
     hasBin: true
     peerDependencies:
       '@expo/metro-config': '*'
@@ -18356,7 +18356,7 @@ snapshots:
     dependencies:
       yallist: 3.1.1
 
-  lucide-react-native@1.70.0(@types/react@19.3.2)(react-native-svg@15.16.0(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.88.1(@babel/core@7.29.7))(@types/react@19.3.2)(react@19.3.0))(react@19.3.0))(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.88.1(@babel/core@7.29.7))(@types/react@19.3.2)(react@19.3.0))(react@19.3.0):
+  lucide-react-native@1.80.0(@types/react@19.3.2)(react-native-svg@15.16.0(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.88.1(@babel/core@7.29.7))(@types/react@19.3.2)(react@19.3.0))(react@19.3.0))(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.88.1(@babel/core@7.29.7))(@types/react@19.3.2)(react@19.3.0))(react@19.3.0):
     dependencies:
       react: 19.3.0
       react-native: 0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.88.1(@babel/core@7.29.7))(@types/react@19.3.2)(react@19.3.0)
@@ -21175,7 +21175,7 @@ snapshots:
       unist-util-is: 6.0.1
       unist-util-visit-parents: 6.0.2
 
-  uniwind@1.13.2(@expo/metro-config@58.0.23(expo@58.0.26)(typescript@7.1.0-beta))(metro-cache@0.87.1)(metro-transform-worker@0.87.1)(metro@0.87.1)(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.88.1(@babel/core@7.29.7))(@types/react@19.3.2)(react@19.3.0))(react@19.3.0)(tailwindcss@4.3.5):
+  uniwind@1.14.0(@expo/metro-config@58.0.23(expo@58.0.26)(typescript@7.1.0-beta))(metro-cache@0.87.1)(metro-transform-worker@0.87.1)(metro@0.87.1)(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.88.1(@babel/core@7.29.7))(@types/react@19.3.2)(react@19.3.0))(react@19.3.0)(tailwindcss@4.3.5):
     dependencies:
       '@tailwindcss/node': 4.3.3
       '@tailwindcss/oxide': 4.3.3

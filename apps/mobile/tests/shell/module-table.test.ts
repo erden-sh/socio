@@ -13,7 +13,7 @@ import { SYMBOLS } from '../../src/ui/symbols';
 // client module file (packages/client/src/modules/*/module.ts*, an input of
 // the app's test task) read as text, its ClientModule's
 // own id, title, memberTitle, navLabel, icon and tone. Every icon must exist in
-// lucide-react-native 1.70.0, the app's, and src/screens/module-icons.ts must
+// lucide-react-native 1.80.0, the app's, and src/screens/module-icons.ts must
 // map it to the app's name for it (src/ui/symbols.ts), lucide's file name.
 
 const app = join(import.meta.dirname, '../..');
@@ -89,8 +89,8 @@ describe('the module table', () => {
         }
     });
 
-    it('names icons lucide-react-native 1.70.0 has, each mapped to the app’s symbol of that name', () => {
-        expect(JSON.parse(readFileSync(join(lucide, 'package.json'), 'utf8')).version).toBe('1.70.0');
+    it('names icons lucide-react-native 1.80.0 has, each mapped to the app’s symbol of that name', () => {
+        expect(JSON.parse(readFileSync(join(lucide, 'package.json'), 'utf8')).version).toBe('1.80.0');
         const icons = readFileSync(join(app, 'src/screens/module-icons.ts'), 'utf8');
         for (const name of new Set(MODULES.map((entry) => entry.icon))) {
             expect(existsSync(join(lucide, 'dist/esm/icons', `${kebab(name)}.mjs`)), `${name}`).toBe(true);
