@@ -43,11 +43,11 @@ describe('cla.yml', () => {
         expect(uses).toEqual(['contributor-assistant/github-action@ca4a40a7d1004f18d9960b404b97e5f30a505a08']);
     });
 
-    it('runs on pull requests and pull request comments only, on GitHub-hosted runners', () => {
+    it('runs on pull requests and pull request comments only, on Blacksmith runners', () => {
         expect(cla).toMatch(/^on:\n {2}issue_comment:\n {4}types: \[created\]\n {2}pull_request_target:\n/m);
         expect(cla).not.toMatch(/workflow_dispatch|workflow_run|schedule|repository_dispatch|\n {2}push:/);
         expect(cla).toContain('github.event.issue.pull_request &&');
-        expect(cla).toMatch(/runs-on: ubuntu-latest\n/);
+        expect(cla).toMatch(/runs-on: blacksmith-4vcpu-ubuntu-2604\n/);
     });
 
     it('serializes signing runs per pull request on the filtered job, never cancelling a running one', () => {
@@ -80,7 +80,9 @@ describe('cla.yml', () => {
         expect(cla).toContain('branch: cla-signatures\n');
         expect(cla).toContain('path-to-signatures: signatures/cla.json\n');
         expect(cla).not.toMatch(/remote-(repository|organization)-name|PERSONAL_ACCESS_TOKEN/);
-        expect(cla).toMatch(/cbnsndwch,dependabot\[bot\],renovate\[bot\],github-actions\[bot\]\$\{\{/);
+        expect(cla).toMatch(
+            /cbnsndwch,dependabot\[bot\],renovate\[bot\],github-actions\[bot\],blacksmith-sh\[bot\]\$\{\{/,
+        );
     });
 });
 

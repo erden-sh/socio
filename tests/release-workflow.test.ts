@@ -1,4 +1,4 @@
-// The release workflow: least-privilege jobs on GitHub-hosted runners,
+// The release workflow: least-privilege jobs on Blacksmith runners,
 // images published under the repository's own owner, and a registry layer
 // cache per image that is never a release tag.
 import { readFileSync } from 'node:fs';
@@ -61,7 +61,7 @@ describe('release-images.yml', () => {
         }
         // The cache tag can't be mistaken for a release by the update feed.
         expect('buildcache').not.toMatch(/^v\d/);
-        // A builder that can export a registry cache: setup-buildx-action's default (docker-container).
+        // A builder that can export a registry cache: Blacksmith's, never the docker driver.
         expect(release).not.toMatch(/driver:\s*docker\b/);
     });
 
@@ -79,10 +79,10 @@ describe('release-images.yml', () => {
         expect(releaseJobs.verify).toContain('grep -q "image.index" /tmp/inspect');
     });
 
-    it('runs every job on GitHub-hosted runners and publishes under the repository owner', () => {
+    it('runs every job on Blacksmith runners and publishes under the repository owner', () => {
         expect(Object.keys(releaseJobs)).toEqual(['root', 'socio-coding', 'supervisor', 'verify', 'release']);
         expect([...release.matchAll(/runs-on:\s*(.+)/g)].map((match) => match[1].trim())).toEqual(
-            Array(5).fill('ubuntu-latest'),
+            Array(5).fill('blacksmith-4vcpu-ubuntu-2604'),
         );
         expect(release).toMatch(/^ {2}OWNER: \$\{\{ github\.repository_owner \}\}$/m);
         expect(release).not.toMatch(/pull_request/);

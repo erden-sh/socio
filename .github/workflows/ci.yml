@@ -21,21 +21,23 @@
 # - the task cache: a push to main writes it and never reads it, a pull
 #   request reads it and never saves it (.github/ci/turbo.sh,
 #   .github/ci/turbo-cache.sh); tests/ci-workflow.test.ts holds that.
-# - it runs on GitHub-hosted runners (runs-on: ubuntu-latest), a fresh VM
-#   per job; .github/ci/runner-check.sh stops the job unless the host has
-#   Docker 26+ and nothing listening beyond loopback.
+# - it runs on Blacksmith's runners, a fresh VM per job;
+#   .github/ci/runner-check.sh stops the job unless the host has Docker 26+,
+#   its Docker bridges closed to the host, and nothing else listening beyond
+#   loopback.
 # This file and .github/ci are trusted: coding sessions' pushes never
 # change .github/ (coding-git refuses it, and Socio's GitHub App has no
 # `workflows` permission).
 name: CI
 # On push to main: run CI (direct commits to main, no PR). On PR branches:
 # run only on pull_request, not push — otherwise pushing to a branch with
-# an open PR fires both events and doubles every check.
+# an open PR fires both events and doubles every check. A draft PR runs
+# nothing until it's marked ready for review.
 on:
   push:
     branches: [main]
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, ready_for_review]
 permissions:
   contents: read
 
@@ -52,11 +54,13 @@ concurrency:
 
 jobs:
   check:
+    # A draft pull request runs nothing: CI runs once it's marked ready.
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
     runs-on: blacksmith-4vcpu-ubuntu-2604
-    # A cold cache on a GitHub-hosted runner takes about 15 minutes.
+    # A cold cache took about 15 minutes on a GitHub-hosted runner.
     timeout-minutes: 30
     steps:
-      - uses: useblacksmith/checkout@v1 # v7.0.1
+      - uses: useblacksmith/checkout@75c49b6ed30ce59336e9252425796cfcfac155f8 # v1
         with:
           persist-credentials: false
       # Docker 26+ and nothing listening beyond loopback, or stop (SECURITY.md).
@@ -129,8 +133,10 @@ jobs:
   # shards cache separately. The pool config (forks, maxWorkers: 4) is in
   # vitest.shared.ts.
   test:
+    # A draft pull request runs nothing: CI runs once it's marked ready.
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
     runs-on: blacksmith-4vcpu-ubuntu-2604
-    # Each shard takes about 15 minutes on a GitHub-hosted runner with a cold cache.
+    # Each shard took about 15 minutes on a GitHub-hosted runner with a cold cache.
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -139,7 +145,7 @@ jobs:
     steps:
       # Two commits: the first parent is main, whose feature boundary baseline
       # the change's may only shrink from (.github/ci/reference-baseline.sh).
-      - uses: useblacksmith/checkout@v1 # v7.0.1
+      - uses: useblacksmith/checkout@75c49b6ed30ce59336e9252425796cfcfac155f8 # v1
         with:
           persist-credentials: false
           fetch-depth: 2
