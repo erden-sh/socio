@@ -280,6 +280,7 @@ describe('chat adapter', () => {
         fake.state.replies.push(textReply('Hello from your plan.'));
         const chunks = await collect(
             chat({
+                threadId: 'thread-1',
                 adapter,
                 stream: true,
                 messages: [{ role: 'user', content: 'Hi there' }],
@@ -331,6 +332,7 @@ describe('chat adapter', () => {
         fake.state.replies.push(textReply('Sunny.', 'resp_1', { summary: 'Checking the forecast.' }));
         const chunks = await collect(
             chat({
+                threadId: 'thread-1',
                 adapter,
                 stream: true,
                 messages: [{ role: 'user', content: 'Weather?' }],
@@ -361,6 +363,7 @@ describe('chat adapter', () => {
         );
         const chunks = await collect(
             chat({
+                threadId: 'thread-1',
                 adapter,
                 stream: true,
                 messages: [{ role: 'user', content: 'Plan it.' }],
@@ -382,6 +385,7 @@ describe('chat adapter', () => {
         const ask = () =>
             collect(
                 chat({
+                    threadId: 'thread-1',
                     adapter,
                     stream: true,
                     messages: [{ role: 'user', content: 'Hi' }],
@@ -421,6 +425,7 @@ describe('chat adapter', () => {
         fake.state.replies.push(textReply('A red square.'));
         await collect(
             chat({
+                threadId: 'thread-1',
                 adapter,
                 stream: true,
                 messages: [
@@ -465,6 +470,7 @@ describe('chat adapter', () => {
         fake.state.replies.push(toolCallReply('get_weather', { city: 'Lisbon' }), textReply('It is sunny in Lisbon.'));
         const chunks = await collect(
             chat({
+                threadId: 'thread-1',
                 adapter,
                 stream: true,
                 messages: [{ role: 'user', content: 'Weather in Lisbon?' }],
@@ -525,6 +531,7 @@ describe('chat adapter', () => {
         });
         const chunks = await collect(
             chat({
+                threadId: 'thread-1',
                 adapter,
                 stream: true,
                 messages: [{ role: 'user', content: 'Hi' }],
@@ -568,6 +575,7 @@ describe('chat adapter', () => {
         const run = async () => {
             const chunks = await collect(
                 chat({
+                    threadId: 'thread-1',
                     adapter,
                     stream: true,
                     messages: [{ role: 'user', content: 'Hi' }],
@@ -590,6 +598,7 @@ describe('chat adapter', () => {
         fake.state.replies.push(textReply('Back again.'));
         const chunks = await collect(
             chat({
+                threadId: 'thread-1',
                 adapter,
                 stream: true,
                 messages: [{ role: 'user', content: 'Hi' }],
@@ -609,6 +618,7 @@ describe('chat adapter', () => {
         const { adapter, markNeedsRelogin } = adapterWith(credentials);
         const chunks = await collect(
             chat({
+                threadId: 'thread-1',
                 adapter,
                 stream: true,
                 messages: [{ role: 'user', content: 'Hi' }],
@@ -628,6 +638,7 @@ describe('chat adapter', () => {
         const { adapter, markNeedsRelogin } = adapterWith(credentials);
         const chunks = await collect(
             chat({
+                threadId: 'thread-1',
                 adapter,
                 stream: true,
                 messages: [{ role: 'user', content: 'Hi' }],
@@ -706,6 +717,7 @@ describe('BYO kind', () => {
         fake.state.replies.push(textReply('Hi!'));
         const chunks = await collect(
             chat({
+                threadId: 'thread-1',
                 adapter: kind.adapterFor(connection.context),
                 stream: true,
                 messages: [{ role: 'user', content: 'Hello' }],
@@ -731,6 +743,7 @@ describe('BYO kind', () => {
         fake.state.refreshError = 'invalid_grant';
         const chunks = await collect(
             chat({
+                threadId: 'thread-1',
                 adapter: kind.adapterFor(connection.context),
                 stream: true,
                 messages: [{ role: 'user', content: 'Hello' }],
@@ -747,6 +760,7 @@ describe('BYO kind', () => {
         // Nothing usable is left: the next turn asks to connect.
         const next = await collect(
             chat({
+                threadId: 'thread-1',
                 adapter: kind.adapterFor(connection.context),
                 stream: true,
                 messages: [{ role: 'user', content: 'Hello' }],
@@ -815,6 +829,7 @@ describe('egress', () => {
         const credentials = issued();
         const chunks = await collect(
             chat({
+                threadId: 'thread-1',
                 adapter: chatGptAdapter({
                     getCredentials: async () => credentials,
                     saveCredentials: async () => {},
