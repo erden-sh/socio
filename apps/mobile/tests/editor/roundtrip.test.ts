@@ -17,6 +17,7 @@ import { join, sep } from 'node:path';
 import { Editor } from '@tiptap/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
+import { markdownManager } from '../../../../packages/client/src/modules/pages/editor/markdown';
 import { bridgeExtensions } from '../../editor/bridges';
 import { editorExtensions, editorProps } from '../../editor/extensions';
 import { attachPageSession, receiveForEditor } from '../../editor/page-bridge';
@@ -267,9 +268,11 @@ describe('the Markdown round trip against the web', () => {
             thrown = error;
         }
         expect(webFailureKind(thrown)).toBe('invalid-content');
-        const rich = richRoundTrip(linked.markdown);
+        // Opened rich, the editor's document has no picture: only the source's untouched text still
+        // holds it, and the serializer, writing that block once edited, leaves it out.
+        richRoundTrip(linked.markdown);
         expect(linked.markdown).toContain('.png');
-        expect(rich.markdown).not.toContain('.png');
+        expect(markdownManager.serialize(markdownManager.parse(linked.markdown))).not.toContain('.png');
     });
 
     it("writes the web's answers for the device route", async () => {

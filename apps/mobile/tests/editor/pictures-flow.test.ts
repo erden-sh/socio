@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { pageImageMarkdown } from '@socio/shared/page-image';
 
+import { preservedMarkdown } from '../../../../packages/client/src/modules/pages/editor/markdown';
 import { bridgeExtensions } from '../../editor/bridges';
 import { editorExtensions, editorProps } from '../../editor/extensions';
 import { attachPageSession, receiveForEditor } from '../../editor/page-bridge';
@@ -148,7 +149,8 @@ describe("a page's own pictures in the editor", () => {
         expect(native.view().editing).toBe(false);
         expect(of('socio-state').at(-1)?.payload).toMatchObject({ unsent: false, canUndo: false });
         expect(editor.can().undo()).toBe(false);
-        expect(editor.getMarkdown()).toBe(of('socio-loaded')[0]?.payload.markdown);
+        expect(of('socio-loaded')[0]?.payload.markdown).toBe(page);
+        expect(preservedMarkdown(editor, page)).toBe(page);
     });
 
     it('keeps a clear placeholder offline with none kept, and draws it once back online', async () => {
