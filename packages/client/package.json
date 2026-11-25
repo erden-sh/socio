@@ -18,7 +18,7 @@
         "@simplewebauthn/browser": "13.3.0",
         "@socio/plugin-ui": "workspace:*",
         "@socio/shared": "workspace:*",
-        "@tanstack/db": "0.15.1",
+        "@tanstack/db": "0.15.2",
         "@tiptap/core": "3.35.0",
         "@tiptap/extension-placeholder": "3.35.0",
         "@tiptap/extension-table": "3.35.0",
