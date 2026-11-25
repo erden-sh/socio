@@ -56,3 +56,30 @@ describe("the service's code", () => {
         expect(notifier).toMatch(/PendingIntent\.FLAG_IMMUTABLE/);
     });
 });
+
+// Expo 58 links expo-notifications as a prebuilt AAR from its local Maven repository, published at
+// the package's own version. The module asks for that artifact by version, so an expo-notifications
+// update that leaves the coordinate behind fails the Android build ("Could not find
+// host.exp.exponent:expo.modules.notifications"), and the libraries the service shares with it would
+// resolve twice.
+describe("the module's Gradle dependencies", () => {
+    const gradle = readFileSync(join(import.meta.dirname, '../../modules/socio-push/android/build.gradle'), 'utf8');
+    const notifications = join(import.meta.dirname, '../../node_modules/expo-notifications');
+    const installed: string = JSON.parse(readFileSync(join(notifications, 'package.json'), 'utf8')).version;
+    const theirs = readFileSync(join(notifications, 'android/build.gradle'), 'utf8');
+    const version = (text: string, artifact: string) =>
+        new RegExp(`'${artifact.replaceAll('.', '\\.')}:([^']+)'`).exec(text)?.[1];
+
+    it('asks for the prebuilt expo-notifications at the installed version', () => {
+        expect(version(gradle, 'host.exp.exponent:expo.modules.notifications')).toBe(installed);
+        expect(gradle).toContain(`expo-notifications ${installed} brings`);
+    });
+
+    it.each(['com.google.firebase:firebase-messaging', 'androidx.core:core', 'androidx.lifecycle:lifecycle-process'])(
+        'uses %s at the version expo-notifications brings',
+        (artifact) => {
+            expect(version(gradle, artifact)).toBeDefined();
+            expect(version(gradle, artifact)).toBe(version(theirs, artifact));
+        },
+    );
+});
