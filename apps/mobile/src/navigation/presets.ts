@@ -169,10 +169,14 @@ export interface ImmersiveOptions {
     readonly hideSystemBars?: boolean;
 }
 
-/** Full-screen media with no bar and no dismiss gesture. */
+/**
+ * Full-screen media with no bar and no system dismiss gesture: the screen draws its own drag to
+ * dismiss (the attachment viewer's, CB-537), so it is a transparent modal, and the screen underneath
+ * shows through as its backdrop fades.
+ */
 export function immersive(options: ImmersiveOptions = {}): Preset {
     return made({
-        presentation: 'fullScreenModal',
+        presentation: 'transparentModal',
         headerShown: false,
         gestureEnabled: false,
         ...(options.hideSystemBars
