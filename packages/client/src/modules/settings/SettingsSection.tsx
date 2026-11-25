@@ -10,6 +10,7 @@ import { DictationPreference } from '../voice/DictationSettings';
 
 import { AccessPolicySection } from './AccessPolicySection';
 import { AccountSections, SettingsCard } from './AccountSettings';
+import { PersonalAppearance } from './AppearanceSettings';
 import { ArchivedChatsSection } from './ArchivedChats';
 import { ChatSkillsSection } from './ChatSkillsSection';
 import { ConnectedAgentsSection } from './ConnectedAgentsSection';
@@ -88,6 +89,13 @@ export function SettingsSection({ id, access }: { id: SettingsSectionId; access:
         case 'account':
             return (
                 <>
+                    <PersonalAppearance
+                        key={shell.workspace.user.id}
+                        defaultThemeId={shell.state.settings.defaultThemeId}
+                        themeId={shell.workspace.preferences?.themeId}
+                        colorMode={shell.workspace.preferences?.colorMode}
+                        mutate={shell.mutate}
+                    />
                     <AccountSections
                         methods={methods}
                         onSignedOut={() => (shell.sessionEnded ?? shell.switchUser)?.()}

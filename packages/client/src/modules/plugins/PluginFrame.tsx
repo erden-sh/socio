@@ -185,6 +185,22 @@ function ServicePlugin({ plugin }: { plugin: PluginLauncherEntry }) {
         return () => window.clearTimeout(timer);
     }, [src]);
 
+    const postTheme = useCallback(() => {
+        const win = frame.current?.contentWindow;
+        const target = bridgeOrigin(origin);
+        if (!win || !target || !pluginIdStable) {
+            return;
+        }
+        const message: HostToPluginMessage = {
+            v: 1,
+            source: 'socio-host',
+            type: 'theme',
+            theme: resolved,
+            pluginId: pluginIdStable,
+        };
+        win.postMessage(message, target);
+    }, [origin, pluginIdStable, resolved]);
+
     useEffect(() => {
         if (!origin) {
             return;
@@ -237,6 +253,7 @@ function ServicePlugin({ plugin }: { plugin: PluginLauncherEntry }) {
                 return;
             }
             if (data.type === 'ready') {
+                postTheme();
                 setReady(true);
                 setWaiting(false);
             }
@@ -267,7 +284,7 @@ function ServicePlugin({ plugin }: { plugin: PluginLauncherEntry }) {
         };
         window.addEventListener('message', onMessage);
         return () => window.removeEventListener('message', onMessage);
-    }, [origin, openAllow, openAnyHttps, navigate, pluginIdStable, routes]);
+    }, [origin, openAllow, openAnyHttps, navigate, pluginIdStable, routes, postTheme]);
 
     // The address moved and the app didn't (a workspace link into the open
     // plugin, Back or Forward): tell it where to go. Not for our own mirror,
@@ -290,20 +307,10 @@ function ServicePlugin({ plugin }: { plugin: PluginLauncherEntry }) {
     }, [origin, addressKey, ready, location.key, location.state, navigationType]);
 
     useEffect(() => {
-        const win = frame.current?.contentWindow;
-        const target = bridgeOrigin(origin);
-        if (!win || !target || !pluginIdStable) {
-            return;
+        if (src) {
+            postTheme();
         }
-        const message: HostToPluginMessage = {
-            v: 1,
-            source: 'socio-host',
-            type: 'theme',
-            theme: resolved,
-            pluginId: pluginIdStable,
-        };
-        win.postMessage(message, target);
-    }, [origin, pluginIdStable, resolved, ready, src]);
+    }, [postTheme, src]);
 
     const openTab = useCallback(() => {
         const at = appRoute.current;

@@ -19,7 +19,7 @@ Revisar cambio de tamaño con menú abierto (3.1), tab o entidad de un enlace qu
 **Archivos.** Modificar `packages/client/src/shell/{AppShell,AppHeader,CommandPalette}.tsx` y `packages/client/src/components/{app-sidebar,nav-user,nav-spaces,sidebar-nav}.tsx`. Extender el escenario `shell` de `scripts/ui-smoke.mjs`.
 
 - [ ] Registrar antes del cambio el caso de sidebar expandida y colapsada, búsqueda global, resultado vacío, menú móvil y encabezado con acciones inyectadas. Agregar una comprobación de menú abierto al pasar de móvil a escritorio.
-- [ ] Aplicar tokens y variantes de base. Preservar registro, atajos Ctrl/⌘+K y Ctrl/⌘+B según plataformas soportadas, breadcrumb y slots de acciones. Liquid Glass vive en las superficies de navegación y apertura.
+- [ ] Aplicar tokens y variantes de base. Preservar registro, atajos Ctrl/⌘+K y Ctrl/⌘+B según plataformas soportadas, breadcrumb y slots de acciones. Erden Glass vive en las superficies de navegación y apertura.
 - [ ] Ejecutar `node scripts/ui-smoke.mjs --base http://127.0.0.1:4398 --scenario shell`. Comparar miembro y administrador. Verificar 390 px con teclado y tacto.
 
 ## 3.2 · Estructura del directorio · PI-02, PI-05
@@ -48,4 +48,4 @@ Revisar cambio de tamaño con menú abierto (3.1), tab o entidad de un enlace qu
 - [ ] Añadir casos de regreso del foco al cerrar detalle, ausencia de la fila que lo abrió, confirmación de cambio de rol, impacto de desactivación y preservación de creador de llave. Probar que Atrás cierra o vuelve al contexto determinable por URL.
 - [ ] Componer panel contextual con Sheet o región lateral según ancho. Enlazar a la ruta completa de la persona o pestaña de la cuenta. Los detalles y acciones siguen los permisos del servidor y el mínimo de información ofrecido por cada respuesta existente.
 - [ ] Ejecutar `pnpm test --project client packages/client/tests/people-ui.test.tsx` y `pnpm test --project server tests/people-detail.test.ts`. Correr los escenarios `people` con un fixture Better Auth y `shell` con las credenciales del fixture, de acuerdo con el encabezado de `scripts/ui-smoke.mjs`. Usar solamente un entorno de prueba porque el escenario desactiva y reactiva una cuenta.
-- [ ] Registrar revisión comparada con el prototipo, incluido 390 px y los cuatro estados Liquid Glass/Socio por esquema. Ejecutar `pnpm run check:cached`, `pnpm run test:cached` y `pnpm run build`.
+- [ ] Registrar revisión comparada con el prototipo, incluido 390 px y los cuatro estados Erden Glass/Socio por esquema. Ejecutar `pnpm run check:cached`, `pnpm run test:cached` y `pnpm run build`.

@@ -113,3 +113,33 @@ it('uses deployment defaults until an admin overrides them', () => {
         }).success,
     ).toBe(true);
 });
+
+it('saves an appearance default for admins and an independent preference per person', async () => {
+    const { alice, bob } = await fixture();
+    expect((await bob('/api/settings', 'PATCH', { defaultThemeId: 'erden' })).status).toBe(403);
+    expect((await alice('/api/settings', 'PATCH', { defaultThemeId: 'retired' })).status).toBe(400);
+    expect((await alice('/api/settings', 'PATCH', { defaultThemeId: 'erden' })).status).toBe(200);
+    expect((await (await bob('/api/state')).json()).settings.defaultThemeId).toBe('erden');
+
+    expect((await bob('/api/preferences', 'PATCH', { themeId: 'retired' })).status).toBe(400);
+    expect((await bob('/api/preferences', 'PATCH', { colorMode: 'sepia' })).status).toBe(400);
+    expect((await bob('/api/preferences', 'PATCH', { themeId: 'plum', userId: 'alice' })).status).toBe(400);
+    const writes = await Promise.all([
+        bob('/api/preferences', 'PATCH', { themeId: 'plum' }),
+        bob('/api/preferences', 'PATCH', { colorMode: 'dark', dictation: 'device' }),
+    ]);
+    expect(writes.map(({ status }) => status)).toEqual([200, 200]);
+    expect((await (await bob('/api/workspace')).json()).preferences).toMatchObject({
+        themeId: 'plum',
+        colorMode: 'dark',
+        dictation: 'device',
+    });
+    expect((await (await alice('/api/preferences')).json()).themeId).toBeUndefined();
+    expect(await (await bob('/api/preferences', 'PATCH', { themeId: null })).json()).toMatchObject({
+        themeId: null,
+        colorMode: 'dark',
+        dictation: 'device',
+    });
+    expect((await alice('/api/settings', 'PATCH', { defaultThemeId: null })).status).toBe(200);
+    expect((await (await bob('/api/state')).json()).settings.defaultThemeId).toBeNull();
+});

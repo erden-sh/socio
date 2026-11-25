@@ -21,7 +21,7 @@ Cualquier módulo se siente parte de Socio al navegar, buscar, editar, revisar o
 
 La familia selecciona sus muestras, patrón y estados a partir del catálogo. Para las vistas nuevas que se pidan, se revisan tres alternativas HTML antes de integrar su estructura. Se puede iniciar la siguiente familia cuando la anterior tenga su pase registrado y las piezas compartidas sean estables. Puede haber Quick actions en una colección con acciones frecuentes, o Access review cuando se disponga de un estado real y su acción tenga permisos.
 
-Por defecto se verifica cada cambio en escritorio y 390 px, Liquid Glass y Socio, claro y oscuro. La galería valida las siete paletas. En los estados sensibles se agregan pruebas de roles, enlaces directos, error, carga, teclado y movimiento reducido. Se documenta la decisión cuando una pantalla necesita CSS especializado o cuando un iframe depende de su propio tema.
+Por defecto se verifica cada cambio en escritorio y 390 px, Erden Glass y Socio, claro y oscuro. La galería valida las siete paletas. En los estados sensibles se agregan pruebas de roles, enlaces directos, error, carga, teclado y movimiento reducido. Se documenta la decisión cuando una pantalla necesita CSS especializado o cuando un iframe depende de su propio tema.
 
 ## Aceptación del programa
 

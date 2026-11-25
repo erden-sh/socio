@@ -14,6 +14,7 @@ import { NOTES_SELECTIONS, SUMMARY_MODELS } from '@socio/shared/context-settings
 import { appPolicyChangeSchema } from '@socio/shared/device-sign-in';
 import { LIMIT_KEYS, validLimit } from '@socio/shared/limits';
 import { isAdmin } from '@socio/shared/roles';
+import { THEME_IDS } from '@socio/shared/settings/appearance';
 import { brandingSchema } from '@socio/shared/settings/branding';
 import { savedLimits } from '@socio/shared/settings/limits';
 import { SPACE_CREATORS } from '@socio/shared/spaces/create-permission';
@@ -86,6 +87,7 @@ export function mountSettingsRoutes(
         const parsed = z
             .object({
                 branding: brandingSchema.nullable().optional(),
+                defaultThemeId: z.enum(THEME_IDS).nullable().optional(),
                 name: z.string().trim().min(1).max(40).optional(),
                 paused: z.boolean().optional(),
                 researchAllowed: z.boolean().optional(),

@@ -38,7 +38,7 @@ Revisar zoom y cadenas largas (2.1), entrada inválida y campo deshabilitado (2.
 
 - [ ] Probar apertura por teclado, Escape, restauración de foco, continuidad del overlay al cambiar de esquema y layout largo en 390 px. Probar superficie sólida con las preferencias de sistema disponibles.
 - [ ] Aplicar tokens de superficie y movimiento a transiciones de entrada, cambio de estado y cierre. Mantener la transición localizada al elemento y un mapa de movimiento reducido.
-- [ ] Confirmar que la opción actual se puede identificar con teclado y que los overlays sin blur se leen sobre contenido de ejemplo. Guardar muestras de Liquid Glass y Socio en claro y oscuro y ejecutar la comprobación en las demás paletas.
+- [ ] Confirmar que la opción actual se puede identificar con teclado y que los overlays sin blur se leen sobre contenido de ejemplo. Guardar muestras de Erden Glass y Socio en claro y oscuro y ejecutar la comprobación en las demás paletas.
 
 ## 2.4 · Patrones compuestos · UI-05
 

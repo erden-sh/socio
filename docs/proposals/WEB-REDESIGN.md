@@ -13,7 +13,7 @@ Socio necesita una identidad visual común para toda la aplicación web y una fo
 | 3. Shell y People Desk | [PRD 3](web-redesign/03-shell-people.md) | [Plan 3](web-redesign/plans/03-shell-people.md) | Navegación y directorio conservan flujos, permisos y enlaces. El piloto deja listos Quick actions, Access review y detalle contextual.  |
 | 4. Resto de las vistas | [PRD 4](web-redesign/04-vistas.md)       | [Plan 4](web-redesign/plans/04-vistas.md)       | Cada familia tiene inventario de rutas y estados, comparación visual y pruebas de sus flujos.                                           |
 
-La primera pieza que se revisa es **una galería HTML aislada con Button, Input, Badge, Skeleton, una tabla y un menú**. Se compara Liquid Glass en claro y oscuro con la paleta Socio y se verifica que las otras cinco compartan el contrato. La implementación sigue el orden de la tabla. Las entregas 1 y 2 pueden compartir una revisión visual antes de incorporar el nuevo valor por defecto a una versión de producto.
+La primera pieza que se revisa es **una galería HTML aislada con Button, Input, Badge, Skeleton, una tabla y un menú**. Se compara Erden Glass en claro y oscuro con la paleta Socio y se verifica que las otras cinco compartan el contrato. La implementación sigue el orden de la tabla. Las entregas 1 y 2 pueden compartir una revisión visual antes de incorporar el nuevo valor por defecto a una versión de producto.
 
 ## Alcance común
 

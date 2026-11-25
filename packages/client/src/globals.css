@@ -25,6 +25,14 @@
 /* Dark mode for the legacy rules: generated. */
 @import './styles/legacy-dark.css' layer(legacy);
 
+/* The Socio palette remains in the base blocks below for the native generator. */
+@import './styles/themes/indigo.css';
+@import './styles/themes/erden.css';
+@import './styles/themes/erden-glass.css';
+@import './styles/themes/cobalt.css';
+@import './styles/themes/plum.css';
+@import './styles/themes/clay.css';
+
 @custom-variant dark (&:where(.dark, .dark *));
 /*
  * Typing in a chat's composer on a touch screen, and how much room its
@@ -164,6 +172,20 @@
     --paused-banner-border: #3b362e;
 }
 
+:root[data-theme]:not([data-theme='socio']) {
+    background-color: var(--background);
+    color: var(--foreground);
+}
+
+:root[data-theme]:not([data-theme='socio']) [data-slot='button'][data-variant='destructive'] {
+    background-color: var(--destructive);
+    color: var(--destructive-foreground);
+}
+
+:root[data-theme]:not([data-theme='socio']) [data-slot='button'][data-variant='destructive']:hover {
+    background-color: color-mix(in srgb, var(--destructive) 93%, var(--destructive-foreground));
+}
+
 @theme inline {
     /* The system stack style.css already uses; no web fonts are loaded. */
     --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -250,11 +272,6 @@
     [role='button']:not([aria-disabled='true']) {
         cursor: pointer;
     }
-    /*
-   * No shadcn body colours (bg-background text-foreground): the page colours
-   * come from style.css's :root, and in dark from styles/legacy-dark.css,
-   * which points them at the same tokens.
-   */
     /*
    * Inside the shell the document itself never scrolls (CB-102): the shell
    * is as tall as what is visible (use-visible-height.ts) and its views

@@ -162,6 +162,7 @@ export async function mountPages(
                     catalog: processI18nCatalog(),
                     preference: (userId) => Context.get(services, LegacyWorkspace).preferences(userId).locale,
                 },
+                appearancePreferences: (userId) => Context.get(services, LegacyWorkspace).preferences(userId),
             },
             // Its own resolver, with its own record of whom it wrote (the API's is another).
             requestUserResolver(auth, { workspace: Context.get(services, LegacyWorkspace) }),

@@ -8,6 +8,7 @@ import type { MediaKind, MediaListing } from '../media-types.js';
 import type { MemoriesState } from '../memory.js';
 import type { PageLibrary } from '../pages/page-library.js';
 import type { ScheduleDetail, SchedulesState } from '../schedule-types.js';
+import type { ResolvedAppearance, ThemeId } from '../settings/appearance.js';
 import type { AgentRunSummary, State, User, WorkspaceState } from '../types.js';
 
 /** What the sign-in screen offers: `/api/auth/session` without the user. */
@@ -25,7 +26,14 @@ export interface SignInView {
  * tag, src/server/web/services.ts's `PageViews`). One set per page request: the answers are kept
  * for the request, so the shell and a module gate share them.
  */
+export interface DocumentAppearance extends ResolvedAppearance {
+    workspaceThemeId: ThemeId;
+    signedIn: boolean;
+}
+
 export interface WebServices {
+    /** Effective palette and mode, with the public workspace fallback for sign-out. */
+    appearance(): Promise<DocumentAppearance>;
     /** Current viewer's docs, resolved before looking up even unknown URLs. */
     docsPage?(url: string): Promise<import('../docs.js').DocsScreen | null>;
     /** The same viewer's navigation, for the not-found page (CB-264). */

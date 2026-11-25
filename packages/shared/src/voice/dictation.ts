@@ -1,6 +1,7 @@
 import type { NotificationPreferences } from '../notifications.js';
 import type { OnboardingPreferences } from '../onboarding.js';
 import type { RoomPresencePreference } from '../rooms/room-notices.js';
+import type { ColorMode, ThemeId } from '../settings/appearance.js';
 
 import type { DictationLanguage } from './dictation-languages.js';
 
@@ -29,6 +30,9 @@ export function dictationAllowedFromEnv(env: Record<string, string | undefined>)
 
 /** One person's preferences, stored on the server (`/api/preferences`). */
 export interface UserPreferences {
+    /** A specific workspace palette, or null to inherit the workspace default. */
+    themeId?: ThemeId | null;
+    colorMode?: ColorMode;
     /** Versioned guides, saved for this person across sessions. */
     onboarding?: OnboardingPreferences;
     /** How they dictate when both ways work; null: not chosen yet (ask). */

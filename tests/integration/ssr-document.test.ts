@@ -247,6 +247,7 @@ beforeAll(async () => {
                     }),
                     preference: (userId) => workspace.preferences(userId).locale,
                 },
+                appearancePreferences: (userId) => workspace.preferences(userId),
             },
             requestUserResolver(auth, platform),
         ),
@@ -655,10 +656,6 @@ it('nonces every inline script with its own response’s nonce, and loads the th
         const inline = scripts.filter(({ body }) => body.trim());
         expect(inline.length).toBeGreaterThan(0);
         for (const { attributes } of inline) {
-            // next-themes' script is a data block (never run, outside the CSP).
-            if (attributes.includes('type="application/json"')) {
-                continue;
-            }
             expect(attributes).toContain(`nonce="${nonce}"`);
         }
         // Scripts from files come from this app.
@@ -743,3 +740,33 @@ it('renders in the page’s locale, with only its route’s dictionaries inlined
     const preferred = await document('/', 'bob', { cookie: 'socio_locale=en-XA' });
     expect(preferred.html).toMatch(/^<!DOCTYPE html><html lang="en-US"/);
 });
+it('renders the effective workspace appearance before CSS and isolates the personal override', async () => {
+    const before = store.settings().defaultThemeId ?? null;
+    try {
+        const original = await document('/');
+        expect(original.html.match(/<html[^>]*>/)?.[0]).toMatch(/<html[^>]+data-theme="erden-glass"/);
+
+        store.updateSettings({ defaultThemeId: 'erden' });
+        workspace.setPreferences('alice', { themeId: 'plum', colorMode: 'dark' });
+
+        for (const path of ['/settings/people', '/docs']) {
+            const admin = await document(path, 'alice');
+            expect(admin.html.match(/<html[^>]*>/)?.[0]).toMatch(
+                /<html[^>]+data-theme="plum"[^>]+data-color-mode="dark"/,
+            );
+            expect(admin.html.match(/<html[^>]*>/)?.[0]).toMatch(/<html[^>]+class="dark"/);
+        }
+        const member = await document('/settings/account', 'bob');
+        expect(member.html.match(/<html[^>]*>/)?.[0]).toMatch(
+            /<html[^>]+data-theme="erden"[^>]+data-color-mode="system"/,
+        );
+        const publicDoc = await document('/docs');
+        expect(publicDoc.html.match(/<html[^>]*>/)?.[0]).toMatch(
+            /<html[^>]+data-theme="erden"[^>]+data-color-mode="system"/,
+        );
+        expect(publicDoc.html).not.toContain('data-theme="plum"');
+    } finally {
+        store.updateSettings({ defaultThemeId: before });
+        workspace.setPreferences('alice', { themeId: null, colorMode: 'system' });
+    }
+}, 60_000);

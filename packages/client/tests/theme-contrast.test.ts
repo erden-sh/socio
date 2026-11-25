@@ -83,3 +83,46 @@ it.each(Object.entries(themes))(
         }
     },
 );
+
+const workspacePalettes = ['indigo', 'erden', 'erden-glass', 'cobalt', 'plum', 'clay'] as const;
+
+it.each(workspacePalettes)('ships both schemes of %s with usable text, controls and focus', (id) => {
+    const globals = readFileSync(new URL('../src/globals.css', import.meta.url), 'utf8');
+    expect(globals).toContain(`./styles/themes/${id}.css`);
+    const css = readFileSync(new URL(`../src/styles/themes/${id}.css`, import.meta.url), 'utf8');
+
+    for (const scheme of ['light', 'dark'] as const) {
+        const selector = `:root[data-theme='${id}']${scheme === 'dark' ? '.dark' : ''}`;
+        const start = css.indexOf(`${selector} {`);
+        expect(start, selector).toBeGreaterThanOrEqual(0);
+        const declaration = css.slice(start, css.indexOf('}', start));
+        const tokens = {
+            ...themes[scheme],
+            ...Object.fromEntries(
+                [...declaration.matchAll(/--([\w-]+):\s*([^;]+);/g)].map(([, key, value]) => [key, value]),
+            ),
+        };
+        for (const [ink, surface, ratio] of [
+            ['foreground', 'background', 4.5],
+            ['card-foreground', 'card', 4.5],
+            ['popover-foreground', 'popover', 4.5],
+            ['primary-foreground', 'primary', 4.5],
+            ['primary-foreground', 'primary-hover', 4.5],
+            ['primary-foreground', 'primary-disabled', 4.5],
+            ['sidebar-muted-foreground', 'sidebar-accent', 4.5],
+            ['muted-foreground', 'muted', 4.5],
+            ['ring', 'popover', 3],
+            ['ring', 'accent', 3],
+            ['input', 'card', 3],
+            ['destructive-foreground', 'destructive', 4.5],
+            ['destructive', 'card', 4.5],
+            ['chat-link', 'muted', 4.5],
+            ['chat-link', 'user-bubble-pending', 4.5],
+        ] as const) {
+            expect(
+                contrast(color(tokens, ink), color(tokens, surface)),
+                `${scheme} ${ink} on ${surface}`,
+            ).toBeGreaterThanOrEqual(ratio);
+        }
+    }
+});

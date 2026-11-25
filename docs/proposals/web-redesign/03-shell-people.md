@@ -26,4 +26,4 @@ El contenido de review empieza con hechos ya presentes en People y Service accou
 - Un administrador usa las tres pestañas y los enlaces directos a personas y cuentas. Un miembro sigue las restricciones vigentes. Sin Better Auth, se conservan las restricciones y Service accounts sigue disponible como hoy.
 - Cada acción primaria abre el flujo existente una sola vez. Al fallar una petición, el panel permite reintento o deriva a la vista que sí se cargó. Sin datos suficientes, Access review deja visible la cobertura conocida.
 - La desactivación muestra impacto y pide confirmación. El cierre de sesión de una cuenta afectada y la reactivación siguen pasando las pruebas existentes.
-- Comparación visual con People Desk en Liquid Glass y Socio en claro y oscuro, con una comprobación básica de las cinco paletas restantes. Teclado, 390 px, escritorio, cadenas largas y navegación Atrás/Adelante forman parte del pase.
+- Comparación visual con People Desk en Erden Glass y Socio en claro y oscuro, con una comprobación básica de las cinco paletas restantes. Teclado, 390 px, escritorio, cadenas largas y navegación Atrás/Adelante forman parte del pase.

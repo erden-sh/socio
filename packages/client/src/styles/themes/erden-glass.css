@@ -1,0 +1,155 @@
+/* Socio web palette. The shared typography, layout and radii are in globals.css. */
+
+:root[data-theme='erden-glass'] {
+    --brand: #176358;
+    --brand-foreground: #ffffff;
+    --background: #edf5f7;
+    --foreground: #14282d;
+    --card: #fcfefe;
+    --card-foreground: var(--foreground);
+    --popover: #fcfefe;
+    --popover-foreground: var(--foreground);
+    --primary: #21675c;
+    --primary-foreground: #ffffff;
+    --primary-hover: #1d5a50;
+    --primary-disabled: #255953;
+    --secondary: #f2f4f5;
+    --secondary-foreground: var(--foreground);
+    --muted: #f2f4f5;
+    --muted-foreground: #395760;
+    --accent: #e5efed;
+    --accent-foreground: var(--foreground);
+    --destructive: #a2393d;
+    --destructive-foreground: #ffffff;
+    --border: #cbdde0;
+    --input: #7c888b;
+    --ring: #176358;
+    --chart-1: var(--brand);
+    --chart-2: #5669ab;
+    --chart-3: #a54429;
+    --chart-4: #557570;
+    --chart-5: var(--muted-foreground);
+    --sidebar: #f5fbfb;
+    --sidebar-foreground: var(--foreground);
+    --sidebar-primary: var(--primary);
+    --sidebar-primary-foreground: var(--primary-foreground);
+    --sidebar-accent: #e5efed;
+    --sidebar-accent-foreground: var(--foreground);
+    --sidebar-muted-foreground: var(--muted-foreground);
+    --sidebar-border: var(--border);
+    --sidebar-ring: var(--ring);
+    --user-bubble: var(--primary);
+    --user-bubble-foreground: var(--primary-foreground);
+    --user-bubble-pending: #e5efed;
+    --user-bubble-pending-border: var(--ring);
+    --chat-link: #176358;
+}
+
+:root[data-theme='erden-glass'].dark {
+    --brand: #a3e7db;
+    --brand-foreground: #000000;
+    --background: #10191e;
+    --foreground: #edf9fa;
+    --card: #1b282e;
+    --card-foreground: var(--foreground);
+    --popover: #1b282e;
+    --popover-foreground: var(--foreground);
+    --primary: #92decf;
+    --primary-foreground: #000000;
+    --primary-hover: #a0e2d5;
+    --primary-disabled: #9ed7cd;
+    --secondary: #2a373c;
+    --secondary-foreground: var(--foreground);
+    --muted: #2a373c;
+    --muted-foreground: #a8c2c7;
+    --accent: #354c4f;
+    --accent-foreground: var(--foreground);
+    --destructive: #ffb0af;
+    --destructive-foreground: #2b151a;
+    --border: #3a525d;
+    --input: #708890;
+    --ring: #a3e7db;
+    --chart-1: var(--brand);
+    --chart-2: #95a5e6;
+    --chart-3: #ec8466;
+    --chart-4: #c9e8dd;
+    --chart-5: var(--muted-foreground);
+    --sidebar: #17232a;
+    --sidebar-foreground: var(--foreground);
+    --sidebar-primary: var(--primary);
+    --sidebar-primary-foreground: var(--primary-foreground);
+    --sidebar-accent: #354c4f;
+    --sidebar-accent-foreground: var(--foreground);
+    --sidebar-muted-foreground: var(--muted-foreground);
+    --sidebar-border: var(--border);
+    --sidebar-ring: var(--ring);
+    --user-bubble: var(--primary);
+    --user-bubble-foreground: var(--primary-foreground);
+    --user-bubble-pending: #354c4f;
+    --user-bubble-pending-border: var(--ring);
+    --chat-link: #a3e7db;
+}
+
+/* Glass is limited to the controls above the solid working surfaces. */
+:root[data-theme='erden-glass'] {
+    --glass-opacity: 84%;
+    --glass-filter: blur(20px) saturate(145%);
+}
+
+@media (prefers-reduced-transparency: reduce), (forced-colors: active) {
+    :root[data-theme='erden-glass'] {
+        --glass-opacity: 100%;
+        --glass-filter: none;
+    }
+}
+
+:root[data-theme='erden-glass']
+    :is(
+        [data-slot='app-header'],
+        [data-slot='sidebar-inner'],
+        [data-slot='dropdown-menu-content'],
+        [data-slot='dropdown-menu-sub-content'],
+        [data-slot='select-content'],
+        [data-slot='popover-content']
+    ) {
+    --glass-surface: var(--popover);
+    background-color: var(--glass-surface);
+}
+
+:root[data-theme='erden-glass'] :is([data-slot='app-header'], [data-slot='sidebar-inner']) {
+    --glass-surface: var(--sidebar);
+    border-color: var(--border);
+}
+
+:root[data-theme='erden-glass'] [data-slot='app-header'] {
+    border-bottom-width: 1px;
+}
+
+@supports (backdrop-filter: blur(1px)) {
+    :root[data-theme='erden-glass']
+        :is(
+            [data-slot='app-header'],
+            [data-slot='sidebar-inner'],
+            [data-slot='dropdown-menu-content'],
+            [data-slot='dropdown-menu-sub-content'],
+            [data-slot='select-content'],
+            [data-slot='popover-content']
+        ) {
+        background-color: color-mix(in srgb, var(--glass-surface) var(--glass-opacity), transparent);
+        backdrop-filter: var(--glass-filter);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    :root[data-theme='erden-glass']
+        :is(
+            [data-slot='app-header'],
+            [data-slot='dropdown-menu-content'],
+            [data-slot='dropdown-menu-sub-content'],
+            [data-slot='select-content'],
+            [data-slot='popover-content']
+        ) {
+        animation-duration: 0ms;
+        transition-duration: 0ms;
+    }
+}

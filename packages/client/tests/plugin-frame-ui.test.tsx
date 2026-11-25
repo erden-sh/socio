@@ -620,3 +620,20 @@ it('opens nothing when the person cancels, or for a link that is not https', asy
     expect(slot('plugin-open-link')).toBeNull();
     expect(opened).toEqual([]);
 });
+
+it('resends the current scheme after every authenticated ready message from the iframe', async () => {
+    mount(entry());
+    await settled();
+    const send = vi.spyOn(iframe()!.contentWindow!, 'postMessage');
+    const ready = { v: 1, source: 'socio-plugin', type: 'ready' };
+    fromFrame(ready, { origin: 'https://other.example' });
+    expect(send).not.toHaveBeenCalled();
+    fromFrame(ready);
+    await settled();
+    fromFrame(ready);
+    await settled();
+    expect(send.mock.calls.filter(([message]) => message.type === 'theme')).toEqual([
+        [{ v: 1, source: 'socio-host', type: 'theme', theme: 'light', pluginId: 'events' }, ORIGIN],
+        [{ v: 1, source: 'socio-host', type: 'theme', theme: 'light', pluginId: 'events' }, ORIGIN],
+    ]);
+});

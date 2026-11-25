@@ -24,6 +24,7 @@ import { handoffLine, handoffOf, type TranscriptHandoff } from '@socio/shared/ro
 import type { TranscriptMention } from '@socio/shared/rooms/room-notices';
 import { withSocioFields } from '@socio/shared/runs/socio-fields';
 import { TraceTimes } from '@socio/shared/runs/trace-times';
+import { COLOR_MODES, THEME_IDS } from '@socio/shared/settings/appearance';
 import { canEditSoul } from '@socio/shared/soul';
 import {
     SPACE_NAME_ERROR,
@@ -790,6 +791,8 @@ export function workspaceRoutes(platform: WorkspaceRoutesDeps, voice: VoiceShape
     app.patch('/preferences', async (c) => {
         const data = z
             .object({
+                themeId: z.enum(THEME_IDS).nullable().optional(),
+                colorMode: z.enum(COLOR_MODES).optional(),
                 dictation: z.enum(DICTATION_METHODS).nullable().optional(),
                 // The transcription server's language hint (CB-221): an offered
                 // code, or null for Auto.
@@ -818,7 +821,7 @@ export function workspaceRoutes(platform: WorkspaceRoutesDeps, voice: VoiceShape
         if (!data.success) {
             return c.json(
                 {
-                    error: 'Use supported dictation, notification, language and versioned guide preferences.',
+                    error: 'Use supported appearance, dictation, notification, language and versioned guide preferences.',
                 },
                 400,
             );
