@@ -199,19 +199,20 @@ export function checkedToolCalls(adapter: AnyTextAdapter, onStop: (error: TurnFa
     checked.chatStream = async function* (options) {
         // Each call's arguments as streamed, by tool call ID.
         const streamed = new Map<string, string>();
-        // This round's RUN_STARTED, and whether a call in it was sent back as unreadable.
+        // This round's RUN_STARTED, and whether a call in it was repaired or
+        // sent back as unreadable.
         let started: { runId?: string; threadId?: string } = {};
-        let sentBack = false;
+        let recovered = false;
         for await (const chunk of adapter.chatStream(options)) {
             if (chunk.type === 'RUN_STARTED') {
                 started = chunk;
             }
             // A stream cut off inside a call's arguments has no finish reason,
             // which the Chat Completions adapter (TanStack AI 1.x) reports as
-            // an incomplete stream. The call is already sent back as
-            // unreadable, so the round ends as a tool round and the model
-            // gets to try again, as before.
-            if (sentBack && chunk.type === 'RUN_ERROR' && (chunk as { code?: unknown }).code === 'incomplete-stream') {
+            // an incomplete stream. The call is already repaired (and runs) or
+            // sent back as unreadable (and the model tries again), so the
+            // round ends as a tool round, as before.
+            if (recovered && chunk.type === 'RUN_ERROR' && (chunk as { code?: unknown }).code === 'incomplete-stream') {
                 yield {
                     type: 'RUN_FINISHED',
                     runId: started.runId ?? '',
@@ -257,6 +258,7 @@ export function checkedToolCalls(adapter: AnyTextAdapter, onStop: (error: TurnFa
                 ]);
                 // The library takes a TOOL_CALL_END's raw `args` over its
                 // `input`, so both carry the repaired arguments.
+                recovered = true;
                 yield { ...chunk, args: JSON.stringify(read.args), input: read.args };
                 continue;
             }
@@ -276,7 +278,7 @@ export function checkedToolCalls(adapter: AnyTextAdapter, onStop: (error: TurnFa
                 onStop(error);
                 throw error;
             }
-            sentBack = true;
+            recovered = true;
             // The library's own form of a call that failed before it ran: the
             // tool is skipped and the model gets this result.
             yield {
