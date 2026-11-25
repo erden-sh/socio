@@ -123,11 +123,11 @@ importers:
         specifier: 1.7.28
         version: 1.7.28(@better-auth/core@1.7.28(@better-auth/utils@0.5.1)(@better-fetch/fetch@1.3.3)(@opentelemetry/api@1.9.1)(better-call@1.4.6(zod@4.6.7))(jose@6.2.18)(kysely@0.29.6)(nanostores@1.5.5))(@better-auth/utils@0.5.1)(@better-fetch/fetch@1.3.3)(better-auth@1.7.28(@opentelemetry/api@1.9.1)(drizzle-orm@1.0.0-rc.4(@opentelemetry/api@1.9.1)(effect@4.0.5)(valibot@1.5.0(typescript@7.1.0-beta))(zod@4.6.7))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vitest@4.1.12(@opentelemetry/api@1.9.1)(@types/node@26.6.10)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@26.6.10)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))))(better-call@1.4.6(zod@4.6.7))(nanostores@1.5.5)
       '@copilotkit/channels-core':
-        specifier: 0.11.0
-        version: 0.11.0(vitest@4.1.12(@opentelemetry/api@1.9.1)(@types/node@26.6.10)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@26.6.10)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)))(zod@4.6.7)
+        specifier: 0.11.1
+        version: 0.11.1(zod@4.6.7)
       '@copilotkit/channels-telegram':
-        specifier: 0.11.0
-        version: 0.11.0(@ag-ui/core@0.0.59)(vitest@4.1.12(@opentelemetry/api@1.9.1)(@types/node@26.6.10)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@26.6.10)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)))(zod@4.6.7)
+        specifier: 0.11.1
+        version: 0.11.1(@ag-ui/core@0.0.59)(zod@4.6.7)
       '@copilotkit/core':
         specifier: ^1.75.0
         version: 1.75.0(@ag-ui/core@0.0.59)(zod@4.6.7)
@@ -370,14 +370,14 @@ importers:
         version: 4.6.7
     devDependencies:
       '@anthropic-ai/claude-agent-sdk':
-        specifier: 0.3.293
-        version: 0.3.293(@anthropic-ai/sdk@0.132.0(zod@4.6.7))(@modelcontextprotocol/sdk@1.32.2(@cfworker/json-schema@4.1.1)(zod@4.6.7))(zod@4.6.7)
+        specifier: 0.3.332
+        version: 0.3.332(@anthropic-ai/sdk@0.132.0(zod@4.6.7))(@modelcontextprotocol/sdk@1.32.2(@cfworker/json-schema@4.1.1)(zod@4.6.7))(zod@4.6.7)
       '@erden-sh/cli':
         specifier: 0.2.2
         version: 0.2.2
       '@openai/codex':
-        specifier: 0.161.0
-        version: 0.161.0
+        specifier: 0.172.0
+        version: 0.172.0
       '@react-router/dev':
         specifier: 8.5.3
         version: 8.5.3(react-router@8.5.3(@types/react-dom@19.3.0(@types/react@19.3.2))(@types/react@19.3.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(typescript@7.1.0-beta)(vite@8.3.8(@types/node@26.6.10)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
@@ -1173,17 +1173,37 @@ packages:
   '@a2ui/web_core@0.10.4':
     resolution: {integrity: sha512-sahOUSKZIGv9ZtnHjfzWR8o/F1XfSTp4sQAX5/auSenQYBYDRaY0+vrZIkddc/IEzpXJob6cFJT2r5/mLzAvqg==}
 
+  '@a2ui/web_core@0.15.0':
+    resolution: {integrity: sha512-S3k9rAJ9O55z5TlDeWy22ly3yQnDLO+XBWihlL5JQSuyxaCUmd7jgFnxO4eq/Bn6dSgdBF0WG8cve/euMoz8SA==}
+
   '@ag-ui/a2ui-middleware@0.0.10':
     resolution: {integrity: sha512-2BQFUQ9vJzUAQSR0dNW/ijhyH8KpiRWISSLTP6mIe6ENyQ2cM1/XLG38/Dcb69olcs36gtZADZzAQWcno5H6fA==}
     peerDependencies:
       '@ag-ui/client': '>=0.0.40'
       rxjs: 7.8.1
 
+  '@ag-ui/a2ui-middleware@0.0.16':
+    resolution: {integrity: sha512-Q/yUAZWGzQDip2aVxfeCu2+HmfcPJrw6XOQwGeX9znxqC/S9xzdBpH/c8eVWZvab6KyxitfgaKBzUyPOkBFj4Q==}
+    peerDependencies:
+      '@ag-ui/client': '>=1.0.0'
+      rxjs: 7.8.1
+
   '@ag-ui/a2ui-toolkit@0.0.4':
     resolution: {integrity: sha512-9VPmgpCAsFVICk7z23kh+Kp/BwYMxw0D0KGjOiKXhm1MAH+Wid2iC3yKsXso+q7UZZiyhWgeDUSgaAkltyLmGg==}
 
+  '@ag-ui/a2ui-toolkit@0.0.5':
+    resolution: {integrity: sha512-klYOXh+L+X8yM0EdrHJGrKmh7G1bKBvO/Zo4ryl6w5JlkXCrqkCeiSLtwB3UeN2Z1w61y1eMmzWn92q9c4/D8w==}
+
   '@ag-ui/client@0.0.59':
     resolution: {integrity: sha512-d7++r8sBAq6z9G/D/WKrMznQ1Mdvew14pCqOVATReFIvl06mCi1BPqTwmos3zCDGAIiSgcvxc/8m472rYQgFFQ==}
+
+  '@ag-ui/client@1.0.2':
+    resolution: {integrity: sha512-BPxcQBPxJZi7XiQI8eBpiE6KBcySjD6hV7XWQhezYbLeK9WJkcUZ6RhX5dngWw+VgfapxPdJdEDTV/JxF21Duw==}
+
+  '@ag-ui/client@1.0.5':
+    resolution: {integrity: sha512-p+j69TEs9vN8JHlBEQYVNgHuTnWYCWRGWpSxk6cuamQ3POdhp3Nf0pf6cTit1P827rOf22ypdbR+M5pbvqlD9A==}
+    peerDependencies:
+      zod: ^3.25.18 || ^4.0.0
 
   '@ag-ui/core@0.0.59':
     resolution: {integrity: sha512-hDgy4ipTqXieT8YG8Mr917Y+FD/f11VK1GefZ5CwTDCuNqS/oTwjJ5l/DZkicThgS8hQW/Y7wPylPBMBJ8BkUg==}
@@ -1196,8 +1216,32 @@ packages:
       zod:
         optional: true
 
+  '@ag-ui/core@1.0.2':
+    resolution: {integrity: sha512-lb0YfvHY4eTHcXthTWzXjsElLqycGWDhaXGTejwMkUV5TtJVZircRS12/tMpqzd32sL+WZ2PWQ4m0+ThKrGF8A==}
+    peerDependencies:
+      zod: ^3.25.18 || ^4.0.0
+    peerDependenciesMeta:
+      zod:
+        optional: true
+
+  '@ag-ui/core@1.0.5':
+    resolution: {integrity: sha512-W7xg7E/bVco3svYxZCp3CMqJ6/fB15U7yAaMS3mhLCwwlJXFzZJ/bGwMqnNrx6Afmj1WmnjFKzliYds+KFXMMQ==}
+    peerDependencies:
+      zod: ^3.25.18 || ^4.0.0
+    peerDependenciesMeta:
+      zod:
+        optional: true
+
   '@ag-ui/encoder@0.0.59':
     resolution: {integrity: sha512-wQCzBsStyZMm8nzhTdTx1G0B1C8yv5rbzZLnz1ka/l5LcJEsK3KTounU8CR9l+7QtcpOUUDJKd0xAbyI6gNcSw==}
+
+  '@ag-ui/encoder@1.0.2':
+    resolution: {integrity: sha512-SE8pQ7dpXwtqpD1WzW2Of9h4uZRDPVGZqT7kdrQ17w9+eOxAolqqRybVLBqJTqCZiUNgX0hFUNlAJSOV0z0UDg==}
+
+  '@ag-ui/encoder@1.0.5':
+    resolution: {integrity: sha512-SKg5jOF2FCVMcl1nSNlk4hZdX9jV5Jg2nce5+jxY7lLSsMkBNMXvEpxZdQ1oWef3YI8OJCyB3cADUI3eyzplhA==}
+    peerDependencies:
+      zod: ^3.25.18 || ^4.0.0
 
   '@ag-ui/langgraph@0.0.43':
     resolution: {integrity: sha512-eG8FBd7jQeo7lfraAz9fbuYM/sFJILnO7yFioCa/++cFygd5CpqpvVoUI1d/WEOzHYTwiuXYM5fPOQ8ZzQuYog==}
@@ -1219,6 +1263,14 @@ packages:
 
   '@ag-ui/proto@0.0.59':
     resolution: {integrity: sha512-X+uvDaegLEHw5kJu8tv2eSqHH8ouat+JCfFokGV1uuMquY8qCEQSlGsM7xzexwX9fujuxgHOWumg5kJDqa0+RA==}
+
+  '@ag-ui/proto@1.0.2':
+    resolution: {integrity: sha512-uIp6TkQdos03Bkjl01Z46cK/D7QAKNO26RYIIX1WfxNy4penVatU0b/TFTjVrOtwSnp5mtl8Rpzkiiu9cZHwlg==}
+
+  '@ag-ui/proto@1.0.5':
+    resolution: {integrity: sha512-HFtYEapXepL3VtCkN2YS1KO5wndjJ8+86d3Qag3EeGp1EKxljZW/hRWN3HiILUTVI5cJ3CqGXBycE1/IAKQsGA==}
+    peerDependencies:
+      zod: ^3.25.18 || ^4.0.0
 
   '@ai-sdk/anthropic@2.0.107':
     resolution: {integrity: sha512-9ueltRd0FPXaEdl18IS8vPJdtm89W1IX7QCf5yx0pc90sLkoHFJ987+/0fBucoikCmUkhEH/8DzO1I+G5cCs5Q==}
@@ -1297,49 +1349,49 @@ packages:
   '@antfu/install-pkg@2.1.0':
     resolution: {integrity: sha512-sdg9NxU3zR4Mnawfbc/x6GB5Wf17WYud5qOuEuxXjaKpYpMkISSJEjItGebXJ2bQ4DIcly4NYH23mtkGJjvKUw==}
 
-  '@anthropic-ai/claude-agent-sdk-darwin-arm64@0.3.293':
-    resolution: {integrity: sha512-E2rwiiHr3LwYzBuTROVDpJkts4QmYCrW39ZIN1qixVSNQhSEiz5LjaKxzrwq0xgPgQDU0vd2fLMG1k72BgD24w==}
+  '@anthropic-ai/claude-agent-sdk-darwin-arm64@0.3.332':
+    resolution: {integrity: sha512-EFqYJyg1zpgQM3NxfOsOLCi2ktm8uYwgSR1DP9D6Z/InlQ0KSBbWAXL/s11itvLTAj6Pn15VeFtNJS7Ehw4xpg==}
     cpu: [arm64]
     os: [darwin]
 
-  '@anthropic-ai/claude-agent-sdk-darwin-x64@0.3.293':
-    resolution: {integrity: sha512-UJD8kX1XDhMqs/0LLxD012h+S9U3Q8XPbRSNcnPQEMNAoEF+lh898xPbVnkUgPKl3jUOUyqYRwFRwDiUJD+GJg==}
+  '@anthropic-ai/claude-agent-sdk-darwin-x64@0.3.332':
+    resolution: {integrity: sha512-vHanIaflUZ5OGgkefYjLjUBfQfiduETCqFlnpvh3DjelEdpphDkBvVmYnPLgH1Lx/eAQBLbIwR8z0qry30u8Dw==}
     cpu: [x64]
     os: [darwin]
 
-  '@anthropic-ai/claude-agent-sdk-linux-arm64-musl@0.3.293':
-    resolution: {integrity: sha512-l5Nfwox69bBMEccSQfPQFOq9hbSqQIMsi4H/UXaMSsqgnxunXuKEBXb5klXZJwk4vUt/NzeqAjB/UFbKqW29HQ==}
+  '@anthropic-ai/claude-agent-sdk-linux-arm64-musl@0.3.332':
+    resolution: {integrity: sha512-dlt1/pFZ4PNTsmSa/cS3m/DD4D17c5S7LEtlD0I8Ue4jbTIdYaNZOIUOYulhy9iD4Eoa47rWfP9L8MkmCrCMUg==}
     cpu: [arm64]
     os: [linux]
 
-  '@anthropic-ai/claude-agent-sdk-linux-arm64@0.3.293':
-    resolution: {integrity: sha512-B3M5gw6pPH/ckMtrLtGg4ZY1adLVnPoXkEV+Ruu0j/gdFzwuLWR64Spa0RCsbo7BXVN6w5NTqkuZk+HBfsPUZA==}
+  '@anthropic-ai/claude-agent-sdk-linux-arm64@0.3.332':
+    resolution: {integrity: sha512-sFApHjuWc+1+1cPoEvC9OpSKv+1LxWQJisjgGK2zIVXE+tBGYSodbsVvhLfLHFKc3pWEnqm90QqUqEQ+v+5vWA==}
     cpu: [arm64]
     os: [linux]
 
-  '@anthropic-ai/claude-agent-sdk-linux-x64-musl@0.3.293':
-    resolution: {integrity: sha512-5N30l2Y17ZV9q0TGCMXtrkTleX+RVtUMoOL+48qQ7ZrKWGYYBtVDS59cIXDv+TAGqoyYVmklw0W2Sy4dA40BwQ==}
+  '@anthropic-ai/claude-agent-sdk-linux-x64-musl@0.3.332':
+    resolution: {integrity: sha512-weDfrdbgQVDuIKjk4kMoQA2x+/FPCpWno/5a9tDKeYg+jbqjIhlpvfvniteEjViL7GVf/U3SfTrjHljylsvSSg==}
     cpu: [x64]
     os: [linux]
 
-  '@anthropic-ai/claude-agent-sdk-linux-x64@0.3.293':
-    resolution: {integrity: sha512-MtqXROSQiuqOCNXfC4k3/3DVfgTNLEdaT5jp/omaZeiPtnRtfCz2KTtBTVG4IwbEDFaKsqfzPsPFzN7X6avwkg==}
+  '@anthropic-ai/claude-agent-sdk-linux-x64@0.3.332':
+    resolution: {integrity: sha512-jcy9+qHfZp8chlyAzugVCDSVoMv3lNIrDxuWo8ukM2SkZWJn0pr4K8sXhJIKbUIvbGrZhZeY5E68zPHNfpv6Sw==}
     cpu: [x64]
     os: [linux]
 
-  '@anthropic-ai/claude-agent-sdk-win32-arm64@0.3.293':
-    resolution: {integrity: sha512-WvPf8cXna446bTx2U4WVQc5+iUgDn94ve8aauvWwcG8n9oa+1wNCKNGFxk8HvS7DQJhF8dfrCbcF068uNFqYNw==}
+  '@anthropic-ai/claude-agent-sdk-win32-arm64@0.3.332':
+    resolution: {integrity: sha512-FWzNarl2AiOzNlF6FQZRFMN1t75elEdDsgVfrB+yIlMZeoMZG9OhFv38oWfgcVbZe4Hv+sR0VEQ5aYRtFDh0AQ==}
     cpu: [arm64]
     os: [win32]
 
-  '@anthropic-ai/claude-agent-sdk-win32-x64@0.3.293':
-    resolution: {integrity: sha512-SVaIDHtpCwM0r0m9jzue1U7yktIZ1eJhR1O3e0UCHYTJluaIXty5m6DzqhG4rjnEoNlEAl9rQLqPigS/R5+IiQ==}
+  '@anthropic-ai/claude-agent-sdk-win32-x64@0.3.332':
+    resolution: {integrity: sha512-UgAe9yBXZJU3km8SY2/jRetE16HpPtWhEcfmQscS4PQFwqGvKHbpUjIZ6J917gAKA8jpJ2PRtDNpDHvCcgrOqg==}
     cpu: [x64]
     os: [win32]
 
-  '@anthropic-ai/claude-agent-sdk@0.3.293':
-    resolution: {integrity: sha512-DVfn46SmpfB7xaKuUHsAC+qwY27hOLHNbvF7FoNOAXLZPRTeCr68SjhBjlFOtk+jz5Nf7pfUwnIUDFcdVih6Dg==}
-    engines: {node: '>=18.0.0'}
+  '@anthropic-ai/claude-agent-sdk@0.3.332':
+    resolution: {integrity: sha512-N0ejnrTLMNJYXkvhdmLEy8QSfjym2ljJCkUBCrLKesYNGgqooi8zHDHawNsi+An6zav/ImPnpi27sbRsRjfcOw==}
+    engines: {node: '>=18.14.0'}
     peerDependencies:
       '@anthropic-ai/sdk': '>=0.93.0'
       '@modelcontextprotocol/sdk': ^1.32.2
@@ -2007,6 +2059,9 @@ packages:
       vitest:
         optional: true
 
+  '@copilotkit/channels-core@0.11.1':
+    resolution: {integrity: sha512-teQapSM7iNFuHxb5XX11rWtw6Rma62vBeQWCCzd4iKc8/siX71VpjX9N+jEsqWsZlMAc+9Pvn0y71BJ8xFJSfg==}
+
   '@copilotkit/channels-intelligence@0.11.0':
     resolution: {integrity: sha512-SAQ5WT6UbHxxUNY7vpgwmvBDoku0uTkn9N6Yyu3pAGemJP3tBIJBIYwzUW9AuRx5CSzBqH9FCf0IoflXTK3TTQ==}
 
@@ -2027,14 +2082,25 @@ packages:
       express:
         optional: true
 
-  '@copilotkit/channels-telegram@0.11.0':
-    resolution: {integrity: sha512-RZWwmMVFzxVejsMK0XB3EVqRfqs4d241Gq+Qik+06FxUuy5b7iD/N7jgmrsuCYl292/y+rstygKzdKmFaoJDXA==}
+  '@copilotkit/channels-telegram@0.11.1':
+    resolution: {integrity: sha512-0mLNaDLFJ2zfDla7Esc6oMmeLwE0u8lIl+SlKtxf04pzCVgtKy1lZ1M3Uc/pKMPEc8iVjar8uv+URiLFpBzMLw==}
 
   '@copilotkit/channels-ui@0.11.0':
     resolution: {integrity: sha512-lhPkazCh0mLHeYi5o1y9RdPY4VOuXr4Q9V0htAvy374t72SdI+5S38yf8Ot8EQw1uNx2q8q1Ta8q+P5I9WJ4IA==}
 
+  '@copilotkit/channels-ui@0.11.1':
+    resolution: {integrity: sha512-SP44xl8D9YHYLzYPU/JkO6WXuuW6qHuLBDdqQsFXLh2U+SRkkO2TPw51UXRVwj1t8iPEpcPUxiH98P8FBChbeA==}
+
   '@copilotkit/core@1.75.0':
     resolution: {integrity: sha512-cHH37QkX8FhMA7PK40234lbc218PI1ULqzgCkgWDhLIRN9l/jZcfmH2UdmIzbs7vbg5W4vaw2V5jzvV8DAi3AA==}
+    engines: {node: '>=20'}
+
+  '@copilotkit/core@1.90.2':
+    resolution: {integrity: sha512-45XTP+Ts3GYtOqLjxGakoPD5eKNxktG7eS0slO0LiIjyug2Qc79SoaJaNq/h0tJ3o2hpb4UybhuERFtNiWiTkQ==}
+    engines: {node: '>=20'}
+
+  '@copilotkit/learning@1.90.2':
+    resolution: {integrity: sha512-iHZ/kv+vexly1ccG6VjMJ+HITCSIsjl1f6yRok8Zi3fF1oxlxRTYoOPSYGm6NSZ90L7Orr5pDNo/7npgIa2utw==}
     engines: {node: '>=20'}
 
   '@copilotkit/license-verifier@0.5.0':
@@ -2097,6 +2163,11 @@ packages:
 
   '@copilotkit/shared@1.75.0':
     resolution: {integrity: sha512-9Va/X3hreSi4BNtKqSqh5uhmwHXefrv2SJ/LjIxcivRBDbmL2gVQY+TpatPxOogNJabspHqy7KoLph4TosS2cg==}
+    peerDependencies:
+      '@ag-ui/core': '>=0.0.48'
+
+  '@copilotkit/shared@1.90.2':
+    resolution: {integrity: sha512-dkfm1LDfXOwQa44j6xfee02sarRC787U1vT1FP8h7US+Q+ZcCnIM7xzbIzN16sKmHcxOH6xFwbtDjKlbg6lmrw==}
     peerDependencies:
       '@ag-ui/core': '>=0.0.48'
 
@@ -3013,6 +3084,9 @@ packages:
   '@lit-labs/ssr-dom-shim@1.6.0':
     resolution: {integrity: sha512-VHb0ALPMTlgKjM6yIxxoQNnpKyUKLD04VzeQdsiXkMqkvYlAHxq9glGLmgbb889/1GsohSOAjvQYoiBppXFqrQ==}
 
+  '@lit/context@1.1.6':
+    resolution: {integrity: sha512-M26qDE6UkQbZA2mQ3RjJ3Gzd8TxP+/0obMgE5HfkfLhEEyYE3Bui4A5XHiGPjy0MUGAyxB3QgVuw2ciS0kHn6A==}
+
   '@lit/reactive-element@2.1.2':
     resolution: {integrity: sha512-pbCDiVMnne1lYUIaYNN5wrwQXDtHaYtg7YEFPeW+hws6U47WeFvISGUWekPGKWOP1ygrs0ef0o1VJMk1exos5A==}
 
@@ -3114,43 +3188,43 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@openai/codex@0.161.0':
-    resolution: {integrity: sha512-+ZnJFGBbQBwYnjUTs+PoacgYVxmNyxMLiadIz6eSJ0AzQW0mRVxuuOQizSbz2qeNAJia9Syxag6j2uGf7guD2Q==}
+  '@openai/codex@0.172.0':
+    resolution: {integrity: sha512-yHf/6wbw4Zvha2M2ylDhDrU9FgfKLYgV6xSzSjlz3gxQNsiVLkXo+fPGwBqvP0A5geLtZs9wAbq+1v7+ZVWJ0g==}
     engines: {node: '>=16'}
     hasBin: true
 
-  '@openai/codex@0.161.0-darwin-arm64':
-    resolution: {integrity: sha512-arxKLYB3uKjewwOpGFo5/MGe8+4JzNB17KIYBmGfF4k3QU+QC4ieXVUwqHmQX2nXrB1BzNMN0gtAgm1AGBTg8w==}
+  '@openai/codex@0.172.0-darwin-arm64':
+    resolution: {integrity: sha512-B239wE7pGeOmjylfqLymDIwuL4QgQR7pQZc5phHpZ3t8UVkno9AS3dNPEprm7AzZHw3kf2I6Uf+uOFfjGegELQ==}
     engines: {node: '>=16'}
     cpu: [arm64]
     os: [darwin]
 
-  '@openai/codex@0.161.0-darwin-x64':
-    resolution: {integrity: sha512-svVXwOisMkf/e9BD8Qyp0BQYOTsRnrYErfLq+o7aNMts8Evg06rRsHUfxH6HAiJ99dUgC/4CLr3Rpwh3833TfQ==}
+  '@openai/codex@0.172.0-darwin-x64':
+    resolution: {integrity: sha512-hrL9NQwH9E0WqK8Yofqe6fipE1XDSXx/C2fwSOagXdTRcjYXOrfQ9fSCKaKZXr/xm43ATdsRSjGGAn8IJhGmhA==}
     engines: {node: '>=16'}
     cpu: [x64]
     os: [darwin]
 
-  '@openai/codex@0.161.0-linux-arm64':
-    resolution: {integrity: sha512-SBu0n4C1Pby9rGKUNA02yHEg/ScbECgiTIiKiKhbYWiUWqGPV1hY0Br7joEntbz0dyNzSWqNPD8uOqxcOry/Fg==}
+  '@openai/codex@0.172.0-linux-arm64':
+    resolution: {integrity: sha512-qLH5VdeTkPlknWgKkU11IlGMyyxKXp9vcj65libT3Zp4P3Kt7gEbK4YDXlDBqWtA09+fGnIUpWERs6BaNo86DA==}
     engines: {node: '>=16'}
     cpu: [arm64]
     os: [linux]
 
-  '@openai/codex@0.161.0-linux-x64':
-    resolution: {integrity: sha512-AVkNzeJWyCHHPyg5vxD8UE6aFsYaOwq0/x6mtmkOKy6LdjvsyxLr7Q7UULlk+Ma3+PnrN8uIxG2/XGPQ936hgA==}
+  '@openai/codex@0.172.0-linux-x64':
+    resolution: {integrity: sha512-YJq6Wz3PFXV5LZ0OQc3/o+gpM3pLmQ/8n8uM2zF/m0O/8zED+uSPT8Ln1KGRrqR8Q6eon9YdWlhueAunVTZ+eg==}
     engines: {node: '>=16'}
     cpu: [x64]
     os: [linux]
 
-  '@openai/codex@0.161.0-win32-arm64':
-    resolution: {integrity: sha512-tgo++ui5X5pXkaz113Q4/PNVviWXlvUdHH4zY+SoGwHm4720JsRPjuUJcUNZ9WtryEiw3Xpj5nKp8pgCXJUjYA==}
+  '@openai/codex@0.172.0-win32-arm64':
+    resolution: {integrity: sha512-lO+hS8rLV3xS5ZZZCBVfPTAqpI1VENId12qhzZ1jNPUBSzKQBOGKs+GHNplak1RHXXXpgK9UHkPQ3A2IvQ8lJg==}
     engines: {node: '>=16'}
     cpu: [arm64]
     os: [win32]
 
-  '@openai/codex@0.161.0-win32-x64':
-    resolution: {integrity: sha512-VdNnttGOG3nbwoREvVurVBXci/EJD/kncVJnvtXjpEE+YhC1twvvrVNmtlZcZGEEVi06xLN/ov0d6nxjZ1XLSg==}
+  '@openai/codex@0.172.0-win32-x64':
+    resolution: {integrity: sha512-48pULjlTwpBZ/TfbOnpnmloHaTQAYELbaiKHEX7qmrtLFIcnPigaNN3omyetPdAuvrRXrmNFRlKfvQme19ZmRA==}
     engines: {node: '>=16'}
     cpu: [x64]
     os: [win32]
@@ -7932,6 +8006,10 @@ packages:
     engines: {node: '>=6'}
     hasBin: true
 
+  jsonrepair@3.15.0:
+    resolution: {integrity: sha512-wy8OTjwsJwQRnQJkKnMJJ9vcytRdBPAgIF/Hy6+s1dAj42BHMKiyL8JzEieIl3JY7idt8eyHwBWTO8mh/+mtwA==}
+    hasBin: true
+
   jsonwebtoken@9.0.3:
     resolution: {integrity: sha512-MT/xP0CrubFRNLNKvxJ2BYfy53Zkm++5bX9dtuPbqAeQpTVe0MQTFhao8+Cp//EmJp244xt6Drw/GVEGCUj40g==}
     engines: {node: '>=12', npm: '>=6'}
@@ -9533,6 +9611,11 @@ packages:
     resolution: {integrity: sha512-mV96ZKxQ4CGn3SyEGaY0Lb9YA443mdVey3c+mdr0NAUaBxiOZGoYCWX8PoM55kictSOmxlJRtZJxIsmZm3jL+w==}
     engines: {node: '>= 20.0.0'}
 
+  redos-detector@6.1.4:
+    resolution: {integrity: sha512-lPlka1rEH6kK42gtgokvvxMmpAvyc28DcRjQbGxeP5RJsJWgAduBOdGedVCDPdSyCr4ay/JDxq3nGYsJZyt8tA==}
+    engines: {node: '>=16.0.0'}
+    hasBin: true
+
   reflect-metadata@0.2.2:
     resolution: {integrity: sha512-urBwgfrvVP/eAyXx4hluJivBKzuEbSQs9rKWCrCkbSxNv8mxPcUZKeuoF3Uy4mJl3Lwprp6yy5/39VWigZ4K6Q==}
 
@@ -9561,6 +9644,10 @@ packages:
 
   regjsgen@0.8.0:
     resolution: {integrity: sha512-RvwtGe3d7LvWiDQXeQw8p5asZUmfU1G/l6WbUXeHta7Y2PEIvBTwH6E2EfmYUK8pxcxEdEmaomqyp0vZZ7C+3Q==}
+
+  regjsparser@0.13.0:
+    resolution: {integrity: sha512-NZQZdC5wOE/H3UT28fVGL+ikOZcEzfMGk/c3iN9UGxzWHMa1op7274oyiUVrAG4B2EuFhus8SvkaYnhvW92p9Q==}
+    hasBin: true
 
   regjsparser@0.14.1:
     resolution: {integrity: sha512-IeYboCLG1KBNRksrZQIZ1SV5KVWZiR0ikFokOcA0n63vLvlaFvCsfxN+fd4aXwL0KW3YD+ByRzIgo9ZAHdbldw==}
@@ -10306,6 +10393,9 @@ packages:
       typescript:
         optional: true
 
+  validate-color@2.2.4:
+    resolution: {integrity: sha512-Znolz+b6CwW6eBXYld7MFM3O7funcdyRfjKC/X9hqYV/0VcC5LB/L45mff7m3dIn9wdGdNOAQ/fybNuD5P/HDw==}
+
   validate-npm-package-name@5.0.1:
     resolution: {integrity: sha512-OljLrQ9SQdOUqTaQxqL5dEfZWrXExyyWsozYlAWFawPVNuD83igl7uJD2RTkNMbniIYgt8l81eCJGIdQF7avLQ==}
     engines: {node: ^14.17.0 || ^16.13.0 || >=18.0.0}
@@ -10731,6 +10821,16 @@ snapshots:
       zod: 3.25.76
       zod-to-json-schema: 3.25.2(zod@3.25.76)
 
+  '@a2ui/web_core@0.15.0':
+    dependencies:
+      '@lit/context': 1.1.6
+      '@preact/signals-core': 1.14.4
+      lit: 3.3.3
+      redos-detector: 6.1.4
+      validate-color: 2.2.4
+      zod: 3.25.76
+      zod-to-json-schema: 3.25.2(zod@3.25.76)
+
   '@ag-ui/a2ui-middleware@0.0.10(@ag-ui/client@0.0.59)(rxjs@7.8.1)':
     dependencies:
       '@ag-ui/a2ui-toolkit': 0.0.4
@@ -10738,13 +10838,48 @@ snapshots:
       clarinet: 0.12.6
       rxjs: 7.8.1
 
+  '@ag-ui/a2ui-middleware@0.0.16(@ag-ui/client@1.0.5(zod@3.25.76))(rxjs@7.8.1)':
+    dependencies:
+      '@ag-ui/a2ui-toolkit': 0.0.5
+      '@ag-ui/client': 1.0.5(zod@3.25.76)
+      clarinet: 0.12.6
+      rxjs: 7.8.1
+
   '@ag-ui/a2ui-toolkit@0.0.4': {}
+
+  '@ag-ui/a2ui-toolkit@0.0.5': {}
 
   '@ag-ui/client@0.0.59':
     dependencies:
       '@ag-ui/core': 0.0.59
       '@ag-ui/encoder': 0.0.59
       '@ag-ui/proto': 0.0.59
+      '@types/uuid': 10.0.0
+      compare-versions: 6.1.1
+      fast-json-patch: 3.1.1
+      rxjs: 7.8.1
+      untruncate-json: 0.0.1
+      uuid: 11.1.1
+      zod: 3.25.76
+
+  '@ag-ui/client@1.0.2':
+    dependencies:
+      '@ag-ui/core': 1.0.2(zod@3.25.76)
+      '@ag-ui/encoder': 1.0.2(zod@3.25.76)
+      '@ag-ui/proto': 1.0.2
+      '@types/uuid': 10.0.0
+      compare-versions: 6.1.1
+      fast-json-patch: 3.1.1
+      rxjs: 7.8.1
+      untruncate-json: 0.0.1
+      uuid: 11.1.1
+      zod: 3.25.76
+
+  '@ag-ui/client@1.0.5(zod@3.25.76)':
+    dependencies:
+      '@ag-ui/core': 1.0.5(zod@3.25.76)
+      '@ag-ui/encoder': 1.0.5(zod@3.25.76)
+      '@ag-ui/proto': 1.0.5(zod@3.25.76)
       '@types/uuid': 10.0.0
       compare-versions: 6.1.1
       fast-json-patch: 3.1.1
@@ -10761,10 +10896,35 @@ snapshots:
     optionalDependencies:
       zod: 4.6.7
 
+  '@ag-ui/core@1.0.2(zod@3.25.76)':
+    optionalDependencies:
+      zod: 3.25.76
+
+  '@ag-ui/core@1.0.2(zod@4.6.7)':
+    optionalDependencies:
+      zod: 4.6.7
+
+  '@ag-ui/core@1.0.5(zod@3.25.76)':
+    optionalDependencies:
+      zod: 3.25.76
+
   '@ag-ui/encoder@0.0.59':
     dependencies:
       '@ag-ui/core': 0.0.59
       '@ag-ui/proto': 0.0.59
+
+  '@ag-ui/encoder@1.0.2(zod@3.25.76)':
+    dependencies:
+      '@ag-ui/core': 1.0.2(zod@3.25.76)
+      '@ag-ui/proto': 1.0.2
+    transitivePeerDependencies:
+      - zod
+
+  '@ag-ui/encoder@1.0.5(zod@3.25.76)':
+    dependencies:
+      '@ag-ui/core': 1.0.5(zod@3.25.76)
+      '@ag-ui/proto': 1.0.5(zod@3.25.76)
+      zod: 3.25.76
 
   '@ag-ui/langgraph@0.0.43(@ag-ui/client@0.0.59)(@ag-ui/core@0.0.59)(@opentelemetry/api@1.9.1)(openai@6.49.0(ws@8.22.0)(zod@4.6.7))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(ws@8.22.0)':
     dependencies:
@@ -10810,6 +10970,20 @@ snapshots:
       '@ag-ui/core': 0.0.59
       '@bufbuild/protobuf': 2.16.0
       '@protobuf-ts/protoc': 2.11.1
+
+  '@ag-ui/proto@1.0.2':
+    dependencies:
+      '@ag-ui/core': 1.0.2(zod@3.25.76)
+      '@bufbuild/protobuf': 2.16.0
+      '@protobuf-ts/protoc': 2.11.1
+      zod: 3.25.76
+
+  '@ag-ui/proto@1.0.5(zod@3.25.76)':
+    dependencies:
+      '@ag-ui/core': 1.0.5(zod@3.25.76)
+      '@bufbuild/protobuf': 2.16.0
+      '@protobuf-ts/protoc': 2.11.1
+      zod: 3.25.76
 
   '@ai-sdk/anthropic@2.0.107(zod@3.25.76)':
     dependencies:
@@ -10903,44 +11077,44 @@ snapshots:
       package-manager-detector: 1.8.0
       tinyexec: 1.4.0
 
-  '@anthropic-ai/claude-agent-sdk-darwin-arm64@0.3.293':
+  '@anthropic-ai/claude-agent-sdk-darwin-arm64@0.3.332':
     optional: true
 
-  '@anthropic-ai/claude-agent-sdk-darwin-x64@0.3.293':
+  '@anthropic-ai/claude-agent-sdk-darwin-x64@0.3.332':
     optional: true
 
-  '@anthropic-ai/claude-agent-sdk-linux-arm64-musl@0.3.293':
+  '@anthropic-ai/claude-agent-sdk-linux-arm64-musl@0.3.332':
     optional: true
 
-  '@anthropic-ai/claude-agent-sdk-linux-arm64@0.3.293':
+  '@anthropic-ai/claude-agent-sdk-linux-arm64@0.3.332':
     optional: true
 
-  '@anthropic-ai/claude-agent-sdk-linux-x64-musl@0.3.293':
+  '@anthropic-ai/claude-agent-sdk-linux-x64-musl@0.3.332':
     optional: true
 
-  '@anthropic-ai/claude-agent-sdk-linux-x64@0.3.293':
+  '@anthropic-ai/claude-agent-sdk-linux-x64@0.3.332':
     optional: true
 
-  '@anthropic-ai/claude-agent-sdk-win32-arm64@0.3.293':
+  '@anthropic-ai/claude-agent-sdk-win32-arm64@0.3.332':
     optional: true
 
-  '@anthropic-ai/claude-agent-sdk-win32-x64@0.3.293':
+  '@anthropic-ai/claude-agent-sdk-win32-x64@0.3.332':
     optional: true
 
-  '@anthropic-ai/claude-agent-sdk@0.3.293(@anthropic-ai/sdk@0.132.0(zod@4.6.7))(@modelcontextprotocol/sdk@1.32.2(@cfworker/json-schema@4.1.1)(zod@4.6.7))(zod@4.6.7)':
+  '@anthropic-ai/claude-agent-sdk@0.3.332(@anthropic-ai/sdk@0.132.0(zod@4.6.7))(@modelcontextprotocol/sdk@1.32.2(@cfworker/json-schema@4.1.1)(zod@4.6.7))(zod@4.6.7)':
     dependencies:
       '@anthropic-ai/sdk': 0.132.0(zod@4.6.7)
       '@modelcontextprotocol/sdk': 1.32.2(@cfworker/json-schema@4.1.1)(zod@4.6.7)
       zod: 4.6.7
     optionalDependencies:
-      '@anthropic-ai/claude-agent-sdk-darwin-arm64': 0.3.293
-      '@anthropic-ai/claude-agent-sdk-darwin-x64': 0.3.293
-      '@anthropic-ai/claude-agent-sdk-linux-arm64': 0.3.293
-      '@anthropic-ai/claude-agent-sdk-linux-arm64-musl': 0.3.293
-      '@anthropic-ai/claude-agent-sdk-linux-x64': 0.3.293
-      '@anthropic-ai/claude-agent-sdk-linux-x64-musl': 0.3.293
-      '@anthropic-ai/claude-agent-sdk-win32-arm64': 0.3.293
-      '@anthropic-ai/claude-agent-sdk-win32-x64': 0.3.293
+      '@anthropic-ai/claude-agent-sdk-darwin-arm64': 0.3.332
+      '@anthropic-ai/claude-agent-sdk-darwin-x64': 0.3.332
+      '@anthropic-ai/claude-agent-sdk-linux-arm64': 0.3.332
+      '@anthropic-ai/claude-agent-sdk-linux-arm64-musl': 0.3.332
+      '@anthropic-ai/claude-agent-sdk-linux-x64': 0.3.332
+      '@anthropic-ai/claude-agent-sdk-linux-x64-musl': 0.3.332
+      '@anthropic-ai/claude-agent-sdk-win32-arm64': 0.3.332
+      '@anthropic-ai/claude-agent-sdk-win32-x64': 0.3.332
 
   '@anthropic-ai/sdk@0.132.0(zod@4.6.7)':
     dependencies:
@@ -11704,25 +11878,34 @@ snapshots:
     transitivePeerDependencies:
       - zod
 
-  '@copilotkit/channels-core@0.11.0(vitest@4.1.12(@opentelemetry/api@1.9.1)(@types/node@26.6.10)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@26.6.10)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)))(zod@4.6.7)':
+  '@copilotkit/channels-core@0.11.1(zod@3.25.76)':
     dependencies:
-      '@ag-ui/client': 0.0.59
-      '@ag-ui/core': 0.0.59
-      '@copilotkit/channels-ui': 0.11.0(@ag-ui/core@0.0.59)
-      '@copilotkit/core': 1.75.0(@ag-ui/core@0.0.59)(zod@4.6.7)
-      '@copilotkit/shared': 1.75.0(@ag-ui/core@0.0.59)
-      zod-to-json-schema: 3.25.2(zod@4.6.7)
-    optionalDependencies:
-      vitest: 4.1.12(@opentelemetry/api@1.9.1)(@types/node@26.6.10)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@26.6.10)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
+      '@ag-ui/client': 1.0.2
+      '@ag-ui/core': 1.0.2(zod@3.25.76)
+      '@copilotkit/channels-ui': 0.11.1(@ag-ui/core@1.0.2(zod@3.25.76))
+      '@copilotkit/core': 1.90.2(@ag-ui/core@1.0.2(zod@3.25.76))
+      '@copilotkit/shared': 1.90.2(@ag-ui/core@1.0.2(zod@3.25.76))
+      zod-to-json-schema: 3.25.2(zod@3.25.76)
     transitivePeerDependencies:
       - zod
 
-  '@copilotkit/channels-intelligence@0.11.0(@ag-ui/core@0.0.59)(@types/express@5.0.6)(express@5.3.0)(vitest@4.1.12(@opentelemetry/api@1.9.1)(@types/node@26.6.10)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@26.6.10)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)))(zod@3.25.76)':
+  '@copilotkit/channels-core@0.11.1(zod@4.6.7)':
+    dependencies:
+      '@ag-ui/client': 1.0.2
+      '@ag-ui/core': 1.0.2(zod@4.6.7)
+      '@copilotkit/channels-ui': 0.11.1(@ag-ui/core@1.0.2(zod@4.6.7))
+      '@copilotkit/core': 1.90.2(@ag-ui/core@1.0.2(zod@4.6.7))
+      '@copilotkit/shared': 1.90.2(@ag-ui/core@1.0.2(zod@4.6.7))
+      zod-to-json-schema: 3.25.2(zod@4.6.7)
+    transitivePeerDependencies:
+      - zod
+
+  '@copilotkit/channels-intelligence@0.11.0(@ag-ui/core@0.0.59)(@types/express@5.0.6)(express@5.3.0)(zod@3.25.76)':
     dependencies:
       '@ag-ui/client': 0.0.59
-      '@copilotkit/channels-core': 0.11.0(vitest@4.1.12(@opentelemetry/api@1.9.1)(@types/node@26.6.10)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@26.6.10)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)))(zod@3.25.76)
-      '@copilotkit/channels-slack': 0.11.0(@types/express@5.0.6)(vitest@4.1.12(@opentelemetry/api@1.9.1)(@types/node@26.6.10)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@26.6.10)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)))(zod@3.25.76)
-      '@copilotkit/channels-teams': 0.11.0(express@5.3.0)(vitest@4.1.12(@opentelemetry/api@1.9.1)(@types/node@26.6.10)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@26.6.10)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)))(zod@3.25.76)
+      '@copilotkit/channels-core': 0.11.1(zod@3.25.76)
+      '@copilotkit/channels-slack': 0.11.0(@types/express@5.0.6)(zod@3.25.76)
+      '@copilotkit/channels-teams': 0.11.0(express@5.3.0)(zod@3.25.76)
       '@copilotkit/channels-ui': 0.11.0(@ag-ui/core@0.0.59)
       phoenix: 1.8.15
     transitivePeerDependencies:
@@ -11735,14 +11918,13 @@ snapshots:
       - express
       - supports-color
       - utf-8-validate
-      - vitest
       - zod
 
-  '@copilotkit/channels-slack@0.11.0(@types/express@5.0.6)(vitest@4.1.12(@opentelemetry/api@1.9.1)(@types/node@26.6.10)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@26.6.10)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)))(zod@3.25.76)':
+  '@copilotkit/channels-slack@0.11.0(@types/express@5.0.6)(zod@3.25.76)':
     dependencies:
       '@ag-ui/client': 0.0.59
       '@ag-ui/core': 0.0.59
-      '@copilotkit/channels-core': 0.11.0(vitest@4.1.12(@opentelemetry/api@1.9.1)(@types/node@26.6.10)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@26.6.10)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)))(zod@3.25.76)
+      '@copilotkit/channels-core': 0.11.1(zod@3.25.76)
       '@copilotkit/channels-ui': 0.11.0(@ag-ui/core@0.0.59)
       '@copilotkit/core': 1.75.0(@ag-ui/core@0.0.59)(zod@3.25.76)
       '@copilotkit/shared': 1.75.0(@ag-ui/core@0.0.59)
@@ -11756,14 +11938,13 @@ snapshots:
       - debug
       - supports-color
       - utf-8-validate
-      - vitest
       - zod
 
-  '@copilotkit/channels-teams@0.11.0(express@5.3.0)(vitest@4.1.12(@opentelemetry/api@1.9.1)(@types/node@26.6.10)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@26.6.10)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)))(zod@3.25.76)':
+  '@copilotkit/channels-teams@0.11.0(express@5.3.0)(zod@3.25.76)':
     dependencies:
       '@ag-ui/client': 0.0.59
       '@ag-ui/core': 0.0.59
-      '@copilotkit/channels-core': 0.11.0(vitest@4.1.12(@opentelemetry/api@1.9.1)(@types/node@26.6.10)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@26.6.10)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)))(zod@3.25.76)
+      '@copilotkit/channels-core': 0.11.1(zod@3.25.76)
       '@copilotkit/channels-ui': 0.11.0(@ag-ui/core@0.0.59)
       '@copilotkit/core': 1.75.0(@ag-ui/core@0.0.59)(zod@3.25.76)
       '@copilotkit/shared': 1.75.0(@ag-ui/core@0.0.59)
@@ -11771,25 +11952,41 @@ snapshots:
     optionalDependencies:
       express: 5.3.0
     transitivePeerDependencies:
-      - vitest
       - zod
 
-  '@copilotkit/channels-telegram@0.11.0(@ag-ui/core@0.0.59)(vitest@4.1.12(@opentelemetry/api@1.9.1)(@types/node@26.6.10)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@26.6.10)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)))(zod@4.6.7)':
+  '@copilotkit/channels-telegram@0.11.1(@ag-ui/core@0.0.59)(zod@4.6.7)':
     dependencies:
-      '@ag-ui/client': 0.0.59
-      '@copilotkit/channels-core': 0.11.0(vitest@4.1.12(@opentelemetry/api@1.9.1)(@types/node@26.6.10)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@26.6.10)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)))(zod@4.6.7)
-      '@copilotkit/channels-ui': 0.11.0(@ag-ui/core@0.0.59)
+      '@ag-ui/client': 1.0.2
+      '@copilotkit/channels-core': 0.11.1(zod@4.6.7)
+      '@copilotkit/channels-ui': 0.11.1(@ag-ui/core@0.0.59)
       grammy: 1.48.0
     transitivePeerDependencies:
       - '@ag-ui/core'
       - encoding
       - supports-color
-      - vitest
       - zod
 
   '@copilotkit/channels-ui@0.11.0(@ag-ui/core@0.0.59)':
     dependencies:
       '@copilotkit/shared': 1.75.0(@ag-ui/core@0.0.59)
+    transitivePeerDependencies:
+      - '@ag-ui/core'
+
+  '@copilotkit/channels-ui@0.11.1(@ag-ui/core@0.0.59)':
+    dependencies:
+      '@copilotkit/shared': 1.90.2(@ag-ui/core@0.0.59)
+    transitivePeerDependencies:
+      - '@ag-ui/core'
+
+  '@copilotkit/channels-ui@0.11.1(@ag-ui/core@1.0.2(zod@3.25.76))':
+    dependencies:
+      '@copilotkit/shared': 1.90.2(@ag-ui/core@1.0.2(zod@3.25.76))
+    transitivePeerDependencies:
+      - '@ag-ui/core'
+
+  '@copilotkit/channels-ui@0.11.1(@ag-ui/core@1.0.2(zod@4.6.7))':
+    dependencies:
+      '@copilotkit/shared': 1.90.2(@ag-ui/core@1.0.2(zod@4.6.7))
     transitivePeerDependencies:
       - '@ag-ui/core'
 
@@ -11816,6 +12013,38 @@ snapshots:
     transitivePeerDependencies:
       - '@ag-ui/core'
       - zod
+
+  '@copilotkit/core@1.90.2(@ag-ui/core@1.0.2(zod@3.25.76))':
+    dependencies:
+      '@a2ui/web_core': 0.15.0
+      '@ag-ui/client': 1.0.5(zod@3.25.76)
+      '@copilotkit/learning': 1.90.2
+      '@copilotkit/shared': 1.90.2(@ag-ui/core@1.0.2(zod@3.25.76))
+      '@tanstack/pacer': 0.20.1
+      jsonrepair: 3.15.0
+      phoenix: 1.8.15
+      rxjs: 7.8.1
+      zod: 3.25.76
+      zod-to-json-schema: 3.25.2(zod@3.25.76)
+    transitivePeerDependencies:
+      - '@ag-ui/core'
+
+  '@copilotkit/core@1.90.2(@ag-ui/core@1.0.2(zod@4.6.7))':
+    dependencies:
+      '@a2ui/web_core': 0.15.0
+      '@ag-ui/client': 1.0.5(zod@3.25.76)
+      '@copilotkit/learning': 1.90.2
+      '@copilotkit/shared': 1.90.2(@ag-ui/core@1.0.2(zod@4.6.7))
+      '@tanstack/pacer': 0.20.1
+      jsonrepair: 3.15.0
+      phoenix: 1.8.15
+      rxjs: 7.8.1
+      zod: 3.25.76
+      zod-to-json-schema: 3.25.2(zod@3.25.76)
+    transitivePeerDependencies:
+      - '@ag-ui/core'
+
+  '@copilotkit/learning@1.90.2': {}
 
   '@copilotkit/license-verifier@0.5.0': {}
 
@@ -11903,7 +12132,7 @@ snapshots:
       '@ai-sdk/openai': 3.0.120(zod@3.25.76)
       '@cfworker/json-schema': 4.1.1
       '@copilotkit/channels-core': 0.11.0(vitest@4.1.12(@opentelemetry/api@1.9.1)(@types/node@26.6.10)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@26.6.10)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)))(zod@3.25.76)
-      '@copilotkit/channels-intelligence': 0.11.0(@ag-ui/core@0.0.59)(@types/express@5.0.6)(express@5.3.0)(vitest@4.1.12(@opentelemetry/api@1.9.1)(@types/node@26.6.10)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@26.6.10)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)))(zod@3.25.76)
+      '@copilotkit/channels-intelligence': 0.11.0(@ag-ui/core@0.0.59)(@types/express@5.0.6)(express@5.3.0)(zod@3.25.76)
       '@copilotkit/license-verifier': 0.5.0
       '@copilotkit/shared': 1.75.0(@ag-ui/core@0.0.59)
       '@graphql-yoga/plugin-defer-stream': 3.24.6(graphql-yoga@5.24.6(graphql@16.14.2))(graphql@16.14.2)
@@ -11963,6 +12192,54 @@ snapshots:
       '@segment/analytics-node': link:vendor/noop-segment
       '@standard-schema/spec': 1.1.0
       chalk: 4.1.2
+      clarinet: 0.12.6
+      graphql: 16.14.2
+      partial-json: 0.1.7
+      rxjs: 7.8.1
+      uuid: 11.1.1
+      zod: 3.25.76
+      zod-to-json-schema: 3.25.2(zod@3.25.76)
+
+  '@copilotkit/shared@1.90.2(@ag-ui/core@0.0.59)':
+    dependencies:
+      '@ag-ui/a2ui-middleware': 0.0.16(@ag-ui/client@1.0.5(zod@3.25.76))(rxjs@7.8.1)
+      '@ag-ui/client': 1.0.5(zod@3.25.76)
+      '@ag-ui/core': 0.0.59
+      '@copilotkit/license-verifier': 0.5.0
+      '@segment/analytics-node': link:vendor/noop-segment
+      '@standard-schema/spec': 1.1.0
+      clarinet: 0.12.6
+      graphql: 16.14.2
+      partial-json: 0.1.7
+      rxjs: 7.8.1
+      uuid: 11.1.1
+      zod: 3.25.76
+      zod-to-json-schema: 3.25.2(zod@3.25.76)
+
+  '@copilotkit/shared@1.90.2(@ag-ui/core@1.0.2(zod@3.25.76))':
+    dependencies:
+      '@ag-ui/a2ui-middleware': 0.0.16(@ag-ui/client@1.0.5(zod@3.25.76))(rxjs@7.8.1)
+      '@ag-ui/client': 1.0.5(zod@3.25.76)
+      '@ag-ui/core': 1.0.2(zod@3.25.76)
+      '@copilotkit/license-verifier': 0.5.0
+      '@segment/analytics-node': link:vendor/noop-segment
+      '@standard-schema/spec': 1.1.0
+      clarinet: 0.12.6
+      graphql: 16.14.2
+      partial-json: 0.1.7
+      rxjs: 7.8.1
+      uuid: 11.1.1
+      zod: 3.25.76
+      zod-to-json-schema: 3.25.2(zod@3.25.76)
+
+  '@copilotkit/shared@1.90.2(@ag-ui/core@1.0.2(zod@4.6.7))':
+    dependencies:
+      '@ag-ui/a2ui-middleware': 0.0.16(@ag-ui/client@1.0.5(zod@3.25.76))(rxjs@7.8.1)
+      '@ag-ui/client': 1.0.5(zod@3.25.76)
+      '@ag-ui/core': 1.0.2(zod@4.6.7)
+      '@copilotkit/license-verifier': 0.5.0
+      '@segment/analytics-node': link:vendor/noop-segment
+      '@standard-schema/spec': 1.1.0
       clarinet: 0.12.6
       graphql: 16.14.2
       partial-json: 0.1.7
@@ -13026,6 +13303,10 @@ snapshots:
 
   '@lit-labs/ssr-dom-shim@1.6.0': {}
 
+  '@lit/context@1.1.6':
+    dependencies:
+      '@lit/reactive-element': 2.1.2
+
   '@lit/reactive-element@2.1.2':
     dependencies:
       '@lit-labs/ssr-dom-shim': 1.6.0
@@ -13132,31 +13413,31 @@ snapshots:
   '@noxcturnal/noxcturnal-win32-x64-msvc@0.1.12':
     optional: true
 
-  '@openai/codex@0.161.0':
+  '@openai/codex@0.172.0':
     optionalDependencies:
-      '@openai/codex-darwin-arm64': '@openai/codex@0.161.0-darwin-arm64'
-      '@openai/codex-darwin-x64': '@openai/codex@0.161.0-darwin-x64'
-      '@openai/codex-linux-arm64': '@openai/codex@0.161.0-linux-arm64'
-      '@openai/codex-linux-x64': '@openai/codex@0.161.0-linux-x64'
-      '@openai/codex-win32-arm64': '@openai/codex@0.161.0-win32-arm64'
-      '@openai/codex-win32-x64': '@openai/codex@0.161.0-win32-x64'
+      '@openai/codex-darwin-arm64': '@openai/codex@0.172.0-darwin-arm64'
+      '@openai/codex-darwin-x64': '@openai/codex@0.172.0-darwin-x64'
+      '@openai/codex-linux-arm64': '@openai/codex@0.172.0-linux-arm64'
+      '@openai/codex-linux-x64': '@openai/codex@0.172.0-linux-x64'
+      '@openai/codex-win32-arm64': '@openai/codex@0.172.0-win32-arm64'
+      '@openai/codex-win32-x64': '@openai/codex@0.172.0-win32-x64'
 
-  '@openai/codex@0.161.0-darwin-arm64':
+  '@openai/codex@0.172.0-darwin-arm64':
     optional: true
 
-  '@openai/codex@0.161.0-darwin-x64':
+  '@openai/codex@0.172.0-darwin-x64':
     optional: true
 
-  '@openai/codex@0.161.0-linux-arm64':
+  '@openai/codex@0.172.0-linux-arm64':
     optional: true
 
-  '@openai/codex@0.161.0-linux-x64':
+  '@openai/codex@0.172.0-linux-x64':
     optional: true
 
-  '@openai/codex@0.161.0-win32-arm64':
+  '@openai/codex@0.172.0-win32-arm64':
     optional: true
 
-  '@openai/codex@0.161.0-win32-x64':
+  '@openai/codex@0.172.0-win32-x64':
     optional: true
 
   '@opencode-ai/sdk@1.19.5':
@@ -17999,6 +18280,8 @@ snapshots:
 
   json5@2.2.3: {}
 
+  jsonrepair@3.15.0: {}
+
   jsonwebtoken@9.0.3:
     dependencies:
       jws: 4.0.1
@@ -20235,6 +20518,10 @@ snapshots:
       - '@node-rs/xxhash'
       - '@opentelemetry/api'
 
+  redos-detector@6.1.4:
+    dependencies:
+      regjsparser: 0.13.0
+
   reflect-metadata@0.2.2: {}
 
   regenerate-unicode-properties@10.3.0:
@@ -20265,6 +20552,10 @@ snapshots:
       unicode-match-property-value-ecmascript: 2.2.1
 
   regjsgen@0.8.0: {}
+
+  regjsparser@0.13.0:
+    dependencies:
+      jsesc: 3.1.0
 
   regjsparser@0.14.1:
     dependencies:
@@ -21163,6 +21454,8 @@ snapshots:
   valibot@1.5.0(typescript@7.1.0-beta):
     optionalDependencies:
       typescript: 7.1.0-beta
+
+  validate-color@2.2.4: {}
 
   validate-npm-package-name@5.0.1: {}
 
