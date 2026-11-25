@@ -26,12 +26,12 @@ android {
 
 dependencies {
   // The messaging service extends expo-notifications' and posts through androidx, at the
-  // versions expo-notifications 58.1.8 brings, so Gradle resolves no second copy. Expo 58 links
+  // versions expo-notifications 58.1.9 brings, so Gradle resolves no second copy. Expo 58 links
   // expo-notifications as its prebuilt AAR (local-maven-repo) unless the app builds it from source.
   if (findProject(':expo-notifications') != null) {
     implementation project(':expo-notifications')
   } else {
-    implementation 'host.exp.exponent:expo.modules.notifications:58.1.8'
+    implementation 'host.exp.exponent:expo.modules.notifications:58.1.9'
   }
   implementation 'com.google.firebase:firebase-messaging:25.0.1'
   implementation 'androidx.core:core:1.17.0'
