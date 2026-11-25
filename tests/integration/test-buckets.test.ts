@@ -38,9 +38,10 @@ const CLIENT_FILES = {
 };
 
 describe('the server bucket', () => {
+    // It reads the whole repository: seconds here, more on a loaded CI runner.
     it('reaches no client file on the real repository', () => {
         expect(testBucketProblems(root)).toEqual([]);
-    });
+    }, 120_000);
 
     it.each([
         ['an import', "import { x } from '../packages/client/src/x';"],
@@ -182,7 +183,7 @@ describe('the buckets together', () => {
         }).toString();
         expect(files).toContain('src/server/main.ts');
         expect(files).not.toMatch(/\/packages\/(?:client|plugin-ui)\//);
-    });
+    }, 120_000);
 
     it('typecheck every project', () => {
         const typecheck = read('scripts/typecheck.mjs');
@@ -204,7 +205,7 @@ describe('the buckets together', () => {
                 (problem) => !/^tests\/integration\/(test-buckets|turbo|apps-isolation)\.test/.test(problem),
             ),
         ).toEqual([]);
-    });
+    }, 120_000);
 
     it('notice a test that starts to read one', () => {
         const turbo = JSON.stringify({
