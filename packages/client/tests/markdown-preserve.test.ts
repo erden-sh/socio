@@ -377,3 +377,24 @@ describe('the serializer’s writing of edited blocks', () => {
         }
     });
 });
+
+describe('preservedMarkdown, from the adversarial review', () => {
+    it('keeps a block whose blank lines after it hold spaces', () => {
+        const source = 'Title\n=====\n\n \n\nEdit\n';
+        expect(inspectMarkdown(source)).toEqual({ supported: true });
+        const editor = open(source);
+        preservedMarkdown(editor, source);
+        replaceText(editor, 'Edit', 'Changed');
+        expect(preservedMarkdown(editor, source)).toBe('Title\n=====\n\n \n\nChanged\n');
+    });
+
+    it.each([
+        ['', '__same__\n\n**same**\n'],
+        ['before a heading', '__same__\n\n**same**\n\n# End\n'],
+    ])('deleting one of two equal blocks keeps the other’s own spelling %s', (_name, source) => {
+        const editor = open(source);
+        preservedMarkdown(editor, source);
+        editor.view.dispatch(editor.state.tr.delete(0, editor.state.doc.firstChild!.nodeSize));
+        expect(preservedMarkdown(editor, source)).toBe(source.replace('__same__\n\n', ''));
+    });
+});

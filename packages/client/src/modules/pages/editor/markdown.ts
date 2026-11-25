@@ -3,7 +3,7 @@ import { TableKit } from '@tiptap/extension-table';
 import TaskItem from '@tiptap/extension-task-item';
 import TaskList from '@tiptap/extension-task-list';
 import { MarkdownManager } from '@tiptap/markdown';
-import type { Node as ProseMirrorNode, Schema } from '@tiptap/pm/model';
+import { Fragment, type Node as ProseMirrorNode, type Schema } from '@tiptap/pm/model';
 import StarterKit from '@tiptap/starter-kit';
 
 import { simpleHtmlToMarkdown } from '@socio/shared/text/simple-html';
@@ -238,26 +238,46 @@ export interface ChangedRun {
  * from one state to the next, which `eq` compares at once.
  */
 export function changedRuns(a: ProseMirrorNode, b: ProseMirrorNode): ChangedRun[] {
-    const n = a.childCount;
-    const m = b.childCount;
-    let head = 0;
-    while (head < n && head < m && a.child(head).eq(b.child(head))) {
-        head += 1;
+    return diffRange(a, b, { aFrom: 0, aTo: a.childCount, bFrom: 0, bTo: b.childCount }, (x, y) => x.eq(y));
+}
+
+/**
+ * `changedRuns` for a document the editor derived from `a` itself: blocks are
+ * first matched as the same node objects, then, within what differs, as
+ * equal ones. Of two equal blocks, the one the person kept is the one
+ * matched, not its twin they deleted (`__a__` and `**a**` are equal nodes).
+ */
+function changedRunsKeepingIdentity(a: ProseMirrorNode, b: ProseMirrorNode): ChangedRun[] {
+    const whole = { aFrom: 0, aTo: a.childCount, bFrom: 0, bTo: b.childCount };
+    return diffRange(a, b, whole, (x, y) => x === y).flatMap((run) => diffRange(a, b, run, (x, y) => x.eq(y)));
+}
+
+/** The runs that differ between `a` children [aFrom, aTo) and `b` children [bFrom, bTo), by `same`. */
+function diffRange(
+    a: ProseMirrorNode,
+    b: ProseMirrorNode,
+    range: ChangedRun,
+    same: (x: ProseMirrorNode, y: ProseMirrorNode) => boolean,
+): ChangedRun[] {
+    let { aFrom, aTo, bFrom, bTo } = range;
+    while (aFrom < aTo && bFrom < bTo && same(a.child(aFrom), b.child(bFrom))) {
+        aFrom += 1;
+        bFrom += 1;
     }
-    let tail = 0;
-    while (tail < n - head && tail < m - head && a.child(n - 1 - tail).eq(b.child(m - 1 - tail))) {
-        tail += 1;
+    while (aTo > aFrom && bTo > bFrom && same(a.child(aTo - 1), b.child(bTo - 1))) {
+        aTo -= 1;
+        bTo -= 1;
     }
-    const rows = n - head - tail;
-    const cols = m - head - tail;
+    const rows = aTo - aFrom;
+    const cols = bTo - bFrom;
     if (rows === 0 && cols === 0) {
         return [];
     }
-    const whole = [{ aFrom: head, aTo: n - tail, bFrom: head, bTo: m - tail }];
+    const whole = [{ aFrom, aTo, bFrom, bTo }];
     if (rows === 0 || cols === 0) {
         return whole;
     }
-    const same = (i: number, j: number) => a.child(head + i).eq(b.child(head + j));
+    const equal = (i: number, j: number) => same(a.child(aFrom + i), b.child(bFrom + j));
     const max = rows + cols;
     const limit = Math.min(max, BLOCK_DIFF_MAX_EDITS);
     // furthest[k + max]: how far along `a` the path on diagonal k (i - j) has come.
@@ -272,7 +292,7 @@ export function changedRuns(a: ProseMirrorNode, b: ProseMirrorNode): ChangedRun[
                     ? furthest[max + k + 1]!
                     : furthest[max + k - 1]! + 1;
             let j = i - k;
-            while (i < rows && j < cols && same(i, j)) {
+            while (i < rows && j < cols && equal(i, j)) {
                 i += 1;
                 j += 1;
             }
@@ -317,7 +337,7 @@ export function changedRuns(a: ProseMirrorNode, b: ProseMirrorNode): ChangedRun[
     let lastJ = -1;
     for (const [pi, pj] of [...pairs, [rows, cols] as [number, number]]) {
         if (pi > lastI + 1 || pj > lastJ + 1) {
-            runs.push({ aFrom: head + lastI + 1, aTo: head + pi, bFrom: head + lastJ + 1, bTo: head + pj });
+            runs.push({ aFrom: aFrom + lastI + 1, aTo: aFrom + pi, bFrom: bFrom + lastJ + 1, bTo: bFrom + pj });
         }
         lastI = pi;
         lastJ = pj;
@@ -347,6 +367,8 @@ interface SourceMap {
     readonly docs: WeakMap<Schema, ProseMirrorNode | null>;
     /** Whether the blocks, read one by one, are known to be the document the whole text reads as. */
     checked: boolean;
+    /** The editor's document as loaded, when it is the blocks: its nodes are matched by identity first. */
+    loaded: ProseMirrorNode | null;
 }
 
 /** A source whose blocks can't be read one by one. */
@@ -400,7 +422,8 @@ function readSource(manager: MarkdownManager, text: string): SourceMap | null {
     const lastBlock = items.findLastIndex((item) => !item.space);
     items.forEach((item, index) => {
         if (!item.space) {
-            const nodes = manager.parse(item.raw).content ?? [];
+            // Blank lines a block took in before a space of its own read as nothing in the whole text.
+            const nodes = manager.parse(item.raw.replace(TRAILING_BLANK_LINES, '')).content ?? [];
             if (nodes.length !== 1) {
                 throw new SourceUnmapped();
             }
@@ -419,7 +442,16 @@ function readSource(manager: MarkdownManager, text: string): SourceMap | null {
         }
     });
     const crlf = /\r\n/.test(text) && !/(?:^|[^\r])\n/.test(text) && !/\r(?!\n)/.test(text);
-    return { text, normalized, blocks, offsets, eol: crlf ? '\r\n' : '\n', docs: new WeakMap(), checked: false };
+    return {
+        text,
+        normalized,
+        blocks,
+        offsets,
+        eol: crlf ? '\r\n' : '\n',
+        docs: new WeakMap(),
+        checked: false,
+        loaded: null,
+    };
 }
 
 const sourceMaps = new WeakMap<MarkdownManager, { source: string; map: SourceMap | null }>();
@@ -524,13 +556,20 @@ export function preservedMarkdown(editor: MarkdownEditor, source: string): strin
             map.docs.set(doc.type.schema, null);
             return full;
         }
-        if (asLoaded && doc.childCount === nodes.length) {
-            // The editor's own nodes: those it keeps unchanged compare at once.
-            base = doc;
-            map.docs.set(doc.type.schema, doc);
+        if (asLoaded && doc.childCount >= nodes.length && sameBlocks(nodes, children.slice(0, nodes.length))) {
+            // The editor's own nodes (its trailing paragraph aside): those it keeps compare at once.
+            const own: ProseMirrorNode[] = [];
+            doc.forEach((child, _offset, index) => {
+                if (index < nodes.length) {
+                    own.push(child);
+                }
+            });
+            base = doc.copy(Fragment.fromArray(own));
+            map.docs.set(doc.type.schema, base);
+            map.loaded = base;
         }
     }
-    const runs = changedRuns(base, doc);
+    const runs = base === map.loaded ? changedRunsKeepingIdentity(base, doc) : changedRuns(base, doc);
     if (runs.length === 0) {
         return map.text;
     }
