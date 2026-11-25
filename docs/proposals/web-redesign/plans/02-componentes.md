@@ -18,12 +18,14 @@ Revisar zoom y cadenas largas (2.1), entrada inválida y campo deshabilitado (2.
 
 **Archivos.** Crear `scripts/component-gallery/index.html`, `scripts/component-gallery/main.tsx`, `scripts/component-gallery/vite.config.ts` y `scripts/check-component-gallery.mjs`.
 
-- [ ] Definir ejemplos con nombres accesibles por familia. Incluir muestra de tema, formulario y tabla antes de agregar el resto.
-- [ ] Resolver `@` al código del cliente y cargar el CSS de producción en la entrada. Aplicar `data-theme` y `data-scheme` a ese documento. Conectar el selector de sistema a `matchMedia`. Usar datos ficticios.
-- [ ] Arrancar con `pnpm exec vite scripts/component-gallery --config scripts/component-gallery/vite.config.ts --host 127.0.0.1 --port 4400`. Ejecutar `node scripts/check-component-gallery.mjs http://127.0.0.1:4400`. El script debe identificar sobreflujo horizontal de página a 390 px y confirmar siete paletas y dos esquemas.
-- [ ] Añadir las 25 familias de la tabla del PRD y verificar que el build de producción no incorpore la entrada de galería.
+- [x] Definir ejemplos con nombres accesibles por familia. Incluir muestra de tema, formulario y tabla antes de agregar el resto.
+- [x] Resolver `@` al código del cliente y cargar el CSS de producción en la entrada. Usar ThemeProvider para aplicar `data-theme`, `data-scheme` y el modo del sistema. Usar datos ficticios.
+- [x] Arrancar con `pnpm exec vite scripts/component-gallery --config scripts/component-gallery/vite.config.ts --host 127.0.0.1 --port 4400`. Ejecutar `node scripts/check-component-gallery.mjs http://127.0.0.1:4400`. El script debe identificar sobreflujo horizontal de página a 390 px y confirmar siete paletas y dos esquemas.
+- [x] Añadir las 25 familias de la tabla del PRD y verificar que el build de producción no incorpore la entrada de galería.
 
 ## 2.2 · Controles, estados y superficies · UI-02 a UI-04
+
+Primer lote verificado en Chromium. Button, Input y Badge muestran un indicador de foco sólido. Button limita la transición a las propiedades que cambian y Skeleton respeta movimiento reducido. Los badges destructivos usan el par de color de su paleta.
 
 **Archivos.** Modificar `packages/client/src/globals.css`, `packages/client/src/style.css`, `packages/client/src/components/form-fields.tsx` y `packages/client/src/components/ui/` por lote. Añadir verificaciones relevantes al script de la galería y al test de contraste existente.
 

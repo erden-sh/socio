@@ -1,0 +1,146 @@
+@import '../../packages/client/src/globals.css';
+@source './';
+
+body {
+    background: var(--background);
+    color: var(--foreground);
+}
+
+.gallery-header {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: var(--sidebar);
+    border-bottom: 1px solid var(--border);
+}
+
+.gallery-wrap {
+    width: min(100% - 2.5rem, 74rem);
+    margin-inline: auto;
+}
+
+.gallery-toolbar,
+.gallery-brand,
+.gallery-appearance,
+.gallery-flow {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.gallery-flow {
+    flex-wrap: wrap;
+}
+
+.gallery-toolbar {
+    min-height: 4rem;
+    justify-content: space-between;
+}
+
+.gallery-brand {
+    font-size: 1rem;
+    font-weight: 650;
+}
+
+.gallery-appearance {
+    flex-wrap: wrap;
+    min-width: 0;
+}
+
+.gallery-main {
+    padding-block: 2rem 3rem;
+}
+
+.gallery-main h1 {
+    margin: 0 0 1.5rem;
+    font-size: clamp(1.8rem, 4vw, 3rem);
+    letter-spacing: -0.045em;
+    font-weight: 620;
+}
+
+.gallery-groups {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: 1.25rem;
+}
+
+.gallery-groups h2 {
+    margin: 0 0 0.5rem;
+    font-size: 1rem;
+    font-weight: 620;
+}
+
+.gallery-panel {
+    border: 1px solid var(--border);
+    border-radius: calc(var(--radius) + 4px);
+    background: var(--card);
+    color: var(--card-foreground);
+}
+
+.gallery-sample {
+    display: grid;
+    gap: 0.55rem;
+    padding: 0.9rem 1rem;
+    min-width: 0;
+}
+
+.gallery-sample + .gallery-sample {
+    border-top: 1px solid var(--border);
+}
+
+.gallery-sample h3 {
+    margin: 0;
+    font-size: 0.875rem;
+    font-weight: 630;
+}
+
+.gallery-sample > label,
+.gallery-appearance label {
+    font-size: 0.8rem;
+    font-weight: 550;
+}
+
+.gallery-sample p {
+    margin: 0;
+}
+
+.gallery-sample [data-slot='table-container'] {
+    min-width: 0;
+}
+
+@media (max-width: 44rem) {
+    .gallery-wrap {
+        width: calc(100% - 1.5rem);
+    }
+
+    .gallery-toolbar {
+        flex-wrap: wrap;
+        padding-block: 0.6rem;
+    }
+
+    .gallery-appearance {
+        display: grid;
+        width: 100%;
+        grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+        gap: 0.25rem 0.5rem;
+    }
+
+    .gallery-appearance label {
+        grid-row: 1;
+    }
+
+    .gallery-appearance select {
+        min-width: 0;
+        width: 100%;
+        min-height: 2.75rem;
+    }
+
+    .gallery-groups {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .gallery-main {
+        padding-top: 1rem;
+    }
+}
