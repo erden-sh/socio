@@ -31,13 +31,9 @@ It reuses public layers instead of inventing their terms:
 
 ## Use it
 
-Install the Erden CLI:
+The Erden CLI is a dev dependency of the repository (`@erden-sh/cli`, pinned), so `pnpm install` brings it, and `pnpm exec erden` runs it. There's no build for Intel Macs; there, install it some other way from [erden.sh](https://erden.sh/docs/getting-started/install-the-cli).
 
-```sh
-curl -fsSL https://erden.sh/install | sh
-```
-
-Then, from the repository root:
+From the repository root:
 
 ```sh
 pnpm ontology:graph    # regenerate data/repo.ttl from the tree
