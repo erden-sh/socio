@@ -20,7 +20,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { parseArgs } from 'node:util';
 
-import webpush from 'web-push';
+import * as webpush from 'web-push';
 
 const ADB = process.env.ADB ?? `${process.env.HOME}/Android/Sdk/platform-tools/adb`;
 const ACTION = 'expo.modules.sociopush.debug';
