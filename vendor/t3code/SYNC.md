@@ -16,7 +16,7 @@ coding sandbox, replacing its own one-shot CLI adapters.
 ## What's vendored
 
 These packages, each a private, unpublished raw TypeScript package
-(Effect 4.0.5 services):
+(Effect 4.1.5 services):
 
 `provider-core`, `provider-acp`, `provider-acp-registry`, `provider-grok`,
 `provider-opencode`, `provider-pi`, `effect-acp`, `effect-codex-app-server`,
@@ -29,7 +29,7 @@ These packages, each a private, unpublished raw TypeScript package
 - Each is a pnpm workspace package (`pnpm-workspace.yaml` → `vendor/t3code/*`).
 - The root `package.json` links them as `link:vendor/t3code/<pkg>`.
 - Versions the packages reference as `catalog:` resolve through the
-  `catalog:` block in `pnpm-workspace.yaml` (effect 4.0.5 and the markdown /
+  `catalog:` block in `pnpm-workspace.yaml` (effect 4.1.5 and the markdown /
   crypto pipeline `shared` renders with). Socio's own code does not use
   `catalog:`.
 - Test files (`*.test.ts`) and each package's `devDependencies`/`scripts`
@@ -45,6 +45,15 @@ definitions are kept here so the packages compile; Socio does not supply the
 relay endpoints, and these code paths are not wired into the session host
 (step 3 replaces them with Socio's own telemetry, audit and update plumbing,
 rather than just removing them).
+
+## Local edits
+
+Socio runs these packages on Effect 4.1, while upstream is on 4.0. Effect 4.1
+replaced `effect/Crypto` with `effect/crypto/*` services, so the vendored code
+takes `SecureRandom` (`uuidV4`, `randomBytes`) and `Digest` (`Digest.sha256`)
+instead of `Crypto.Crypto`. `shared`'s `nodeSqliteClient` passes the `driver`
+name that 4.1's `SqlClient.make` requires. Keep these edits on a re-sync
+until upstream moves to 4.1.
 
 ## Ported into the push relay (`apps/push-relay`)
 
