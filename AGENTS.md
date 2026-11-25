@@ -1,6 +1,6 @@
 # Agent instructions for Socio
 
-Socio is a team workspace with AI socios: Node 26.13.0, Hono, React Router 8 (SSR), SQLite (`node:sqlite`), Effect 4.0.5, React 19, Tailwind v4, pnpm 10.15 workspaces, Vitest and TypeScript 7.1.
+Socio is a team workspace with AI socios: Node 26.13.0, Hono, React Router 8 (SSR), SQLite (`node:sqlite`), Effect 4.1.5, React 19, Tailwind v4, pnpm 10.15 workspaces, Vitest and TypeScript 7.1.
 
 ## Map
 
@@ -33,7 +33,7 @@ pnpm run build                    # the production build
 - **Test buckets:** a test that imports or reads `packages/client` or `@socio/plugin-ui` goes in `tests/integration` (`scripts/check-test-buckets.mjs`). A test that reads a file under `docs/` or `marketing/` needs it removed from the exclusions in `turbo.json`.
 - **Data:** only `packages/data` and a feature's `infra/` import Drizzle. Async writes go through `transaction()`, `writeSoon()` or a repository in `uow.run`, never a bare `.prepare('INSERT ...').run()` (`docs/DATA-LAYER.md`).
 - **Migrations** live in each feature's `migrations.ts`. Two releases share a schema during a deploy, so migrations only add; removals are a later `phase: 'contract'` migration with `readersFrom`. Never change a released migration (`src/server/modules/released-migrations.json`): add one.
-- **Effect 4.0.5:** services are `class X extends Context.Service<X, XShape>()('socio/<feature>/X') {}`, errors `Data.TaggedError`, layers `Layer.succeed`, `Layer.sync` or `Layer.effect` (`Context.Tag`, `Effect.Service` and `Layer.scoped` don't exist). `Effect.run*` only in `composition/`, `main.ts`, `index.ts` and process entries.
+- **Effect 4.1.5:** services are `class X extends Context.Service<X, XShape>()('socio/<feature>/X') {}`, errors `Data.TaggedError`, layers `Layer.succeed`, `Layer.sync` or `Layer.effect` (`Context.Tag`, `Effect.Service` and `Layer.scoped` don't exist). `Effect.run*` only in `composition/`, `main.ts`, `index.ts` and process entries.
 - **Feature boundaries:** a feature imports another only through its `contract.ts`. `scripts/check-feature-boundaries.mjs` (run by the tests) fails a new crossing; its baseline only shrinks and is rewritten with `--write`, never by hand.
 - **Locale:** in the client and `packages/shared`, sort and format text with `packages/shared/src/locale.ts` (lint rule `socio/locale`).
 

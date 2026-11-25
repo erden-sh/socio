@@ -1,8 +1,7 @@
 import type { ProviderInstanceEnvironment, ProviderInstanceId } from "@t3tools/contracts";
 import type { AcpRegistrySettings } from "../settings.ts";
-import * as Crypto from "effect/Crypto";
+import * as Digest from "effect/crypto/Digest";
 import * as Effect from "effect/Effect";
-import * as Hex from "effect/encoding/Hex";
 import * as FileSystem from "effect/FileSystem";
 import * as Path from "effect/Path";
 import * as Ref from "effect/Ref";
@@ -16,10 +15,9 @@ const decodeState = Schema.decodeUnknownEffect(
 );
 const encodeJson = Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown));
 const hash = Effect.fn("AcpRegistryAuthenticationState.hash")(function* (value: unknown) {
-  const crypto = yield* Crypto.Crypto;
+  const digest = yield* Digest.Digest;
   const json = yield* encodeJson(value).pipe(Effect.orDie);
-  const digest = yield* crypto.digest("SHA-256", new TextEncoder().encode(json)).pipe(Effect.orDie);
-  return Hex.encode(digest);
+  return yield* digest.digestHex(Digest.sha256, new TextEncoder().encode(json));
 });
 
 export const makeAcpRegistryAuthenticationState = Effect.fn("makeAcpRegistryAuthenticationState")(
