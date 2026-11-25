@@ -235,7 +235,8 @@ it('runs a long tool-heavy turn to its cap: every round fitted, the trace comple
         [3, 'tool_calls'],
         [4, 'stop'],
     ]);
-    expect(loop[0].error).toBe('context_length_exceeded');
+    // TanStack AI 1.x adapters name a refused prompt `context_overflow`.
+    expect(loop[0].error).toBe('context_overflow');
     expect(trace.rounds.filter((round) => round.retry)).toEqual([
         expect.objectContaining({ round: 1, retry: 1, stop: 'tool_calls' }),
     ]);

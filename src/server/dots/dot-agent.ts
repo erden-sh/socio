@@ -1169,6 +1169,12 @@ export class DotAgentCore extends AbstractAgent {
                                         runId: ctx.input.runId,
                                         modelOptions: model.modelOptions,
                                         agentLoopStrategy: rounds.strategy,
+                                        // TanStack AI 1.x defaults: server tools start together
+                                        // and failing inputs are coerced to the schema. Socio's
+                                        // tools run one at a time, in call order, and an invalid
+                                        // input goes back to the model as an error.
+                                        toolExecution: 'sequential',
+                                        repairToolInput: false,
                                         middleware: [rounds.middleware, steer, proseCheck],
                                         // Never let library logs carry conversation content.
                                         debug: modelDebug,

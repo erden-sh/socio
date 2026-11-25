@@ -104,7 +104,7 @@ export function limitedOutput(
             }
             if (chunk.type === 'TOOL_CALL_START') {
                 calls.set(chunk.toolCallId, {
-                    name: chunk.toolCallName ?? chunk.toolName ?? 'unknown',
+                    name: chunk.toolCallName || 'unknown',
                     args: '',
                 });
             }
@@ -170,8 +170,8 @@ export function limitedOutput(
                 type: 'TOOL_CALL_END',
                 toolCallId: id,
                 toolCallName: last.name,
-                toolName: last.name,
                 timestamp: Date.now(),
+                args: '{}',
                 input: {},
                 state: 'output-error',
                 result: OUTPUT_LIMIT_RESULT,

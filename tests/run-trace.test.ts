@@ -327,6 +327,7 @@ it('reads tokens and the stop reason from a ChatGPT plan’s response.completed'
         markNeedsRelogin: async () => {},
     });
     for await (const chunk of chat({
+        threadId: 'thread-1',
         adapter: tracer.adapter(adapter),
         stream: true,
         messages: [{ role: 'user', content: 'Hi' }],

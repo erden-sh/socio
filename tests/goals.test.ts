@@ -96,7 +96,9 @@ it('returns the goal already waiting for approval, not a second request', async 
     // Once approved it is an active goal, so asking again shows it (CB-135);
     // with force it is a new request.
     // The decision's continuation turn (CB-58) gets a fake model's answer.
-    vi.spyOn(globalThis, 'fetch').mockImplementation(async () => completion({ role: 'assistant', content: 'Ok.' }));
+    const model = vi
+        .spyOn(globalThis, 'fetch')
+        .mockImplementation(async () => completion({ role: 'assistant', content: 'Ok.' }));
     await f.platform.approvals.decide(String(first.id), 'alice', true);
     expect(await f.tool('goal_set')(f.goalInput)).toMatchObject({
         outcome: 'possible_duplicates',
@@ -104,6 +106,9 @@ it('returns the goal already waiting for approval, not a second request', async 
     const later = await f.tool('goal_set')({ ...f.goalInput, force: true });
     expect(later.id).not.toBe(first.id);
     expect(await f.platform.approvals.list('alice', { status: 'pending' })).toHaveLength(2);
+    // The continuation turn runs in the background: its model call is the fake's,
+    // made before the test restores fetch.
+    await vi.waitFor(() => expect(model).toHaveBeenCalled());
 });
 
 it('keeps the pending goal of one person from another’s', async () => {

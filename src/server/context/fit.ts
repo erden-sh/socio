@@ -109,6 +109,8 @@ export const MAX_SUMMARIES_PER_TURN = 3;
 
 const OVER_LENGTH_CODES = new Set([
     'context_length_exceeded',
+    // TanStack AI 1.x adapters' own code for it.
+    'context_overflow',
     'chatgpt_context_too_long',
     'string_above_max_length',
     // llama.cpp's server.

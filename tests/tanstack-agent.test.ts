@@ -336,14 +336,16 @@ function rawPageCall(id: string, rawArguments: string, finishReason: string | nu
 const notes = JSON.stringify({ title: 'Notes', content: '# Notes' });
 
 it.each([
-    ['trailing text', `${notes}</tool_call>`],
-    ['missing closing brace', notes.slice(0, -1)],
-    ['double-encoded', JSON.stringify(notes)],
-])('repairs tool arguments with %s and runs the tool once (CB-12)', async (repair, rawArguments) => {
+    ['trailing text', `${notes}</tool_call>`, 'tool_calls'],
+    ['missing closing brace', notes.slice(0, -1), 'tool_calls'],
+    // Cut off at the end, with no finish reason: still repaired and run.
+    ['missing closing brace', notes.slice(0, -1), null],
+    ['double-encoded', JSON.stringify(notes), 'tool_calls'],
+])('repairs tool arguments with %s and runs the tool once (CB-12, finish %s)', async (repair, rawArguments, finish) => {
     const f = fixture();
     const network = vi
         .spyOn(globalThis, 'fetch')
-        .mockResolvedValueOnce(rawPageCall('create-page', rawArguments))
+        .mockResolvedValueOnce(rawPageCall('create-page', rawArguments, finish))
         .mockResolvedValueOnce(completion({ role: 'assistant', content: 'Created Notes.' }));
     const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
     await lastValueFrom(f.agent.run(f.input).pipe(toArray()));

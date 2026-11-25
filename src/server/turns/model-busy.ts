@@ -77,6 +77,7 @@ const NEVER = new Set([
     'usage_not_included',
     'billing_hard_limit_reached',
     'context_length_exceeded',
+    'context_overflow',
     'chatgpt_context_too_long',
 ]);
 /** A connection that failed or dropped, in the words of fetch and Node. */

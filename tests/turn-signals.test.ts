@@ -272,6 +272,7 @@ async function compatibleRound(deltas: Array<Record<string, unknown>>, usage?: R
     const entries: TraceEntry[] = [];
     const tracer = new TurnTracer((entry) => entries.push(entry));
     for await (const chunk of chat({
+        threadId: 'thread-1',
         adapter: tracer.adapter(model.adapter({ maxRetries: 0 })),
         stream: true,
         messages: [{ role: 'user', content: 'Hi' }],
@@ -333,6 +334,7 @@ it('marks a ChatGPT plan’s reasoning summary as a summary', async () => {
         markNeedsRelogin: async () => {},
     });
     for await (const chunk of chat({
+        threadId: 'thread-1',
         adapter: tracer.adapter(adapter),
         stream: true,
         messages: [{ role: 'user', content: 'Hi' }],

@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 
 import { chat } from '@tanstack/ai';
 import { z } from 'zod';
@@ -50,10 +50,12 @@ export function inferenceDecider(resolver: InferenceResolver): AutoDecider {
             signal.addEventListener('abort', () => abortController.abort(), {
                 once: true,
             });
-            const text = await chat({
+            const { text } = await chat({
                 adapter: model.adapter(),
                 messages: [{ role: 'user', content: prompt }],
                 systemPrompts: [system],
+                // A one-off call with no conversation of its own.
+                threadId: `approval-${randomUUID()}`,
                 stream: false,
                 abortController,
                 modelOptions: model.chatCompletions ? { ...model.modelOptions, temperature: 0 } : model.modelOptions,
