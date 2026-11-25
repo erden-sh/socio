@@ -294,7 +294,7 @@ describe('the PKCE pair, the start page and the callback', () => {
         expect(sheetStateSchema.safeParse(one.state).success).toBe(true);
         expect(one.challenge).toBe(createHash('sha256').update(one.verifier).digest('base64url'));
         expect(new Set([one.verifier, one.state, two.verifier, two.state]).size).toBe(4);
-        expect(() => newSheetSecrets(() => new Uint8Array(16), sha256Base64)).rejects.toThrow(/16 bytes/);
+        await expect(newSheetSecrets(() => new Uint8Array(16), sha256Base64)).rejects.toThrow(/16 bytes/);
     });
 
     it('the start page carries exactly the challenge, the state, the platform and the variant', async () => {
