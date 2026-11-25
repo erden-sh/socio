@@ -68,7 +68,7 @@ const commands = (step: string) => {
 };
 /** What each step of a job does: an action it uses, or its commands. */
 const plan = (job: string) => steps(job).map((step) => /uses: (\S+)/.exec(step)?.[1] ?? commands(step));
-const CHECKOUT = 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1';
+const CHECKOUT = 'useblacksmith/checkout@75c49b6ed30ce59336e9252425796cfcfac155f8';
 const RUNNER_CHECK = ['bash .github/ci/runner-check.sh'];
 const RESTORE = 'actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae';
 const SAVE = 'actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae';
@@ -85,8 +85,18 @@ it('runs on pushes and pull requests, and nothing else', () => {
     expect([...on.matchAll(/^ {2}([\w-]+):/gm)].map((m) => m[1])).toEqual(['push', 'pull_request']);
     // push is scoped to main so PR branch pushes don't duplicate (push +
     // pull_request both fire); pull_request covers PR branches.
-    expect(on).toContain('  push:\n    branches: [main]\n  pull_request:\n    types: [opened, synchronize, reopened]');
+    expect(on).toContain(
+        '  push:\n    branches: [main]\n  pull_request:\n    types: [opened, synchronize, reopened, ready_for_review]',
+    );
     expect(code).not.toMatch(/workflow_dispatch|workflow_run|schedule|pull_request_target|repository_dispatch/);
+});
+
+it('runs nothing on a draft pull request, and runs when it is marked ready', () => {
+    for (const job of ['check', 'test']) {
+        expect(jobs[job], job).toContain(
+            "\n    if: github.event_name != 'pull_request' || !github.event.pull_request.draft\n",
+        );
+    }
 });
 
 it('gives CI a read-only token and no secrets', () => {
@@ -154,8 +164,11 @@ it('runs only an allowed list of commands on the runner, none from the branch', 
     ]);
 });
 
-it('runs every job on GitHub-hosted runners, each checked before any container starts', () => {
-    expect([...code.matchAll(/runs-on:\s*(.+)/g)].map((m) => m[1].trim())).toEqual(['ubuntu-latest', 'ubuntu-latest']);
+it('runs every job on Blacksmith runners, each checked before any container starts', () => {
+    expect([...code.matchAll(/runs-on:\s*(.+)/g)].map((m) => m[1].trim())).toEqual([
+        'blacksmith-4vcpu-ubuntu-2604',
+        'blacksmith-4vcpu-ubuntu-2604',
+    ]);
     for (const job of ['check', 'test']) {
         expect(plan(job).slice(0, 2)).toEqual([CHECKOUT, RUNNER_CHECK]);
     }
@@ -197,7 +210,7 @@ const LOOPBACK = [
     'udp UNCONN 0 0 10.70.11.186%enp39s0:68 0.0.0.0:*',
 ].join('\n');
 
-it('stops sshd on a GitHub-hosted runner before it checks, and only there', () => {
+it('stops sshd on a GitHub-hosted runner before it checks, and not on an unknown one', () => {
     const dir = temp();
     const sshd = join(dir, 'sshd');
     writeFileSync(sshd, 'tcp LISTEN 0 4096 0.0.0.0:22 0.0.0.0:*\n');
@@ -260,6 +273,129 @@ it('stops when anything on the runner listens beyond loopback', () => {
         expect(result.status).toBe(1);
         expect(result.out).toMatch(/^::error::This runner listens beyond loopback/m);
     }
+});
+
+describe('on a Blacksmith runner', () => {
+    const BLACKSMITH = { RUNNER_NAME: 'blacksmith-01abc-4vcpu' };
+    const SERVICES = ['tcp LISTEN 0 4096 192.168.127.43:8378 0.0.0.0:*', 'tcp LISTEN 0 4096 0.0.0.0:49193 0.0.0.0:*'];
+    /** A firewall stand-in that leaves a mark, and exits `status`. */
+    const firewall = (status = 0) => {
+        const dir = temp();
+        const script = join(dir, 'firewall');
+        writeFileSync(script, `#!/usr/bin/env bash\ntouch '${join(dir, 'ran')}'\nexit ${status}\n`);
+        chmodSync(script, 0o755);
+        return { env: { FIREWALL: script, SSH_STOP: 'true' }, ran: () => existsSync(join(dir, 'ran')) };
+    };
+
+    it("closes the Docker bridges, then lets through Blacksmith's cache and agent alone", () => {
+        const fw = firewall();
+        const result = runnerCheck('29.1.3', [LOOPBACK, ...SERVICES].join('\n'), 0, { ...BLACKSMITH, ...fw.env });
+        expect(result.status).toBe(0);
+        expect(fw.ran()).toBe(true);
+        expect(result.out).toContain("Runner OK: Docker 29.1.3, Docker's bridges closed to the host");
+    });
+
+    it('stops sshd there too', () => {
+        const dir = temp();
+        const stopped = join(dir, 'stopped');
+        const stop = join(dir, 'stop-ssh');
+        writeFileSync(stop, `#!/usr/bin/env bash\ntouch '${stopped}'\n`);
+        chmodSync(stop, 0o755);
+        const fw = firewall();
+        expect(runnerCheck('29.1.3', LOOPBACK, 0, { ...BLACKSMITH, ...fw.env, SSH_STOP: stop }).status).toBe(0);
+        expect(existsSync(stopped)).toBe(true);
+    });
+
+    it('stops when the bridges could not be closed, whatever listens', () => {
+        const fw = firewall(1);
+        const result = runnerCheck('29.1.3', LOOPBACK, 0, { ...BLACKSMITH, ...fw.env });
+        expect(result.status).toBe(1);
+        expect(result.out).toMatch(/^::error::Could not close this runner to its Docker bridges/m);
+        expect(result.out).not.toContain('Runner OK');
+    });
+
+    it('stops on any other listener beyond loopback', () => {
+        for (const listener of [
+            'tcp LISTEN 0 4096 0.0.0.0:22 0.0.0.0:*',
+            'tcp LISTEN 0 4096 0.0.0.0:8379 0.0.0.0:*',
+            'tcp LISTEN 0 4096 0.0.0.0:18378 0.0.0.0:*',
+            'udp UNCONN 0 0 0.0.0.0:8378 0.0.0.0:*',
+            'udp UNCONN 0 0 0.0.0.0:49193 0.0.0.0:*',
+        ]) {
+            const result = runnerCheck('29.1.3', [LOOPBACK, ...SERVICES, listener].join('\n'), 0, {
+                ...BLACKSMITH,
+                ...firewall().env,
+            });
+            expect(result.status, listener).toBe(1);
+            expect(result.out).toMatch(/^::error::This runner listens beyond loopback/m);
+        }
+    });
+
+    it("is told apart by the runner's name alone: elsewhere no firewall runs, and those ports stop the check", () => {
+        const fw = firewall();
+        for (const env of <Record<string, string>[]>[
+            {},
+            { RUNNER_NAME: 'GitHub Actions 3' },
+            { RUNNER_NAME: 'my-blacksmith-01' },
+        ]) {
+            const result = runnerCheck('29.1.3', [LOOPBACK, ...SERVICES].join('\n'), 0, { ...env, ...fw.env });
+            expect(result.status).toBe(1);
+        }
+        expect(fw.ran()).toBe(false);
+    });
+});
+
+describe('bridge-firewall.sh', () => {
+    const RULES = [
+        '-A INPUT -i br-+ -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT',
+        '-A INPUT -i br-+ -j DROP',
+        '-A INPUT -i docker0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT',
+        '-A INPUT -i docker0 -j DROP',
+    ];
+    /** Runs the script against stand-in iptables and ip6tables that log their arguments and list `listing`. */
+    const run = (listing: string[], failOn = '') => {
+        const dir = temp();
+        const log = join(dir, 'log');
+        for (const tool of ['iptables', 'ip6tables']) {
+            writeFileSync(
+                join(dir, tool),
+                `#!/usr/bin/env bash\necho "${tool} $*" >> '${log}'\n` +
+                    `[ -n '${failOn}' ] && [[ "$*" == *'${failOn}'* ]] && exit 1\n` +
+                    `if [ "$2" = -S ]; then printf '%s\\n' '-P INPUT ACCEPT' ${listing.map((l) => `'${l}'`).join(' ')}; fi\n`,
+            );
+            chmodSync(join(dir, tool), 0o755);
+        }
+        const result = spawnSync('bash', [ci('bridge-firewall.sh')], {
+            env: { PATH: process.env.PATH, IPTABLES: join(dir, 'iptables'), IP6TABLES: join(dir, 'ip6tables') },
+        });
+        const calls = existsSync(log) ? readFileSync(log, 'utf8').trim().split('\n') : [];
+        return { status: result.status, calls };
+    };
+
+    it('puts the reply rule ahead of the drop for each bridge, at the top of INPUT, for IPv4 and IPv6', () => {
+        const { status, calls } = run([...RULES, '-A INPUT -j ACCEPT']);
+        expect(status).toBe(0);
+        for (const tool of ['iptables', 'ip6tables']) {
+            expect(calls.filter((call) => call.startsWith(`${tool} `))).toEqual([
+                `${tool} -w -I INPUT 1 -i docker0 -j DROP`,
+                `${tool} -w -I INPUT 1 -i docker0 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT`,
+                `${tool} -w -I INPUT 1 -i br-+ -j DROP`,
+                `${tool} -w -I INPUT 1 -i br-+ -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT`,
+                `${tool} -w -S INPUT`,
+            ]);
+        }
+    });
+
+    it('fails unless INPUT then starts with exactly those rules, in that order', () => {
+        expect(run([RULES[1], RULES[0], RULES[2], RULES[3]]).status).not.toBe(0);
+        expect(run(['-A INPUT -j ACCEPT', ...RULES]).status).not.toBe(0);
+        expect(run(RULES.slice(0, 3)).status).not.toBe(0);
+    });
+
+    it('fails when any rule cannot be added', () => {
+        expect(run(RULES, '-i br-+ -j DROP').status).not.toBe(0);
+        expect(run(RULES, 'conntrack').status).not.toBe(0);
+    });
 });
 
 it('mounts only the copy of the checkout, and gives containers no way into the runner', () => {
@@ -332,13 +468,18 @@ it('pins one Node version, by digest, everywhere', () => {
     expect(new Set(froms).size).toBe(1);
 });
 
-it('runs two jobs, with no condition that could skip its checks', () => {
+it('runs two jobs, with no condition that could skip its checks but a draft', () => {
     expect(Object.keys(jobs)).toEqual(['check', 'test']);
-    // Neither job has an if: that could skip it; test doesn't need check
-    // (they run in parallel — both must always run). Only the cache's own
-    // steps have a condition, so no check depends on it.
-    expect(jobs.check).not.toMatch(/^ {4}(if|needs):/m);
-    expect(jobs.test).not.toMatch(/^ {4}(if|needs):/m);
+    // Neither job has an if: that could skip it, but the draft one: a draft
+    // can't be merged, and marking it ready runs both. test doesn't need
+    // check (they run in parallel — both must always run). Only the cache's
+    // own steps have a condition, so no check depends on it.
+    for (const job of ['check', 'test']) {
+        expect(jobs[job].match(/^ {4}if: .*$/gm), job).toEqual([
+            "    if: github.event_name != 'pull_request' || !github.event.pull_request.draft",
+        ]);
+        expect(jobs[job], job).not.toMatch(/^ {4}needs:/m);
+    }
     for (const job of ['check', 'test']) {
         for (const step of steps(job).filter((text) => /^ {8}if:/m.test(text))) {
             expect(step, step).toMatch(/turbo-cache|actions\/cache\//);

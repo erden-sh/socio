@@ -13,7 +13,7 @@
 # Runtime composes pin the index digest:
 #   image: ghcr.io/<owner>/company-brain:vX.Y.Z@sha256:<index-digest>
 #
-# Runs on GitHub-hosted runners. Every build reads and writes a registry
+# Runs on Blacksmith's runners. Every build reads and writes a registry
 # layer cache in its own package, ghcr.io/<owner>/<name>:buildcache
 # (mode=max, so intermediate stages too), so the next release reuses the
 # layers of the last build that finished. `buildcache` is not a release tag:
@@ -61,11 +61,10 @@ jobs:
           - { target: apps, image: company-brain-apps, df_target: apps-runtime }
           - { target: coding-git, image: company-brain-coding-git }
     steps:
-      - uses: useblacksmith/checkout@v1 # v7.0.1
+      - uses: useblacksmith/checkout@75c49b6ed30ce59336e9252425796cfcfac155f8 # v1
         with:
           persist-credentials: false
-      - name: Setup Blacksmith Builder
-        uses: useblacksmith/setup-docker-builder@v1
+      - uses: useblacksmith/setup-docker-builder@00b770997181b0ea829a64add3dbd306fe9cfa25 # v1
       - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           registry: ${{ env.REGISTRY }}
@@ -96,11 +95,10 @@ jobs:
       contents: read # check out the repo
       packages: write # push the image and its build cache to ghcr.io/<owner>/<name>
     steps:
-      - uses: useblacksmith/checkout@v1 # v7.0.1
+      - uses: useblacksmith/checkout@75c49b6ed30ce59336e9252425796cfcfac155f8 # v1
         with:
           persist-credentials: false
-      - name: Setup Blacksmith Builder
-        uses: useblacksmith/setup-docker-builder@v1
+      - uses: useblacksmith/setup-docker-builder@00b770997181b0ea829a64add3dbd306fe9cfa25 # v1
       - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           registry: ${{ env.REGISTRY }}
@@ -164,11 +162,10 @@ jobs:
       contents: read # check out the repo
       packages: write # push the image and its build cache to ghcr.io/<owner>/<name>
     steps:
-      - uses: useblacksmith/checkout@v1 # v7.0.1
+      - uses: useblacksmith/checkout@75c49b6ed30ce59336e9252425796cfcfac155f8 # v1
         with:
           persist-credentials: false
-      - name: Setup Blacksmith Builder
-        uses: useblacksmith/setup-docker-builder@v1
+      - uses: useblacksmith/setup-docker-builder@00b770997181b0ea829a64add3dbd306fe9cfa25 # v1
       - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           registry: ${{ env.REGISTRY }}
@@ -237,7 +234,7 @@ jobs:
     permissions:
       contents: write # create the GitHub release
     steps:
-      - uses: useblacksmith/checkout@v1 # v7.0.1
+      - uses: useblacksmith/checkout@75c49b6ed30ce59336e9252425796cfcfac155f8 # v1
         with:
           persist-credentials: false
       - name: Extract this release's notes

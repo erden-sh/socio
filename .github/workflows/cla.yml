@@ -14,7 +14,7 @@
 # - no secrets: only the job's GITHUB_TOKEN, scoped to what the action does
 #   (write the signatures file, comment on and lock the pull request, rerun
 #   its own failed run once everyone has signed);
-# - it runs on GitHub-hosted runners, like every workflow here.
+# - it runs on Blacksmith's runners, like every workflow here.
 # Make it a required status check on main.
 name: CLA
 on:
@@ -68,12 +68,12 @@ jobs:
           path-to-document: ${{ github.server_url }}/${{ github.repository }}/blob/main/CLA.md
           path-to-signatures: signatures/cla.json
           branch: cla-signatures
-          # Never asked to sign: the repository owner's account, dependency
-          # and Actions bots, and the pull request's author when GitHub says
+          # Never asked to sign: the repository owner's account, dependency,
+          # Actions and Blacksmith's bots, and the pull request's author when GitHub says
           # they own the repository or are a member of its organization. Other
           # authors of commits in that pull request still have to sign.
           allowlist: >-
-            cbnsndwch,dependabot[bot],renovate[bot],github-actions[bot]${{
+            cbnsndwch,dependabot[bot],renovate[bot],github-actions[bot],blacksmith-sh[bot]${{
             contains(fromJSON('["OWNER","MEMBER"]'), github.event.pull_request.author_association || github.event.issue.author_association)
             && format(',{0}', github.event.pull_request.user.login || github.event.issue.user.login) || '' }}
           create-file-commit-message: 'chore: create the CLA signatures file'
