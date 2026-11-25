@@ -63,6 +63,11 @@ overrides:
   'ws@>=8.0.0 <8.23.0': ^8.23.0
   'source-map-js@<1.2.2': ^1.2.2
   '@graphql-tools/utils@>=12.0.0 <12.0.2': ^12.0.2
+  # Out of Better Auth's declared range (@better-auth/passkey asks for
+  # ^13.3.2) on purpose: 14.1.0 closes GHSA-2g3p-m8c9-hhwh and
+  # GHSA-j3h4-m3m2-7p7j (both fixed in 14.0.2), and 14's only breaking change
+  # is requiring Node 22 or later. Remove once Better Auth accepts ^14.
+  '@better-auth/passkey>@simplewebauthn/server': 14.1.0
   effect: $effect
   '@effect/platform-node': 'catalog:'
   '@effect/platform-node-shared': $@effect/platform-node-shared
