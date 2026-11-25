@@ -387,11 +387,13 @@ function Board() {
         swipe.count.set(view.columns.length);
         swipe.width.set(width);
     }, [view.columns.length, width, swipe.count, swipe.width]);
+    // Named apart: the hooks lint reads `swipe.current` as a ref's mutable value.
+    const { current: swipeColumn, moving: swipeMoving } = swipe;
     useEffect(() => {
-        swipe.current.set(columnIndex);
+        swipeColumn.set(columnIndex);
         // The chosen column is drawn where it rests: its neighbors go.
-        swipe.moving.set(0);
-    }, [columnIndex, swipe.current, swipe.moving]);
+        swipeMoving.set(0);
+    }, [columnIndex, swipeColumn, swipeMoving]);
     const land = (index: number) => {
         const status = view.columns[index]?.status;
         if (status === undefined || status === view.column) {
