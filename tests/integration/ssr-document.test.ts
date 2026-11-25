@@ -579,7 +579,7 @@ it('answers a missing or hidden help article with the same Not found page and a 
         const [missing, hidden] = pages.map(({ html, nonce }) => {
             const part = (pattern: RegExp) => html.replaceAll(nonce, 'NONCE').match(pattern)?.[0];
             return {
-                article: part(/<article id="nd-page"[\s\S]*?<\/article>/),
+                article: part(/<article [^>]*id="nd-page"[\s\S]*?<\/article>/),
                 sidebar: part(/<aside id="nd-sidebar"[\s\S]*?<\/aside>/),
                 data: part(/streamController\.enqueue\([\s\S]*?\);<\/script>/),
             };

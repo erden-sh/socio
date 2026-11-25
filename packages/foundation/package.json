@@ -23,7 +23,7 @@
         "@ag-ui/client": "^0.0.59",
         "@copilotkit/runtime": "^1.75.0",
         "@tanstack/ai": "^0.63.0",
-        "@types/node": "^26.6.3",
+        "@types/node": "^26.6.10",
         "vitest": "^4.1.12",
         "zod": "^4.6.7"
     },

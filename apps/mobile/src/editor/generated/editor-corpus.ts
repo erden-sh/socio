@@ -86,10 +86,10 @@ export const EDITOR_CORPUS: readonly CorpusDocument[] = [
         name: 'inline.md',
         markdown:
             'Plain, **strong**, __strong too__, *em*, _em too_, ***both***, ~~struck~~ and `code`, plus `` a ` tick ``.\n\nA [link](https://example.com/a?b=c&d=e "Title"), a [page link](/#/spaces/s1/pages/p1), an autolink <https://example.com> and a bare https://example.com/bare.\n\nEscapes: \\* \\_ \\` \\# \\[ \\] \\\\ and 2 \\< 3 \\> 1.\n\nA hard break with a backslash\\\nand one with two spaces  \nend.\n\nNested **bold with *italic* inside** and *italic with **bold** inside*.\n',
-        golden: 'Plain, **strong**, __strong too__, *em*, _em too_, ***both***, ~~struck~~ and `code`, plus `` a ` tick ``.\n\nA [link](https://example.com/a?b=c&d=e "Title"), a [page link](/#/spaces/s1/pages/p1), an autolink <https://example.com> and a bare https://example.com/bare.\n\nEscapes: \\* \\_ \\` \\# \\[ \\] \\\\ and 2 \\< 3 \\> 1.\n\nA hard break with a backslash\\\nand one with two spaces  \nend.\n\nNested **bold with *italic* inside** and *italic with **bold** inside*.\n',
-        supported: false,
-        reason: 'Some formatting cannot be safely round-tripped. Source mode keeps the original document intact.',
-        edited: null,
+        golden: 'Plain, **strong**, **strong too**, *em*, *em too*, ***both***, ~~struck~~ and `code`, plus ``a ` tick``.\n\nA [link](https://example.com/a?b=c&d=e "Title"), a [page link](/#/spaces/s1/pages/p1), an autolink [https://example.com](https://example.com) and a bare [https://example.com/bare](https://example.com/bare).\n\nEscapes: \\* \\_ \\` # \\[ \\] \\\\ and 2 &lt; 3 &gt; 1.\n\nA hard break with a backslash  \nand one with two spaces  \nend.\n\nNested **bold with *italic* inside** and *italic with **bold** inside*.',
+        supported: true,
+        reason: null,
+        edited: 'Plain, **strong**, **strong too**, *em*, *em too*, ***both***, ~~struck~~ and `code`, plus ``a ` tick``.\n\nA [link](https://example.com/a?b=c&d=e "Title"), a [page link](/#/spaces/s1/pages/p1), an autolink [https://example.com](https://example.com) and a bare [https://example.com/bare](https://example.com/bare).\n\nEscapes: \\* \\_ \\` # \\[ \\] \\\\ and 2 &lt; 3 &gt; 1.\n\nA hard break with a backslash  \nand one with two spaces  \nend.\n\nNested **bold with *italic* inside** and *italic with **bold** inside*.Typed on the phone.',
     },
     {
         name: 'lists-canonical.md',

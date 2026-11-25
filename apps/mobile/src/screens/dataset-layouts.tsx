@@ -417,10 +417,12 @@ export function BoardLayout(props: {
         swipe.count.set(board.swipeable.length);
         swipe.width.set(width);
     }, [board.swipeable.length, width, swipe.count, swipe.width]);
+    // Named apart: the hooks lint reads `swipe.current` as a ref's mutable value.
+    const { current: swipeColumn, moving: swipeMoving } = swipe;
     useEffect(() => {
-        swipe.current.set(board.focus);
-        swipe.moving.set(0);
-    }, [board.focus, swipe.current, swipe.moving]);
+        swipeColumn.set(board.focus);
+        swipeMoving.set(0);
+    }, [board.focus, swipeColumn, swipeMoving]);
     const land = (index: number) => {
         const column = board.swipeable[index];
         if (column === undefined || index === board.focus) {

@@ -25,7 +25,7 @@ COPY egress-proxy.mjs /ci/egress-proxy.mjs
 # lockfile names (tests/ci-workflow.test.ts checks the count of FROM lines,
 # not this). PLAYWRIGHT_BROWSERS_PATH is world-readable so user 65534 finds it.
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
-RUN npm install -g playwright@1.63.0 \
+RUN npm install -g playwright@1.65.1 \
   && node /usr/local/lib/node_modules/playwright/cli.js install --with-deps chromium \
   && chmod -R a+rX /ms-playwright \
   && npm uninstall -g playwright \
