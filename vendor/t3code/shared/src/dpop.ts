@@ -1,6 +1,6 @@
 import { pipe } from "effect/Function";
-import { p256 } from "@noble/curves/nist";
-import { sha256 } from "@noble/hashes/sha2";
+import { p256 } from "@noble/curves/nist.js";
+import { sha256 } from "@noble/hashes/sha2.js";
 import * as Base64Url from "effect/encoding/Base64Url";
 import * as Option from "effect/Option";
 import * as Result from "effect/Result";
@@ -179,6 +179,9 @@ export function verifyDpopProof(input: {
       {
         prehash: false,
         format: "compact",
+        // ES256 has no low-S rule and WebCrypto signers emit either half. @noble/curves 2
+        // rejects high-S by default; 1.x accepted it for P-256.
+        lowS: false,
       },
     );
     if (!verified) {
