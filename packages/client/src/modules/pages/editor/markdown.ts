@@ -347,7 +347,8 @@ function diffRange(
 
 /** A top-level block of the source as the editor read it: its node and where its text is (LF offsets). */
 interface SourceBlock {
-    readonly node: JSONContent;
+    /** Null when the block was matched to the loaded document's node instead of parsed on its own. */
+    readonly node: JSONContent | null;
     readonly from: number;
     readonly to: number;
 }
@@ -377,15 +378,36 @@ class SourceUnmapped extends Error {}
 /** `@tiptap/markdown`'s blank lines that end a block, which it reads as a space of their own. */
 const TRAILING_BLANK_LINES = /\n[^\S\n]*(?:\n[^\S\n]*)+$/;
 
+/** The node types each marked token may read as, for matching tokens to the loaded document's blocks. */
+const TOKEN_NODES: Record<string, readonly string[]> = {
+    paragraph: ['paragraph'],
+    heading: ['heading'],
+    hr: ['horizontalRule'],
+    code: ['codeBlock', 'datasetView', 'embedCard', 'pageImage'],
+    blockquote: ['blockquote'],
+    list: ['bulletList', 'orderedList', 'taskList'],
+    taskList: ['taskList'],
+    table: ['table'],
+};
+
 /**
  * Reads the source into its top-level blocks, each with the range of its own
  * text, the way `@tiptap/markdown` parses it: marked's top-level tokens, a
  * block's trailing blank lines split off, and runs of blank lines read as
- * empty paragraphs (zero-width ranges in the blank lines). Null when a
- * token isn't one block. Whether the blocks are the whole text's document
- * is checked on first use (`checked`).
+ * empty paragraphs (zero-width ranges in the blank lines).
+ *
+ * With `loaded` (the editor's document as it read this source), each block is
+ * matched to its node there, in order, by kind: one lexing pass and no parse.
+ * The map is then checked, and its document is the editor's own nodes. Else,
+ * or when the two don't line up, each block is parsed on its own (null when a
+ * token isn't one block), and checked on first use (`checked`).
  */
-function readSource(manager: MarkdownManager, text: string): SourceMap | null {
+function readSource(
+    manager: MarkdownManager,
+    text: string,
+    loadedAs?: { doc: ProseMirrorNode; tokens: readonly Token[] | null },
+): SourceMap | null {
+    const loaded = loadedAs?.doc;
     const normalized = text.replace(/\r\n?/g, '\n');
     let offsets: Int32Array | null = null;
     if (normalized !== text) {
@@ -397,12 +419,15 @@ function readSource(manager: MarkdownManager, text: string): SourceMap | null {
         }
         offsets[normalized.length] = at;
     }
-    const tokens = manager.instance.lexer(normalized);
+    let tokens = loadedAs?.tokens ?? null;
+    if (!tokens || tokens.map((token) => token.raw).join('') !== normalized) {
+        tokens = manager.instance.lexer(normalized);
+    }
     if (tokens.map((token) => token.raw).join('') !== normalized) {
         return null;
     }
     // The tokens as @tiptap/markdown's parse sees them (its extractAbsorbedBlankLines).
-    const items: { space: boolean; from: number; to: number; raw: string }[] = [];
+    const items: { space: boolean; type: string; from: number; to: number; raw: string }[] = [];
     let at = 0;
     tokens.forEach((token, index) => {
         const from = at;
@@ -411,26 +436,22 @@ function readSource(manager: MarkdownManager, text: string): SourceMap | null {
         const trailing = space || tokens[index + 1]?.type === 'space' ? null : TRAILING_BLANK_LINES.exec(token.raw);
         if (trailing) {
             const split = at - trailing[0].length;
-            items.push({ space: false, from, to: split, raw: normalized.slice(from, split) });
-            items.push({ space: true, from: split, to: at, raw: trailing[0] });
+            items.push({ space: false, type: token.type, from, to: split, raw: normalized.slice(from, split) });
+            items.push({ space: true, type: 'space', from: split, to: at, raw: trailing[0] });
         } else {
-            items.push({ space, from, to: at, raw: token.raw });
+            items.push({ space, type: token.type, from, to: at, raw: token.raw });
         }
     });
-    const blocks: SourceBlock[] = [];
+    // Each block's kind (its token's type, or an empty paragraph) and the range of its own text.
+    const spans: { token: string | null; raw: string; from: number; to: number }[] = [];
     let before = false;
     const lastBlock = items.findLastIndex((item) => !item.space);
     items.forEach((item, index) => {
         if (!item.space) {
-            // Blank lines a block took in before a space of its own read as nothing in the whole text.
-            const nodes = manager.parse(item.raw.replace(TRAILING_BLANK_LINES, '')).content ?? [];
-            if (nodes.length !== 1) {
-                throw new SourceUnmapped();
-            }
             // A block's own text, without the blank lines a tokenizer took in around it (the task list's).
             const lead = /^(?:[^\S\n]*\n)*/.exec(item.raw)![0].length;
             const trail = /(?:\n[^\S\n]*)*$/.exec(item.raw.slice(lead))![0].length;
-            blocks.push({ node: nodes[0]!, from: item.from + lead, to: item.to - trail });
+            spans.push({ token: item.type, raw: item.raw, from: item.from + lead, to: item.to - trail });
             before = true;
             return;
         }
@@ -438,11 +459,11 @@ function readSource(manager: MarkdownManager, text: string): SourceMap | null {
         const empty = Math.max(separators - (before && index < lastBlock ? 1 : 0), 0);
         for (let count = 0; count < empty; count += 1) {
             const place = Math.min(item.from + 2 * (count + (before ? 1 : 0)), item.to);
-            blocks.push({ node: { type: 'paragraph', content: [] }, from: place, to: place });
+            spans.push({ token: null, raw: '', from: place, to: place });
         }
     });
     const crlf = /\r\n/.test(text) && !/(?:^|[^\r])\n/.test(text) && !/\r(?!\n)/.test(text);
-    return {
+    const map = (blocks: SourceBlock[]): SourceMap => ({
         text,
         normalized,
         blocks,
@@ -451,10 +472,100 @@ function readSource(manager: MarkdownManager, text: string): SourceMap | null {
         docs: new WeakMap(),
         checked: false,
         loaded: null,
-    };
+    });
+    const own = loaded ? matchLoaded(spans, loaded) : null;
+    // A code block's text may hold the blank lines its range leaves out (a fence never closed): each
+    // is read alone and must be its node, else the blocks are read one by one.
+    const codeHolds =
+        own?.every((node, index) => {
+            const { token, from, to } = spans[index]!;
+            if (token !== 'code') {
+                return true;
+            }
+            try {
+                const [read, ...more] = manager.parse(normalized.slice(from, to)).content ?? [];
+                return !!read && more.length === 0 && node.eq(node.type.schema.nodeFromJSON(read));
+            } catch {
+                return false;
+            }
+        }) ?? false;
+    if (own && codeHolds) {
+        const read = map(spans.map(({ from, to }) => ({ node: null, from, to })));
+        const base = loaded!.copy(Fragment.fromArray(own));
+        read.docs.set(base.type.schema, base);
+        read.checked = true;
+        read.loaded = base;
+        return read;
+    }
+    return map(
+        spans.map(({ token, raw, from, to }) => {
+            if (token === null) {
+                return { node: { type: 'paragraph', content: [] }, from, to };
+            }
+            // Blank lines a block took in before a space of its own read as nothing in the whole text.
+            const nodes = manager.parse(raw.replace(TRAILING_BLANK_LINES, '')).content ?? [];
+            if (nodes.length !== 1) {
+                throw new SourceUnmapped();
+            }
+            return { node: nodes[0]!, from, to };
+        }),
+    );
 }
 
+/**
+ * The loaded document's nodes for the source's blocks, in order, when each is
+ * of its token's kind (an empty paragraph for blank lines) and only empty
+ * paragraphs (the editor's trailing one) are left over. Null otherwise.
+ */
+function matchLoaded(spans: readonly { token: string | null }[], loaded: ProseMirrorNode) {
+    if (loaded.childCount < spans.length) {
+        return null;
+    }
+    const own: ProseMirrorNode[] = [];
+    for (let index = 0; index < loaded.childCount; index += 1) {
+        const node = loaded.child(index);
+        const span = spans[index];
+        const empty = node.type.name === 'paragraph' && node.childCount === 0;
+        if (!span) {
+            if (!empty) {
+                return null;
+            }
+            continue;
+        }
+        if (span.token === null ? !empty : !TOKEN_NODES[span.token]?.includes(node.type.name)) {
+            return null;
+        }
+        own.push(node);
+    }
+    return own;
+}
+
+/** A token of marked, the lexer `@tiptap/markdown` reads with. */
+type Token = ReturnType<MarkdownManager['instance']['lexer']>[number];
+
 const sourceMaps = new WeakMap<MarkdownManager, { source: string; map: SourceMap | null }>();
+/** What each editor last loaded: the source, its document then, and the tokens its parse lexed. */
+const loadedDocs = new WeakMap<
+    MarkdownManager,
+    { source: string; doc: ProseMirrorNode; tokens: readonly Token[] | null }
+>();
+/** The text each manager's parse last lexed, and its tokens: a load's, reused to read its source. */
+const lastLexed = new WeakMap<MarkdownManager, { text: string; tokens: readonly Token[] }>();
+{
+    // Every parse lexes with a lexer from `createLexer` (private): its top-level `lex` is noted.
+    const prototype = MarkdownManager.prototype as unknown as { createLexer(): { lex(text: string): Token[] } };
+    const create = prototype.createLexer;
+    prototype.createLexer = function createLexer(this: MarkdownManager) {
+        const lexer = create.call(this);
+        const lex = lexer.lex.bind(lexer);
+        lexer.lex = (text: string) => {
+            const tokens = lex(text);
+            lastLexed.set(this, { text, tokens });
+            return tokens;
+        };
+        return lexer;
+    };
+}
 
 /** The source's map for this manager: the last one read is kept, as an editor saves the same source many times. */
 function sourceMap(manager: MarkdownManager, source: string) {
@@ -462,14 +573,49 @@ function sourceMap(manager: MarkdownManager, source: string) {
     if (cached?.source === source) {
         return cached.map;
     }
+    const loaded = loadedDocs.get(manager);
     let map: SourceMap | null;
     try {
-        map = readSource(manager, source);
+        map = loaded?.source === source ? readSource(manager, source, loaded) : readSource(manager, source);
     } catch {
         map = null;
     }
     sourceMaps.set(manager, { source, map });
     return map;
+}
+
+/** Runs `work` once the page is idle (`requestIdleCallback`, else a timer). */
+function whenIdle(work: () => void) {
+    if (typeof requestIdleCallback === 'function') {
+        requestIdleCallback(work, { timeout: 2_000 });
+    } else {
+        setTimeout(work, 0);
+    }
+}
+
+/**
+ * Notes the source the editor has just loaded and its document as loaded, for
+ * `preservedMarkdown`: no work now (opening costs what it did), and the source
+ * is read when the page is idle, or at the first save if that comes first.
+ * Call it after every load (the first content, `setContent`, a merge). With
+ * `idle: false`, nothing is scheduled: the first save reads it.
+ */
+export function rememberLoadedMarkdown(editor: MarkdownEditor, source: string, { idle = true } = {}) {
+    const manager = editor.markdown;
+    if (!manager) {
+        return;
+    }
+    // The load's own tokens, when its parse was of this text: reading the source then lexes nothing.
+    const lexed = lastLexed.get(manager);
+    const tokens = lexed && lexed.text.replace(/\r\n?/g, '\n') === source.replace(/\r\n?/g, '\n') ? lexed.tokens : null;
+    loadedDocs.set(manager, { source, doc: editor.state.doc, tokens });
+    if (idle) {
+        whenIdle(() => {
+            if (loadedDocs.get(manager)?.source === source) {
+                sourceMap(manager, source);
+            }
+        });
+    }
 }
 
 const isEmptyParagraph = (node: JSONContent | undefined) => node?.type === 'paragraph' && !node.content?.length;
@@ -499,8 +645,9 @@ const isEmptyMarkdown = (markdown: string) => markdown.replace(/&nbsp;|\u00A0/g,
 /**
  * The editor's document as Markdown, keeping the source's own text wherever
  * the person didn't change it. `source` is the Markdown the editor loaded
- * (after `simpleHtmlToMarkdown`). Call it once right after loading too: the
- * source is read then, against the document as loaded, which is cheap.
+ * (after `simpleHtmlToMarkdown`). Call `rememberLoadedMarkdown` after each
+ * load: the source is then read against the document as loaded, with one
+ * lexing pass and no parse, off the open path.
  *
  * The document's top-level blocks are matched with the source's (a shortest
  * edit script of equal nodes, `changedRuns`). Every block that is still there, unchanged, is
@@ -537,7 +684,10 @@ export function preservedMarkdown(editor: MarkdownEditor, source: string): strin
     let base = map.docs.get(doc.type.schema);
     if (base === undefined) {
         try {
-            base = doc.type.schema.nodeFromJSON({ type: 'doc', content: map.blocks.map((block) => block.node) });
+            // Blocks matched to the loaded document carry no node of their own: that doc is set for its schema.
+            base = map.blocks.every((block) => block.node)
+                ? doc.type.schema.nodeFromJSON({ type: 'doc', content: map.blocks.map((block) => block.node!) })
+                : null;
         } catch {
             base = null;
         }
@@ -546,8 +696,8 @@ export function preservedMarkdown(editor: MarkdownEditor, source: string): strin
     if (!base) {
         return full;
     }
-    const nodes = map.blocks.map((block) => block.node);
     if (!map.checked) {
+        const nodes = map.blocks.map((block) => block.node!);
         // Read against the document as loaded (cheap), else against the whole text read again.
         const loaded = withoutTrailingEmpty(nodes);
         const asLoaded = sameBlocks(loaded, withoutTrailingEmpty(children));

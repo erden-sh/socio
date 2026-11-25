@@ -8,6 +8,7 @@ import {
     documentExtensions,
     inspectMarkdown,
     preservedMarkdown,
+    rememberLoadedMarkdown,
 } from '../../../../packages/client/src/modules/pages/editor/markdown';
 import { CORPUS_EDIT_TEXT } from '../../src/editor/corpus';
 
@@ -93,9 +94,12 @@ export function richRoundTrip(stored: string, element?: HTMLElement): WebAnswer 
     try {
         // Nothing sent while the page opens; the first transaction may (the web saves its trailing paragraph).
         const openUpdates = updates;
+        // RichEditor's `onCreate`.
+        rememberLoadedMarkdown(editor, source);
         editor.view.dispatch(editor.state.tr);
         const markdown = preservedMarkdown(editor, source);
         editor.commands.setContent(source, { contentType: 'markdown', emitUpdate: false });
+        rememberLoadedMarkdown(editor, source);
         const reloaded = preservedMarkdown(editor, source);
         editor.commands.focus('end');
         editor.chain().focus().insertContent(CORPUS_EDIT_TEXT, { parseOptions: editor.options.parseOptions }).run();

@@ -30,6 +30,7 @@ import {
     changedRuns,
     inspectMarkdown,
     preservedMarkdown,
+    rememberLoadedMarkdown,
 } from '../../../packages/client/src/modules/pages/editor/markdown';
 import {
     ACTIVE_NAMES,
@@ -420,6 +421,8 @@ export class PageSession {
             this.editor.view.dispatch(tr.setMeta(BRIDGE_META, 'replace').setMeta('addToHistory', false));
             this.version += 1;
         }
+        // The merge is the new source: the document now reads as it.
+        rememberLoadedMarkdown(this.editor, this.source);
         this.answerReplace(replace.ifVersion, true);
     }
 

@@ -15,7 +15,7 @@ import { DatasetViewBlock } from './DatasetViewBlock';
 import { EditorLoading } from './EditorLoading';
 import { EmbedCardNode } from './embed-card-node';
 import { EmbedCardBlock } from './EmbedCardBlock';
-import { documentExtensions, preservedMarkdown } from './markdown';
+import { documentExtensions, preservedMarkdown, rememberLoadedMarkdown } from './markdown';
 import { PageImageNode } from './page-image-node';
 import { PageImageBlock } from './PageImageBlock';
 import { SlashCommands } from './slash-commands';
@@ -147,9 +147,9 @@ export default function RichEditor({
                 return false;
             },
         },
-        // Reads the source against the document as loaded, so the first edit doesn't have to.
+        // The source and the document as loaded; read when idle, off the open path.
         onCreate: ({ editor }) => {
-            preservedMarkdown(editor, source.current ?? '');
+            rememberLoadedMarkdown(editor, source.current ?? '');
         },
         onUpdate: ({ editor }) => {
             const markdown = preservedMarkdown(editor, source.current ?? '');
@@ -181,7 +181,7 @@ export default function RichEditor({
                 contentType: 'markdown',
                 emitUpdate: false,
             });
-            preservedMarkdown(editor, source.current);
+            rememberLoadedMarkdown(editor, source.current);
         }
     }, [editor, value]);
     if (!editor) {

@@ -1,13 +1,14 @@
 // @vitest-environment jsdom
 import { Editor } from '@tiptap/core';
 import { Markdown } from '@tiptap/markdown';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
     documentExtensions,
     inspectMarkdown,
     markdownManager,
     preservedMarkdown,
+    rememberLoadedMarkdown,
 } from '../src/modules/pages/editor/markdown';
 
 // What an edit writes back (`preservedMarkdown`, RichEditor's and the app's
@@ -17,8 +18,11 @@ import {
 const editors: Editor[] = [];
 afterEach(() => editors.splice(0).forEach((editor) => editor.destroy()));
 
-/** The web's editor on `source`, mounted as RichEditor's is (its plugins append their transactions). */
-function open(source: string) {
+/**
+ * The web's editor on `source`, mounted as RichEditor's is (its plugins append their transactions),
+ * the load remembered as its `onCreate` does (`remember: false`: not, so the source is read alone).
+ */
+function open(source: string, { remember = true } = {}) {
     const editor = new Editor({
         element: document.createElement('div'),
         extensions: [...documentExtensions(), Markdown],
@@ -26,6 +30,9 @@ function open(source: string) {
         contentType: 'markdown',
     });
     editors.push(editor);
+    if (remember) {
+        rememberLoadedMarkdown(editor, source, { idle: false });
+    }
     // The first transaction, as a click makes: the trailing paragraph goes in.
     editor.view.dispatch(editor.state.tr);
     return editor;
@@ -388,6 +395,20 @@ describe('preservedMarkdown, from the adversarial review', () => {
         expect(preservedMarkdown(editor, source)).toBe('Title\n=====\n\n \n\nChanged\n');
     });
 
+    it.each(['~~~\na\n \n', '~~~\na\n\n\n', '    a\n\n\n\nb\n'])(
+        'reads a code block whose text holds trailing blank lines the same with the load remembered or not: %j',
+        (source) => {
+            const remembered = open(source);
+            const alone = open(source, { remember: false });
+            for (const editor of [remembered, alone]) {
+                replaceText(editor, 'a', 'A');
+            }
+            const saved = preservedMarkdown(remembered, source);
+            expect(saved).toBe(preservedMarkdown(alone, source));
+            expect(remembered.schema.nodeFromJSON(markdownManager.parse(saved)).eq(remembered.state.doc)).toBe(true);
+        },
+    );
+
     it.each([
         ['', '__same__\n\n**same**\n'],
         ['before a heading', '__same__\n\n**same**\n\n# End\n'],
@@ -396,5 +417,75 @@ describe('preservedMarkdown, from the adversarial review', () => {
         preservedMarkdown(editor, source);
         editor.view.dispatch(editor.state.tr.delete(0, editor.state.doc.firstChild!.nodeSize));
         expect(preservedMarkdown(editor, source)).toBe(source.replace('__same__\n\n', ''));
+    });
+});
+
+describe('reading the source off the open path', () => {
+    /** Spies on the manager's lexing (only reading a source lexes through `instance.lexer`) and parsing. */
+    function spy(editor: Editor) {
+        const manager = editor.markdown!;
+        // marked's instance may be shared between managers: no calls from before count.
+        vi.restoreAllMocks();
+        return { lex: vi.spyOn(manager.instance, 'lexer'), parse: vi.spyOn(manager, 'parse') };
+    }
+
+    it('does no work when the page opens: the source is read at the first save, from the load’s own tokens', () => {
+        const editor = open(PAGE);
+        const { lex, parse } = spy(editor);
+        rememberLoadedMarkdown(editor, PAGE, { idle: false });
+        expect(lex).not.toHaveBeenCalled();
+        expect(parse).not.toHaveBeenCalled();
+        replaceText(editor, 'quoted', 'said');
+        expect(preservedMarkdown(editor, PAGE)).toBe(PAGE.replace('> quoted', '> said'));
+        // Matched to the document as loaded, with the tokens its parse lexed: nothing lexed again,
+        // only the page's one code block read alone, and the changed stretch read back.
+        expect(lex).not.toHaveBeenCalled();
+        expect(parse).toHaveBeenCalledTimes(2);
+        replaceText(editor, 'said', 'told');
+        preservedMarkdown(editor, PAGE);
+        expect(parse).toHaveBeenCalledTimes(3);
+        editor.commands.undo();
+        editor.commands.undo();
+        expect(preservedMarkdown(editor, PAGE)).toBe(PAGE);
+    });
+
+    it('without the load’s tokens, lexes the source once, at the first save', () => {
+        const editor = open(PAGE, { remember: false });
+        // Another parse since the load: its tokens aren't the page's.
+        editor.markdown!.parse('Something else');
+        const { lex } = spy(editor);
+        rememberLoadedMarkdown(editor, PAGE, { idle: false });
+        expect(lex).not.toHaveBeenCalled();
+        replaceText(editor, 'Last', 'Final');
+        expect(preservedMarkdown(editor, PAGE)).toBe(PAGE.replace('Last paragraph.', 'Final paragraph.'));
+        preservedMarkdown(editor, PAGE);
+        expect(lex).toHaveBeenCalledTimes(1);
+    });
+
+    it('reads the source when the page is idle, not while it opens', () => {
+        vi.useFakeTimers();
+        try {
+            const editor = open(PAGE, { remember: false });
+            editor.markdown!.parse('Something else');
+            const { lex } = spy(editor);
+            rememberLoadedMarkdown(editor, PAGE);
+            expect(lex).not.toHaveBeenCalled();
+            vi.runAllTimers();
+            expect(lex).toHaveBeenCalledTimes(1);
+            replaceText(editor, 'Last', 'Final');
+            expect(preservedMarkdown(editor, PAGE)).toBe(PAGE.replace('Last paragraph.', 'Final paragraph.'));
+            expect(lex).toHaveBeenCalledTimes(1);
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('a source the editor loaded without being remembered is read block by block, with the same result', () => {
+        const remembered = open(PAGE);
+        const alone = open(PAGE, { remember: false });
+        for (const editor of [remembered, alone]) {
+            replaceText(editor, 'there.', 'there!');
+        }
+        expect(preservedMarkdown(alone, PAGE)).toBe(preservedMarkdown(remembered, PAGE));
     });
 });

@@ -15,7 +15,7 @@ import type { EditorView } from '@tiptap/pm/view';
 
 import { simpleHtmlToMarkdown } from '@socio/shared/text/simple-html';
 
-import { documentExtensions, preservedMarkdown } from '../../../packages/client/src/modules/pages/editor/markdown';
+import { documentExtensions, rememberLoadedMarkdown } from '../../../packages/client/src/modules/pages/editor/markdown';
 
 import { type PageImages, pageImageWithView } from './page-images';
 
@@ -87,7 +87,8 @@ export const BRIDGE_META = 'socioBridge';
 /**
  * Loads a stored page the web's way (RichEditor.tsx: simple HTML read as its
  * Markdown, then set as Markdown) and gives back its text the way an edit
- * writes it (`preservedMarkdown`: the source itself, as nothing changed). Opening
+ * writes it: the source itself, as nothing changed (`preservedMarkdown` keeps
+ * every untouched block; it reads the source when idle, not now). Opening
  * sends no update, and it isn't an edit: Undo never goes back past it.
  *
  * `addToHistory: false` only keeps the load itself out of the history; the
@@ -105,7 +106,8 @@ export function loadMarkdown(editor: Editor, stored: string) {
         .run();
     const { doc, selection, plugins } = editor.state;
     editor.view.updateState(EditorState.create({ doc, selection, plugins }));
-    return preservedMarkdown(editor, source);
+    rememberLoadedMarkdown(editor, source);
+    return source;
 }
 
 /**
