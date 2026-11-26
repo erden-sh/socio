@@ -15,8 +15,13 @@ import { Cloud } from './contract.js';
  */
 export const cloudModule: ServerModule = {
     id: 'cloud',
+    start: ({ services }) => services.get(Cloud).resume(),
     tick: {
         everyMs: 60_000,
         run: ({ services }) => services.get(Cloud).work(),
     },
+    // Drained, not cut off: an enrollment in flight has spent its token, and
+    // only its answer, stored, keeps the identity.
+    release: ({ services }) => services.get(Cloud).drain(),
+    stop: ({ services }) => services.get(Cloud).drain(),
 };

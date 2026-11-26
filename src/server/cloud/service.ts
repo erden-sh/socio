@@ -135,7 +135,9 @@ export class CloudService implements CloudShape {
     private nextSyncAt = 0;
     private syncFailures = 0;
     private working?: Promise<void>;
+    private draining = false;
     private saidLost = false;
+    private saidHeld = false;
 
     constructor(private readonly options: CloudServiceOptions) {
         this.client = new IssuerClient(options.config.issuer, options.transport);
@@ -352,7 +354,7 @@ export class CloudService implements CloudShape {
      * only; a call while one runs joins it. It never throws.
      */
     work(): Promise<void> {
-        if (this.options.config.off) {
+        if (this.options.config.off || this.draining) {
             return Promise.resolve();
         }
         this.working ??= this.dueWork()
@@ -367,9 +369,18 @@ export class CloudService implements CloudShape {
         return this.working;
     }
 
+    async drain(): Promise<void> {
+        this.draining = true;
+        await this.working;
+    }
+
+    resume(): void {
+        this.draining = false;
+    }
+
     private async dueWork() {
         const token = this.options.config.enrollmentToken;
-        if (token && this.now() >= this.nextEnrollAt && !this.settled(token)) {
+        if (token && this.now() >= this.nextEnrollAt && !this.settled(token) && !this.heldByLoss()) {
             try {
                 await this.enroll(token);
                 this.enrollFailures = 0;
@@ -390,6 +401,25 @@ export class CloudService implements CloudShape {
                 throw error;
             }
         }
+    }
+
+    /**
+     * Whether a lost identity holds enrollment back: the record that says
+     * which token was spent can't be opened, so the token still mounted may
+     * well be that one. Only `SOCIO_CLOUD_REPLACE_LOST=true` lets it through.
+     */
+    private heldByLoss(): boolean {
+        const { sealed, record } = this.read();
+        if (!sealed || record || this.options.config.replaceLost) {
+            return false;
+        }
+        if (!this.saidHeld) {
+            this.saidHeld = true;
+            this.options.log(
+                'Cloud connection: not enrolling over the lost identity. Set SOCIO_CLOUD_REPLACE_LOST=true with a new enrollment token to replace it.',
+            );
+        }
+        return true;
     }
 
     /** Whether this enrollment token was already tried to an end: used, or refused for good. */

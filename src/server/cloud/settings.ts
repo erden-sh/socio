@@ -40,6 +40,13 @@ export function cloudFromEnv(env: Record<string, string | undefined>): CloudEnvi
         off: mode === 'off',
         issuer: issuerOrigin(env.SOCIO_CLOUD_ISSUER?.trim() || CLOUD_ISSUER_DEFAULT),
     };
+    const replaceLost = env.SOCIO_CLOUD_REPLACE_LOST?.trim().toLowerCase();
+    if (replaceLost && replaceLost !== 'true' && replaceLost !== 'false') {
+        throw new Error('SOCIO_CLOUD_REPLACE_LOST must be true or false.');
+    }
+    if (replaceLost === 'true') {
+        config.replaceLost = true;
+    }
     const token = env.SOCIO_CLOUD_ENROLLMENT_TOKEN?.trim();
     if (token && token.toLowerCase() !== 'none') {
         // A header value: one line of visible ASCII. Never echoed.

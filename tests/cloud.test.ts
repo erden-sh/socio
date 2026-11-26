@@ -104,6 +104,8 @@ describe('the settings', () => {
             expect(() => cloudFromEnv({ SOCIO_CLOUD_ISSUER: bad })).toThrow(/SOCIO_CLOUD_ISSUER/);
         }
         expect(() => cloudFromEnv({ SOCIO_CLOUD: 'maybe' })).toThrow(/SOCIO_CLOUD must be on or off/);
+        expect(() => cloudFromEnv({ SOCIO_CLOUD_REPLACE_LOST: 'yes' })).toThrow(/SOCIO_CLOUD_REPLACE_LOST/);
+        expect(cloudFromEnv({ SOCIO_CLOUD_REPLACE_LOST: 'true' }).replaceLost).toBe(true);
     });
 
     it('reads the token from a secret file, and never echoes a bad one', () => {
@@ -393,12 +395,70 @@ describe('the data key', () => {
         expect(lost.logs.join('\n')).toContain('Cloud connection lost');
     });
 
-    it('enrolls again over a lost identity with a new token', async () => {
+    it('never spends the token still mounted over a lost identity', async () => {
+        const { path, issuer, token } = await enrolled();
+        const before = issuer.requests.length;
+        // Provisioning leaves the used token in place; the record that it was used is what was lost.
+        for (let restart = 0; restart < 2; restart++) {
+            const lost = setup({ path, issuer, key: OTHER_KEY, env: { SOCIO_CLOUD_ENROLLMENT_TOKEN: token } });
+            await lost.cloud.work();
+            expect(lost.cloud.status().connection).toBe('lost');
+            expect(lost.logs.join('\n')).toContain('SOCIO_CLOUD_REPLACE_LOST=true');
+        }
+        expect(issuer.requests.length).toBe(before);
+    });
+
+    it('enrolls again over a lost identity with a new token when told to replace it', async () => {
         const { path, issuer, deploymentId } = await enrolled();
         const { token } = issuer.provision(deploymentId);
-        const recovered = setup({ path, issuer, key: OTHER_KEY, env: { SOCIO_CLOUD_ENROLLMENT_TOKEN: token } });
+        const recovered = setup({
+            path,
+            issuer,
+            key: OTHER_KEY,
+            env: { SOCIO_CLOUD_ENROLLMENT_TOKEN: token, SOCIO_CLOUD_REPLACE_LOST: 'true' },
+        });
         await recovered.cloud.work();
         expect(recovered.cloud.status()).toMatchObject({ connection: 'connected', deploymentId });
+        expect(recovered.cloud.sealStates()).toMatchObject({ current: 1, unknown: 0 });
+    });
+});
+
+describe('shutting down', () => {
+    it('waits for an enrollment in flight, so the spent token’s identity is stored', async () => {
+        const issuer = fakeIssuer();
+        const { token, deploymentId } = issuer.provision();
+        let answer!: () => void;
+        const held = new Promise<void>((resolve) => (answer = resolve));
+        let registering!: () => void;
+        const started = new Promise<void>((resolve) => (registering = resolve));
+        issuer.onRegister = () => {
+            registering();
+            return held;
+        };
+        const { cloud, store } = setup({ issuer, env: { SOCIO_CLOUD_ENROLLMENT_TOKEN: token } });
+        void cloud.work();
+        await started;
+        // The token is spent at the issuer; the answer hasn't come back.
+        let drained = false;
+        const drain = cloud.drain().then(() => (drained = true));
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        expect(drained).toBe(false);
+        answer();
+        await drain;
+        expect(store.secretSetting(CLOUD_IDENTITY_SETTING)).toBeDefined();
+        expect(cloud.status()).toMatchObject({ connection: 'connected', deploymentId });
+    });
+
+    it('starts no work while drained, and again once resumed', async () => {
+        const issuer = fakeIssuer();
+        const { token } = issuer.provision();
+        const { cloud } = setup({ issuer, env: { SOCIO_CLOUD_ENROLLMENT_TOKEN: token } });
+        await cloud.drain();
+        await cloud.work();
+        expect(issuer.requests).toEqual([]);
+        cloud.resume();
+        await cloud.work();
+        expect(cloud.status().connection).toBe('connected');
     });
 });
 

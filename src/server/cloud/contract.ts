@@ -26,6 +26,13 @@ export interface CloudEnvironment {
     issuer: string;
     /** `SOCIO_CLOUD_ENROLLMENT_TOKEN` (`_FILE`): provisioning's initial access token, single use. */
     enrollmentToken?: string;
+    /**
+     * `SOCIO_CLOUD_REPLACE_LOST=true`: a stored identity the data key can't
+     * open may be replaced by enrolling with the token. Without it, nothing
+     * enrolls over one: the token still mounted is most likely the one
+     * already spent, and the record of that is what was lost.
+     */
+    replaceLost?: boolean;
 }
 
 /**
@@ -74,6 +81,14 @@ export interface CloudShape {
      * with a token not yet tried, and the daily sync. It never throws.
      */
     work(): Promise<void>;
+    /**
+     * Waits for the work running now and starts no more until `resume`: the
+     * module's `release` and `stop`, so a shutdown never closes the database
+     * between the issuer spending a token and the identity being stored.
+     */
+    drain(): Promise<void>;
+    /** Lets `work` run again (the module's `start`, when this runtime leads again). */
+    resume(): void;
 }
 
 export class Cloud extends Context.Service<Cloud, CloudShape>()('socio/cloud/Cloud') {}
