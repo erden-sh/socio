@@ -565,6 +565,13 @@ it('refuses a client message with the id of one still queued (CB-223)', async ()
         200,
     );
     await idle(f, thread.id);
+    // The queued turn starts once the first has ended, which may be after
+    // the runner already reads idle: wait for its messages, then for idle.
+    await vi.waitFor(async () => expect(await f.platform.runner.messages(thread.id)).toHaveLength(4), {
+        timeout: 10_000,
+        interval: 10,
+    });
+    await idle(f, thread.id);
     // Only the new message was taken; the queued one went next, as queued.
     const stored = await f.platform.runner.messages(thread.id);
     expect(stored.map((message) => [message.id, message.role, message.content])).toEqual([

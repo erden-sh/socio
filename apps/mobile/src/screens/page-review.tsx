@@ -5,6 +5,8 @@ import { useEffect, useState, useSyncExternalStore } from 'react';
 import { AccessibilityInfo, Alert, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { contentText } from '@socio/shared/chat/content-text';
+
 import { pageReviewCard } from '../chat/cards';
 import { chatSource } from '../chat/chat-source';
 import { outboxStateStore } from '../chat/composer';
@@ -95,7 +97,7 @@ function PageReview({ chat, call, dot }: { chat: string; call: string; dot: stri
     const result = snapshot.runs
         .flatMap((run) => run.messages)
         .find((message) => message.role === 'tool' && message.toolCallId === call);
-    const card = pageReviewCard(toolCall, result?.role === 'tool' ? result.content : undefined);
+    const card = pageReviewCard(toolCall, result?.role === 'tool' ? contentText(result.content) : undefined);
     if (card.kind !== 'page-review') {
         return null;
     }

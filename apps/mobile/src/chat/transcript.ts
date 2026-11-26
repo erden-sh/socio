@@ -1,6 +1,7 @@
 import type { Message } from '@ag-ui/core';
 
 import type { HistoryRun } from '@socio/shared/chat/chat-history';
+import { contentText } from '@socio/shared/chat/content-text';
 import { dateTimeFormat } from '@socio/shared/locale';
 import type { LocalId } from '@socio/shared/mascot';
 import type { LiveTurn } from '@socio/shared/rooms/live-turn';
@@ -222,7 +223,7 @@ export function transcriptRows(
     const results = new Map<string, string>();
     for (const message of [...runs.flatMap((run) => run.messages), ...turn.messages]) {
         if (message.role === 'tool') {
-            results.set(message.toolCallId, message.content);
+            results.set(message.toolCallId, contentText(message.content));
         }
     }
     const socio = extras.socio ?? null;

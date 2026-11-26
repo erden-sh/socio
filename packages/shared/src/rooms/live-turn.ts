@@ -1,6 +1,6 @@
 import type { BaseEvent, Message } from '@ag-ui/core';
 
-import { AG_UI_EVENT } from '../runs/event-types.js';
+import { AG_UI_EVENT, LEGACY_THINKING_EVENT } from '../runs/event-types.js';
 import { SENDER_METADATA, SENDER_NAME_METADATA, SOCIO_METADATA, type MessageAuthor } from '../types.js';
 
 import { handoffOf, type TranscriptHandoff } from './room-handoffs.js';
@@ -81,7 +81,7 @@ const upsert = (messages: RoomMessage[], message: RoomMessage) => {
  * once, a reply starts over. Pure, for tests.
  */
 export function applyRoomEvent(turn: LiveTurn, event: BaseEvent, me: string | undefined): LiveTurn {
-    switch (event.type) {
+    switch (event.type as string) {
         case AG_UI_EVENT.RUN_STARTED: {
             const input = (event as { input?: { messages?: Message[] } }).input;
             let messages = turn.messages;
@@ -173,10 +173,10 @@ export function applyRoomEvent(turn: LiveTurn, event: BaseEvent, me: string | un
                 : turn;
         case AG_UI_EVENT.REASONING_START:
         case AG_UI_EVENT.REASONING_MESSAGE_START:
-        case AG_UI_EVENT.THINKING_START:
+        case LEGACY_THINKING_EVENT.THINKING_START:
             return { ...turn, running: true, phase: 'thinking' };
         case AG_UI_EVENT.REASONING_END:
-        case AG_UI_EVENT.THINKING_END:
+        case LEGACY_THINKING_EVENT.THINKING_END:
         case AG_UI_EVENT.TOOL_CALL_START:
             return { ...turn, running: true, phase: 'working' };
         case AG_UI_EVENT.RUN_FINISHED:

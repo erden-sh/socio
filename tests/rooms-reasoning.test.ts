@@ -318,10 +318,11 @@ it('fails closed on reasoning: a turn nobody is known to have started is no oneâ
     ).toBeUndefined();
     expect(
         filter({
-            type: EventType.THINKING_START,
+            // A pre-1.0 name, as a run stored before the upgrade holds it.
+            type: 'THINKING_START',
             title: 'SECRET title',
-        } as BaseEvent),
-    ).toEqual({ type: EventType.THINKING_START });
+        } as unknown as BaseEvent),
+    ).toEqual({ type: 'THINKING_START' });
     const snapshot = filter({
         type: EventType.MESSAGES_SNAPSHOT,
         messages: [

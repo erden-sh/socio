@@ -96,13 +96,14 @@ it('copies the history a fixed number of times, not once per event', async () =>
     expect(await run(500)).toBe(await run(10));
 });
 
-it('the default applier, for contrast, copies on every event', async () => {
-    const clone = vi.spyOn(globalThis, 'structuredClone');
+it('the default applier, for contrast, rebuilds the agent’s messages', async () => {
+    // Before AG-UI 1.0 it also deep-copied the history on every event; since
+    // 1.0 its copies are a fixed number too, but it still keeps the messages.
     const agent = new Scripted(deltas(200));
     agent.threadId = 't1';
     agent.setMessages(history());
     await agent.runAgent({ runId: 'r-default' }, { onEvent: () => {} });
-    expect(clone.mock.calls.length).toBeGreaterThan(200);
+    expect(agent.messages).toHaveLength(401);
 });
 
 it('puts the agent’s own apply back after the run, also when it fails', async () => {

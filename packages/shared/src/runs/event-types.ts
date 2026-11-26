@@ -17,11 +17,6 @@ export const AG_UI_EVENT = {
     TOOL_CALL_END: 'TOOL_CALL_END',
     TOOL_CALL_CHUNK: 'TOOL_CALL_CHUNK',
     TOOL_CALL_RESULT: 'TOOL_CALL_RESULT',
-    THINKING_START: 'THINKING_START',
-    THINKING_END: 'THINKING_END',
-    THINKING_TEXT_MESSAGE_START: 'THINKING_TEXT_MESSAGE_START',
-    THINKING_TEXT_MESSAGE_CONTENT: 'THINKING_TEXT_MESSAGE_CONTENT',
-    THINKING_TEXT_MESSAGE_END: 'THINKING_TEXT_MESSAGE_END',
     STATE_SNAPSHOT: 'STATE_SNAPSHOT',
     STATE_DELTA: 'STATE_DELTA',
     MESSAGES_SNAPSHOT: 'MESSAGES_SNAPSHOT',
@@ -48,3 +43,16 @@ export const AG_UI_EVENT = {
 
 /** One AG-UI event type, as its string. */
 export type AgUiEventType = (typeof AG_UI_EVENT)[keyof typeof AG_UI_EVENT];
+
+/**
+ * The reasoning events' names before AG-UI 1.0 renamed them REASONING_*.
+ * Nothing sends them any more, but runs stored before the upgrade may hold
+ * them, so every reader of stored events keeps matching these too.
+ */
+export const LEGACY_THINKING_EVENT = {
+    THINKING_START: 'THINKING_START',
+    THINKING_END: 'THINKING_END',
+    THINKING_TEXT_MESSAGE_START: 'THINKING_TEXT_MESSAGE_START',
+    THINKING_TEXT_MESSAGE_CONTENT: 'THINKING_TEXT_MESSAGE_CONTENT',
+    THINKING_TEXT_MESSAGE_END: 'THINKING_TEXT_MESSAGE_END',
+} as const;

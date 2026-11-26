@@ -1,6 +1,7 @@
 import type { Message } from '@ag-ui/core';
 
 import type { HistoryRun } from '@socio/shared/chat/chat-history';
+import { contentText } from '@socio/shared/chat/content-text';
 import { formatNumber } from '@socio/shared/locale';
 import { LOOP_END_LABELS, cachedPercent, type RunTraceView } from '@socio/shared/runs/run-trace';
 import { toolLabel, type ToolIcon } from '@socio/shared/runs/tool-labels';
@@ -117,7 +118,7 @@ function turnsOf(runs: readonly HistoryRun[]): readonly ChatTurn[] {
     const results = new Map<string, string>();
     for (const message of messages) {
         if (message.role === 'tool') {
-            results.set(message.toolCallId, message.content);
+            results.set(message.toolCallId, contentText(message.content));
         }
     }
     const isCard = cardCalls(messages);
