@@ -351,7 +351,7 @@ export function pageTools(access: ReturnType<typeof pageAccess>) {
         defineTool({
             name: 'edit_space_page',
             description:
-                'Edit a page using its current expectedRevision. On conflict read the new version first. Write quotes as Markdown blockquotes ("> "), not HTML <blockquote>. Preserve user content, including ```dataset-view blocks (embedded dataset views; add new ones with insert_dataset_view) and ```embed blocks (link cards; add new ones with unfurl_link).',
+                'Edit a page using its current expectedRevision. On conflict read the new version first. folder: true turns it into a folder (its body hidden, not deleted), false back into a page. Write quotes as Markdown blockquotes ("> "), not HTML <blockquote>. Preserve user content, including ```dataset-view blocks (embedded dataset views; add new ones with insert_dataset_view) and ```embed blocks (link cards; add new ones with unfurl_link).',
             parameters: pagePatch.extend({ id: z.string(), ...scope }),
             execute: async ({ id, spaceId, ...patch }) => access.edit(id, patch, spaceId),
         }),

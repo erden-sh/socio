@@ -21,7 +21,14 @@ export class SqlitePages extends SqliteRepository implements PageRepository {
         return this.write('edit page', async () => {
             await this.db
                 .update(p)
-                .set({ ...edit, revision: sql`${p.revision} + 1`, updatedAt: now })
+                .set({
+                    title: edit.title,
+                    content: edit.content,
+                    parentId: edit.parentId,
+                    ...(edit.folder === undefined ? {} : { folder: edit.folder }),
+                    revision: sql`${p.revision} + 1`,
+                    updatedAt: now,
+                })
                 .where(and(eq(p.id, id), eq(p.revision, revision)));
         });
     }
@@ -46,15 +53,6 @@ export class SqlitePages extends SqliteRepository implements PageRepository {
             await this.db
                 .update(p)
                 .set({ coverId, updatedAt: now })
-                .where(and(eq(p.id, id), isNull(p.deletedAt)));
-        });
-    }
-
-    folder(id: string, folder: boolean, now: number) {
-        return this.write('set page folder', async () => {
-            await this.db
-                .update(p)
-                .set({ folder, revision: sql`${p.revision} + 1`, updatedAt: now })
                 .where(and(eq(p.id, id), isNull(p.deletedAt)));
         });
     }

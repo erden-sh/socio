@@ -167,6 +167,8 @@ export interface PagePatch {
     title?: string;
     content?: string;
     parentId?: string | null;
+    /** Turns it into a folder or back (CB-426), in the same revision. */
+    folder?: boolean;
     expectedRevision: number;
 }
 
@@ -260,7 +262,12 @@ export interface PageStoreShape {
         now?: number,
     ) => Promise<{ page: Page; previous: string | null }>;
     /** Turns a page into a folder or back (CB-426): its body stays, hidden in a folder. */
-    readonly setFolder: (spaceId: string, id: string, folder: boolean, now?: number) => Promise<Page>;
+    readonly setFolder: (
+        spaceId: string,
+        id: string,
+        folder: boolean,
+        options?: { expectedRevision?: number; now?: number },
+    ) => Promise<Page>;
     readonly delete: (
         spaceId: string,
         id: string,

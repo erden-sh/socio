@@ -501,7 +501,7 @@
             },
             {
                 "name": "edit_space_page",
-                "description": "Edit a page using its current expectedRevision. On conflict read the new version first. Write quotes as Markdown blockquotes (\"> \"), not HTML <blockquote>. Preserve user content, including ```dataset-view blocks (embedded dataset views; add new ones with insert_dataset_view) and ```embed blocks (link cards; add new ones with unfurl_link).",
+                "description": "Edit a page using its current expectedRevision. On conflict read the new version first. folder: true turns it into a folder (its body hidden, not deleted), false back into a page. Write quotes as Markdown blockquotes (\"> \"), not HTML <blockquote>. Preserve user content, including ```dataset-view blocks (embedded dataset views; add new ones with insert_dataset_view) and ```embed blocks (link cards; add new ones with unfurl_link).",
                 "parameters": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "type": "object",
@@ -509,6 +509,7 @@
                         "title": { "type": "string", "minLength": 1, "maxLength": 160 },
                         "content": { "type": "string", "maxLength": 100000 },
                         "parentId": { "anyOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }] },
+                        "folder": { "type": "boolean" },
                         "expectedRevision": { "type": "integer", "exclusiveMinimum": 0, "maximum": 9007199254740991 },
                         "id": { "type": "string" },
                         "spaceId": {
@@ -1988,7 +1989,7 @@
             },
             {
                 "name": "edit_space_page",
-                "description": "Edit a page using its current expectedRevision. On conflict read the new version first. Write quotes as Markdown blockquotes (\"> \"), not HTML <blockquote>. Preserve user content, including ```dataset-view blocks (embedded dataset views; add new ones with insert_dataset_view) and ```embed blocks (link cards; add new ones with unfurl_link).",
+                "description": "Edit a page using its current expectedRevision. On conflict read the new version first. folder: true turns it into a folder (its body hidden, not deleted), false back into a page. Write quotes as Markdown blockquotes (\"> \"), not HTML <blockquote>. Preserve user content, including ```dataset-view blocks (embedded dataset views; add new ones with insert_dataset_view) and ```embed blocks (link cards; add new ones with unfurl_link).",
                 "parameters": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "type": "object",
@@ -1996,6 +1997,7 @@
                         "title": { "type": "string", "minLength": 1, "maxLength": 160 },
                         "content": { "type": "string", "maxLength": 100000 },
                         "parentId": { "anyOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }] },
+                        "folder": { "type": "boolean" },
                         "expectedRevision": { "type": "integer", "exclusiveMinimum": 0, "maximum": 9007199254740991 },
                         "id": { "type": "string" },
                         "spaceId": {
@@ -3493,7 +3495,7 @@
             },
             {
                 "name": "edit_space_page",
-                "description": "Edit a page using its current expectedRevision. On conflict read the new version first. Write quotes as Markdown blockquotes (\"> \"), not HTML <blockquote>. Preserve user content, including ```dataset-view blocks (embedded dataset views; add new ones with insert_dataset_view) and ```embed blocks (link cards; add new ones with unfurl_link).",
+                "description": "Edit a page using its current expectedRevision. On conflict read the new version first. folder: true turns it into a folder (its body hidden, not deleted), false back into a page. Write quotes as Markdown blockquotes (\"> \"), not HTML <blockquote>. Preserve user content, including ```dataset-view blocks (embedded dataset views; add new ones with insert_dataset_view) and ```embed blocks (link cards; add new ones with unfurl_link).",
                 "parameters": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "type": "object",
@@ -3501,6 +3503,7 @@
                         "title": { "type": "string", "minLength": 1, "maxLength": 160 },
                         "content": { "type": "string", "maxLength": 100000 },
                         "parentId": { "anyOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }] },
+                        "folder": { "type": "boolean" },
                         "expectedRevision": { "type": "integer", "exclusiveMinimum": 0, "maximum": 9007199254740991 },
                         "id": { "type": "string" },
                         "spaceId": {
@@ -5113,7 +5116,7 @@
             },
             {
                 "name": "edit_space_page",
-                "description": "Edit a page using its current expectedRevision. On conflict read the new version first. Write quotes as Markdown blockquotes (\"> \"), not HTML <blockquote>. Preserve user content, including ```dataset-view blocks (embedded dataset views; add new ones with insert_dataset_view) and ```embed blocks (link cards; add new ones with unfurl_link).",
+                "description": "Edit a page using its current expectedRevision. On conflict read the new version first. folder: true turns it into a folder (its body hidden, not deleted), false back into a page. Write quotes as Markdown blockquotes (\"> \"), not HTML <blockquote>. Preserve user content, including ```dataset-view blocks (embedded dataset views; add new ones with insert_dataset_view) and ```embed blocks (link cards; add new ones with unfurl_link).",
                 "parameters": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "type": "object",
@@ -5121,6 +5124,7 @@
                         "title": { "type": "string", "minLength": 1, "maxLength": 160 },
                         "content": { "type": "string", "maxLength": 100000 },
                         "parentId": { "anyOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }] },
+                        "folder": { "type": "boolean" },
                         "expectedRevision": { "type": "integer", "exclusiveMinimum": 0, "maximum": 9007199254740991 },
                         "id": { "type": "string" },
                         "spaceId": {
@@ -6868,7 +6872,7 @@
             },
             {
                 "name": "edit_space_page",
-                "description": "Edit a page using its current expectedRevision. On conflict read the new version first. Write quotes as Markdown blockquotes (\"> \"), not HTML <blockquote>. Preserve user content, including ```dataset-view blocks (embedded dataset views; add new ones with insert_dataset_view) and ```embed blocks (link cards; add new ones with unfurl_link).",
+                "description": "Edit a page using its current expectedRevision. On conflict read the new version first. folder: true turns it into a folder (its body hidden, not deleted), false back into a page. Write quotes as Markdown blockquotes (\"> \"), not HTML <blockquote>. Preserve user content, including ```dataset-view blocks (embedded dataset views; add new ones with insert_dataset_view) and ```embed blocks (link cards; add new ones with unfurl_link).",
                 "parameters": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "type": "object",
@@ -6876,6 +6880,7 @@
                         "title": { "type": "string", "minLength": 1, "maxLength": 160 },
                         "content": { "type": "string", "maxLength": 100000 },
                         "parentId": { "anyOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }] },
+                        "folder": { "type": "boolean" },
                         "expectedRevision": { "type": "integer", "exclusiveMinimum": 0, "maximum": 9007199254740991 },
                         "id": { "type": "string" },
                         "spaceId": {
@@ -8630,7 +8635,7 @@
             },
             {
                 "name": "edit_space_page",
-                "description": "Edit a page using its current expectedRevision. On conflict read the new version first. Write quotes as Markdown blockquotes (\"> \"), not HTML <blockquote>. Preserve user content, including ```dataset-view blocks (embedded dataset views; add new ones with insert_dataset_view) and ```embed blocks (link cards; add new ones with unfurl_link).",
+                "description": "Edit a page using its current expectedRevision. On conflict read the new version first. folder: true turns it into a folder (its body hidden, not deleted), false back into a page. Write quotes as Markdown blockquotes (\"> \"), not HTML <blockquote>. Preserve user content, including ```dataset-view blocks (embedded dataset views; add new ones with insert_dataset_view) and ```embed blocks (link cards; add new ones with unfurl_link).",
                 "parameters": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "type": "object",
@@ -8638,6 +8643,7 @@
                         "title": { "type": "string", "minLength": 1, "maxLength": 160 },
                         "content": { "type": "string", "maxLength": 100000 },
                         "parentId": { "anyOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }] },
+                        "folder": { "type": "boolean" },
                         "expectedRevision": { "type": "integer", "exclusiveMinimum": 0, "maximum": 9007199254740991 },
                         "id": { "type": "string" },
                         "spaceId": {
@@ -10325,7 +10331,7 @@
             },
             {
                 "name": "edit_space_page",
-                "description": "Edit a page using its current expectedRevision. On conflict read the new version first. Write quotes as Markdown blockquotes (\"> \"), not HTML <blockquote>. Preserve user content, including ```dataset-view blocks (embedded dataset views; add new ones with insert_dataset_view) and ```embed blocks (link cards; add new ones with unfurl_link).",
+                "description": "Edit a page using its current expectedRevision. On conflict read the new version first. folder: true turns it into a folder (its body hidden, not deleted), false back into a page. Write quotes as Markdown blockquotes (\"> \"), not HTML <blockquote>. Preserve user content, including ```dataset-view blocks (embedded dataset views; add new ones with insert_dataset_view) and ```embed blocks (link cards; add new ones with unfurl_link).",
                 "parameters": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "type": "object",
@@ -10333,6 +10339,7 @@
                         "title": { "type": "string", "minLength": 1, "maxLength": 160 },
                         "content": { "type": "string", "maxLength": 100000 },
                         "parentId": { "anyOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }] },
+                        "folder": { "type": "boolean" },
                         "expectedRevision": { "type": "integer", "exclusiveMinimum": 0, "maximum": 9007199254740991 },
                         "id": { "type": "string" },
                         "spaceId": {
@@ -12342,7 +12349,7 @@
             },
             {
                 "name": "edit_space_page",
-                "description": "Edit a page using its current expectedRevision. On conflict read the new version first. Write quotes as Markdown blockquotes (\"> \"), not HTML <blockquote>. Preserve user content, including ```dataset-view blocks (embedded dataset views; add new ones with insert_dataset_view) and ```embed blocks (link cards; add new ones with unfurl_link).",
+                "description": "Edit a page using its current expectedRevision. On conflict read the new version first. folder: true turns it into a folder (its body hidden, not deleted), false back into a page. Write quotes as Markdown blockquotes (\"> \"), not HTML <blockquote>. Preserve user content, including ```dataset-view blocks (embedded dataset views; add new ones with insert_dataset_view) and ```embed blocks (link cards; add new ones with unfurl_link).",
                 "parameters": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "type": "object",
@@ -12350,6 +12357,7 @@
                         "title": { "type": "string", "minLength": 1, "maxLength": 160 },
                         "content": { "type": "string", "maxLength": 100000 },
                         "parentId": { "anyOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }] },
+                        "folder": { "type": "boolean" },
                         "expectedRevision": { "type": "integer", "exclusiveMinimum": 0, "maximum": 9007199254740991 },
                         "id": { "type": "string" },
                         "spaceId": {

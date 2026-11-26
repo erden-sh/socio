@@ -62,6 +62,8 @@ export const pagePatch = z
         title: z.string().trim().min(1).max(160).optional(),
         content: z.string().max(100000).optional(),
         parentId: z.string().min(1).nullable().optional(),
+        // CB-426: turns the page into a folder or back, in the same revision as the rest.
+        folder: z.boolean().optional(),
         expectedRevision: z.number().int().positive(),
     })
     .strict();
@@ -806,14 +808,30 @@ export class Pages implements PageStoreShape {
      * Socio Mobile's sync) then sees the change, and an editor still open
      * on the old revision elsewhere gets the usual conflict instead of
      * saving over a page that became a folder. Already so, nothing changes.
+     * With `expectedRevision`, a page at another revision is refused, as an
+     * edit is; it is read and written in one unit of work, so an edit that
+     * commits in between is never written over. The same write as `update`.
      */
-    setFolder(spaceId: string, id: string, folder: boolean, now = Date.now()): Promise<Page> {
+    setFolder(
+        spaceId: string,
+        id: string,
+        folder: boolean,
+        { expectedRevision, now = Date.now() }: { expectedRevision?: number; now?: number } = {},
+    ): Promise<Page> {
         return this.unit('set page folder', async () => {
             const page = this.get(spaceId, id);
+            if (expectedRevision !== undefined && page.revision !== expectedRevision) {
+                throw new PageError('This page changed. Reload the latest revision before saving your draft.', 409);
+            }
             if (page.folder === folder) {
                 return page;
             }
-            await this.repos.pages.folder(id, folder, now);
+            await this.repos.pages.edit(
+                id,
+                page.revision,
+                { title: page.title, content: page.content, parentId: page.parentId, folder },
+                now,
+            );
             return this.get(spaceId, id);
         });
     }
@@ -957,7 +975,8 @@ export class Pages implements PageStoreShape {
             }
             const parent = data.parentId === undefined ? page.parentId : data.parentId;
             this.parent(spaceId, parent, id);
-            // A move changes neither the title nor the text.
+            // A move, or turning it into a folder and back (CB-426), changes
+            // neither the title nor the text.
             const changed =
                 (data.title !== undefined && data.title !== page.title) ||
                 (data.content !== undefined && data.content !== page.content);
@@ -971,6 +990,7 @@ export class Pages implements PageStoreShape {
                     title: data.title ?? page.title,
                     content: data.content ?? page.content,
                     parentId: parent,
+                    ...(data.folder === undefined ? {} : { folder: data.folder }),
                 },
                 now,
             );

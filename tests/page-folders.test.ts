@@ -3,6 +3,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { afterEach, expect, it, vi } from 'vitest';
 
 import { migrate } from '@socio/data/migrate';
+import { sqliteData } from '@socio/data/open';
 import type { Page, PageSummary, PageTreeItem } from '@socio/shared/pages/page-library';
 import type { PageSearchResult } from '@socio/shared/pages/page-search';
 import type { Space } from '@socio/shared/types';
@@ -196,4 +197,45 @@ it('finds a folder by its title, with no snippet of its hidden body', async () =
         f.as('ada')(`/spaces/search?${new URLSearchParams({ q: 'garden', space: f.space })}`),
     );
     expect(again.results.find((hit) => hit.id === f.page.id)!.snippet.length).toBeGreaterThan(0);
+});
+
+it('checks a folder switch’s expected revision in the unit that writes it, behind an edit that lands first', async () => {
+    const workspace = new WorkspaceStore(testDatabase());
+    cleanup.push(() => workspace.close());
+    const space = workspace.spaces()[0].id;
+    const page = await workspace.pages.create(space, { title: 'Notes', content: 'Mine.' });
+    const { uow } = sqliteData(workspace.db);
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    // Another edit, its unit open first and committing revision 2 after the switch was asked for.
+    const other = uow.run(
+        async () => {
+            await gate;
+            await workspace.pages.update(space, page.id, { content: 'Theirs.', expectedRevision: 1 });
+        },
+        { label: 'another edit' },
+    );
+    while (!uow.foreignUnit) {
+        await Promise.resolve();
+    }
+    const stale = workspace.pages.setFolder(space, page.id, true, { expectedRevision: 1 });
+    const combined = workspace.pages.update(space, page.id, { title: 'Mine', folder: true, expectedRevision: 1 });
+    release();
+    await other;
+    await expect(stale).rejects.toMatchObject({ status: 409 });
+    await expect(combined).rejects.toMatchObject({ status: 409 });
+    expect(workspace.pages.get(space, page.id)).toMatchObject({
+        title: 'Notes',
+        content: 'Theirs.',
+        folder: false,
+        revision: 2,
+    });
+    // At the current revision, both go, each one revision.
+    expect(await workspace.pages.setFolder(space, page.id, true, { expectedRevision: 2 })).toMatchObject({
+        folder: true,
+        revision: 3,
+    });
+    expect(
+        await workspace.pages.update(space, page.id, { title: 'Mine', folder: false, expectedRevision: 3 }),
+    ).toMatchObject({ title: 'Mine', folder: false, content: 'Theirs.', revision: 4 });
 });

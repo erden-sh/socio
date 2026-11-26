@@ -766,30 +766,24 @@ export function agentMcpServer({
         },
         async ({ spaceId, pageId, expectedRevision, title, content, parentId, folder }) => {
             const id = editable(spaceId);
-            // A call that only sets `folder` changes nothing else, so no edit.
-            const edits =
-                folder === undefined || title !== undefined || content !== undefined || parentId !== undefined;
-            let page = edits
-                ? await workspace.pages.update(
-                      id,
-                      pageId,
-                      {
-                          expectedRevision,
-                          ...(title !== undefined ? { title } : {}),
-                          ...(content !== undefined ? { content: pageMarkdown(content) } : {}),
-                          ...(parentId !== undefined ? { parentId } : {}),
-                      },
-                      { by: person.id },
-                  )
-                : workspace.pages.get(id, pageId);
-            if (folder !== undefined) {
-                // Only the mark, as the web's Turn into folder: a stale revision is
-                // refused as for any edit.
-                if (!edits && page.revision !== expectedRevision) {
-                    throw new PageError('This page changed. Reload the latest revision before saving your draft.', 409);
-                }
-                page = await workspace.pages.setFolder(id, pageId, folder);
-            }
+            // Each is one unit of work that checks expectedRevision as it writes (CB-426), so an
+            // edit committed in between is refused, never written over.
+            const page =
+                folder !== undefined && title === undefined && content === undefined && parentId === undefined
+                    ? // Only the mark, as the web's Turn into folder.
+                      await workspace.pages.setFolder(id, pageId, folder, { expectedRevision })
+                    : await workspace.pages.update(
+                          id,
+                          pageId,
+                          {
+                              expectedRevision,
+                              ...(title !== undefined ? { title } : {}),
+                              ...(content !== undefined ? { content: pageMarkdown(content) } : {}),
+                              ...(parentId !== undefined ? { parentId } : {}),
+                              ...(folder !== undefined ? { folder } : {}),
+                          },
+                          { by: person.id },
+                      );
             return written(page);
         },
     );

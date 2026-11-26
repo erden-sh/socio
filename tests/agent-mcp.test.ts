@@ -4,6 +4,7 @@ import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { Layer } from 'effect';
 import { afterEach, expect, it, vi } from 'vitest';
 
+import { sqliteData } from '@socio/data/open';
 import type { AgentActor } from '@socio/foundation/agents/actor';
 import type { AgentScope } from '@socio/shared/agents/scopes';
 import type { User } from '@socio/shared/types';
@@ -1459,4 +1460,84 @@ it('creates folders and turns pages into folders and back, keeping their body (C
     expect(back.data).toMatchObject({ title: 'Plan, again', folder: false });
     const read = await call('read_page', { spaceId, pageId: page.data.id });
     expect(read.data).toMatchObject({ title: 'Plan, again', content: 'Steps.', folder: false });
+});
+
+it('refuses a stale expectedRevision for a folder switch when another edit lands between read and write (CB-426)', async () => {
+    const { connect, workspace } = await fixture();
+    const [everyday] = workspace.spaces();
+    const spaceId = everyday!.id;
+    const { call } = await connect(actorFor('bob', ['pages:read', 'pages:write']));
+    const { uow } = sqliteData(workspace.db);
+    /**
+     * Another edit's unit of work, open before the call's write and holding
+     * its write until `release`: the call reads the page at revision 1, then
+     * its write queues behind this one, which commits revision 2 first.
+     */
+    const otherEdit = (pageId: string) => {
+        let release!: () => void;
+        const gate = new Promise<void>((resolve) => (release = resolve));
+        const unit = uow.run(
+            async () => {
+                await gate;
+                workspace.db.prepare("UPDATE pages SET content='Theirs.', revision=revision+1 WHERE id=?").run(pageId);
+            },
+            { label: 'another edit' },
+        );
+        return { unit, release };
+    };
+    /** Resolves once the store's `method` is called, its unit queued. */
+    const called = (method: 'setFolder' | 'update') =>
+        new Promise<void>((resolve) => {
+            const original = workspace.pages[method].bind(workspace.pages) as (...args: unknown[]) => Promise<unknown>;
+            vi.spyOn(workspace.pages, method).mockImplementation(((...args: unknown[]) => {
+                const result = original(...args);
+                resolve();
+                return result;
+            }) as never);
+        });
+
+    for (const [method, change] of [
+        ['setFolder', { folder: true }],
+        ['update', { title: 'Mine', folder: true }],
+    ] as const) {
+        const made = await call('create_page', { spaceId, title: `For ${method}`, content: 'Mine.' });
+        const pageId = made.data.id as string;
+        expect(made.data.revision).toBe(1);
+        const other = otherEdit(pageId);
+        while (!uow.foreignUnit) {
+            await Promise.resolve();
+        }
+        const queued = called(method);
+        const stale = call('update_page', { spaceId, pageId, expectedRevision: 1, ...change });
+        await queued;
+        other.release();
+        await other.unit;
+        const answer = await stale;
+        expect(answer.isError, method).toBe(true);
+        // The other edit stands; nothing of the stale call was written.
+        expect(workspace.pages.get(spaceId, pageId)).toMatchObject({
+            title: `For ${method}`,
+            content: 'Theirs.',
+            folder: false,
+            revision: 2,
+        });
+        vi.restoreAllMocks();
+    }
+});
+
+it('switches a page into a folder with its other changes in one revision (CB-426)', async () => {
+    const { connect, workspace } = await fixture();
+    const [everyday] = workspace.spaces();
+    const spaceId = everyday!.id;
+    const { call } = await connect(actorFor('bob', ['pages:read', 'pages:write']));
+    const made = await call('create_page', { spaceId, title: 'Plan', content: 'Steps.' });
+    const both = await call('update_page', {
+        spaceId,
+        pageId: made.data.id,
+        expectedRevision: 1,
+        title: 'Plans',
+        folder: true,
+    });
+    expect(both.data).toMatchObject({ title: 'Plans', folder: true, revision: 2 });
+    expect(workspace.pages.get(spaceId, made.data.id as string).content).toBe('Steps.');
 });

@@ -55,6 +55,8 @@ export interface PageEdit {
     title: string;
     content: string;
     parentId: string | null;
+    /** Whether it is a folder (CB-426); left as it is when left out. */
+    folder?: boolean;
 }
 
 /** Who deleted a page, and when; `with` names the page it went with. */
@@ -83,11 +85,6 @@ export interface PageRepository {
      * revision: a cover isn't part of the page's text.
      */
     cover(id: string, coverId: string | null, now: number): Promise<void>;
-    /**
-     * Marks a live page as a folder or a page (CB-426), as its next
-     * revision, edited `now`; its title and body stay.
-     */
-    folder(id: string, folder: boolean, now: number): Promise<void>;
     /** Hides a live page with its stamp; a deleted one stays as it was. */
     hide(id: string, deletion: PageDeletion): Promise<void>;
 }
