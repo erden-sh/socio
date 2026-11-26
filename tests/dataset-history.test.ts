@@ -281,7 +281,11 @@ describe('pruning', () => {
         const check = open(path);
         expect(check.prepare('SELECT count(*) AS n FROM "_writes" WHERE id = 900').get()).toEqual({ n: 1 });
         check.close();
-    });
+        // Its own limit: the prune opens the file once per table and page (some 620
+        // times here), each open reading a 600-table schema. That is the case under
+        // test, so it stays; it takes about 4 s on a quiet host and several times that
+        // on a loaded one.
+    }, 60_000);
 
     it('reads history a page at a time and writes nothing when no row is old enough', async () => {
         const { engine, path, upsert } = engineFixture();
