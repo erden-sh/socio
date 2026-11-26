@@ -5,6 +5,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { migrate } from '@socio/data/migrate';
 import { sqliteData } from '@socio/data/open';
 import type { Page, PageSummary, PageTreeItem } from '@socio/shared/pages/page-library';
+import type { SpaceRadar } from '@socio/shared/pages/page-radar';
 import type { PageSearchResult } from '@socio/shared/pages/page-search';
 import type { Space } from '@socio/shared/types';
 
@@ -197,6 +198,30 @@ it('finds a folder by its title, with no snippet of its hidden body', async () =
         f.as('ada')(`/spaces/search?${new URLSearchParams({ q: 'garden', space: f.space })}`),
     );
     expect(again.results.find((hit) => hit.id === f.page.id)!.snippet.length).toBeGreaterThan(0);
+});
+
+it('keeps a folder’s hidden body out of the Space’s radar: no excerpt and no open decision from it', async () => {
+    const f = await fixture();
+    const plan = await f.json<Page>(
+        f.as('ada')(`/spaces/${f.space}/pages`, 'POST', {
+            title: 'Plans',
+            content: 'TBD: kept body should be hidden.',
+        }),
+    );
+    const radar = () => f.json<SpaceRadar>(f.as('ada')(`/spaces/${f.space}/radar`));
+    const before = await radar();
+    expect(before.recent.find((entry) => entry.id === plan.id)?.excerpt).toContain('kept body');
+    expect(before.open.some((entry) => entry.id === plan.id)).toBe(true);
+
+    await f.folder('ada', plan.id, { folder: true });
+    const folded = await radar();
+    expect(folded.recent.find((entry) => entry.id === plan.id)?.excerpt).toBe('');
+    expect(folded.open.some((entry) => entry.id === plan.id)).toBe(false);
+    expect(JSON.stringify(folded)).not.toContain('kept body');
+
+    // Back into a page, its text and its open decision show again.
+    await f.folder('ada', plan.id, { folder: false });
+    expect((await radar()).open.some((entry) => entry.id === plan.id)).toBe(true);
 });
 
 it('checks a folder switch’s expected revision in the unit that writes it, behind an edit that lands first', async () => {

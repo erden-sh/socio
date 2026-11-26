@@ -643,7 +643,8 @@ export class Pages implements PageStoreShape {
             spaceId: page.spaceId,
             parentId: page.parentId,
             title: page.title,
-            excerpt: pageExcerpt(page.content, page.title),
+            // A folder's body is hidden (CB-426): nothing of it reaches the radar, not even its open decisions.
+            excerpt: page.folder ? '' : pageExcerpt(page.content, page.title),
             revision: page.revision,
             revisions: counts.get(page.id) ?? 0,
             createdAt: page.createdAt,
