@@ -14,6 +14,7 @@ import { dataKeyId, SEAL_PURPOSES, type SealPurpose, type SealState } from '@soc
 import type { DataKeyResealStatus, DataKeyStatus, RecoveryKeyCheck } from '@socio/shared/types';
 
 import type { BackupService } from '../../backup/backup-service.js';
+import type { CloudService } from '../../cloud/service.js';
 import type { DataSpace } from '../../dataspace/space.js';
 import type { GitHubAppSettings } from '../../github/settings.js';
 import type { InferenceService } from '../../inference/service.js';
@@ -23,6 +24,7 @@ import type { UpdateService } from '../../updates/service.js';
 import type { TranscriptionKeys } from '../../voice/transcription.js';
 import type { WorkspaceSecrets } from '../../workspace-secrets/service.js';
 import { LegacyConfig, LegacyModuleContext, LegacyWorkspace } from '../base.js';
+import { CloudConnectionService } from '../cloud.js';
 import type { PlatformConfig } from '../config.js';
 import { LegacyData } from '../dataspace.js';
 import { LegacyGitHub } from '../github.js';
@@ -73,6 +75,7 @@ export interface DataKeySources {
     readonly github: Pick<GitHubAppSettings, 'sealStates' | 'reseal'>;
     readonly transcriptionKeys: Pick<TranscriptionKeys, 'sealStates' | 'reseal'>;
     readonly updates: Pick<UpdateService, 'sealStates' | 'reseal'>;
+    readonly cloud: Pick<CloudService, 'sealStates' | 'reseal'>;
     readonly mcpConnections: Pick<McpConnections, 'sealStates' | 'reseal'>;
     readonly workspaceSecrets: Pick<WorkspaceSecrets, 'sealStates' | 'reseal'>;
     /** Scheduled backups, read at the moment of use (their late-bound port). */
@@ -112,10 +115,10 @@ export class DataKeys implements DataKeyAdminShape {
             backups: this.sources.backups()?.sealStates() ?? { current: 0, previous: 0, legacy: 0, unknown: 0 },
             'push-keys': await this.sources.notifications.push.sealStates(),
             'dispatch-credentials': await github.sealStates(),
-            // The transcription key and the release feed's token.
+            // The transcription key, the release feed's token and the cloud connection's identity.
             'settings-secrets': addStates(
-                this.sources.transcriptionKeys.sealStates(),
-                this.sources.updates.sealStates(),
+                addStates(this.sources.transcriptionKeys.sealStates(), this.sources.updates.sealStates()),
+                this.sources.cloud.sealStates(),
             ),
             'mcp-credentials': mcpConnections.sealStates(),
             'workspace-secrets': workspaceSecrets.sealStates(),
@@ -195,6 +198,7 @@ export class DataKeys implements DataKeyAdminShape {
             this.sources.transcriptionKeys,
             this.sources.mcpConnections,
             this.sources.updates,
+            this.sources.cloud,
             this.sources.workspaceSecrets,
         ];
         for (const store of stores) {
@@ -333,6 +337,7 @@ const DataKeyAdminLive = Layer.effect(
                 github: yield* LegacyGitHub,
                 transcriptionKeys: yield* LegacyTranscriptionKeys,
                 updates: yield* LegacyUpdates,
+                cloud: yield* CloudConnectionService,
                 mcpConnections: yield* LegacyMcpConnections,
                 workspaceSecrets: yield* LegacyWorkspaceSecrets,
                 backups: () => ports.backups.peek(),

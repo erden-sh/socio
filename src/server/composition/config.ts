@@ -24,6 +24,7 @@ import type { AutoTriageSettings, SetupStatus } from '@socio/shared/types';
 import type { DictationAllowed } from '@socio/shared/voice/dictation';
 
 import type { AppsRuntimeSettings } from '../apps/contract.js';
+import type { CloudEnvironment } from '../cloud/contract.js';
 import type { DataSettings } from '../dataspace/contract.js';
 import type { DomainsSetup } from '../domains/contract.js';
 import type { DeploymentKind, FlagEnvDefaults } from '../flags/contract.js';
@@ -262,6 +263,8 @@ export interface PlatformConfig extends SearchWebConfig {
     domains?: DomainsSetup;
     /** UPDATES_* and UPDATER_* (`updatesFromEnv`, CB-259): the release feed and the updater; none when unset. */
     updates?: UpdatesEnvironment;
+    /** SOCIO_CLOUD* (`cloudFromEnv`): the cloud connection; off when unset (a platform built without the entry). */
+    cloud?: CloudEnvironment;
     /**
      * `FEATURE_FLAGS` (`flagDefaultsFromEnv`, CB-169): this instance's
      * default for some flags, under an operator's rule in Settings.

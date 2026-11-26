@@ -44,6 +44,7 @@ import { askLayers } from './ask.js';
 import { capabilitiesLayers } from './capabilities.js';
 import { chatNameSuggestionsLayers } from './chat-name-suggestions.js';
 import { classifyLayers } from './classify.js';
+import { cloudLayers } from './cloud.js';
 import { codingLayers } from './coding.js';
 import { computersLayers } from './computers.js';
 import { contextLayers } from './context.js';
@@ -145,6 +146,7 @@ export function appGraph<B, RB>(root: Layer.Layer<B, never, RB>) {
             then(operationsLayers.analytics),
             then(domainsLayers.domains),
             then(updatesLayers.updates),
+            then(cloudLayers.cloud),
             then(capabilitiesLayers.capabilities),
             then(dotsLayers.extensions),
             then(approvalsLayers.notices),
