@@ -175,7 +175,8 @@ describe('the scanner’s hand-off', () => {
         const screen = src('screens/scan-qr.tsx');
         expect(screen).toContain('scanCode(latest.current, data, SCAN_LINKS, handOff)');
         expect(screen).toContain('open: (url) => void openScannedLink(url)');
-        expect(screen).toContain("barcodeScannerSettings={{ barcodeTypes: ['qr'] }}");
+        // QR codes only, through QrCamera on both platforms (tests/qr-camera.test.ts).
+        expect(screen).toContain('onCode={onCode}');
         // The development field that stands in for the camera never renders outside __DEV__.
         expect(screen.match(/<DevScan\b/g)).toHaveLength(1);
         expect(screen).toContain('{__DEV__ ? <DevScan ');

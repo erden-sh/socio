@@ -1,7 +1,7 @@
 import { useNavigation } from '@react-navigation/native';
-import { type BarcodeScanningResult, CameraView, useCameraPermissions } from 'expo-camera';
+import { useCameraPermissions } from 'expo-camera';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Linking, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, Linking, Pressable, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { openScannedLink } from '../navigation/scanned-link';
@@ -10,9 +10,12 @@ import { appState } from '../platform/app-state';
 import { SCAN_LINKS } from '../platform/qr-scan';
 import { AppSymbol, Button, Text } from '../ui';
 
+import { QrCamera } from './qr-camera';
+
 // Add workspace's QR scanner (CB-566): the camera full screen (the `modal` preset), opened only by a
-// tap on the first screen's QR row, which is when the camera permission is asked. It reads QR codes
-// only; Socio's own (net/qr-scan.ts: Add a device, Get the app, an invite, this build's link host and
+// tap on the first screen's QR row, which is when the camera permission is asked (expo-camera's, on
+// both platforms). The camera is `QrCamera` (qr-camera.tsx: CameraX and ZXing on Android, nothing of
+// Google's; qr-camera.ios.tsx: expo-camera on iOS). It reads QR codes only; Socio's own (net/qr-scan.ts: Add a device, Get the app, an invite, this build's link host and
 // variant) closes the scanner and opens as the same link from outside would (scanned-link.ts); any
 // other code says so under the frame with Try again, and the camera keeps reading. Refused, it says
 // so with Open Settings (and Allow the camera while Android may still ask), and reads the permission
@@ -81,15 +84,11 @@ export function ScanQrScreen() {
     return (
         <View testID="scan-qr-screen" className="flex-1 bg-black">
             {running ? (
-                <CameraView
+                <QrCamera
                     testID="scan-qr-camera"
-                    style={StyleSheet.absoluteFill}
-                    facing="back"
-                    barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
-                    enableTorch={light}
-                    onBarcodeScanned={
-                        scan.step === 'opening' ? undefined : (result: BarcodeScanningResult) => onCode(result.data)
-                    }
+                    torch={light}
+                    reading={scan.step !== 'opening'}
+                    onCode={onCode}
                     onMountError={() => setCameraFailed(true)}
                 />
             ) : null}
