@@ -91,9 +91,6 @@ describe('authedFetch', () => {
                 origin: ORIGIN,
                 cookie: `${SESSION}=t1.c2ln%3D`,
                 'user-agent': USER_AGENT,
-                // This build reads AG-UI 1.0's attachment parts: the server sends
-                // the pre-1.0 shape only to builds that don't say so.
-                'x-socio-reads': 'ag-ui-media',
             },
             body: undefined,
             credentials: 'omit',

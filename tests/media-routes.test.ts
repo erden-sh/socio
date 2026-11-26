@@ -285,21 +285,13 @@ it('deletes a pending attachment with its file, but not a sent one, and collects
     expect(await f.platform.media.attachment(sent)).toBeUndefined();
 });
 
-// AG-UI 1.0's media part, as the apps send it now, and the pre-1.0 `binary`
-// reference, as the native app builds already shipped still do.
+// AG-UI 1.0's media part, as every client sends it (the run endpoint refuses
+// the pre-1.0 `binary` reference in a new message: runtime-scope.test.ts).
 const NEW_SHAPE = (attachment: AttachmentRef) =>
     attachmentPart({ id: attachment.id, mimeType: attachment.mediaType, filename: attachment.name });
-const OLD_SHAPE = (attachment: AttachmentRef) => ({
-    type: 'binary',
-    id: attachment.id,
-    mimeType: attachment.mediaType,
-    filename: attachment.name,
-});
 
-it.each([
-    ['the 1.0 media part', NEW_SHAPE],
-    ['the pre-1.0 binary part', OLD_SHAPE],
-])('binds a message’s attachments (%s) when its run is accepted, not when the model is called', async (_, ref) => {
+it('binds a message’s attachments when its run is accepted, not when the model is called', async () => {
+    const ref = NEW_SHAPE;
     const f = await fixture();
     const alice = await f.as('alice');
     const upload = async (as: typeof alice, name: string) =>
@@ -334,8 +326,7 @@ it.each([
     );
     expect(await response.text()).toBe('stopped');
     expect(runtime).toHaveBeenCalledTimes(1);
-    // CopilotKit gets (and the runner stores) the 1.0 part, whichever came:
-    // its request parser drops the old one.
+    // CopilotKit gets (and the runner stores) the 1.0 part as it came.
     const forwarded = (await (runtime.mock.calls[0][0] as Request).json()) as { messages: Message[] };
     expect(forwarded.messages[0].content).toEqual([{ type: 'text', text: 'see' }, NEW_SHAPE(report), NEW_SHAPE(bobs)]);
     expect(await f.platform.media.attachment(report.id)).toMatchObject({

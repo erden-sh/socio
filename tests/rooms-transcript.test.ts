@@ -7,6 +7,7 @@ import { ROOM_FAILURE_NOTES, TURN_FAILURE_MESSAGES, type TurnFailure } from '@so
 import { ROOM_PROBLEM_FALLBACK, TURN_PROBLEM_FALLBACK, turnProblems } from '@socio/foundation/rooms/turn-problems';
 import { approvalNoteMessagePrefix, approvalNoteSource } from '@socio/shared/approvals';
 import { ROOM_DISCLOSURE_VERSION } from '@socio/shared/rooms/rooms';
+import { messageAuthor } from '@socio/shared/runs/socio-fields';
 import { SENDER_METADATA, SOCIO_METADATA, type MessageAuthor, type TranscriptTurnProblem } from '@socio/shared/types';
 
 import type { LocalAgentRunner } from '../src/server/turns/local-runner.js';
@@ -30,7 +31,7 @@ interface TranscriptMessage {
     id: string;
     role: string;
     content: unknown;
-    author?: MessageAuthor;
+    metadata?: { author?: MessageAuthor; at?: number };
     socioId?: string;
 }
 interface Transcript {
@@ -104,7 +105,7 @@ it('says which socio wrote each reply, each sender by id, where a refused turn s
     const transcript = (await (await f.as('ada')(`/conversations/${roomId}/transcript`)).json()) as Transcript;
     const byId = new Map(transcript.messages.map((m) => [m.id, m]));
     expect(byId.get('t-run-mo')?.socioId).toBe(f.company.id);
-    expect(byId.get('u-mo')?.author).toEqual({
+    expect(messageAuthor(byId.get('u-mo'))).toEqual({
         name: 'Mo',
         you: false,
         id: 'mo',
@@ -115,7 +116,7 @@ it('says which socio wrote each reply, each sender by id, where a refused turn s
     expect(problem).toMatchObject({ runId: 'run-nina' });
     expect(Object.values(TURN_FAILURE_MESSAGES)).toContain(problem!.message);
     // After the last message shown before it ended: Nina's, kept.
-    expect(byId.get('u-nina')?.author).toMatchObject({ name: 'Nina' });
+    expect(messageAuthor(byId.get('u-nina'))).toMatchObject({ name: 'Nina' });
     expect(problem!.after).toBe('u-nina');
     expect(problem!.author).toEqual({ name: 'Nina', you: false, id: 'nina' });
     // Ada reads it about Nina, not Socio's words to Nina (CB-205).
@@ -130,7 +131,7 @@ it('says which socio wrote each reply, each sender by id, where a refused turn s
     expect(own.messages.length).toBeGreaterThan(0);
     expect(own).not.toHaveProperty('cursor');
     expect(own).not.toHaveProperty('problems');
-    expect(own.messages.every((message) => !message.author)).toBe(true);
+    expect(own.messages.every((message) => !messageAuthor(message))).toBe(true);
 });
 
 it('attributes a converted chat’s earlier messages to its former owner, never a server note', async () => {
@@ -164,7 +165,7 @@ it('attributes a converted chat’s earlier messages to its former owner, never 
     const read = async (person: string) =>
         new Map(
             ((await (await f.as(person)(`/conversations/${privateId}/transcript`)).json()) as Transcript).messages.map(
-                (message) => [message.id, message.author],
+                (message) => [message.id, messageAuthor(message)],
             ),
         );
     expect((await read('ada')).get('u-old')).toEqual({
@@ -192,9 +193,10 @@ it('attributes a converted chat’s earlier messages to its former owner, never 
     }>;
     const old = listed.find((message) => message.id === 'u-old')!;
     expect(old.metadata?.author).toEqual({ name: 'Olive', you: false, id: 'olive' });
-    expect(old.author).toEqual(old.metadata?.author);
-    expect(old.at).toEqual(expect.any(Number));
-    expect(old.metadata?.at).toBe(old.at);
+    expect(old.metadata?.at).toEqual(expect.any(Number));
+    // In `metadata` only: no top-level copy.
+    expect(old).not.toHaveProperty('author');
+    expect(old).not.toHaveProperty('at');
     // A room made as a room has no former owner.
     expect(f.workspace.convertedFrom('nope')).toBeUndefined();
 

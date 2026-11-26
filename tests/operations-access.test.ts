@@ -15,6 +15,7 @@ import {
     type OpsChatHistoryPage,
     type OpsChatView,
 } from '@socio/shared/operations/operations-access';
+import { messageAuthor } from '@socio/shared/runs/socio-fields';
 import type { User } from '@socio/shared/types';
 import { SENDER_METADATA, SENDER_NAME_METADATA } from '@socio/shared/types';
 
@@ -616,7 +617,7 @@ it('names each person’s message in a chat by who wrote it, several people in a
     const web = await json<OpsChatHistoryPage>(await carolApi('/operations/chats/t-bob/history'));
     const asked = web.items.flatMap((run) => run.messages.filter((message) => message.role === 'user'));
     expect(asked.length).toBeGreaterThan(0);
-    expect(asked.every((message) => message.author?.name === 'Bob')).toBe(true);
+    expect(asked.every((message) => messageAuthor(message)?.name === 'Bob')).toBe(true);
     // A Telegram team topic: bob and olga write in it; someone since gone
     // keeps the name they had; a message from before CB-66 has no sender.
     f.workspace.bindThread('t-team', f.dot.id, 'Team agenda', teamOwner('-100'));
@@ -668,17 +669,17 @@ it('names each person’s message in a chat by who wrote it, several people in a
     expect(chat).toMatchObject({ team: true, ownerName: 'Telegram team' });
     const team = await json<OpsChatHistoryPage>(await carolApi('/operations/chats/t-team/history'));
     const messages = team.items[0]!.messages;
-    expect(messages.map((message) => [message.role, message.author?.name])).toEqual([
+    expect(messages.map((message) => [message.role, messageAuthor(message)?.name])).toEqual([
         ['user', 'Bob'],
         ['user', 'Olga'],
         ['user', 'Gina'],
         ['user', 'Team member'],
         ['assistant', undefined],
     ]);
-    expect(messages.every((message) => !message.author?.you)).toBe(true);
+    expect(messages.every((message) => !messageAuthor(message)?.you)).toBe(true);
     // Never anyone's account id; the rest of the metadata stays.
     expect(JSON.stringify(team)).not.toContain(SENDER_METADATA);
-    // The author is there too (and at the top level, for the app builds that
-    // predate reading metadata).
-    expect(messages[0]!.metadata).toEqual({ socioSource: 'telegram', author: messages[0]!.author });
+    // The author is there, in `metadata` only.
+    expect(messages[0]!.metadata).toEqual({ socioSource: 'telegram', author: { name: 'Bob', you: false } });
+    expect(messages[0]).not.toHaveProperty('author');
 });

@@ -78,8 +78,7 @@ function withAuthors(run: HistoryRun, names: ReadonlyMap<string, string>, owner:
                 you: false,
             };
             const { metadata: _given, ...rest } = message;
-            // Its author in `metadata`, which AG-UI 1.0 keeps, and for now at
-            // the top level too (`withSocioFields`).
+            // Its author in `metadata`, which AG-UI 1.0 keeps (`withSocioFields`).
             return withSocioFields({ ...rest, ...(Object.keys(metadata).length ? { metadata } : {}) }, { author });
         }),
     };

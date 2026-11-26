@@ -54,13 +54,7 @@ describe('the shell’s snapshot sources', () => {
         await s.workspace.pull('', s.workspace.cursor());
         expect(s.fetch.calls.map((call) => call.url)).toEqual([`${ORIGIN}/api/state`, `${ORIGIN}/api/workspace`]);
         for (const call of s.fetch.calls) {
-            expect(Object.keys(sentHeaders(call)).sort()).toEqual([
-                'accept',
-                'cookie',
-                'origin',
-                'user-agent',
-                'x-socio-reads',
-            ]);
+            expect(Object.keys(sentHeaders(call)).sort()).toEqual(['accept', 'cookie', 'origin', 'user-agent']);
         }
         // A whole kind takes no other scope, and nothing is sent for one.
         await expect(s.state.pull('everyday', null)).rejects.toBeInstanceOf(TypeError);

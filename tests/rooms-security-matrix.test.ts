@@ -9,6 +9,7 @@ import type {
 } from '@socio/shared/operations/operations-access';
 import { pageReviewTool } from '@socio/shared/pages/page-review';
 import { ROOM_DISCLOSURE_VERSION, ROOM_INVITE_TTL_MS } from '@socio/shared/rooms/rooms';
+import { messageAuthor } from '@socio/shared/runs/socio-fields';
 import { SENDER_METADATA, SENDER_NAME_METADATA, type AgentRunSummary } from '@socio/shared/types';
 
 import { dotAdminWeb } from '../src/server/composition/dots.js';
@@ -676,20 +677,22 @@ it('stamps every room message with its real sender end to end, whatever a client
 
     // Every reader sees Mo: each member, and an admin in Operations.
     const authorFor = async (person: string) =>
-        (
-            (await (await f.as(person)(`/conversations/${roomA}/transcript`)).json()) as {
-                messages: Array<{
-                    id: string;
-                    author?: { name: string; you: boolean; id?: string };
-                }>;
-            }
-        ).messages.find((message) => message.id === 'forged-1')?.author;
+        messageAuthor(
+            (
+                (await (await f.as(person)(`/conversations/${roomA}/transcript`)).json()) as {
+                    messages: Array<{
+                        id: string;
+                        author?: { name: string; you: boolean; id?: string };
+                    }>;
+                }
+            ).messages.find((message) => message.id === 'forged-1'),
+        );
     // A room's transcript names the sender by id too (CB-212): the real one.
     expect(await authorFor('ada')).toEqual({ name: 'Mo', you: false, id: 'mo' });
     expect(await authorFor('mo')).toEqual({ name: 'Mo', you: true, id: 'mo' });
     const ops = (await (await f.as('alice')(`/operations/chats/${roomA}/history`)).json()) as OpsChatHistoryPage;
     const opsMessage = ops.items.flatMap((item) => item.messages).find((message) => message.id === 'forged-1');
-    expect(opsMessage?.author).toEqual({ name: 'Mo', you: false });
+    expect(messageAuthor(opsMessage)).toEqual({ name: 'Mo', you: false });
     expect(JSON.stringify(opsMessage)).not.toContain(SENDER_METADATA);
 
     // A stranger's turn in the room, forged as a member's, never runs.

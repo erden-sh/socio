@@ -5,6 +5,30 @@ build's "What to Test" in TestFlight (AGENTS.md, Versions). An entry is `## <ver
 <YYYY-MM-DD>)`, or `(build pending)` until it is uploaded, then a short **What to test** list in plain
 words, grouped by screen.
 
+## 0.2.7 (build pending)
+
+Your three notes on 0.2.6, editing in datasets, and a newer foundation under the app.
+
+**What to test**
+
+Your notes
+
+- Pictures on an issue: open one, then pinch or double-tap to zoom in, drag to move around while zoomed, and double-tap again to fit. With several pictures, swipe sideways to go to the next one.
+- In the same viewer, drag a picture down to close it: the issue shows behind it. A short drag springs back.
+- Search for something that matches nothing: a "No results" message shows in the middle of the screen with a Clear search button. A Space's page search, the Board and Schedules do the same, with Clear filters when filters are on.
+
+Datasets (where the workspace has them switched on)
+
+- In a table view, tap a cell to edit it. Dates use the phone's date picker.
+- Add a row, change a field, and export a view as CSV through the share sheet.
+- Change a view's layout or filters and save it for everyone while someone else saves the same view: the app shows their version beside yours, with Keep mine, Take theirs or Save mine as a new view.
+- Edit a cell someone else just changed: the app shows their value and lets you choose.
+
+Chats and rooms
+
+- Send photos and files in a chat and in a room, then reopen them: they still show, along with older ones.
+- Message times, who wrote each room message, and the details of a failed turn still show.
+
 ## 0.2.6 (build 3711, 2026-11-22)
 
 Your two notes on 0.2.5, and the first part of datasets in Spaces.

@@ -11,6 +11,7 @@ import { runFacts } from '@socio/foundation/operations/run-facts';
 import { acceptedMessages, withSender } from '@socio/foundation/workspace/client-messages';
 import type { OpsChatHistoryPage } from '@socio/shared/operations/operations-access';
 import { pageReviewTool } from '@socio/shared/pages/page-review';
+import { messageAuthor } from '@socio/shared/runs/socio-fields';
 import { SENDER_METADATA, SENDER_NAME_METADATA } from '@socio/shared/types';
 import { voiceReceiptMessagePrefix } from '@socio/shared/voice/voice-receipt';
 
@@ -231,7 +232,7 @@ it('stores a web message claiming another sender as the signed-in person’s, ev
     const authors = page.items
         .flatMap((run) => run.messages)
         .filter((message) => message.role === 'user')
-        .map((message) => message.author?.name);
+        .map((message) => messageAuthor(message)?.name);
     expect(authors).toEqual(['Olive']);
 
     // Analytics credit them with it too (CB-187).
@@ -297,7 +298,7 @@ it('keeps what the conversation stored, whatever a later request says it held', 
         page.items
             .flatMap((run) => run.messages)
             .filter((message) => message.role === 'user')
-            .map((message) => message.author?.name),
+            .map((message) => messageAuthor(message)?.name),
     ).toEqual(['Olive', 'Olive']);
     // Each run stored only what it brought.
     const started = f.platform.runner
@@ -639,7 +640,7 @@ it('keeps a queued file message the server ran as it stored it, whatever a later
     const authors = (await f.transcript(thread.id)).items
         .flatMap((run) => run.messages)
         .filter((message) => message.role === 'user')
-        .map((message) => [message.id, message.author?.name]);
+        .map((message) => [message.id, messageAuthor(message)?.name]);
     // Newest turn first.
     expect(authors).toEqual([
         ['u2', 'Olive'],
@@ -707,7 +708,7 @@ it('keeps steered text delivered mid-turn as stored, whatever a later request re
     const authors = (await f.transcript(thread.id)).items
         .flatMap((run) => run.messages)
         .filter((message) => message.role === 'user')
-        .map((message) => [message.id, message.author?.name]);
+        .map((message) => [message.id, messageAuthor(message)?.name]);
     // Newest turn first.
     expect(authors).toEqual([
         ['u2', 'Olive'],

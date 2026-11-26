@@ -5,6 +5,7 @@ import { contentText } from '@socio/shared/chat/content-text';
 import { dateTimeFormat } from '@socio/shared/locale';
 import type { LocalId } from '@socio/shared/mascot';
 import type { LiveTurn } from '@socio/shared/rooms/live-turn';
+import { messageAt } from '@socio/shared/runs/socio-fields';
 import type { CallReceipt } from '@socio/shared/types';
 
 import type { ToneName } from '../theme/theme';
@@ -169,9 +170,12 @@ function rowOf(
     return null;
 }
 
-/** A message's time: the runs' (`times.messages`, the web's CB-72), else its own `at`, else none. */
+/**
+ * A message's time: the runs' (`times.messages`, the web's CB-72), else its own `metadata.at`
+ * (or the top-level `at` a message stored before AG-UI 1.0 has: `messageAt`), else none.
+ */
 function timeOf(times: ReadonlyMap<string, number>, message: Message): number | undefined {
-    const own = (message as { at?: unknown }).at;
+    const own = messageAt(message);
     return times.get(message.id) ?? (typeof own === 'number' && Number.isFinite(own) ? own : undefined);
 }
 

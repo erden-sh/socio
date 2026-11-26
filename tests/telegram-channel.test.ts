@@ -10,6 +10,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 
 import { TURN_FAILURE_MESSAGES, turnError } from '@socio/foundation/observability/failures';
 import { teamOwner } from '@socio/foundation/telegram/team-owner';
+import { messageAuthor } from '@socio/shared/runs/socio-fields';
 import { TELEGRAM_INGRESS_METADATA } from '@socio/shared/types';
 
 import { DEFAULT_MOCK_USERS } from '../src/server/auth/config.js';
@@ -580,11 +581,11 @@ it('shows topic conversations to linked chat members, read-only, and keeps DMs p
     expect(transcript.messages.map((m: { role: string }) => m.role)).toEqual(['user', 'assistant']);
     // Who said it (CB-66): the sender's name, and whether it is the reader;
     // never their account id.
-    expect(transcript.messages[0].author).toEqual({ name: 'Bob', you: true });
-    expect(transcript.messages[1].author).toBeUndefined();
+    expect(messageAuthor(transcript.messages[0])).toEqual({ name: 'Bob', you: true });
+    expect(messageAuthor(transcript.messages[1])).toBeUndefined();
     expect(JSON.stringify(transcript)).not.toContain('socioSender');
     const aliceTranscript = await (await alice(`/api/conversations/${topic.id}/transcript`)).json();
-    expect(aliceTranscript.messages[0].author).toEqual({
+    expect(messageAuthor(aliceTranscript.messages[0])).toEqual({
         name: 'Bob',
         you: false,
     });
@@ -599,11 +600,9 @@ it('shows topic conversations to linked chat members, read-only, and keeps DMs p
         ]);
     for (const reader of [alice, bob]) {
         const { messages } = await (await reader(`/api/conversations/${topic.id}/transcript`)).json();
-        expect(messages[0]).toMatchObject({
-            id: 'before-cb66',
-            author: { name: 'Team member', you: false },
-        });
-        expect(messages[1].author).toEqual({
+        expect(messages[0]).toMatchObject({ id: 'before-cb66' });
+        expect(messageAuthor(messages[0])).toEqual({ name: 'Team member', you: false });
+        expect(messageAuthor(messages[1])).toEqual({
             name: 'Bob',
             you: reader === bob,
         });
@@ -611,7 +610,7 @@ it('shows topic conversations to linked chat members, read-only, and keeps DMs p
     older.mockRestore();
     // Not in a DM: there is only the owner.
     const dmTranscript = await (await alice(`/api/conversations/${dm.id}/transcript`)).json();
-    expect(dmTranscript.messages[0].author).toBeUndefined();
+    expect(messageAuthor(dmTranscript.messages[0])).toBeUndefined();
     expect((await carol(`/api/conversations/${topic.id}/transcript`)).status).toBe(404);
     expect((await bob(`/api/conversations/${dm.id}/transcript`)).status).toBe(404);
     expect((await alice(`/api/conversations/${dm.id}/transcript`)).status).toBe(200);

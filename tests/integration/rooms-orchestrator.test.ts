@@ -6,6 +6,7 @@ import { HANDOFF_REFUSAL_MESSAGES, handoffLine, handoffRefusal } from '@socio/sh
 import { parseRoomMentions } from '@socio/shared/rooms/room-mentions';
 import { messageTargets, targetsLine, withMention } from '@socio/shared/rooms/room-view';
 import { ROOM_DISCLOSURE_VERSION, type RoomSocioView } from '@socio/shared/rooms/rooms';
+import { messageAuthor } from '@socio/shared/runs/socio-fields';
 import type { Dot } from '@socio/shared/types';
 
 import { alternating } from '../../src/server/context/alternate.js';
@@ -394,7 +395,7 @@ it('runs the socios a message names in order, in one work cycle as its sender, e
         messages.map((message) =>
             message.handoff
                 ? `handoff:${message.handoff.kind}:${message.handoff.to.name}`
-                : `${message.role}:${message.author?.name ?? message.socioId}`,
+                : `${message.role}:${messageAuthor(message)?.name ?? message.socioId}`,
         ),
     ).toEqual(['user:Mo', `assistant:${f.sebas.id}`, `handoff:mention:${f.lead.name}`, `assistant:${f.lead.id}`]);
     const [first, second] = f.traces();

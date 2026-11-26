@@ -14,7 +14,6 @@ import type { InferencePurpose } from '@socio/foundation/turns/inference-purpose
 import { acceptedMessages, openClientCalls, senderOf } from '@socio/foundation/workspace/client-messages';
 import { isApprovalNote } from '@socio/shared/approvals';
 import { THREAD_RUNNING_CODE, THREAD_RUNNING_MESSAGE } from '@socio/shared/chat/thread-running';
-import { legacyMediaStream, wantsLegacyMedia } from '@socio/shared/media/legacy-media';
 import { ContentError, checkNewUserContent } from '@socio/shared/media/refs';
 import { ROOM_DENIAL_MESSAGES, turnContextProblems } from '@socio/shared/rooms/rooms';
 import type { RunActor } from '@socio/shared/runs/run-trace';
@@ -190,12 +189,6 @@ export function appTurns(sources: TurnsSources): AppTurnsShape {
     };
     const handle = async (request: Request, userId: string): Promise<Response> => {
         const receivedAt = Date.now();
-        // COMPAT(ag-ui-1.0): a client that doesn't say it reads AG-UI 1.0's
-        // media parts (the native app builds already shipped) gets its
-        // stream's attachments as the pre-1.0 reference. Remove with
-        // `@socio/shared/media/legacy-media`.
-        const legacy = wantsLegacyMedia(request.headers);
-        const forClient = (response: Response) => (legacy ? legacyMediaStream(response) : response);
         let body: unknown;
         if (request.method !== 'GET' && request.method !== 'HEAD') {
             body = await request
@@ -217,21 +210,19 @@ export function appTurns(sources: TurnsSources): AppTurnsShape {
         // A room's stream, for this member as the rule lets them see it
         // (CB-212): their own, closed when their access ends.
         if (scope.room && scope.action === 'read' && scope.threadId) {
-            return forClient(
-                conversationStream({
-                    runner,
-                    streams: roomStreams,
-                    readerEvents: roomReaderEvents,
-                    threadId: scope.threadId,
-                    reader: userId,
-                    room: true,
-                    signal: request.signal,
-                    mode: {
-                        kind: 'connect',
-                        headers: Object.fromEntries(request.headers),
-                    },
-                }),
-            );
+            return conversationStream({
+                runner,
+                streams: roomStreams,
+                readerEvents: roomReaderEvents,
+                threadId: scope.threadId,
+                reader: userId,
+                room: true,
+                signal: request.signal,
+                mode: {
+                    kind: 'connect',
+                    headers: Object.fromEntries(request.headers),
+                },
+            });
         }
         // In a room, Stop is the running cycle's initiator's or an admin's
         // (CB-208).
@@ -370,7 +361,7 @@ export function appTurns(sources: TurnsSources): AppTurnsShape {
             }
         }
         requestUsers.set(request, { userId, receivedAt });
-        return forClient(await handler.fetch(request));
+        return handler.fetch(request);
     };
     /**
      * `turn`, with the run id and token usage; `textOnly` turns have no tools.

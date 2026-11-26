@@ -173,11 +173,12 @@ export interface OpsRoomAudit {
 
 /**
  * A finished turn of the admin transcript view. Each person's message
- * says who wrote it, as the server resolved it: several people write in
- * a team topic. Never their account ids.
+ * says who wrote it, as the server resolved it, in `metadata.author`
+ * (`messageAuthor`): several people write in a team topic. Never their
+ * account ids.
  */
 export interface OpsTranscriptRun extends Omit<HistoryRun, 'messages'> {
-    messages: (Message & { author?: MessageAuthor })[];
+    messages: (Message & { metadata?: { author?: MessageAuthor } & Record<string, unknown> })[];
 }
 
 /** A page of a chat's finished turns, newest first (`CursorPage`). */
