@@ -120,6 +120,8 @@ describe('reading the endpoint’s answer', () => {
 
     it('reads an older server (a 404, a page that isn’t its JSON) as no app minimum', async () => {
         expect(await compatFromAnswer(new Response('Not found', { status: 404 }), 'ios')).toEqual({ kind: 'none' });
+        // Asked with no cookie, an older server's session check answers before its 404.
+        expect(await compatFromAnswer(json(401, { code: 'sign_in' }), 'ios')).toEqual({ kind: 'none' });
         expect(await compatFromAnswer(new Response('<!doctype html>', { status: 200 }), 'ios')).toEqual({
             kind: 'none',
         });
@@ -127,7 +129,7 @@ describe('reading the endpoint’s answer', () => {
     });
 
     it('keeps what was known for the server away or any other refusal', async () => {
-        for (const status of [500, 502, 503, 401, 403, 429]) {
+        for (const status of [500, 502, 503, 403, 429]) {
             expect(await compatFromAnswer(json(status, {}), 'ios'), String(status)).toBeNull();
         }
     });

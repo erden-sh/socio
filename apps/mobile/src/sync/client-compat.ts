@@ -25,8 +25,8 @@ import type { ViewState } from './view-state';
 //   asked meanwhile runs once more after it.
 // - **Kept** in cache.db's `kv` (`CLIENT_COMPAT_KEY`), so a cold start offline
 //   shows the gate before any answer. Clear cache forgets it until the next read.
-// - **An older server** has no endpoint: a 404, or a 2xx that isn't its JSON,
-//   means no app minimum (`none`), and the server's own version still decides
+// - **An older server** has no endpoint: a 404 (or the 401 its session check
+//   gives a request with no cookie), or a 2xx that isn't its JSON, means no app minimum (`none`), and the server's own version still decides
 //   the reverse case (versions.ts, "needs a server update"). No answer, a 5xx
 //   or anything else keeps what was known.
 // - **Required** while this version is below the minimum, or since a 426 until
@@ -74,7 +74,7 @@ export interface ClientCompat {
 }
 
 export interface ClientCompatOptions {
-    /** The scope's authedFetch: the endpoint needs no session, but this sends to the workspace's origin alone. */
+    /** The scope's authedFetch, asked `anonymous`: the endpoint is public, and this sends to the workspace's origin alone. */
     readonly fetch: AuthedFetch;
     /** The app's User-Agent, which names its version and platform. */
     readonly userAgent: string;
@@ -119,7 +119,9 @@ export async function compatFromAnswer(
     platform: AppPlatform,
     signal?: AbortSignal,
 ): Promise<CompatKnown | null> {
-    if (response.status === 404) {
+    // An older server has no such route: asked with no cookie, its session check answers 401 before
+    // its 404. A server with the endpoint never answers it with either (CB-553).
+    if (response.status === 404 || response.status === 401) {
         return { kind: 'none' };
     }
     if (response.status < 200 || response.status >= 300) {
@@ -197,7 +199,8 @@ export function createClientCompat({
         }
         let answer: CompatKnown | null = null;
         try {
-            const response = await fetch(CLIENT_COMPAT_PATH, { signal });
+            // Public: no cookie or install id, so it can't count as contact with the session (the lease).
+            const response = await fetch(CLIENT_COMPAT_PATH, { signal, anonymous: true });
             answer = await compatFromAnswer(response, app.platform, signal);
         } catch (error) {
             // No answer: what was known stands.

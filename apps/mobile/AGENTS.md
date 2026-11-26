@@ -681,7 +681,7 @@ fake server and a real `cache.db` (`node:sqlite`):
   most every 10 s, and at once on the flush trigger the platform injects (the app going to the
   background). A confirmation writes at once.
 - **Contact** (`contact.ts`, for the lease): only 2xx or 304 answers, under `/api/` but never
-  `/api/auth`, to requests that carried the session cookie, from `authedFetch`'s `onAnswer`.
+  `/api/auth` nor the public `/api/client/compat`, to requests that carried the session cookie, from `authedFetch`'s `onAnswer`.
 - **The server's version** (`versions.ts`) is `/api/state`'s `version` (no header carries one): a 200's
   from its body, a 304's from the stored state row it vouches for. The cache hands each answer, with its
   Date header, to the workspace's `ServerVersions` in the order answers apply. The highest version seen
@@ -1164,8 +1164,11 @@ check. The web, MCP and agents are never refused for a version. Under Node excep
   closed read nothing). One read at a time, one asked meanwhile once after it.
 - **Kept** in cache.db's `kv` (`client-compat`, `{ v: 1, minimum, recommended }` or `{ v: 1, none: true }`),
   so a cold start offline shows the gate before any answer; Clear cache forgets it until the next read.
-- **An older server** (a 404, or a 2xx that isn't the endpoint's JSON) has no app minimum (`none`). No
-  answer, a 5xx or any other refusal keeps what was known.
+- **An older server** (a 404, the 401 its session check gives the cookie-less read, or a 2xx that isn't the
+  endpoint's JSON) has no app minimum (`none`). No answer, a 5xx or any other refusal keeps what was known.
+- **The read is anonymous** (`AuthedRequestInit.anonymous`): no cookie or install id, its answer changes
+  neither the jar nor the session, and it never counts as contact (`contact.ts` leaves out
+  `CLIENT_COMPAT_PATH`; a 426 is never 2xx either), so the public endpoint can't move the lease.
 - **Below the minimum** (or since a 426, until a read says otherwise) `ClientUpdateGate`
   (`screens/client-update.tsx`, inside `ActiveWorkspace` in `src/app.tsx`) draws Update Socio in place of
   the workspace's screens, as `workspace-failed.tsx` does: the words (`src/shell/client-update.ts`: the

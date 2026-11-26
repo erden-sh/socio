@@ -30,6 +30,7 @@ import { signedIn, wire } from './wire';
 // row; and the server versions and gate, contact and the back-off are wired in.
 
 const B_ORIGIN = 'https://b.example.test';
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 let device: Phone;
 const scopes: WorkspaceScope[] = [];
@@ -762,6 +763,30 @@ describe('the app’s version against the server (CB-553)', () => {
         expect(scope.compat.state().required).toBe(true);
         expect(scope.outbox.status().heldForUpdate).toBe(true);
         expect(s.net.calls).toEqual([]);
+    });
+
+    it('never moves the lease with its compat reads: no cookie goes, and the answer is no contact', async () => {
+        const s = await setup();
+        const cookies: (string | null)[] = [];
+        const fetch: typeof s.net.fetch = async (url, init) => {
+            if (new URL(url).pathname === '/api/client/compat') {
+                cookies.push(((init.headers ?? {}) as Record<string, string>).cookie ?? null);
+                const numbers = { minimum: '0.2.7', recommended: '0.2.7' };
+                return new Response(JSON.stringify({ platforms: { ios: numbers, android: numbers } }), {
+                    status: 200,
+                    headers: { 'Content-Type': 'application/json', Date: new Date(Date.now() + DAY_MS).toUTCString() },
+                });
+            }
+            // Everything else: no answer, as for a copy whose session the server no longer honors.
+            throw new TypeError('Network request failed');
+        };
+        const scope = await s.open({ userAgent: APP, fetch });
+        const before = scope.contact.last();
+        await scope.compat.check();
+        await scope.compat.check();
+        expect(cookies).toEqual([null, null]);
+        expect(scope.contact.last()).toBe(before);
+        expect(scope.compat.known()).toMatchObject({ kind: 'known', minimum: '0.2.7' });
     });
 
     it('never gates a server without the endpoint (older than CB-553)', async () => {

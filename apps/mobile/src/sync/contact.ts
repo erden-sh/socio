@@ -1,3 +1,5 @@
+import { CLIENT_COMPAT_PATH } from '@socio/shared/client-compat';
+
 import type { Answered } from '../net/authed-fetch';
 import type { CookieJar } from '../net/cookie-jar';
 
@@ -8,7 +10,8 @@ import type { CookieJar } from '../net/cookie-jar';
 // - it is 2xx or 304 (a 304 passed the session check too);
 // - its path is under /api/, but not /api/auth or /api/auth/*: those run before
 //   the session check (src/server/composition/http/auth.ts), and
-//   /api/auth/session answers 200 with `user: null` for a dead cookie;
+//   /api/auth/session answers 200 with `user: null` for a dead cookie; nor
+//   CLIENT_COMPAT_PATH, public and before it too (CB-553; a 426 is never 2xx);
 // - its request carried the session cookie, as authedFetch's `onAnswer`
 //   reports what each request took from the jar: the few /api routes outside
 //   /api/auth that skip the check (tokens, plugin services) don't count either.
@@ -24,7 +27,9 @@ export const CONTACT_WRITE_MS = 60_000;
 export function countsAsContact(url: URL, status: number): boolean {
     const path = url.pathname;
     const auth = path === '/api/auth' || path.startsWith('/api/auth/');
-    return path.startsWith('/api/') && !auth && ((status >= 200 && status < 300) || status === 304);
+    // The app versions a server serves are public: answered before any session check (CB-553).
+    const publicPath = auth || path === CLIENT_COMPAT_PATH;
+    return path.startsWith('/api/') && !publicPath && ((status >= 200 && status < 300) || status === 304);
 }
 
 /** Whether a Cookie header carries the cookie `name`. */
