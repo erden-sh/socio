@@ -38,6 +38,7 @@ function Choice<T extends string>({
             </label>
             <select
                 id={id}
+                data-slot="native-select"
                 className={nativeSelect}
                 value={auto.value.choice}
                 aria-busy={auto.status === 'saving'}

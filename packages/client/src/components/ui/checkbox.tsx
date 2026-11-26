@@ -1,4 +1,4 @@
-import { CheckIcon } from 'lucide-react';
+import { CheckIcon, MinusIcon } from 'lucide-react';
 import { Checkbox as CheckboxPrimitive } from 'radix-ui';
 import * as React from 'react';
 
@@ -9,7 +9,7 @@ function Checkbox({ className, ...props }: React.ComponentProps<typeof CheckboxP
         <CheckboxPrimitive.Root
             data-slot="checkbox"
             className={cn(
-                'peer size-4 shrink-0 rounded-[4px] border border-input shadow-xs transition-shadow outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground dark:bg-input/30 dark:aria-invalid:ring-destructive/40 dark:data-[state=checked]:bg-primary',
+                'group/checkbox peer size-4 shrink-0 rounded-[4px] border border-muted-foreground transition-[background-color,border-color] duration-150 ease-out motion-reduce:transition-none outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-solid focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground data-[state=indeterminate]:border-primary data-[state=indeterminate]:bg-primary data-[state=indeterminate]:text-primary-foreground dark:bg-input/30 dark:data-[state=checked]:bg-primary',
                 className,
             )}
             {...props}
@@ -18,7 +18,8 @@ function Checkbox({ className, ...props }: React.ComponentProps<typeof CheckboxP
                 data-slot="checkbox-indicator"
                 className="grid place-content-center text-current transition-none"
             >
-                <CheckIcon className="size-3.5" />
+                <CheckIcon className="size-3.5 group-data-[state=indeterminate]/checkbox:hidden" />
+                <MinusIcon className="hidden size-3.5 group-data-[state=indeterminate]/checkbox:block" />
             </CheckboxPrimitive.Indicator>
         </CheckboxPrimitive.Root>
     );

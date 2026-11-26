@@ -29,18 +29,18 @@ Primer lote verificado en Chromium. Button, Input y Badge muestran un indicador 
 
 **Archivos.** Modificar `packages/client/src/globals.css`, `packages/client/src/style.css`, `packages/client/src/components/form-fields.tsx` y `packages/client/src/components/ui/` por lote. Añadir verificaciones relevantes al script de la galería y al test de contraste existente.
 
-- [ ] Hacer que el chequeo de contraste cubra estados de acción primaria, destructiva, foco, campos inválidos y badges informativos por esquema. Separar estado deshabilitado del indicador de foco.
-- [ ] Ajustar Button, Input, Badge, Skeleton y Card. Tratar controles nativos y estilizados como familia. Después ajustar Textarea, Select, Checkbox, Switch, Avatar, Table, ScrollArea, Separator y Toaster. Mantener las variantes de densidad como elección del flujo.
-- [ ] Revisar contraste de pares y estados de carga/error. Confirmar que un control inválido se entiende por su mensaje y que uno bloqueado conserva su razón visible cuando el flujo la requiera.
-- [ ] Ejecutar `pnpm test --project client packages/client/tests/theme-contrast.test.ts` y la comprobación de galería. Si cambia una regla heredada, regenerar su equivalente con la prueba existente y revisar el diff.
+- [x] Hacer que el chequeo de contraste cubra estados de acción primaria, destructiva, foco, campos inválidos y badges informativos por esquema. Separar estado deshabilitado del indicador de foco.
+- [x] Ajustar Button, Input, Badge, Skeleton y Card. Tratar controles nativos y estilizados como familia. Después ajustar Textarea, Select, Checkbox, Switch, Avatar, Table, ScrollArea, Separator y Toaster. Mantener las variantes de densidad como elección del flujo.
+- [x] Revisar contraste de pares y estados de carga/error. Confirmar que un control inválido se entiende por su mensaje y que uno bloqueado conserva su razón visible cuando el flujo la requiera.
+- [x] Ejecutar `pnpm test --project client packages/client/tests/theme-contrast.test.ts` y la comprobación de galería. Si cambia una regla heredada, regenerar su equivalente con la prueba existente y revisar el diff.
 
 ## 2.3 · Navegación, overlays y microinteracciones · UI-03, UI-04, UI-06
 
 **Archivos.** Modificar `packages/client/src/components/ui/{breadcrumb,sidebar,tabs,collapsible,command,alert-dialog,dialog,dropdown-menu,popover,sheet,tooltip}.tsx`. Reutilizar `packages/client/src/components/ui/return-focus.ts`. Extender `scripts/check-component-gallery.mjs`.
 
-- [ ] Probar apertura por teclado, Escape, restauración de foco, continuidad del overlay al cambiar de esquema y layout largo en 390 px. Probar superficie sólida con las preferencias de sistema disponibles.
-- [ ] Aplicar tokens de superficie y movimiento a transiciones de entrada, cambio de estado y cierre. Mantener la transición localizada al elemento y un mapa de movimiento reducido.
-- [ ] Confirmar que la opción actual se puede identificar con teclado y que los overlays sin blur se leen sobre contenido de ejemplo. Guardar muestras de Erden Glass y Socio en claro y oscuro y ejecutar la comprobación en las demás paletas.
+- [x] Probar apertura por teclado, Escape, restauración de foco, continuidad del overlay al cambiar de esquema y layout largo en 390 px. Probar superficie sólida con las preferencias de sistema disponibles.
+- [x] Aplicar tokens de superficie y movimiento a transiciones de entrada, cambio de estado y cierre. Mantener la transición localizada al elemento y un mapa de movimiento reducido.
+- [x] Confirmar que la opción actual se puede identificar con teclado y que los overlays sin blur se leen sobre contenido de ejemplo. Guardar muestras de Erden Glass y Socio en claro y oscuro y ejecutar la comprobación en las demás paletas.
 
 ## 2.4 · Patrones compuestos · UI-05
 

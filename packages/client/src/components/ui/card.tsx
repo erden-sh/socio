@@ -7,7 +7,7 @@ function Card({ className, ...props }: React.ComponentProps<'div'>) {
         <div
             data-slot="card"
             className={cn(
-                'flex flex-col gap-6 rounded-xl border bg-card py-6 text-card-foreground shadow-sm',
+                'flex min-w-0 flex-col gap-6 rounded-xl border bg-card py-6 text-card-foreground shadow-xs',
                 className,
             )}
             {...props}
@@ -26,7 +26,7 @@ function CardHeader({ className, ...props }: React.ComponentProps<'div'>) {
         <div
             data-slot="card-header"
             className={cn(
-                '@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-y-2 px-6 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-6 [&>:not([data-slot=card-action])]:col-start-1',
+                '@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-y-2 px-6 has-data-[slot=card-action]:grid-cols-[minmax(0,1fr)_auto] [.border-b]:pb-6 [&>:not([data-slot=card-action])]:col-start-1',
                 className,
             )}
             {...props}
@@ -35,11 +35,23 @@ function CardHeader({ className, ...props }: React.ComponentProps<'div'>) {
 }
 
 function CardTitle({ className, ...props }: React.ComponentProps<'div'>) {
-    return <div data-slot="card-title" className={cn('leading-none font-medium', className)} {...props} />;
+    return (
+        <div
+            data-slot="card-title"
+            className={cn('leading-tight font-medium tracking-tight [overflow-wrap:anywhere]', className)}
+            {...props}
+        />
+    );
 }
 
 function CardDescription({ className, ...props }: React.ComponentProps<'div'>) {
-    return <div data-slot="card-description" className={cn('text-sm text-muted-foreground', className)} {...props} />;
+    return (
+        <div
+            data-slot="card-description"
+            className={cn('text-sm text-muted-foreground [overflow-wrap:anywhere]', className)}
+            {...props}
+        />
+    );
 }
 
 function CardAction({ className, ...props }: React.ComponentProps<'div'>) {

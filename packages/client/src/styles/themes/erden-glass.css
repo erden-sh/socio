@@ -139,17 +139,3 @@
         backdrop-filter: var(--glass-filter);
     }
 }
-
-@media (prefers-reduced-motion: reduce) {
-    :root[data-theme='erden-glass']
-        :is(
-            [data-slot='app-header'],
-            [data-slot='dropdown-menu-content'],
-            [data-slot='dropdown-menu-sub-content'],
-            [data-slot='select-content'],
-            [data-slot='popover-content']
-        ) {
-        animation-duration: 0ms;
-        transition-duration: 0ms;
-    }
-}

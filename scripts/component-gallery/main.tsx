@@ -35,7 +35,7 @@ import {
     BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardAction, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
@@ -145,6 +145,9 @@ function Fields() {
                 <label className="gallery-flow">
                     <Checkbox defaultChecked /> Notify members
                 </label>
+                <label className="gallery-flow">
+                    <Checkbox defaultChecked="indeterminate" /> Select all members
+                </label>
             </Sample>
             <Sample name="Switch">
                 <label className="gallery-flow">
@@ -212,16 +215,16 @@ function Displays() {
                 </div>
             </Sample>
             <Sample name="Card">
-                <Card className="gap-3 py-4 shadow-none">
+                <Card className="gap-3 py-4">
                     <CardHeader>
-                        <CardTitle>Design studio</CardTitle>
+                        <CardTitle>InternationalFieldResearchAndDesignStudio</CardTitle>
                         <CardDescription>Private workspace</CardDescription>
+                        <CardAction>
+                            <Button size="sm" variant="outline" onClick={() => toast.info('Access details selected')}>
+                                View access
+                            </Button>
+                        </CardAction>
                     </CardHeader>
-                    <CardContent>
-                        <Button size="sm" variant="outline" onClick={() => toast.info('Access details selected')}>
-                            View access
-                        </Button>
-                    </CardContent>
                 </Card>
             </Sample>
             <Sample name="Separator">
@@ -435,6 +438,7 @@ function Gallery() {
                             <label htmlFor="gallery-palette">Theme</label>
                             <select
                                 id="gallery-palette"
+                                data-slot="native-select"
                                 className={nativeSelect}
                                 value={palette}
                                 onChange={(event) => setPalette(event.currentTarget.value as ThemeId)}
@@ -448,6 +452,7 @@ function Gallery() {
                             <label htmlFor="gallery-mode">Color mode</label>
                             <select
                                 id="gallery-mode"
+                                data-slot="native-select"
                                 className={nativeSelect}
                                 value={mode}
                                 onChange={(event) => setMode(event.currentTarget.value as ColorMode)}

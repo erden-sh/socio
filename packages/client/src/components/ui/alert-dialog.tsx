@@ -22,7 +22,7 @@ function AlertDialogOverlay({ className, ...props }: React.ComponentProps<typeof
         <AlertDialogPrimitive.Overlay
             data-slot="alert-dialog-overlay"
             className={cn(
-                'fixed inset-0 z-50 bg-black/50 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0',
+                'fixed inset-0 z-50 bg-black/50 [--tw-animation-duration:150ms] data-[state=closed]:[--tw-animation-duration:100ms] ease-out motion-reduce:animate-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0',
                 className,
             )}
             {...props}
@@ -42,7 +42,7 @@ function AlertDialogContent({
             <AlertDialogPrimitive.Content
                 data-slot="alert-dialog-content"
                 className={cn(
-                    'fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border bg-background p-6 shadow-lg duration-200 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 sm:max-w-lg',
+                    'fixed top-[50%] left-[50%] z-50 grid w-full max-h-[calc(100dvh-2rem)] max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 overflow-y-auto rounded-xl border bg-background p-6 shadow-lg [--tw-animation-duration:150ms] data-[state=closed]:[--tw-animation-duration:100ms] ease-out motion-reduce:animate-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 sm:max-w-lg',
                     className,
                 )}
                 onCloseAutoFocus={closeAutoFocus}

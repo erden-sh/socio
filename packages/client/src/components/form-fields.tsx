@@ -55,7 +55,7 @@ export function PermissionRow({
  * so iOS doesn't zoom in on focus (CB-96).
  */
 const selectBase =
-    'min-w-0 max-w-full rounded-md border border-input bg-transparent py-0 text-base leading-normal shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm dark:bg-input/30';
+    'min-w-0 max-w-full rounded-md border border-input bg-transparent py-0 text-base leading-normal shadow-xs outline-none transition-[background-color,border-color] duration-150 ease-out motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-solid focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm dark:bg-input/30';
 
 /** A settings page's select (Settings cards). */
 export const nativeSelect = cn(selectBase, 'h-9 px-2');
