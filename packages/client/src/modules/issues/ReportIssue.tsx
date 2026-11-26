@@ -182,8 +182,6 @@ function ReportDialog({ draft }: { draft: ReportDraft }) {
             closeReport();
             return;
         }
-        const focused = document.activeElement;
-        editingFocus.current = focused instanceof HTMLElement && dialog.current?.contains(focused) ? focused : null;
         setDiscardOpen(true);
     };
     const addFiles = (picked: File[]) => {
@@ -239,6 +237,13 @@ function ReportDialog({ draft }: { draft: ReportDraft }) {
         <form
             data-slot="report-issue-form"
             className="grid gap-4"
+            onFocusCapture={(event) => {
+                // The field to return to after "Keep editing". A click on Cancel focuses Cancel first, so the
+                // dismissal buttons don't count.
+                if (event.target instanceof HTMLElement && !event.target.closest('[data-slot="dialog-close"]')) {
+                    editingFocus.current = event.target;
+                }
+            }}
             onSubmit={(e) => {
                 e.preventDefault();
                 void submit();

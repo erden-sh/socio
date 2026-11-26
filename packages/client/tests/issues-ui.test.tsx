@@ -618,7 +618,18 @@ it('files a report with kind, priority, area and an attachment', async () => {
 
 it.each([
     ['Escape', () => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))],
-    ['the close button', () => document.querySelector<HTMLButtonElement>('[data-slot="dialog-close"]')!.click()],
+    [
+        'the close button',
+        () => {
+            // The dialog's own close button, not Cancel (which has the same slot inside the form).
+            const close = [...document.querySelectorAll<HTMLButtonElement>('[data-slot="dialog-close"]')].find(
+                (button) => !button.closest('form'),
+            )!;
+            // A pointer click focuses the button before it clicks.
+            close.focus();
+            close.click();
+        },
+    ],
     [
         'clicking outside',
         () => {
@@ -627,7 +638,13 @@ it.each([
             backdrop.click();
         },
     ],
-    ['Cancel', () => buttons('Cancel')[0]!.click()],
+    [
+        'Cancel',
+        () => {
+            buttons('Cancel')[0]!.focus();
+            buttons('Cancel')[0]!.click();
+        },
+    ],
 ] as const)('protects the issue draft when dismissed with %s', async (_name, dismiss) => {
     render(<ReportIssue moduleId="issues" />);
     act(() => openReport());
