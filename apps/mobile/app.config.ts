@@ -283,14 +283,17 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             ],
             // The add-workspace QR scanner (CB-566): the same camera purpose string, no microphone
             // (no purpose string on iOS, RECORD_AUDIO not asked on Android, and blocked anyway), and
-            // its barcode scanner on. Its Android document scanner is off (plugins/camera.ts).
+            // its barcode scanner off: on Android it is ML Kit, and the app holds nothing of Google's
+            // (the owner, 2026-11-26), so modules/socio-scanner reads QR codes there; iOS reads them
+            // through AVFoundation, which this setting doesn't touch. Its Android document scanner and
+            // ML Kit's manifest entry go too (plugins/camera.ts).
             [
                 'expo-camera',
                 {
                     cameraPermission: CAMERA_PURPOSE,
                     microphonePermission: false,
                     recordAudioAndroid: false,
-                    barcodeScannerEnabled: true,
+                    barcodeScannerEnabled: false,
                 },
             ],
             './plugins/camera.ts',

@@ -30,7 +30,7 @@ import {
     variantCheckGradle,
     variantXcodeEnv,
 } from '../plugins/build-env';
-import { DOCUMENT_SCANNER_PROPERTY } from '../plugins/camera';
+import { DOCUMENT_SCANNER_PROPERTY, MLKIT_DEPENDENCIES } from '../plugins/camera';
 import withNetworkSecurityConfig, {
     CLEARTEXT_HOSTS,
     DEBUG_SOURCE_SETS,
@@ -678,6 +678,13 @@ describe('package.json', () => {
         expect(typeof require('@bacons/apple-targets/app.plugin')).toBe('function');
     });
 
+    it('builds expo-camera from source, since a prebuilt one holds its ML Kit libraries (CB-566)', () => {
+        // Expo's prebuilt expo-camera AAR comes with a POM that lists ML Kit and the Play services code
+        // scanner whatever `expo.camera.barcode-scanner-enabled` says; only a source build reads it.
+        const pkg = JSON.parse(readFileSync(join(app, 'package.json'), 'utf8'));
+        expect(pkg.expo.autolinking.buildFromSource).toContain('expo-camera');
+    });
+
     it('builds expo-sqlite from source, since a prebuilt one has no cipher', () => {
         const pkg = JSON.parse(readFileSync(join(app, 'package.json'), 'utf8'));
         expect(pkg.expo.autolinking.buildFromSource).toContain('expo-sqlite');
@@ -739,7 +746,11 @@ interface Introspected {
         modResults: {
             android: {
                 manifest: {
-                    manifest: { application: { $: Record<string, string> }[]; 'uses-permission'?: Node[] };
+                    manifest: {
+                        $?: Record<string, string>;
+                        application: { $: Record<string, string> }[];
+                        'uses-permission'?: Node[];
+                    };
                 };
                 gradleProperties: { type: string; key?: string; value?: string }[];
                 colors: { resources: { color?: Node[] } };
@@ -957,7 +968,7 @@ describe('the introspected Expo config', () => {
     );
 
     it.each(variants)(
-        '%s: the QR scanner (CB-566): expo-camera with no microphone, QR codes on, no document scanner',
+        '%s: the QR scanner (CB-566): expo-camera with no microphone and nothing of Google’s on Android',
         (variant) => {
             const config = of(variant);
             expect(CAMERA_PURPOSE).toMatch(/scan the QR code/);
@@ -967,14 +978,27 @@ describe('the introspected Expo config', () => {
                 cameraPermission: CAMERA_PURPOSE,
                 microphonePermission: false,
                 recordAudioAndroid: false,
-                barcodeScannerEnabled: true,
+                barcodeScannerEnabled: false,
             });
             const { android, ios } = config._internal.modResults;
             expect(ios.infoPlist.NSMicrophoneUsageDescription).toBeUndefined();
             const gradle = android.gradleProperties.filter(
                 (line) => line.type === 'property' && line.key?.startsWith('expo.camera.'),
             );
-            expect(gradle.map((line) => [line.key, line.value])).toEqual([[DOCUMENT_SCANNER_PROPERTY, 'false']]);
+            // Both of expo-camera's ML Kit scanners off: its ML Kit and Play services libraries are
+            // compile-only, so the release build carries none (modules/socio-scanner's README).
+            expect(Object.fromEntries(gradle.map((line) => [line.key, line.value]))).toEqual({
+                'expo.camera.barcode-scanner-enabled': 'false',
+                [DOCUMENT_SCANNER_PROPERTY]: 'false',
+            });
+            // ML Kit's install-time model download is taken out of the merged manifest.
+            const { manifest } = android.manifest;
+            expect(manifest.$?.['xmlns:tools']).toBe('http://schemas.android.com/tools');
+            const application = manifest.application[0] as { 'meta-data'?: Node[] };
+            const mlkit = attrs(application['meta-data'] ?? []).filter(
+                (at) => at?.['android:name'] === MLKIT_DEPENDENCIES,
+            );
+            expect(mlkit).toEqual([{ 'android:name': MLKIT_DEPENDENCIES, 'tools:node': 'remove' }]);
         },
     );
 

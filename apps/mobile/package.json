@@ -101,6 +101,7 @@
                 "@bacons/apple-targets"
             ],
             "buildFromSource": [
+                "expo-camera",
                 "expo-sqlite",
                 "react-native-keyboard-controller"
             ]
