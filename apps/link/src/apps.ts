@@ -56,8 +56,14 @@ const SCHEMES: Readonly<Record<AppVariant, string>> = {
 const ANDROID_CERTS: Readonly<Record<AppVariant, readonly string[]>> = {
     // Placeholder: the Play app signing key's SHA-256 (Play re-signs what the store ships).
     production: [PLACEHOLDER_SHA256],
-    // Placeholder: the preview keystore's SHA-256.
-    preview: [PLACEHOLDER_SHA256],
+    // Socio Preview's Play app signing keys (Play re-signs what it ships), as Play Console's
+    // Deep links page lists them. Never the upload key, never the debug key: sideloaded preview
+    // APKs are debug-signed and don't verify on this host, by design.
+    preview: [
+        'B8:9E:1A:3A:97:22:F9:23:CE:9C:17:B5:BF:8C:FE:2F:72:A9:D7:EA:C0:89:C0:81:95:DB:8A:15:6A:3F:92:83',
+        'DD:05:AB:DF:E1:01:21:E2:94:70:CD:84:02:1D:E5:1C:E4:DF:F7:15:43:D2:F4:81:57:C7:ED:F3:FD:47:D5:E8',
+        '44:5C:18:03:69:6D:A6:DC:AD:34:62:64:5A:99:78:4E:91:18:DB:15:84:9C:17:5D:CD:A0:FF:C5:5E:50:E3:C4',
+    ],
     development: [DEBUG_KEYSTORE_SHA256],
 };
 

@@ -39,10 +39,19 @@ describe('the placeholders, until the owner fills them', () => {
         expect(APPLE_TEAM_ID).toBe('6DDJ59773H');
     });
 
-    it("the Play app signing key's and the preview keystore's SHA-256", () => {
+    it("the production app's Play app signing key SHA-256", () => {
         expect(PLACEHOLDER_SHA256).toBe(Array(32).fill('00').join(':'));
         expect(byVariant.production?.androidCertSha256).toEqual([PLACEHOLDER_SHA256]);
-        expect(byVariant.preview?.androidCertSha256).toEqual([PLACEHOLDER_SHA256]);
+    });
+
+    it('Socio Preview names its Play app signing keys, and neither the debug key nor a placeholder', () => {
+        expect(byVariant.preview?.androidCertSha256).toEqual([
+            'B8:9E:1A:3A:97:22:F9:23:CE:9C:17:B5:BF:8C:FE:2F:72:A9:D7:EA:C0:89:C0:81:95:DB:8A:15:6A:3F:92:83',
+            'DD:05:AB:DF:E1:01:21:E2:94:70:CD:84:02:1D:E5:1C:E4:DF:F7:15:43:D2:F4:81:57:C7:ED:F3:FD:47:D5:E8',
+            '44:5C:18:03:69:6D:A6:DC:AD:34:62:64:5A:99:78:4E:91:18:DB:15:84:9C:17:5D:CD:A0:FF:C5:5E:50:E3:C4',
+        ]);
+        expect(byVariant.preview?.androidCertSha256).not.toContain(DEBUG_KEYSTORE_SHA256);
+        expect(byVariant.preview?.androidCertSha256).not.toContain(PLACEHOLDER_SHA256);
     });
 
     it("development is signed with the React Native template's public debug key", () => {
