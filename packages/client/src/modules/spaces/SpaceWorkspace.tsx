@@ -287,7 +287,7 @@ export function SpaceWorkspace({
                     // The first screen says for the whole Space; every page's summary, once polled.
                     hasCovers={seeded ? seeded.hasCovers : pages.some((item) => item.cover)}
                     onPage={onPage}
-                    onNew={() => void create(null)}
+                    onNew={(parentId) => void create(parentId)}
                     onDeleted={removed}
                     tabs={<SpaceTabs space={space} />}
                 />

@@ -223,7 +223,7 @@ it('deletes a page from its menu after a confirm naming it, then shows the Space
     click(button('Delete page', dialog()!));
     await until(() => router.state.location.pathname === '/spaces/s1', 'the Space');
     expect(deletes).toEqual(['p1']);
-    await until(() => /All pages/.test(text()), 'the library');
+    await until(() => !!host.querySelector('[data-slot="library-count"]'), 'the library');
     expect([...host.querySelectorAll('[data-slot="library-page-card"] h3')].map((item) => item.textContent)).toEqual([
         'Other',
     ]);
@@ -355,6 +355,15 @@ it('links three-level ancestors and direct children through the real page route'
 it('shows complete parent paths in All pages without replacing search or the flat library', async () => {
     pages = [page('p1', 'Garden'), page('p2', 'Beds', { parentId: 'p1' }), page('p3', 'Tomatoes', { parentId: 'p2' })];
     await open('/spaces/s1');
+    // The library opens by level (CB-426): only Garden, with Beds inside it.
+    await until(() => host.querySelectorAll('[data-slot="library-page-card"]').length === 1, 'the top level');
+    expect(host.querySelector('[data-slot="library-inside"]')?.textContent).toBe('1 inside');
+    const browse = host.querySelector('[role="combobox"][aria-label="Browse pages"]')!;
+    act(() =>
+        browse.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true })),
+    );
+    const all = [...document.querySelectorAll('[role="option"]')].find((el) => el.textContent === 'All pages')!;
+    act(() => all.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true })));
     await until(() => host.querySelectorAll('[data-slot="library-page-card"]').length === 3, 'all pages');
     expect(host.querySelector('[data-slot="library-page-card"] [aria-label="Parent pages"]')?.textContent).toBe(
         'Garden',
