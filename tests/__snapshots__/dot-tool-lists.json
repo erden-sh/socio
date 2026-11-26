@@ -89,7 +89,7 @@
             },
             {
                 "name": "create_space_page",
-                "description": "Create a Markdown page in this Space when the user requests a document. Write quotes as Markdown blockquotes (lines starting with \"> \"), never as HTML such as <blockquote>: the page editor cannot show raw HTML.",
+                "description": "Create a Markdown page in this Space when the user requests a document; folder: true makes a folder instead, a page shown as a container for pages under it (parentId), its body hidden, not deleted. Write quotes as Markdown blockquotes (lines starting with \"> \"), never as HTML such as <blockquote>: the page editor cannot show raw HTML.",
                 "parameters": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "type": "object",
@@ -102,12 +102,17 @@
                         },
                         "sourceUrl": { "type": "string", "maxLength": 2048 },
                         "sourceTitle": { "type": "string", "maxLength": 300 },
+                        "folder": {
+                            "default": false,
+                            "description": "Make it a folder: a page shown as a container of pages, its body hidden (not deleted).",
+                            "type": "boolean"
+                        },
                         "spaceId": {
                             "description": "Authorized Space ID. Defaults to the current page Space or the default destination.",
                             "type": "string"
                         }
                     },
-                    "required": ["title", "content", "parentId"],
+                    "required": ["title", "content", "parentId", "folder"],
                     "additionalProperties": false
                 }
             },
@@ -883,7 +888,7 @@
             },
             {
                 "name": "list_space_pages",
-                "description": "List pages in your authorized Space. Return internal page links when helpful.",
+                "description": "List pages in your authorized Space. folder: true marks a folder, a page shown as a container of the pages under it, its body hidden (not deleted). Return internal page links when helpful.",
                 "parameters": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "type": "object",
@@ -1571,7 +1576,7 @@
             },
             {
                 "name": "create_space_page",
-                "description": "Create a Markdown page in this Space when the user requests a document. Write quotes as Markdown blockquotes (lines starting with \"> \"), never as HTML such as <blockquote>: the page editor cannot show raw HTML.",
+                "description": "Create a Markdown page in this Space when the user requests a document; folder: true makes a folder instead, a page shown as a container for pages under it (parentId), its body hidden, not deleted. Write quotes as Markdown blockquotes (lines starting with \"> \"), never as HTML such as <blockquote>: the page editor cannot show raw HTML.",
                 "parameters": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "type": "object",
@@ -1584,12 +1589,17 @@
                         },
                         "sourceUrl": { "type": "string", "maxLength": 2048 },
                         "sourceTitle": { "type": "string", "maxLength": 300 },
+                        "folder": {
+                            "default": false,
+                            "description": "Make it a folder: a page shown as a container of pages, its body hidden (not deleted).",
+                            "type": "boolean"
+                        },
                         "spaceId": {
                             "description": "Authorized Space ID. Defaults to the current page Space or the default destination.",
                             "type": "string"
                         }
                     },
-                    "required": ["title", "content", "parentId"],
+                    "required": ["title", "content", "parentId", "folder"],
                     "additionalProperties": false
                 }
             },
@@ -2365,7 +2375,7 @@
             },
             {
                 "name": "list_space_pages",
-                "description": "List pages in your authorized Space. Return internal page links when helpful.",
+                "description": "List pages in your authorized Space. folder: true marks a folder, a page shown as a container of the pages under it, its body hidden (not deleted). Return internal page links when helpful.",
                 "parameters": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "type": "object",
@@ -3071,7 +3081,7 @@
             },
             {
                 "name": "create_space_page",
-                "description": "Create a Markdown page in this Space when the user requests a document. Write quotes as Markdown blockquotes (lines starting with \"> \"), never as HTML such as <blockquote>: the page editor cannot show raw HTML.",
+                "description": "Create a Markdown page in this Space when the user requests a document; folder: true makes a folder instead, a page shown as a container for pages under it (parentId), its body hidden, not deleted. Write quotes as Markdown blockquotes (lines starting with \"> \"), never as HTML such as <blockquote>: the page editor cannot show raw HTML.",
                 "parameters": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "type": "object",
@@ -3084,12 +3094,17 @@
                         },
                         "sourceUrl": { "type": "string", "maxLength": 2048 },
                         "sourceTitle": { "type": "string", "maxLength": 300 },
+                        "folder": {
+                            "default": false,
+                            "description": "Make it a folder: a page shown as a container of pages, its body hidden (not deleted).",
+                            "type": "boolean"
+                        },
                         "spaceId": {
                             "description": "Authorized Space ID. Defaults to the current page Space or the default destination.",
                             "type": "string"
                         }
                     },
-                    "required": ["title", "content", "parentId"],
+                    "required": ["title", "content", "parentId", "folder"],
                     "additionalProperties": false
                 }
             },
@@ -3865,7 +3880,7 @@
             },
             {
                 "name": "list_space_pages",
-                "description": "List pages in your authorized Space. Return internal page links when helpful.",
+                "description": "List pages in your authorized Space. folder: true marks a folder, a page shown as a container of the pages under it, its body hidden (not deleted). Return internal page links when helpful.",
                 "parameters": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "type": "object",
@@ -4686,7 +4701,7 @@
             },
             {
                 "name": "create_space_page",
-                "description": "Create a Markdown page in this Space when the user requests a document. Write quotes as Markdown blockquotes (lines starting with \"> \"), never as HTML such as <blockquote>: the page editor cannot show raw HTML.",
+                "description": "Create a Markdown page in this Space when the user requests a document; folder: true makes a folder instead, a page shown as a container for pages under it (parentId), its body hidden, not deleted. Write quotes as Markdown blockquotes (lines starting with \"> \"), never as HTML such as <blockquote>: the page editor cannot show raw HTML.",
                 "parameters": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "type": "object",
@@ -4699,12 +4714,17 @@
                         },
                         "sourceUrl": { "type": "string", "maxLength": 2048 },
                         "sourceTitle": { "type": "string", "maxLength": 300 },
+                        "folder": {
+                            "default": false,
+                            "description": "Make it a folder: a page shown as a container of pages, its body hidden (not deleted).",
+                            "type": "boolean"
+                        },
                         "spaceId": {
                             "description": "Authorized Space ID. Defaults to the current page Space or the default destination.",
                             "type": "string"
                         }
                     },
-                    "required": ["title", "content", "parentId"],
+                    "required": ["title", "content", "parentId", "folder"],
                     "additionalProperties": false
                 }
             },
@@ -5604,7 +5624,7 @@
             },
             {
                 "name": "list_space_pages",
-                "description": "List pages in your authorized Space. Return internal page links when helpful.",
+                "description": "List pages in your authorized Space. folder: true marks a folder, a page shown as a container of the pages under it, its body hidden (not deleted). Return internal page links when helpful.",
                 "parameters": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "type": "object",
@@ -6436,7 +6456,7 @@
             },
             {
                 "name": "create_space_page",
-                "description": "Create a Markdown page in this Space when the user requests a document. Write quotes as Markdown blockquotes (lines starting with \"> \"), never as HTML such as <blockquote>: the page editor cannot show raw HTML.",
+                "description": "Create a Markdown page in this Space when the user requests a document; folder: true makes a folder instead, a page shown as a container for pages under it (parentId), its body hidden, not deleted. Write quotes as Markdown blockquotes (lines starting with \"> \"), never as HTML such as <blockquote>: the page editor cannot show raw HTML.",
                 "parameters": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "type": "object",
@@ -6449,12 +6469,17 @@
                         },
                         "sourceUrl": { "type": "string", "maxLength": 2048 },
                         "sourceTitle": { "type": "string", "maxLength": 300 },
+                        "folder": {
+                            "default": false,
+                            "description": "Make it a folder: a page shown as a container of pages, its body hidden (not deleted).",
+                            "type": "boolean"
+                        },
                         "spaceId": {
                             "description": "Authorized Space ID. Defaults to the current page Space or the default destination.",
                             "type": "string"
                         }
                     },
-                    "required": ["title", "content", "parentId"],
+                    "required": ["title", "content", "parentId", "folder"],
                     "additionalProperties": false
                 }
             },
@@ -7354,7 +7379,7 @@
             },
             {
                 "name": "list_space_pages",
-                "description": "List pages in your authorized Space. Return internal page links when helpful.",
+                "description": "List pages in your authorized Space. folder: true marks a folder, a page shown as a container of the pages under it, its body hidden (not deleted). Return internal page links when helpful.",
                 "parameters": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "type": "object",
@@ -8193,7 +8218,7 @@
             },
             {
                 "name": "create_space_page",
-                "description": "Create a Markdown page in this Space when the user requests a document. Write quotes as Markdown blockquotes (lines starting with \"> \"), never as HTML such as <blockquote>: the page editor cannot show raw HTML.",
+                "description": "Create a Markdown page in this Space when the user requests a document; folder: true makes a folder instead, a page shown as a container for pages under it (parentId), its body hidden, not deleted. Write quotes as Markdown blockquotes (lines starting with \"> \"), never as HTML such as <blockquote>: the page editor cannot show raw HTML.",
                 "parameters": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "type": "object",
@@ -8206,12 +8231,17 @@
                         },
                         "sourceUrl": { "type": "string", "maxLength": 2048 },
                         "sourceTitle": { "type": "string", "maxLength": 300 },
+                        "folder": {
+                            "default": false,
+                            "description": "Make it a folder: a page shown as a container of pages, its body hidden (not deleted).",
+                            "type": "boolean"
+                        },
                         "spaceId": {
                             "description": "Authorized Space ID. Defaults to the current page Space or the default destination.",
                             "type": "string"
                         }
                     },
-                    "required": ["title", "content", "parentId"],
+                    "required": ["title", "content", "parentId", "folder"],
                     "additionalProperties": false
                 }
             },
@@ -9055,7 +9085,7 @@
             },
             {
                 "name": "list_space_pages",
-                "description": "List pages in your authorized Space. Return internal page links when helpful.",
+                "description": "List pages in your authorized Space. folder: true marks a folder, a page shown as a container of the pages under it, its body hidden (not deleted). Return internal page links when helpful.",
                 "parameters": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "type": "object",
@@ -9854,7 +9884,7 @@
             },
             {
                 "name": "create_space_page",
-                "description": "Create a Markdown page in this Space when the user requests a document. Write quotes as Markdown blockquotes (lines starting with \"> \"), never as HTML such as <blockquote>: the page editor cannot show raw HTML.",
+                "description": "Create a Markdown page in this Space when the user requests a document; folder: true makes a folder instead, a page shown as a container for pages under it (parentId), its body hidden, not deleted. Write quotes as Markdown blockquotes (lines starting with \"> \"), never as HTML such as <blockquote>: the page editor cannot show raw HTML.",
                 "parameters": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "type": "object",
@@ -9867,12 +9897,17 @@
                         },
                         "sourceUrl": { "type": "string", "maxLength": 2048 },
                         "sourceTitle": { "type": "string", "maxLength": 300 },
+                        "folder": {
+                            "default": false,
+                            "description": "Make it a folder: a page shown as a container of pages, its body hidden (not deleted).",
+                            "type": "boolean"
+                        },
                         "spaceId": {
                             "description": "Authorized Space ID. Defaults to the current page Space or the default destination.",
                             "type": "string"
                         }
                     },
-                    "required": ["title", "content", "parentId"],
+                    "required": ["title", "content", "parentId", "folder"],
                     "additionalProperties": false
                 }
             },
@@ -10945,7 +10980,7 @@
             },
             {
                 "name": "list_space_pages",
-                "description": "List pages in your authorized Space. Return internal page links when helpful.",
+                "description": "List pages in your authorized Space. folder: true marks a folder, a page shown as a container of the pages under it, its body hidden (not deleted). Return internal page links when helpful.",
                 "parameters": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "type": "object",
@@ -11895,7 +11930,7 @@
             },
             {
                 "name": "create_space_page",
-                "description": "Create a Markdown page in this Space when the user requests a document. Write quotes as Markdown blockquotes (lines starting with \"> \"), never as HTML such as <blockquote>: the page editor cannot show raw HTML.",
+                "description": "Create a Markdown page in this Space when the user requests a document; folder: true makes a folder instead, a page shown as a container for pages under it (parentId), its body hidden, not deleted. Write quotes as Markdown blockquotes (lines starting with \"> \"), never as HTML such as <blockquote>: the page editor cannot show raw HTML.",
                 "parameters": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "type": "object",
@@ -11908,12 +11943,17 @@
                         },
                         "sourceUrl": { "type": "string", "maxLength": 2048 },
                         "sourceTitle": { "type": "string", "maxLength": 300 },
+                        "folder": {
+                            "default": false,
+                            "description": "Make it a folder: a page shown as a container of pages, its body hidden (not deleted).",
+                            "type": "boolean"
+                        },
                         "spaceId": {
                             "description": "Authorized Space ID. Defaults to the current page Space or the default destination.",
                             "type": "string"
                         }
                     },
-                    "required": ["title", "content", "parentId"],
+                    "required": ["title", "content", "parentId", "folder"],
                     "additionalProperties": false
                 }
             },
@@ -12813,7 +12853,7 @@
             },
             {
                 "name": "list_space_pages",
-                "description": "List pages in your authorized Space. Return internal page links when helpful.",
+                "description": "List pages in your authorized Space. folder: true marks a folder, a page shown as a container of the pages under it, its body hidden (not deleted). Return internal page links when helpful.",
                 "parameters": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "type": "object",
