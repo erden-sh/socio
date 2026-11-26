@@ -15,8 +15,9 @@ import { appState } from '../platform/app-state';
 import { holdEditorGrace } from '../platform/background-grace';
 import { useAdvanced } from '../platform/device-settings';
 import { editorPictureSource } from '../platform/editor-pictures';
-import { OPEN_ONLINE } from '../shell/page-reader';
+import { FOLDER_NO_EDITOR, OPEN_ONLINE } from '../shell/page-reader';
 import type { EditorDraft, PageEditorDraft } from '../sync/page-drafts';
+import { heldFolder, isFolder, pendingFolder } from '../sync/page-manage';
 import { useColors, useScheme } from '../theme/scheme';
 import { Banner, Text } from '../ui';
 
@@ -70,12 +71,20 @@ function EditorRoute({ spaceId, pageId }: { spaceId: string; pageId: string }) {
     const scope = useWorkspaceScope();
     const body = usePageBody(spaceId, pageId);
     const [start, setStart] = useState<EditorDraft | null>(null);
-    const found = start ?? editorStart(scope.pageDrafts.stored(pageId), scope.outbox, pageId, body.value);
+    // A folder (CB-426) has no editor: its body is kept, hidden, and nothing here may show or save
+    // over it. A toggle waiting on the phone counts, and so does the Space's list.
+    const folder =
+        pendingFolder(scope.outbox, pageId) ?? (isFolder(body.value) || heldFolder(scope.cache, spaceId, pageId));
+    const found =
+        start ?? (folder ? null : editorStart(scope.pageDrafts.stored(pageId), scope.outbox, pageId, body.value));
     useEffect(() => {
         if (start === null && found !== null) {
             setStart(found);
         }
     }, [start, found]);
+    if (start === null && folder) {
+        return <Waiting line={FOLDER_NO_EDITOR} />;
+    }
     if (start === null) {
         return <Waiting line={found === null && body.settled ? OPEN_ONLINE : 'Loading page…'} />;
     }

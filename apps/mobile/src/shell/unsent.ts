@@ -51,6 +51,7 @@ import { type HoldGroup, UNSENT_GONE, type UnsentWrite } from '../sync/outbox';
 import {
     PAGE_COVER_KIND,
     PAGE_DELETE_KIND,
+    PAGE_FOLDER_KIND,
     PAGE_MANAGE_REFUSALS,
     PAGE_MOVE_KIND,
     type PageCoverPayload,
@@ -189,6 +190,7 @@ const PAGE_KINDS: readonly string[] = [
     PAGE_MOVE_KIND,
     PAGE_DELETE_KIND,
     PAGE_COVER_KIND,
+    PAGE_FOLDER_KIND,
 ];
 /** A save refused because its page is gone: the list offers Save as a new page. */
 const PAGE_GONE: readonly string[] = [PAGE_SAVE_REFUSALS.deleted, PAGE_SAVE_REFUSALS.noPage, UNSENT_GONE];
@@ -295,7 +297,7 @@ function describePage(
         case PAGE_CREATE_KIND: {
             const create = payload as Partial<PageCreatePayload> | null;
             return {
-                what: `New page ${quoted(typeof create?.title === 'string' ? create.title : '')}`,
+                what: `${create?.folder === true ? 'New folder' : 'New page'} ${quoted(typeof create?.title === 'string' ? create.title : '')}`,
                 text: pageCopy(create),
             };
         }
@@ -303,6 +305,17 @@ function describePage(
             return { what: named('Move', 'Move a page'), text: null };
         case PAGE_DELETE_KIND:
             return { what: named('Delete', 'Delete a page'), text: null };
+        case PAGE_FOLDER_KIND:
+            // CB-426: the web's menu words, with the page's title.
+            return payload?.folder === true
+                ? {
+                      what: held === null ? 'Turn a page into a folder' : `Turn ${quoted(held)} into a folder`,
+                      text: null,
+                  }
+                : {
+                      what: held === null ? 'Turn a folder into a page' : `Turn ${quoted(held)} into a page`,
+                      text: null,
+                  };
         default: {
             const removed = (payload as Partial<PageCoverPayload> | null)?.change?.kind === 'remove';
             return {

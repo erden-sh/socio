@@ -128,6 +128,11 @@ export interface SearchInput {
     readonly pages?: readonly SearchPageTitle[];
     /** The server's half (server-search.ts); idle by default. */
     readonly server?: ServerSearchState;
+    /**
+     * Whether a page the server found is a folder (CB-426), by the Space's list the phone holds: a
+     * folder shows no snippet, and one only its hidden body matched doesn't show. None by default.
+     */
+    readonly isFolder?: (spaceId: string, pageId: string) => boolean;
     readonly role: Role | null | undefined;
     /** For the pages' freshness; the device's clock by default. */
     readonly now?: number;
@@ -194,18 +199,20 @@ function issueLink(issue: IssueSummary): SearchLink {
     );
 }
 
-function pageLink(page: SearchPageTitle, space: SpaceRow, hit?: PageHit, now?: number): SearchLink {
+function pageLink(page: SearchPageTitle, space: SpaceRow, hit?: PageHit, now?: number, folder = false): SearchLink {
     const title = page.title.trim() === '' ? 'Untitled page' : page.title;
     const fresh = hit === undefined ? null : freshnessLabel(hit.freshness, now);
+    // A folder's body is hidden (CB-426): no snippet of it, whatever the server sent.
     const snippet =
-        hit === undefined
+        hit === undefined || folder
             ? ''
             : hit.snippet
                   .map((part) => part.text)
                   .join('')
                   .replace(/\s+/g, ' ')
                   .trim();
-    const first = fresh === null ? space.name : `${space.name} · ${fresh}`;
+    const where = folder ? `${space.name} · Folder` : space.name;
+    const first = fresh === null ? where : `${where} · ${fresh}`;
     return link(
         {
             key: `page-${page.id}`,
@@ -217,7 +224,9 @@ function pageLink(page: SearchPageTitle, space: SpaceRow, hit?: PageHit, now?: n
             target: { kind: 'space-page', spaceId: page.spaceId, pageId: page.id },
             testID: `search-page-${page.id}`,
         },
-        [`${title}, page in ${space.name}`, fresh, snippet].filter((part) => part !== null && part !== '').join(', '),
+        [`${title}, ${folder ? 'folder' : 'page'} in ${space.name}`, fresh, snippet]
+            .filter((part) => part !== null && part !== '')
+            .join(', '),
     );
 }
 
@@ -440,7 +449,12 @@ export function searchView(input: SearchInput): SearchView {
         }
         const hits = (answer.pages?.results ?? []).flatMap((hit) => {
             const space = spaceById.get(hit.spaceId);
-            return space === undefined ? [] : [pageLink(hit, space, hit, input.now)];
+            const folder = input.isFolder?.(hit.spaceId, hit.id) === true;
+            // The server still finds a folder by its hidden body: one its title doesn't match never shows.
+            if (space === undefined || (folder && !foldText(hit.title).includes(folded))) {
+                return [];
+            }
+            return [pageLink(hit, space, hit, input.now, folder)];
         });
         const fromServer = new Map(hits.map((item) => [item.key, item]));
         const local = (groups.get('pages') ?? []).map((item) => fromServer.get(item.key) ?? item);

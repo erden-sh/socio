@@ -6,8 +6,11 @@ import { DELETE, effectiveOverlays, type MenuAction, type NotSaved } from '../ch
 import type { UnsentWrite } from '../sync/outbox';
 import type { OverlayItem } from '../sync/outbox-overlay';
 import {
+    isFolder,
+    knowsFolders,
     PAGE_COVER_KIND,
     PAGE_DELETE_KIND,
+    PAGE_FOLDER_KIND,
     PAGE_MANAGE_REFUSALS,
     PAGE_MOVE_KIND,
     UNTITLED_PAGE,
@@ -24,8 +27,11 @@ import { unsentWhy } from './unsent';
 // the server's: only an admin deletes a subtree with others' pages) and its
 // confirm's words, the move's Space and parent picker, the library's pages
 // with this phone's pending writes laid over (the page writes' overlays), and
-// the ones the server refused, said with Retry, Copy and Discard. No React
-// Native, so tests/shell runs it under Node.
+// the ones the server refused, said with Retry, Copy and Discard. Folders
+// (CB-426): the web's "Turn into folder" and "Turn into page", for whoever opens
+// the page (the web offers it to everyone; the server checks), only once the
+// server sends the mark, and New folder. No React Native, so tests/shell runs it
+// under Node.
 
 export const MOVE: MenuAction = { name: 'move', label: 'Move' };
 export const SET_COVER: MenuAction = { name: 'set-cover', label: 'Set cover' };
@@ -33,9 +39,60 @@ export const SET_COVER: MenuAction = { name: 'set-cover', label: 'Set cover' };
 export const CHANGE_COVER: MenuAction = { name: 'set-cover', label: 'Change cover' };
 export const REMOVE_COVER: MenuAction = { name: 'remove-cover', label: 'Remove cover' };
 
+/** The web's words for the toggle (PageDocument.tsx's menu). */
+export const TURN_INTO_FOLDER: MenuAction = { name: 'turn-into-folder', label: 'Turn into folder' };
+export const TURN_INTO_PAGE: MenuAction = { name: 'turn-into-page', label: 'Turn into page' };
+
 export const NEW_PAGE = 'New page';
 export const NEW_PAGE_LABEL = 'Title';
 export const COVER_REMOVED = 'Cover removed';
+/** The web's New folder dialog (NewFolderDialog.tsx). */
+export const NEW_FOLDER = 'New folder';
+export const NEW_FOLDER_LABEL = 'Folder name';
+export const NEW_FOLDER_LINE = 'A folder holds pages and other folders.';
+export const CREATE_FOLDER = 'Create folder';
+
+/** A folder's + menu (CB-426): the web's New page and New folder in its contents. */
+export const NEW_PAGE_ACTION: MenuAction = { name: 'new-page', label: NEW_PAGE };
+export const NEW_FOLDER_ACTION: MenuAction = { name: 'new-folder', label: NEW_FOLDER };
+
+/**
+ * What the page reader's bar offers (CB-426): a page has Edit, Ask about this page and, once the
+ * server knows folders, Turn into folder in its ⋯; a folder has no editor and nothing that reads its
+ * hidden body (no Edit, no Ask), a + menu with New page and New folder, and Turn into page. Before
+ * the page is read, a page's buttons, which the screen dims.
+ */
+export interface ReaderBar {
+    readonly edit: boolean;
+    readonly ask: boolean;
+    readonly add: readonly MenuAction[];
+    readonly more: readonly MenuAction[];
+}
+
+export function readerBar(view: { readonly folder: boolean; readonly foldersKnown: boolean } | null): ReaderBar {
+    if (view === null) {
+        return { edit: true, ask: true, add: [], more: [] };
+    }
+    if (view.folder) {
+        return { edit: false, ask: false, add: [NEW_PAGE_ACTION, NEW_FOLDER_ACTION], more: [TURN_INTO_PAGE] };
+    }
+    return { edit: true, ask: true, add: [], more: view.foldersKnown ? [TURN_INTO_FOLDER] : [] };
+}
+
+/** The toggle a page offers (CB-426), or null while the server sends no mark (a server before folders). */
+export function folderToggle(page: object): MenuAction | null {
+    if (!knowsFolders(page)) {
+        return null;
+    }
+    return isFolder(page) ? TURN_INTO_PAGE : TURN_INTO_FOLDER;
+}
+
+/**
+ * Whether New folder shows in a Space: once any page the server sent carries the mark, or
+ * while the Space has none to tell (a server before folders then refuses it, and the
+ * not-saved notice says so).
+ */
+export const offersFolders = (pages: readonly object[]): boolean => pages.length === 0 || pages.some(knowsFolders);
 
 /**
  * Runs one write at a time: a call while the last one is still in flight is
@@ -72,6 +129,7 @@ export interface ShownPage extends PageSummary {
 }
 
 interface PagePatch {
+    folder?: boolean;
     spaceId?: string;
     parentId?: string | null;
     title?: string;
@@ -191,13 +249,18 @@ export function deleteRule(
     return { allowed: mine(page) && subpages.every(mine), subpages };
 }
 
-/** A page row's menu: Move, the cover's, and Delete where the rule allows. */
-export function pageMenu(page: Pick<ShownPage, 'cover' | 'coverUpload'>, deletable: boolean): MenuAction[] {
+/** A page row's menu: Move, the cover's, the folder toggle once the server knows folders, and Delete where the rule allows. */
+export function pageMenu(
+    page: Pick<ShownPage, 'cover' | 'coverUpload'> & { readonly folder?: boolean },
+    deletable: boolean,
+): MenuAction[] {
     const covered = page.cover !== null || page.coverUpload !== null;
+    const toggle = folderToggle(page);
     return [
         MOVE,
         covered ? CHANGE_COVER : SET_COVER,
         ...(covered ? [REMOVE_COVER] : []),
+        ...(toggle === null ? [] : [toggle]),
         ...(deletable ? [DELETE] : []),
     ];
 }
@@ -249,6 +312,7 @@ const MANAGE_KINDS: ReadonlySet<string> = new Set([
     PAGE_MOVE_KIND,
     PAGE_DELETE_KIND,
     PAGE_COVER_KIND,
+    PAGE_FOLDER_KIND,
 ]);
 
 /** A refused page write: what it says, what Copy takes, and what Retry does. */
@@ -270,6 +334,7 @@ const VERBS: Readonly<Record<string, string>> = {
     [PAGE_MOVE_KIND]: 'Couldn’t move',
     [PAGE_DELETE_KIND]: 'Couldn’t delete',
     [PAGE_COVER_KIND]: 'Couldn’t change the cover of',
+    [PAGE_FOLDER_KIND]: 'Couldn’t turn',
 };
 
 const stringOf = (value: unknown): string | null => (typeof value === 'string' ? value : null);
@@ -313,10 +378,12 @@ export function pagesNotSaved(
                         ? written
                         : `${written}\n\n${content}`
                     : null;
+            const into =
+                write.kind === PAGE_FOLDER_KIND ? (payload.folder === true ? ' into a folder' : ' into a page') : '';
             return [
                 {
                     id: write.id,
-                    text: `${VERBS[write.kind]} “${title}”. ${unsentWhy(write.reason)}.`,
+                    text: `${write.kind === PAGE_CREATE_KIND && payload.folder === true ? 'Couldn’t create the folder' : VERBS[write.kind]} “${title}”${into}. ${unsentWhy(write.reason)}.`,
                     copy,
                     again:
                         write.kind === PAGE_DELETE_KIND && write.reason === PAGE_MANAGE_REFUSALS.newSubpages

@@ -16,6 +16,7 @@ import { homeSocios } from '../shell/home';
 import { issuesQuery, shellQuery, shellRows, sociosQuery, spacesQuery } from '../shell/queries';
 import { addMemoryAction, type SearchIconName, type SearchItem, type SearchTarget, searchView } from '../shell/search';
 import { spaceList } from '../shell/spaces';
+import { heldFolder } from '../sync/page-manage';
 import { createServerSearch } from '../sync/server-search';
 import { AppSymbol, Screen, SearchField, Text, ToneTile } from '../ui';
 import { SearchEmptyState, useEmptyFill } from '../ui/empty-state';
@@ -106,6 +107,7 @@ function ScopedSearch() {
         spaces: spaceList(spaces),
         issues,
         server: serverState,
+        isFolder: (spaceId, pageId) => heldFolder(scope.cache, spaceId, pageId),
         role: workspace?.user.role ?? null,
     });
     const go = (target: SearchTarget) => {

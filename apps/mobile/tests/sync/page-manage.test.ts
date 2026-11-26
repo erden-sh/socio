@@ -21,9 +21,12 @@ import {
     PAGE_MANAGE_REFUSALS,
     PAGE_MANAGE_VIEWS,
     pageManageKinds,
+    PAGE_FOLDER_KIND,
+    pendingFolder,
     removePageCover,
     restorePageCover,
     setPageCover,
+    setPageFolder,
 } from '../../src/sync/page-manage';
 import { createPageSaves, PAGE_IDS, PAGE_SAVE_KIND, PAGE_SAVE_REFUSALS, pageSaveKind } from '../../src/sync/page-save';
 import type { PageMove } from '../../src/sync/page-store';
@@ -36,7 +39,10 @@ import { userDb } from './outbox-fakes';
 // a real user.db against a fake server that answers as src/server/pages's routes do: POST
 // creates (title trimmed, 404 for a parent not there, 410 for a deleted one),
 // move (to another Space only; 400 "already there"), soft delete (403, 409 for
-// subpages without `?subpages=true`, 410 once deleted) and covers.
+// subpages without `?subpages=true`, 410 once deleted), covers and folders
+// (CB-426: `folder` on create and on the PATCH, a compare-and-set on the
+// revision; `legacy()` plays a server from before folders, whose strict schemas
+// answer the field with 400 and whose pages carry no mark).
 
 const directories: string[] = [];
 const files: UserDb[] = [];
@@ -89,6 +95,7 @@ function pagesServer() {
     let serverNow = SERVER_START;
     let ids = 0;
     let offline = false;
+    let legacy = false;
     /** Requests matching this land, then their answers are lost. */
     let lose: RegExp | null = null;
     /** Statuses the next DELETE of a page answers with, before anything happens. */
@@ -114,6 +121,13 @@ function pagesServer() {
         fenceCopies,
         offline(on: boolean) {
             offline = on;
+        },
+        /** A server from before folders. */
+        legacy() {
+            legacy = true;
+            for (const [id, { folder: _, ...rest }] of pages) {
+                pages.set(id, rest as Stored);
+            }
         },
         loseAnswers(match: RegExp | null) {
             lose = match;
@@ -150,6 +164,9 @@ function pagesServer() {
                 if (method === 'GET') {
                     return json(200, live(spaceId).map(summary));
                 }
+                if (legacy && body !== undefined && 'folder' in body) {
+                    return json(400, { error: 'Unrecognized key: "folder"' });
+                }
                 const parentId = (body?.parentId as string | null) ?? null;
                 if (parentId !== null) {
                     const parent = pages.get(parentId);
@@ -169,6 +186,7 @@ function pagesServer() {
                     revision: 1,
                     createdAt: serverNow,
                     updatedAt: serverNow,
+                    folder: body?.folder === true,
                 });
                 pages.set(made.id, made);
                 return json(201, made);
@@ -219,13 +237,17 @@ function pagesServer() {
                 return json(200, found);
             }
             if (method === 'PATCH') {
+                if (legacy && body !== undefined && 'folder' in body) {
+                    return json(400, { error: 'A valid page patch and expectedRevision are required.' });
+                }
                 if (body?.expectedRevision !== found.revision) {
                     return json(409);
                 }
                 const next = {
                     ...found,
-                    title: String(body.title).trim(),
-                    content: String(body.content),
+                    title: body.title === undefined ? found.title : String(body.title).trim(),
+                    content: body.content === undefined ? found.content : String(body.content),
+                    ...(typeof body.folder === 'boolean' ? { folder: body.folder } : {}),
                     revision: found.revision + 1,
                 };
                 pages.set(found.id, next);
@@ -854,5 +876,177 @@ describe('page covers', () => {
         p.outbox.start();
         await vi.waitFor(() => expect(p.outbox.unsent()).toHaveLength(1), { timeout: 5_000 });
         expect(p.outbox.unsent()[0]!.reason).toBe(PAGE_SAVE_REFUSALS.deleted);
+    });
+});
+
+describe('folders (CB-426)', () => {
+    const kinds = (p: Awaited<ReturnType<typeof phone>>) => p.outbox.rows().map((row) => row.kind);
+
+    it('a toggle made offline shows at once and goes as the mark alone, with its revision; the body stays', async () => {
+        const server = pagesServer();
+        const p = await phone(server);
+        server.offline(true);
+        expect(await setPageFolder({ ...p.write, spaceId: 's1', pageId: 'p1', folder: true, revision: 3 })).toBe(
+            'queued',
+        );
+        expect(overlaysOf({ rows: p.outbox.rows(), kinds: PAGE_MANAGE_VIEWS, scope: p.outbox })[0]).toMatchObject({
+            key: 'p1',
+            mode: 'patch',
+            value: { folder: true, excerpt: '' },
+        });
+        expect(pendingFolder(p.outbox, 'p1')).toBe(true);
+        p.outbox.start();
+        await vi.waitFor(() => expect(requests(server, 'PATCH')).toHaveLength(1), { timeout: 5_000 });
+        server.offline(false);
+        p.outbox.wake();
+        await settled(p.outbox);
+        expect(server.pages.get('p1')).toMatchObject({ folder: true, content: 'Hello', title: 'Roadmap', revision: 4 });
+        expect(pendingFolder(p.outbox, 'p1')).toBeNull();
+        // The answer goes to the body and the list; the list's summary has no excerpt of the hidden body.
+        expect(p.bodies.get(pageBodyKey('s1', 'p1'))).toMatchObject({ folder: true, revision: 4 });
+        expect(p.confirmed).toContainEqual(
+            expect.objectContaining({
+                key: 'p1',
+                version: 4,
+                value: expect.objectContaining({ folder: true, excerpt: '' }),
+            }),
+        );
+        expect(p.rebased).toContainEqual({ pageId: 'p1', from: [3], revision: 4 });
+    });
+
+    it('a second toggle while one waits folds into it, and back again takes it out with nothing sent', async () => {
+        const server = pagesServer();
+        const p = await phone(server);
+        const toggle = (folder: boolean) =>
+            setPageFolder({ ...p.write, spaceId: 's1', pageId: 'p1', folder, revision: 3 });
+        expect(await toggle(true)).toBe('queued');
+        expect(await toggle(true)).toBe('folded');
+        expect(kinds(p)).toEqual([PAGE_FOLDER_KIND]);
+        expect(await toggle(false)).toBe('removed');
+        expect(p.outbox.rows()).toEqual([]);
+        p.outbox.start();
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        expect(requests(server, 'PATCH')).toEqual([]);
+        expect(server.pages.get('p1')).toMatchObject({ folder: false, revision: 3 });
+    });
+
+    it('a save queued ahead of it moves its revision: no 409, two PATCHes, the save’s text kept', async () => {
+        const server = pagesServer();
+        const p = await phone(server);
+        const start = { spaceId: 's1', revision: 3, title: 'Roadmap', content: 'Hello' };
+        expect(await p.saves.savePage('p1', { ...start, content: 'Hello there' })).toBe('queued');
+        await setPageFolder({ ...p.write, spaceId: 's1', pageId: 'p1', folder: true, revision: 3 });
+        p.outbox.start();
+        await settled(p.outbox);
+        expect(server.log.filter((line) => !line.startsWith('GET'))).toEqual([
+            'PATCH /api/spaces/s1/pages/p1',
+            'PATCH /api/spaces/s1/pages/p1',
+        ]);
+        expect(requests(server, 'GET')).toEqual([]);
+        expect(server.pages.get('p1')).toMatchObject({ content: 'Hello there', folder: true, revision: 5 });
+    });
+
+    it('someone’s edit meanwhile: the 409 reads the page and the mark goes again on its revision', async () => {
+        const server = pagesServer();
+        const p = await phone(server);
+        server.pages.set('p1', { ...server.pages.get('p1')!, content: 'Edited elsewhere', revision: 4 });
+        await setPageFolder({ ...p.write, spaceId: 's1', pageId: 'p1', folder: true, revision: 3 });
+        p.outbox.start();
+        await settled(p.outbox);
+        expect(server.log).toEqual([
+            'PATCH /api/spaces/s1/pages/p1',
+            'GET /api/spaces/s1/pages/p1',
+            'PATCH /api/spaces/s1/pages/p1',
+        ]);
+        expect(server.pages.get('p1')).toMatchObject({ content: 'Edited elsewhere', folder: true, revision: 5 });
+        expect(p.outbox.unsent()).toEqual([]);
+    });
+
+    it('already a folder (someone else’s toggle, or a lost answer) is done with no second PATCH', async () => {
+        const server = pagesServer();
+        const p = await phone(server);
+        server.pages.set('p1', { ...server.pages.get('p1')!, folder: true, revision: 4 });
+        await setPageFolder({ ...p.write, spaceId: 's1', pageId: 'p1', folder: true, revision: 3 });
+        p.outbox.start();
+        await settled(p.outbox);
+        expect(requests(server, 'PATCH')).toHaveLength(1);
+        expect(p.bodies.get(pageBodyKey('s1', 'p1'))).toMatchObject({ folder: true, revision: 4 });
+    });
+
+    it('a page deleted meanwhile, or a server from before folders, refuses it with words', async () => {
+        const gone = pagesServer();
+        gone.pages.set('p1', { ...gone.pages.get('p1')!, deleted: true });
+        const p = await phone(gone);
+        await setPageFolder({ ...p.write, spaceId: 's1', pageId: 'p1', folder: true, revision: 3 });
+        p.outbox.start();
+        await vi.waitFor(() => expect(p.outbox.unsent()).toHaveLength(1), { timeout: 5_000 });
+        expect(p.outbox.unsent()[0]!.reason).toBe(PAGE_SAVE_REFUSALS.deleted);
+
+        const old = pagesServer();
+        old.legacy();
+        const q = await phone(old);
+        await setPageFolder({ ...q.write, spaceId: 's1', pageId: 'p1', folder: true, revision: 3 });
+        q.outbox.start();
+        await vi.waitFor(() => expect(q.outbox.unsent()).toHaveLength(1), { timeout: 5_000 });
+        expect(q.outbox.unsent()[0]!.reason).toBe(PAGE_SAVE_REFUSALS.invalid);
+        expect(unsentWhy(q.outbox.unsent()[0]!.reason)).not.toBe('');
+        expect(old.pages.get('p1')).toMatchObject({ revision: 3, content: 'Hello' });
+    });
+
+    it('New folder sends `folder: true` with its create; a page made on the phone takes a toggle into its create', async () => {
+        const server = pagesServer();
+        const p = await phone(server);
+        const { localId } = await createPage({
+            ...p.write,
+            spaceId: 's1',
+            title: 'Plans',
+            content: 'Never shown',
+            createdBy: ME,
+            serverAt: SERVER_START,
+            known: ['p1'],
+            folder: true,
+        });
+        const shown = overlaysOf({ rows: p.outbox.rows(), kinds: PAGE_MANAGE_VIEWS, scope: p.outbox });
+        expect(shown[0]).toMatchObject({ key: localId, mode: 'insert', value: { folder: true, excerpt: '' } });
+        // A plain page made on the phone, turned into a folder before its create went: one POST.
+        const second = await createPage({
+            ...p.write,
+            spaceId: 's1',
+            title: 'Archive',
+            createdBy: ME,
+            serverAt: SERVER_START,
+            known: ['p1'],
+        });
+        expect(
+            await setPageFolder({ ...p.write, spaceId: 's1', pageId: second.localId, folder: true, revision: 0 }),
+        ).toBe('folded');
+        expect(kinds(p)).toEqual(['page-create', 'page-create']);
+        p.outbox.start();
+        await settled(p.outbox);
+        expect(requests(server, 'POST')).toHaveLength(2);
+        expect(requests(server, 'PATCH')).toEqual([]);
+        expect(server.pages.get(p.outbox.resolve(PAGE_IDS, localId)!)).toMatchObject({ title: 'Plans', folder: true });
+        expect(server.pages.get(p.outbox.resolve(PAGE_IDS, second.localId)!)).toMatchObject({
+            title: 'Archive',
+            folder: true,
+        });
+    });
+
+    it('a plain page’s create never names `folder`, so a server from before folders still takes it', async () => {
+        const server = pagesServer();
+        server.legacy();
+        const p = await phone(server);
+        const { localId } = await createPage({
+            ...p.write,
+            spaceId: 's1',
+            title: 'Plain',
+            createdBy: ME,
+            serverAt: SERVER_START,
+            known: ['p1'],
+        });
+        p.outbox.start();
+        await settled(p.outbox);
+        expect(p.outbox.unsent()).toEqual([]);
+        expect(p.outbox.resolve(PAGE_IDS, localId)).not.toBeNull();
     });
 });

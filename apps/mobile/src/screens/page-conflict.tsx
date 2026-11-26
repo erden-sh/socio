@@ -51,10 +51,12 @@ export function PageConflictBanner(props: {
     current: Page | null;
     /** A short line for the screen's toast ("Saved your version as a new page"). */
     onNotice: (text: string) => void;
+    /** The page is a folder (CB-426): no Compare, which would show its hidden body. */
+    folder?: boolean;
 }) {
     const { spaceId, pageId, current, onNotice } = props;
     const scope = useWorkspaceScope();
-    const banner = conflictBanner(usePageConflicts(pageId));
+    const banner = conflictBanner(usePageConflicts(pageId), props.folder === true);
     const { saveMine, pickSpace, element: picker } = useSaveAsNewPage();
     const [comparing, setComparing] = useState<DiffSheetContent | null>(null);
     useRouteSheet(comparing === null ? null : diffSheet(comparing, () => setComparing(null)), () => setComparing(null));

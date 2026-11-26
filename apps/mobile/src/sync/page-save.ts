@@ -63,6 +63,8 @@ import type { SnapshotCache } from './snapshot-cache';
 export const PAGE_SAVE_KIND = 'page-save';
 /** page-manage.ts's create of a page made on the phone: edits fold into it while it is queued. */
 export const PAGE_CREATE_KIND = 'page-create';
+/** page-manage.ts's folder toggle (CB-426): a save ahead of it in the lane moves its expected revision. */
+export const PAGE_FOLDER_KIND = 'page-folder';
 /** The `ids` map's kind for a page's server id (page-manage.ts's creates). */
 export const PAGE_IDS = 'page';
 const LOCAL_PAGE_PREFIX = 'local-page-';
@@ -480,6 +482,9 @@ export function createPageSaves(options: PageSavesOptions): PageSaves {
  * first. Null for another kind's row, or one this build can't read.
  */
 export function movedSave(other: Pick<OutboxRow, 'kind' | 'payload'>, page: Page) {
+    if (other.kind === PAGE_FOLDER_KIND) {
+        return folderOn(other, page);
+    }
     if (other.kind !== PAGE_SAVE_KIND) {
         return null;
     }
@@ -499,6 +504,30 @@ export function movedSave(other: Pick<OutboxRow, 'kind' | 'payload'>, page: Page
         ownRevisions: bounded([...next.ownRevisions, page.revision]),
         bases: bounded([...basesOf(next), page.revision]),
     });
+}
+
+/**
+ * A queued folder toggle (page-manage.ts's `page-folder`) behind a write of
+ * this phone that landed as `page`: it goes on `page`'s Space and revision, so
+ * it needs no 409 first. Null for a row this build can't read.
+ */
+export function folderOn(other: Pick<OutboxRow, 'kind' | 'payload'>, page: Page) {
+    if (other.kind !== PAGE_FOLDER_KIND) {
+        return null;
+    }
+    let value: unknown;
+    try {
+        value = JSON.parse(other.payload);
+    } catch {
+        return null;
+    }
+    if (typeof value !== 'object' || value === null || typeof (value as { folder?: unknown }).folder !== 'boolean') {
+        return null;
+    }
+    return {
+        payload: JSON.stringify({ ...(value as object), spaceId: page.spaceId, revision: page.revision }),
+        payloadVersion: 1,
+    };
 }
 
 // ---- The kind ------------------------------------------------------------------
@@ -598,6 +627,9 @@ export function pageSaveKind(options: PageSaveKindOptions = {}): OutboxKind<unkn
                 }
             },
             amend: (other) => {
+                if (other.kind === PAGE_FOLDER_KIND) {
+                    return folderOn(other, page);
+                }
                 if (other.kind !== PAGE_SAVE_KIND) {
                     return null;
                 }

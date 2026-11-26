@@ -115,8 +115,24 @@ export function useNativeBar(bar: NativeBar): void {
                 item.onPress();
             }
         };
+        // A menu's choice too: the bar is set again only when what it shows changes, so a page
+        // whose params moved under the same bar (a link to another page) would answer for the old one.
+        const choose = (side: 'left' | 'right', index: number) => (name: string) => {
+            const item = (latest.current[side] ?? NO_ITEMS)[index];
+            if (item !== undefined && !isCustom(item)) {
+                item.menu?.onAction(name);
+            }
+        };
         const withPress = (side: 'left' | 'right', list: readonly BarItem[]) =>
-            list.map((item, index) => (isCustom(item) ? item : { ...item, onPress: press(side, index) }));
+            list.map((item, index) =>
+                isCustom(item)
+                    ? item
+                    : {
+                          ...item,
+                          onPress: press(side, index),
+                          ...(item.menu === undefined ? {} : { menu: { ...item.menu, onAction: choose(side, index) } }),
+                      },
+            );
         const pressed = withPress('right', right);
         const pressedLeft = withPress('left', left);
         // A custom item's element, by its id, for iOS's item (in glass unless it is `bare`).

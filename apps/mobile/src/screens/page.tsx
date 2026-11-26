@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 
 import { Alert, Pressable, View } from 'react-native';
 
 import { MODULE_IDS } from '@socio/shared/modules';
+import type { Space } from '@socio/shared/types';
 
 import { OPEN_IN_BROWSER } from '../chat/chat-view';
 import { outboxStateStore } from '../chat/composer';
@@ -20,7 +21,7 @@ import {
     useWorkspaceScope,
 } from '../live';
 import { useBarInset } from '../navigation/bar-inset';
-import { useNativeBar } from '../navigation/native-bar';
+import { type BarItem, useNativeBar } from '../navigation/native-bar';
 import { pageAction, pageEditorAction, spaceAction } from '../navigation/tabs';
 import { useFirstFrameWithData } from '../platform/cold-start';
 import { useEmbedPicture } from '../platform/image-cache';
@@ -37,7 +38,11 @@ import {
     pageChatEntry,
     socioOfAction,
 } from '../shell/page-conversation';
+import { readerBar } from '../shell/page-menus';
 import {
+    FOLDER_EMPTY,
+    FOLDER_KEPT_TEXT,
+    IN_THIS_FOLDER,
     OPEN_ONLINE,
     PAGE_NOT_FOUND,
     PAGE_NOT_FOUND_LINE,
@@ -49,14 +54,16 @@ import {
 } from '../shell/page-reader';
 import { pagesQuery, shellQuery, shellRows, sociosQuery, spacesQuery } from '../shell/queries';
 import { SPACE_UNAVAILABLE, spaceHeading, spaceUnavailable } from '../shell/space-library';
-import { pendingPageText } from '../sync/page-save';
-import { AppSymbol, Screen, Text } from '../ui';
+import { pendingFolder } from '../sync/page-manage';
+import { isLocalPage, pendingPageText } from '../sync/page-save';
+import { AppSymbol, Button, Screen, Text } from '../ui';
 import { EmptyState, NOT_SHARED_LINE, useWayBack } from '../ui/empty-state';
 
 import { MarkdownBlock } from './chat-markdown';
 import { useOpenLink } from './open-link';
 import { DatasetViewBlock, EmbedCardBlock, PagePictureBlock, PageTableBlock } from './page-blocks';
 import { PageConflictBanner, PageToasts } from './page-conflict';
+import { usePageManage, usePageWrites } from './page-menus';
 import { ListRow, Section, StatusBanners, useRememberScreen } from './shell-parts';
 
 // Reading a page: the `Page` route
@@ -74,7 +81,10 @@ import { ListRow, Section, StatusBanners, useRememberScreen } from './shell-part
 // the page, which shows theirs (page-conflict.tsx). Ask about this page
 // (CB-499, the web's Page conversation) opens the person's chat about it with a
 // socio of its Space, in the chat screen (`useAskAboutPage` below; the view in
-// src/shell/page-conversation.ts).
+// src/shell/page-conversation.ts). A folder (CB-426) reads as what it holds: the
+// pages and folders in it, New page and New folder in the bar's + menu, Turn into
+// page in its ⋯, and nothing of its hidden body: no body or excerpt, no Edit, no
+// Ask about this page, no Compare under a conflict.
 
 const SPACES = moduleEntry(MODULE_IDS.spaces);
 /** The page's chat, pushed over it in the tab the page is in (a NAVIGATE could go back to another chat). */
@@ -93,7 +103,14 @@ function PageRoute({ spaceId, pageId }: { spaceId: string; pageId: string }) {
     if (spaceUnavailable(spaces, spaceId, listed)) {
         return <Missing title={SPACES.title} headline={SPACE_UNAVAILABLE} line={NOT_SHARED_LINE} />;
     }
-    return <Reader spaceId={spaceId} pageId={pageId} spaceName={spaceHeading(spaces, spaceId)?.name ?? SPACES.title} />;
+    return (
+        <Reader
+            spaceId={spaceId}
+            pageId={pageId}
+            spaces={spaces}
+            spaceName={spaceHeading(spaces, spaceId)?.name ?? SPACES.title}
+        />
+    );
 }
 
 /** A page or Space the person can't open here: said plainly (the shared empty state), nothing pulled. */
@@ -111,13 +128,25 @@ function Missing(props: { title: string; headline: string; line: string | null }
     );
 }
 
-function Reader({ spaceId, pageId, spaceName }: { spaceId: string; pageId: string; spaceName: string }) {
+function Reader({
+    spaceId,
+    pageId,
+    spaces,
+    spaceName,
+}: {
+    spaceId: string;
+    pageId: string;
+    spaces: readonly Space[];
+    spaceName: string;
+}) {
     const navigation = useNavigation();
     const { pages: store, workspace, outbox } = useWorkspaceScope();
     const openLink = useOpenLink();
     useRememberScreen(pageScreen(spaceId, pageId));
     const space = useSpacePages(spaceId);
-    const { data: pages } = useLiveQuery({ query: pagesQuery(space.collection) });
+    const { data: synced } = useLiveQuery({ query: pagesQuery(space.collection) });
+    // This phone's page writes over the list: a page made in a folder shows in it at once (CB-426).
+    const { shown: pages, refused } = usePageWrites(spaceId, synced);
     const body = usePageBody(spaceId, pageId);
     // A save still waiting shows its draft (the page save's overlay); a refused one leaves the server's under its banner.
     // Read from the store's snapshot, so the compiler's memo moves with every outbox change.
@@ -132,9 +161,27 @@ function Reader({ spaceId, pageId, spaceName }: { spaceId: string; pageId: strin
         pageId,
     );
     const pending = waiting?.state === 'pending' ? waiting : null;
+    const marking = pendingFolder(
+        {
+            rows: () => [...writes.rows],
+            unsent: () => [...writes.unsent],
+            resolve: (kind, id) => outbox.resolve(kind, id),
+        },
+        pageId,
+    );
     const conflicts = usePageConflicts(pageId);
     const ask = useAskAboutPage(spaceId, pageId, waiting !== null || conflicts.length > 0);
-    const view = pageView(pages, spaceId, pageId, body.value, pending);
+    const view = pageView(pages, spaceId, pageId, body.value, pending, marking);
+    const here = new Set([pageId, ...(view?.children ?? []).map((child) => child.id)]);
+    const manage = usePageManage(
+        spaceId,
+        spaces,
+        pages,
+        refused.filter((item) => here.has(item.pageId)),
+        synced,
+    );
+    const bar = readerBar(view);
+    const shownPage = pages.find((page) => page.id === pageId);
     const [notice, setNotice] = useState<string | null>(null);
     const hideNotice = useCallback(() => setNotice(null), []);
     // Only on screen: a merge that lands under the editor is the editor's toast, not a hidden one here.
@@ -164,7 +211,24 @@ function Reader({ spaceId, pageId, spaceName }: { spaceId: string; pageId: strin
             navigation.dispatch(spaceAction(link.spaceId));
         }
     };
-    const openPage = (id: string) => navigation.dispatch(pageAction(spaceId, id));
+    // A page made here opens once the server has it (its create resolved, the row re-keys).
+    const openPage = (id: string) => {
+        if (!isLocalPage(id)) {
+            navigation.dispatch(pageAction(spaceId, id));
+        }
+    };
+    const onAdd = (name: string) => {
+        if (name === 'new-folder') {
+            manage.newFolder(pageId);
+        } else if (name === 'new-page') {
+            manage.newPage(pageId);
+        }
+    };
+    const onMore = (name: string) => {
+        if (shownPage !== undefined) {
+            manage.act(shownPage, name);
+        }
+    };
     // The system's bar (CB-420; Notes' and Files'): no title while the page's own shows, then the page's
     // title once that has scrolled under the bar; Edit at its end, in glass on iOS.
     const barInset = useBarInset();
@@ -175,31 +239,59 @@ function Reader({ spaceId, pageId, spaceName }: { spaceId: string; pageId: strin
     // Only whether it has gone, so a scroll re-renders the page only as it crosses.
     const [titleGone, setTitleGone] = useState(false);
     const onScrollY = (y: number) => setTitleGone(titleEnd !== null && y + barInset > titleEnd);
+    const right: BarItem[] = [];
+    if (bar.edit) {
+        right.push({
+            id: 'page-edit',
+            label: 'Edit',
+            hint: "Opens the page's editor",
+            symbol: 'pencil',
+            icon: 'pencil',
+            iconOnly: true,
+            disabled: view === null,
+            onPress: () => navigation.dispatch(pageEditorAction(spaceId, pageId)),
+        });
+    }
+    if (bar.ask) {
+        right.push({
+            id: 'page-chat',
+            label: PAGE_CHAT_LABEL,
+            hint: PAGE_CHAT_HINT,
+            symbol: 'bubble.left',
+            icon: 'message-circle',
+            iconOnly: true,
+            disabled: view === null || ask.busy,
+            onPress: ask.press,
+            ...(ask.menu === null ? {} : { menu: ask.menu }),
+        });
+    }
+    // A folder (CB-426): New page and New folder inside it.
+    if (bar.add.length > 0) {
+        right.push({
+            id: 'page-folder-add',
+            label: 'Add to this folder',
+            symbol: 'plus',
+            icon: 'plus',
+            iconOnly: true,
+            onPress: () => {},
+            menu: { actions: bar.add, onAction: onAdd },
+        });
+    }
+    // Turn into folder, or into page (CB-426).
+    if (bar.more.length > 0 && shownPage !== undefined) {
+        right.push({
+            id: 'page-more',
+            label: 'More',
+            symbol: 'ellipsis',
+            icon: 'ellipsis',
+            iconOnly: true,
+            onPress: () => {},
+            menu: { actions: bar.more, onAction: onMore },
+        });
+    }
     useNativeBar({
         title: titleGone ? (view?.title ?? spaceName) : view === null ? spaceName : '',
-        right: [
-            {
-                id: 'page-edit',
-                label: 'Edit',
-                hint: "Opens the page's editor",
-                symbol: 'pencil',
-                icon: 'pencil',
-                iconOnly: true,
-                disabled: view === null,
-                onPress: () => navigation.dispatch(pageEditorAction(spaceId, pageId)),
-            },
-            {
-                id: 'page-chat',
-                label: PAGE_CHAT_LABEL,
-                hint: PAGE_CHAT_HINT,
-                symbol: 'bubble.left',
-                icon: 'message-circle',
-                iconOnly: true,
-                disabled: view === null || ask.busy,
-                onPress: ask.press,
-                ...(ask.menu === null ? {} : { menu: ask.menu }),
-            },
-        ],
+        right,
     });
 
     if (gone) {
@@ -209,7 +301,13 @@ function Reader({ spaceId, pageId, spaceName }: { spaceId: string; pageId: strin
         <View testID="page-screen" className="flex-1 bg-screen" collapsable={false}>
             <Screen edges={['right', 'bottom', 'left']} onScrollY={onScrollY}>
                 <StatusBanners />
-                <PageConflictBanner spaceId={spaceId} pageId={pageId} current={body.value} onNotice={setNotice} />
+                <PageConflictBanner
+                    spaceId={spaceId}
+                    pageId={pageId}
+                    current={body.value}
+                    onNotice={setNotice}
+                    folder={view?.folder === true}
+                />
                 {view === null ? (
                     <Text variant="subheadline" tone="muted" testID="page-loading">
                         Loading page…
@@ -233,12 +331,30 @@ function Reader({ spaceId, pageId, spaceName }: { spaceId: string; pageId: strin
                                 </Text>
                             )}
                         </View>
-                        <Body view={view} spaceId={spaceId} pageId={pageId} waiting={!body.settled} onLink={onLink} />
-                        <Children pages={view.children} onOpen={openPage} />
+                        {view.folder ? (
+                            <FolderContents
+                                view={view}
+                                onOpen={openPage}
+                                onNewPage={() => manage.newPage(pageId)}
+                                onNewFolder={() => manage.newFolder(pageId)}
+                            />
+                        ) : (
+                            <>
+                                <Body
+                                    view={view}
+                                    spaceId={spaceId}
+                                    pageId={pageId}
+                                    waiting={!body.settled}
+                                    onLink={onLink}
+                                />
+                                <Children pages={view.children} onOpen={openPage} />
+                            </>
+                        )}
                     </>
                 )}
             </Screen>
             {focused ? <PageToasts pageId={pageId} notice={notice} onHide={hideNotice} /> : null}
+            {manage.element}
         </View>
     );
 }
@@ -420,26 +536,85 @@ function Body(props: {
     );
 }
 
-/** The subpages (the web's "Child pages"). */
-function Children({ pages, onOpen }: { pages: readonly PageRef[]; onOpen: (id: string) => void }) {
+/** The subpages (the web's "Child pages"), or what a folder holds ("In this folder"), each folder with its icon. */
+function Children({
+    pages,
+    onOpen,
+    title = 'Child pages',
+    testID = 'page-children',
+}: {
+    pages: readonly PageRef[];
+    onOpen: (id: string) => void;
+    title?: string;
+    testID?: string;
+}) {
     if (pages.length === 0) {
         return null;
     }
     return (
-        <Section title="Child pages" testID="page-children">
+        <Section title={title} testID={testID}>
             {pages.map((page, index) => (
                 <ListRow
                     key={page.id}
                     first={index === 0}
                     testID={`page-child-${page.id}`}
                     leadingSize={20}
-                    leading={<AppSymbol name="file-text" color="muted-foreground" />}
+                    leading={
+                        <AppSymbol name={page.folder === true ? 'folder' : 'file-text'} color="muted-foreground" />
+                    }
                     title={page.title}
-                    accessibilityLabel={page.title}
-                    accessibilityHint="Opens the page"
+                    accessibilityLabel={page.folder === true ? `${page.title}, Folder` : page.title}
+                    accessibilityHint={page.folder === true ? 'Opens the folder' : 'Opens the page'}
                     onPress={() => onOpen(page.id)}
                 />
             ))}
         </Section>
+    );
+}
+
+/**
+ * A folder's contents (CB-426, the web's `FolderContents`) where a page has its body: the pages and
+ * folders in it, or "This folder is empty." with New page and New folder, and a muted line when it
+ * still keeps text from when it was a page. Never the text itself.
+ */
+function FolderContents(props: {
+    view: PageView;
+    onOpen: (id: string) => void;
+    onNewPage: () => void;
+    onNewFolder: () => void;
+}) {
+    const { view } = props;
+    return (
+        <View className="gap-3" testID="page-folder">
+            {view.children.length === 0 ? (
+                <View className="gap-3" testID="page-folder-empty">
+                    <Text variant="subheadline" tone="muted">
+                        {FOLDER_EMPTY}
+                    </Text>
+                    <View className="flex-row flex-wrap gap-2">
+                        <Button label="New page" icon="plus" onPress={props.onNewPage} testID="page-folder-new-page" />
+                        <Button
+                            label="New folder"
+                            icon="folder-plus"
+                            variant="ghost"
+                            onPress={props.onNewFolder}
+                            testID="page-folder-new-folder"
+                        />
+                    </View>
+                </View>
+            ) : (
+                <Children
+                    pages={view.children}
+                    onOpen={props.onOpen}
+                    title={IN_THIS_FOLDER}
+                    testID="page-folder-children"
+                />
+            )}
+            {view.keptText ? (
+                <Text variant="footnote" tone="muted" testID="page-folder-kept-text">
+                    {FOLDER_KEPT_TEXT}
+                </Text>
+            ) : null}
+        </View>
     );
 }

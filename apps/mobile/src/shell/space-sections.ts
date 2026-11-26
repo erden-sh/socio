@@ -93,9 +93,10 @@ function edited(entry: RadarEntry): string {
     return `${day.format(entry.updatedAt)}${kept}`;
 }
 
-function radarRow(entry: RadarEntry, meta: string): RadarRow {
+function radarRow(entry: RadarEntry, meta: string, folders: ReadonlySet<string>): RadarRow {
     const title = titleOf(entry);
-    const excerpt = entry.excerpt.trim() === '' ? null : entry.excerpt;
+    // A folder's body is hidden (CB-426): the server sends no excerpt of it, and none shows here either.
+    const excerpt = folders.has(entry.id) || entry.excerpt.trim() === '' ? null : entry.excerpt;
     return { id: entry.id, title, excerpt, meta, accessibilityLabel: `${title}, ${meta}` };
 }
 
@@ -103,8 +104,11 @@ function radarRow(entry: RadarEntry, meta: string): RadarRow {
 export const staleAge = (ageDays: number) =>
     ageDays === 0 ? 'Updated today' : `${plural(ageDays, 'day', 'days')} since the last edit`;
 
-/** The radar's sections in the web's order and words. */
-export function radarView(radar: SpaceRadar): RadarView {
+/**
+ * The radar's sections in the web's order and words. `folders` are the Space's folders the phone
+ * holds (CB-426): their rows show no excerpt.
+ */
+export function radarView(radar: SpaceRadar, folders: ReadonlySet<string> = new Set()): RadarView {
     return {
         scope:
             `${plural(radar.total, 'live page', 'live pages')} in this Space. Stale is older than ` +
@@ -113,14 +117,14 @@ export function radarView(radar: SpaceRadar): RadarView {
             {
                 id: 'recent',
                 title: 'Recent changes',
-                rows: radar.recent.map((entry) => radarRow(entry, edited(entry))),
+                rows: radar.recent.map((entry) => radarRow(entry, edited(entry), folders)),
                 empty: 'No pages yet.',
             },
             {
                 id: 'open',
                 title: 'Open decisions & experiments',
                 rows: radar.open.map((entry: RadarOpenEntry) =>
-                    radarRow(entry, `${entry.markers.join(', ')} · ${edited(entry)}`),
+                    radarRow(entry, `${entry.markers.join(', ')} · ${edited(entry)}`, folders),
                 ),
                 empty:
                     'Nothing flagged. A page shows here when its title or excerpt carries a marker like todo, ' +
@@ -129,7 +133,7 @@ export function radarView(radar: SpaceRadar): RadarView {
             {
                 id: 'stale',
                 title: 'Potentially stale',
-                rows: radar.stale.map((entry) => radarRow(entry, staleAge(entry.ageDays))),
+                rows: radar.stale.map((entry) => radarRow(entry, staleAge(entry.ageDays), folders)),
                 empty: `Nothing stale. Every page was updated within ${radar.staleDays} days.`,
             },
         ],

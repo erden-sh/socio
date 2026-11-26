@@ -1558,6 +1558,20 @@ ported (no Effect), its test's cases as specs:
   `{ pendingDelete: true }`, `{ cover }` or `{ coverUpload }`). The scope's `newPages`
   (`createLocalPages`) re-keys the editor draft (`page:<local>`) and the last screen
   once a create resolves, tells the screen (`subscribe`), and repeats the moves as the scope opens.
+- **Folders** (CB-426): a folder is a page marked `folder: true`, its body kept but hidden; a
+  copy with no mark (a server before folders) is a page (`isFolder`, `knowsFolders`). New folder is
+  `createPage({ folder: true })`, which sends `folder` only when true. `setPageFolder` queues
+  `page-folder` in lane `page:<id>`: `PATCH …/pages/:id { folder, expectedRevision }` (the web's
+  `PUT …/folder` takes no revision), safe to repeat; a toggle back while one is queued takes it out,
+  and a page whose create is queued takes the mark into the create. A save or move of this phone
+  ahead of it moves its revision (`folderOn`); a 409 reads the page: already so is done, else a
+  `rewrite` on its revision. 410 `page-deleted`, 403 `page-refused`, 400 `page-invalid`. Its overlay
+  is `{ folder, excerpt: '' }`; `pendingFolder` gives the reader and the editor the mark still waiting.
+  **Nothing of a folder's body shows**: the library's rows say what it holds (`folderLine`), its
+  title alone matches a search, the server's body-only matches (its text search still finds a
+  folder by its hidden body) and snippets are dropped in the library and Search (`heldFolder`), the
+  radar shows no excerpt of it, the reader shows no body or excerpt and no Edit, Ask about this page
+  or Compare, and the editor doesn't open on one. `tests/shell/folders.test.ts` checks each place.
 - **Exactly once.** A run's check, and the busy-thread rule before it moves a
   row to steering, ask shared's `recoverTurn` through `turn-recovery.ts`'s `recoverRun`: `connect`
   replays the runs after the newest one held and stops at the first run's start; the row's id in a
@@ -1881,7 +1895,10 @@ Account sheet is a root stack route over them:
   the workspace's pages and Spaces, path or old hash form (`pageLink`, the web's `resolveLink`), open in
   the app; the rest keep the replies' rules. Edit opens the page's editor (The page editor's screen,
   below). While a save of it waits as a conflict, the conflict banner shows above it, and a clean
-  merge's toast at the bottom.
+  merge's toast at the bottom. A folder (CB-426) reads as what it holds: "In this folder" (each folder with its
+  icon) or "This folder is empty." with New page and New folder, the web's line when it keeps text,
+  New page and New folder in the bar's + menu and Turn into page in its ⋯ (a page's ⋯ has Turn
+  into folder once the server sends the mark; the library's long-press menus have the toggle too).
 - **The Board** is the `Board` route at `/issues` (`screens/board.tsx`,
   view model `src/shell/board.ts`), pushed from Home's tile (which counts the open issues,
   `openIssueCount`) and Search; its bar has New issue (`FileIssue`, below), Select and iOS's search
