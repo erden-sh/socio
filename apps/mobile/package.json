@@ -1,6 +1,6 @@
 {
     "name": "@socio/mobile",
-    "version": "0.2.6",
+    "version": "0.2.7",
     "private": true,
     "description": "Socio's native app for iOS and Android (Expo, React Native). A skeleton for now.",
     "main": "index.ts",
