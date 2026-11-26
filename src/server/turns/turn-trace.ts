@@ -23,12 +23,17 @@ import {
     type TraceReactions,
     type TraceRetry,
     type TraceRound,
+    type TraceInputIssue,
+    type TraceInputPath,
+    type TraceInputRepair,
     type TraceTool,
+    type TraceToolInput,
     type TraceTurn,
     type TraceWait,
     type ToolOutcome,
     REASONING_KINDS,
     RUN_ACTOR_KINDS,
+    TRACE_INPUT_TYPES,
 } from '@socio/shared/runs/run-trace';
 import { count, isObject, roundTokens } from '@socio/shared/runs/token-usage';
 import { toolImageOf } from '@socio/shared/tool-images';
@@ -37,6 +42,7 @@ import type { AgentRunStatus as RunStatus } from '@socio/shared/types';
 import type { CycleLedger } from '../cycles/contract.js';
 
 import type { FitTrace } from './contract.js';
+import { CALL_ID, EXPECTED_TYPES, ISSUE_CODES, isRepairText } from './tool-input-repair.js';
 
 /**
  * A turn's trace (CB-128), in two halves. Inside a Dot turn, `TurnTracer`
@@ -327,6 +333,13 @@ export class TurnTracer {
         });
         this.repeat = { retry: 1, cause: 'fallback' };
     }
+    /**
+     * A server tool's input that failed its schema, repaired or not
+     * (`toolInputRepair`): an entry of the round whose output called it.
+     */
+    toolInput(entry: Omit<TraceToolInput, 'kind' | 'round' | 'at'>) {
+        this.send({ kind: 'tool_input', round: this.round, at: this.now(), ...entry });
+    }
     /** An entry from outside the model loop: what a module told the Dot (CB-133). */
     note(entry: TraceEntry) {
         this.send(entry);
@@ -575,6 +588,55 @@ const FALLBACKS = ['error', 'empty', 'cap'];
 const drop = <T extends object>(entry: T) =>
     Object.fromEntries(Object.entries(entry).filter(([, value]) => value !== undefined)) as T;
 
+/** A tool input's path in a trace: declared names, indexes and `*`. */
+function inputPath(value: unknown): TraceInputPath | undefined {
+    if (!Array.isArray(value) || value.length > 8) {
+        return undefined;
+    }
+    const path = value.map((segment) =>
+        (typeof segment === 'number' && Number.isSafeInteger(segment) && segment >= 0) ||
+        (typeof segment === 'string' && segment.length <= 64)
+            ? segment
+            : undefined,
+    );
+    return path.every((segment) => segment !== undefined) ? (path as TraceInputPath) : undefined;
+}
+
+function inputIssue(value: unknown): TraceInputIssue | undefined {
+    if (!isObject(value)) {
+        return undefined;
+    }
+    const path = inputPath(value.path);
+    const code =
+        typeof value.code === 'string' && (value.code === 'invalid' || ISSUE_CODES.has(value.code))
+            ? value.code
+            : undefined;
+    const expected =
+        typeof value.expected === 'string' && EXPECTED_TYPES.has(value.expected) ? value.expected : undefined;
+    if (!path || !code || !TRACE_INPUT_TYPES.includes(value.received as never)) {
+        return undefined;
+    }
+    return drop<TraceInputIssue>({ path, code, expected, received: value.received as TraceInputIssue['received'] });
+}
+
+/** A repair: only number or boolean text, and the value it was read as. */
+function inputRepair(value: unknown): TraceInputRepair | undefined {
+    if (!isObject(value)) {
+        return undefined;
+    }
+    const path = inputPath(value.path);
+    const { from, to } = value;
+    if (
+        !path ||
+        typeof from !== 'string' ||
+        !isRepairText(from) ||
+        to !== (from === 'true' || from === 'false' ? from === 'true' : Number(from))
+    ) {
+        return undefined;
+    }
+    return { path, from, to: to as number | boolean };
+}
+
 /** An entry from a turn's stream, checked field by field; undefined when it isn't one. */
 export function traceEntry(value: unknown): TraceEntry | undefined {
     if (!isObject(value)) {
@@ -772,6 +834,38 @@ export function traceEntry(value: unknown): TraceEntry | undefined {
                 image: typeof value.image === 'string' && ATTACHMENT_ID.test(value.image) ? value.image : undefined,
             });
         }
+        case 'tool_input': {
+            const round = count(value.round);
+            const name = text(value.name);
+            const at = time(value.at);
+            const issues = Array.isArray(value.issues)
+                ? value.issues
+                      .slice(0, 10)
+                      .map(inputIssue)
+                      .filter((issue) => issue !== undefined)
+                : [];
+            const repairs = Array.isArray(value.repairs)
+                ? value.repairs
+                      .slice(0, 10)
+                      .map(inputRepair)
+                      .filter((repair) => repair !== undefined)
+                : [];
+            if (round === undefined || !name || at === undefined || !issues.length) {
+                return undefined;
+            }
+            const repaired = value.repaired === true && repairs.length > 0;
+            return drop<TraceToolInput>({
+                kind: 'tool_input',
+                round,
+                at,
+                name,
+                callId: typeof value.callId === 'string' && CALL_ID.test(value.callId) ? value.callId : undefined,
+                issues,
+                more: count(value.more) || undefined,
+                repaired,
+                repairs: repaired ? repairs : undefined,
+            });
+        }
         case 'wait': {
             const round = count(value.round);
             const name = text(value.name);
@@ -921,6 +1015,8 @@ export class TraceRecorder {
             this.trace.fallback = entry;
         } else if (entry.kind === 'tool') {
             this.trace.tools.push(entry);
+        } else if (entry.kind === 'tool_input') {
+            (this.trace.toolInputs ??= []).push(entry);
         } else {
             this.trace.waits.push(entry satisfies TraceWait);
         }

@@ -30,6 +30,7 @@ import { agentLoop } from '../../turns/agent-loop.js';
 import { RetryBudget, busyModel, retriedRequests } from '../../turns/model-busy.js';
 import { timedRounds } from '../../turns/round-timer.js';
 import { learnedSkillTools, tanstackTools } from '../../turns/tanstack-tools.js';
+import { toolInputRepair } from '../../turns/tool-input-repair.js';
 import { TurnTracer } from '../../turns/turn-trace.js';
 import { LegacyConfig, LegacyStore, LegacyWorkspace } from '../base.js';
 import type { CoreStore } from '../core-store.js';
@@ -88,6 +89,7 @@ export function dotTurnServices(store: CoreStore, workspace: AppWorkspace, confi
             timedRounds,
             tanstackTools,
             learnedSkillTools,
+            toolInputRepair,
         },
     };
 }

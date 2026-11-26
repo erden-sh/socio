@@ -194,6 +194,60 @@ export interface TraceTool {
      */
     image?: string;
 }
+/**
+ * Where a value sits in a tool's input: the property names its schema
+ * declares and array indexes. Any other key (a record's, a key the schema
+ * doesn't know) is `*`, since the model or the person chose it.
+ */
+export type TraceInputPath = Array<string | number>;
+/** A JSON value's type, as a schema issue found it; `missing` when absent. */
+export type TraceInputType = 'string' | 'number' | 'boolean' | 'null' | 'array' | 'object' | 'missing';
+export const TRACE_INPUT_TYPES: readonly TraceInputType[] = [
+    'string',
+    'number',
+    'boolean',
+    'null',
+    'array',
+    'object',
+    'missing',
+];
+/** One way a tool input failed its schema: never the value or the message. */
+export interface TraceInputIssue {
+    path: TraceInputPath;
+    /** The schema's issue code ("invalid_type", "too_small"), or `invalid`. */
+    code: string;
+    /** The type the schema wanted, for a type issue ("number", "boolean"). */
+    expected?: string;
+    received: TraceInputType;
+}
+/**
+ * A number or a boolean the model sent as text, read as what the schema
+ * wanted: `from` is the text, a number literal or `true`/`false`.
+ */
+export interface TraceInputRepair {
+    path: TraceInputPath;
+    from: string;
+    to: number | boolean;
+}
+/**
+ * A server tool's input that failed its schema: what failed, and whether
+ * reading numbers and booleans sent as text fixed it (then the tool ran
+ * with the repaired input; otherwise the model got the schema error).
+ */
+export interface TraceToolInput {
+    kind: 'tool_input';
+    /** The round whose output called it. */
+    round: number;
+    at: number;
+    name: string;
+    callId?: string;
+    issues: TraceInputIssue[];
+    /** Issues past those listed. */
+    more?: number;
+    repaired: boolean;
+    /** What the repair changed, when it fixed the input. */
+    repairs?: TraceInputRepair[];
+}
 /** The turn handed over to a person: an approval request, or a tool the browser runs. */
 export interface TraceWait {
     kind: 'wait';
@@ -216,6 +270,7 @@ export type TraceEntry =
     | TraceTurn
     | TraceRound
     | TraceTool
+    | TraceToolInput
     | TraceWait
     | TraceCompaction
     | TraceNotes
@@ -229,6 +284,8 @@ export interface RunTrace {
     rounds: TraceRound[];
     tools: TraceTool[];
     waits: TraceWait[];
+    /** Tool inputs that failed their schema. Absent when none did, and in older traces. */
+    toolInputs?: TraceToolInput[];
     /** Absent in traces stored before CB-129. */
     compactions?: TraceCompaction[];
     /** Absent in traces stored before CB-137. */

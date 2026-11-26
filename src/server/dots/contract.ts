@@ -33,6 +33,7 @@ import type {
     RetryCause,
     TraceEntry,
     TraceFallback,
+    TraceToolInput,
     TraceRetry,
     TraceTurn,
 } from '@socio/shared/runs/run-trace';
@@ -217,6 +218,8 @@ export interface TurnTracerShape {
         again(kind: { retry: number; cause: RetryCause }): void;
     };
     fallback(entry: Omit<TraceFallback, 'kind' | 'round' | 'at'>): void;
+    /** A server tool input that failed its schema, repaired or not. */
+    toolInput(entry: Omit<TraceToolInput, 'kind' | 'round' | 'at'>): void;
     note(entry: TraceEntry): void;
     start(turn: Omit<TraceTurn, 'kind'>): void;
     /** The model's own stream, each request timed and traced. */
@@ -289,6 +292,8 @@ export interface DotTurnEngine {
     tanstackTools(tools: ToolDefinition[]): AnyTool[];
     /** `learnedSkillTools`. */
     learnedSkillTools(context: BuiltInAgentFactoryContext, check: () => void): AnyTool[];
+    /** `toolInputRepair`: schema failures traced, numbers and booleans sent as text read. */
+    toolInputRepair(trace: (entry: Omit<TraceToolInput, 'kind' | 'round' | 'at'>) => void): ChatMiddleware;
 }
 
 /**
