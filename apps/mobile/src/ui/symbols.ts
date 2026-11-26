@@ -12,7 +12,7 @@ import type { SFSymbol } from 'expo-symbols';
 // heading's H1 to H3, a picture that failed. `fill` is the symbol's filled
 // form, for a chosen state (a vote cast). No React Native here, so the Node
 // tests read it as the app does; tests/ui/symbols.test.ts checks every name
-// against SF Symbols 5 and lucide 1.70.0.
+// against SF Symbols 5 and lucide 1.80.0.
 
 export interface SymbolSpec {
     /** The SF Symbol iOS draws; null where SF Symbols has none, and iOS draws the lucide icon. */
