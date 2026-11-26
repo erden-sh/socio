@@ -183,7 +183,6 @@ async function open(path: string) {
     return router;
 }
 const text = () => host.textContent ?? '';
-const crumb = () => host.querySelector('[data-slot="breadcrumb-page"]')?.textContent;
 const dialog = () => document.querySelector<HTMLElement>('[role="dialog"]');
 const button = (name: string, within: ParentNode = document) =>
     [...within.querySelectorAll<HTMLButtonElement>('button')].find(
