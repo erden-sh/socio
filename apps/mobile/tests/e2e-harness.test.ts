@@ -38,6 +38,7 @@ import {
     workspaceCacheUrls,
     workspaceFolders,
 } from '../e2e/run.mjs';
+import { readingVersion } from '../e2e/server-version.mjs';
 import {
     a2Seeds,
     a3Seeds,
@@ -55,6 +56,8 @@ import {
     parseServerArgs,
     seedPicture,
     seedPlan,
+    restartFor,
+    restartOptions,
     serverEnv,
     serverStart,
     TASK_INTERVAL_SECONDS,
@@ -120,6 +123,64 @@ describe('servers.mjs', () => {
             aheadDays('x'),
             aheadDays('401'),
         ]).toEqual([0, 8, 0.5, null, null, null]);
+    });
+
+    it('restarts with the app versions served and one workspace’s server version (CB-553)', () => {
+        const [server] = seedPlan({ ports: [4351], modelPort: 4550, dir: '/tmp/e2e' });
+        const raised = serverStart(server!.env, 0, { minimum: '0.2.8', recommended: '0.2.9' });
+        expect(raised.env).toMatchObject({ APP_MINIMUM_VERSION: '0.2.8', APP_RECOMMENDED_VERSION: '0.2.9' });
+        expect(raised.args).not.toContain('./apps/mobile/e2e/server-version.mjs');
+        const older = serverStart(server!.env, 0, { version: '0.53.0' });
+        expect(older.args).toContain('./apps/mobile/e2e/server-version.mjs');
+        expect(older.args.at(-1)).toBe('dist/server/server/index.js');
+        expect(older.env.SOCIO_E2E_SERVER_VERSION).toBe('0.53.0');
+        expect(older.env.APP_MINIMUM_VERSION).toBeUndefined();
+        expect(existsSync(join(import.meta.dirname, '../e2e/server-version.mjs'))).toBe(true);
+
+        const query = (text: string) => restartOptions(new URLSearchParams(text));
+        expect(query('')).toEqual({ days: 0, minimum: {}, recommended: {}, versions: {} });
+        const options = query(
+            'minimum=0.2.8&minimum=B:0.99.0&recommended=0.2.9&version=B:0.53.0&version=C:0.60.1&ahead=2',
+        );
+        expect(options).toEqual({
+            days: 2,
+            minimum: { '*': '0.2.8', B: '0.99.0' },
+            recommended: { '*': '0.2.9' },
+            versions: { B: '0.53.0', C: '0.60.1' },
+        });
+        expect(restartFor(options!, 'A')).toEqual({ minimum: '0.2.8', recommended: '0.2.9', version: undefined });
+        expect(restartFor(options!, 'B')).toEqual({ minimum: '0.99.0', recommended: '0.2.9', version: '0.53.0' });
+        for (const bad of [
+            'minimum=x',
+            'minimum=D:0.2.8',
+            'recommended=0.2.7-rc',
+            'version=D:0.53.0',
+            'version=B:0.53',
+            'version=0.53.0',
+            'version=B',
+            'ahead=-1',
+        ]) {
+            expect(query(bad), bad).toBeNull();
+        }
+    });
+
+    it('reports another version from the build’s releases.json alone (server-version.mjs)', () => {
+        const files: Record<string, string> = {
+            '/app/dist/server/releases.json': JSON.stringify({ version: '0.54.0', commit: null, releases: [] }),
+            '/app/package.json': JSON.stringify({ version: '0.54.0' }),
+        };
+        const read = ((path: string | URL, options?: unknown) => {
+            const text = files[path instanceof URL ? path.pathname : path]!;
+            return options === undefined ? Buffer.from(text) : text;
+        }) as unknown as typeof import('node:fs').readFileSync;
+        const reading = readingVersion(read, '0.53.0');
+        expect(JSON.parse(reading('/app/dist/server/releases.json', 'utf8') as string)).toEqual({
+            version: '0.53.0',
+            commit: null,
+            releases: [],
+        });
+        expect(JSON.parse(reading(new URL('file:///app/dist/server/releases.json')).toString()).version).toBe('0.53.0');
+        expect(JSON.parse(reading('/app/package.json', 'utf8') as string).version).toBe('0.54.0');
     });
 
     it('moves "now" ahead and leaves a given date alone (clock-ahead.mjs)', () => {

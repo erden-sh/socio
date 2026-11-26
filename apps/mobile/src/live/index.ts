@@ -1,6 +1,6 @@
 // The open workspace for screens: its scope's
 // context, its collections and live queries (@tanstack/react-db), its sync
-// status and its version gate. React and React Navigation live here, never in
+// status, its version gate and whether this app is new enough for it. React and React Navigation live here, never in
 // src/sync, which runs under Node.
 export {
     and,
@@ -18,6 +18,7 @@ export {
     lte,
     not,
     or,
+    useClientCompat,
     useCollections,
     useKeptSpaces,
     useLiveInfiniteQuery,

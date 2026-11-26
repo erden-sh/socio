@@ -692,7 +692,8 @@ fake server and a real `cache.db` (`node:sqlite`):
   stamped with the highest as its answer applies, unless its pull began before that version was taken.
   A scope stamped otherwise is `stale()`, due one pull, which sends its ETag like any other: the tag's
   boot id makes a new build check the body hash.
-- **The minimum-version gate** passes `MINIMUM_SERVER_VERSION` (0.32.0) and later, and '0.0.0' only in
+- **The minimum-version gate** passes `MINIMUM_SERVER_VERSION` (0.54.0, the first server with AG-UI 1.0's
+  media parts, the only attachments the app sends) and later, and '0.0.0' only in
   development and preview (the variant is injected). Each answer's verdict is the highest version's
   after it, not the answer's own, so a deploy's old build has no say however the answers are shared out,
   and the gate moves at most once per deploy; an answer with no readable version votes closed. It opens
@@ -848,7 +849,7 @@ fake server and a real `cache.db` (`node:sqlite`):
 - **Screens read the scope through `src/live`** (React, outside `src/sync`): `WorkspaceScopeProvider`
   (which remounts its subtree for a new scope), `useCollections`, react-db's `useLiveQuery` and the
   query operators, `useSyncOnFocus` (a screen in view), `useSyncStatus` ("Reconnecting…") and
-  `useVersionGate`, `useSessionState` and `useWriteHold`, `useViewState` (the scope's `kv`) and `useHasWorkspaceScope`. `index.ts` loads `react-native-get-random-values` first, for TanStack DB's ids.
+  `useVersionGate`, `useClientCompat` (Update Socio and its banner), `useSessionState` and `useWriteHold`, `useViewState` (the scope's `kv`) and `useHasWorkspaceScope`. `index.ts` loads `react-native-get-random-values` first, for TanStack DB's ids.
 - **One scope is open at a time** (`active-scope.ts`): the shell gate's workspace's,
   opened before the first frame and following the gate (`src/platform/active-scope.ts`). A switch
   disposes the old scope before the next opens, and the last switch asked wins. `src/app.tsx` draws
@@ -1142,9 +1143,45 @@ Expired, Ended and the lease, under Node except the bindings:
   clears the lock and counts as contact in one transaction; a rollback puts that state back
   (`restoreSession`). No registry migration: the columns were in migration 1.
 - **The screens:** `StatusBanners` (`screens/shell-parts.tsx`) over each tab: Expired with Sign in, the
-  update banner, then "Reconnecting…" unless Expired. The lock screen (`screens/lock.tsx`) says "Sign in
+  update banner ("needs a server update": the server is below `MINIMUM_SERVER_VERSION`), the newer-app
+  banner (below), then "Reconnecting…" unless Expired. The lock screen (`screens/lock.tsx`) says "Sign in
   to see <workspace>" (`src/shell/session.ts`: the name, else the host), the lease's "Sign in by <date>
   or this phone’s copy is erased", then Sign in, the switcher and Add a workspace.
+
+## Client version compatibility
+
+Whether this app is new enough for a workspace's server (CB-553), the reverse of the minimum-version
+gate (Sync). The numbers are shared's `CLIENT_COMPAT` (`packages/shared/src/client-compat.ts`), which
+the server publishes per platform as `minimum` and `recommended` at `GET /api/client/compat` (no session,
+no-store) and enforces: an app below its platform's minimum, told by its User-Agent alone
+(`Socio/<version> (<iPhone|iPad|Android>; …)`), gets 426 `{ code: 'client_update_required', minimum,
+platform }` on every `/api/*` request but `/api/auth/*` and the endpoint, before sign-in and the session
+check. The web, MCP and agents are never refused for a version. Under Node except the screens:
+
+- **Per workspace** (`src/sync/client-compat.ts`, `scope.compat`): one phone holds workspaces on
+  different releases, so each scope reads its own server's numbers: as it starts, on each return to the
+  foreground, and after a 426 while open (`refused()`, which closes the gate at once; further 426s while
+  closed read nothing). One read at a time, one asked meanwhile once after it.
+- **Kept** in cache.db's `kv` (`client-compat`, `{ v: 1, minimum, recommended }` or `{ v: 1, none: true }`),
+  so a cold start offline shows the gate before any answer; Clear cache forgets it until the next read.
+- **An older server** (a 404, or a 2xx that isn't the endpoint's JSON) has no app minimum (`none`). No
+  answer, a 5xx or any other refusal keeps what was known.
+- **Below the minimum** (or since a 426, until a read says otherwise) `ClientUpdateGate`
+  (`screens/client-update.tsx`, inside `ActiveWorkspace` in `src/app.tsx`) draws Update Socio in place of
+  the workspace's screens, as `workspace-failed.tsx` does: the words (`src/shell/client-update.ts`: the
+  version it needs and the one the phone has, and that everything is kept), Open TestFlight on iOS
+  (`itms-beta://`), Android only saying where to look (the app knows no download page), Check again
+  (`compat.check()`) and the switcher with Add a workspace. Another workspace opens and works as before.
+  Nothing is signed out or wiped: drafts, the outbox (held, above) and the cache wait for the update.
+- **Between the minimum and the recommendation** `StatusBanners` shows "Socio <version> is ready. Update
+  when you can." with Not now, which dismisses it for that recommended version (`client-compat.dismissed`
+  in `kv`); a higher one shows it again.
+- **Raising the minimum** is a release step (docs/RELEASING.md): with the breaking server change, and only
+  once an app at it is installable. An operator may override both numbers with `APP_MINIMUM_VERSION` and
+  `APP_RECOMMENDED_VERSION` (docs/SETUP.md); `e2e/servers.mjs`'s restart sets them (`?minimum=`,
+  `?recommended=`, for every workspace or `B:0.99.0` for one) and one workspace's server version (`?version=B:0.53.0`, `e2e/server-version.mjs`);
+  Maestro's `client-compat.yaml`. `tests/sync/client-compat.test.ts`, `tests/shell/client-update.test.ts`,
+  the 426 cases in `tests/sync/outbox.test.ts` and `tests/sync/scope.test.ts`.
 
 ## Outbox
 
@@ -1169,7 +1206,12 @@ ported (no Effect), its test's cases as specs:
   `holdScope`) or `interrupt()` (iOS's grace expiry), on disk before their requests stop. An unknown row
   of a kind that is safe to repeat goes again; another kind's goes through its `check`, and with
   none, or one that can't tell, waits for the person.
-- **A 401** holds every lane (`status().heldForSignIn`) until `resume()` or the next scope. Rows this build
+- **A 401** holds every lane (`status().heldForSignIn`) until `resume()` or the next scope. **A 426**
+  (`client_update_required`, CB-553) requeues its row and holds every lane the same way
+  (`HeldForUpdate`, a `HeldForSignIn`, so a kind that throws a 401 on throws it on too;
+  `status().heldForUpdate`) until `holdForUpdate(false)`: the scope follows `scope.compat`, and kept
+  numbers below the minimum hold from the open. Nothing goes to Unsent or is dropped, and the row isn't
+  ambiguous: the guard answers before anything runs, so its next send isn't matched as already applied. Rows this build
   can't decode, and every row of a read-only user.db, are kept, never sent ("Update Socio to send these").
 - **Kinds** (`OutboxKind`: decode, `send` returning an outcome, `check`, `creates`, `overlay`) come from
   the features, given to the scope as `outboxKinds`; each request goes through `context.fetch`, the scope's

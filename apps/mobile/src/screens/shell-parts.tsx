@@ -5,10 +5,18 @@ import { Pressable, useWindowDimensions, View } from 'react-native';
 
 import type { LocalId } from '@socio/shared/mascot';
 
-import { useSessionState, useSyncStatus, useVersionGate, useViewState, useWorkspaceScope } from '../live';
+import {
+    useClientCompat,
+    useSessionState,
+    useSyncStatus,
+    useVersionGate,
+    useViewState,
+    useWorkspaceScope,
+} from '../live';
 import { introTile, MODULE_TONE_PLACE } from '../navigation/bar-items';
 import { chatAction } from '../navigation/tabs';
 import { signInAgain } from '../platform/session';
+import { UPDATE_DISMISS_LABEL, updateBannerCopy } from '../shell/client-update';
 import type { SocioState } from '../shell/home';
 import {
     type issueScreen,
@@ -39,7 +47,9 @@ import type { SymbolName } from '../ui/symbols';
 
 /**
  * The workspace's state over a tab's content: Expired, with Sign in;
- * the update banner while the minimum-version gate is closed; "Reconnecting…"
+ * the update banner while the minimum-version gate is closed (the server is too old); the
+ * newer-app banner while this app is below the version the server recommends, until dismissed for
+ * that version (CB-553; below the minimum, Update Socio shows instead of the tabs); "Reconnecting…"
  * while the server is away (the scheduler's status), unless Expired says more.
  */
 export function StatusBanners() {
@@ -47,6 +57,7 @@ export function StatusBanners() {
     const status = useSyncStatus();
     const expired = useSessionState() === 'expired';
     const outdated = useVersionGate() === 'closed';
+    const { recommended } = useClientCompat();
     return (
         <>
             {expired ? (
@@ -63,6 +74,15 @@ export function StatusBanners() {
                     {UPDATE_BANNER}
                 </Banner>
             ) : null}
+            {recommended === null ? null : (
+                <Banner
+                    tone="info"
+                    testID="update-recommended"
+                    action={{ label: UPDATE_DISMISS_LABEL, onPress: () => scope.compat.dismiss() }}
+                >
+                    {updateBannerCopy(recommended)}
+                </Banner>
+            )}
             {status.reconnecting && !expired ? (
                 <Banner tone="warning" testID="reconnecting">
                     Reconnecting…

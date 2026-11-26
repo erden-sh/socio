@@ -197,6 +197,9 @@ export function checkNewUserContent(messages: unknown, known: ReadonlySet<string
             if (part?.type === 'text' && typeof part.text === 'string') {
                 continue;
             }
+            // An app this old never gets here: the version guard answers it with 426
+            // `client_update_required` first (CB-553). This stays for any other sender
+            // still holding the pre-1.0 shape (a tab or a script), which the guard doesn't read.
             if (part?.type === 'binary' && isAttachmentPart(part)) {
                 throw new ContentError('This version of Socio is out of date. Update it to send attachments.');
             }

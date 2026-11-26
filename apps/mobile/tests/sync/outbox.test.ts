@@ -492,6 +492,85 @@ describe('the drain', () => {
         expect(await onDisk()).toEqual([]);
     });
 
+    it('holds every lane on a 426 until the update, drops nothing and sends nothing to Unsent (CB-553)', async () => {
+        let refused = true;
+        const { outbox, server, onDisk } = await setup({
+            wrapFetch: (f) => async (input, init) =>
+                refused
+                    ? new Response(
+                          JSON.stringify({ code: 'client_update_required', minimum: '0.2.8', platform: 'ios' }),
+                          {
+                              status: 426,
+                              headers: { 'Content-Type': 'application/json' },
+                          },
+                      )
+                    : f(input, init),
+        });
+        const statuses: boolean[] = [];
+        outbox.onStatus((status) => statuses.push(status.heldForUpdate));
+        await outbox.enqueue(message('a', { lane: 'chat:a' }));
+        await outbox.enqueue(message('b', { lane: 'chat:b' }));
+        await outbox.enqueue(message('c', { kind: REPEATABLE.kind, lane: 'chat:c' }));
+        outbox.start();
+        await outbox.idle();
+        expect(outbox.status()).toMatchObject({ heldForUpdate: true, heldForSignIn: false, unsent: 0 });
+        expect(statuses).toContain(true);
+        expect((await onDisk()).map((row) => row.state)).toEqual(['queued', 'queued', 'queued']);
+        // A poke, the network back or a sign-in's resume don't end it: only the update does.
+        outbox.poke();
+        outbox.wake();
+        outbox.resume();
+        await outbox.idle();
+        expect(server.received.size).toBe(0);
+        expect(outbox.status().heldForUpdate).toBe(true);
+
+        refused = false;
+        outbox.holdForUpdate(false);
+        await outbox.idle();
+        expect(outbox.status().heldForUpdate).toBe(false);
+        expect(server.received.size).toBe(3);
+        expect(await onDisk()).toEqual([]);
+    });
+
+    it('sends a row refused with a 426 again as new, never as one that may have reached the server', async () => {
+        const seen: (boolean | undefined)[] = [];
+        let refused = true;
+        const watched: OutboxKind<unknown> = {
+            ...(MESSAGE as OutboxKind<unknown>),
+            async send(write, context) {
+                seen.push(write.ambiguous);
+                return MESSAGE.send(write as Parameters<typeof MESSAGE.send>[0], context);
+            },
+        };
+        const { outbox, server } = await setup({
+            kinds: [watched, UNCHECKED, REPEATABLE] as OutboxKind<unknown>[],
+            wrapFetch: (f) => async (input, init) =>
+                refused ? new Response('{"code":"client_update_required"}', { status: 426 }) : f(input, init),
+        });
+        await outbox.enqueue(message('a', { lane: 'chat:a' }));
+        outbox.start();
+        await outbox.idle();
+        expect(outbox.status().heldForUpdate).toBe(true);
+        refused = false;
+        outbox.holdForUpdate(false);
+        await outbox.idle();
+        expect(seen).toEqual([undefined, undefined]);
+        expect(server.received.size).toBe(1);
+    });
+
+    it('holds from the start when the kept numbers say the app is too old, and goes after', async () => {
+        const { outbox, server } = await setup();
+        outbox.holdForUpdate(true);
+        await outbox.enqueue(message('a', { lane: 'chat:a' }));
+        outbox.start();
+        await outbox.idle();
+        expect(server.received.size).toBe(0);
+        expect(outbox.status().heldForUpdate).toBe(true);
+        outbox.holdForUpdate(false);
+        await outbox.idle();
+        expect(server.received.size).toBe(1);
+    });
+
     it('holds a row, and the rest of its lane, for the person; Send now lets it go', async () => {
         const { outbox, server } = await setup();
         server.answers.push(400);

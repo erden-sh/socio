@@ -12,6 +12,7 @@ import { launchStatus, startLaunch } from './platform/device-store';
 import { setTapOpener } from './platform/push-taps';
 import { signOutStatus } from './platform/sign-out';
 import { BuildNoticeLayer } from './screens/build-notice';
+import { ClientUpdateGate } from './screens/client-update';
 import { PresenceLayer } from './screens/notice-banner';
 import { SigningOut } from './screens/signing-out';
 import { TapNoticeLayer } from './screens/tap-notice';
@@ -93,9 +94,12 @@ export function App() {
                             failed={(workspaceId) => <WorkspaceFailed workspaceId={workspaceId} />}
                         >
                             <WorkspaceSummary />
-                            <PresenceLayer open={openAppPath}>
-                                <RootNavigation theme={THEMES[scheme]} />
-                            </PresenceLayer>
+                            {/* Update Socio in place of the workspace while its server needs a newer app (CB-553). */}
+                            <ClientUpdateGate>
+                                <PresenceLayer open={openAppPath}>
+                                    <RootNavigation theme={THEMES[scheme]} />
+                                </PresenceLayer>
+                            </ClientUpdateGate>
                         </ActiveWorkspace>
                     )}
                     {/* A notification tap's "Switched to Acme". */}

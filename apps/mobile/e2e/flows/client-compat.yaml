@@ -1,0 +1,78 @@
+# Client version compatibility (CB-553), after sign-in.yaml on workspace A:
+# servers.mjs restarts with an app minimum above this build's, so the next
+# pull is refused with 426 and Update Socio shows in place of the workspace
+# (Check again, the switcher and Add a workspace; Open TestFlight on iOS).
+# Lowered again, the return to the foreground reads the numbers and the
+# workspace comes back as it was, nothing signed out. Then a recommended
+# version above this build's: the banner over Home, and Not now dismisses it
+# for that version, also after the next return.
+appId: ${APP_ID}
+name: client-compat
+---
+- runFlow: common/open.yaml
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 180000
+- runFlow:
+    file: common/compat.yaml
+    env:
+      QUERY: 'minimum=0.99.0'
+- extendedWaitUntil:
+    visible:
+      id: update-required-screen
+    timeout: 120000
+- assertVisible:
+    id: update-check-again
+- assertVisible:
+    id: add-another-workspace
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - assertVisible:
+          id: update-open-testflight
+- takeScreenshot: client-compat-gate
+# Check again with the minimum still raised keeps the gate.
+- tapOn:
+    id: update-check-again
+- assertVisible:
+    id: update-required-screen
+- runFlow:
+    file: common/compat.yaml
+    env:
+      QUERY: ''
+- runFlow: common/foreground.yaml
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 60000
+- assertNotVisible:
+    id: update-required-screen
+- takeScreenshot: client-compat-recovered
+- runFlow:
+    file: common/compat.yaml
+    env:
+      QUERY: 'recommended=0.99.0'
+- runFlow: common/foreground.yaml
+- extendedWaitUntil:
+    visible:
+      id: update-recommended
+    timeout: 60000
+- takeScreenshot: client-compat-banner
+- tapOn: 'Not now'
+- extendedWaitUntil:
+    notVisible:
+      id: update-recommended
+    timeout: 10000
+- runFlow: common/foreground.yaml
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 60000
+- assertNotVisible:
+    id: update-recommended
+- runFlow:
+    file: common/compat.yaml
+    env:
+      QUERY: ''

@@ -85,6 +85,7 @@ import { jobSettingsFromEnv, scheduleSettingsFromEnv } from './schedules/setting
 import { webSearchProvider } from './search/select.js';
 import { SqliteStateStore } from './telegram/channel-state.js';
 import { LocalAgentRunner } from './turns/local-runner.js';
+import { clientCompatFromEnv } from './updates/client-compat.js';
 import { updatesFromEnv } from './updates/settings.js';
 import { transcriptionFromEnv } from './voice/transcription.js';
 import { voiceCallsFromEnv } from './voice/voice-speech.js';
@@ -304,6 +305,8 @@ const app = createApp({
     auth,
     network,
     runtime: appRuntime,
+    // CB-553: the app versions this server works with; APP_MINIMUM_VERSION and APP_RECOMMENDED_VERSION override them.
+    clientCompat: clientCompatFromEnv(process.env),
 });
 // The security headers and the health check, after the app's own routes.
 mountProcessRoutes(app, edge, leader);

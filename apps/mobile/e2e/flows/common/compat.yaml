@@ -1,0 +1,10 @@
+# Tells servers.mjs (on its loopback control port, SERVERS_CONTROL) to restart the workspaces
+# with the app versions in ${QUERY} (`minimum=0.99.0`, `recommended=0.99.0`, `version=B:0.53.0`;
+# '' puts the defaults back), CB-553. Maestro sends it from the host.
+appId: ${APP_ID}
+name: compat
+---
+- runScript:
+    file: compat.js
+    env:
+      QUERY: ${QUERY}
