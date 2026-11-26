@@ -3,7 +3,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 
-import { EventSchemas, EventType, type Message, type RunAgentInput, type RunStartedEvent } from '@ag-ui/client';
+import { EventType, type Message, type RunAgentInput, type RunStartedEvent } from '@ag-ui/client';
+import { EventSchemas } from '@ag-ui/core/schemas';
 import { lastValueFrom, toArray } from 'rxjs';
 import { afterEach, expect, it } from 'vitest';
 

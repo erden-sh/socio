@@ -6,6 +6,7 @@ import type { Message } from '@ag-ui/client';
 import { afterEach, expect, it, vi } from 'vitest';
 
 import { DataError } from '@socio/foundation/dataspace/data-error';
+import { attachmentPart } from '@socio/shared/media/refs';
 
 import { PNG, pngOf } from './fixtures/media.js';
 import { makeTestRuntime } from './helpers/test-runtime.js';
@@ -45,7 +46,12 @@ async function fixture(imageModelMaxBytes?: number) {
     return { platform, workspace, dot, thread, upload, turn };
 }
 
-const ref = (attachment: { id: string; mediaType: string; name: string }) => ({
+type Uploaded = { id: string; mediaType: string; name: string };
+/** The reference Socio writes (AG-UI 1.0's media part). */
+const ref = (attachment: Uploaded) =>
+    attachmentPart({ id: attachment.id, mimeType: attachment.mediaType, filename: attachment.name });
+/** The pre-1.0 reference stored history still holds. */
+const legacyRef = (attachment: Uploaded) => ({
     type: 'binary',
     id: attachment.id,
     mimeType: attachment.mediaType,
@@ -55,7 +61,10 @@ const user = (id: string, ...content: unknown[]) => ({ id, role: 'user', content
 type Part = { type: string; text?: string; source?: { value: string } };
 const parts = (message: Message) => message.content as unknown as Part[];
 
-it('shows the newest images as the original bytes and notes the rest', async () => {
+it.each([
+    ['the 1.0 media part', ref],
+    ['the pre-1.0 binary part, as stored history holds it', legacyRef],
+])('shows the newest images as the original bytes and notes the rest (%s)', async (_, ref) => {
     const f = await fixture();
     const old = await f.upload('old.png', pngOf(100, 1));
     const middle = await f.upload('middle.png', pngOf(100, 2));

@@ -1052,6 +1052,17 @@ it('stores a Telegram photo as an attachment of the sender: the run keeps the re
     const stored = JSON.stringify(platform.runner.events(thread.id));
     expect(stored).toContain(attachment.id);
     expect(stored).not.toContain(photo);
+    // As AG-UI 1.0's media part that refers to the saved file, which the
+    // conversation's replay keeps.
+    const [message] = (await platform.runner.messages(thread.id)).filter((entry) => entry.id === 'tg-photo');
+    expect(message.content).toEqual([
+        { type: 'text', text: 'what is this?' },
+        {
+            type: 'image',
+            source: { type: 'file', value: attachment.id, provider: 'socio', mimeType: 'image/png' },
+            metadata: { filename: expect.stringMatching(/^telegram-photo/) },
+        },
+    ]);
     const request = String(network.mock.calls[0][1]?.body);
     expect(request).toContain(`data:image/png;base64,${photo}`);
     // The sender is stored for the team transcript (CB-66), never sent to the

@@ -22,6 +22,30 @@ Bundler, because it is bundled), `shared`, `foundation` and `data` (each
 `packages/<name>`, NodeNext), `plugin-ui`, `app-sdk` and `mobile` (`apps/mobile`,
 the native app, Bundler).
 
+## Changing dependencies: `pnpm deps`
+
+Change the lockfile with `pnpm deps` (`scripts/deps.mjs`) instead of a bare
+pnpm command: `pnpm deps` installs, `pnpm deps add -w some-pkg` adds,
+`pnpm deps update '@ag-ui/*'` updates. It runs pnpm with the
+`readPackage` hook in `scripts/pnpm-hooks.cjs`, then drops the
+`pnpmfileChecksum` pnpm writes into `pnpm-lock.yaml`.
+
+The hook keeps one copy of AG-UI. `@ag-ui/*` declare zod as a peer;
+CopilotKit 1.90 depends on zod 3 and Socio on zod 4, so without the hook pnpm
+installs every `@ag-ui` package twice (one per zod), and CopilotKit no longer
+recognizes Socio's agents (`instanceof` fails across the copies). The hook
+makes zod a plain dependency of `@ag-ui/*`, on the zod Socio names. pnpm's
+`overrides` and `packageExtensions` can't remove a peer, so they don't help.
+
+The hook isn't `.pnpmfile.cjs` on purpose: CI installs with
+`--ignore-pnpmfile` (no branch code runs in the networked install container,
+CB-183), and it refuses a lockfile that carries a pnpmfile checksum. Its result
+lives in `pnpm-lock.yaml` alone, so every install that only reads the lockfile
+(CI, the images, `pnpm install --frozen-lockfile`) gets the single copy. A
+bare `pnpm add` or `pnpm install` that resolves anything brings the second
+copy back; `tests/ag-ui-single-copy.test.ts` then fails: rerun `pnpm deps`.
+Remove the hook, the script and the test once CopilotKit depends on zod 4.
+
 ## The task graph (Turborepo)
 
 `pnpm run check:cached`, `test:cached` and `build:cached` run the same work as

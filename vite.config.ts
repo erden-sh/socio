@@ -42,6 +42,10 @@ export default defineConfig({
     // bundled into the server build, the import is Vite's to handle. Only that
     // package: a bundled dependency resolves its own imports from the app's
     // top level, which may hold another version or only a dev dependency.
+    // That's why `@a2ui/web_core` (CopilotKit's, on zod 3) is a direct
+    // dependency at CopilotKit's exact version: Vite keeps it external only
+    // when it resolves from the top level. Bundled, its `import "zod"` got
+    // Socio's zod 4 and the built server crashed at startup.
     ssr: { noExternal: ['@copilotkit/react-core'] },
     // Development: find the browser's dependencies up front, from the entry and
     // every route (there's no index.html to start from). Otherwise each first

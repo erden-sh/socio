@@ -406,7 +406,6 @@ const touchable = 'text-muted-foreground hover:text-foreground pointer-coarse:mi
 /** A queued message's attachments as the transcript shows a message's. */
 const partsOf = (message: QueuedMessage): AttachmentPart[] =>
     (message.attachments ?? []).map((ref) => ({
-        type: 'binary',
         id: ref.id,
         mimeType: ref.mediaType,
         filename: ref.name,

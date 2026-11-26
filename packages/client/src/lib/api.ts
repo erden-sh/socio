@@ -1,6 +1,13 @@
+import { READS_AG_UI_MEDIA, READS_HEADER } from '@socio/shared/media/refs';
 import { UNREADABLE_RESPONSE } from '@socio/shared/reconnect';
 
 import { postWrite } from './change-channel';
+
+/**
+ * Every API request says the app reads AG-UI 1.0's attachment parts, so the
+ * server sends them as it stores them (@socio/shared/media/legacy-media).
+ */
+const READS = { [READS_HEADER]: READS_AG_UI_MEDIA };
 
 export class ApiError extends Error {
     constructor(
@@ -15,7 +22,10 @@ export async function api<T>(path: string, method = 'GET', body?: unknown, signa
     const response = await fetch(`/api${path}`, {
         method,
         signal,
-        headers: ['GET', 'HEAD'].includes(method) ? {} : { 'Content-Type': 'application/json' },
+        headers: {
+            ...READS,
+            ...(['GET', 'HEAD'].includes(method) ? {} : { 'Content-Type': 'application/json' }),
+        },
         ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     });
     const data = await answer<T>(response);
@@ -112,7 +122,7 @@ export async function apiIfChanged<T>(
 ): Promise<Fresh<T> | typeof UNCHANGED> {
     const response = await fetch(`/api${path}`, {
         signal,
-        headers: tag ? { ...headers, 'If-None-Match': tag } : headers,
+        headers: { ...READS, ...headers, ...(tag ? { 'If-None-Match': tag } : {}) },
     });
     if (response.status === 304) {
         return UNCHANGED;

@@ -4,6 +4,7 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, expect, it, vi } from 'vitest';
 
+import { READS_AG_UI_MEDIA, READS_HEADER } from '@socio/shared/media/refs';
 import { TIME_ZONE_HEADER } from '@socio/shared/time-zone';
 
 // CB-159: the web app sends the browser's time zone with every chat
@@ -41,7 +42,11 @@ async function optionsIn(zone: string) {
 it('sends the browser’s time zone in a header with the chat runtime’s requests', async () => {
     globalThis.IS_REACT_ACT_ENVIRONMENT = true;
     const options = await optionsIn('America/New_York');
-    expect(options.headers).toEqual({ [TIME_ZONE_HEADER]: 'America/New_York' });
+    expect(options.headers).toEqual({
+        [TIME_ZONE_HEADER]: 'America/New_York',
+        // And that the app reads AG-UI 1.0's attachment parts.
+        [READS_HEADER]: READS_AG_UI_MEDIA,
+    });
     const sent: Array<{ url: string; zone: string | null }> = [];
     vi.stubGlobal('fetch', (input: string | URL | Request, init?: RequestInit) => {
         const request = new Request(
@@ -77,6 +82,6 @@ it('sends the browser’s time zone in a header with the chat runtime’s reques
     }
 });
 
-it('sends no header for a zone that isn’t a valid IANA name', async () => {
-    expect((await optionsIn('+05:30')).headers).toEqual({});
+it('sends no time zone header for a zone that isn’t a valid IANA name', async () => {
+    expect((await optionsIn('+05:30')).headers).toEqual({ [READS_HEADER]: READS_AG_UI_MEDIA });
 });

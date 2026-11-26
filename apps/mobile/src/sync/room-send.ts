@@ -2,6 +2,7 @@ import type { Message } from '@ag-ui/core';
 
 import { STEERING_MAX_CHARS } from '@socio/shared/chat/steering';
 import type { AttachmentRef } from '@socio/shared/media-types';
+import { attachmentIds } from '@socio/shared/media/refs';
 import type { PersonMention } from '@socio/shared/rooms/room-people-mentions';
 import type { RoomReadState } from '@socio/shared/rooms/rooms';
 import { SENDER_METADATA, type Conversation } from '@socio/shared/types';
@@ -174,12 +175,7 @@ const textOf = (content: Message['content']): string => {
         .join('\n');
 };
 
-const fileIds = (content: Message['content']): string[] =>
-    Array.isArray(content)
-        ? (content as { type?: unknown; id?: unknown }[])
-              .filter((part) => part?.type === 'binary' && typeof part.id === 'string')
-              .map((part) => part.id as string)
-        : [];
+const fileIds = (content: Message['content']): string[] => attachmentIds(content);
 
 const sameFiles = (a: readonly string[], b: readonly string[]) =>
     a.length === b.length && a.every((id, index) => id === b[index]);

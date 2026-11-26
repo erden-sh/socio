@@ -5,6 +5,7 @@ import { createMemoryRouter, RouterProvider } from 'react-router';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
 import type { AttachmentRef, UploadResult } from '@socio/shared/media-types';
+import { attachmentPart } from '@socio/shared/media/refs';
 import type { Conversation, Dot } from '@socio/shared/types';
 
 import type { Shell } from '../src/shell/shell-context';
@@ -236,17 +237,26 @@ it('attaches by paste, drop and picker in the chat, removes before sending, and 
         role: 'user',
         content: [
             { type: 'text', text: 'Look' },
+            // AG-UI 1.0 media parts, never the pre-1.0 `binary` reference.
             {
-                type: 'binary',
-                id: 'cbatt_AAAAAAAAAAAAAAAAAAAAAA',
-                mimeType: 'image/png',
-                filename: 'shot.png',
+                type: 'image',
+                source: {
+                    type: 'file',
+                    value: 'cbatt_AAAAAAAAAAAAAAAAAAAAAA',
+                    provider: 'socio',
+                    mimeType: 'image/png',
+                },
+                metadata: { filename: 'shot.png' },
             },
             {
-                type: 'binary',
-                id: 'cbatt_BBBBBBBBBBBBBBBBBBBBBB',
-                mimeType: 'text/markdown',
-                filename: 'notes.md',
+                type: 'document',
+                source: {
+                    type: 'file',
+                    value: 'cbatt_BBBBBBBBBBBBBBBBBBBBBB',
+                    provider: 'socio',
+                    mimeType: 'text/markdown',
+                },
+                metadata: { filename: 'notes.md' },
             },
         ],
     });
@@ -298,12 +308,7 @@ it('sends the new-chat composer’s attachments with the first message', async (
     expect(agent.addMessage).toHaveBeenCalledWith(
         expect.objectContaining({
             content: [
-                {
-                    type: 'binary',
-                    id: 'cbatt_AAAAAAAAAAAAAAAAAAAAAA',
-                    mimeType: 'image/png',
-                    filename: 'shot.png',
-                },
+                attachmentPart({ id: 'cbatt_AAAAAAAAAAAAAAAAAAAAAA', mimeType: 'image/png', filename: 'shot.png' }),
             ],
         }),
     );
@@ -369,7 +374,7 @@ it('uploads pending attachments in the new-chat composer and starts the chat wit
     expect(upload.removeAttachment).not.toHaveBeenCalled();
 });
 
-it('shows a bubble’s images and files, and a removed one as removed', async () => {
+it('shows a bubble’s images and files (stored before AG-UI 1.0, as `binary`), and a removed one as removed', async () => {
     const view = await render(
         <ChatTranscript
             calls={[]}

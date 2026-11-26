@@ -1,5 +1,6 @@
 import { EventType } from '@ag-ui/core';
 
+import { errorDetailFields } from '@socio/shared/runs/socio-fields';
 import {
     ROOM_FAILURE_NOTES,
     TURN_FAILURE_MESSAGES,
@@ -136,8 +137,9 @@ export function failureDetail(error: unknown): string {
 
 /**
  * The RUN_ERROR for a failed turn: a friendly `message`, the failure kind as
- * `code`, and the operator detail in `errorDetail`. LocalAgentRunner removes
- * `errorDetail` before the event is stored or sent (it keeps it in the run's
+ * `code`, and the operator detail in `errorDetail` (in `metadata` too, which
+ * AG-UI 1.0's client keeps: `errorDetailFields`). LocalAgentRunner removes
+ * it before the event is stored or sent (it keeps it in the run's
  * `agent_runs.errorDetail` column), so it never reaches a client.
  */
 export function turnError(
@@ -151,7 +153,7 @@ export function turnError(
         message:
             kind === 'time_limit' && limitMs !== undefined ? timeLimitMessage(limitMs) : TURN_FAILURE_MESSAGES[kind],
         code: kind,
-        ...(error === undefined ? {} : { errorDetail: failureDetail(error) }),
+        ...(error === undefined ? {} : errorDetailFields(failureDetail(error))),
     };
 }
 

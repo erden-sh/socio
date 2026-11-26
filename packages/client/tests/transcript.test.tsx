@@ -2,6 +2,8 @@ import type { Message } from '@ag-ui/core';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { expect, it } from 'vitest';
 
+import { attachmentPart, type AttachmentRef } from '@socio/shared/media/refs';
+
 import { ChatTranscript, isInternalVoiceReceipt } from '../src/modules/chat/ChatTranscript';
 
 it('keeps call receipts between the anchored message and later conversation turns', () => {
@@ -110,7 +112,15 @@ it('hides only marked receipt prompts while retaining summaries and prior unmark
     expect(html).toContain('My next question');
 });
 
-it('renders a message with attachments as its text, image thumbnails and file chips (CB-54)', () => {
+// The attachments of two messages, the second with files only: A, an image; B, a CSV; C, a zip.
+const attachmentRefsFixture = {
+    A: { id: 'cbatt_AAAAAAAAAAAAAAAAAAAAAA', mimeType: 'image/png', filename: 'chart.png' },
+    B: { id: 'cbatt_BBBBBBBBBBBBBBBBBBBBBB', mimeType: 'text/csv', filename: 'data.csv' },
+    C: { id: 'cbatt_CCCCCCCCCCCCCCCCCCCCCC', mimeType: 'application/zip', filename: 'logs.zip' },
+};
+
+function renderAttachments(part: (ref: AttachmentRef) => object) {
+    const { A, B, C } = attachmentRefsFixture;
     const html = renderToStaticMarkup(
         <ChatTranscript
             calls={[]}
@@ -118,35 +128,10 @@ it('renders a message with attachments as its text, image thumbnails and file ch
                 {
                     id: 'files',
                     role: 'user',
-                    content: [
-                        { type: 'text', text: 'What about these?' },
-                        {
-                            type: 'binary',
-                            id: 'cbatt_AAAAAAAAAAAAAAAAAAAAAA',
-                            mimeType: 'image/png',
-                            filename: 'chart.png',
-                        },
-                        {
-                            type: 'binary',
-                            id: 'cbatt_BBBBBBBBBBBBBBBBBBBBBB',
-                            mimeType: 'text/csv',
-                            filename: 'data.csv',
-                        },
-                    ],
-                },
+                    content: [{ type: 'text', text: 'What about these?' }, part(A), part(B)],
+                } as unknown as Message,
                 // Only files: still a bubble.
-                {
-                    id: 'only',
-                    role: 'user',
-                    content: [
-                        {
-                            type: 'binary',
-                            id: 'cbatt_CCCCCCCCCCCCCCCCCCCCCC',
-                            mimeType: 'application/zip',
-                            filename: 'logs.zip',
-                        },
-                    ],
-                },
+                { id: 'only', role: 'user', content: [part(C)] } as unknown as Message,
             ]}
         />,
     );
@@ -155,4 +140,41 @@ it('renders a message with attachments as its text, image thumbnails and file ch
     expect(html).toContain('href="/api/media/attachments/cbatt_BBBBBBBBBBBBBBBBBBBBBB/content?download=1"');
     expect(html).toContain('logs.zip');
     expect(html.match(/data-chat-body="user"/g)).toHaveLength(2);
+}
+
+it('renders a message with attachments as its text, image thumbnails and file chips (CB-54)', () => {
+    renderAttachments(attachmentPart);
+});
+
+it('renders attachments stored before AG-UI 1.0, as `binary` parts, the same way', () => {
+    renderAttachments(({ id, mimeType, filename }) => ({ type: 'binary', id, mimeType, filename }));
+});
+
+it('names another person’s message from its metadata, else from the top level a server before AG-UI 1.0 sent', () => {
+    const html = renderToStaticMarkup(
+        <ChatTranscript
+            calls={[]}
+            messages={[
+                {
+                    id: 'meta',
+                    role: 'user',
+                    content: 'From metadata',
+                    // A stale top-level copy loses to metadata.
+                    author: { name: 'Stale', you: false },
+                    metadata: { author: { name: 'Ada', you: false } },
+                } as unknown as Message,
+                { id: 'top', role: 'user', content: 'From the top', author: { name: 'Bo', you: false } },
+                {
+                    id: 'mine',
+                    role: 'user',
+                    content: 'Mine',
+                    metadata: { author: { name: 'Me', you: true } },
+                } as unknown as Message,
+            ]}
+        />,
+    );
+    const names = [...html.matchAll(/data-chat-author[^>]*>([^<]*)</g)].map((match) => match[1]);
+    expect(names).toEqual(['Ada', 'Bo']);
+    expect(html.match(/data-chat-body="other"/g)).toHaveLength(2);
+    expect(html.match(/data-chat-body="user"/g)).toHaveLength(1);
 });

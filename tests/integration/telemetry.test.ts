@@ -47,7 +47,18 @@ globalThis.fetch = async (url) => {
   return new Response('{"ok":true}', { status: 202 });
 };
 ${mode === 'opt-out' ? `await import(${JSON.stringify(optOutUrl)});` : ''}
-${mode === 'sdk-first' ? `await import('@copilotkit/runtime/v2');` : ''}
+${
+    mode === 'sdk-first'
+        ? `await import('@copilotkit/runtime/v2');
+{
+  // CopilotKit 1.90 reads the opt-out at each capture too, so the canary's
+  // event goes before any of our modules sets it.
+  const { TelemetryClient } = await import('@copilotkit/shared/telemetry');
+  await new TelemetryClient({ packageName: 'telemetry-probe', packageVersion: '0.0.0', sampleRate: 1 })
+    .capture('oss.runtime.instance_created', { probe: true });
+}`
+        : ''
+}
 const { startAppRuntime } = await import(${JSON.stringify(mainUrl)});
 const { Store } = await import(${JSON.stringify(storeUrl)});
 const { WorkspaceStore } = await import(${JSON.stringify(workspaceUrl)});

@@ -4,6 +4,8 @@
  */
 import type { Message } from '@ag-ui/client';
 
+import { attachmentRef } from '@socio/shared/media/refs';
+
 const MEDIA_TYPES = new Set(['image', 'audio', 'video', 'document', 'binary']);
 
 /** TensorFold's default `--vision-max-images`. */
@@ -64,7 +66,9 @@ export function modelReadableMessages(messages: Message[], maxImages: number): M
                     if (!MEDIA_TYPES.has(String(part.type))) {
                         return part;
                     }
-                    if (part.type === 'image' && maxImages > 0) {
+                    // A reference to a Socio attachment (either shape) is never bytes
+                    // the model can take: resolving it (media/resolve.ts) comes first.
+                    if (part.type === 'image' && maxImages > 0 && !attachmentRef(part)) {
                         images += 1;
                         if (images <= maxImages) {
                             return part;
@@ -93,15 +97,19 @@ export function messageText(content: unknown): string {
         return '';
     }
     return (content as Part[])
-        .map((part) =>
-            part?.type === 'text' && typeof part.text === 'string'
-                ? part.text
-                : part?.type === 'binary' && typeof part.id === 'string'
-                  ? `[attachment: ${typeof part.filename === 'string' && part.filename ? part.filename : mimeOf(part)}]`
-                  : MEDIA_TYPES.has(String(part?.type))
-                    ? `[${part.type === 'image' ? 'image' : 'attachment'}: ${mimeOf(part)}]`
-                    : '',
-        )
+        .map((part) => {
+            if (part?.type === 'text' && typeof part.text === 'string') {
+                return part.text;
+            }
+            const ref = attachmentRef(part);
+            if (ref || (part?.type === 'binary' && typeof part.id === 'string')) {
+                const name = ref?.filename ?? (typeof part.filename === 'string' ? part.filename : '');
+                return `[attachment: ${name || mimeOf(part)}]`;
+            }
+            return MEDIA_TYPES.has(String(part?.type))
+                ? `[${part.type === 'image' ? 'image' : 'attachment'}: ${mimeOf(part)}]`
+                : '';
+        })
         .filter(Boolean)
         .join('\n');
 }

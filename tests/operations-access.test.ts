@@ -678,5 +678,7 @@ it('names each person’s message in a chat by who wrote it, several people in a
     expect(messages.every((message) => !message.author?.you)).toBe(true);
     // Never anyone's account id; the rest of the metadata stays.
     expect(JSON.stringify(team)).not.toContain(SENDER_METADATA);
-    expect(messages[0]!.metadata).toEqual({ socioSource: 'telegram' });
+    // The author is there too (and at the top level, for the app builds that
+    // predate reading metadata).
+    expect(messages[0]!.metadata).toEqual({ socioSource: 'telegram', author: messages[0]!.author });
 });

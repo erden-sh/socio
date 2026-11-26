@@ -8,6 +8,7 @@ import {
     withheldResult,
 } from '@socio/foundation/context/room-context';
 import { isApprovalNote } from '@socio/shared/approvals';
+import { LEGACY_THINKING_EVENT } from '@socio/shared/runs/event-types';
 import { TIME_ZONE_MOVED_EVENT } from '@socio/shared/time-zone';
 import { TOOL_ACTOR_METADATA } from '@socio/shared/types';
 
@@ -102,7 +103,7 @@ export function readerFilter(reader: string, source: ReaderEventSource) {
         });
     };
     return (event: BaseEvent): BaseEvent | undefined => {
-        switch (event.type) {
+        switch (event.type as string) {
             case EventType.RUN_STARTED: {
                 const { runId, input } = event as {
                     runId?: unknown;
@@ -153,15 +154,16 @@ export function readerFilter(reader: string, source: ReaderEventSource) {
             case EventType.REASONING_MESSAGE_START:
             case EventType.REASONING_MESSAGE_END:
             case EventType.REASONING_END:
-            case EventType.THINKING_START:
-            case EventType.THINKING_END:
-            case EventType.THINKING_TEXT_MESSAGE_START:
-            case EventType.THINKING_TEXT_MESSAGE_END:
+            // The names runs stored before AG-UI 1.0 may hold.
+            case LEGACY_THINKING_EVENT.THINKING_START:
+            case LEGACY_THINKING_EVENT.THINKING_END:
+            case LEGACY_THINKING_EVENT.THINKING_TEXT_MESSAGE_START:
+            case LEGACY_THINKING_EVENT.THINKING_TEXT_MESSAGE_END:
                 return theirs() ? event : bare(event);
             case EventType.REASONING_MESSAGE_CONTENT:
             case EventType.REASONING_MESSAGE_CHUNK:
             case EventType.REASONING_ENCRYPTED_VALUE:
-            case EventType.THINKING_TEXT_MESSAGE_CONTENT:
+            case LEGACY_THINKING_EVENT.THINKING_TEXT_MESSAGE_CONTENT:
                 return theirs() ? event : undefined;
             case EventType.CUSTOM:
                 return (event as { name?: unknown }).name === TIME_ZONE_MOVED_EVENT && !theirs() ? undefined : event;

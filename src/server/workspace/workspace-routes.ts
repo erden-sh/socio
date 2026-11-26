@@ -15,12 +15,14 @@ import type { ModelChoice } from '@socio/shared/inference';
 import { modelChoiceInput } from '@socio/shared/inference/model-choice-input';
 import { learningContainerIdSchema, validateLearningSettings } from '@socio/shared/learning';
 import { LOCALS } from '@socio/shared/mascot';
+import { legacyMediaJson, wantsLegacyMedia } from '@socio/shared/media/legacy-media';
 import { displayContent } from '@socio/shared/media/refs';
 import { NOTIFICATION_CONTENT } from '@socio/shared/notifications';
 import { onboardingPreferencesSchema } from '@socio/shared/onboarding';
 import { isAdmin } from '@socio/shared/roles';
 import { handoffLine, handoffOf, type TranscriptHandoff } from '@socio/shared/rooms/room-handoffs';
 import type { TranscriptMention } from '@socio/shared/rooms/room-notices';
+import { withSocioFields } from '@socio/shared/runs/socio-fields';
 import { TraceTimes } from '@socio/shared/runs/trace-times';
 import { canEditSoul } from '@socio/shared/soul';
 import {
@@ -716,25 +718,32 @@ export function workspaceRoutes(platform: WorkspaceRoutesDeps, voice: VoiceShape
             // have text; a reasoning message another member gets may be emptied
             // (CB-210), and is kept so the trace shows the socio thought.
             .filter((message) => message.text.trim() || message.role === 'reasoning')
-            .map(({ id, role, text, content, author, socioId, handoff, toolCallId, toolCalls }) => ({
-                id,
-                role,
-                // A handoff's note is for the next socio: the room reads its line.
-                content: handoff ? text : displayContent(content, text),
-                ...(author ? { author } : {}),
-                // Which socio wrote it (CB-212); none for replies stored before.
-                ...(socioId ? { socioId } : {}),
-                ...(handoff ? { handoff } : {}),
-                ...(times.messages.has(id) ? { at: times.messages.get(id) } : {}),
-                ...(role === 'user' && mentionsOf(id) ? { mentions: mentionsOf(id) } : {}),
-                // The trace's parts (CB-283): a tool result's call id, and the
-                // calls an assistant message made.
-                ...(role === 'tool' && toolCallId ? { toolCallId } : {}),
-                ...(role === 'assistant' && toolCalls?.length ? { toolCalls } : {}),
-            }));
+            .map(({ id, role, text, content, author, socioId, handoff, toolCallId, toolCalls }) =>
+                // Its author and time in `metadata`, which AG-UI 1.0 keeps, and
+                // for now at the top level too (`withSocioFields`).
+                withSocioFields(
+                    {
+                        id,
+                        role,
+                        // A handoff's note is for the next socio: the room reads its line.
+                        content: handoff ? text : displayContent(content, text),
+                        // Which socio wrote it (CB-212); none for replies stored before.
+                        ...(socioId ? { socioId } : {}),
+                        ...(handoff ? { handoff } : {}),
+                        ...(role === 'user' && mentionsOf(id) ? { mentions: mentionsOf(id) } : {}),
+                        // The trace's parts (CB-283): a tool result's call id, and the
+                        // calls an assistant message made.
+                        ...(role === 'tool' && toolCallId ? { toolCallId } : {}),
+                        ...(role === 'assistant' && toolCalls?.length ? { toolCalls } : {}),
+                    },
+                    { author, at: times.messages.get(id) },
+                ),
+            );
         return c.json({
             conversation: thread,
-            messages: shown,
+            // COMPAT(ag-ui-1.0): attachments as the pre-1.0 reference for a
+            // client that doesn't read AG-UI 1.0's media parts (`legacy-media`).
+            messages: wantsLegacyMedia(c.req.raw.headers) ? legacyMediaJson(shown) : shown,
             ...(room
                 ? {
                       cursor,

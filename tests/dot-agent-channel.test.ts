@@ -5,6 +5,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { TURN_FAILURE_MESSAGES } from '@socio/foundation/observability/failures';
 import { LOOP_END_EVENT } from '@socio/shared/loop-end';
 import { RUN_TRACE_EVENT } from '@socio/shared/runs/run-trace';
+import { withoutSocioFields } from '@socio/shared/runs/socio-fields';
 
 import { DotAgent } from './helpers/dot-agent.js';
 import { Store, WorkspaceStore } from './helpers/stores.js';
@@ -118,13 +119,9 @@ function fixture(channel = true) {
     };
     return { agent, input, workspace };
 }
-// What a client may see of a RUN_ERROR; LocalAgentRunner drops errorDetail.
-const visible = (events: BaseEvent[]) =>
-    events.map((event) => {
-        const rest: Record<string, unknown> = { ...event };
-        delete rest.errorDetail;
-        return rest;
-    });
+// What a client may see of a RUN_ERROR; LocalAgentRunner drops errorDetail,
+// at the top level and in metadata.
+const visible = (events: BaseEvent[]) => events.map((event) => withoutSocioFields(event, ['errorDetail']));
 it.each([true, false])(
     'replaces an inner RUN_ERROR payload with the message for its kind (channel=%s)',
     async (channel) => {
@@ -144,7 +141,9 @@ it.each([true, false])(
                 type: EventType.RUN_ERROR,
                 message: TURN_FAILURE_MESSAGES.model_rejected,
                 code: 'model_rejected',
+                // In metadata, which AG-UI 1.0 keeps, and at the top level.
                 errorDetail: '400 SECRET token',
+                metadata: { errorDetail: '400 SECRET token' },
             },
         ]);
         expect(errors.mock.calls.flat().join(' ')).toContain('Turn failed (run run): model_rejected; 400 SECRET token');
@@ -203,7 +202,7 @@ it('sanitizes observable errors and startup exceptions without retaining causes'
     });
     const startup = await lastValueFrom(f.agent.run(f.input).pipe(toArray()));
     expect(visible(startup)).toEqual(visible(events));
-    expect(startup[0]).toMatchObject({ errorDetail: 'SECRET startup' });
+    expect(startup[0]).toMatchObject({ errorDetail: 'SECRET startup', metadata: { errorDetail: 'SECRET startup' } });
 });
 it('reports a missing model configuration as its own kind', async () => {
     const store = new Store(testDatabase());

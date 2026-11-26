@@ -64,7 +64,9 @@ it('builds one RUN_ERROR shape: friendly message, kind as code, server-only deta
         type: EventType.RUN_ERROR,
         message: TURN_FAILURE_MESSAGES.model_rejected,
         code: 'model_rejected',
+        // In metadata, which AG-UI 1.0 keeps, and at the top level.
         errorDetail: '400 bad image',
+        metadata: { errorDetail: '400 bad image' },
     });
     expect(turnError('time_limit')).toEqual({
         type: EventType.RUN_ERROR,

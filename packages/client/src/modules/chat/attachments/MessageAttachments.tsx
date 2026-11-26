@@ -1,7 +1,8 @@
 import { Download, FileText, ImageOff } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-import { ATTACHMENT_ID, attachmentContentUrl } from '@socio/shared/media-types';
+import { attachmentContentUrl } from '@socio/shared/media-types';
+import type { AttachmentRef } from '@socio/shared/media/refs';
 import { formatSize } from '@socio/shared/text/format-size';
 
 import { plainHover } from '../../../lib/plain-button';
@@ -11,20 +12,12 @@ import { attachmentView } from './upload';
 
 import { cn } from '@/lib/utils';
 
-/** A message part that refers to an attachment (AG-UI `binary`, id only). */
-export interface AttachmentPart {
-    type: 'binary';
-    id: string;
-    mimeType: string;
-    filename?: string;
-}
-
-export const isAttachmentPart = (part: unknown): part is AttachmentPart =>
-    !!part &&
-    typeof part === 'object' &&
-    (part as { type?: unknown }).type === 'binary' &&
-    typeof (part as { id?: unknown }).id === 'string' &&
-    ATTACHMENT_ID.test((part as { id: string }).id);
+/**
+ * An attachment a message refers to, read from either part shape
+ * (`@socio/shared/media/refs`: AG-UI 1.0's media part, or the pre-1.0
+ * `binary` one stored history still holds).
+ */
+export type AttachmentPart = AttachmentRef;
 
 /** A file's chip, on the bubble's color. */
 const fileChip =

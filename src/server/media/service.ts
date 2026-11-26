@@ -22,7 +22,7 @@ import {
     type UploadResult,
 } from '@socio/shared/media-types';
 import { cleanName } from '@socio/shared/media/file-types';
-import { attachmentIds } from '@socio/shared/media/refs';
+import { attachmentIds, attachmentPart } from '@socio/shared/media/refs';
 import { COVER_MAX_BYTES, coverUrl, type CoverImage, type PageCover } from '@socio/shared/pages/page-library';
 import type { ToolImage } from '@socio/shared/tool-images';
 
@@ -1321,10 +1321,7 @@ export class MediaService implements MediaShape {
                         'telegram',
                     );
                     content.push({
-                        type: 'binary',
-                        id: row!.id,
-                        mimeType: row!.mediaType,
-                        filename: row!.name,
+                        ...attachmentPart({ id: row!.id, mimeType: row!.mediaType, filename: row!.name }),
                     });
                 } catch (error) {
                     content.push({

@@ -2,9 +2,11 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
+import type { Message } from '@ag-ui/core';
 import { afterEach, expect, it, vi } from 'vitest';
 
 import type { AttachmentRef, AttachmentView, MediaItem, MediaListing, UploadResult } from '@socio/shared/media-types';
+import { attachmentPart, attachmentRef } from '@socio/shared/media/refs';
 
 import { DEFAULT_MOCK_USERS } from '../src/server/auth/config.js';
 import { MockAuthProvider } from '../src/server/auth/mock.js';
@@ -283,7 +285,21 @@ it('deletes a pending attachment with its file, but not a sent one, and collects
     expect(await f.platform.media.attachment(sent)).toBeUndefined();
 });
 
-it('binds a message’s attachments when its run is accepted, not when the model is called', async () => {
+// AG-UI 1.0's media part, as the apps send it now, and the pre-1.0 `binary`
+// reference, as the native app builds already shipped still do.
+const NEW_SHAPE = (attachment: AttachmentRef) =>
+    attachmentPart({ id: attachment.id, mimeType: attachment.mediaType, filename: attachment.name });
+const OLD_SHAPE = (attachment: AttachmentRef) => ({
+    type: 'binary',
+    id: attachment.id,
+    mimeType: attachment.mediaType,
+    filename: attachment.name,
+});
+
+it.each([
+    ['the 1.0 media part', NEW_SHAPE],
+    ['the pre-1.0 binary part', OLD_SHAPE],
+])('binds a message’s attachments (%s) when its run is accepted, not when the model is called', async (_, ref) => {
     const f = await fixture();
     const alice = await f.as('alice');
     const upload = async (as: typeof alice, name: string) =>
@@ -294,12 +310,6 @@ it('binds a message’s attachments when its run is accepted, not when the model
     // The run stops before the model factory runs (Stop pressed at once, a
     // paused workspace…): the runner has stored the message all the same.
     const runtime = vi.spyOn(f.platform.handler, 'fetch').mockImplementation(async () => new Response('stopped'));
-    const ref = (attachment: AttachmentRef) => ({
-        type: 'binary',
-        id: attachment.id,
-        mimeType: attachment.mediaType,
-        filename: attachment.name,
-    });
     const response = await f.platform.handle(
         new Request(`http://localhost/api/copilotkit/agent/${f.dot.id}/run`, {
             method: 'POST',
@@ -324,6 +334,10 @@ it('binds a message’s attachments when its run is accepted, not when the model
     );
     expect(await response.text()).toBe('stopped');
     expect(runtime).toHaveBeenCalledTimes(1);
+    // CopilotKit gets (and the runner stores) the 1.0 part, whichever came:
+    // its request parser drops the old one.
+    const forwarded = (await (runtime.mock.calls[0][0] as Request).json()) as { messages: Message[] };
+    expect(forwarded.messages[0].content).toEqual([{ type: 'text', text: 'see' }, NEW_SHAPE(report), NEW_SHAPE(bobs)]);
     expect(await f.platform.media.attachment(report.id)).toMatchObject({
         threadId: thread.id,
         dotId: f.dot.id,
@@ -389,12 +403,14 @@ it('lets members of a team conversation see its attachments', async () => {
             ],
         } as never,
     ]);
-    const ref = (message.content as unknown as Array<{ id?: string }>)[1];
-    expect(ref).toMatchObject({
-        type: 'binary',
-        mimeType: 'image/png',
-        filename: 'telegram-photo.png',
+    // Stored as the 1.0 media part that refers to the saved file.
+    const part = (message.content as unknown[])[1];
+    expect(part).toMatchObject({
+        type: 'image',
+        source: { type: 'file', provider: 'socio', mimeType: 'image/png' },
+        metadata: { filename: 'telegram-photo.png' },
     });
+    const ref = attachmentRef(part)!;
     const url = `/media/attachments/${ref.id}/content`;
     expect((await alice(url)).status).toBe(200);
     expect((await bob(url)).status).toBe(404);

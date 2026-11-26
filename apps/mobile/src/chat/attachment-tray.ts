@@ -1,7 +1,7 @@
 import type { Message } from '@ag-ui/core';
 
 import type { AttachmentKind } from '@socio/shared/media-types';
-import { isAttachmentPart } from '@socio/shared/media/refs';
+import { attachmentRefs } from '@socio/shared/media/refs';
 import { formatSize } from '@socio/shared/text/format-size';
 
 import type { AddProblem, Attachment, AttachmentFailure, MediaLimits, PickedFile } from '../sync/attachments';
@@ -311,13 +311,13 @@ export interface MessageFile {
 const kindOfMime = (mime: string): AttachmentKind =>
     mime.startsWith('image/') ? 'image' : mime.startsWith('text/') ? 'text' : 'file';
 
-/** A stored or streamed message's files: its `binary` parts by the server's id, in order. */
+/**
+ * A stored or streamed message's files, by the server's id, in order: its
+ * attachment parts in either shape (AG-UI 1.0's media part, or the pre-1.0
+ * `binary` one that history stored before it).
+ */
 export function messageFiles(message: Pick<Message, 'content'>): MessageFile[] {
-    const content = message.content as unknown;
-    if (!Array.isArray(content)) {
-        return [];
-    }
-    return content.filter(isAttachmentPart).map((part) => {
+    return attachmentRefs(message.content).map((part) => {
         const name = part.filename ?? (part.mimeType.startsWith('image/') ? 'Image' : 'Attachment');
         return {
             id: part.id,

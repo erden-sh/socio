@@ -2,7 +2,7 @@ import type { Message } from '@ag-ui/client';
 
 import { TURN_IMAGE_BYTES } from '@socio/shared/media-types';
 import { cleanName } from '@socio/shared/media/file-types';
-import { isAttachmentPart, type AttachmentPart } from '@socio/shared/media/refs';
+import { attachmentRef, isAttachmentPart, type AttachmentRef } from '@socio/shared/media/refs';
 import { formatSize } from '@socio/shared/text/format-size';
 
 import type { AttachmentRow, BindTurn, ResolveTurn } from './contract.js';
@@ -58,6 +58,11 @@ export async function resolveMessages<F extends { path: string; size: number }>(
         }
         const resolved: Part[][] = [];
         for (const part of parts.slice().reverse()) {
+            const ref = attachmentRef(part);
+            if (ref) {
+                resolved.push(await resolvePart(ref));
+                continue;
+            }
             // Legacy inline images count against the limit, as the model sees them.
             if (part.type === 'image') {
                 if (turn.maxImages > 0) {
@@ -66,15 +71,11 @@ export async function resolveMessages<F extends { path: string; size: number }>(
                 resolved.push([part]);
                 continue;
             }
-            if (!isAttachmentPart(part)) {
-                resolved.push([part]);
-                continue;
-            }
-            resolved.push(await resolvePart(part));
+            resolved.push([part]);
         }
         out.push({ ...message, content: resolved.reverse().flat() } as Message);
 
-        async function resolvePart(part: AttachmentPart): Promise<Part[]> {
+        async function resolvePart(part: AttachmentRef): Promise<Part[]> {
             const found = await media.attachment(part.id);
             if (!found) {
                 return [
