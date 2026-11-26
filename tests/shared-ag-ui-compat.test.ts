@@ -4,12 +4,14 @@
 import { describe, expect, it } from 'vitest';
 
 import { turnError } from '@socio/foundation/observability/failures';
+import { legacyMediaStream, wantsLegacyMedia } from '@socio/shared/media/legacy-media';
 import {
     attachmentPart,
     attachmentRef,
     attachmentRefs,
     checkNewUserContent,
     ContentError,
+    downgradeAttachmentParts,
     upgradeAttachmentParts,
 } from '@socio/shared/media/refs';
 import {
@@ -128,5 +130,54 @@ describe('Socio’s own fields', () => {
             metadata: { errorDetail: '400 no vision' },
         });
         expect(turnError('model_rejected')).not.toHaveProperty('metadata');
+    });
+});
+
+describe('responses for the app builds already shipped (COMPAT(ag-ui-1.0))', () => {
+    const ref = { id: ID, mimeType: 'image/png', filename: 'a.png' };
+
+    it('downgrades Socio’s attachment parts at any depth, and nothing else', () => {
+        const other = { type: 'image', source: { type: 'data', value: 'AAAA', mimeType: 'image/png' } };
+        const body = {
+            runs: [{ messages: [{ id: 'u', content: [{ type: 'text', text: 'x' }, attachmentPart(ref), other] }] }],
+        };
+        expect(downgradeAttachmentParts(body)).toEqual({
+            runs: [
+                { messages: [{ id: 'u', content: [{ type: 'text', text: 'x' }, { type: 'binary', ...ref }, other] }] },
+            ],
+        });
+        const plain = { runs: [{ messages: [{ id: 'u', content: 'hi' }] }] };
+        expect(downgradeAttachmentParts(plain)).toBe(plain);
+    });
+
+    it('tells the clients apart by X-Socio-Reads', () => {
+        expect(wantsLegacyMedia(new Headers())).toBe(true);
+        expect(wantsLegacyMedia(new Headers({ 'X-Socio-Reads': 'ag-ui-media' }))).toBe(false);
+        expect(wantsLegacyMedia(new Headers({ 'X-Socio-Reads': 'other, AG-UI-Media' }))).toBe(false);
+        expect(wantsLegacyMedia(new Headers({ 'X-Socio-Reads': 'other' }))).toBe(true);
+    });
+
+    it('rewrites a server-sent stream frame by frame, however its chunks split', async () => {
+        const event = { type: 'RUN_STARTED', input: { messages: [{ id: 'u', content: [attachmentPart(ref)] }] } };
+        const text = `: keep-alive\n\nevent: cursor\nid: 3\ndata: {"seq":3}\n\ndata: ${JSON.stringify(event)}\n\n`;
+        const bytes = new TextEncoder().encode(text);
+        const body = new ReadableStream<Uint8Array>({
+            start(controller) {
+                // Split mid-frame and mid-character boundary alike.
+                for (let at = 0; at < bytes.length; at += 7) {
+                    controller.enqueue(bytes.slice(at, at + 7));
+                }
+                controller.close();
+            },
+        });
+        const out = await legacyMediaStream(
+            new Response(body, { headers: { 'Content-Type': 'text/event-stream' } }),
+        ).text();
+        const downgraded = { ...event, input: { messages: [{ id: 'u', content: [{ type: 'binary', ...ref }] }] } };
+        expect(out).toBe(
+            `: keep-alive\n\nevent: cursor\nid: 3\ndata: {"seq":3}\n\ndata: ${JSON.stringify(downgraded)}\n\n`,
+        );
+        const json = Response.json({ a: 1 });
+        expect(legacyMediaStream(json)).toBe(json);
     });
 });

@@ -18,6 +18,7 @@ import {
     type HistoryPage,
     type HistoryRun,
 } from '@socio/shared/chat/chat-history';
+import { legacyMediaJson, legacyMediaStream, wantsLegacyMedia } from '@socio/shared/media/legacy-media';
 import type { TranscriptMention } from '@socio/shared/rooms/room-notices';
 import { TraceTimes } from '@socio/shared/runs/trace-times';
 import { turnFailureKind, type TurnFailure } from '@socio/shared/turn-failures';
@@ -274,13 +275,16 @@ export function historyRoutes(platform: HistoryRoutesDeps) {
         }
         const reader = roomReader(thread, c.get('user').id);
         const history = await historyPage(platform.runner, platform.replay, thread.id, { after, before }, reader);
+        // COMPAT(ag-ui-1.0): attachments as the pre-1.0 reference for a client
+        // that doesn't read AG-UI 1.0's media parts (`legacy-media`).
+        const forClient = <T>(body: T) => (wantsLegacyMedia(c.req.raw.headers) ? legacyMediaJson(body) : body);
         if (reader === undefined || !history.runs.length) {
-            return c.json(history);
+            return c.json(forClient(history));
         }
         // In a room, each person's message carries whom it mentions, as the
         // transcript gives it (CB-416): the app's "@you" badge reads it.
         const names = new Map(platform.workspace.users().map((user) => [user.id, user.name]));
-        return c.json(withMentions(history, await platform.roomNotices.mentions(thread.id), names, reader));
+        return c.json(forClient(withMentions(history, await platform.roomNotices.mentions(thread.id), names, reader)));
     });
     // The conversation as it happens (CB-212): server-sent events from
     // after run `after` (or `Last-Event-ID`, as a reconnecting EventSource
@@ -297,7 +301,7 @@ export function historyRoutes(platform: HistoryRoutesDeps) {
         if (Number.isNaN(after)) {
             return c.json({ error: 'Ask for the runs after one run.' }, 400);
         }
-        return conversationStream({
+        const stream = conversationStream({
             runner: platform.runner,
             streams: platform.roomStreams,
             readerEvents: platform.readerEvents,
@@ -308,6 +312,8 @@ export function historyRoutes(platform: HistoryRoutesDeps) {
             signal: c.req.raw.signal,
             mode: { kind: 'follow', after: after ?? 0 },
         });
+        // COMPAT(ag-ui-1.0): as the history (`legacy-media`).
+        return wantsLegacyMedia(c.req.raw.headers) ? legacyMediaStream(stream) : stream;
     });
     app.get('/conversations/:id/tool-results/:toolCallId', async (c) => {
         const thread = owned(c.get('user').id, c.req.param('id'));

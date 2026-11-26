@@ -205,3 +205,59 @@ export function checkNewUserContent(messages: unknown, known: ReadonlySet<string
         }
     }
 }
+
+/**
+ * The header a client sends to say it reads AG-UI 1.0's media parts:
+ * `X-Socio-Reads: ag-ui-media` (a comma-separated list of what it reads).
+ * The web app and the native app send it on every request since AG-UI 1.0.
+ */
+export const READS_HEADER = 'X-Socio-Reads';
+/** `READS_HEADER`'s token for AG-UI 1.0 media parts. */
+export const READS_AG_UI_MEDIA = 'ag-ui-media';
+
+/** Whether a `READS_HEADER` value says its client reads AG-UI 1.0 media parts. */
+export const readsAgUiMedia = (value: string | null | undefined) =>
+    !!value &&
+    value
+        .split(',')
+        .map((token) => token.trim().toLowerCase())
+        .includes(READS_AG_UI_MEDIA);
+
+/** The pre-1.0 reference for an attachment, for a client that reads only that. */
+export function legacyAttachmentPart({ id, mimeType, filename }: AttachmentRef): LegacyAttachmentPart {
+    return { type: 'binary', id, mimeType, ...(filename ? { filename } : {}) };
+}
+
+/**
+ * `value` (a response body, an event, anything JSON) with every attachment
+ * part Socio writes, at any depth, as the pre-1.0 `binary` reference; the
+ * same value when it holds none. Other media parts are left as they are.
+ *
+ * COMPAT(ag-ui-1.0): for the native app builds already shipped (0.2.6 and
+ * earlier), which read only the pre-1.0 shape, in history, transcripts and
+ * the live stream: without it they show no attachment and their steering
+ * recovery, which finds a delivered message by its attachment ids, sends it
+ * again. Remove once no supported build is 0.2.6 or older.
+ */
+export function downgradeAttachmentParts<T>(value: T): T {
+    if (!value || typeof value !== 'object') {
+        return value;
+    }
+    if (Array.isArray(value)) {
+        const parts = value.map((entry) => downgradeAttachmentParts(entry));
+        return (parts.every((entry, index) => entry === value[index]) ? value : parts) as T;
+    }
+    if ((value as Part).type !== 'binary' && MEDIA_PART_TYPES.has(String((value as Part).type))) {
+        const ref = attachmentRef(value);
+        if (ref) {
+            return legacyAttachmentPart(ref) as T;
+        }
+    }
+    let changed = false;
+    const entries = Object.entries(value).map(([key, entry]) => {
+        const next = downgradeAttachmentParts(entry);
+        changed ||= next !== entry;
+        return [key, next] as const;
+    });
+    return (changed ? Object.fromEntries(entries) : value) as T;
+}

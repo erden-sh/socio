@@ -1,5 +1,6 @@
 import { INSTALL_HEADER, installIdSchema } from '@socio/shared/device-sign-in';
 import { UPLOAD_HEADER } from '@socio/shared/media-types';
+import { READS_AG_UI_MEDIA, READS_HEADER } from '@socio/shared/media/refs';
 import { browserTimeZone, TIME_ZONE_HEADER } from '@socio/shared/time-zone';
 
 import type { CookieJar, Outgoing } from './cookie-jar';
@@ -46,6 +47,9 @@ import { classifyUnauthorized, type SessionEnd, sessionEndOf, wipesCopy } from '
 // - `onAnswer` sees each answer with what its request carried, once its
 //   Set-Cookie has applied: the sync engine records contact from it
 //   (src/sync/contact.ts).
+// - `X-Socio-Reads: ag-ui-media` goes on every request: this build reads
+//   AG-UI 1.0's attachment parts, so the server sends them as it stores them
+//   (builds before it get the pre-1.0 shape, @socio/shared/media/legacy-media).
 // - The workspace's install id, when it has one, goes on every request
 //   as `X-Socio-Install`: only here, so only to this origin, sign-in included.
 //   publicFetch, the relay's fetch and the link domain never carry it. A 401 to
@@ -166,6 +170,7 @@ const RESERVED = [
     'x-file-type',
     TIME_ZONE_HEADER.toLowerCase(),
     INSTALL_HEADER.toLowerCase(),
+    READS_HEADER.toLowerCase(),
 ];
 
 /** The longest 401 body read for its code: the server's are a few dozen bytes. Reading stops past it. */
@@ -270,6 +275,7 @@ export function createAuthedFetch({
                     'x-file-type': upload?.type || null,
                     [TIME_ZONE_HEADER.toLowerCase()]: zone ?? null,
                     [INSTALL_HEADER.toLowerCase()]: installId,
+                    [READS_HEADER.toLowerCase()]: READS_AG_UI_MEDIA,
                 },
                 RESERVED,
             );

@@ -1,3 +1,4 @@
+import { READS_AG_UI_MEDIA, READS_HEADER } from '@socio/shared/media/refs';
 import { browserTimeZone, TIME_ZONE_HEADER } from '@socio/shared/time-zone';
 
 /**
@@ -17,7 +18,11 @@ import { browserTimeZone, TIME_ZONE_HEADER } from '@socio/shared/time-zone';
  * browser; the server render sends none.
  */
 const timeZone = typeof window === 'undefined' ? undefined : browserTimeZone();
-const headers: Record<string, string> = timeZone ? { [TIME_ZONE_HEADER]: timeZone } : {};
+const headers: Record<string, string> = {
+    // The app reads AG-UI 1.0's attachment parts (@socio/shared/media/legacy-media).
+    [READS_HEADER]: READS_AG_UI_MEDIA,
+    ...(timeZone ? { [TIME_ZONE_HEADER]: timeZone } : {}),
+};
 
 export const copilotKitOptions = {
     runtimeUrl: '/api/copilotkit',

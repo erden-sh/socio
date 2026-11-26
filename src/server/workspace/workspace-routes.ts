@@ -15,6 +15,7 @@ import type { ModelChoice } from '@socio/shared/inference';
 import { modelChoiceInput } from '@socio/shared/inference/model-choice-input';
 import { learningContainerIdSchema, validateLearningSettings } from '@socio/shared/learning';
 import { LOCALS } from '@socio/shared/mascot';
+import { legacyMediaJson, wantsLegacyMedia } from '@socio/shared/media/legacy-media';
 import { displayContent } from '@socio/shared/media/refs';
 import { NOTIFICATION_CONTENT } from '@socio/shared/notifications';
 import { onboardingPreferencesSchema } from '@socio/shared/onboarding';
@@ -740,7 +741,9 @@ export function workspaceRoutes(platform: WorkspaceRoutesDeps, voice: VoiceShape
             );
         return c.json({
             conversation: thread,
-            messages: shown,
+            // COMPAT(ag-ui-1.0): attachments as the pre-1.0 reference for a
+            // client that doesn't read AG-UI 1.0's media parts (`legacy-media`).
+            messages: wantsLegacyMedia(c.req.raw.headers) ? legacyMediaJson(shown) : shown,
             ...(room
                 ? {
                       cursor,
