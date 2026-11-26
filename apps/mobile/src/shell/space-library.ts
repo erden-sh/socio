@@ -5,6 +5,7 @@ import { foldText, freshnessLabel } from '@socio/shared/pages/page-search';
 import type { Space } from '@socio/shared/types';
 
 import type { ServerSearchState } from '../sync/server-search';
+import { searchEmpty, type SearchEmptyView } from '../ui/search-empty';
 
 import { OFFLINE_LINE, WAITING_LINE } from './search';
 
@@ -262,6 +263,10 @@ export const pagePath = (spaceId: string, pageId: string) =>
 
 /** The library's search field: its label for screen readers and its placeholder, the web's words. */
 export const PAGE_SEARCH_LABEL = 'Search pages';
+
+/** The web's LibraryEmpty for a search that found no page (SpaceLibrary.tsx). */
+export const NO_MATCHING_PAGES = 'No matching pages';
+export const NO_MATCHING_PAGES_LINE = 'Try a different title or phrase.';
 /** The section of the server's matches in the pages' text the phone's titles and excerpts missed. */
 export const IN_PAGE_TEXT = 'In page text';
 
@@ -285,8 +290,8 @@ export interface LibrarySearchView {
     readonly text: readonly PageTextRow[];
     /** "Searching page text needs a connection", "Searching pages…", or null. */
     readonly line: string | null;
-    /** "Nothing matches “…”." once nothing matched and nothing more is coming. */
-    readonly empty: string | null;
+    /** The web's "No matching pages" (CB-552) once nothing matched and nothing more is coming. */
+    readonly empty: SearchEmptyView | null;
     /** The count heading over the matches: "2 pages". */
     readonly count: string;
 }
@@ -353,7 +358,10 @@ export function librarySearch(input: {
         local,
         text,
         line,
-        empty: total === 0 && !waiting ? `Nothing matches “${input.query.trim()}”.` : null,
+        empty:
+            total === 0 && !waiting
+                ? searchEmpty({ query: input.query, title: NO_MATCHING_PAGES, line: NO_MATCHING_PAGES_LINE })
+                : null,
         count: pageCount(total),
     };
 }

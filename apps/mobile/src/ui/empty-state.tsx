@@ -1,18 +1,27 @@
 import { StackActions, useNavigation } from '@react-navigation/native';
-import { View } from 'react-native';
+import { useState } from 'react';
+import { type LayoutChangeEvent, Platform, View } from 'react-native';
+import { useKeyboardState } from 'react-native-keyboard-controller';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { characterFor, type LocalId } from '@socio/shared/mascot';
 
+import { useBarInset } from '../navigation/bar-inset';
+import { MATERIAL_NAVIGATION_BAR } from '../navigation/presets';
 import { useRootGate } from '../navigation/root-gate';
 import { wayOut } from '../navigation/routes';
 import { type ToneName } from '../theme/theme';
 
+import { AppSymbol } from './app-symbol';
 import { Button } from './button';
 import { LOCAL_ART_MAX } from './local-art';
 import { LocalAvatar } from './local-avatar';
+import { emptyFill, fillCovers } from './screen-insets';
+import { CLEAR_FILTERS, CLEAR_SEARCH, SEARCH_EMPTY_SYMBOL, type SearchEmptyView } from './search-empty';
 import type { SymbolName } from './symbols';
 import { Text } from './text';
 import { ToneTile } from './tone-tile';
+import { useAnnouncement } from './use-announcement';
 
 // A screen with nothing to show (the web's EmptyPage and LibraryEmpty):
 // a Local, or a module's tile where the web draws an icon ("No pages yet"), a
@@ -96,4 +105,109 @@ export function useWayBack(route: string): EmptyStateAction | null {
               onPress: () => navigation.dispatch(StackActions.replace(exit)),
               testID: 'empty-state-back',
           };
+}
+
+export interface SearchEmptyStateProps {
+    /** `searchEmpty()`'s title, line and actions. */
+    readonly view: SearchEmptyView;
+    /** Empties the field and keeps the focus in it; offered while something is typed. */
+    readonly onClearSearch: () => void;
+    /** Turns the filters off; offered while some are on. */
+    readonly onClearFilters?: () => void;
+    /** `useEmptyFill`'s, to center it in what shows of the screen; none: its own height. */
+    readonly fill?: EmptyFill;
+    readonly testID: string;
+}
+
+/**
+ * A search or filter that matched nothing (CB-552; search-empty.ts): a magnifying glass, the title
+ * and a muted line, read by a screen reader as one element and announced once as it appears, then
+ * Clear search and Clear filters as real buttons. iOS's ContentUnavailableView.search in the app's
+ * type, Material's empty state on Android.
+ */
+export function SearchEmptyState({ view, onClearSearch, onClearFilters, fill, testID }: SearchEmptyStateProps) {
+    // Said once as it shows: the announcement stays the same while more is typed (search-empty.ts).
+    useAnnouncement(view.announcement, { onAppear: true, shown: false });
+    return (
+        <View
+            className="items-center justify-center gap-4 px-4 py-8"
+            style={fill?.minHeight == null ? undefined : { minHeight: fill.minHeight }}
+            onLayout={
+                fill === undefined ? undefined : (event: LayoutChangeEvent) => fill.onPlace(event.nativeEvent.layout.y)
+            }
+            testID={testID}
+        >
+            <View
+                accessible
+                accessibilityRole="summary"
+                accessibilityLabel={view.accessibilityLabel}
+                className="items-center gap-2"
+                testID={`${testID}-text`}
+            >
+                <AppSymbol name={SEARCH_EMPTY_SYMBOL} size={44} color="muted-foreground" />
+                <Text variant="title2" weight="bold" className="text-center">
+                    {view.title}
+                </Text>
+                <Text variant="subheadline" tone="muted" className="text-center">
+                    {view.line}
+                </Text>
+            </View>
+            {view.clearSearch || (view.clearFilters && onClearFilters !== undefined) ? (
+                <View className="flex-row flex-wrap justify-center gap-2">
+                    {view.clearSearch ? (
+                        <Button
+                            label={CLEAR_SEARCH}
+                            variant="tinted"
+                            onPress={onClearSearch}
+                            testID={`${testID}-clear`}
+                        />
+                    ) : null}
+                    {view.clearFilters && onClearFilters !== undefined ? (
+                        <Button
+                            label={CLEAR_FILTERS}
+                            variant="tinted"
+                            onPress={onClearFilters}
+                            testID={`${testID}-clear-filters`}
+                        />
+                    ) : null}
+                </View>
+            ) : null}
+        </View>
+    );
+}
+
+/** What `useEmptyFill` hands the screen and its empty state. */
+export interface EmptyFill {
+    /** The keyboard's height while it is up, else 0: the Screen's `keyboardInset` on iOS. */
+    readonly keyboard: number;
+    /** The empty state's height, to center it in what shows; null until the screen has laid out. */
+    readonly minHeight: number | null;
+    /** The Screen's `onFrameHeight`. */
+    readonly onFrameHeight: (height: number) => void;
+    /** Where the empty state starts in the content. */
+    readonly onPlace: (y: number) => void;
+}
+
+/**
+ * Centers a screen's empty state in what shows of it (CB-552): below iOS's bar (`useBarInset`), above
+ * the tab bar, the bottom search row (`bottomField`: Search's, on iOS 26) or the keyboard.
+ */
+export function useEmptyFill(bottomField: boolean): EmptyFill {
+    const keyboard = useKeyboardState((state) => (state.isVisible ? state.height : 0));
+    const top = useBarInset();
+    const insets = useSafeAreaInsets();
+    const [frame, setFrame] = useState(0);
+    const [above, setAbove] = useState<number | null>(null);
+    const covers = fillCovers(Platform.OS, {
+        safeBottom: insets.bottom,
+        keyboard,
+        bottomField,
+        navigation: MATERIAL_NAVIGATION_BAR + insets.bottom,
+    });
+    return {
+        keyboard,
+        minHeight: frame === 0 || above === null ? null : emptyFill({ frame, top, covers, above }),
+        onFrameHeight: setFrame,
+        onPlace: setAbove,
+    };
 }

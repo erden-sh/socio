@@ -37,6 +37,7 @@ import { issueKey, ISSUES } from '../sync/issues';
 import { OUTBOX_COPY } from '../sync/outbox';
 import type { OverlayItem, OverlayKind } from '../sync/outbox-overlay';
 import type { ToneName } from '../theme/theme';
+import { searchEmpty, type SearchEmptyView } from '../ui/search-empty';
 
 import {
     type ComponentChipsView,
@@ -387,6 +388,9 @@ export interface BoardPeek {
     readonly empty: boolean;
 }
 
+/** The line under the Board's "no results" (CB-552). */
+export const BOARD_EMPTY_LINE = 'Try other words or filters.';
+
 /** How many of a neighbor's rows a swipe draws beside the cards: more than a phone's screen holds. */
 export const PEEK_ROWS = 8;
 
@@ -414,6 +418,11 @@ export interface BoardView {
     readonly wontFix: { readonly count: number; readonly offered: boolean };
     /** What the column says with no rows. */
     readonly empty: string;
+    /**
+     * The empty state a search or the filters leave (CB-552): "No results for “…”" or the web's "No
+     * issues match", with Clear search and Clear filters for what is set; null with neither.
+     */
+    readonly noMatch: SearchEmptyView | null;
     /** This device's writes waiting on the whole board (every column, filtered or not): the announcement's count. */
     readonly pendingCount: number;
     /** The board or the list. */
@@ -587,6 +596,16 @@ export function boardView(input: BoardInput): BoardView {
             offered: filters.status.length === 0,
         },
         empty: searching || active ? 'No issues match.' : 'No issues',
+        noMatch:
+            searching || active
+                ? searchEmpty({
+                      query,
+                      line: BOARD_EMPTY_LINE,
+                      // The facets and the lane, not the words (`active` counts them too).
+                      filtered: filtersActive({ ...prefs.filters, q: '' }) || prefs.components.length > 0,
+                      ...(searching ? {} : { title: 'No issues match' }),
+                  })
+                : null,
         pendingCount: pending.length + shown.filter((item) => item.pending !== null).length,
         layout: prefs.view,
         selectable: ordered.map((issue) => issue.number),

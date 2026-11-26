@@ -144,10 +144,11 @@ describe('Schedules’ search and filters', () => {
     it('shows them over the list on the screen, with the web’s line when nothing matches', () => {
         const screen = read('schedules.tsx');
         expect(screen).toContain('data.shown.schedules.filter((schedule) => matchesSchedule(schedule, filter))');
-        expect(screen).toMatch(/<SearchField\s+label=\{SCHEDULE_SEARCH_LABEL\}/);
+        expect(screen).toMatch(/<SearchField\s+ref=\{searchRef\}\s+label=\{SCHEDULE_SEARCH_LABEL\}/);
         expect(screen).toContain('testID="schedules-status-filter"');
         expect(screen).toContain('testID="schedules-socio-filter"');
-        expect(screen).toContain('{NO_SCHEDULES_MATCH}');
+        // The shared empty state, its title the web's line while only filters narrow it (CB-552).
+        expect(screen).toContain('view={schedulesEmpty(filter)}');
         // Each filter is a pop-up button: the system's menu (CB-421), the value held checked.
         expect(screen).toContain('<ActionMenu request={props.menu} trigger="press"');
         expect(screen).toContain('checked: option.value === value,');

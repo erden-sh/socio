@@ -1,5 +1,5 @@
 import type { ReactElement, ReactNode } from 'react';
-import { Platform, type RefreshControlProps, View } from 'react-native';
+import { type LayoutChangeEvent, Platform, type RefreshControlProps, View } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { type Edge, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -55,6 +55,14 @@ export interface ScreenProps {
     readonly grouped?: boolean;
     /** Pull to refresh: a `RefreshControl` from `usePullToRefresh`, for a page that syncs. */
     readonly refreshControl?: ReactElement<RefreshControlProps>;
+    /**
+     * The keyboard's height (`useBarFieldKeyboard`), for a screen whose field is the bar's
+     * (iOS's search field): it pads its bottom by it instead of following the keyboard with
+     * UIKit's insets, which scrolled it under the bar (CB-552; keyboard-scroll.ts).
+     */
+    readonly keyboardInset?: number;
+    /** Its frame's height as it lays out, for an empty state centered in what shows (CB-552). */
+    readonly onFrameHeight?: (height: number) => void;
 }
 
 export function Screen({
@@ -67,12 +75,14 @@ export function Screen({
     onScrollY,
     grouped = false,
     refreshControl,
+    keyboardInset,
+    onFrameHeight,
 }: ScreenProps) {
     const insets = useSafeAreaInsets();
     const groupedPage = useGroupedColor('page');
     const content = cx('grow gap-5 px-4 pt-4 pb-4', centered && 'items-center justify-center');
     const uikit = uikitInsets(edges, Platform.OS);
-    const follow = keyboardFollow(Platform.OS, keyboardAware, useScreenFocused());
+    const follow = keyboardFollow(Platform.OS, keyboardAware, useScreenFocused(), keyboardInset !== undefined);
     const frame = (
         // `collapsable={false}`: a View with only a background forms no stacking context, so
         // Fabric mounts its children beside it, and UIKit's walk down the first subviews meets
@@ -82,6 +92,9 @@ export function Screen({
             testID={testID}
             className="flex-1 bg-screen"
             collapsable={false}
+            {...(onFrameHeight === undefined
+                ? {}
+                : { onLayout: (event: LayoutChangeEvent) => onFrameHeight(event.nativeEvent.layout.height) })}
             style={{
                 ...(grouped ? { backgroundColor: groupedPage } : {}),
                 paddingTop: edges.includes('top') ? insets.top : 0,
@@ -99,6 +112,7 @@ export function Screen({
                     bottomOffset={KEYBOARD_GAP}
                     {...(refreshControl === undefined ? {} : { refreshControl })}
                     automaticallyAdjustKeyboardInsets={follow.uikit}
+                    {...(follow.inset ? { contentInset: { bottom: keyboardInset ?? 0 } } : {})}
                     // A tab screen (no bottom edge) scrolls under iOS 26's glass tab bar: let UIKit
                     // inset its content by the bar, so the last row can rest above it (owner,
                     // 2026-11-08). The native tabs only set this when the ScrollView is the

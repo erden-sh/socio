@@ -1,7 +1,15 @@
 import { LegendList, type LegendListRef } from '@legendapp/list/react-native';
 import { useNavigation } from '@react-navigation/native';
 import * as Clipboard from 'expo-clipboard';
-import { type ReactNode, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
+import {
+    type ReactNode,
+    type RefObject,
+    useEffect,
+    useLayoutEffect,
+    useRef,
+    useState,
+    useSyncExternalStore,
+} from 'react';
 import {
     Alert,
     Platform,
@@ -9,12 +17,14 @@ import {
     ScrollView,
     type ScrollViewInstance,
     StyleSheet,
+    type TextInputInstance,
     useWindowDimensions,
     View,
 } from 'react-native';
 import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
 import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import type { SearchBarCommands } from 'react-native-screens';
 
 import { canTriage, NO_FILTERS, toggleDotRequests } from '@socio/shared/issues/issue-board';
 import type { IssueStatus } from '@socio/shared/issues/issue-types';
@@ -95,6 +105,7 @@ import {
     usePullToRefresh,
 } from '../ui';
 import { cx } from '../ui/cx';
+import { SearchEmptyState } from '../ui/empty-state';
 import type { SymbolName } from '../ui/symbols';
 import { useAnnouncement } from '../ui/use-announcement';
 
@@ -199,6 +210,14 @@ function Board() {
         viewState.set(BOARD_PREFS_KEY, boardPrefsText(next));
     };
     const [query, setQuery] = useState('');
+    const barField = useRef<SearchBarCommands>(null);
+    const fieldRef = useRef<TextInputInstance>(null);
+    // Clear search (CB-552): the field emptied (the bar's sends no change for it), the focus kept in it.
+    const clearSearch = () => {
+        barField.current?.clearText();
+        setQuery('');
+        (barSearch(Platform.OS) ? barField : fieldRef).current?.focus();
+    };
     const [filtering, setFiltering] = useState(false);
     const { data: shell } = useLiveQuery({ query: shellQuery(collections) });
     const user = shellRows(shell).workspace?.user ?? null;
@@ -289,7 +308,7 @@ function Board() {
                           ? [{ id: 'board-select', label: 'Select', onPress: () => setSelection(new Set()) }]
                           : []),
                   ],
-                  search: { placeholder: ISSUE_SEARCH_PLACEHOLDER, onChange: setQuery },
+                  search: { placeholder: ISSUE_SEARCH_PLACEHOLDER, onChange: setQuery, ref: barField },
               },
     );
     const open = (row: BoardRow) => {
@@ -456,6 +475,7 @@ function Board() {
                             view={view}
                             query={query}
                             onQuery={setQuery}
+                            fieldRef={fieldRef}
                             onFilter={() => setFiltering(true)}
                             onColumn={(column) => setPrefs({ ...prefs, column })}
                             onLayout={(layout) => setPrefs({ ...prefs, view: layout })}
@@ -463,9 +483,23 @@ function Board() {
                     }
                     ListEmptyComponent={
                         <SwipePage swipe={swipe} index={columnIndex}>
-                            <Text variant="subheadline" tone="muted" className="py-8 text-center" testID="board-empty">
-                                {view.empty}
-                            </Text>
+                            {view.noMatch === null ? (
+                                <Text
+                                    variant="subheadline"
+                                    tone="muted"
+                                    className="py-8 text-center"
+                                    testID="board-empty"
+                                >
+                                    {view.empty}
+                                </Text>
+                            ) : (
+                                <SearchEmptyState
+                                    view={view.noMatch}
+                                    onClearSearch={clearSearch}
+                                    onClearFilters={() => setPrefs({ ...prefs, filters: NO_FILTERS, components: [] })}
+                                    testID="board-empty"
+                                />
+                            )}
                         </SwipePage>
                     }
                     renderItem={({ item, index }) =>
@@ -583,6 +617,7 @@ function BoardHead(props: {
     view: BoardView;
     query: string;
     onQuery: (text: string) => void;
+    fieldRef: RefObject<TextInputInstance | null>;
     onFilter: () => void;
     onColumn: (column: BoardColumn['status']) => void;
     onLayout: (layout: BoardLayout) => void;
@@ -598,6 +633,7 @@ function BoardHead(props: {
             />
             {barSearch(Platform.OS) ? null : (
                 <SearchField
+                    ref={props.fieldRef}
                     label={ISSUE_SEARCH_LABEL}
                     placeholder={ISSUE_SEARCH_PLACEHOLDER}
                     value={props.query}

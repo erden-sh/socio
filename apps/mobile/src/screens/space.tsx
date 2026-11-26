@@ -1,7 +1,8 @@
 import { useIsFocused, useNavigation } from '@react-navigation/native';
 import type { StaticScreenProps } from '@react-navigation/native';
-import { useEffect, useState, useSyncExternalStore } from 'react';
-import { Platform, Pressable, View } from 'react-native';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { Platform, Pressable, type TextInputInstance, View } from 'react-native';
+import type { SearchBarCommands } from 'react-native-screens';
 
 import { MODULE_IDS } from '@socio/shared/modules';
 import type { Space } from '@socio/shared/types';
@@ -70,7 +71,14 @@ import {
     ToneTile,
     usePullToRefresh,
 } from '../ui';
-import { EmptyState, NOT_SHARED_LINE, useWayBack } from '../ui/empty-state';
+import {
+    type EmptyFill,
+    EmptyState,
+    NOT_SHARED_LINE,
+    SearchEmptyState,
+    useEmptyFill,
+    useWayBack,
+} from '../ui/empty-state';
 
 import { ActionMenu, type MenuRequest } from './action-menu';
 import { MOVE_ACTION, useDatasetMove } from './dataset-move';
@@ -168,6 +176,8 @@ function Library(props: { spaceId: string; spaces: readonly Space[]; initialTab:
     const manage = usePageManage(spaceId, spaces, pages, refused, synced);
     const [view, setView] = useState<LibraryView>('recent');
     const [query, setQuery] = useState('');
+    const barField = useRef<SearchBarCommands>(null);
+    const fieldRef = useRef<TextInputInstance>(null);
     const search = usePageSearch(spaceId, query);
     const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
     const heading = spaceHeading(spaces, spaceId);
@@ -250,11 +260,26 @@ function Library(props: { spaceId: string; spaces: readonly Space[]; initialTab:
                   ]
                 : []),
         ],
-        ...(searches ? { search: { placeholder: PAGE_SEARCH_LABEL, onChange: setQuery } } : {}),
+        ...(searches ? { search: { placeholder: PAGE_SEARCH_LABEL, onChange: setQuery, ref: barField } } : {}),
     });
+    // The search field is the bar's on iOS: the screen pads by the keyboard itself, and "No matching
+    // pages" centers in what shows below the heading (CB-552).
+    const inBar = barSearch(Platform.OS);
+    const fill = useEmptyFill(false);
+    const clearSearch = () => {
+        barField.current?.clearText();
+        setQuery('');
+        (inBar ? barField : fieldRef).current?.focus();
+    };
     return (
         <View testID="space-screen" className="flex-1 bg-screen" collapsable={false}>
-            <Screen edges={['right', 'bottom', 'left']} grouped refreshControl={refreshControl}>
+            <Screen
+                edges={['right', 'bottom', 'left']}
+                grouped
+                refreshControl={refreshControl}
+                {...(inBar && searches ? { keyboardInset: fill.keyboard } : {})}
+                onFrameHeight={fill.onFrameHeight}
+            >
                 <StatusBanners />
                 <PageIntro
                     subtitle={spaceIntro(heading, recent.length)}
@@ -282,8 +307,9 @@ function Library(props: { spaceId: string; spaces: readonly Space[]; initialTab:
                     />
                 ) : (
                     <>
-                        {barSearch(Platform.OS) ? null : (
+                        {inBar ? null : (
                             <SearchField
+                                ref={fieldRef}
                                 label={PAGE_SEARCH_LABEL}
                                 value={query}
                                 onChangeText={setQuery}
@@ -291,7 +317,13 @@ function Library(props: { spaceId: string; spaces: readonly Space[]; initialTab:
                             />
                         )}
                         {found.searching ? (
-                            <SearchResults found={found} onOpen={open} rowMenu={rowMenu} />
+                            <SearchResults
+                                found={found}
+                                onOpen={open}
+                                rowMenu={rowMenu}
+                                onClearSearch={clearSearch}
+                                fill={fill}
+                            />
                         ) : (
                             <>
                                 <ViewPicker view={view} onView={setView} />
@@ -390,6 +422,8 @@ function SearchResults(props: {
     found: LibrarySearchView;
     onOpen: (id: string) => void;
     rowMenu: (id: string, title: string) => RowMenu;
+    onClearSearch: () => void;
+    fill: EmptyFill;
 }) {
     const { found, onOpen, rowMenu } = props;
     return (
@@ -437,9 +471,12 @@ function SearchResults(props: {
                 </Text>
             )}
             {found.empty === null ? null : (
-                <Text variant="subheadline" tone="muted" className="text-center" testID="space-search-empty">
-                    {found.empty}
-                </Text>
+                <SearchEmptyState
+                    view={found.empty}
+                    onClearSearch={props.onClearSearch}
+                    fill={props.fill}
+                    testID="space-search-empty"
+                />
             )}
         </>
     );

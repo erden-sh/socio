@@ -99,12 +99,17 @@ describe('the search fields', () => {
         expect(ISSUE_SEARCH_PLACEHOLDER).toBe('Search');
         const board = src('screens/board.tsx');
         // Android's drawn field; iOS's is the bar's own (CB-420, `barSearch`).
-        expect(board).toMatch(/\{barSearch\(Platform\.OS\) \? null : \(\s+<SearchField\s+label=\{ISSUE_SEARCH_LABEL\}/);
-        expect(board).toContain('search: { placeholder: ISSUE_SEARCH_PLACEHOLDER, onChange: setQuery },');
+        expect(board).toMatch(
+            /\{barSearch\(Platform\.OS\) \? null : \(\s+<SearchField\s+ref=\{props\.fieldRef\}\s+label=\{ISSUE_SEARCH_LABEL\}/,
+        );
+        expect(board).toContain(
+            'search: { placeholder: ISSUE_SEARCH_PLACEHOLDER, onChange: setQuery, ref: barField },',
+        );
         expect(board).not.toContain('<Field');
         const space = src('screens/space.tsx');
-        expect(space).toMatch(/\{barSearch\(Platform\.OS\) \? null : \(\s+<SearchField\s+label=\{PAGE_SEARCH_LABEL\}/);
-        expect(space).toContain('search: { placeholder: PAGE_SEARCH_LABEL, onChange: setQuery }');
+        expect(space).toContain('const inBar = barSearch(Platform.OS);');
+        expect(space).toMatch(/\{inBar \? null : \(\s+<SearchField\s+ref=\{fieldRef\}\s+label=\{PAGE_SEARCH_LABEL\}/);
+        expect(space).toContain('search: { placeholder: PAGE_SEARCH_LABEL, onChange: setQuery, ref: barField }');
     });
 });
 

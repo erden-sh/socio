@@ -276,6 +276,28 @@ describe('the board’s filters', () => {
         expect(v.empty).toBe('No issues match.');
     });
 
+    it('leave the shared empty state when a search or the filters match nothing, with what clears them (CB-552)', () => {
+        expect(view(issues, open).noMatch).toBeNull();
+        expect(view(issues, { ...open, query: 'nothing like it' }).noMatch).toEqual({
+            title: 'No results for “nothing like it”',
+            line: 'Try other words or filters.',
+            accessibilityLabel: 'No results for “nothing like it”. Try other words or filters.',
+            announcement: 'No results',
+            clearSearch: true,
+            clearFilters: false,
+        });
+        // The filters alone: the web's words, and Clear filters only.
+        expect(view(issues, { ...open, filters: { priority: ['critical'] } }).noMatch).toMatchObject({
+            title: 'No issues match',
+            clearSearch: false,
+            clearFilters: true,
+        });
+        expect(view(issues, { ...open, query: 'zzz', filters: { priority: ['critical'] } }).noMatch).toMatchObject({
+            clearSearch: true,
+            clearFilters: true,
+        });
+    });
+
     it('have the "Socio requests" lane, with the open ones counted', () => {
         const v = view(issues, { ...open, filters: { label: ['dot-request'] } });
         expect(v.dotRequestsOnly).toBe(true);

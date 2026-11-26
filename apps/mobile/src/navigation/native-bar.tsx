@@ -1,7 +1,8 @@
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackHeaderItem, NativeStackNavigationOptions } from '@react-navigation/native-stack';
-import { type ReactElement, type ReactNode, useLayoutEffect, useRef } from 'react';
+import { type ReactElement, type ReactNode, type RefObject, useLayoutEffect, useRef } from 'react';
 import { Platform, Pressable, View } from 'react-native';
+import type { SearchBarCommands } from 'react-native-screens';
 
 import { ActionMenu } from '../screens/action-menu';
 import { MENU_TAKES_TAP } from '../shell/native-menu';
@@ -44,6 +45,12 @@ export interface BarSearch {
     /** The placeholder, and what screen readers call it. */
     readonly placeholder: string;
     readonly onChange: (text: string) => void;
+    /**
+     * The system field's commands (iOS), for a page that empties or focuses it itself: Search's
+     * and a Space's Clear search (CB-552). Setting its text from here sends no change: the page
+     * sets its own query too.
+     */
+    readonly ref?: RefObject<SearchBarCommands | null>;
 }
 
 export interface NativeBar {
@@ -161,6 +168,7 @@ export function useNativeBar(bar: NativeBar): void {
                     hideWhenScrolling: false,
                     onChangeText: (event) => latest.current.search?.onChange(event.nativeEvent.text),
                     onCancelButtonPress: () => latest.current.search?.onChange(''),
+                    ...(current.search.ref === undefined ? {} : { ref: current.search.ref }),
                 };
             }
         } else {

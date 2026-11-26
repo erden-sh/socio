@@ -74,7 +74,9 @@ describe('the keyboard on scrolling screens (CB-418)', () => {
         const screen = read('ui/screen.tsx');
         expect(screen).toContain("import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';");
         expect(screen).toMatch(/<KeyboardAwareScrollView[\s\S]*\{\.\.\.keyboardScroll\(Platform\.OS\)\}/);
-        expect(screen).toContain('const follow = keyboardFollow(Platform.OS, keyboardAware, useScreenFocused());');
+        expect(screen).toContain(
+            'const follow = keyboardFollow(Platform.OS, keyboardAware, useScreenFocused(), keyboardInset !== undefined);',
+        );
         expect(screen).toContain('enabled={follow.controller}');
         expect(screen).toContain('automaticallyAdjustKeyboardInsets={follow.uikit}');
         expect(screen).toMatch(/bottomOffset=\{KEYBOARD_GAP\}/);
@@ -82,11 +84,11 @@ describe('the keyboard on scrolling screens (CB-418)', () => {
     });
 
     it('is only the focused screen’s: a list under a pushed page never takes its keyboard (CB-461)', () => {
-        expect(keyboardFollow('ios', true, true)).toEqual({ controller: false, uikit: true });
-        expect(keyboardFollow('android', true, true)).toEqual({ controller: true, uikit: false });
+        expect(keyboardFollow('ios', true, true)).toEqual({ controller: false, uikit: true, inset: false });
+        expect(keyboardFollow('android', true, true)).toEqual({ controller: true, uikit: false, inset: false });
         for (const os of ['ios', 'android']) {
-            expect(keyboardFollow(os, true, false)).toEqual({ controller: false, uikit: false });
-            expect(keyboardFollow(os, false, true)).toEqual({ controller: false, uikit: false });
+            expect(keyboardFollow(os, true, false)).toEqual({ controller: false, uikit: false, inset: false });
+            expect(keyboardFollow(os, false, true)).toEqual({ controller: false, uikit: false, inset: false });
         }
         // The focus is the navigator's, which leaves on the push, before the page's keyboard shows,
         // and is always on outside a navigator (sign-in, lock).

@@ -30,6 +30,11 @@ export interface KeyboardFollow {
     readonly controller: boolean;
     /** UIKit's `automaticallyAdjustKeyboardInsets`: iOS. */
     readonly uikit: boolean;
+    /**
+     * The Screen's own bottom inset, the keyboard's height (`contentInset`): iOS, for a screen
+     * whose field is the bar's (Search, a Space's "Search pages"; CB-552), outside its scroll view.
+     */
+    readonly inset: boolean;
 }
 
 /**
@@ -38,10 +43,18 @@ export interface KeyboardFollow {
  * gets every keyboard notification; on iOS UIKit then shifts its content by the
  * keyboard's travel (a WebView's caret is outside it), and it came back
  * scrolled under the bar.
+ *
+ * `barField`: the screen's field is the bar's (iOS's UISearchController), not in its
+ * content. There React Native's keyboard insets have nothing to bring into view, and
+ * on every keyboard change they `scrollTo` an offset clamped to `contentInset`, not to
+ * UIKit's adjusted inset: the content jumped up under the bar and the status bar, so
+ * Search's first row and its "no results" sat unreadable under them (CB-552, CB-462).
+ * Such a screen pads its bottom by the keyboard itself (`inset`), which moves nothing.
  */
-export function keyboardFollow(os: string, keyboardAware: boolean, focused: boolean): KeyboardFollow {
+export function keyboardFollow(os: string, keyboardAware: boolean, focused: boolean, barField = false): KeyboardFollow {
     const on = keyboardAware && focused;
-    return { controller: on && os !== 'ios', uikit: on && os === 'ios' };
+    const ios = os === 'ios';
+    return { controller: on && !ios, uikit: on && ios && !barField, inset: on && ios && barField };
 }
 
 /**
