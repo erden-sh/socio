@@ -33,6 +33,7 @@ How this file is kept (scripts/release.mjs and the app's build read it):
 
 - **A long socio name stays on one line in the sidebar (CB-430).** A long name next to the Personal badge wrapped out of its row into the rows below; it now ends in an ellipsis instead.
 - **The Space library says "Sorted by relevance" while you search (CB-497).** Search results come in order of relevance, but the sort menu still showed "Recently edited" or "Name A–Z". During a search the menu now gives way to "Sorted by relevance", and clearing the search brings back the sort you chose.
+- **Closing an issue report you have edited asks first (CB-495).** Escape, the close button, Cancel or a click outside the report threw away what you had typed and attached. If you changed anything, Socio now asks whether to discard the draft; Keep editing returns you to the field you were in. A report you haven't touched still closes right away.
 
 ## v0.54.0 (2026-11-26)
 
