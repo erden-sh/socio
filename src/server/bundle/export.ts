@@ -281,7 +281,7 @@ export async function exportBundle(options: ExportOptions): Promise<ExportResult
         // Pages, parents first, each with its images.
         const { order, parent } = treeOrder(db, pageIds);
         const pageRow = db.prepare(
-            'SELECT id, spaceId, title, content, createdAt, updatedAt, createdBy, coverId, sourceUrl, sourceTitle FROM pages WHERE id=?',
+            'SELECT id, spaceId, title, content, createdAt, updatedAt, createdBy, coverId, sourceUrl, sourceTitle, folder FROM pages WHERE id=?',
         );
         const tags = db.prepare('SELECT tag, createdBy, createdAt FROM page_tags WHERE pageId=? ORDER BY tag');
         const links = db.prepare(
@@ -377,6 +377,7 @@ export async function exportBundle(options: ExportOptions): Promise<ExportResult
                 coverId: coverId && images.has(coverId) ? coverId : null,
                 sourceUrl: str(row.sourceUrl),
                 sourceTitle: str(row.sourceTitle),
+                folder: !!row.folder,
                 tags: (tags.all(id) as Row[]).map((t) => {
                     note(t.createdBy);
                     return { tag: String(t.tag), createdBy: str(t.createdBy), createdAt: Number(t.createdAt) };

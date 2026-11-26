@@ -40,6 +40,7 @@ const summary = (id: string, title: string, fields: Partial<PageSummary> = {}): 
     sourceThreadId: null,
     createdBy: null,
     cover: null,
+    folder: false,
     ...fields,
 });
 

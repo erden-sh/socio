@@ -74,6 +74,7 @@ function page(id: string, title: string, parentId: string | null = null, updated
         sourceThreadId: null,
         createdBy: null,
         cover: null,
+        folder: false,
     };
 }
 
@@ -98,7 +99,12 @@ const click = (el: Element) => act(() => (el as HTMLElement).click());
 
 function render(
     pages: PageSummary[],
-    props: { total?: number; onPage?: (id: string) => void; onNew?: (parentId: string | null) => void } = {},
+    props: {
+        total?: number;
+        onPage?: (id: string) => void;
+        onNew?: (parentId: string | null) => void;
+        onNewFolder?: (parentId: string | null, title: string) => Promise<unknown>;
+    } = {},
 ) {
     act(() =>
         root.render(
@@ -108,6 +114,7 @@ function render(
                 total={props.total}
                 onPage={props.onPage ?? (() => {})}
                 onNew={props.onNew ?? (() => {})}
+                onNewFolder={props.onNewFolder}
                 onDeleted={() => {}}
             />,
         ),
@@ -229,4 +236,79 @@ it('searches the whole Space and names each result’s path', async () => {
         'Policies and SOPs › Vendor list',
     );
     expect(trail()).toBeNull();
+});
+
+// Folders (CB-426): a page marked as a folder, shown as a container.
+const folder = (id: string, title: string, parentId: string | null = null, updatedAt = 1): PageSummary => ({
+    ...page(id, title, parentId, updatedAt),
+    excerpt: '',
+    folder: true,
+});
+const button = (name: string, within: ParentNode = document) =>
+    [...within.querySelectorAll<HTMLButtonElement>('button')].find((el) => el.textContent?.trim() === name);
+const folderLine = (title: string) => card(title).querySelector('[data-slot="library-folder"]')?.textContent;
+
+it('shows folders as folders and opens one to its level, even empty', () => {
+    const onPage = vi.fn();
+    render(
+        [folder('projects', 'Projects', null, 9), page('plan', 'Plan', 'projects'), folder('empty', 'Empty', null, 2)],
+        {
+            onPage,
+        },
+    );
+    expect(titles()).toEqual(['Projects', 'Empty']);
+    // A folder card says what it holds where a page shows its text.
+    expect(folderLine('Projects')).toBe('Folder · 1 inside');
+    expect(folderLine('Empty')).toBe('Empty folder');
+    expect(card('Projects').querySelector('svg.lucide-folder')).not.toBeNull();
+    expect(card('Projects').querySelector('[data-slot="library-inside"]')).toBeNull();
+
+    click(card('Empty'));
+    expect(onPage).not.toHaveBeenCalled();
+    expect(heading()).toContain('In this folder');
+    expect(trail()?.querySelector('[aria-current="location"]')?.textContent).toBe('Empty');
+    expect(host.textContent).toContain('This folder is empty');
+    // The trail's button opens the folder's own page.
+    click([...trail()!.querySelectorAll('button')].find((el) => el.textContent?.includes('Open folder'))!);
+    expect(onPage).toHaveBeenCalledWith('empty');
+});
+
+it('opens a folder from All pages at its level', () => {
+    render([folder('projects', 'Projects'), page('plan', 'Plan', 'projects'), page('welcome', 'Welcome')]);
+    choose('Browse pages', 'All pages');
+    expect(titles()).toHaveLength(3);
+    expect(folderLine('Projects')).toBe('Folder · 1 inside');
+    click(card('Projects'));
+    expect(heading()).toContain('In this folder');
+    expect(titles()).toEqual(['Plan']);
+});
+
+it('asks a new folder’s name and makes it inside the level', async () => {
+    const onNewFolder = vi.fn(async () => undefined);
+    render(tree(), { onNewFolder });
+    click(card('Policies and SOPs'));
+    click(button('New folder')!);
+    const dialog = () => document.querySelector<HTMLElement>('[role="dialog"]');
+    await until(() => !!dialog(), 'the name dialog');
+    const create = () => button('Create folder', dialog()!)!;
+    expect(create().disabled).toBe(true);
+    await type(dialog()!.querySelector<HTMLInputElement>('input[aria-label="Folder name"]')!, '  Contracts ');
+    click(create());
+    await until(() => !dialog(), 'the dialog to close');
+    expect(onNewFolder).toHaveBeenCalledWith('policies', 'Contracts');
+
+    // From an empty level's own button, and a refusal keeps the dialog with its reason.
+    onNewFolder.mockRejectedValueOnce(new Error('Pages require a title.'));
+    render([folder('empty', 'Empty')], { onNewFolder });
+    click(card('Empty'));
+    // The header's, and the empty level's under it.
+    const both = [...host.querySelectorAll('button')].filter((el) => el.textContent?.trim() === 'New folder');
+    expect(both).toHaveLength(2);
+    click(both[1]!);
+    await until(() => !!dialog(), 'the name dialog again');
+    await type(dialog()!.querySelector<HTMLInputElement>('input[aria-label="Folder name"]')!, 'Inner');
+    click(create());
+    await until(() => !!dialog()?.querySelector('[role="alert"]'), 'the refusal');
+    expect(dialog()!.querySelector('[role="alert"]')!.textContent).toBe('Pages require a title.');
+    expect(onNewFolder).toHaveBeenLastCalledWith('empty', 'Inner');
 });

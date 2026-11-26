@@ -23,6 +23,8 @@ export interface NewPage {
     sourceUrl: string | null;
     /** The title at the source, or null (CB-328). */
     sourceTitle: string | null;
+    /** Whether it is a folder (CB-426); false when left out. */
+    folder?: boolean;
 }
 
 /** A tag on a page (CB-328). Tag names are workspace-global; rows are scoped
@@ -81,6 +83,11 @@ export interface PageRepository {
      * revision: a cover isn't part of the page's text.
      */
     cover(id: string, coverId: string | null, now: number): Promise<void>;
+    /**
+     * Marks a live page as a folder or a page (CB-426), as its next
+     * revision, edited `now`; its title and body stay.
+     */
+    folder(id: string, folder: boolean, now: number): Promise<void>;
     /** Hides a live page with its stamp; a deleted one stays as it was. */
     hide(id: string, deletion: PageDeletion): Promise<void>;
 }

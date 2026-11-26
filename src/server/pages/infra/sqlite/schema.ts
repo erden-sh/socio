@@ -27,6 +27,7 @@ export const pages = sqliteTable('pages', {
     coverId: str(),
     sourceUrl: str(),
     sourceTitle: str(),
+    folder: flag().notNull().default(false),
 });
 
 export const pageTags = sqliteTable(

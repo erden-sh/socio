@@ -35,6 +35,7 @@ const summary = (id: string, title: string, fields: Partial<PageSummary> = {}): 
     sourceThreadId: null,
     createdBy: 'u-ada',
     cover: null,
+    folder: false,
     ...fields,
 });
 

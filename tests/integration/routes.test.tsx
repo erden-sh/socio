@@ -469,6 +469,7 @@ it('shows a page’s title in the breadcrumb and follows a rename (CB-38)', asyn
                 cover: null,
                 sourceUrl: null,
                 sourceTitle: null,
+                folder: false,
             },
         ],
     };

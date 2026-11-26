@@ -158,6 +158,8 @@ export interface PageInput {
     parentId?: string | null;
     sourceUrl?: string;
     sourceTitle?: string;
+    /** A folder (CB-426); a page when left out. */
+    folder?: boolean;
 }
 
 /** An edit, as `pagePatch` (pages.ts) takes it. */
@@ -257,6 +259,8 @@ export interface PageStoreShape {
         coverId: string | null,
         now?: number,
     ) => Promise<{ page: Page; previous: string | null }>;
+    /** Turns a page into a folder or back (CB-426): its body stays, hidden in a folder. */
+    readonly setFolder: (spaceId: string, id: string, folder: boolean, now?: number) => Promise<Page>;
     readonly delete: (
         spaceId: string,
         id: string,

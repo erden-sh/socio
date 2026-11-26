@@ -606,6 +606,7 @@ it('reads pages only in Spaces the person can read', async () => {
             id: runbook.id,
             parentId: null,
             title: 'Deploy runbook',
+            folder: false,
             url: `http://localhost/spaces/${ops.id}/pages/${runbook.id}`,
         },
     ]);
@@ -1407,4 +1408,55 @@ it('binds subscription recipients to the grant person and requires both board-re
         cancelSourceKind: 'agent',
         cancelSourceId: 'g-bob',
     });
+});
+
+it('creates folders and turns pages into folders and back, keeping their body (CB-426)', async () => {
+    const { connect, workspace } = await fixture();
+    const [everyday] = workspace.spaces();
+    const spaceId = everyday!.id;
+    const { call } = await connect(actorFor('bob', ['pages:read', 'pages:write']));
+
+    const folder = await call('create_page', { spaceId, title: 'Projects', folder: true });
+    expect(folder.isError).toBe(false);
+    expect(folder.data).toMatchObject({ title: 'Projects', folder: true });
+    const page = await call('create_page', { spaceId, title: 'Plan', content: 'Steps.', parentId: folder.data.id });
+    expect(page.data.folder).toBe(false);
+
+    // list_pages and read_page say which is a folder.
+    const tree = await call('list_pages', { spaceId });
+    expect(tree.data.pages).toEqual([
+        expect.objectContaining({ id: folder.data.id, parentId: null, folder: true }),
+        expect.objectContaining({ id: page.data.id, parentId: folder.data.id, folder: false }),
+    ]);
+    expect((await call('read_page', { spaceId, pageId: folder.data.id })).data).toMatchObject({ folder: true });
+
+    // update_page with only folder turns the page into one; its body stays.
+    const turned = await call('update_page', {
+        spaceId,
+        pageId: page.data.id,
+        expectedRevision: page.data.revision,
+        folder: true,
+    });
+    expect(turned.isError).toBe(false);
+    expect(turned.data).toMatchObject({ folder: true, revision: (page.data.revision as number) + 1 });
+    expect(workspace.pages.get(spaceId, page.data.id as string)).toMatchObject({ folder: true, content: 'Steps.' });
+    // A stale revision is refused, as for any edit.
+    const stale = await call('update_page', {
+        spaceId,
+        pageId: page.data.id,
+        expectedRevision: page.data.revision,
+        folder: false,
+    });
+    expect(stale.isError).toBe(true);
+    // With a title, both change; back into a page shows the same body.
+    const back = await call('update_page', {
+        spaceId,
+        pageId: page.data.id,
+        expectedRevision: turned.data.revision,
+        title: 'Plan, again',
+        folder: false,
+    });
+    expect(back.data).toMatchObject({ title: 'Plan, again', folder: false });
+    const read = await call('read_page', { spaceId, pageId: page.data.id });
+    expect(read.data).toMatchObject({ title: 'Plan, again', content: 'Steps.', folder: false });
 });

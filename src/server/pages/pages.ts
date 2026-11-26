@@ -50,6 +50,11 @@ export const pageInput = z
         parentId: z.string().min(1).nullable().default(null),
         sourceUrl: z.string().max(2048).optional(),
         sourceTitle: z.string().max(300).optional(),
+        // CB-426: a folder is a page shown as a container of pages; its body is hidden, not dropped.
+        folder: z
+            .boolean()
+            .default(false)
+            .describe('Make it a folder: a page shown as a container of pages, its body hidden (not deleted).'),
     })
     .strict();
 export const pagePatch = z
@@ -309,6 +314,15 @@ export const pagesSchema: SchemaSet = {
             up: `ALTER TABLE pages ADD COLUMN sourceUrl TEXT;
       ALTER TABLE pages ADD COLUMN sourceTitle TEXT;`,
         },
+        {
+            // CB-426: a folder is a page marked as one. It shows its name and
+            // the pages inside it, and hides its body, which stays as it was:
+            // turning it back into a page shows the text again.
+            version: 14,
+            name: 'page folders',
+            phase: 'expand',
+            up: 'ALTER TABLE pages ADD COLUMN folder INTEGER NOT NULL DEFAULT 0',
+        },
     ],
 };
 /**
@@ -380,8 +394,10 @@ export class Pages implements PageStoreShape {
      * shows it (gone with its image file), rather than the bare id.
      */
     private pageOf = (row: unknown): Page => {
-        const { coverId, ...page } = unstamped(row as Omit<Page, 'cover'> & { coverId?: string | null });
-        return { ...page, cover: coverId ? this.coverView(coverId) : null };
+        const { coverId, folder, ...page } = unstamped(
+            row as Omit<Page, 'cover' | 'folder'> & { coverId?: string | null; folder?: number | boolean | null },
+        );
+        return { ...page, folder: !!folder, cover: coverId ? this.coverView(coverId) : null };
     };
     private tagOf = (row: unknown): PageTag => {
         const r = row as PageTag;
@@ -530,12 +546,13 @@ export class Pages implements PageStoreShape {
     tree(spaceId: string): PageTreeItem[] {
         this.requireSpace(spaceId);
         return this.db
-            .prepare(`SELECT id, parentId, title FROM pages WHERE spaceId=? AND ${LIVE} ORDER BY createdAt,id`)
+            .prepare(`SELECT id, parentId, title, folder FROM pages WHERE spaceId=? AND ${LIVE} ORDER BY createdAt,id`)
             .all(spaceId)
-            .map(({ id, parentId, title }) => ({
+            .map(({ id, parentId, title, folder }) => ({
                 id: String(id),
                 parentId: parentId === null ? null : String(parentId),
                 title: String(title),
+                folder: !!folder,
             }));
     }
     /**
@@ -547,14 +564,15 @@ export class Pages implements PageStoreShape {
         this.requireSpace(spaceId);
         return this.db
             .prepare(
-                `SELECT id, parentId, title, revision, createdAt FROM pages WHERE spaceId=? AND ${LIVE} ORDER BY createdAt,id`,
+                `SELECT id, parentId, title, folder, revision, createdAt FROM pages WHERE spaceId=? AND ${LIVE} ORDER BY createdAt,id`,
             )
             .all(spaceId)
-            .map(({ id, parentId, title, revision, createdAt }) => ({
+            .map(({ id, parentId, title, folder, revision, createdAt }) => ({
                 kind: 'page' as const,
                 id: String(id),
                 parentId: parentId === null ? null : String(parentId),
                 title: String(title),
+                folder: !!folder,
                 position: spaceItemKey(Number(createdAt), String(id)),
                 version: Number(revision),
             }));
@@ -779,6 +797,26 @@ export class Pages implements PageStoreShape {
             return { page: this.get(spaceId, id), previous: row.coverId };
         });
     }
+    /**
+     * Turns a live page into a folder or back into a page (CB-426). Only the
+     * mark changes: the title and body stay as they are, a folder's body
+     * hidden, so no revision of the text is kept. It is a new revision all
+     * the same, as a move within the Space is: everything that follows a
+     * page by its revision (other tabs' open page, the sidebar's items,
+     * Socio Mobile's sync) then sees the change, and an editor still open
+     * on the old revision elsewhere gets the usual conflict instead of
+     * saving over a page that became a folder. Already so, nothing changes.
+     */
+    setFolder(spaceId: string, id: string, folder: boolean, now = Date.now()): Promise<Page> {
+        return this.unit('set page folder', async () => {
+            const page = this.get(spaceId, id);
+            if (page.folder === folder) {
+                return page;
+            }
+            await this.repos.pages.folder(id, folder, now);
+            return this.get(spaceId, id);
+        });
+    }
     private parent(spaceId: string, parentId: string | null, id?: string) {
         const seen = new Set([id]);
         let cursor = parentId;
@@ -832,6 +870,7 @@ export class Pages implements PageStoreShape {
                 createdBy,
                 sourceUrl: data.sourceUrl ?? null,
                 sourceTitle: data.sourceTitle ?? null,
+                folder: data.folder,
             });
             await this.indexPage(spaceId, id, data.title, data.content);
         });

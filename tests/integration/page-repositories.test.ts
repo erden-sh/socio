@@ -98,6 +98,20 @@ it('adds, edits at a revision, moves and hides pages', async () => {
     await expect(repos.pages.insert(page())).rejects.toThrow();
 });
 
+it('marks a page as a folder and back as its next revision, keeping its text (CB-426)', async () => {
+    const { db, repos } = context();
+    const row = () => db.prepare("SELECT folder, title, content, revision, updatedAt FROM pages WHERE id='p1'").get();
+    await repos.pages.insert(page());
+    expect(row()).toMatchObject({ folder: 0, revision: 1 });
+    await repos.pages.folder('p1', true, 20);
+    expect(row()).toEqual({ folder: 1, title: 'Notes', content: '# Notes', revision: 2, updatedAt: 20 });
+    await repos.pages.folder('p1', false, 30);
+    expect(row()).toEqual({ folder: 0, title: 'Notes', content: '# Notes', revision: 3, updatedAt: 30 });
+    // Made as a folder.
+    await repos.pages.insert(page({ id: 'p2', folder: true }));
+    expect(db.prepare("SELECT folder FROM pages WHERE id='p2'").get()).toEqual({ folder: 1 });
+});
+
 it('keeps revisions and finds the latest by when it was replaced', async () => {
     const { db, repos } = context();
     expect(await repos.revisions.latest('p1')).toBeUndefined();

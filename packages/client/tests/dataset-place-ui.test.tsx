@@ -19,8 +19,8 @@ declare global {
 }
 
 const TREE: PageTreeItem[] = [
-    { id: 'p1', parentId: null, title: 'Plan' },
-    { id: 'p2', parentId: 'p1', title: 'Detail' },
+    { id: 'p1', parentId: null, title: 'Plan', folder: false },
+    { id: 'p2', parentId: 'p1', title: 'Detail', folder: false },
 ];
 const detail = (sharedSpaceId: string | null): DatasetDetail =>
     ({

@@ -50,6 +50,15 @@ export class SqlitePages extends SqliteRepository implements PageRepository {
         });
     }
 
+    folder(id: string, folder: boolean, now: number) {
+        return this.write('set page folder', async () => {
+            await this.db
+                .update(p)
+                .set({ folder, revision: sql`${p.revision} + 1`, updatedAt: now })
+                .where(and(eq(p.id, id), isNull(p.deletedAt)));
+        });
+    }
+
     hide(id: string, deletion: PageDeletion) {
         return this.write('delete page', async () => {
             await this.db

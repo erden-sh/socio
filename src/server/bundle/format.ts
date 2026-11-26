@@ -128,6 +128,8 @@ export const pageRecordSchema = z
         coverId: id.nullable(),
         sourceUrl: text(2048).nullable(),
         sourceTitle: text(300).nullable(),
+        /** A folder (CB-426); a bundle from before folders has none: a page. */
+        folder: z.boolean().default(false),
         tags: z.array(
             z.object({ tag: z.string().min(1).max(100), createdBy: id.nullable(), createdAt: time }).strict(),
         ),

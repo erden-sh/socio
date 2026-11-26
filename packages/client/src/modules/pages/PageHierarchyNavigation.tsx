@@ -1,9 +1,11 @@
-import { ChevronRight, FileText } from 'lucide-react';
+import { ChevronRight, FileText, Folder } from 'lucide-react';
 import { Link } from 'react-router';
 
 import type { HierarchyPage } from '@socio/shared/pages/page-hierarchy';
 
 import { spacePath } from './page-navigation';
+
+import { cn } from '@/lib/utils';
 
 /** The shell's ancestor crumbs are hidden on phones; retain their navigation here. */
 export function PageAncestorLinks({ pages }: { pages: HierarchyPage[] }) {
@@ -29,13 +31,22 @@ export function PageAncestorLinks({ pages }: { pages: HierarchyPage[] }) {
     );
 }
 
-export function PageChildLinks({ pages }: { pages: HierarchyPage[] }) {
+/** The pages under a page, or inside a folder (CB-426), each folder with its icon. */
+export function PageChildLinks({
+    pages,
+    title = 'Child pages',
+    className,
+}: {
+    pages: Array<HierarchyPage & { folder?: boolean }>;
+    title?: string;
+    className?: string;
+}) {
     if (!pages.length) {
         return null;
     }
     return (
-        <nav aria-label="Child pages" className="mt-8 min-w-0 border-t pt-5">
-            <h2 className="mb-2 text-sm font-semibold">Child pages</h2>
+        <nav aria-label={title} className={cn('mt-8 min-w-0 border-t pt-5', className)}>
+            <h2 className="mb-2 text-sm font-semibold">{title}</h2>
             <ul className="m-0 list-none divide-y p-0">
                 {pages.map((page) => (
                     <li key={page.id}>
@@ -43,7 +54,11 @@ export function PageChildLinks({ pages }: { pages: HierarchyPage[] }) {
                             to={spacePath(page.spaceId, page.id)}
                             className="flex min-h-11 min-w-0 items-center gap-2 rounded px-2 py-2 text-sm hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
                         >
-                            <FileText aria-hidden className="size-4 shrink-0" />
+                            {page.folder ? (
+                                <Folder aria-hidden className="size-4 shrink-0" />
+                            ) : (
+                                <FileText aria-hidden className="size-4 shrink-0" />
+                            )}
                             <span className="min-w-0 flex-1 [overflow-wrap:anywhere]">
                                 {page.title.trim() || 'Untitled page'}
                             </span>

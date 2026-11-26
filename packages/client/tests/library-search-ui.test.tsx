@@ -97,6 +97,7 @@ function page(id: string, title: string, excerpt: string, updatedAt = 1): PageSu
         sourceThreadId: null,
         createdBy: null,
         cover: null,
+        folder: false,
     };
 }
 

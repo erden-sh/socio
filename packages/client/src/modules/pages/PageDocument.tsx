@@ -1,4 +1,4 @@
-import { ArrowLeft, PanelLeft, Check, LoaderCircle, FileCode2 } from 'lucide-react';
+import { ArrowLeft, PanelLeft, Check, LoaderCircle, FileCode2, FolderPlus, Plus } from 'lucide-react';
 import { type ComponentProps, lazy, Suspense, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 import { pageAncestors, pageChildren } from '@socio/shared/pages/page-hierarchy';
@@ -18,6 +18,7 @@ import { EditorLoading } from './editor/EditorLoading';
 import { inspectMarkdown } from './editor/markdown';
 import { usePageAutosave } from './editor/use-page-autosave';
 import { MovePageDialog } from './MovePageDialog';
+import { NewFolderDialog } from './NewFolderDialog';
 import { PageIconButton } from './page-chrome';
 import { PageConversation } from './PageConversation';
 import { PageCoverArea } from './PageCover';
@@ -39,6 +40,8 @@ export function PageDocument({
     onHome,
     onOutline,
     onSubpage,
+    onNewFolder,
+    onFolder,
     onDeleted,
     onMoved,
     onDirty,
@@ -60,6 +63,10 @@ export function PageDocument({
     onHome: () => void;
     onOutline: () => void;
     onSubpage: () => void;
+    /** New folder inside this page or folder (CB-426), named in its dialog. */
+    onNewFolder?: (title: string) => Promise<unknown>;
+    /** Turned into a folder or back into a page here (CB-426), with the page the server sent. */
+    onFolder?: (page: Page) => void;
     onDeleted: (ids: string[]) => void;
     /** Moved to another Space (CB-142): where it is now, and every page that went. */
     onMoved: (page: Page, moved: string[]) => void;
@@ -96,6 +103,26 @@ export function PageDocument({
     // CB-281: "Create follow-up" from a Space finding, and the seed that opens
     // the page chat to ask for a goal (the goal destination).
     const [promote, setPromote] = useState(false);
+    const [naming, setNaming] = useState(false);
+    // A folder (CB-426) shows what it holds instead of its body, which it keeps: no editor is
+    // mounted, so nothing can save over the kept text.
+    const folder = page.folder;
+    const toggleFolder = async () => {
+        // A title typed a moment ago is saved first, as the page it was typed on.
+        if (!(await controller.flush(true))) {
+            setNotice('Save your changes before turning this page into a folder.');
+            return;
+        }
+        try {
+            const next = await api<Page>(`/spaces/${page.spaceId}/pages/${page.id}/folder`, 'PUT', {
+                folder: !folder,
+            });
+            onFolder?.(next);
+            setNotice('');
+        } catch (error) {
+            setNotice(error instanceof Error ? error.message : 'Could not change this page. Try again.');
+        }
+    };
     const [goalSeed, setGoalSeed] = useState<{
         prompt: string;
         dotId: string;
@@ -221,21 +248,31 @@ export function PageDocument({
                                 label: 'Save now · ⌘/Ctrl S',
                                 action: () => void controller.flush(true),
                             },
+                            ...(folder
+                                ? []
+                                : [
+                                      {
+                                          label: sourceMode ? 'Visual editor' : 'Markdown source',
+                                          action: () => {
+                                              if (sourceMode && !safety.supported) {
+                                                  setNotice(safety.reason ?? 'This document needs source mode.');
+                                                  return;
+                                              }
+                                              setSource(!sourceMode);
+                                          },
+                                      },
+                                  ]),
+                            // Whoever opens a page may edit it (no read-only page view); the
+                            // server checks again.
                             {
-                                label: sourceMode ? 'Visual editor' : 'Markdown source',
-                                action: () => {
-                                    if (sourceMode && !safety.supported) {
-                                        setNotice(safety.reason ?? 'This document needs source mode.');
-                                        return;
-                                    }
-                                    setSource(!sourceMode);
-                                },
+                                label: folder ? 'Turn into page' : 'Turn into folder',
+                                action: () => void toggleFolder(),
                             },
                             { label: 'Move within Space', action: () => setMove(!move) },
                             { label: 'Move to…', action: () => setMoveSpace(true) },
-                            { label: 'New subpage', action: onSubpage },
-                            { label: 'Create follow-up…', action: () => setPromote(true) },
-                            { label: 'Download Markdown', action: download },
+                            { label: folder ? 'New page inside' : 'New subpage', action: onSubpage },
+                            ...(folder ? [] : [{ label: 'Create follow-up…', action: () => setPromote(true) }]),
+                            ...(folder ? [] : [{ label: 'Download Markdown', action: download }]),
                             ...(page.sourceThreadId
                                 ? [
                                       {
@@ -362,7 +399,14 @@ export function PageDocument({
                                 onChange={(title) => controller.edit({ title })}
                             />
                         </div>
-                        {sourceMode ? (
+                        {folder ? (
+                            <FolderContents
+                                pages={children}
+                                kept={!!page.content.trim()}
+                                onNewPage={onSubpage}
+                                onNewFolder={onNewFolder && (() => setNaming(true))}
+                            />
+                        ) : sourceMode ? (
                             <>
                                 <div className="mt-0 mb-3 flex items-center gap-2 text-xs font-medium text-muted-foreground">
                                     <FileCode2 size={15} />
@@ -395,7 +439,10 @@ export function PageDocument({
                                 )}
                             </ClientOnly>
                         )}
-                        <PageChildLinks pages={children} />
+                        {!folder && <PageChildLinks pages={children} />}
+                        {onNewFolder && (
+                            <NewFolderDialog open={naming} onOpenChange={setNaming} onCreate={onNewFolder} />
+                        )}
                     </article>
                 </div>
             </div>
@@ -429,6 +476,48 @@ export function PageDocument({
                 />
             )}
         </section>
+    );
+}
+
+/**
+ * A folder's contents (CB-426) where a page has its body: the pages and
+ * folders inside it, New page and New folder, and a muted line when it
+ * still keeps text from when it was a page.
+ */
+function FolderContents({
+    pages,
+    kept,
+    onNewPage,
+    onNewFolder,
+}: {
+    pages: ComponentProps<typeof PageChildLinks>['pages'];
+    kept: boolean;
+    onNewPage: () => void;
+    onNewFolder?: () => void;
+}) {
+    return (
+        <div data-slot="folder-contents">
+            <div className="mb-2 flex flex-wrap items-center gap-2">
+                <Button size="sm" onClick={onNewPage}>
+                    <Plus /> New page
+                </Button>
+                {onNewFolder && (
+                    <Button size="sm" variant="outline" onClick={onNewFolder}>
+                        <FolderPlus /> New folder
+                    </Button>
+                )}
+            </div>
+            {pages.length ? (
+                <PageChildLinks pages={pages} title="In this folder" className="mt-4" />
+            ) : (
+                <p className="mt-6 text-sm text-muted-foreground">This folder is empty.</p>
+            )}
+            {kept && (
+                <p data-slot="folder-kept-text" className="mt-6 text-xs text-muted-foreground">
+                    This folder keeps its page text. Turn it back into a page to see it.
+                </p>
+            )}
+        </div>
     );
 }
 

@@ -103,9 +103,9 @@ it('gives the sidebar tree titles and parents only, the same to members and admi
     const tree = (await member.json()) as PageTreeItem[];
     // The list's order, with exactly the fields the tree renders.
     expect(tree).toEqual([
-        { id: plan.id, parentId: null, title: 'Plan' },
-        { id: child.id, parentId: plan.id, title: 'Child' },
-        { id: notes.id, parentId: null, title: 'Notes' },
+        { id: plan.id, parentId: null, title: 'Plan', folder: false },
+        { id: child.id, parentId: plan.id, title: 'Child', folder: false },
+        { id: notes.id, parentId: null, title: 'Notes', folder: false },
     ]);
     // Spaces are the team's: an admin gets the same; the view is the route's.
     expect(await json(alice(`/spaces/${space}/page-tree`))).toEqual(tree);

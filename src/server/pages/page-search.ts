@@ -185,6 +185,8 @@ interface Candidate {
     updatedAt: number;
     score: number;
     matched: 'word' | 'text';
+    /** A folder (CB-426): its body is hidden, so it gets no snippet. */
+    folder: boolean;
 }
 
 export class PageSearch {
@@ -229,7 +231,7 @@ export class PageSearch {
         }
         return this.db
             .prepare(
-                `SELECT s.id AS row, p.id, p.spaceId, p.title, p.updatedAt, f.rank AS score
+                `SELECT s.id AS row, p.id, p.spaceId, p.title, p.updatedAt, p.folder, f.rank AS score
          FROM ${table} f JOIN page_search s ON s.id = f.rowid JOIN pages p ON p.id = s.pageId
          WHERE ${table} MATCH ? AND f.rank MATCH 'bm25(${TITLE_WEIGHT}.0, 1.0)'
            AND +f.rowid IN (SELECT id FROM page_search WHERE spaceId IN (SELECT value FROM json_each(?)))
@@ -246,6 +248,7 @@ export class PageSearch {
                 updatedAt: Number(row.updatedAt),
                 score: Number(row.score),
                 matched: table === 'page_search_fts' ? 'word' : 'text',
+                folder: !!row.folder,
             }));
     }
 
@@ -366,8 +369,10 @@ export class PageSearch {
             );
     }
 
-    private snippets(hits: Candidate[], words: string[]): Map<number, SnippetPart[]> {
+    private snippets(all: Candidate[], words: string[]): Map<number, SnippetPart[]> {
         const out = new Map<number, SnippetPart[]>();
+        // A folder's body is hidden (CB-426): it still matches, by its title too, but shows none.
+        const hits = all.filter((hit) => !hit.folder);
         // `+rowid`: a filter on the matches, not a MATCH per row (2 to 4 times
         // faster on long queries).
         const byWord = hits.filter((hit) => hit.matched === 'word');

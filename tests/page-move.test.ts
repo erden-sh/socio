@@ -130,9 +130,9 @@ it('moves a page with its subpages to another Space, keeping ids, history, searc
         createdBy: 'bob',
     });
     expect(workspace.pages.tree(to)).toEqual([
-        { id: plan.id, parentId: null, title: 'Garden plan' },
-        { id: beds.id, parentId: plan.id, title: 'Beds' },
-        { id: path.id, parentId: beds.id, title: 'Path' },
+        { id: plan.id, parentId: null, title: 'Garden plan', folder: false },
+        { id: beds.id, parentId: plan.id, title: 'Beds', folder: false },
+        { id: path.id, parentId: beds.id, title: 'Path', folder: false },
     ]);
     expect(workspace.pages.list(from).map((page) => page.id)).toEqual([other.id]);
     // History stays with the page; a move keeps no revision of its own.
@@ -289,6 +289,7 @@ it('lets a socio move a page only between Spaces it was granted, for its person'
         title: 'Notes',
         parentId: null,
         revision: 2,
+        folder: false,
         url: `/spaces/${to}/pages/${page.id}`,
         from,
         subpagesMoved: 0,

@@ -82,6 +82,7 @@ const PAGE: Page = {
     cover: null,
     sourceUrl: null,
     sourceTitle: null,
+    folder: false,
 };
 
 function pageServer() {

@@ -199,22 +199,52 @@ export function SpaceWorkspace({
         );
         setOpen((current) => (current?.id === id ? { ...current, cover } : current));
     }, []);
+    // Turned into a folder or back into a page here (CB-426): a new revision of the page with the
+    // same title and body, so the list and the open page take it as a save's answer, and the
+    // sidebar hears of it at once.
+    const foldered = useCallback(
+        (next: Page) => {
+            saved(next);
+            setSeed(
+                (current) =>
+                    current && {
+                        ...current,
+                        pages: current.pages.map((item) => (item.id === next.id ? pageSummary(next) : item)),
+                    },
+            );
+            notifyPagesChanged(space.id);
+        },
+        [saved, space.id],
+    );
+    /** Makes a page, or a folder named `title` (CB-426), under `parentId`. */
+    const make = async (parentId: string | null, folder?: { title: string }) => {
+        const next = await api<Page>(`/spaces/${space.id}/pages`, 'POST', {
+            title: folder?.title ?? 'Untitled page',
+            content: '',
+            parentId,
+            ...(folder ? { folder: true } : {}),
+        });
+        created.current.set(next.id, polls.current.started);
+        setPages((previous) => [...previous, pageSummary(next)]);
+        setSeed(
+            (current) =>
+                current && { ...current, pages: [...current.pages, pageSummary(next)], total: current.total + 1 },
+        );
+        notifyPagesChanged(space.id);
+        return next;
+    };
     const create = async (parentId: string | null) => {
         try {
-            const next = await api<Page>(`/spaces/${space.id}/pages`, 'POST', {
-                title: 'Untitled page',
-                content: '',
-                parentId,
-            });
-            created.current.set(next.id, polls.current.started);
-            setPages((previous) => [...previous, pageSummary(next)]);
+            const next = await make(parentId);
             setOpen(next);
-            notifyPagesChanged(space.id);
             onPage(next.id);
         } catch (e) {
             setError(e instanceof Error ? e.message : 'Could not create page.');
         }
     };
+    // A new folder stays where the person is: it shows among the pages there (its dialog says
+    // why one was refused).
+    const createFolder = (parentId: string | null, title: string) => make(parentId, { title });
     // After a delete: drop the pages here, refresh the sidebar, and leave a
     // deleted page for the Space's library (no unsaved-draft prompt: the
     // draft went with the page).
@@ -288,6 +318,7 @@ export function SpaceWorkspace({
                     hasCovers={seeded ? seeded.hasCovers : pages.some((item) => item.cover)}
                     onPage={onPage}
                     onNew={(parentId) => void create(parentId)}
+                    onNewFolder={createFolder}
                     onDeleted={removed}
                     tabs={<SpaceTabs space={space} />}
                 />
@@ -317,6 +348,8 @@ export function SpaceWorkspace({
                         onHome={() => onPage()}
                         onOutline={() => setOutline(!outline)}
                         onSubpage={() => void create(page.id)}
+                        onNewFolder={(title) => createFolder(page.id, title)}
+                        onFolder={foldered}
                         onDeleted={removed}
                         onMoved={moved}
                         onDirty={onDirty}

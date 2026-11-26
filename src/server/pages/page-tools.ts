@@ -159,8 +159,8 @@ export function pageAccess(
         list: (requested?: string) =>
             workspace.pages
                 .list(resolve(requested))
-                .map(({ id, spaceId, title, parentId, revision }) =>
-                    linked({ id, spaceId, title, parentId, revision }),
+                .map(({ id, spaceId, title, parentId, revision, folder }) =>
+                    linked({ id, spaceId, title, parentId, revision, folder }),
                 ),
         read: async (id: string, requested?: string) => {
             const page = workspace.pages.get(resolve(requested), id);
@@ -224,6 +224,7 @@ export function pageAccess(
                     title: page.title,
                     parentId: page.parentId,
                     revision: page.revision,
+                    folder: page.folder,
                 }),
                 from,
                 subpagesMoved: moved.length - 1,
@@ -316,7 +317,8 @@ export function pageTools(access: ReturnType<typeof pageAccess>) {
         }),
         defineTool({
             name: 'list_space_pages',
-            description: 'List pages in your authorized Space. Return internal page links when helpful.',
+            description:
+                'List pages in your authorized Space. folder: true marks a folder, a page shown as a container of the pages under it, its body hidden (not deleted). Return internal page links when helpful.',
             parameters: z.object(scope),
             execute: async ({ spaceId }) => access.list(spaceId),
         }),
@@ -342,7 +344,7 @@ export function pageTools(access: ReturnType<typeof pageAccess>) {
         defineTool({
             name: 'create_space_page',
             description:
-                'Create a Markdown page in this Space when the user requests a document. Write quotes as Markdown blockquotes (lines starting with "> "), never as HTML such as <blockquote>: the page editor cannot show raw HTML.',
+                'Create a Markdown page in this Space when the user requests a document; folder: true makes a folder instead, a page shown as a container for pages under it (parentId), its body hidden, not deleted. Write quotes as Markdown blockquotes (lines starting with "> "), never as HTML such as <blockquote>: the page editor cannot show raw HTML.',
             parameters: pageInput.extend(scope),
             execute: async ({ spaceId, ...input }) => access.create(input, spaceId),
         }),

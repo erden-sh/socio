@@ -298,6 +298,7 @@ export function agentMcpServer({
         spaceId: page.spaceId,
         parentId: page.parentId,
         title: page.title,
+        folder: page.folder,
         revision: page.revision,
         updatedAt: new Date(page.updatedAt).toISOString(),
         url: pageUrl(page.spaceId, page.id),
@@ -628,7 +629,7 @@ export function agentMcpServer({
     tool(
         'list_pages',
         {
-            description: `List one Space’s pages: id, title and parent, as its page tree. ${UNTRUSTED}`,
+            description: `List one Space’s pages: id, title, parent and folder, as its page tree. A folder is a page shown as a container of the pages under it; its body is hidden, not deleted. ${UNTRUSTED}`,
             inputSchema: { spaceId: z.string().min(1).max(100) },
             annotations: READ,
         },
@@ -679,7 +680,7 @@ export function agentMcpServer({
     tool(
         'read_page',
         {
-            description: `Read one page’s Markdown, by its Space and id (from search_pages or list_pages). ${UNTRUSTED}`,
+            description: `Read one page’s Markdown, by its Space and id (from search_pages or list_pages). folder: true means people see it as a container of the pages under it, its body hidden but kept. ${UNTRUSTED}`,
             inputSchema: {
                 spaceId: z.string().min(1).max(100),
                 pageId: z.string().min(1).max(100),
@@ -693,6 +694,7 @@ export function agentMcpServer({
                 spaceId: page.spaceId,
                 parentId: page.parentId,
                 title: page.title,
+                folder: page.folder,
                 content: page.content,
                 revision: page.revision,
                 updatedAt: new Date(page.updatedAt).toISOString(),
@@ -704,7 +706,7 @@ export function agentMcpServer({
     tool(
         'create_page',
         {
-            description: `Create a page in a Space the person you act for may edit, only when they asked you to. Same rule as the web: anyone who can read the Space may edit its pages; a private Space only for its members; a deleted Space is not found. title is required. content is Markdown (stored as the editor would save it, at most ${PAGE_BODY_MAX} characters). parentId, when set, must be a page in that same Space. Returns the new page’s id and url. The page is theirs. ${UNTRUSTED}`,
+            description: `Create a page in a Space the person you act for may edit, only when they asked you to. Same rule as the web: anyone who can read the Space may edit its pages; a private Space only for its members; a deleted Space is not found. title is required. content is Markdown (stored as the editor would save it, at most ${PAGE_BODY_MAX} characters). parentId, when set, must be a page in that same Space. folder: true makes a folder: a page shown as a container of the pages under it, its body hidden, not deleted. Returns the new page’s id and url. The page is theirs. ${UNTRUSTED}`,
             inputSchema: {
                 spaceId: z.string().min(1).max(100),
                 title: z.string().trim().min(1).max(160),
@@ -716,13 +718,14 @@ export function agentMcpServer({
                     .nullable()
                     .optional()
                     .describe('A page in the same Space to nest this one under. Omit for the top of the Space.'),
+                folder: z.boolean().optional().describe('Create a folder instead of a page. Omit for a page.'),
             },
             annotations: WRITE,
         },
-        async ({ spaceId, title, content, parentId }) => {
+        async ({ spaceId, title, content, parentId, folder }) => {
             const page = await workspace.pages.create(
                 editable(spaceId),
-                { title, content: pageMarkdown(content), parentId: parentId ?? null },
+                { title, content: pageMarkdown(content), parentId: parentId ?? null, folder: folder ?? false },
                 null,
                 person.id,
             );
@@ -732,7 +735,7 @@ export function agentMcpServer({
     tool(
         'update_page',
         {
-            description: `Replace a page’s title and/or Markdown body, or move it under another parent in the same Space, only when the person you act for asked you to. Pass only the fields to change, plus expectedRevision from read_page or the last write; if the page changed since, this fails and nothing is saved. content replaces the whole body (use append_page to add to it) and is stored as the editor would save it. Same edit rule as the web. ${UNTRUSTED}`,
+            description: `Replace a page’s title and/or Markdown body, or move it under another parent in the same Space, only when the person you act for asked you to. Pass only the fields to change, plus expectedRevision from read_page or the last write; if the page changed since, this fails and nothing is saved. content replaces the whole body (use append_page to add to it) and is stored as the editor would save it. folder: true turns the page into a folder (a container of the pages under it, its body hidden, not deleted), false back into a page. Same edit rule as the web. ${UNTRUSTED}`,
             inputSchema: {
                 spaceId: z.string().min(1).max(100),
                 pageId: z.string().min(1).max(100),
@@ -754,21 +757,39 @@ export function agentMcpServer({
                     .nullable()
                     .optional()
                     .describe('A page in the same Space, or null for the top of the Space.'),
+                folder: z
+                    .boolean()
+                    .optional()
+                    .describe('true: a folder, its body hidden but kept; false: a page again.'),
             },
             annotations: WRITE,
         },
-        async ({ spaceId, pageId, expectedRevision, title, content, parentId }) => {
-            const page = await workspace.pages.update(
-                editable(spaceId),
-                pageId,
-                {
-                    expectedRevision,
-                    ...(title !== undefined ? { title } : {}),
-                    ...(content !== undefined ? { content: pageMarkdown(content) } : {}),
-                    ...(parentId !== undefined ? { parentId } : {}),
-                },
-                { by: person.id },
-            );
+        async ({ spaceId, pageId, expectedRevision, title, content, parentId, folder }) => {
+            const id = editable(spaceId);
+            // A call that only sets `folder` changes nothing else, so no edit.
+            const edits =
+                folder === undefined || title !== undefined || content !== undefined || parentId !== undefined;
+            let page = edits
+                ? await workspace.pages.update(
+                      id,
+                      pageId,
+                      {
+                          expectedRevision,
+                          ...(title !== undefined ? { title } : {}),
+                          ...(content !== undefined ? { content: pageMarkdown(content) } : {}),
+                          ...(parentId !== undefined ? { parentId } : {}),
+                      },
+                      { by: person.id },
+                  )
+                : workspace.pages.get(id, pageId);
+            if (folder !== undefined) {
+                // Only the mark, as the web's Turn into folder: a stale revision is
+                // refused as for any edit.
+                if (!edits && page.revision !== expectedRevision) {
+                    throw new PageError('This page changed. Reload the latest revision before saving your draft.', 409);
+                }
+                page = await workspace.pages.setFolder(id, pageId, folder);
+            }
             return written(page);
         },
     );

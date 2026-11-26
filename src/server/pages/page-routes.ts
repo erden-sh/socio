@@ -28,6 +28,8 @@ const coverInput = z.union([
     z.object({ fileId: z.string().min(1).max(200) }).strict(),
     z.object({ embedId: z.string().min(1).max(200) }).strict(),
 ]);
+/** `PUT …/folder` (CB-426): whether the page is a folder. */
+const folderInput = z.object({ folder: z.boolean() }).strict();
 /**
  * What the page routes use (it was `PagesPlatform` in
  * `platform-needs.ts`): the HTTP composition builds it where it mounts them.
@@ -276,6 +278,21 @@ export function pageRoutes(platform: PageRouteServices) {
             });
         }
         return c.json({ previous });
+    });
+    // A folder or a page (CB-426): whoever may edit the page turns it into a
+    // folder, which shows the pages inside it and hides its body, or back
+    // into a page. The body is never changed: it shows again as a page.
+    app.put('/spaces/:spaceId/pages/:id/folder', async (c) => {
+        const spaceId = readable(c);
+        const data = folderInput.safeParse(await c.req.json().catch(() => null));
+        if (!data.success) {
+            return c.json({ error: 'Say whether the page is a folder.' }, 400);
+        }
+        const userId = c.get('user').id;
+        if (!platform.workspace.pages.canEdit(userId, spaceId)) {
+            return c.json({ error: 'You can’t edit pages in that Space.' }, 403);
+        }
+        return c.json(await platform.workspace.pages.setFolder(spaceId, c.req.param('id'), data.data.folder));
     });
     // A picture for a page (CB-358): one of the person's own image files,
     // made into an image of the Space exactly as a cover is (media's

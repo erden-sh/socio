@@ -57,7 +57,7 @@ const PRIVATE: PrivateItemsResponse = {
         },
     ],
 };
-const TREE: PageTreeItem[] = [{ id: 'p1', parentId: null, title: 'Roadmap' }];
+const TREE: PageTreeItem[] = [{ id: 'p1', parentId: null, title: 'Roadmap', folder: false }];
 let requests: string[] = [];
 let root: Root;
 let host: HTMLElement;
