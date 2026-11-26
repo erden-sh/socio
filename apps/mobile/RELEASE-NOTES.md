@@ -5,7 +5,7 @@ build's "What to Test" in TestFlight (AGENTS.md, Versions). An entry is `## <ver
 <YYYY-MM-DD>)`, or `(build pending)` until it is uploaded, then a short **What to test** list in plain
 words, grouped by screen.
 
-## 0.2.7 (build pending)
+## 0.2.7 (build 3806, 2026-11-26)
 
 Your three notes on 0.2.6, editing in datasets, and a newer foundation under the app.
 
