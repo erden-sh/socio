@@ -2,13 +2,16 @@
  * What other features may know of the cloud connection: the deployment's
  * identity at the cloud services' issuer (docs/specs/CLOUD-SERVICES-PROTOCOL.md).
  * Its tags, the slice of the service they call, and plain types and
- * constants. It imports only `effect`, and holds no logic.
+ * constants. It imports only `effect` and the shared view types, and holds
+ * no logic.
  *
  * Not here, on purpose: `CloudService`, `cloudFromEnv`, the key and the
  * issuer's client. The layer (`cloud/layer.ts`) and the composition build
  * them (`composition/cloud.ts`, `index.ts`).
  */
 import { Context } from 'effect';
+
+import type { CloudStatus } from '@socio/shared/cloud';
 
 // ── Plain types and constants ─────────────────────────────────────────────
 
@@ -35,34 +38,7 @@ export interface CloudEnvironment {
     replaceLost?: boolean;
 }
 
-/**
- * How the deployment stands with the issuer:
- *
- * - `off`: turned off by the environment.
- * - `not-connected`: no identity for this issuer. Nothing is sent.
- * - `connected`: it holds a key the issuer knows.
- * - `paused`: the issuer holds back tokens until its staff confirm a changed origin.
- * - `revoked`: the issuer refused the key. Nothing more is sent until it enrolls again.
- * - `lost`: an identity is stored, but its seal can't be opened (the data key changed).
- */
-export type CloudConnection = 'off' | 'not-connected' | 'connected' | 'paused' | 'revoked' | 'lost';
-
-/** `hosted` or `self-hosted`, as the issuer assigned it; the app never chooses. */
-export type DeploymentMode = 'hosted' | 'self-hosted';
-
-/** The connection, for the server's own use and its admins; never a key or a token. */
-export interface CloudStatus {
-    connection: CloudConnection;
-    issuer: string;
-    /** The deployment id the issuer gave at registration (`dep_…`). */
-    deploymentId?: string;
-    deploymentMode?: DeploymentMode;
-    /** What the issuer lets the deployment do, as it last said. */
-    scopes: readonly string[];
-    /** When it enrolled, and when the issuer last answered a sync (ms). */
-    enrolledAt?: number;
-    lastSyncAt?: number;
-}
+export type { CloudConnection, CloudStatus, DeploymentMode } from '@socio/shared/cloud';
 
 // ── The service ──────────────────────────────────────────────────────────
 

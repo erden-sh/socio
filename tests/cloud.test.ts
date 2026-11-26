@@ -6,13 +6,17 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
+import { Hono } from 'hono';
 import { afterEach, describe, expect, it } from 'vitest';
 
+import type { AppEnv } from '@socio/foundation/http/app-env';
 import { SecretBox } from '@socio/foundation/keys/secret-box';
 import { loadSecretFiles } from '@socio/foundation/keys/secret-files';
+import type { User } from '@socio/shared/types';
 
 import { CLOUD_IDENTITY_SETTING } from '../src/server/cloud/contract.js';
 import { cloudService } from '../src/server/cloud/layer.js';
+import { cloudRoutes } from '../src/server/cloud/routes.js';
 import type { CloudService } from '../src/server/cloud/service.js';
 import { cloudFromEnv } from '../src/server/cloud/settings.js';
 
@@ -600,5 +604,78 @@ describe('two runtimes on one database', () => {
         // B sees A's identity and uses it.
         expect(b.cloud.status().connection).toBe('connected');
         expect(await b.cloud.token(PUSH)).toMatch(/^at_/);
+    });
+    it('shows the last sync on every runtime, not only the one that synced', async () => {
+        const issuer = fakeIssuer();
+        const path = database();
+        const { token } = issuer.provision();
+        const a = setup({ path, issuer, env: { SOCIO_CLOUD_ENROLLMENT_TOKEN: token } });
+        const b = setup({ path, issuer });
+        await a.cloud.work();
+        const synced = a.cloud.status().lastSyncAt;
+        expect(synced).toBeGreaterThan(0);
+        expect(b.cloud.status()).toMatchObject({ connection: 'connected', lastSyncAt: synced });
+    });
+
+    it('shows a sync’s pause on the other runtime until it gets a token again', async () => {
+        const issuer = fakeIssuer();
+        const path = database();
+        const { token } = issuer.provision();
+        let now = Date.now();
+        const a = setup({ path, issuer, now: () => now, env: { SOCIO_CLOUD_ENROLLMENT_TOKEN: token } });
+        const b = setup({ path, issuer, now: () => now });
+        await a.cloud.work();
+        // A day on, A's sync says the issuer holds the deployment for review.
+        issuer.syncStatus = 'paused';
+        now += 25 * 60 * 60_000;
+        await a.cloud.work();
+        expect(b.cloud.status().connection).toBe('paused');
+        // Staff confirmed it: B gets a token, and the stored pause is over for it.
+        issuer.syncStatus = 'active';
+        now += 1;
+        expect(await b.cloud.token(PUSH)).toMatch(/^at_/);
+        expect(b.cloud.status().connection).toBe('connected');
+    });
+});
+
+describe('GET /api/cloud', () => {
+    function serve(cloud: CloudService, user: User) {
+        const app = new Hono<AppEnv>();
+        app.use('*', async (c, next) => {
+            c.set('user', user);
+            await next();
+        });
+        app.route('/api', cloudRoutes(cloud));
+        return app;
+    }
+    const ADA: User = { id: 'ada', name: 'Ada', role: 'admin' };
+    const BOB: User = { id: 'bob', name: 'Bob', role: 'member' };
+
+    it('refuses members', async () => {
+        const { cloud } = await enrolled();
+        const answer = await serve(cloud, BOB).request('/api/cloud');
+        expect(answer.status).toBe(403);
+        expect(JSON.stringify(await answer.json())).not.toContain('dep_');
+    });
+
+    it('shows an admin the connection, and never a key or a token', async () => {
+        const { cloud, deploymentId, token } = await enrolled();
+        await cloud.token(PUSH);
+        const answer = await serve(cloud, ADA).request('/api/cloud');
+        expect(answer.status).toBe(200);
+        const text = await answer.text();
+        const body = JSON.parse(text) as Record<string, unknown>;
+        expect(Object.keys(body).sort()).toEqual(
+            ['connection', 'deploymentId', 'deploymentMode', 'enrolledAt', 'issuer', 'lastSyncAt', 'scopes'].sort(),
+        );
+        expect(body).toMatchObject({ connection: 'connected', issuer: ISSUER, deploymentId });
+        expect(text).not.toContain(token);
+        expect(text).not.toMatch(/"d"|privateJwk|"kid"|at_/);
+    });
+
+    it('shows a deployment that is not connected as such, with nothing else', async () => {
+        const { cloud } = setup();
+        const answer = await serve(cloud, ADA).request('/api/cloud');
+        expect(await answer.json()).toEqual({ connection: 'not-connected', issuer: ISSUER, scopes: [] });
     });
 });

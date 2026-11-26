@@ -1,12 +1,14 @@
 import type { ServerModule } from '../modules/contract.js';
 
 import { Cloud } from './contract.js';
+import { cloudRoutes } from './routes.js';
 
 /**
  * The cloud connection (docs/specs/CLOUD-SERVICES-PROTOCOL.md §3.1): the
- * deployment's identity at the cloud services' issuer. It has no routes and
- * no tables: the identity is one sealed secret setting, so an older build
- * can still open the database.
+ * deployment's identity at the cloud services' issuer. It has no tables: the
+ * identity is one sealed secret setting, so an older build can still open
+ * the database. Its one route, `GET /api/cloud` (admins), is the Cloud
+ * connection card's view on the Platform page.
  *
  * Its tick, on the leader only, enrolls with provisioning's token when one
  * is set and syncs once a day. The first run comes a minute after start,
@@ -15,6 +17,7 @@ import { Cloud } from './contract.js';
  */
 export const cloudModule: ServerModule = {
     id: 'cloud',
+    routes: ({ services }) => cloudRoutes(services.get(Cloud)),
     start: ({ services }) => services.get(Cloud).resume(),
     tick: {
         everyMs: 60_000,

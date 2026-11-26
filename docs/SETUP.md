@@ -1344,6 +1344,8 @@ A deployment can hold an identity at Socio's cloud services, which later feature
 
 **Using it.** The server asks the issuer for an access token per service, with a signed assertion and no secret, keeps it in memory only and renews it at 80% of its life. Once a day, and right after enrolling, it syncs: its version, its origin (the first of `APP_ORIGIN`) and a fingerprint (a hash of the origin and an id made once), nothing about people, counts or content. If the issuer refuses the key, the server stops calling, tells the admins once and keeps that across restarts; a new token enrolls it again. If the data key that sealed the identity is gone, the server logs "Cloud connection lost" and sends nothing, even with a token still set: that is most likely the token already spent, and the record of it is what was lost. To recover, put a new token from provisioning in place and set `SOCIO_CLOUD_REPLACE_LOST=true` for that start; the new key replaces the old one. On a shutdown or a leader handover, the server waits for an enrollment in flight to be stored before it closes the database.
 
+**Seeing it.** Admins see the connection on the Platform page's **Cloud connection** card (`GET /api/cloud`, admins only): its state (connected, not connected, paused, revoked, identity lost or off), the issuer, the deployment id and mode, what the issuer lets it use, and when it enrolled and last synced, with what to do when it is revoked or lost. Every server runtime shows the same last sync, since it is kept with the sealed identity. The card never shows the key, a token or the enrollment token.
+
 ## Development checks
 
 ```sh
