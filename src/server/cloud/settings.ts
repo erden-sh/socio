@@ -47,6 +47,10 @@ export function cloudFromEnv(env: Record<string, string | undefined>): CloudEnvi
     if (replaceLost === 'true') {
         config.replaceLost = true;
     }
+    const reports = env.SOCIO_CLOUD_REPORTS_ORIGIN?.trim();
+    if (reports) {
+        config.reportsOrigin = issuerOrigin(reports, 'SOCIO_CLOUD_REPORTS_ORIGIN');
+    }
     const token = env.SOCIO_CLOUD_ENROLLMENT_TOKEN?.trim();
     if (token && token.toLowerCase() !== 'none') {
         // A header value: one line of visible ASCII. Never echoed.
@@ -56,4 +60,26 @@ export function cloudFromEnv(env: Record<string, string | undefined>): CloudEnvi
         config.enrollmentToken = token;
     }
     return config;
+}
+
+/**
+ * The reports collector's origin (CB-382): `SOCIO_CLOUD_REPORTS_ORIGIN`
+ * when set, else the issuer's sibling, as the issuer names its services
+ * (`https://cloud.socio.sh` → `https://reports.socio.sh`,
+ * `https://cloud-staging.socio.sh` → `https://reports-staging.socio.sh`).
+ * Undefined for an issuer whose host doesn't start with `cloud` (a local
+ * one on loopback): then reports aren't available until the variable names
+ * the collector.
+ */
+export function reportsOrigin(config: Pick<CloudEnvironment, 'issuer' | 'reportsOrigin'>): string | undefined {
+    if (config.reportsOrigin) {
+        return config.reportsOrigin;
+    }
+    const url = new URL(config.issuer);
+    const sibling = /^cloud(-[a-z0-9-]+)?\./.exec(url.hostname);
+    if (!sibling) {
+        return undefined;
+    }
+    url.hostname = `reports${sibling[1] ?? ''}.${url.hostname.slice(sibling[0].length)}`;
+    return url.origin;
 }

@@ -22,6 +22,7 @@ import type { ModelChoice } from '@socio/shared/inference';
 
 import { SuggestionsRepo, type ChatNameRoutesDeps } from '../../chat-name-suggestions/contract.js';
 import { chatNameRoutes } from '../../chat-name-suggestions/routes.js';
+import { ReplyReports } from '../../cloud/contract.js';
 import { reactionRoutes } from '../../context/reaction-routes.js';
 import { steeringRoutes } from '../../context/steering-routes.js';
 import { dotAdminRoutes } from '../../dots/dot-admin.js';
@@ -34,6 +35,7 @@ import { replayMessages } from '../../replay/replay.js';
 import { roomReads } from '../../rooms/read-state.js';
 import { roomReaderEvents } from '../../rooms/reader-events.js';
 import { soulRoutes } from '../../souls/soul-routes.js';
+import { Releases } from '../../updates/contract.js';
 import { Dictation } from '../../voice/contract.js';
 import type { VoiceService } from '../../voice/voice.js';
 import { historyRoutes } from '../../workspace/chat-history.js';
@@ -73,6 +75,8 @@ function makeWorkspaceSlice(services: AppEdge['services']) {
     const conversations = get(ConversationAdmin);
     const turns = get(AppTurns);
     const status = get(AppStatus);
+    const replyReports = get(ReplyReports);
+    const releases = get(Releases);
     // The delegations return the service's own promise, not an `async`
     // wrapper's, so each settles on the same microtask as the service's.
     return {
@@ -102,6 +106,10 @@ function makeWorkspaceSlice(services: AppEdge['services']) {
         plugins: get(LegacyPlugins),
         chatNamesRepo: get(SuggestionsRepo),
         dictationStreams: get(Dictation),
+        // AI reply reports (CB-382): the reactions file them, the workspace view says whether they are on.
+        reports: replyReports,
+        replyReports,
+        version: () => releases.data().version,
         /** Whether the server is draining (CB-37): its late port, read when a request runs. */
         get draining() {
             return ports.draining.get();

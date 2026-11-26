@@ -9,6 +9,9 @@
  */
 import { Effect, Layer } from 'effect';
 
+import type { ReplyReportsState } from '@socio/shared/chat/reply-reports';
+
+import { ReplyReports } from '../cloud/contract.js';
 import { Plugins } from '../plugins/contract.js';
 import { EventReplayLive } from '../replay/layer.js';
 import { Reads } from '../rooms/contract.js';
@@ -37,6 +40,8 @@ export interface ViewSourcePlatform {
     adminSetup: WorkspaceViewSourcesShape['adminSetup'];
     statusEpoch: WorkspaceViewSourcesShape['statusEpoch'];
     transcriptionSources: WorkspaceViewSourcesShape['transcriptionSources'];
+    /** The AI reply reports' state (CB-382), `cloud/`'s `ReplyReports`. */
+    readonly replyReports?: { state(): ReplyReportsState };
 }
 
 /** The boot step's store's members the views read (`WorkspaceStore`). */
@@ -84,6 +89,7 @@ export function viewSourcesOf(
         statusEpoch: () => platform.statusEpoch(),
         transcriptionSources: () => platform.transcriptionSources(),
         dictationStreams: { recordingsOnly: (provider) => platform.dictationStreams.recordingsOnly(provider) },
+        replyReports: () => platform.replyReports?.state() ?? null,
     });
 }
 
@@ -106,6 +112,7 @@ const ViewSourcesLive = Layer.effect(
             adminSetup: () => status.adminSetup(),
             statusEpoch: () => status.statusEpoch(),
             transcriptionSources: () => status.transcriptionSources(),
+            replyReports: yield* ReplyReports,
         };
         const reads = yield* Reads;
         const plugins = yield* Plugins;

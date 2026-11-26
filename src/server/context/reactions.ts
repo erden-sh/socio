@@ -3,9 +3,10 @@ import type { DatabaseSync } from 'node:sqlite';
 import { writeSoon } from '@socio/data/open';
 import type { DotTurn } from '@socio/foundation/turns/turn';
 import { OPPOSITE, REACTION_EMOJI, type MessageReactions, type ReactionKind } from '@socio/shared/chat/reactions';
+import type { ReportRemoval } from '@socio/shared/chat/reply-reports';
 import type { TraceReactions } from '@socio/shared/runs/run-trace';
 
-import type { ReactionRow, ReactionsShape } from './contract.js';
+import type { ReactionReportsShape, ReactionRow, ReactionsShape } from './contract.js';
 
 /**
  * Reactions on a Dot's messages (CB-133): one row per person, message and
@@ -19,7 +20,17 @@ export const NOTE_MAX = 20;
 export const EXCERPT_CHARS = 60;
 
 export class MessageReactionStore implements ReactionsShape {
+    private reports?: Pick<ReactionReportsShape, 'withdraw' | 'marks'>;
     constructor(private db: DatabaseSync) {}
+    /**
+     * The reply reports (CB-382), which the composition attaches once it
+     * has built them: a thumbs-down removed here, from any path (the web,
+     * the app, Telegram, a thumbs-up replacing it), withdraws its report in
+     * the same synchronous step.
+     */
+    attachReports(reports: Pick<ReactionReportsShape, 'withdraw' | 'marks'>) {
+        this.reports = reports;
+    }
     /** Adds one (again is fine); a thumbs up removes the same person's thumbs down. */
     add(
         threadId: string,
@@ -28,11 +39,9 @@ export class MessageReactionStore implements ReactionsShape {
         kind: ReactionKind,
         message: { at?: number; text: string },
         now = Date.now(),
-    ) {
+    ): ReportRemoval | undefined {
         const opposite = OPPOSITE[kind];
-        if (opposite) {
-            this.remove(threadId, messageId, userId, opposite);
-        }
+        const withdrawn = opposite ? this.remove(threadId, messageId, userId, opposite) : undefined;
         this.db
             .prepare(
                 `INSERT OR IGNORE INTO message_reactions (threadId, messageId, userId, kind, createdAt, messageAt, excerpt)
@@ -47,11 +56,13 @@ export class MessageReactionStore implements ReactionsShape {
                 message.at ?? null,
                 message.text.replace(/\s+/g, ' ').trim().slice(0, EXCERPT_CHARS),
             );
+        return withdrawn;
     }
-    remove(threadId: string, messageId: string, userId: string, kind: ReactionKind) {
+    remove(threadId: string, messageId: string, userId: string, kind: ReactionKind): ReportRemoval | undefined {
         this.db
             .prepare('DELETE FROM message_reactions WHERE threadId=? AND messageId=? AND userId=? AND kind=?')
             .run(threadId, messageId, userId, kind);
+        return kind === 'down' ? this.reports?.withdraw(threadId, messageId, userId) : undefined;
     }
     /** The thread's messages that have reactions, as `userId` sees them. */
     view(threadId: string, userId: string): Record<string, MessageReactions> {
@@ -64,6 +75,15 @@ export class MessageReactionStore implements ReactionsShape {
             entry.counts[row.kind] = (entry.counts[row.kind] ?? 0) + 1;
             if (row.userId === userId) {
                 entry.mine.push(row.kind);
+            }
+        }
+        // The reader's own reports (CB-382), on the replies they still react to.
+        if (userId && this.reports) {
+            for (const [messageId, report] of Object.entries(this.reports.marks(threadId, userId))) {
+                const entry = messages[messageId];
+                if (entry?.mine.includes('down')) {
+                    entry.report = report;
+                }
             }
         }
         return messages;

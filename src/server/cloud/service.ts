@@ -245,7 +245,7 @@ export class CloudService implements CloudShape {
         return this.metadata.value;
     }
 
-    async token(audience: string): Promise<string | undefined> {
+    async token(audience: string, options: { renew?: boolean } = {}): Promise<string | undefined> {
         let resource: string;
         try {
             // A service is named by its origin (§2.3), under the issuer's own rules for one.
@@ -259,6 +259,10 @@ export class CloudService implements CloudShape {
         }
         const slot = `${identity.clientId}\n${identity.key.kid}\n${resource}`;
         const now = this.now();
+        if (options.renew) {
+            // The service refused it: never offered again, whatever its age.
+            this.tokens.delete(slot);
+        }
         const cached = this.tokens.get(slot);
         if (cached && now < cached.renewAt) {
             return cached.token;

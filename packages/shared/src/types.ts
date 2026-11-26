@@ -829,6 +829,12 @@ export interface WorkspaceState {
      * itself. Missing (an older server): none.
      */
     permissions?: WorkspacePermissions;
+    /**
+     * Whether a thumbs-down may carry an AI reply report (CB-382,
+     * docs/specs/REPLY-REPORTS.md §1): `null` when sharing is off or this
+     * server can't share. Missing (an older server): the same as `null`.
+     */
+    replyReports?: import('./chat/reply-reports.js').ReplyReportsState;
 }
 
 /** `WorkspaceState.permissions`. */

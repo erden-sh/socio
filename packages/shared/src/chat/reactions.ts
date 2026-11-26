@@ -5,6 +5,8 @@
  * Dot on its next turn as one short structured note, and the Learning
  * analysis reads them as evidence.
  */
+import type { ReportMark } from './reply-reports.js';
+
 export const REACTIONS = ['up', 'down', 'retry', 'needs-work'] as const;
 export type ReactionKind = (typeof REACTIONS)[number];
 
@@ -38,6 +40,8 @@ export interface MessageReactions {
     counts: Partial<Record<ReactionKind, number>>;
     /** The reader's own. */
     mine: ReactionKind[];
+    /** The reader's own report on this reply, if they made one (CB-382). */
+    report?: ReportMark;
 }
 
 /** `GET /api/conversations/:id/reactions`: the messages that have any. */

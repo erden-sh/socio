@@ -25,6 +25,13 @@ import { Context } from 'effect';
 import type { NotesAudience, TimeMarker } from '@socio/foundation/context/time-markers';
 import type { ToolImageSource } from '@socio/foundation/turns/tool-images';
 import type { MessageReactions, ReactionKind } from '@socio/shared/chat/reactions';
+import type {
+    ReplyReportsState,
+    ReportMark,
+    ReportOutcome,
+    ReportReason,
+    ReportRemoval,
+} from '@socio/shared/chat/reply-reports';
 import type { QueuedMessage } from '@socio/shared/chat/steering';
 import type { ContextSettings, NotesSelection } from '@socio/shared/context-settings';
 import type { InferenceCapabilities } from '@socio/shared/inference';
@@ -408,8 +415,13 @@ export interface ReactionsShape {
         kind: ReactionKind,
         message: { at?: number; text: string },
         now?: number,
-    ): void;
-    remove(threadId: string, messageId: string, userId: string, kind: ReactionKind): void;
+    ): ReportRemoval | undefined;
+    /**
+     * Removes one. Removing a thumbs-down (or replacing it with a thumbs-up,
+     * in `add`) withdraws the person's report on that reply (CB-382): what it
+     * answers is what became of it, when there was one.
+     */
+    remove(threadId: string, messageId: string, userId: string, kind: ReactionKind): ReportRemoval | undefined;
     /** The thread's messages that have reactions, as `userId` sees them. */
     view(threadId: string, userId: string): Record<string, MessageReactions>;
     /** Reactions no turn was told about yet, oldest first. */
@@ -421,6 +433,61 @@ export interface ReactionsShape {
 }
 
 export class Reactions extends Context.Service<Reactions, ReactionsShape>()('socio/context/Reactions') {}
+
+// ── AI reply reports (CB-382, docs/specs/REPLY-REPORTS.md) ─────────────────
+
+/** What the reaction route gathered about a confirmed report, before it is redacted and sealed. */
+export interface ReactionReportInput {
+    threadId: string;
+    messageId: string;
+    userId: string;
+    /** The consent the person confirmed under (`ReplyReportsState.consent`). */
+    consent: string;
+    reason: ReportReason;
+    /** Trimmed; at most `REPORT_NOTE_MAX` code points. */
+    note?: string;
+    /** The reply's text as shown, and when it was written. */
+    reply: { text: string; at?: number };
+    /** The message it answered, as text (attachments as `[attachment: …]`), and whether it is another person's. */
+    prompt?: { text: string; byOther: boolean };
+    model?: string;
+    /** The socio that wrote the reply: only its hash leaves. */
+    socioId?: string;
+    surface?: 'web' | 'mobile' | 'telegram';
+    appVersion?: string;
+}
+
+/** A report ready to queue: its id and sealed body, made outside the reaction's unit of work. */
+export interface PreparedReactionReport {
+    readonly id: string;
+    readonly threadId: string;
+    readonly messageId: string;
+    readonly userId: string;
+    readonly consent: string;
+    readonly sealed: string;
+    readonly createdAt: number;
+}
+
+/**
+ * What the reactions ask of the reply reports, which `cloud/` (above
+ * context in the folder order) implements as its `ReplyReports`. `file`
+ * and `withdraw` are synchronous writes on the workspace connection, so the
+ * reaction's own unit of work holds them with the reaction row.
+ */
+export interface ReactionReportsShape {
+    /** Whether reports are shared now, and under which consent. */
+    state(): ReplyReportsState;
+    /** This person's report on this reply, if one exists. */
+    mark(threadId: string, messageId: string, userId: string): ReportMark | undefined;
+    /** This person's reports in a conversation, by reply. */
+    marks(threadId: string, userId: string): Record<string, ReportMark>;
+    /** Redacts, cuts, hashes and seals the report's body. */
+    prepare(input: ReactionReportInput): Promise<PreparedReactionReport>;
+    /** Queues it, after checking sharing, consent and an existing report again. */
+    file(report: PreparedReactionReport): ReportOutcome;
+    /** The thumbs-down went: an unsent report is deleted (`withdrawn`), a sent one stays (`kept`). */
+    withdraw(threadId: string, messageId: string, userId: string): ReportRemoval | undefined;
+}
 
 /** A Dot's stored reply, the only kind of message a reaction is for. */
 export interface DotReply {

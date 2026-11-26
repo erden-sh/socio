@@ -15,7 +15,7 @@ import type { Ask } from '../ask/contract.js';
 import type { Capabilities } from '../capabilities/contract.js';
 import type { ClassifyConfig } from '../classify/contract.js';
 import type { ClassifyHost } from '../classify/tags.js';
-import type { Cloud } from '../cloud/contract.js';
+import type { Cloud, ReplyReports } from '../cloud/contract.js';
 import type { ComputerRecords, Computers } from '../computers/contract.js';
 import type { ContextConfig, ChatNotes, SharedChats } from '../context/contract.js';
 import type { CycleUpkeep } from '../cycles/contract.js';
@@ -173,6 +173,7 @@ export type ModuleHookServices =
     | Domains
     | Updates
     | Cloud
+    | ReplyReports
     | SecretsAdmin
     | Tools
     | McpConnectionsService

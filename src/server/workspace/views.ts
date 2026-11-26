@@ -71,6 +71,8 @@ export function workspaceViews(
                 plugins: sources.plugins.launcher(user),
                 // What this person may do, from their role and the settings.
                 permissions: workspacePermissions(user),
+                // Whether a thumbs-down may carry an AI reply report (CB-382).
+                replyReports: sources.replyReports?.() ?? null,
             };
         },
         /**
@@ -122,7 +124,9 @@ export function workspaceViews(
             const unread = await sources.reads.version(user.id);
             // What the person may do follows an admin's settings, which no counter covers.
             const permissions = workspacePermissions(user);
-            return `${JSON.stringify(user)}|${counters}|${unread}|${sources.statusEpoch()}|${JSON.stringify(dictation)}|${JSON.stringify(permissions)}`;
+            // Reply reports' sharing and consent follow an admin's setting and the cloud connection, which no counter covers.
+            const replyReports = sources.replyReports?.() ?? null;
+            return `${JSON.stringify(user)}|${counters}|${unread}|${sources.statusEpoch()}|${JSON.stringify(dictation)}|${JSON.stringify(permissions)}|${JSON.stringify(replyReports)}`;
         },
     };
 }

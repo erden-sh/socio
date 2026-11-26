@@ -18,7 +18,7 @@ import type { WorkspaceSettingsShape } from '../settings/contract.js';
 import type { RunnerShape } from '../turns/contract.js';
 import type { ConversationsShape, PeopleShape, SociosShape } from '../workspace/contract.js';
 
-import type { SteeringQueue, WaitingTurnsShape } from './contract.js';
+import type { ReactionReportsShape, SteeringQueue, WaitingTurnsShape } from './contract.js';
 
 /**
  * Whether a conversation came from Telegram: `telegram/`'s
@@ -83,7 +83,15 @@ export type RoutesWorkspace = Pick<ConversationsShape, 'thread' | 'access' | 'al
 /** What the reactions' routes read (`reaction-routes.ts`, CB-133). */
 export interface ReactionRouteSources {
     readonly workspace: Pick<RoutesWorkspace, 'db' | 'readableThread' | 'access'>;
-    readonly runner: Pick<RunnerShape, 'rowsMentioning'>;
+    readonly runner: Pick<RunnerShape, 'rowsMentioning' | 'messages' | 'runTrace'>;
+    /**
+     * The AI reply reports (CB-382): `cloud/`'s `ReplyReports`, by the slice
+     * stated in the contract (cloud is above context in the folder order).
+     * None: a thumbs-down is never a report.
+     */
+    readonly reports?: ReactionReportsShape;
+    /** The running build's version: a web report's `appVersion`. */
+    version?(): string;
 }
 
 /** What the steering routes read (`steering-routes.ts`, CB-151). */

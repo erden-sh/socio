@@ -72,6 +72,9 @@ const KNOWN = new Map<string, number>([
     // `transaction()` with the notes and facts.
     ['src/server/context/notes.ts', 5],
     ['src/server/context/reactions.ts', 3],
+    // CB-382: the reply reports' outbox and setting, every write inside a
+    // `transaction()`, or inside the reaction's own (`file`, `withdraw`).
+    ['src/server/cloud/reply-reports.ts', 15],
     // CB-215: a room admin's cancel of someone else's queued message, inside
     // `transaction()` as the others are.
     ['src/server/context/steering.ts', 8],

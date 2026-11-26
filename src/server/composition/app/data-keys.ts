@@ -24,7 +24,7 @@ import type { UpdateService } from '../../updates/service.js';
 import type { TranscriptionKeys } from '../../voice/transcription.js';
 import type { WorkspaceSecrets } from '../../workspace-secrets/service.js';
 import { LegacyConfig, LegacyModuleContext, LegacyWorkspace } from '../base.js';
-import { CloudConnectionService } from '../cloud.js';
+import { CloudConnectionService, ReplyReportsConnectionService } from '../cloud.js';
 import type { PlatformConfig } from '../config.js';
 import { LegacyData } from '../dataspace.js';
 import { LegacyGitHub } from '../github.js';
@@ -76,6 +76,8 @@ export interface DataKeySources {
     readonly transcriptionKeys: Pick<TranscriptionKeys, 'sealStates' | 'reseal'>;
     readonly updates: Pick<UpdateService, 'sealStates' | 'reseal'>;
     readonly cloud: Pick<CloudService, 'sealStates' | 'reseal'>;
+    /** The reply reports' hash key and unsent bodies (CB-382). */
+    readonly replyReports?: Pick<CloudService, 'sealStates' | 'reseal'>;
     readonly mcpConnections: Pick<McpConnections, 'sealStates' | 'reseal'>;
     readonly workspaceSecrets: Pick<WorkspaceSecrets, 'sealStates' | 'reseal'>;
     /** Scheduled backups, read at the moment of use (their late-bound port). */
@@ -115,10 +117,14 @@ export class DataKeys implements DataKeyAdminShape {
             backups: this.sources.backups()?.sealStates() ?? { current: 0, previous: 0, legacy: 0, unknown: 0 },
             'push-keys': await this.sources.notifications.push.sealStates(),
             'dispatch-credentials': await github.sealStates(),
-            // The transcription key, the release feed's token and the cloud connection's identity.
+            // The transcription key, the release feed's token, the cloud connection's identity
+            // and the reply reports' hash key and unsent bodies.
             'settings-secrets': addStates(
                 addStates(this.sources.transcriptionKeys.sealStates(), this.sources.updates.sealStates()),
-                this.sources.cloud.sealStates(),
+                addStates(
+                    this.sources.cloud.sealStates(),
+                    this.sources.replyReports?.sealStates() ?? { current: 0, previous: 0, legacy: 0, unknown: 0 },
+                ),
             ),
             'mcp-credentials': mcpConnections.sealStates(),
             'workspace-secrets': workspaceSecrets.sealStates(),
@@ -199,6 +205,7 @@ export class DataKeys implements DataKeyAdminShape {
             this.sources.mcpConnections,
             this.sources.updates,
             this.sources.cloud,
+            ...(this.sources.replyReports ? [this.sources.replyReports] : []),
             this.sources.workspaceSecrets,
         ];
         for (const store of stores) {
@@ -338,6 +345,7 @@ const DataKeyAdminLive = Layer.effect(
                 transcriptionKeys: yield* LegacyTranscriptionKeys,
                 updates: yield* LegacyUpdates,
                 cloud: yield* CloudConnectionService,
+                replyReports: yield* ReplyReportsConnectionService,
                 mcpConnections: yield* LegacyMcpConnections,
                 workspaceSecrets: yield* LegacyWorkspaceSecrets,
                 backups: () => ports.backups.peek(),
