@@ -71,8 +71,7 @@ export function CloudConnectionCard() {
                     {status && <Badge variant={VARIANT[status.connection]}>{LABEL[status.connection]}</Badge>}
                 </CardTitle>
                 <CardDescription>
-                    This server’s identity at Ingenio’s cloud services, which it uses for the push relay, release
-                    updates and, if you turn it on, sharing AI reply reports.
+                    This server’s identity at Ingenio’s cloud services. Nothing uses it yet beyond its own daily sync.
                 </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-3 text-sm">
