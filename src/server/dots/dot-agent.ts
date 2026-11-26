@@ -1002,6 +1002,9 @@ export class DotAgentCore extends AbstractAgent {
                                 }),
                             ),
                     });
+                    // A server tool input that fails its schema: traced, and only
+                    // numbers and booleans sent as text repaired, never `null`.
+                    const inputRepair = this.services.turns.toolInputRepair((entry) => tracer.toolInput(entry));
                     tracer.start({
                         label: model.label,
                         model: model.model,
@@ -1172,10 +1175,11 @@ export class DotAgentCore extends AbstractAgent {
                                         // TanStack AI 1.x defaults: server tools start together
                                         // and failing inputs are coerced to the schema. Socio's
                                         // tools run one at a time, in call order, and an invalid
-                                        // input goes back to the model as an error.
+                                        // input goes back to the model as an error, unless
+                                        // inputRepair reads its numbers and booleans sent as text.
                                         toolExecution: 'sequential',
                                         repairToolInput: false,
-                                        middleware: [rounds.middleware, steer, proseCheck],
+                                        middleware: [rounds.middleware, steer, proseCheck, inputRepair],
                                         // Never let library logs carry conversation content.
                                         debug: modelDebug,
                                         tools: tracer.tools([
