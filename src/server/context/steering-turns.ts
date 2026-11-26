@@ -5,6 +5,7 @@ import type { Message } from '@ag-ui/client';
 import { senderMetadata, senderOf, type MessageSender } from '@socio/foundation/workspace/client-messages';
 import type { QueuedMessage } from '@socio/shared/chat/steering';
 import { compareText } from '@socio/shared/locale';
+import { attachmentPart } from '@socio/shared/media/refs';
 
 import type { WaitingTurnsShape, SteeringQueue } from './contract.js';
 import type { SteeringTurnSources } from './sources.js';
@@ -23,12 +24,9 @@ export const queuedMessage = ({ id, text, attachments }: QueuedMessage, sender: 
         content: attachments?.length
             ? [
                   ...(text.trim() ? [{ type: 'text' as const, text }] : []),
-                  ...attachments.map((ref) => ({
-                      type: 'binary' as const,
-                      id: ref.id,
-                      mimeType: ref.mediaType,
-                      filename: ref.name,
-                  })),
+                  ...attachments.map((ref) =>
+                      attachmentPart({ id: ref.id, mimeType: ref.mediaType, filename: ref.name }),
+                  ),
               ]
             : text,
     }) as Message;

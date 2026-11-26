@@ -3,6 +3,7 @@ import type { Message } from '@ag-ui/core';
 import type { HistoryRun } from '@socio/shared/chat/chat-history';
 import { STEERING_MAX_CHARS } from '@socio/shared/chat/steering';
 import type { AttachmentRef } from '@socio/shared/media-types';
+import { attachmentIds, attachmentPart } from '@socio/shared/media/refs';
 import type { LiveTurn } from '@socio/shared/rooms/live-turn';
 import { AG_UI_EVENT } from '@socio/shared/runs/event-types';
 
@@ -195,7 +196,7 @@ export function followStoredChats(
 export const steeringPath = (threadId: string) => `/api/conversations/${encodeURIComponent(threadId)}/steering`;
 const conversationPath = (threadId: string) => `/api/conversations/${encodeURIComponent(threadId)}`;
 
-/** The AG-UI message a row carries: its text, and its files as references (shared's `AttachmentPart`). */
+/** The AG-UI message a row carries: its text, and its files as references (shared's `attachmentPart`). */
 export function chatMessage(id: string, payload: Pick<ChatMessagePayload, 'text' | 'attachments'>): Message {
     const files = payload.attachments ?? [];
     if (files.length === 0) {
@@ -206,12 +207,7 @@ export function chatMessage(id: string, payload: Pick<ChatMessagePayload, 'text'
         role: 'user',
         content: [
             ...(payload.text.trim() ? [{ type: 'text' as const, text: payload.text }] : []),
-            ...files.map((file) => ({
-                type: 'binary' as const,
-                id: file.id,
-                mimeType: file.mediaType,
-                filename: file.name,
-            })),
+            ...files.map((file) => attachmentPart({ id: file.id, mimeType: file.mediaType, filename: file.name })),
         ],
     } as Message;
 }
@@ -361,12 +357,7 @@ const textOf = (content: Message['content']): string => {
         .join('\n');
 };
 
-const fileIds = (content: Message['content']): string[] =>
-    Array.isArray(content)
-        ? (content as { type?: unknown; id?: unknown }[])
-              .filter((part) => part?.type === 'binary' && typeof part.id === 'string')
-              .map((part) => part.id as string)
-        : [];
+const fileIds = (content: Message['content']): string[] => attachmentIds(content);
 
 const sameFiles = (a: readonly string[], b: readonly string[]) =>
     a.length === b.length && a.every((id, index) => id === b[index]);

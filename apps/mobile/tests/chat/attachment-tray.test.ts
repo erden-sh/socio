@@ -1,6 +1,7 @@
 import type { Message } from '@ag-ui/core';
 import { describe, expect, it } from 'vitest';
 
+import { attachmentPart } from '@socio/shared/media/refs';
 import { NO_LIVE_TURN } from '@socio/shared/rooms/live-turn';
 
 import {
@@ -275,6 +276,16 @@ describe('a message’s files', () => {
         ]);
         expect(viewerImages(files)).toEqual([{ id: att(1), name: 'shot.png', local: null }]);
         expect(messageFiles({ content: 'text' } as Message)).toEqual([]);
+        // The AG-UI 1.0 media parts the server and the apps write now read the same.
+        const written = [
+            { type: 'text', text: 'Look' },
+            attachmentPart({ id: att(1), mimeType: 'image/png', filename: 'shot.png' }),
+            attachmentPart({ id: att(2), mimeType: 'application/pdf', filename: 'spec.pdf' }),
+            // Bytes inline, or a file another provider issued: not references.
+            { type: 'image', source: { type: 'data', value: 'AAAA', mimeType: 'image/png' } },
+            { type: 'image', source: { type: 'file', value: att(3), provider: 'openai', mimeType: 'image/png' } },
+        ];
+        expect(messageFiles({ content: written } as unknown as Message)).toEqual(files);
     });
 
     it('draws a message with files and no text, and a pending one from its copies', () => {

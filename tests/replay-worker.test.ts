@@ -218,8 +218,10 @@ describe('equivalence with the whole replay', () => {
         const rows = stateful.flatMap((row) => replayableEvents('thread', row));
         const whole = await replaySnapshot('thread', compactEvents(rows));
         const head = await replaySnapshot('thread', compactEvents(rows.slice(0, rows.length - 6)));
-        expect(head.state).toEqual({ extra: 'x' });
-        expect(whole.state).toEqual({ step: 3 });
+        // Since AG-UI 1.0 a RUN_STARTED whose input has no state keeps the
+        // state it found (before, it started each run from none).
+        expect(head.state).toEqual({ step: 1, list: [], extra: 'x' });
+        expect(whole.state).toEqual({ step: 3, list: [], extra: 'x' });
         expect(await replaySnapshot('thread', compactEvents(rows.slice(-6)), head)).toEqual(whole);
     });
 
@@ -505,4 +507,59 @@ describe('a worker that fails', () => {
         expect((await replayer.messages('k', 'thread', basic)).messages).toEqual(await replayRows('thread', basic));
         expect(replayer.threadId).toBe(first);
     });
+});
+
+// AG-UI 1.0 (deps/ag-ui-1): runs stored before it replay whole, their
+// attachments as the 1.0 media parts, nothing dropped.
+it('replays a run stored before AG-UI 1.0: a partial input, a binary attachment, THINKING_* events', async () => {
+    const t = 'thread';
+    const attachment = { id: 'cbatt_AAAAAAAAAAAAAAAAAAAAAA', mimeType: 'image/png', filename: 'shot.png' };
+    const old = [
+        {
+            type: EventType.RUN_STARTED,
+            threadId: t,
+            runId: 'r0',
+            // Before the runner wrote the input's ids.
+            input: {
+                messages: [
+                    {
+                        id: 'u0',
+                        role: 'user',
+                        metadata: { socioSender: 'alice' },
+                        content: [
+                            { type: 'text', text: 'look' },
+                            { type: 'binary', ...attachment },
+                        ],
+                    },
+                ],
+            },
+        },
+        { type: 'THINKING_START' },
+        { type: 'THINKING_TEXT_MESSAGE_START' },
+        { type: 'THINKING_TEXT_MESSAGE_CONTENT', delta: 'hmm' },
+        { type: 'THINKING_TEXT_MESSAGE_END' },
+        { type: 'THINKING_END' },
+        { type: EventType.TEXT_MESSAGE_START, messageId: 'a0', role: 'assistant' },
+        { type: EventType.TEXT_MESSAGE_CONTENT, messageId: 'a0', delta: 'a chart' },
+        { type: EventType.TEXT_MESSAGE_END, messageId: 'a0' },
+        { type: EventType.RUN_FINISHED, threadId: t, runId: 'r0' },
+    ];
+    const rows: StoredRunRow[] = [{ seq: 1, runId: 'r0', events: JSON.stringify(old) }];
+    const messages = await replayRows(t, rows);
+    expect(messages.find((message) => message.id === 'u0')).toEqual({
+        id: 'u0',
+        role: 'user',
+        metadata: { socioSender: 'alice' },
+        content: [
+            { type: 'text', text: 'look' },
+            {
+                type: 'image',
+                source: { type: 'file', value: attachment.id, provider: 'socio', mimeType: 'image/png' },
+                metadata: { filename: 'shot.png' },
+            },
+        ],
+    });
+    expect(messages.find((message) => message.id === 'a0')).toMatchObject({ role: 'assistant', content: 'a chart' });
+    // The stored row is never rewritten: the upgrade is the replay's.
+    expect(rows[0].events).toContain('"type":"binary"');
 });

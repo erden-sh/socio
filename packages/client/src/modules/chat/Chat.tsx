@@ -8,6 +8,7 @@ import type { HistoryRun } from '@socio/shared/chat/chat-history';
 import { mergeHistory } from '@socio/shared/chat/history-chain';
 import type { ModelChoice } from '@socio/shared/inference';
 import type { AttachmentRef } from '@socio/shared/media-types';
+import { attachmentPart } from '@socio/shared/media/refs';
 import type { Page } from '@socio/shared/pages/page-library';
 import { reconnectDelay, type Outcome } from '@socio/shared/reconnect';
 import { movedTimeZoneText } from '@socio/shared/time-zone';
@@ -624,12 +625,7 @@ export function Chat({
                                 },
                             ]
                           : []),
-                      ...refs.map((ref) => ({
-                          type: 'binary' as const,
-                          id: ref.id,
-                          mimeType: ref.mediaType,
-                          filename: ref.name,
-                      })),
+                      ...refs.map((ref) => attachmentPart({ id: ref.id, mimeType: ref.mediaType, filename: ref.name })),
                   ]
                 : text,
         };

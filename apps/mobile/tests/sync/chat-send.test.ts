@@ -6,6 +6,7 @@ import { type LiveTurn, NO_LIVE_TURN } from '@socio/shared/rooms/live-turn';
 import { chatLiveTurn } from '../../src/chat/composer';
 import {
     CHAT_WAIT,
+    chatMessage,
     chatMessageKind,
     chatMessageWrite,
     chatWaitCopy,
@@ -600,5 +601,29 @@ describe('a message in a private chat', () => {
                 { threadId: THREAD, message: { id: 'm-1', role: 'user', content: 'hi' }, serverId: null },
             ],
         ]);
+    });
+});
+
+describe('the message a row carries', () => {
+    it('refers to its files with AG-UI 1.0 media parts, never the pre-1.0 binary part', () => {
+        const file = {
+            id: 'cbatt_AAAAAAAAAAAAAAAAAAAAAA',
+            name: 'a.png',
+            mediaType: 'image/png',
+            size: 3,
+            kind: 'image',
+        };
+        expect(chatMessage('m-1', { text: 'see', attachments: [file as never] })).toEqual({
+            id: 'm-1',
+            role: 'user',
+            content: [
+                { type: 'text', text: 'see' },
+                {
+                    type: 'image',
+                    source: { type: 'file', value: file.id, provider: 'socio', mimeType: 'image/png' },
+                    metadata: { filename: 'a.png' },
+                },
+            ],
+        });
     });
 });

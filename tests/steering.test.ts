@@ -1068,11 +1068,11 @@ it('queues a message with an attachment while a turn runs; the round takes the t
             metadata: { socioSender: 'alice', socioSenderName: 'Alice' },
             content: [
                 { type: 'text', text: 'This is what I see.' },
+                // The 1.0 media part, never the pre-1.0 `binary` one.
                 {
-                    type: 'binary',
-                    id: shot.id,
-                    mimeType: 'image/png',
-                    filename: 'screenshot.png',
+                    type: 'image',
+                    source: { type: 'file', value: shot.id, provider: 'socio', mimeType: 'image/png' },
+                    metadata: { filename: 'screenshot.png' },
                 },
             ],
         }),
@@ -1123,7 +1123,7 @@ it('queues a message with an attachment while a turn runs; the round takes the t
     await f.idle();
     expect((await f.stored()).at(-2)).toMatchObject({
         id: alone.body.message.id,
-        content: [{ type: 'binary', id: pending.id }],
+        content: [{ type: 'image', source: { type: 'file', value: pending.id } }],
     });
 });
 

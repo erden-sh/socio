@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { EventType, type BaseEvent, type Message } from '@ag-ui/core';
 
 import { isApprovalNote } from '@socio/shared/approvals';
+import { upgradeMessageAttachments } from '@socio/shared/media/refs';
 import { pageReviewTool } from '@socio/shared/pages/page-review';
 import {
     SENDER_METADATA,
@@ -168,7 +169,9 @@ export const skippedReview = (toolCallId: string): Message =>
  * checked before as its own) is kept as written, with no sender. Results
  * come before the person's new messages, so none is stored after one of
  * them; it follows its call directly only when that call is the newest
- * stored message. Undefined when a message claims to be a voice call's receipt, which only
+ * stored message. A person's message's pre-1.0 attachment references are
+ * rewritten as AG-UI 1.0 media parts (`@socio/shared/media/refs`). Undefined
+ * when a message claims to be a voice call's receipt, which only
  * the server writes. A message with the id of one still in the chat's
  * steering queue (`queued`, CB-223) is refused: that id becomes the queued
  * message's once delivered, and a client never sends it first.
@@ -198,7 +201,14 @@ export async function acceptedMessages(
             if (message.id.startsWith(voiceReceiptMessagePrefix)) {
                 return undefined;
             }
-            said.push(isApprovalNote(message) ? withoutSender(message) : withSender(message, sender));
+            // A pre-1.0 attachment reference (the native app builds already
+            // shipped send one) becomes the 1.0 media part: CopilotKit's request
+            // parser drops the old shape, and the conversation stores the new.
+            said.push(
+                upgradeMessageAttachments(
+                    isApprovalNote(message) ? withoutSender(message) : withSender(message, sender),
+                ),
+            );
         } else if (message.role === 'tool') {
             open ??= new Set(await openCalls());
             if (!open.delete(message.toolCallId)) {

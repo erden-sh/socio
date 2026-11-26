@@ -2,7 +2,7 @@ import type { Message } from '@ag-ui/client';
 import { expect, it } from 'vitest';
 
 import { messageText, modelReadableMessages } from '@socio/foundation/turns/media-parts';
-import { displayContent } from '@socio/shared/media/refs';
+import { attachmentPart, displayContent } from '@socio/shared/media/refs';
 
 const image = {
     type: 'image',
@@ -37,6 +37,12 @@ it('keeps images for a vision model but still drops other media', () => {
     expect(JSON.stringify(out[2])).not.toContain('BBBB');
 });
 
+it('never hands a vision model an attachment reference as an image: resolving it comes first', () => {
+    const ref = attachmentPart({ id: 'cbatt_AAAAAAAAAAAAAAAAAAAAAA', mimeType: 'image/png', filename: 'shot.png' });
+    const [out] = modelReadableMessages([{ id: 'r', role: 'user', content: [ref] }] as unknown as Message[], 4);
+    expect(out.content).toEqual([{ type: 'text', text: expect.stringContaining('(image/png)') }]);
+});
+
 it('renders attachments as markers in display text', () => {
     expect(messageText(history[1].content)).toBe('look\n[image: image/jpeg]');
     expect(messageText(history[2].content)).toBe('[attachment: application/pdf]');
@@ -55,17 +61,29 @@ it('renders attachments as markers in display text', () => {
             { type: 'binary', id: 'cbatt_BBBBBBBBBBBBBBBBBBBBBB', mimeType: 'x/y' },
         ]),
     ).toBe('see these\n[attachment: shot.png]\n[attachment: x/y]');
+    // The 1.0 media part that refers to an attachment reads the same.
+    expect(
+        messageText([
+            { type: 'text', text: 'see these' },
+            attachmentPart({ id: 'cbatt_AAAAAAAAAAAAAAAAAAAAAA', mimeType: 'image/png', filename: 'shot.png' }),
+            attachmentPart({ id: 'cbatt_BBBBBBBBBBBBBBBBBBBBBB', mimeType: 'x/y' }),
+        ]),
+    ).toBe('see these\n[attachment: shot.png]\n[attachment: x/y]');
 });
 
-it('keeps references, never inline bytes, in a read-only transcript', () => {
-    const ref = {
-        type: 'binary',
-        id: 'cbatt_AAAAAAAAAAAAAAAAAAAAAA',
-        mimeType: 'image/png',
-        filename: 'shot.png',
-    };
-    const content = [{ type: 'text', text: 'see' }, image, ref];
-    expect(displayContent(content, messageText(content))).toEqual([{ type: 'text', text: 'see' }, ref]);
+it('keeps references, never inline bytes, in a read-only transcript, as 1.0 media parts', () => {
+    const ref = { id: 'cbatt_AAAAAAAAAAAAAAAAAAAAAA', mimeType: 'image/png', filename: 'shot.png' };
+    const written = attachmentPart(ref);
+    expect(written).toEqual({
+        type: 'image',
+        source: { type: 'file', value: ref.id, provider: 'socio', mimeType: 'image/png' },
+        metadata: { filename: 'shot.png' },
+    });
+    // Stored before AG-UI 1.0 (`binary`) or since: shown as the 1.0 part.
+    for (const stored of [{ type: 'binary', ...ref }, written]) {
+        const content = [{ type: 'text', text: 'see' }, image, stored];
+        expect(displayContent(content, messageText(content))).toEqual([{ type: 'text', text: 'see' }, written]);
+    }
     // Without references: the display text, as before.
     expect(displayContent(history[1].content, 'look')).toBe('look');
     expect(displayContent('plain', 'plain')).toBe('plain');
