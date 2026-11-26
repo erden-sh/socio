@@ -7,7 +7,7 @@
 # aren't open yet; the form handler and the analytics proxy join it there.
 #
 # The top level is for `wrangler dev --local`. `staging` and `production` are for the deploy
-# pipeline, which deploys them to the Ingenio Ventures Cloudflare account; nothing in this
+# pipeline, which deploys them to Socio's own Cloudflare account; nothing in this
 # repository deploys. Nothing here names the account: no account_id (the deploy pipeline passes
 # CLOUDFLARE_ACCOUNT_ID), no zone id, no key, no token. tests/wrangler-config.test.ts holds all of
 # this, in every environment.
