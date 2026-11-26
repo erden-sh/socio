@@ -89,7 +89,7 @@
             },
             {
                 "name": "create_space_page",
-                "description": "Create a Markdown page in this Space when the user requests a document. Write quotes as Markdown blockquotes (lines starting with \"> \"), never as HTML such as <blockquote>: the page editor cannot show raw HTML.",
+                "description": "Create a Markdown page in this Space when the user requests a document; folder: true makes a folder instead, a page shown as a container for pages under it (parentId), its body hidden, not deleted. Write quotes as Markdown blockquotes (lines starting with \"> \"), never as HTML such as <blockquote>: the page editor cannot show raw HTML.",
                 "parameters": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "type": "object",
@@ -102,12 +102,17 @@
                         },
                         "sourceUrl": { "type": "string", "maxLength": 2048 },
                         "sourceTitle": { "type": "string", "maxLength": 300 },
+                        "folder": {
+                            "default": false,
+                            "description": "Make it a folder: a page shown as a container of pages, its body hidden (not deleted).",
+                            "type": "boolean"
+                        },
                         "spaceId": {
                             "description": "Authorized Space ID. Defaults to the current page Space or the default destination.",
                             "type": "string"
                         }
                     },
-                    "required": ["title", "content", "parentId"],
+                    "required": ["title", "content", "parentId", "folder"],
                     "additionalProperties": false
                 }
             },
@@ -496,7 +501,7 @@
             },
             {
                 "name": "edit_space_page",
-                "description": "Edit a page using its current expectedRevision. On conflict read the new version first. Write quotes as Markdown blockquotes (\"> \"), not HTML <blockquote>. Preserve user content, including ```dataset-view blocks (embedded dataset views; add new ones with insert_dataset_view) and ```embed blocks (link cards; add new ones with unfurl_link).",
+                "description": "Edit a page using its current expectedRevision. On conflict read the new version first. folder: true turns it into a folder (its body hidden, not deleted), false back into a page. Write quotes as Markdown blockquotes (\"> \"), not HTML <blockquote>. Preserve user content, including ```dataset-view blocks (embedded dataset views; add new ones with insert_dataset_view) and ```embed blocks (link cards; add new ones with unfurl_link).",
                 "parameters": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "type": "object",
@@ -504,6 +509,7 @@
                         "title": { "type": "string", "minLength": 1, "maxLength": 160 },
                         "content": { "type": "string", "maxLength": 100000 },
                         "parentId": { "anyOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }] },
+                        "folder": { "type": "boolean" },
                         "expectedRevision": { "type": "integer", "exclusiveMinimum": 0, "maximum": 9007199254740991 },
                         "id": { "type": "string" },
                         "spaceId": {
@@ -883,7 +889,7 @@
             },
             {
                 "name": "list_space_pages",
-                "description": "List pages in your authorized Space. Return internal page links when helpful.",
+                "description": "List pages in your authorized Space. folder: true marks a folder, a page shown as a container of the pages under it, its body hidden (not deleted). Return internal page links when helpful.",
                 "parameters": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "type": "object",
@@ -1571,7 +1577,7 @@
             },
             {
                 "name": "create_space_page",
-                "description": "Create a Markdown page in this Space when the user requests a document. Write quotes as Markdown blockquotes (lines starting with \"> \"), never as HTML such as <blockquote>: the page editor cannot show raw HTML.",
+                "description": "Create a Markdown page in this Space when the user requests a document; folder: true makes a folder instead, a page shown as a container for pages under it (parentId), its body hidden, not deleted. Write quotes as Markdown blockquotes (lines starting with \"> \"), never as HTML such as <blockquote>: the page editor cannot show raw HTML.",
                 "parameters": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "type": "object",
@@ -1584,12 +1590,17 @@
                         },
                         "sourceUrl": { "type": "string", "maxLength": 2048 },
                         "sourceTitle": { "type": "string", "maxLength": 300 },
+                        "folder": {
+                            "default": false,
+                            "description": "Make it a folder: a page shown as a container of pages, its body hidden (not deleted).",
+                            "type": "boolean"
+                        },
                         "spaceId": {
                             "description": "Authorized Space ID. Defaults to the current page Space or the default destination.",
                             "type": "string"
                         }
                     },
-                    "required": ["title", "content", "parentId"],
+                    "required": ["title", "content", "parentId", "folder"],
                     "additionalProperties": false
                 }
             },
@@ -1978,7 +1989,7 @@
             },
             {
                 "name": "edit_space_page",
-                "description": "Edit a page using its current expectedRevision. On conflict read the new version first. Write quotes as Markdown blockquotes (\"> \"), not HTML <blockquote>. Preserve user content, including ```dataset-view blocks (embedded dataset views; add new ones with insert_dataset_view) and ```embed blocks (link cards; add new ones with unfurl_link).",
+                "description": "Edit a page using its current expectedRevision. On conflict read the new version first. folder: true turns it into a folder (its body hidden, not deleted), false back into a page. Write quotes as Markdown blockquotes (\"> \"), not HTML <blockquote>. Preserve user content, including ```dataset-view blocks (embedded dataset views; add new ones with insert_dataset_view) and ```embed blocks (link cards; add new ones with unfurl_link).",
                 "parameters": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "type": "object",
@@ -1986,6 +1997,7 @@
                         "title": { "type": "string", "minLength": 1, "maxLength": 160 },
                         "content": { "type": "string", "maxLength": 100000 },
                         "parentId": { "anyOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }] },
+                        "folder": { "type": "boolean" },
                         "expectedRevision": { "type": "integer", "exclusiveMinimum": 0, "maximum": 9007199254740991 },
                         "id": { "type": "string" },
                         "spaceId": {
@@ -2365,7 +2377,7 @@
             },
             {
                 "name": "list_space_pages",
-                "description": "List pages in your authorized Space. Return internal page links when helpful.",
+                "description": "List pages in your authorized Space. folder: true marks a folder, a page shown as a container of the pages under it, its body hidden (not deleted). Return internal page links when helpful.",
                 "parameters": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "type": "object",
@@ -3071,7 +3083,7 @@
             },
             {
                 "name": "create_space_page",
-                "description": "Create a Markdown page in this Space when the user requests a document. Write quotes as Markdown blockquotes (lines starting with \"> \"), never as HTML such as <blockquote>: the page editor cannot show raw HTML.",
+                "description": "Create a Markdown page in this Space when the user requests a document; folder: true makes a folder instead, a page shown as a container for pages under it (parentId), its body hidden, not deleted. Write quotes as Markdown blockquotes (lines starting with \"> \"), never as HTML such as <blockquote>: the page editor cannot show raw HTML.",
                 "parameters": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "type": "object",
@@ -3084,12 +3096,17 @@
                         },
                         "sourceUrl": { "type": "string", "maxLength": 2048 },
                         "sourceTitle": { "type": "string", "maxLength": 300 },
+                        "folder": {
+                            "default": false,
+                            "description": "Make it a folder: a page shown as a container of pages, its body hidden (not deleted).",
+                            "type": "boolean"
+                        },
                         "spaceId": {
                             "description": "Authorized Space ID. Defaults to the current page Space or the default destination.",
                             "type": "string"
                         }
                     },
-                    "required": ["title", "content", "parentId"],
+                    "required": ["title", "content", "parentId", "folder"],
                     "additionalProperties": false
                 }
             },
@@ -3478,7 +3495,7 @@
             },
             {
                 "name": "edit_space_page",
-                "description": "Edit a page using its current expectedRevision. On conflict read the new version first. Write quotes as Markdown blockquotes (\"> \"), not HTML <blockquote>. Preserve user content, including ```dataset-view blocks (embedded dataset views; add new ones with insert_dataset_view) and ```embed blocks (link cards; add new ones with unfurl_link).",
+                "description": "Edit a page using its current expectedRevision. On conflict read the new version first. folder: true turns it into a folder (its body hidden, not deleted), false back into a page. Write quotes as Markdown blockquotes (\"> \"), not HTML <blockquote>. Preserve user content, including ```dataset-view blocks (embedded dataset views; add new ones with insert_dataset_view) and ```embed blocks (link cards; add new ones with unfurl_link).",
                 "parameters": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "type": "object",
@@ -3486,6 +3503,7 @@
                         "title": { "type": "string", "minLength": 1, "maxLength": 160 },
                         "content": { "type": "string", "maxLength": 100000 },
                         "parentId": { "anyOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }] },
+                        "folder": { "type": "boolean" },
                         "expectedRevision": { "type": "integer", "exclusiveMinimum": 0, "maximum": 9007199254740991 },
                         "id": { "type": "string" },
                         "spaceId": {
@@ -3865,7 +3883,7 @@
             },
             {
                 "name": "list_space_pages",
-                "description": "List pages in your authorized Space. Return internal page links when helpful.",
+                "description": "List pages in your authorized Space. folder: true marks a folder, a page shown as a container of the pages under it, its body hidden (not deleted). Return internal page links when helpful.",
                 "parameters": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "type": "object",
@@ -4686,7 +4704,7 @@
             },
             {
                 "name": "create_space_page",
-                "description": "Create a Markdown page in this Space when the user requests a document. Write quotes as Markdown blockquotes (lines starting with \"> \"), never as HTML such as <blockquote>: the page editor cannot show raw HTML.",
+                "description": "Create a Markdown page in this Space when the user requests a document; folder: true makes a folder instead, a page shown as a container for pages under it (parentId), its body hidden, not deleted. Write quotes as Markdown blockquotes (lines starting with \"> \"), never as HTML such as <blockquote>: the page editor cannot show raw HTML.",
                 "parameters": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "type": "object",
@@ -4699,12 +4717,17 @@
                         },
                         "sourceUrl": { "type": "string", "maxLength": 2048 },
                         "sourceTitle": { "type": "string", "maxLength": 300 },
+                        "folder": {
+                            "default": false,
+                            "description": "Make it a folder: a page shown as a container of pages, its body hidden (not deleted).",
+                            "type": "boolean"
+                        },
                         "spaceId": {
                             "description": "Authorized Space ID. Defaults to the current page Space or the default destination.",
                             "type": "string"
                         }
                     },
-                    "required": ["title", "content", "parentId"],
+                    "required": ["title", "content", "parentId", "folder"],
                     "additionalProperties": false
                 }
             },
@@ -5093,7 +5116,7 @@
             },
             {
                 "name": "edit_space_page",
-                "description": "Edit a page using its current expectedRevision. On conflict read the new version first. Write quotes as Markdown blockquotes (\"> \"), not HTML <blockquote>. Preserve user content, including ```dataset-view blocks (embedded dataset views; add new ones with insert_dataset_view) and ```embed blocks (link cards; add new ones with unfurl_link).",
+                "description": "Edit a page using its current expectedRevision. On conflict read the new version first. folder: true turns it into a folder (its body hidden, not deleted), false back into a page. Write quotes as Markdown blockquotes (\"> \"), not HTML <blockquote>. Preserve user content, including ```dataset-view blocks (embedded dataset views; add new ones with insert_dataset_view) and ```embed blocks (link cards; add new ones with unfurl_link).",
                 "parameters": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "type": "object",
@@ -5101,6 +5124,7 @@
                         "title": { "type": "string", "minLength": 1, "maxLength": 160 },
                         "content": { "type": "string", "maxLength": 100000 },
                         "parentId": { "anyOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }] },
+                        "folder": { "type": "boolean" },
                         "expectedRevision": { "type": "integer", "exclusiveMinimum": 0, "maximum": 9007199254740991 },
                         "id": { "type": "string" },
                         "spaceId": {
@@ -5604,7 +5628,7 @@
             },
             {
                 "name": "list_space_pages",
-                "description": "List pages in your authorized Space. Return internal page links when helpful.",
+                "description": "List pages in your authorized Space. folder: true marks a folder, a page shown as a container of the pages under it, its body hidden (not deleted). Return internal page links when helpful.",
                 "parameters": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "type": "object",
@@ -6436,7 +6460,7 @@
             },
             {
                 "name": "create_space_page",
-                "description": "Create a Markdown page in this Space when the user requests a document. Write quotes as Markdown blockquotes (lines starting with \"> \"), never as HTML such as <blockquote>: the page editor cannot show raw HTML.",
+                "description": "Create a Markdown page in this Space when the user requests a document; folder: true makes a folder instead, a page shown as a container for pages under it (parentId), its body hidden, not deleted. Write quotes as Markdown blockquotes (lines starting with \"> \"), never as HTML such as <blockquote>: the page editor cannot show raw HTML.",
                 "parameters": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "type": "object",
@@ -6449,12 +6473,17 @@
                         },
                         "sourceUrl": { "type": "string", "maxLength": 2048 },
                         "sourceTitle": { "type": "string", "maxLength": 300 },
+                        "folder": {
+                            "default": false,
+                            "description": "Make it a folder: a page shown as a container of pages, its body hidden (not deleted).",
+                            "type": "boolean"
+                        },
                         "spaceId": {
                             "description": "Authorized Space ID. Defaults to the current page Space or the default destination.",
                             "type": "string"
                         }
                     },
-                    "required": ["title", "content", "parentId"],
+                    "required": ["title", "content", "parentId", "folder"],
                     "additionalProperties": false
                 }
             },
@@ -6843,7 +6872,7 @@
             },
             {
                 "name": "edit_space_page",
-                "description": "Edit a page using its current expectedRevision. On conflict read the new version first. Write quotes as Markdown blockquotes (\"> \"), not HTML <blockquote>. Preserve user content, including ```dataset-view blocks (embedded dataset views; add new ones with insert_dataset_view) and ```embed blocks (link cards; add new ones with unfurl_link).",
+                "description": "Edit a page using its current expectedRevision. On conflict read the new version first. folder: true turns it into a folder (its body hidden, not deleted), false back into a page. Write quotes as Markdown blockquotes (\"> \"), not HTML <blockquote>. Preserve user content, including ```dataset-view blocks (embedded dataset views; add new ones with insert_dataset_view) and ```embed blocks (link cards; add new ones with unfurl_link).",
                 "parameters": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "type": "object",
@@ -6851,6 +6880,7 @@
                         "title": { "type": "string", "minLength": 1, "maxLength": 160 },
                         "content": { "type": "string", "maxLength": 100000 },
                         "parentId": { "anyOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }] },
+                        "folder": { "type": "boolean" },
                         "expectedRevision": { "type": "integer", "exclusiveMinimum": 0, "maximum": 9007199254740991 },
                         "id": { "type": "string" },
                         "spaceId": {
@@ -7354,7 +7384,7 @@
             },
             {
                 "name": "list_space_pages",
-                "description": "List pages in your authorized Space. Return internal page links when helpful.",
+                "description": "List pages in your authorized Space. folder: true marks a folder, a page shown as a container of the pages under it, its body hidden (not deleted). Return internal page links when helpful.",
                 "parameters": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "type": "object",
@@ -8193,7 +8223,7 @@
             },
             {
                 "name": "create_space_page",
-                "description": "Create a Markdown page in this Space when the user requests a document. Write quotes as Markdown blockquotes (lines starting with \"> \"), never as HTML such as <blockquote>: the page editor cannot show raw HTML.",
+                "description": "Create a Markdown page in this Space when the user requests a document; folder: true makes a folder instead, a page shown as a container for pages under it (parentId), its body hidden, not deleted. Write quotes as Markdown blockquotes (lines starting with \"> \"), never as HTML such as <blockquote>: the page editor cannot show raw HTML.",
                 "parameters": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "type": "object",
@@ -8206,12 +8236,17 @@
                         },
                         "sourceUrl": { "type": "string", "maxLength": 2048 },
                         "sourceTitle": { "type": "string", "maxLength": 300 },
+                        "folder": {
+                            "default": false,
+                            "description": "Make it a folder: a page shown as a container of pages, its body hidden (not deleted).",
+                            "type": "boolean"
+                        },
                         "spaceId": {
                             "description": "Authorized Space ID. Defaults to the current page Space or the default destination.",
                             "type": "string"
                         }
                     },
-                    "required": ["title", "content", "parentId"],
+                    "required": ["title", "content", "parentId", "folder"],
                     "additionalProperties": false
                 }
             },
@@ -8600,7 +8635,7 @@
             },
             {
                 "name": "edit_space_page",
-                "description": "Edit a page using its current expectedRevision. On conflict read the new version first. Write quotes as Markdown blockquotes (\"> \"), not HTML <blockquote>. Preserve user content, including ```dataset-view blocks (embedded dataset views; add new ones with insert_dataset_view) and ```embed blocks (link cards; add new ones with unfurl_link).",
+                "description": "Edit a page using its current expectedRevision. On conflict read the new version first. folder: true turns it into a folder (its body hidden, not deleted), false back into a page. Write quotes as Markdown blockquotes (\"> \"), not HTML <blockquote>. Preserve user content, including ```dataset-view blocks (embedded dataset views; add new ones with insert_dataset_view) and ```embed blocks (link cards; add new ones with unfurl_link).",
                 "parameters": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "type": "object",
@@ -8608,6 +8643,7 @@
                         "title": { "type": "string", "minLength": 1, "maxLength": 160 },
                         "content": { "type": "string", "maxLength": 100000 },
                         "parentId": { "anyOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }] },
+                        "folder": { "type": "boolean" },
                         "expectedRevision": { "type": "integer", "exclusiveMinimum": 0, "maximum": 9007199254740991 },
                         "id": { "type": "string" },
                         "spaceId": {
@@ -9055,7 +9091,7 @@
             },
             {
                 "name": "list_space_pages",
-                "description": "List pages in your authorized Space. Return internal page links when helpful.",
+                "description": "List pages in your authorized Space. folder: true marks a folder, a page shown as a container of the pages under it, its body hidden (not deleted). Return internal page links when helpful.",
                 "parameters": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "type": "object",
@@ -9854,7 +9890,7 @@
             },
             {
                 "name": "create_space_page",
-                "description": "Create a Markdown page in this Space when the user requests a document. Write quotes as Markdown blockquotes (lines starting with \"> \"), never as HTML such as <blockquote>: the page editor cannot show raw HTML.",
+                "description": "Create a Markdown page in this Space when the user requests a document; folder: true makes a folder instead, a page shown as a container for pages under it (parentId), its body hidden, not deleted. Write quotes as Markdown blockquotes (lines starting with \"> \"), never as HTML such as <blockquote>: the page editor cannot show raw HTML.",
                 "parameters": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "type": "object",
@@ -9867,12 +9903,17 @@
                         },
                         "sourceUrl": { "type": "string", "maxLength": 2048 },
                         "sourceTitle": { "type": "string", "maxLength": 300 },
+                        "folder": {
+                            "default": false,
+                            "description": "Make it a folder: a page shown as a container of pages, its body hidden (not deleted).",
+                            "type": "boolean"
+                        },
                         "spaceId": {
                             "description": "Authorized Space ID. Defaults to the current page Space or the default destination.",
                             "type": "string"
                         }
                     },
-                    "required": ["title", "content", "parentId"],
+                    "required": ["title", "content", "parentId", "folder"],
                     "additionalProperties": false
                 }
             },
@@ -10290,7 +10331,7 @@
             },
             {
                 "name": "edit_space_page",
-                "description": "Edit a page using its current expectedRevision. On conflict read the new version first. Write quotes as Markdown blockquotes (\"> \"), not HTML <blockquote>. Preserve user content, including ```dataset-view blocks (embedded dataset views; add new ones with insert_dataset_view) and ```embed blocks (link cards; add new ones with unfurl_link).",
+                "description": "Edit a page using its current expectedRevision. On conflict read the new version first. folder: true turns it into a folder (its body hidden, not deleted), false back into a page. Write quotes as Markdown blockquotes (\"> \"), not HTML <blockquote>. Preserve user content, including ```dataset-view blocks (embedded dataset views; add new ones with insert_dataset_view) and ```embed blocks (link cards; add new ones with unfurl_link).",
                 "parameters": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "type": "object",
@@ -10298,6 +10339,7 @@
                         "title": { "type": "string", "minLength": 1, "maxLength": 160 },
                         "content": { "type": "string", "maxLength": 100000 },
                         "parentId": { "anyOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }] },
+                        "folder": { "type": "boolean" },
                         "expectedRevision": { "type": "integer", "exclusiveMinimum": 0, "maximum": 9007199254740991 },
                         "id": { "type": "string" },
                         "spaceId": {
@@ -10945,7 +10987,7 @@
             },
             {
                 "name": "list_space_pages",
-                "description": "List pages in your authorized Space. Return internal page links when helpful.",
+                "description": "List pages in your authorized Space. folder: true marks a folder, a page shown as a container of the pages under it, its body hidden (not deleted). Return internal page links when helpful.",
                 "parameters": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "type": "object",
@@ -11895,7 +11937,7 @@
             },
             {
                 "name": "create_space_page",
-                "description": "Create a Markdown page in this Space when the user requests a document. Write quotes as Markdown blockquotes (lines starting with \"> \"), never as HTML such as <blockquote>: the page editor cannot show raw HTML.",
+                "description": "Create a Markdown page in this Space when the user requests a document; folder: true makes a folder instead, a page shown as a container for pages under it (parentId), its body hidden, not deleted. Write quotes as Markdown blockquotes (lines starting with \"> \"), never as HTML such as <blockquote>: the page editor cannot show raw HTML.",
                 "parameters": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "type": "object",
@@ -11908,12 +11950,17 @@
                         },
                         "sourceUrl": { "type": "string", "maxLength": 2048 },
                         "sourceTitle": { "type": "string", "maxLength": 300 },
+                        "folder": {
+                            "default": false,
+                            "description": "Make it a folder: a page shown as a container of pages, its body hidden (not deleted).",
+                            "type": "boolean"
+                        },
                         "spaceId": {
                             "description": "Authorized Space ID. Defaults to the current page Space or the default destination.",
                             "type": "string"
                         }
                     },
-                    "required": ["title", "content", "parentId"],
+                    "required": ["title", "content", "parentId", "folder"],
                     "additionalProperties": false
                 }
             },
@@ -12302,7 +12349,7 @@
             },
             {
                 "name": "edit_space_page",
-                "description": "Edit a page using its current expectedRevision. On conflict read the new version first. Write quotes as Markdown blockquotes (\"> \"), not HTML <blockquote>. Preserve user content, including ```dataset-view blocks (embedded dataset views; add new ones with insert_dataset_view) and ```embed blocks (link cards; add new ones with unfurl_link).",
+                "description": "Edit a page using its current expectedRevision. On conflict read the new version first. folder: true turns it into a folder (its body hidden, not deleted), false back into a page. Write quotes as Markdown blockquotes (\"> \"), not HTML <blockquote>. Preserve user content, including ```dataset-view blocks (embedded dataset views; add new ones with insert_dataset_view) and ```embed blocks (link cards; add new ones with unfurl_link).",
                 "parameters": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "type": "object",
@@ -12310,6 +12357,7 @@
                         "title": { "type": "string", "minLength": 1, "maxLength": 160 },
                         "content": { "type": "string", "maxLength": 100000 },
                         "parentId": { "anyOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }] },
+                        "folder": { "type": "boolean" },
                         "expectedRevision": { "type": "integer", "exclusiveMinimum": 0, "maximum": 9007199254740991 },
                         "id": { "type": "string" },
                         "spaceId": {
@@ -12813,7 +12861,7 @@
             },
             {
                 "name": "list_space_pages",
-                "description": "List pages in your authorized Space. Return internal page links when helpful.",
+                "description": "List pages in your authorized Space. folder: true marks a folder, a page shown as a container of the pages under it, its body hidden (not deleted). Return internal page links when helpful.",
                 "parameters": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "type": "object",

@@ -852,7 +852,7 @@ export async function importBundle(options: ImportOptions): Promise<ImportReport
 
     // ── Pages ─────────────────────────────────────────────────────────
     const pageRow = db.prepare(
-        'SELECT spaceId, title, content, parentId, coverId, revision, updatedAt, deletedAt FROM pages WHERE id=?',
+        'SELECT spaceId, title, content, parentId, coverId, folder, revision, updatedAt, deletedAt FROM pages WHERE id=?',
     );
     const embedRow = db.prepare('SELECT 1 FROM media_embeds WHERE id=?');
     const tagRow = db.prepare('SELECT 1 FROM page_tags WHERE pageId=? AND tag=?');
@@ -862,15 +862,23 @@ export async function importBundle(options: ImportOptions): Promise<ImportReport
     const putSearch = lazy(
         'INSERT INTO page_search(pageId, spaceId, title, body) VALUES (?, ?, ?, ?) ON CONFLICT(pageId) DO UPDATE SET spaceId=excluded.spaceId, title=excluded.title, body=excluded.body',
     );
-    const pageHash = (spaceId: unknown, title: unknown, content: unknown, parentId: unknown, coverId: unknown) =>
-        hashOf({ spaceId, title, content, parentId, coverId });
+    // A folder (CB-426) counts only when set, so a page's hash is what it was
+    // before folders and an earlier import of it isn't seen as changed here.
+    const pageHash = (
+        spaceId: unknown,
+        title: unknown,
+        content: unknown,
+        parentId: unknown,
+        coverId: unknown,
+        folder: unknown,
+    ) => hashOf({ spaceId, title, content, parentId, coverId, ...(folder ? { folder: true } : {}) });
     const pageHashNow = (id: string) => {
         const row = pageRow.get(id) as Row | undefined;
         return !row
             ? undefined
             : row.deletedAt !== null
               ? DELETED
-              : pageHash(row.spaceId, row.title, row.content, row.parentId, row.coverId);
+              : pageHash(row.spaceId, row.title, row.content, row.parentId, row.coverId, row.folder);
     };
     const spaceLiveNow = db.prepare('SELECT 1 FROM spaces WHERE id=? AND deletedAt IS NULL');
     const pageLive = db.prepare('SELECT 1 FROM pages WHERE id=? AND spaceId=? AND deletedAt IS NULL');
@@ -1040,7 +1048,7 @@ export async function importBundle(options: ImportOptions): Promise<ImportReport
         );
         const parentId = page.parentId && placed.get(page.parentId) === target ? page.parentId : null;
         const coverId = page.coverId && embedsHere.has(page.coverId) ? page.coverId : null;
-        const desired = pageHash(target, page.title, content, parentId, coverId);
+        const desired = pageHash(target, page.title, content, parentId, coverId, page.folder);
         const row = pageRow.get(page.id) as Row | undefined;
         if (row && row.spaceId !== target && !row.deletedAt) {
             count('page', 'conflict');
@@ -1059,8 +1067,8 @@ export async function importBundle(options: ImportOptions): Promise<ImportReport
                 desired,
                 () => {
                     db.prepare(
-                        `INSERT INTO pages(id, spaceId, parentId, title, content, revision, createdAt, updatedAt, sourceThreadId, createdBy, coverId, sourceUrl, sourceTitle)
-                     VALUES (?, ?, ?, ?, ?, 1, ?, ?, NULL, ?, ?, ?, ?)`,
+                        `INSERT INTO pages(id, spaceId, parentId, title, content, revision, createdAt, updatedAt, sourceThreadId, createdBy, coverId, sourceUrl, sourceTitle, folder)
+                     VALUES (?, ?, ?, ?, ?, 1, ?, ?, NULL, ?, ?, ?, ?, ?)`,
                     ).run(
                         page.id,
                         target,
@@ -1073,6 +1081,7 @@ export async function importBundle(options: ImportOptions): Promise<ImportReport
                         coverId,
                         page.sourceUrl,
                         page.sourceTitle,
+                        page.folder ? 1 : 0,
                     );
                     putSearch.run(page.id, target, page.title, pageText(content));
                 },
@@ -1103,12 +1112,13 @@ export async function importBundle(options: ImportOptions): Promise<ImportReport
                         now(),
                     );
                     db.prepare(
-                        'UPDATE pages SET title=?, content=?, parentId=?, coverId=?, updatedAt=?, revision=revision+1 WHERE id=?',
+                        'UPDATE pages SET title=?, content=?, parentId=?, coverId=?, folder=?, updatedAt=?, revision=revision+1 WHERE id=?',
                     ).run(
                         page.title,
                         content,
                         parentId,
                         coverId,
+                        page.folder ? 1 : 0,
                         Math.max(page.updatedAt, Number(before.updatedAt)),
                         page.id,
                     );

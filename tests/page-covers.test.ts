@@ -77,9 +77,10 @@ it('adds a nullable coverId to pages, keeping every row (pages 10)', () => {
         { module: 'pages', version: 11, name: 'page tags', action: 'apply' },
         { module: 'pages', version: 12, name: 'page links', action: 'apply' },
         { module: 'pages', version: 13, name: 'page source attribution', action: 'apply' },
+        { module: 'pages', version: 14, name: 'page folders', action: 'apply' },
     ]);
     expect(upgraded.prepare('SELECT * FROM pages').all()).toEqual(
-        before.map((row) => ({ ...row, coverId: null, sourceUrl: null, sourceTitle: null })),
+        before.map((row) => ({ ...row, coverId: null, sourceUrl: null, sourceTitle: null, folder: 0 })),
     );
     const column = (db: DatabaseSync) =>
         db.prepare("SELECT * FROM pragma_table_info('pages') WHERE name='coverId'").get();

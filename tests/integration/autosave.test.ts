@@ -18,6 +18,7 @@ const page: Page = {
     cover: null,
     sourceUrl: null,
     sourceTitle: null,
+    folder: false,
 };
 function deferred<T>() {
     let resolve!: (value: T) => void;

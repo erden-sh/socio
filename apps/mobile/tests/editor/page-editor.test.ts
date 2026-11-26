@@ -32,6 +32,7 @@ const BODY: Page = {
     cover: null,
     sourceUrl: null,
     sourceTitle: null,
+    folder: false,
 };
 
 const save = (draft: string, state: OutboxRow['state'] = 'queued', lane = 'page:p1'): OutboxRow =>

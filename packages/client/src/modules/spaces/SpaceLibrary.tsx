@@ -1,4 +1,16 @@
-import { ArrowUpRight, ChevronRight, FileText, FolderOpen, LayoutGrid, List, Plus, Search, Trash2 } from 'lucide-react';
+import {
+    ArrowUpRight,
+    ChevronRight,
+    FileText,
+    Folder,
+    FolderOpen,
+    FolderPlus,
+    LayoutGrid,
+    List,
+    Plus,
+    Search,
+    Trash2,
+} from 'lucide-react';
 import { useContext, useMemo, useState, type ReactNode } from 'react';
 
 import { compareText, lowerText } from '@socio/shared/locale';
@@ -25,6 +37,7 @@ import { toneTile } from '../../shell/tones';
 import { PageHeader } from '../../views/WorkspacePage';
 import { useModules } from '../context';
 import { canDeletePage, DeletePageDialog } from '../pages/DeletePageDialog';
+import { NewFolderDialog } from '../pages/NewFolderDialog';
 import { LibraryEmpty, PagePrimaryButton } from '../pages/page-chrome';
 
 import { notePageUse } from './page-commands';
@@ -54,6 +67,7 @@ export function SpaceLibrary({
     hasCovers = false,
     onPage,
     onNew,
+    onNewFolder,
     onDeleted,
     tabs,
 }: {
@@ -70,6 +84,11 @@ export function SpaceLibrary({
     onPage: (id: string) => void;
     /** New page, inside the level being browsed (CB-426): its parent's id, or null at the top. */
     onNew: (parentId: string | null) => void;
+    /**
+     * New folder (CB-426), named in its dialog, inside the level being browsed. Resolves once it is
+     * made; a refusal rejects with the words to show. Without it, no New folder.
+     */
+    onNewFolder?: (parentId: string | null, title: string) => Promise<unknown>;
     onDeleted: (ids: string[]) => void;
 }) {
     const user = useContext(CurrentUser);
@@ -84,6 +103,8 @@ export function SpaceLibrary({
     // at once, each with its path.
     const [browse, setBrowse] = useState<Browse>('level');
     const [at, setAt] = useState<string | null>(null);
+    // New folder's name dialog (CB-426), while it is open.
+    const [naming, setNaming] = useState(false);
     // The first screen (before the first poll) is only part of the Space: its levels can't place a
     // page whose parent it lacks, so they show only pages with no parent until every page is in.
     const partial = total !== undefined && total > pages.length;
@@ -104,6 +125,14 @@ export function SpaceLibrary({
     );
     const trail = folder ? [...hierarchy.ancestors(folder), folder] : [];
     const open = (id: string | null) => setAt(id);
+    // A folder (CB-426) always opens its level, from All pages too, as a page with pages inside does
+    // by level.
+    const openFolder = (id: string) => {
+        setBrowse('level');
+        setQuery('');
+        setAt(id);
+    };
+    const level = byLevel ? (folder?.id ?? null) : null;
     // Two or more characters: the server's search over titles and text, as
     // the user types.
     const [exact, setExact] = useState(false);
@@ -166,11 +195,12 @@ export function SpaceLibrary({
                         {datasets && space.access === 'editor' && (
                             <SpaceDatasetActions space={space} admin={!!user && isAdmin(user)} />
                         )}
-                        <Button
-                            size="sm"
-                            onClick={() => onNew(byLevel ? (folder?.id ?? null) : null)}
-                            data-tour="new-page"
-                        >
+                        {onNewFolder && (
+                            <Button size="sm" variant="outline" onClick={() => setNaming(true)}>
+                                <FolderPlus /> New folder
+                            </Button>
+                        )}
+                        <Button size="sm" onClick={() => onNew(level)} data-tour="new-page">
                             <Plus /> New page
                         </Button>
                     </>
@@ -286,7 +316,7 @@ export function SpaceLibrary({
                             className="ml-auto h-7 text-muted-foreground"
                             onClick={() => onPage(folder.id)}
                         >
-                            Open page <ArrowUpRight className="size-3.5" />
+                            {folder.folder ? 'Open folder' : 'Open page'} <ArrowUpRight className="size-3.5" />
                         </Button>
                     </nav>
                 )}
@@ -294,7 +324,15 @@ export function SpaceLibrary({
                     className="m-0 mb-3 flex items-baseline gap-2 text-sm font-medium text-muted-foreground"
                     data-slot="library-count"
                 >
-                    {query ? 'Search results' : !byLevel ? 'All pages' : folder ? 'Inside this page' : 'Top level'}
+                    {query
+                        ? 'Search results'
+                        : !byLevel
+                          ? 'All pages'
+                          : folder
+                            ? folder.folder
+                                ? 'In this folder'
+                                : 'Inside this page'
+                            : 'Top level'}
                     <span
                         className="font-mono text-xs text-muted-foreground/80 tabular-nums"
                         aria-label={`${count}${searching && remote.answer?.more ? ' or more' : ''} ${count === 1 ? 'page' : 'pages'}`}
@@ -323,13 +361,17 @@ export function SpaceLibrary({
                                 const page = pages.find((item) => item.id === hit.id);
                                 return card(
                                     hit,
-                                    <span data-slot="library-snippet">
-                                        {hit.snippet.length ? (
-                                            <Snippet parts={hit.snippet} />
-                                        ) : (
-                                            'An empty page, ready to write.'
-                                        )}
-                                    </span>,
+                                    page?.folder ? (
+                                        <FolderLine inside={hierarchy.children(page).length} />
+                                    ) : (
+                                        <span data-slot="library-snippet">
+                                            {hit.snippet.length ? (
+                                                <Snippet parts={hit.snippet} />
+                                            ) : (
+                                                'An empty page, ready to write.'
+                                            )}
+                                        </span>
+                                    ),
                                     <>
                                         <span data-slot="library-freshness" className="font-mono">
                                             {freshnessLabel(hit.freshness)}
@@ -342,7 +384,11 @@ export function SpaceLibrary({
                                     </>,
                                     () => {
                                         notePageUse(space.id, hit.id);
-                                        onPage(hit.id);
+                                        if (page?.folder) {
+                                            openFolder(page.id);
+                                        } else {
+                                            onPage(hit.id);
+                                        }
                                     },
                                     page && canDeletePage(user, page) ? page : undefined,
                                 );
@@ -361,12 +407,18 @@ export function SpaceLibrary({
                         {filtered.map((page) => {
                             // By level, a page with pages inside opens its level (CB-426); the trail's
                             // Open page opens the page itself.
-                            const inside = byLevel ? hierarchy.children(page).length : 0;
+                            // A folder (CB-426) always opens its level, even empty, and says what it
+                            // holds where a page shows its text.
+                            const inside = byLevel || page.folder ? hierarchy.children(page).length : 0;
                             return card(
                                 page,
-                                page.excerpt || 'An empty page, ready to write.',
+                                page.folder ? (
+                                    <FolderLine inside={inside} />
+                                ) : (
+                                    page.excerpt || 'An empty page, ready to write.'
+                                ),
                                 <>
-                                    {inside > 0 && (
+                                    {!page.folder && inside > 0 && (
                                         <span
                                             data-slot="library-inside"
                                             className="flex shrink-0 items-center gap-1 font-medium text-foreground/80"
@@ -384,35 +436,63 @@ export function SpaceLibrary({
                                         <PagePath titles={hierarchy.ancestors(page).map((parent) => parent.title)} />
                                     )}
                                 </>,
-                                inside > 0 ? () => open(page.id) : () => onPage(page.id),
+                                page.folder
+                                    ? () => openFolder(page.id)
+                                    : inside > 0
+                                      ? () => open(page.id)
+                                      : () => onPage(page.id),
                                 canDeletePage(user, page) ? page : undefined,
                             );
                         })}
                     </LibraryPages>
                 ) : (
                     <LibraryEmpty
-                        icon={<FileText size={30} strokeWidth={1.3} />}
+                        icon={
+                            byLevel && folder?.folder ? (
+                                <FolderOpen size={30} strokeWidth={1.3} />
+                            ) : (
+                                <FileText size={30} strokeWidth={1.3} />
+                            )
+                        }
                         title={
                             query
                                 ? 'No matching pages'
                                 : byLevel && folder
-                                  ? 'Nothing inside this page yet'
+                                  ? folder.folder
+                                      ? 'This folder is empty'
+                                      : 'Nothing inside this page yet'
                                   : 'No pages yet'
                         }
                         action={
                             !query && (
-                                <PagePrimaryButton onClick={() => onNew(byLevel ? (folder?.id ?? null) : null)}>
-                                    <Plus className="size-4" /> New page
-                                </PagePrimaryButton>
+                                <div className="flex flex-wrap items-center justify-center gap-2">
+                                    <PagePrimaryButton onClick={() => onNew(level)}>
+                                        <Plus className="size-4" /> New page
+                                    </PagePrimaryButton>
+                                    {onNewFolder && (
+                                        <Button variant="outline" onClick={() => setNaming(true)}>
+                                            <FolderPlus className="size-4" /> New folder
+                                        </Button>
+                                    )}
+                                </div>
                             )
                         }
                     >
                         {query
                             ? 'Try a different title or phrase.'
                             : byLevel && folder
-                              ? 'Pages you create here go inside it.'
+                              ? folder.folder
+                                  ? 'Pages and folders you create here go inside it.'
+                                  : 'Pages you create here go inside it.'
                               : 'Create your first page to start organizing this Space.'}
                     </LibraryEmpty>
+                )}
+                {onNewFolder && (
+                    <NewFolderDialog
+                        open={naming}
+                        onOpenChange={setNaming}
+                        onCreate={(title) => onNewFolder(level, title)}
+                    />
                 )}
                 {deleting && (
                     <DeletePageDialog
@@ -434,6 +514,16 @@ export function SpaceLibrary({
 
 type Layout = 'grid' | 'list';
 type Browse = 'level' | 'all';
+
+/** A folder card's line (CB-426) where a page's card shows its text: what it holds. */
+export function FolderLine({ inside }: { inside: number }) {
+    return (
+        <span data-slot="library-folder" className="inline-flex items-center gap-1.5">
+            <Folder aria-hidden className="size-3.5 shrink-0" />
+            {inside ? `Folder · ${inside} inside` : 'Empty folder'}
+        </span>
+    );
+}
 
 /** A page's parents, root first, on its card (CB-237); nothing for a top-level page. */
 function PagePath({ titles }: { titles: string[] }) {

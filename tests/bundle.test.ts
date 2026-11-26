@@ -1888,3 +1888,59 @@ describe('memory', () => {
         expect(existsSync(join(dir, 'bundle.partial'))).toBe(false);
     });
 });
+
+describe('folders (CB-426)', () => {
+    it('carries a folder through export and import, its body kept', async () => {
+        const source = await seedSource(dir);
+        source.db.prepare("UPDATE pages SET folder=1 WHERE id='pg-root'").run();
+        const { out } = await makeBundle(dir, source);
+        const pages = readFileSync(join(out, 'pages.jsonl'), 'utf8')
+            .trim()
+            .split('\n')
+            .map((l) => JSON.parse(l));
+        expect(Object.fromEntries(pages.map((p) => [p.id, p.folder]))).toEqual({
+            'pg-root': true,
+            'pg-picked': false,
+            'pg-child': false,
+        });
+        const db = seedTarget();
+        await importer(db, await BundleReader.open(out), dir).run({ apply: true });
+        const rows = db.prepare('SELECT id, folder, content FROM pages ORDER BY id').all();
+        expect(rows.map((row) => [row.id, row.folder])).toEqual([
+            ['pg-child', 0],
+            ['pg-picked', 0],
+            ['pg-root', 1],
+        ]);
+        expect(String(rows.find((row) => row.id === 'pg-root')!.content)).toContain('Tracks CB-1');
+
+        // Turned back into a page at the source, the next import follows; an
+        // unchanged page is not seen as changed.
+        source.db.prepare("UPDATE pages SET folder=0, updatedAt=updatedAt+1 WHERE id='pg-root'").run();
+        const again = await makeBundle(dir, source, {}, 'bundle-2');
+        const report = await importer(db, await BundleReader.open(again.out), dir).run({ apply: true });
+        expect(report.counts.page).toMatchObject({ update: 1 });
+        expect(db.prepare("SELECT folder FROM pages WHERE id='pg-root'").get()).toEqual({ folder: 0 });
+    });
+
+    it('reads a page record without the field, from before folders, as a page', async () => {
+        const source = await seedSource(dir);
+        source.db.prepare("UPDATE pages SET folder=1 WHERE id='pg-root'").run();
+        const { out } = await makeBundle(dir, source);
+        const path = join(out, 'pages.jsonl');
+        const lines = readFileSync(path, 'utf8')
+            .trim()
+            .split('\n')
+            .map((l) => {
+                const { folder: _folder, ...record } = JSON.parse(l);
+                return JSON.stringify(record);
+            });
+        writeFileSync(path, `${lines.join('\n')}\n`);
+        expect(readFileSync(path, 'utf8')).not.toContain('"folder"');
+        const manifest = JSON.parse(readFileSync(join(out, 'manifest.json'), 'utf8'));
+        manifest.files['pages.jsonl'] = await hashFile(path);
+        writeFileSync(join(out, 'manifest.json'), JSON.stringify(manifest));
+        const db = seedTarget();
+        await importer(db, await BundleReader.open(out), dir).run({ apply: true });
+        expect(db.prepare('SELECT DISTINCT folder FROM pages').all()).toEqual([{ folder: 0 }]);
+    });
+});

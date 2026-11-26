@@ -23,6 +23,8 @@ export interface NewPage {
     sourceUrl: string | null;
     /** The title at the source, or null (CB-328). */
     sourceTitle: string | null;
+    /** Whether it is a folder (CB-426); false when left out. */
+    folder?: boolean;
 }
 
 /** A tag on a page (CB-328). Tag names are workspace-global; rows are scoped
@@ -53,6 +55,8 @@ export interface PageEdit {
     title: string;
     content: string;
     parentId: string | null;
+    /** Whether it is a folder (CB-426); left as it is when left out. */
+    folder?: boolean;
 }
 
 /** Who deleted a page, and when; `with` names the page it went with. */

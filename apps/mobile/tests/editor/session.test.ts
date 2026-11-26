@@ -606,6 +606,7 @@ describe('wired to the page draft and the page save', () => {
                 cover: null,
                 sourceUrl: null,
                 sourceTitle: null,
+                folder: false,
             }),
             newId: () => `id-${(id += 1)}`,
         });

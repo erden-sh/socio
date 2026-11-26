@@ -179,6 +179,7 @@ export const page = (
     cover: null,
     sourceUrl: null,
     sourceTitle: null,
+    folder: false,
 });
 
 export const conversation = (id: string, title: string, createdAt = 1) => ({

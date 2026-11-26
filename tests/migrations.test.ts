@@ -247,6 +247,8 @@ it('gives a fresh database and a release-1 database the same schema, keeping its
             // CB-328: no structured source attribution (pages migration 13).
             sourceUrl: null,
             sourceTitle: null,
+            // CB-426: a page, not a folder (pages migration 14).
+            folder: 0,
         })),
     );
     // Tasks gain the schedule columns (core migration 2), empty.
@@ -1699,7 +1701,7 @@ it('compresses every kept revision body, keeping every row and column (pages 7)'
             .prepare("SELECT version, name FROM schema_migrations WHERE module='pages' ORDER BY version DESC LIMIT 1")
             .get(),
         // Later additive steps preserve migration 7's compression guarantees.
-    ).toEqual({ version: 13, name: 'page source attribution' });
+    ).toEqual({ version: 14, name: 'page folders' });
     expect(revisionSchema(db)).toEqual([
         {
             name: 'page_revisions',
@@ -1711,10 +1713,11 @@ it('compresses every kept revision body, keeping every row and column (pages 7)'
     expect(db.prepare('PRAGMA integrity_check').get()).toEqual({
         integrity_check: 'ok',
     });
-    // Pages gain only an empty cover (pages migration 10) and source
-    // attribution columns (pages migration 13, CB-328).
+    // Pages gain only an empty cover (pages migration 10), source
+    // attribution columns (pages migration 13, CB-328) and the folder mark,
+    // off (pages migration 14, CB-426).
     expect(db.prepare('SELECT * FROM pages ORDER BY id').all()).toEqual(
-        pages.map((row) => ({ ...row, coverId: null, sourceUrl: null, sourceTitle: null })),
+        pages.map((row) => ({ ...row, coverId: null, sourceUrl: null, sourceTitle: null, folder: 0 })),
     );
     expect(db.prepare('SELECT * FROM page_search ORDER BY id').all()).toEqual(search);
     // Every row and column but the body as it was; bodies stored as bytes,
@@ -1830,6 +1833,12 @@ it('compresses the revisions of a release-1 database migrated to pages 6, matchi
             name: 'page source attribution',
             action: 'apply',
         },
+        {
+            module: 'pages',
+            version: 14,
+            name: 'page folders',
+            action: 'apply',
+        },
     ]);
     boot(fresh, join(dir, 'fresh-backups'));
     const prodDb = open(prod);
@@ -1838,9 +1847,16 @@ it('compresses the revisions of a release-1 database migrated to pages 6, matchi
     const after = rowsOf(prodDb);
     expect({ ...after, page_revisions: [] }).toEqual({
         ...before,
-        // Pages gain only an empty cover (pages migration 10) and source
-        // attribution columns (pages migration 13, CB-328).
-        pages: before.pages.map((row) => ({ ...row, coverId: null, sourceUrl: null, sourceTitle: null })),
+        // Pages gain only an empty cover (pages migration 10), source
+        // attribution columns (pages migration 13, CB-328) and the folder
+        // mark, off (pages migration 14, CB-426).
+        pages: before.pages.map((row) => ({
+            ...row,
+            coverId: null,
+            sourceUrl: null,
+            sourceTitle: null,
+            folder: 0,
+        })),
         page_revisions: [],
         // CB-328: page knowledge graph tables (pages migrations 11 and 12),
         // new and empty.

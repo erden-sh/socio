@@ -77,6 +77,7 @@ const page = (id: string, title: string, extra: Partial<Page> = {}): Page => ({
     cover: null,
     sourceUrl: null,
     sourceTitle: null,
+    folder: false,
     ...extra,
 });
 

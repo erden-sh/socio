@@ -35,6 +35,8 @@ interface TreeEntry {
     parentId: string | null;
     title: string;
     kind: string;
+    /** A folder (CB-426): a page shown with a folder's icon. */
+    folder?: boolean;
     /** A scratch dataset's socio, named beside it in the Private group. */
     socio?: SpaceDatasetItem['socio'];
 }
@@ -109,6 +111,7 @@ const itemEntries = (answer: unknown): TreeEntry[] =>
         parentId: item.parentId,
         title: item.title,
         kind: item.kind,
+        ...(item.folder ? { folder: true } : {}),
         ...(item.socio ? { socio: item.socio } : {}),
     }));
 const pageEntries = (answer: unknown): TreeEntry[] =>
@@ -166,7 +169,7 @@ function Branches({
                     ) : (
                         <SidebarMenuSubButton asChild isActive={pageId === entry.id}>
                             <NavLink to={spacePath(spaceId!, entry.id)} end title={entry.title} onClick={onNavigate}>
-                                <FileText />
+                                {entry.folder ? <Folder data-icon="folder" /> : <FileText />}
                                 <span>{entry.title}</span>
                             </NavLink>
                         </SidebarMenuSubButton>

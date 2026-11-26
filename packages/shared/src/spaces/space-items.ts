@@ -54,6 +54,8 @@ export interface SpacePageItem extends SpaceItemBase {
      * creation, which never changes.
      */
     kind: 'page';
+    /** A folder (CB-426); absent from a server before folders. */
+    folder?: boolean;
 }
 
 export interface SpaceDatasetItem extends SpaceItemBase {

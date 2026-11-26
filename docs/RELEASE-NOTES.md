@@ -29,6 +29,10 @@ How this file is kept (scripts/release.mjs and the app's build read it):
 
 ## Unreleased
 
+### New
+
+- **Organize a Space's pages in folders (CB-426).** **New folder**, next to **New page** in the library and inside every folder, asks for a name and makes a folder where you are. A folder shows its name and what it holds, never a body, and opens to its contents even when empty, from **All pages** too. Any page can become a folder with **Turn into folder** in its menu and go back with **Turn into page**: its text is kept, only hidden while it is a folder. Folders keep their place through moves, exports and imports, match search by their title, and socios can make and switch them with the page tools.
+
 ## v0.55.0 (2026-11-26)
 
 A Space's library now opens at its top level, so you open a page to see the pages inside it, with All pages still one click away. Deployments can also enroll with Socio's cloud services; nothing uses the connection yet.

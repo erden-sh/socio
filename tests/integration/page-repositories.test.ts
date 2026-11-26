@@ -98,6 +98,26 @@ it('adds, edits at a revision, moves and hides pages', async () => {
     await expect(repos.pages.insert(page())).rejects.toThrow();
 });
 
+it('marks a page as a folder and back as its next revision, keeping its text (CB-426)', async () => {
+    const { db, repos } = context();
+    const row = () => db.prepare("SELECT folder, title, content, revision, updatedAt FROM pages WHERE id='p1'").get();
+    await repos.pages.insert(page());
+    expect(row()).toMatchObject({ folder: 0, revision: 1 });
+    const same = { title: 'Notes', content: '# Notes', parentId: null };
+    await repos.pages.edit('p1', 1, { ...same, folder: true }, 20);
+    expect(row()).toEqual({ folder: 1, title: 'Notes', content: '# Notes', revision: 2, updatedAt: 20 });
+    // An edit that doesn't say leaves the mark as it is; at a stale revision, nothing.
+    await repos.pages.edit('p1', 2, same, 25);
+    expect(row()).toMatchObject({ folder: 1, revision: 3 });
+    await repos.pages.edit('p1', 2, { ...same, folder: false }, 26);
+    expect(row()).toMatchObject({ folder: 1, revision: 3 });
+    await repos.pages.edit('p1', 3, { ...same, folder: false }, 30);
+    expect(row()).toEqual({ folder: 0, title: 'Notes', content: '# Notes', revision: 4, updatedAt: 30 });
+    // Made as a folder.
+    await repos.pages.insert(page({ id: 'p2', folder: true }));
+    expect(db.prepare("SELECT folder FROM pages WHERE id='p2'").get()).toEqual({ folder: 1 });
+});
+
 it('keeps revisions and finds the latest by when it was replaced', async () => {
     const { db, repos } = context();
     expect(await repos.revisions.latest('p1')).toBeUndefined();

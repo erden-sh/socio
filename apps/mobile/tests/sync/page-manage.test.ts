@@ -78,6 +78,7 @@ function page(id: string, change: Partial<Page> = {}): Stored {
         cover: null,
         sourceUrl: null,
         sourceTitle: null,
+        folder: false,
         ...change,
     };
 }

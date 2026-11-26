@@ -26,6 +26,11 @@ export interface Page {
     sourceUrl: string | null;
     /** The title at the source, or null (CB-328). */
     sourceTitle: string | null;
+    /**
+     * A folder (CB-426): a page shown as a container of the pages inside
+     * it. Its body is kept but hidden; turned back into a page, it shows.
+     */
+    folder: boolean;
 }
 
 /** A page saved through the review flow, with the draft that was reviewed. */
@@ -54,6 +59,8 @@ export interface PageSummary {
     createdBy: string | null;
     /** The page's cover (CB-308), or null without one. */
     cover: PageCover | null;
+    /** A folder (CB-426): its body is hidden, so its excerpt is empty. */
+    folder: boolean;
 }
 
 /**
@@ -124,6 +131,8 @@ export interface PageTreeItem {
     id: string;
     parentId: string | null;
     title: string;
+    /** A folder (CB-426). */
+    folder: boolean;
 }
 
 /**
@@ -140,7 +149,8 @@ export function pageSummary({
     sourceUrl?: string | null;
     sourceTitle?: string | null;
 }): PageSummary {
-    return { ...page, excerpt: pageExcerpt(content, page.title) };
+    // A folder's body is hidden (CB-426): no excerpt of it.
+    return { ...page, excerpt: page.folder ? '' : pageExcerpt(content, page.title) };
 }
 
 /** How many pages the library's first screen carries. */

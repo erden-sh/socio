@@ -18,6 +18,7 @@ const base: Page = {
     cover: null,
     sourceUrl: null,
     sourceTitle: null,
+    folder: false,
 };
 it('retains a newly created document when an earlier list response arrives after creation', async () => {
     let resolve!: (pages: Page[]) => void;

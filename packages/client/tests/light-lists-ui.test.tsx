@@ -20,9 +20,9 @@ declare global {
 }
 
 const TREE: PageTreeItem[] = [
-    { id: 'p1', parentId: null, title: 'Roadmap' },
-    { id: 'p2', parentId: 'p1', title: 'Q3 goals' },
-    { id: 'p3', parentId: null, title: 'Notes' },
+    { id: 'p1', parentId: null, title: 'Roadmap', folder: false },
+    { id: 'p2', parentId: 'p1', title: 'Q3 goals', folder: false },
+    { id: 'p3', parentId: null, title: 'Notes', folder: false },
 ];
 const ISSUES: IssueTitle[] = [{ number: 12, title: 'Login fails on Safari', status: 'in_progress' }];
 let requests: string[] = [];

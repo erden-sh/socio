@@ -21,7 +21,14 @@ export class SqlitePages extends SqliteRepository implements PageRepository {
         return this.write('edit page', async () => {
             await this.db
                 .update(p)
-                .set({ ...edit, revision: sql`${p.revision} + 1`, updatedAt: now })
+                .set({
+                    title: edit.title,
+                    content: edit.content,
+                    parentId: edit.parentId,
+                    ...(edit.folder === undefined ? {} : { folder: edit.folder }),
+                    revision: sql`${p.revision} + 1`,
+                    updatedAt: now,
+                })
                 .where(and(eq(p.id, id), eq(p.revision, revision)));
         });
     }
