@@ -7,6 +7,7 @@ import { topicKey, topicOfKey } from '@socio/foundation/rooms/topic-keys';
 import { teamOwner } from '@socio/foundation/telegram/team-owner';
 import type { RoomTopicCode, RoomTopicView } from '@socio/shared/rooms/room-telegram';
 import { ROOM_DISCLOSURE_VERSION, roomOwnerId, type RoomEvent } from '@socio/shared/rooms/rooms';
+import { messageAuthor } from '@socio/shared/runs/socio-fields';
 import { SENDER_METADATA } from '@socio/shared/types';
 
 import {
@@ -366,7 +367,7 @@ it('runs a member’s message in a bound topic as a room turn as them, and repli
     expect((message as { metadata?: Record<string, unknown> }).metadata?.[SENDER_METADATA]).toBe('mo');
     // The room's transcript, for Ada in the app: Mo said it.
     const transcript = await (await f.as('ada')(`/conversations/${roomId}/transcript`)).json();
-    expect(transcript.messages[0].author).toMatchObject({ name: 'Mo' });
+    expect(messageAuthor(transcript.messages[0])).toMatchObject({ name: 'Mo' });
     // The turn's trigger and acting person are Mo; no legacy thread exists.
     const [run] = f.platform.runner.recentRuns();
     expect(f.platform.runner.runTrace(run.runId)!.trace).toMatchObject({
@@ -481,7 +482,7 @@ it('never lets a forged or queued sender speak as a member, or as anyone, in a b
     // The transcript says Mo wrote his, whatever the text claims (by id
     // too, in a room, CB-212).
     const transcript = await (await f.as('mo')(`/conversations/${roomId}/transcript`)).json();
-    expect(transcript.messages[0].author).toEqual({
+    expect(messageAuthor(transcript.messages[0])).toEqual({
         name: 'Mo',
         you: true,
         id: 'mo',
@@ -534,7 +535,7 @@ it('stores a member’s message queued behind another member’s running turn in
     expect(
         transcript.messages
             .filter((message: { role: string }) => message.role === 'user')
-            .map((message: { author: { name: string } }) => message.author.name),
+            .map((message: unknown) => messageAuthor(message)?.name),
     ).toEqual(['Ada', 'Mo']);
 });
 

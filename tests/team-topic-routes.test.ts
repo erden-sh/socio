@@ -3,6 +3,7 @@ import type { DatabaseSync } from 'node:sqlite';
 import { afterEach, expect, it } from 'vitest';
 
 import { teamOwner } from '@socio/foundation/telegram/team-owner';
+import { messageAuthor } from '@socio/shared/runs/socio-fields';
 import { SENDER_METADATA, type Conversation } from '@socio/shared/types';
 
 import { DEFAULT_MOCK_USERS } from '../src/server/auth/config.js';
@@ -143,7 +144,7 @@ it('lets members read a team topic and keeps its owner routes closed', async () 
         };
         expect(messages.map((message) => message.role)).toEqual(['user', 'assistant']);
         // Who asked (CB-66), never their id.
-        expect(messages[0].author).toBeDefined();
+        expect(messageAuthor(messages[0])).toBeDefined();
         expect(JSON.stringify(messages)).not.toContain('"bob"');
         for (const [method, path, body] of ownerRoutes) {
             expect((await member(path, method, body)).status, `${name} ${method} ${path}`).toBe(404);

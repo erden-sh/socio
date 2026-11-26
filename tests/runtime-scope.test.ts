@@ -1,6 +1,8 @@
 import { lastValueFrom, toArray } from 'rxjs';
 import { expect, it, onTestFinished, vi } from 'vitest';
 
+import { attachmentPart } from '@socio/shared/media/refs';
+
 import { validateRuntimeScope } from '../src/server/turns/runtime-scope.js';
 
 import { ScriptAgent } from './fixtures/script-agent.js';
@@ -152,11 +154,9 @@ it('refuses inline bytes in new user messages and keeps accepting them in stored
         [{ type: 'binary', mimeType: 'image/png', data: 'AAAA' }],
         [{ type: 'binary', mimeType: 'image/png', url: 'https://x.invalid/a.png' }],
         [{ type: 'binary', mimeType: 'image/png', id: 'not-an-attachment' }],
-        Array.from({ length: 11 }, () => ({
-            type: 'binary',
-            mimeType: 'image/png',
-            id: 'cbatt_AAAAAAAAAAAAAAAAAAAAAA',
-        })),
+        // The pre-1.0 reference: no client sends it since AG-UI 1.0.
+        [{ type: 'binary', mimeType: 'image/png', id: 'cbatt_AAAAAAAAAAAAAAAAAAAAAA' }],
+        Array.from({ length: 11 }, () => attachmentPart({ mimeType: 'image/png', id: 'cbatt_AAAAAAAAAAAAAAAAAAAAAA' })),
     ]) {
         const response = await run([legacy, { id: 'fresh', role: 'user', content }]);
         expect(response.status, JSON.stringify(content)).toBe(400);
@@ -165,6 +165,20 @@ it('refuses inline bytes in new user messages and keeps accepting them in stored
         ((await (await run([legacy, { id: 'fresh', role: 'user', content: [image] }])).json()) as { error: string })
             .error,
     ).toBe('Attach files with the attach button.');
+    expect(
+        (
+            (await (
+                await run([
+                    legacy,
+                    {
+                        id: 'fresh',
+                        role: 'user',
+                        content: [{ type: 'binary', mimeType: 'image/png', id: 'cbatt_AAAAAAAAAAAAAAAAAAAAAA' }],
+                    },
+                ])
+            ).json()) as { error: string }
+        ).error,
+    ).toBe('This version of Socio is out of date. Update it to send attachments.');
     // References, and the stored legacy message, pass on to the runtime.
     const passed = await run([
         legacy,
@@ -173,12 +187,7 @@ it('refuses inline bytes in new user messages and keeps accepting them in stored
             role: 'user',
             content: [
                 { type: 'text', text: 'and this' },
-                {
-                    type: 'binary',
-                    mimeType: 'image/png',
-                    id: 'cbatt_AAAAAAAAAAAAAAAAAAAAAA',
-                    filename: 'a.png',
-                },
+                attachmentPart({ mimeType: 'image/png', id: 'cbatt_AAAAAAAAAAAAAAAAAAAAAA', filename: 'a.png' }),
             ],
         },
     ]);

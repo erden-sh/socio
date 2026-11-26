@@ -15,7 +15,6 @@ import type { ModelChoice } from '@socio/shared/inference';
 import { modelChoiceInput } from '@socio/shared/inference/model-choice-input';
 import { learningContainerIdSchema, validateLearningSettings } from '@socio/shared/learning';
 import { LOCALS } from '@socio/shared/mascot';
-import { legacyMediaJson, wantsLegacyMedia } from '@socio/shared/media/legacy-media';
 import { displayContent } from '@socio/shared/media/refs';
 import { NOTIFICATION_CONTENT } from '@socio/shared/notifications';
 import { onboardingPreferencesSchema } from '@socio/shared/onboarding';
@@ -719,8 +718,7 @@ export function workspaceRoutes(platform: WorkspaceRoutesDeps, voice: VoiceShape
             // (CB-210), and is kept so the trace shows the socio thought.
             .filter((message) => message.text.trim() || message.role === 'reasoning')
             .map(({ id, role, text, content, author, socioId, handoff, toolCallId, toolCalls }) =>
-                // Its author and time in `metadata`, which AG-UI 1.0 keeps, and
-                // for now at the top level too (`withSocioFields`).
+                // Its author and time in `metadata`, which AG-UI 1.0 keeps (`withSocioFields`).
                 withSocioFields(
                     {
                         id,
@@ -741,9 +739,7 @@ export function workspaceRoutes(platform: WorkspaceRoutesDeps, voice: VoiceShape
             );
         return c.json({
             conversation: thread,
-            // COMPAT(ag-ui-1.0): attachments as the pre-1.0 reference for a
-            // client that doesn't read AG-UI 1.0's media parts (`legacy-media`).
-            messages: wantsLegacyMedia(c.req.raw.headers) ? legacyMediaJson(shown) : shown,
+            messages: shown,
             ...(room
                 ? {
                       cursor,

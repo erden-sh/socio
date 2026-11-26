@@ -204,7 +204,6 @@ describe('signInWithPassword: the request', () => {
             'content-type': 'application/json',
             origin: ORIGIN,
             'user-agent': USER_AGENT,
-            'x-socio-reads': 'ag-ui-media',
         });
     });
 

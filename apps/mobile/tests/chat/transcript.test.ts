@@ -175,6 +175,24 @@ describe('message times', () => {
         expect(rowTime(rows[2] as { at?: number }, now)).toBeNull();
     });
 
+    it('else take a message’s own time from its metadata, or the top level a message stored before AG-UI 1.0 has', () => {
+        const rows = transcriptRows(
+            [
+                run(1, [
+                    { ...user('u1'), metadata: { at } } as unknown as Message,
+                    { ...reply('a1'), at: at + 60_000 } as unknown as Message,
+                    // The runs' time wins over the message's own.
+                    { ...user('u2'), metadata: { at: 1 } } as unknown as Message,
+                ]),
+            ].map((stored) => ({
+                ...stored,
+                times: { messages: [['u2', at + 120_000]], tools: [], reasoning: [] },
+            })) as HistoryRun[],
+            NO_LIVE_TURN,
+        );
+        expect(rows.map((row) => (row as { at?: number }).at)).toEqual([at, at + 60_000, at + 120_000]);
+    });
+
     it('say a bubble’s time to screen readers, after its words', () => {
         expect(bubbleLabel({ text: 'Hi', at }, now)).toBe('Hi, 10:01 AM');
         expect(bubbleLabel({ text: 'Hi' }, now)).toBeUndefined();

@@ -3,7 +3,6 @@ import { randomUUID } from 'node:crypto';
 import { EventType, type BaseEvent, type Message } from '@ag-ui/core';
 
 import { isApprovalNote } from '@socio/shared/approvals';
-import { upgradeMessageAttachments } from '@socio/shared/media/refs';
 import { pageReviewTool } from '@socio/shared/pages/page-review';
 import {
     SENDER_METADATA,
@@ -201,14 +200,9 @@ export async function acceptedMessages(
             if (message.id.startsWith(voiceReceiptMessagePrefix)) {
                 return undefined;
             }
-            // A pre-1.0 attachment reference (the native app builds already
-            // shipped send one) becomes the 1.0 media part: CopilotKit's request
-            // parser drops the old shape, and the conversation stores the new.
-            said.push(
-                upgradeMessageAttachments(
-                    isApprovalNote(message) ? withoutSender(message) : withSender(message, sender),
-                ),
-            );
+            // Its attachments come as AG-UI 1.0 media parts: the run endpoint
+            // refuses the pre-1.0 reference in a new message (`checkNewUserContent`).
+            said.push(isApprovalNote(message) ? withoutSender(message) : withSender(message, sender));
         } else if (message.role === 'tool') {
             open ??= new Set(await openCalls());
             if (!open.delete(message.toolCallId)) {

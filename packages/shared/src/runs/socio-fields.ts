@@ -5,14 +5,9 @@
  *
  * AG-UI 1.0's client takes off every top-level field the protocol doesn't
  * define, in the browser and on the server alike (`runAgent`, a replay), so
- * these travel in `metadata`, which it keeps. Readers prefer `metadata` and
- * fall back to the top level.
- *
- * COMPAT(ag-ui-1.0): the native app builds already shipped (0.2.6 and
- * earlier) read these fields at the top level only, so they are written in
- * both places for now. Once every supported build reads `metadata`, make
- * `withSocioFields` write `metadata` alone and drop the fallback in
- * `socioField`.
+ * these travel in `metadata`, which it keeps, and only there. Readers prefer
+ * `metadata` and fall back to the top level, where a server from before 1.0
+ * wrote them (records and responses a client kept from then).
  */
 
 import type { MessageAuthor } from '../types.js';
@@ -25,8 +20,8 @@ const metadataOf = (value: unknown): Fields | undefined => {
 };
 
 /**
- * `target` with `fields` set in its `metadata` (with what it held) and, for
- * now, at its top level too. A field whose value is undefined is left out.
+ * `target` with `fields` set in its `metadata` (with what it held). A field
+ * whose value is undefined is left out.
  */
 export function withSocioFields<T extends object>(target: T, fields: Fields): T {
     const given = Object.fromEntries(Object.entries(fields).filter(([, value]) => value !== undefined));
@@ -35,9 +30,6 @@ export function withSocioFields<T extends object>(target: T, fields: Fields): T 
     }
     return {
         ...target,
-        // COMPAT(ag-ui-1.0): the top-level copies, for the native app builds
-        // that predate reading `metadata`. Remove with `socioField`'s fallback.
-        ...given,
         metadata: { ...metadataOf(target), ...given },
     };
 }
@@ -48,7 +40,8 @@ export function socioField(source: unknown, name: string): unknown {
     if (metadata && metadata[name] !== undefined) {
         return metadata[name];
     }
-    // COMPAT(ag-ui-1.0): what a server from before 1.0 wrote, top level only.
+    // What a server from before AG-UI 1.0 wrote: top level only. Kept for
+    // records stored then; nothing writes it there now.
     return source && typeof source === 'object' ? (source as Fields)[name] : undefined;
 }
 
@@ -83,10 +76,11 @@ export function withoutSocioFields<T extends object>(source: T, names: readonly 
 /**
  * A RUN_ERROR's operator detail, as an agent writes it for the runner
  * (`LocalAgentRunner` keeps it in `agent_runs.errorDetail` and takes it off
- * the event, so no client gets it). In both places, as `withSocioFields`.
+ * the event, so no client gets it). In `metadata`, and at the top level for
+ * the server's own reader (the Dot agent's failure log, `dots/dot-agent.ts`):
+ * neither copy ever leaves the server.
  */
 export const errorDetailFields = (detail: string) => ({
-    // COMPAT(ag-ui-1.0): the top-level copy; remove with `withSocioFields`'.
     errorDetail: detail,
     metadata: { errorDetail: detail },
 });

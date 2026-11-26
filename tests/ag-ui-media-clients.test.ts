@@ -1,19 +1,19 @@
-// AG-UI 1.0 (deps/ag-ui-1): the server stores attachments as 1.0 media parts,
-// and gives them as the pre-1.0 `binary` reference to a client that doesn't
-// send `X-Socio-Reads: ag-ui-media` (the native app builds already shipped,
-// 0.2.6 and earlier), in history, the transcript and the live stream. Without
-// that those builds show no attachment, and their steering recovery (which
-// finds a delivered message in history by its attachment ids) sends it again.
+// AG-UI 1.0 (deps/ag-ui-1): every client gets attachments as 1.0 media parts,
+// with no header to ask for them, in history, the transcript and the live
+// stream; a transcript message's author and time come in its `metadata`
+// only. A run stored before 1.0, its attachment as the pre-1.0 `binary`
+// reference, reads the same: the replay upgrades it on the way out.
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import type { DatabaseSync } from 'node:sqlite';
 
 import type { Message } from '@ag-ui/client';
 import { lastValueFrom } from 'rxjs';
 import { afterEach, expect, it, vi } from 'vitest';
 
 import type { HistoryPage } from '@socio/shared/chat/chat-history';
-import { attachmentPart, READS_AG_UI_MEDIA, READS_HEADER } from '@socio/shared/media/refs';
+import { attachmentPart } from '@socio/shared/media/refs';
 
 import { DEFAULT_MOCK_USERS } from '../src/server/auth/config.js';
 import { MockAuthProvider } from '../src/server/auth/mock.js';
@@ -34,16 +34,9 @@ const REF = { id: ID, mimeType: 'image/png', filename: 'shot.png' };
 const NEW_SHAPE = attachmentPart(REF);
 const OLD_SHAPE = { type: 'binary', ...REF };
 
-/** What a shipped build's steering recovery matches a delivered message by (0.2.6's `fileIds`). */
-const shippedFileIds = (content: unknown): string[] =>
-    Array.isArray(content)
-        ? (content as { type?: unknown; id?: unknown }[])
-              .filter((part) => part?.type === 'binary' && typeof part.id === 'string')
-              .map((part) => part.id as string)
-        : [];
-
-async function fixture() {
-    const dir = mkdtempSync(join(tmpdir(), 'cb-legacy-media-'));
+/** A conversation with one stored turn, its person's message holding `part`. */
+async function fixture(part: unknown) {
+    const dir = mkdtempSync(join(tmpdir(), 'cb-ag-ui-media-'));
     cleanup.push(() => rmSync(dir, { recursive: true, force: true }));
     const { platform, workspace, app, dispose } = await makeTestRuntime({
         config: { sessionSecret: 'secret-0123456789abcdef-xyz', data: { userDataDir: dir } },
@@ -66,12 +59,12 @@ async function fixture() {
     const cookie = login.headers.get('set-cookie')!.split(';')[0];
     const dot = workspace.dots()[0];
     const thread = await platform.createConversation(dot.id, 'A', 'alice');
-    // A turn the runner stored, its person's message with an attachment as
-    // the server writes it now.
+    // A turn the runner stored, its person's message with an attachment in
+    // the given shape: as the server writes it now, or as one stored before 1.0.
     const message = {
         id: 'u1',
         role: 'user',
-        content: [{ type: 'text', text: 'see' }, NEW_SHAPE],
+        content: [{ type: 'text', text: 'see' }, part],
     } as unknown as Message;
     const agent = new ScriptAgent('a chart');
     agent.agentId = dot.id;
@@ -93,18 +86,21 @@ async function fixture() {
         }),
     );
     await vi.waitFor(() => expect(platform.runner.activeRunId(thread.id)).toBeUndefined());
-    /** A request as a client: a shipped build sends no `X-Socio-Reads`. */
-    const request = (path: string, reads: boolean, init: { method?: string; body?: unknown } = {}) =>
+    // The run as stored: the shape it was given, never rewritten in the row.
+    const stored = (platform.runner as unknown as { db: DatabaseSync }).db
+        .prepare('SELECT events FROM agent_runs WHERE runId = ?')
+        .get('r1') as { events: string };
+    /** A request as a client: the cookie and nothing else, no header asking for a shape. */
+    const request = (path: string, init: { method?: string; body?: unknown } = {}) =>
         app.request(`/api${path}`, {
             method: init.method ?? 'GET',
             headers: {
                 cookie,
-                ...(reads ? { [READS_HEADER]: READS_AG_UI_MEDIA } : {}),
                 ...(init.body === undefined ? {} : { 'Content-Type': 'application/json' }),
             },
             ...(init.body === undefined ? {} : { body: JSON.stringify(init.body) }),
         });
-    return { thread, dot, request };
+    return { thread, dot, request, stored: stored.events };
 }
 
 /** The `data:` JSON of a server-sent events body, until `enough` says so (a follow stream stays open). */
@@ -145,32 +141,35 @@ const startedContent = (events: unknown[]) =>
     )?.input?.messages?.find((message) => message.id === 'u1')?.content;
 
 it.each([
-    ['a shipped build (no X-Socio-Reads) gets the pre-1.0 binary reference', false, OLD_SHAPE],
-    ['a build that reads AG-UI 1.0 media gets the media part', true, NEW_SHAPE],
-])('%s in history, the transcript and the live stream', async (_, reads, shape) => {
-    const f = await fixture();
-    const expected = [{ type: 'text', text: 'see' }, shape];
+    ['a run stored now (1.0 media part)', NEW_SHAPE, true],
+    ['a run stored before 1.0 (binary reference)', OLD_SHAPE, false],
+])('%s reaches every client as the 1.0 media part, with no header', async (_, part, modern) => {
+    const f = await fixture(part);
+    expect(f.stored.includes('"type":"binary"')).toBe(!modern);
+    const expected = [{ type: 'text', text: 'see' }, NEW_SHAPE];
 
-    // History: what the app syncs, and what its steering recovery searches.
-    const history = (await (await f.request(`/conversations/${f.thread.id}/history`, reads)).json()) as HistoryPage;
+    // History: what the apps sync, and what the native app's steering recovery searches.
+    const history = (await (await f.request(`/conversations/${f.thread.id}/history`)).json()) as HistoryPage;
     const sent = history.runs.flatMap((run) => run.messages).find((message) => message.id === 'u1')!;
     expect(sent.content).toEqual(expected);
-    // The recovery a shipped build runs finds the delivered copy by its ids,
-    // so it doesn't send it again; on a 1.0 build the shared reader does.
-    expect(shippedFileIds(sent.content)).toEqual(reads ? [] : [ID]);
 
-    // The transcript.
-    const transcript = (await (await f.request(`/conversations/${f.thread.id}/transcript`, reads)).json()) as {
-        messages: Message[];
+    // The transcript: the attachment, and its time in `metadata` only (an
+    // author, in a room, goes there the same way: `withSocioFields`).
+    const transcript = (await (await f.request(`/conversations/${f.thread.id}/transcript`)).json()) as {
+        messages: Array<Message & { metadata?: Record<string, unknown> }>;
     };
-    expect(transcript.messages.find((message) => message.id === 'u1')!.content).toEqual(expected);
+    const shown = transcript.messages.find((message) => message.id === 'u1')!;
+    expect(shown.content).toEqual(expected);
+    expect(typeof shown.metadata?.at).toBe('number');
+    expect(shown).not.toHaveProperty('author');
+    expect(shown).not.toHaveProperty('at');
 
     // The live stream: the conversation's follow stream, from the start…
-    const follow = await f.request(`/conversations/${f.thread.id}/stream?after=0`, reads);
+    const follow = await f.request(`/conversations/${f.thread.id}/stream?after=0`);
     expect(startedContent(await frames(follow, (seen) => startedContent(seen) !== undefined))).toEqual(expected);
 
     // …and the runtime's connect, which the apps' run client opens.
-    const connect = await f.request(`/copilotkit/agent/${f.dot.id}/connect`, reads, {
+    const connect = await f.request(`/copilotkit/agent/${f.dot.id}/connect`, {
         method: 'POST',
         body: {
             threadId: f.thread.id,
