@@ -44,8 +44,9 @@ describe('route presets', () => {
         });
     });
 
-    it('shows immersive media with no bar and no dismiss gesture, hiding the system bars when asked', () => {
-        expect(immersive()).toEqual({ presentation: 'fullScreenModal', headerShown: false, gestureEnabled: false });
+    it('shows immersive media over the screen underneath, with no bar and no system dismiss gesture, hiding the system bars when asked', () => {
+        // Transparent, so the viewer's own drag to dismiss shows the screen underneath (CB-537).
+        expect(immersive()).toEqual({ presentation: 'transparentModal', headerShown: false, gestureEnabled: false });
         expect(immersive({ hideSystemBars: true })).toMatchObject({
             statusBarHidden: true,
             navigationBarHidden: true,
