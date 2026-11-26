@@ -29,14 +29,29 @@ How this file is kept (scripts/release.mjs and the app's build read it):
 
 ## Unreleased
 
+### Summary
+
+Saving a page keeps everything you didn't edit exactly as it was, and socios no longer fail a tool call over a number or a yes or no sent as text. Socio Mobile testers need the latest build.
+
+- Saving a page keeps the parts you didn't edit exactly as they were
+- Socios no longer fail a tool call over a number or a yes or no sent as text
+- Socio Mobile 0.2.6 and older need 0.2.7
+- Dependencies move to patched versions
+
 ### Breaking
 
-- **Socio Mobile 0.2.6 and older need the next TestFlight build.** The server no longer keeps answering in the shapes the app had before AG-UI 1.0: attachments come only as AG-UI 1.0 media parts, a transcript message's `author` and `at` only in its `metadata`, and the `X-Socio-Reads` header is gone. An installed build of 0.2.6 or older shows no attachments, loses some run details (a message's author and time), may send a delivered message again after a lost answer, and can't send an attachment (the server refuses the old reference and says to update). Testers update to the next TestFlight build. Conversations stored before AG-UI 1.0 still read in full, their old attachment references included.
+- **Socio Mobile 0.2.6 and older need 0.2.7 (build 3806): TestFlight on iOS, Socio Preview 3806 on Android.** The server no longer keeps answering in the shapes the app had before AG-UI 1.0: attachments come only as AG-UI 1.0 media parts, a transcript message's `author` and `at` only in its `metadata`, and the `X-Socio-Reads` header is gone. An installed build of 0.2.6 or older shows no attachments, loses some run details (a message's author and time), may send a delivered message again after a lost answer, and can't send an attachment (the server refuses the old reference and says to update). Testers update to 0.2.7: from TestFlight on iOS, and Socio Preview on Android. Conversations stored before AG-UI 1.0 still read in full, their old attachment references included.
 
 ### Changed
 
 - **A tool input with a number or a boolean sent as text runs instead of failing.** When a socio's call to a server tool fails the tool's schema only because a number came as text (`"timeoutMs": "18000"`) or a boolean as `"true"` or `"false"`, Socio reads it as the number or boolean and runs the tool, so the model no longer spends a round on the retry; the `Model tool call … repaired input` log line names each field. Nothing else is repaired: `null`, an empty or other text, a missing field, and a field whose schema also takes text or an object stay as they were, and the model gets the schema error as before. A whole number field takes plain digits only (`"1e3"` and `"1.5"` stay text). The library's own repair stays off. Each schema failure, repaired or not, is a new `tool_input` entry in the turn's trace: the tool, each issue's path, code and expected and received types, and the repair, never a text value.
 - **AG-UI 1.0 and CopilotKit 1.90.** Socio moves to `@ag-ui/client` and `@ag-ui/core` 1.0.5 and `@copilotkit/*` 1.90; Telegram stays on `@copilotkit/channels-*` 0.11.1, the last release that has it. Attachments are now written as AG-UI 1.0 media parts (`image`, `audio`, `video` or `document`, by the file's type) whose `source` is `{ type: 'file', value: <attachment id>, provider: 'socio' }`, with the file name in the part's `metadata`, from the web app, Socio Mobile, the steering queue and Telegram. The old `{ type: 'binary', id, mimeType, filename }` reference is still read in stored conversations, and every client gets it as the new part. A transcript message's `author` and `at` come in its `metadata`, which AG-UI 1.0 keeps. Runs stored before the upgrade replay as before: their reasoning events (`THINKING_*`, now `REASONING_*`) and their attachments come through. Changing dependencies now goes through `pnpm deps` (docs/TOOLING.md).
+- **Saving a page keeps untouched blocks byte-identical.** Editing a page in the web editor or in Socio Mobile no longer rewrites the whole document on save: every block you didn't touch keeps its exact Markdown, spacing and markers included, and only the blocks you changed are written again. A page that can't be matched block by block saves as it did before.
+- **Dependencies move to patched versions.** The security pass clears 60 of the 69 open dependency alerts (Hono, the MCP SDK, nodemailer, Zod, Vite and others, plus scoped overrides). Effect moves to 4.1, Vitest to 5.1, jsdom to 31, TanStack AI to 1.8, SimpleWebAuthn to 14, web-push to 4 and `@noble/curves` and `@noble/hashes` to 2.4. Passkeys, Web Push and DPoP proofs work as before; nothing changes in how Socio works.
+
+### Upgrading
+
+- **Images come from `ghcr.io/erden-sh`.** From this release, Socio's images are published as `ghcr.io/erden-sh/company-brain:vX.Y.Z@sha256:<index-digest>`, and the same for `company-brain-apps`, `company-brain-coding-git`, `socio-coding` and `company-brain-supervisor`. Point every image reference at the new owner and pin the new index digests. No migration or setting changes.
 
 ## v0.53.1 (2026-11-24)
 
