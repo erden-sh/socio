@@ -5,7 +5,7 @@ so the Socio app gets notifications without running in the background. It never 
 encrypts each push for the phone's own keys (RFC 8291), and the phone decrypts it. WebCrypto and
 fetch only, no runtime dependency, no Effect, no `nodejs_compat`.
 
-It runs on Ingenio Ventures' Cloudflare account, on Workers Paid. Nothing in this repository deploys
+It runs on Socio's own Cloudflare account, on Workers Paid. Nothing in this repository deploys
 it: the operator's IaC does.
 
 | Worker               | Host                                                        | For                                                       |
@@ -14,7 +14,7 @@ it: the operator's IaC does.
 | `socio-push`         | `https://push.socio.sh`                                     | every build that ships, TestFlight and internal tests too |
 | (local)              | `127.0.0.1:8787`, or a quick tunnel's `*.trycloudflare.com` | `wrangler dev` on a developer's machine                   |
 
-Each host is a Worker custom domain on the socio.sh zone (Ingenio Ventures' account, bought
+Each host is a Worker custom domain on the socio.sh zone (Socio's own Cloudflare account, bought
 2026-11-10): `routes = [{ pattern = "…", custom_domain = true }]` in `wrangler.toml`, so Cloudflare
 makes the DNS record and the certificate on deploy. `workers_dev` is off in both environments, so
 the custom domain is each Worker's only host: a push's VAPID `aud` must equal the one `RELAY_ORIGIN`,

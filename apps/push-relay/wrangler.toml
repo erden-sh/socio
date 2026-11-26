@@ -2,7 +2,7 @@
 #
 # The top level is for `wrangler dev --local` on a developer's machine: local D1, local rate
 # limiters, a loopback origin. `staging` and `production` are for the deploy pipeline, which deploys
-# them to the Ingenio Ventures Cloudflare account and fills in what is marked "deploy:" below. Each
+# them to Socio's own Cloudflare account and fills in what is marked "deploy:" below. Each
 # serves one Worker custom domain on socio.sh:
 # push-staging.socio.sh and push.socio.sh, the hosts DEFAULT_PUSH_HOSTS names
 # (src/server/notifications/contract.ts). Nothing here names the account: no account_id (the deploy

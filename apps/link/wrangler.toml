@@ -2,7 +2,7 @@
 #
 # The top level is for `wrangler dev --local` on a developer's machine and the test bench (behind
 # a quick tunnel). `staging` and `production` are for the deploy pipeline, which deploys them to
-# the Ingenio Ventures Cloudflare account; nothing in this repository deploys. Each serves one Worker custom domain on socio.sh, the hosts
+# Socio's own Cloudflare account; nothing in this repository deploys. Each serves one Worker custom domain on socio.sh, the hosts
 # `@socio/shared/device-sign-in` names (LINK_STAGING_HOST, LINK_HOST):
 #   - staging, link-staging.socio.sh: the development builds only (the public debug key);
 #   - production, link.socio.sh: the production and preview builds only (src/apps.ts, HOST_VARIANTS).
