@@ -5,6 +5,26 @@ build's "What to Test" in TestFlight (AGENTS.md, Versions). An entry is `## <ver
 <YYYY-MM-DD>)`, or `(build pending)` until it is uploaded, then a short **What to test** list in plain
 words, grouped by screen.
 
+## 0.2.8 (build pending)
+
+Media in the app, files that open in the app instead of the browser, and a clear Update Socio screen when a workspace needs a newer app.
+
+**What to test**
+
+Links
+
+- After this update, scan the QR code from Socio on a computer with the Camera app: it opens Socio instead of the browser.
+
+Media
+
+- More → Media: browse your folders, switch between grid and list, filter by kind, and search.
+- Open a picture, a PDF and a text file: the picture opens in the viewer, the PDF in Quick Look, and the text shows on its page. Share and Save work on each.
+- In a chat or a room, tap a file under a message: it opens its page in Media, not the browser. That includes a file someone else sent in a room.
+
+Updates
+
+- If a workspace's server needs a newer app, that workspace shows Update Socio with a TestFlight button, and your other workspaces keep working. Nothing you wrote is lost: it sends once you update.
+
 ## 0.2.7 (build 3806, 2026-11-26)
 
 Your three notes on 0.2.6, editing in datasets, and a newer foundation under the app.
