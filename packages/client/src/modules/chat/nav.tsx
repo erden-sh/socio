@@ -118,7 +118,7 @@ function DotRow({ dot }: { dot: Dot }) {
                         onClick={nav.close}
                     >
                         {mascot}
-                        <span>{dot.name}</span>
+                        <span className="min-w-0 truncate">{dot.name}</span>
                         <DotVisibilityBadge dot={dot} className="ml-1 group-data-[collapsible=icon]:hidden" />
                     </Link>
                 </SidebarMenuButton>
