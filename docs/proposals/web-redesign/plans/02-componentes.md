@@ -12,6 +12,8 @@
 
 Usar el contrato de temas de 1.1. Conservar firmas, roles, eventos, foco y comportamiento de teclado. Los estilos de las vistas pueden adoptar la nueva base de forma incremental. La revisión visual parte de la galería HTML 1.0. Mantener un commit por lote verificable.
 
+El prototipo aprobado de People Desk es la referencia visual de Erden Glass. La galería reúne las primitivas reales en un directorio de ejemplo para comprobar el borde iluminado de la barra, las cápsulas de navegación y acción, los paneles sólidos y el tratamiento de selección en claro y oscuro.
+
 Revisar zoom y cadenas largas (2.1), entrada inválida y campo deshabilitado (2.2), cambio de tema con overlay abierto (2.3), foco al cerrar o filtrar un resultado (2.3 y 2.4) y datos incompletos de los paneles (2.4).
 
 ## 2.1 · Galería con las primitivas reales · UI-01, UI-03

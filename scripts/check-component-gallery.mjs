@@ -22,6 +22,8 @@ try {
     assert.equal(new Set(families).size, 25);
     const theme = page.getByRole('combobox', { name: 'Theme', exact: true });
     const mode = page.getByRole('combobox', { name: 'Color mode', exact: true });
+    const desk = page.getByRole('region', { name: 'People Desk' });
+    const deskToolbar = page.locator('.gallery-desk [data-slot="app-header"]');
     const themes = await theme.locator('option').evaluateAll((options) => options.map((option) => option.value));
     assert.equal(themes.length, 7);
     assert.equal(await theme.inputValue(), 'erden-glass');
@@ -49,16 +51,57 @@ try {
             if (id === 'socio' || id === 'erden-glass') {
                 await savePreview(`${id}-${scheme}`);
             }
+            if (id === 'erden-glass') {
+                await page.evaluate(() => window.scrollTo(0, 0));
+                await savePreview(`erden-glass-people-desk-${scheme}`, false);
+            }
         }
     }
     await theme.selectOption('erden-glass');
     await mode.selectOption('system');
     await page.emulateMedia({ colorScheme: 'dark' });
     await waitAppearance('erden-glass', 'dark');
-    assert.match(
-        await page.locator('.gallery-header').evaluate((element) => getComputedStyle(element).backdropFilter),
-        /blur/,
-    );
+    assert.match(await deskToolbar.evaluate((element) => getComputedStyle(element).backdropFilter), /blur/);
+    assert.equal(await deskToolbar.evaluate((element) => getComputedStyle(element).borderRadius), '22px');
+    const invite = desk.getByRole('button', { name: 'Invite people' });
+    assert.equal(await invite.evaluate((element) => getComputedStyle(element).borderRadius), '999px');
+    const deskTabs = desk.getByRole('tablist');
+    assert.equal(await deskTabs.evaluate((element) => getComputedStyle(element).borderRadius), '999px');
+    for (const panel of await desk.locator('[data-slot="card"]').all()) {
+        const panelStyle = await panel.evaluate((element) => {
+            const { backdropFilter, borderRadius } = getComputedStyle(element);
+            return { backdropFilter, borderRadius };
+        });
+        assert.deepEqual(panelStyle, { backdropFilter: 'none', borderRadius: '18px' });
+    }
+    const expired = desk.getByRole('button', { name: /Sofia Rivera/ }).getByText('Invite expired');
+    assert.equal(await expired.evaluate((element) => getComputedStyle(element, '::before').width), '6px');
+    const quick = desk.getByRole('button', { name: 'Quick actions' });
+    await quick.focus();
+    await page.keyboard.press('Enter');
+    const command = page.getByRole('dialog', { name: 'Quick actions' });
+    await command.waitFor();
+    assert.match(await command.evaluate((element) => getComputedStyle(element).backdropFilter), /blur/);
+    await savePreview('erden-glass-quick-actions-dark', false);
+    await page.emulateMedia({ contrast: 'more' });
+    assert.equal(await command.evaluate((element) => getComputedStyle(element).backdropFilter), 'none');
+    assert.doesNotMatch(await command.evaluate((element) => getComputedStyle(element).backgroundColor), /\//);
+    await page.emulateMedia({ contrast: 'no-preference' });
+    await command.getByRole('combobox').fill('sofia');
+    await page.keyboard.press('Enter');
+    await command.waitFor({ state: 'hidden' });
+    await page.waitForFunction(() => document.activeElement?.textContent === 'Quick actions');
+    assert.equal(await desk.getByRole('button', { name: /Sofia Rivera/ }).getAttribute('aria-pressed'), 'true');
+    const review = desk.getByRole('button', { name: 'Access review' });
+    await review.focus();
+    await page.keyboard.press('Enter');
+    const accessReview = page.getByRole('dialog', { name: 'Access review' });
+    await accessReview.getByRole('button', { name: /Elena Morales/ }).click();
+    await accessReview.waitFor({ state: 'hidden' });
+    assert.equal(await desk.getByRole('button', { name: /Elena Morales/ }).getAttribute('aria-pressed'), 'true');
+    await desk.getByRole('searchbox').fill('Avery');
+    assert.equal(await desk.getByRole('button', { name: /Elena Morales/ }).count(), 0);
+    await desk.getByRole('searchbox').fill('');
 
     const menuTrigger = page.getByRole('button', { name: 'Person actions' });
     const menu = page.getByRole('menu');
@@ -67,17 +110,14 @@ try {
     assert.match(await menu.evaluate((node) => getComputedStyle(node).backdropFilter), /blur/);
     await page.emulateMedia({ forcedColors: 'active' });
     assert.equal(await menu.evaluate((node) => getComputedStyle(node).backdropFilter), 'none');
-    assert.equal(
-        await page.locator('.gallery-header').evaluate((element) => getComputedStyle(element).backdropFilter),
-        'none',
-    );
+    assert.equal(await deskToolbar.evaluate((element) => getComputedStyle(element).backdropFilter), 'none');
     await page.keyboard.press('Escape');
     await menu.waitFor({ state: 'hidden' });
     await page.emulateMedia({ forcedColors: 'none' });
 
-    await mode.focus();
-    await page.keyboard.press('Tab');
     const primary = page.getByRole('button', { name: 'Confirm changes' });
+    await page.keyboard.press('Tab');
+    await primary.focus();
     assert.equal(await primary.evaluate((button) => button === document.activeElement), true);
     assert.equal(await primary.evaluate((button) => getComputedStyle(button).outlineWidth), '2px');
     assert.notEqual(await primary.evaluate((button) => getComputedStyle(button).transitionProperty), 'all');
@@ -121,6 +161,7 @@ try {
     assert.equal(await email.getAttribute('aria-invalid'), 'false');
     await theme.selectOption('erden');
     await waitAppearance('erden', 'dark');
+    assert.notEqual(await invite.evaluate((element) => getComputedStyle(element).borderRadius), '999px');
     assert.equal(await email.inputValue(), 'review@studio.example');
     assert.equal(await page.getByRole('button', { name: 'Unavailable' }).isEnabled(), false);
     await page.getByRole('button', { name: 'Name', exact: true }).click();
@@ -156,8 +197,16 @@ try {
     await page.setViewportSize({ width: 390, height: 844 });
     await theme.selectOption('erden-glass');
     await waitAppearance('erden-glass', 'light');
+    const expiredRow = desk.getByRole('button', { name: /Sofia Rivera/ });
+    const expiredBadgeBounds = await expired.boundingBox();
+    const rowArrowBounds = await expiredRow.locator('.desk-row-arrow').boundingBox();
+    assert.ok(
+        expiredBadgeBounds && rowArrowBounds && expiredBadgeBounds.x + expiredBadgeBounds.width < rowArrowBounds.x,
+    );
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await savePreview('erden-glass-people-desk-mobile', false);
     for (const [action, role, name, slot] of [
-        ['Invite people', 'dialog', 'Invite people', 'dialog-content'],
+        ['Open invitation form', 'dialog', 'Invite people', 'dialog-content'],
         ['Remove invitation', 'alertdialog', 'Remove this invitation?', 'alert-dialog-content'],
         ['Person details', 'dialog', 'Imani Brooks', 'sheet-content'],
         ['Activity filter', 'dialog', undefined, 'popover-content'],
@@ -192,7 +241,7 @@ try {
     await savePreview('erden-glass-mobile');
     assert.deepEqual(errors, []);
     console.log(
-        'Component gallery passed: 25 families, 14 appearances, form states, keyboard focus, open overlay, 390px layout and solid fallback.',
+        'Component gallery passed: People Desk surfaces and actions, 25 families, 14 appearances, keyboard focus, 390px layout and solid fallback.',
     );
 } finally {
     await browser.close();

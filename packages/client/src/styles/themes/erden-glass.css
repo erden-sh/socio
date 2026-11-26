@@ -90,52 +90,194 @@
     --chat-link: #a3e7db;
 }
 
-/* Glass is limited to the controls above the solid working surfaces. */
+/* The People Desk material separates floating controls from solid working surfaces. */
 :root[data-theme='erden-glass'] {
-    --glass-opacity: 84%;
-    --glass-filter: blur(20px) saturate(145%);
+    --glass-rim: light-dark(#ffffffdc, #d7faff40);
+    --glass-highlight: light-dark(#ffffffbf, #d3feff23);
+    --glass-recess: light-dark(#5280941d, #050e1654);
+    --glass-shadow-color: light-dark(#25617021, #03080d70);
+    --glass-edge: inset 0 1px 0 var(--glass-highlight);
+    --glass-float:
+        0 1px 2px var(--glass-recess), 0 10px 26px -10px var(--glass-shadow-color), var(--glass-edge),
+        inset 0 -1px 0 var(--glass-recess);
+    --glass-filter: blur(18px) saturate(117%);
+    --glass-opacity: 77%;
+    --glass-command-opacity: 89%;
+    --glass-toolbar-button-opacity: 52%;
+    --glass-panel-radius: 18px;
+    --glass-floating-radius: 22px;
+    --glass-canvas:
+        radial-gradient(ellipse 670px 420px at 7% 6%, light-dark(#99dace8c, #3caa9570), transparent 86%),
+        radial-gradient(ellipse 630px 355px at 82% 0%, light-dark(#adcaf584, #4676ad66), transparent 90%),
+        radial-gradient(ellipse 580px 410px at 100% 96%, light-dark(#7eaede4d, #4a62ac50), transparent 94%);
+    --control-selection: light-dark(#e4efed, #354c4f);
+    --control-selection-border: light-dark(#acceca, #52797c);
 }
 
-@media (prefers-reduced-transparency: reduce), (forced-colors: active) {
-    :root[data-theme='erden-glass'] {
-        --glass-opacity: 100%;
-        --glass-filter: none;
-    }
+:root[data-theme='erden-glass'] [data-slot='workspace-canvas'] {
+    background-image: var(--glass-canvas);
 }
 
 :root[data-theme='erden-glass']
     :is(
         [data-slot='app-header'],
         [data-slot='sidebar-inner'],
+        [data-slot='dialog-content'][data-content='command'],
         [data-slot='dropdown-menu-content'],
         [data-slot='dropdown-menu-sub-content'],
         [data-slot='select-content'],
         [data-slot='popover-content']
     ) {
-    --glass-surface: var(--popover);
-    background-color: var(--glass-surface);
+    background-color: var(--popover);
 }
 
-:root[data-theme='erden-glass'] :is([data-slot='app-header'], [data-slot='sidebar-inner']) {
-    --glass-surface: var(--sidebar);
-    border-color: var(--border);
+:root[data-theme='erden-glass']
+    :is([data-slot='app-header'], [data-slot='sidebar-inner'], [data-slot='dialog-content'][data-content='command']) {
+    border: 1px solid var(--glass-rim);
+    border-radius: var(--glass-floating-radius);
+    box-shadow: var(--glass-float);
 }
 
-:root[data-theme='erden-glass'] [data-slot='app-header'] {
-    border-bottom-width: 1px;
+:root[data-theme='erden-glass'] [data-slot='dialog-content'][data-content='command'] {
+    --glass-opacity: var(--glass-command-opacity);
 }
 
-@supports (backdrop-filter: blur(1px)) {
+:root[data-theme='erden-glass'] [data-slot='dialog-content'][data-content='command'] [data-slot='command'] {
+    background: transparent;
+}
+
+:root[data-theme='erden-glass'] [data-slot='command-input-wrapper']:has([data-slot='command-input']:focus-visible) {
+    box-shadow: inset 0 -2px var(--ring);
+}
+
+:root[data-theme='erden-glass'] [data-slot='command-item'][data-selected='true'] {
+    background-color: var(--control-selection);
+    box-shadow: inset 0 0 0 1px var(--control-selection-border);
+}
+
+:root[data-theme='erden-glass'] [data-slot='card'] {
+    border-radius: var(--glass-panel-radius);
+    box-shadow: 0 5px 18px -13px var(--glass-shadow-color);
+}
+
+:root[data-theme='erden-glass'] [data-slot='dialog-content']:not([data-content='command']),
+:root[data-theme='erden-glass'] [data-slot='alert-dialog-content'] {
+    border-radius: var(--glass-panel-radius);
+    background-color: var(--card);
+}
+
+:root[data-theme='erden-glass']
+    [data-component='button'][data-variant='default']:is([data-size='default'], [data-size='lg']),
+:root[data-theme='erden-glass'] [data-slot='app-header'] [data-component='button'][data-variant='outline'] {
+    border-radius: 999px;
+    border: 1px solid var(--glass-rim);
+    box-shadow: var(--glass-float);
+}
+
+:root[data-theme='erden-glass'] [data-slot='app-header'] [data-component='button'][data-variant='outline']:not(:hover) {
+    background-color: color-mix(in srgb, var(--card) var(--glass-toolbar-button-opacity), transparent);
+}
+
+:root[data-theme='erden-glass'] [data-slot='sidebar-menu-button'] {
+    border-radius: 999px;
+}
+
+:root[data-theme='erden-glass'] [data-slot='sidebar-menu-button']:focus-visible {
+    outline: 2px solid var(--sidebar-ring);
+    outline-offset: -2px;
+}
+
+:root[data-theme='erden-glass'] [data-slot='sidebar-menu-button'][data-active='true'] {
+    color: var(--brand);
+    background: var(--control-selection);
+    box-shadow:
+        inset 0 0 0 1px var(--control-selection-border),
+        var(--glass-edge);
+}
+
+:root[data-theme='erden-glass'] [data-slot='tabs-list'][data-variant='default'][aria-orientation='horizontal'] {
+    height: 2.5rem;
+    max-width: 100%;
+    gap: 2px;
+    padding: 3px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background-color: var(--card);
+}
+
+:root[data-theme='erden-glass']
+    [data-slot='tabs-list'][data-variant='default'][aria-orientation='horizontal']
+    > [data-slot='tabs-trigger'] {
+    border-radius: 999px;
+}
+
+:root[data-theme='erden-glass']
+    [data-slot='tabs-list'][data-variant='default'][aria-orientation='horizontal']
+    > [data-slot='tabs-trigger'][data-state='active'] {
+    border-color: var(--control-selection-border);
+    background: var(--control-selection);
+    color: var(--brand);
+}
+
+:root[data-theme='erden-glass'] [data-slot='table-row'][data-state='selected'] {
+    background-color: var(--control-selection);
+}
+
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
     :root[data-theme='erden-glass']
         :is(
             [data-slot='app-header'],
             [data-slot='sidebar-inner'],
+            [data-slot='dialog-content'][data-content='command'],
             [data-slot='dropdown-menu-content'],
             [data-slot='dropdown-menu-sub-content'],
             [data-slot='select-content'],
             [data-slot='popover-content']
         ) {
-        background-color: color-mix(in srgb, var(--glass-surface) var(--glass-opacity), transparent);
+        background-color: color-mix(in srgb, var(--popover) var(--glass-opacity), transparent);
+        -webkit-backdrop-filter: var(--glass-filter);
         backdrop-filter: var(--glass-filter);
+    }
+
+    :root[data-theme='erden-glass']
+        :is(
+            [data-slot='app-header'],
+            [data-slot='sidebar-inner'],
+            [data-slot='dialog-content'][data-content='command']
+        ) {
+        background-image: linear-gradient(
+            to bottom,
+            color-mix(in srgb, var(--glass-highlight) 44%, transparent),
+            transparent 38px
+        );
+    }
+}
+
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more), (forced-colors: active) {
+    :root[data-theme='erden-glass'] {
+        --glass-rim: var(--input);
+        --glass-filter: none;
+        --glass-opacity: 100%;
+        --glass-command-opacity: 100%;
+        --glass-toolbar-button-opacity: 100%;
+        --glass-canvas: none;
+        --glass-float: none;
+    }
+
+    :root[data-theme='erden-glass']
+        :is(
+            [data-slot='app-header'],
+            [data-slot='sidebar-inner'],
+            [data-slot='dialog-content'][data-content='command']
+        ) {
+        background-image: none;
+    }
+}
+
+@media (forced-colors: active) {
+    :root[data-theme='erden-glass']
+        :is([data-slot='sidebar-menu-button'][data-active='true'], [data-slot='command-item'][data-selected='true']) {
+        outline: 1px solid Highlight;
+        outline-offset: -2px;
     }
 }

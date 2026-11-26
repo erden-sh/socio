@@ -43,6 +43,16 @@
 @custom-variant keyboard-short (&:where([data-keyboard-room='short'] *, [data-keyboard-room='tight'] *));
 @custom-variant keyboard-tight (&:where([data-keyboard-room='tight'] *));
 
+/* Shared web status pairs are separate from the top-level native palette. */
+@layer base {
+    :root {
+        --status-success-bg: light-dark(#e4f5ed, #233e35);
+        --status-success-fg: light-dark(#196649, #91dfb9);
+        --status-warning-bg: light-dark(#fff1d8, #453621);
+        --status-warning-fg: light-dark(#875204, #f6ca84);
+    }
+}
+
 /*
  * Design tokens, seeded from the current chrome so nothing jumps. .dark is
  * on <html> when the theme (packages/client/src/shell/theme.tsx) resolves to dark.

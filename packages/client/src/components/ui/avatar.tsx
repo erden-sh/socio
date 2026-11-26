@@ -8,9 +8,11 @@ import { cn } from '@/lib/utils';
 function Avatar({
     className,
     size = 'default',
+    shape = 'circle',
     ...props
 }: React.ComponentProps<typeof AvatarPrimitive.Root> & {
     size?: 'default' | 'sm' | 'lg';
+    shape?: 'circle' | 'rounded';
 }) {
     return (
         <AvatarPrimitive.Root
@@ -18,6 +20,7 @@ function Avatar({
             data-size={size}
             className={cn(
                 'group/avatar relative flex size-8 shrink-0 overflow-hidden rounded-full select-none data-[size=lg]:size-10 data-[size=sm]:size-6',
+                shape === 'rounded' && 'rounded-lg',
                 className,
             )}
             {...props}
@@ -40,7 +43,7 @@ function AvatarFallback({ className, ...props }: React.ComponentProps<typeof Ava
         <AvatarPrimitive.Fallback
             data-slot="avatar-fallback"
             className={cn(
-                'flex size-full items-center justify-center rounded-full bg-muted text-sm font-medium text-muted-foreground group-data-[size=sm]/avatar:text-xs',
+                'flex size-full items-center justify-center rounded-[inherit] bg-muted text-sm font-medium text-muted-foreground group-data-[size=sm]/avatar:text-xs',
                 className,
             )}
             {...props}

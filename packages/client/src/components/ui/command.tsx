@@ -2,7 +2,14 @@ import { Command as CommandPrimitive } from 'cmdk';
 import { SearchIcon } from 'lucide-react';
 import * as React from 'react';
 
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 
 function Command({ className, ...props }: React.ComponentProps<typeof CommandPrimitive>) {
@@ -28,6 +35,7 @@ function CommandDialog({
     className,
     showCloseButton = true,
     commandProps,
+    trigger,
     ...props
 }: React.ComponentProps<typeof Dialog> & {
     title?: string;
@@ -35,10 +43,16 @@ function CommandDialog({
     className?: string;
     showCloseButton?: boolean;
     commandProps?: React.ComponentProps<typeof CommandPrimitive>;
+    trigger?: React.ReactElement;
 }) {
     return (
         <Dialog {...props}>
-            <DialogContent className={cn('overflow-hidden p-0', className)} showCloseButton={showCloseButton}>
+            {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
+            <DialogContent
+                data-content="command"
+                className={cn('overflow-hidden p-0', className)}
+                showCloseButton={showCloseButton}
+            >
                 <DialogHeader className="sr-only">
                     <DialogTitle>{title}</DialogTitle>
                     <DialogDescription>{description}</DialogDescription>

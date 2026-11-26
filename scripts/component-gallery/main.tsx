@@ -13,6 +13,8 @@ import {
 
 import logo from '../../public/favicon.svg?inline';
 
+import { PeopleDesk } from './people-desk';
+
 import { nativeSelect } from '@/components/form-fields';
 import {
     AlertDialog,
@@ -86,7 +88,7 @@ const people = [
 function Sample({ name, children }: { name: string; children: ReactNode }) {
     return (
         <section className="gallery-sample" data-sample={name}>
-            <h3>{name}</h3>
+            <h4>{name}</h4>
             {children}
         </section>
     );
@@ -180,7 +182,7 @@ function DirectoryTable() {
                         <TableCell className="whitespace-normal [overflow-wrap:anywhere]">{person.name}</TableCell>
                         <TableCell>{person.role}</TableCell>
                         <TableCell>
-                            <Badge variant="outline">{person.status}</Badge>
+                            <Badge variant={person.status === 'Active' ? 'success' : 'info'}>{person.status}</Badge>
                         </TableCell>
                     </TableRow>
                 ))}
@@ -194,14 +196,14 @@ function Displays() {
         <>
             <Sample name="Badge">
                 <div className="gallery-flow">
-                    <Badge>Active</Badge>
-                    <Badge variant="secondary">Invited</Badge>
-                    <Badge variant="outline">Review required</Badge>
-                    <Badge variant="destructive">Expired</Badge>
+                    <Badge variant="success">Active</Badge>
+                    <Badge variant="info">Invited</Badge>
+                    <Badge variant="warning">Invite expired</Badge>
+                    <Badge variant="destructive">Removed</Badge>
                 </div>
             </Sample>
             <Sample name="Avatar">
-                <Avatar aria-label="Imani Brooks">
+                <Avatar shape="rounded" aria-label="Imani Brooks">
                     <AvatarFallback aria-hidden="true">IB</AvatarFallback>
                 </Avatar>
             </Sample>
@@ -317,7 +319,7 @@ function Navigation() {
                 </SidebarProvider>
             </Sample>
             <Sample name="Command">
-                <Command label="Workspace commands" className="border">
+                <Command label="Workspace commands" defaultValue="Find a person" className="border">
                     <CommandInput placeholder="Find a command…" />
                     <CommandList>
                         <CommandEmpty>No matching commands</CommandEmpty>
@@ -336,7 +338,7 @@ function Overlays() {
             <Sample name="Dialog">
                 <Dialog>
                     <DialogTrigger asChild>
-                        <Button variant="outline">Invite people</Button>
+                        <Button variant="outline">Open invitation form</Button>
                     </DialogTrigger>
                     <DialogContent>
                         <DialogHeader>
@@ -428,7 +430,7 @@ function Gallery() {
     return (
         <ThemeProvider appearance={{ signedIn: true, themeId: palette, workspaceThemeId: palette, colorMode: mode }}>
             <TooltipProvider>
-                <header className="gallery-header" data-slot="app-header">
+                <header className="gallery-header">
                     <div className="gallery-wrap gallery-toolbar">
                         <div className="gallery-brand">
                             <img width="32" height="32" src={logo} alt="" />
@@ -466,33 +468,37 @@ function Gallery() {
                         </div>
                     </div>
                 </header>
-                <main className="gallery-wrap gallery-main">
-                    <h1>Component gallery</h1>
-                    <div className="gallery-groups">
-                        <section>
-                            <h2>Controls</h2>
-                            <div className="gallery-panel">
-                                <Fields />
-                            </div>
-                        </section>
-                        <section>
-                            <h2>Surfaces and status</h2>
-                            <div className="gallery-panel">
-                                <Displays />
-                            </div>
-                        </section>
-                        <section>
-                            <h2>Navigation</h2>
-                            <div className="gallery-panel">
-                                <Navigation />
-                            </div>
-                        </section>
-                        <section>
-                            <h2>Overlays</h2>
-                            <div className="gallery-panel">
-                                <Overlays />
-                            </div>
-                        </section>
+                <main data-slot="workspace-canvas">
+                    <div className="gallery-wrap gallery-main">
+                        <h1 className="sr-only">Component gallery</h1>
+                        <PeopleDesk />
+                        <h2 className="gallery-library-title">Component library</h2>
+                        <div className="gallery-groups">
+                            <section>
+                                <h3>Controls</h3>
+                                <Card className="gap-0 py-0">
+                                    <Fields />
+                                </Card>
+                            </section>
+                            <section>
+                                <h3>Surfaces and status</h3>
+                                <Card className="gap-0 py-0">
+                                    <Displays />
+                                </Card>
+                            </section>
+                            <section>
+                                <h3>Navigation</h3>
+                                <Card className="gap-0 py-0">
+                                    <Navigation />
+                                </Card>
+                            </section>
+                            <section>
+                                <h3>Overlays</h3>
+                                <Card className="gap-0 py-0">
+                                    <Overlays />
+                                </Card>
+                            </section>
+                        </div>
                     </div>
                 </main>
                 <Toaster />

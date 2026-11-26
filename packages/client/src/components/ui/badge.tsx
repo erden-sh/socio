@@ -15,8 +15,17 @@ const badgeVariants = cva(
                 outline: 'border-border text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground',
                 ghost: '[a&]:hover:bg-accent [a&]:hover:text-accent-foreground',
                 link: 'text-primary underline-offset-4 [a&]:hover:underline',
+                success: 'bg-(--status-success-bg) text-(--status-success-fg)',
+                warning: 'bg-(--status-warning-bg) text-(--status-warning-fg)',
+                info: 'bg-accent text-accent-foreground',
             },
         },
+        compoundVariants: [
+            {
+                variant: ['success', 'warning', 'info'],
+                class: 'rounded-[6px] px-1.5 py-0.5 text-[11px] font-semibold before:size-1.5 before:rounded-full before:bg-current forced-colors:border-current',
+            },
+        ],
         defaultVariants: {
             variant: 'default',
         },
