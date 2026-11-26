@@ -277,8 +277,7 @@ function Library(props: { spaceId: string; spaces: readonly Space[]; initialTab:
                 edges={['right', 'bottom', 'left']}
                 grouped
                 refreshControl={refreshControl}
-                {...(inBar && searches ? { keyboardInset: fill.keyboard } : {})}
-                onFrameHeight={fill.onFrameHeight}
+                {...(inBar && searches ? { barKeyboard: fill } : {})}
             >
                 <StatusBanners />
                 <PageIntro

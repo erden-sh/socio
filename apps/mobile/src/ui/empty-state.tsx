@@ -1,12 +1,11 @@
 import { StackActions, useNavigation } from '@react-navigation/native';
-import { useState } from 'react';
-import { type LayoutChangeEvent, Platform, View } from 'react-native';
-import { useKeyboardState } from 'react-native-keyboard-controller';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Platform, useWindowDimensions, View, type ViewInstance } from 'react-native';
+import { KeyboardController, KeyboardEvents } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { characterFor, type LocalId } from '@socio/shared/mascot';
 
-import { useBarInset } from '../navigation/bar-inset';
 import { useRootGate } from '../navigation/root-gate';
 import { wayOut } from '../navigation/routes';
 import { type ToneName } from '../theme/theme';
@@ -127,13 +126,35 @@ export interface SearchEmptyStateProps {
 export function SearchEmptyState({ view, onClearSearch, onClearFilters, fill, testID }: SearchEmptyStateProps) {
     // Said once as it shows: the announcement stays the same while more is typed (search-empty.ts).
     useAnnouncement(view.announcement, { onAppear: true, shown: false });
+    const box = useRef<ViewInstance>(null);
+    const [top, setTop] = useState<number | null>(null);
+    const insets = useSafeAreaInsets();
+    const { height: screen } = useWindowDimensions();
+    const keyboard = fill?.keyboard ?? 0;
+    // Where it starts on the screen, read again as the keyboard (and iOS's bar with it) moves.
+    const place = () => box.current?.measureInWindow((_x, y) => setTop(y));
+    useEffect(() => {
+        if (fill === undefined) {
+            return;
+        }
+        place();
+        const later = setTimeout(place, KEYBOARD_SETTLE_MS);
+        return () => clearTimeout(later);
+    }, [fill, keyboard]);
+    const minHeight =
+        fill === undefined || top === null
+            ? null
+            : emptyFill({
+                  screen,
+                  top,
+                  covers: fillCovers(Platform.OS, { safeBottom: insets.bottom, keyboard, searchTab: fill.searchTab }),
+              });
     return (
         <View
+            ref={box}
             className="items-center justify-center gap-4 px-4 py-8"
-            style={fill?.minHeight == null ? undefined : { minHeight: fill.minHeight }}
-            onLayout={
-                fill === undefined ? undefined : (event: LayoutChangeEvent) => fill.onPlace(event.nativeEvent.layout.y)
-            }
+            style={minHeight === null ? undefined : { minHeight }}
+            onLayout={fill === undefined ? undefined : place}
             testID={testID}
         >
             <View
@@ -175,33 +196,35 @@ export function SearchEmptyState({ view, onClearSearch, onClearFilters, fill, te
     );
 }
 
+/** How long after the keyboard starts moving the empty state reads its place again: past the animation. */
+export const KEYBOARD_SETTLE_MS = 450;
+
 /** What `useEmptyFill` hands the screen and its empty state. */
 export interface EmptyFill {
-    /** The keyboard's height while it is up, else 0: the Screen's `keyboardInset` on iOS. */
+    /**
+     * The keyboard's height, set as it starts to show or hide (not once it has), so the empty state
+     * moves with it rather than a beat after: the Screen's `keyboardInset` on iOS.
+     */
     readonly keyboard: number;
-    /** The empty state's height, to center it in what shows; null until the screen has laid out. */
-    readonly minHeight: number | null;
-    /** The Screen's `onFrameHeight`. */
-    readonly onFrameHeight: (height: number) => void;
-    /** Where the empty state starts in the content. */
-    readonly onPlace: (y: number) => void;
+    /** Whether the screen is the Search tab, whose bottom bar covers it on Android. */
+    readonly searchTab: boolean;
 }
 
 /**
- * Centers a screen's empty state in what shows of it (CB-552): below iOS's bar (`useBarInset`), above
- * the home indicator, the Search tab's bottom bar (`searchTab`) or the keyboard.
+ * The keyboard an empty state centers above (CB-552): its height from keyboard-controller's
+ * will-show and will-hide events, at the start of the keyboard's travel.
  */
 export function useEmptyFill(searchTab: boolean): EmptyFill {
-    const keyboard = useKeyboardState((state) => (state.isVisible ? state.height : 0));
-    const top = useBarInset();
-    const insets = useSafeAreaInsets();
-    const [frame, setFrame] = useState(0);
-    const [above, setAbove] = useState<number | null>(null);
-    const covers = fillCovers(Platform.OS, { safeBottom: insets.bottom, keyboard, searchTab });
-    return {
-        keyboard,
-        minHeight: frame === 0 || above === null ? null : emptyFill({ frame, top, covers, above }),
-        onFrameHeight: setFrame,
-        onPlace: setAbove,
-    };
+    const [keyboard, setKeyboard] = useState(() =>
+        KeyboardController.isVisible() ? (KeyboardController.state()?.height ?? 0) : 0,
+    );
+    useEffect(() => {
+        const show = KeyboardEvents.addListener('keyboardWillShow', (event) => setKeyboard(event.height));
+        const hide = KeyboardEvents.addListener('keyboardWillHide', () => setKeyboard(0));
+        return () => {
+            show.remove();
+            hide.remove();
+        };
+    }, []);
+    return useMemo(() => ({ keyboard, searchTab }), [keyboard, searchTab]);
 }

@@ -75,7 +75,7 @@ describe('the keyboard on scrolling screens (CB-418)', () => {
         expect(screen).toContain("import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';");
         expect(screen).toMatch(/<KeyboardAwareScrollView[\s\S]*\{\.\.\.keyboardScroll\(Platform\.OS\)\}/);
         expect(screen).toContain(
-            'const follow = keyboardFollow(Platform.OS, keyboardAware, useScreenFocused(), keyboardInset !== undefined);',
+            'const follow = keyboardFollow(Platform.OS, keyboardAware, useScreenFocused(), barKeyboard !== undefined);',
         );
         expect(screen).toContain('enabled={follow.controller}');
         expect(screen).toContain('automaticallyAdjustKeyboardInsets={follow.uikit}');

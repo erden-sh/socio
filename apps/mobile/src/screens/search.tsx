@@ -1,7 +1,8 @@
 import type { NativeBottomTabNavigationProp } from '@react-navigation/bottom-tabs/unstable';
 import { type ParamListBase, useFocusEffect, useIsFocused, useNavigation } from '@react-navigation/native';
-import { type RefObject, useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { type ReactNode, type RefObject, useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Platform, type TextInputInstance, View } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import type { SearchBarCommands } from 'react-native-screens';
 
 import { useCollections, useHasWorkspaceScope, useLiveQuery, useSyncStatus, useWorkspaceScope } from '../live';
@@ -139,45 +140,57 @@ function ScopedSearch() {
         }
     };
     return (
-        <Screen
-            testID="search-screen"
-            edges={TAB_STACK_EDGES}
-            // The field is the bar's on iOS: the screen pads by the keyboard itself (CB-552).
-            {...(inBar ? { keyboardInset: fill.keyboard } : {})}
-            onFrameHeight={fill.onFrameHeight}
-        >
-            {inBar ? null : (
-                <SearchField
-                    ref={field}
-                    label="Search Socio"
-                    value={query}
-                    onChangeText={setQuery}
-                    placeholder={SEARCH_PLACEHOLDER}
-                    testID="search-field"
-                />
-            )}
-            {view.sections.map((section) => (
-                <Section key={section.id} title={section.title} testID={`search-${section.id}`}>
-                    {section.items.map((item, index) => (
-                        <SearchRow key={item.key} item={item} first={index === 0} onGo={go} />
-                    ))}
-                </Section>
-            ))}
-            {view.serverLine === null ? null : (
-                <Text variant="subheadline" tone="muted" className="text-center" testID="search-server-line">
-                    {view.serverLine}
-                </Text>
-            )}
-            {view.noMatches ? (
-                <SearchEmptyState
-                    view={searchEmpty({ query, line: SEARCH_EMPTY_LINE })}
-                    onClearSearch={clearSearch}
-                    fill={fill}
-                    testID="search-no-matches"
-                />
-            ) : null}
-        </Screen>
+        <SearchTabInsets>
+            <Screen
+                testID="search-screen"
+                edges={TAB_STACK_EDGES}
+                // The field is the bar's on iOS: the screen pads by the keyboard itself (CB-552).
+                {...(inBar ? { barKeyboard: fill } : {})}
+                // Its empty state fills what shows itself: grown to the frame, it would scroll (CB-552).
+                fit={inBar}
+            >
+                {inBar ? null : (
+                    <SearchField
+                        ref={field}
+                        label="Search Socio"
+                        value={query}
+                        onChangeText={setQuery}
+                        placeholder={SEARCH_PLACEHOLDER}
+                        testID="search-field"
+                    />
+                )}
+                {view.sections.map((section) => (
+                    <Section key={section.id} title={section.title} testID={`search-${section.id}`}>
+                        {section.items.map((item, index) => (
+                            <SearchRow key={item.key} item={item} first={index === 0} onGo={go} />
+                        ))}
+                    </Section>
+                ))}
+                {view.serverLine === null ? null : (
+                    <Text variant="subheadline" tone="muted" className="text-center" testID="search-server-line">
+                        {view.serverLine}
+                    </Text>
+                )}
+                {view.noMatches ? (
+                    <SearchEmptyState
+                        view={searchEmpty({ query, line: SEARCH_EMPTY_LINE })}
+                        onClearSearch={clearSearch}
+                        fill={fill}
+                        testID="search-no-matches"
+                    />
+                ) : null}
+            </Screen>
+        </SearchTabInsets>
     );
+}
+
+/**
+ * Search's safe area on iOS: its own provider, measured by UIKit, whose bottom holds the home
+ * indicator and iOS 26's bottom search row (as a pushed page's holds the tab bar, tab-stack.tsx), so
+ * the empty state centers above the row (CB-552). Android keeps the window's.
+ */
+function SearchTabInsets(props: { readonly children: ReactNode }) {
+    return Platform.OS === 'ios' ? <SafeAreaProvider>{props.children}</SafeAreaProvider> : props.children;
 }
 
 /**

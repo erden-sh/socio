@@ -6,7 +6,13 @@ import { describe, expect, it } from 'vitest';
 import { MATERIAL_NAVIGATION_BAR } from '../../src/navigation/presets';
 import { ANY_SCHEDULE, schedulesEmpty } from '../../src/shell/schedules';
 import { keyboardFollow } from '../../src/ui/keyboard-scroll';
-import { emptyFill, fillCovers, IOS_BOTTOM_SEARCH_ROW, SCREEN_BOTTOM_PAD } from '../../src/ui/screen-insets';
+import {
+    emptyFill,
+    fillCovers,
+    IOS_SEARCH_ROW_ON_KEYBOARD,
+    keyboardInset,
+    SCREEN_BOTTOM_PAD,
+} from '../../src/ui/screen-insets';
 import {
     CLEAR_FILTERS,
     CLEAR_SEARCH,
@@ -119,8 +125,12 @@ describe('Search with no results (CB-552)', () => {
     });
 
     it('pads by the keyboard itself on iOS, whose field is the bar’s, and centers the empty state', () => {
-        expect(search).toContain('{...(inBar ? { keyboardInset: fill.keyboard } : {})}');
-        expect(search).toContain('onFrameHeight={fill.onFrameHeight}');
+        expect(search).toContain('{...(inBar ? { barKeyboard: fill } : {})}');
+        // Its own safe area on iOS, measured by UIKit: the home indicator and the bottom search row.
+        expect(search).toContain(
+            "return Platform.OS === 'ios' ? <SafeAreaProvider>{props.children}</SafeAreaProvider> : props.children;",
+        );
+        expect(search).toMatch(/<SearchTabInsets>\s*<Screen/);
         expect(search).toContain('const fill = useEmptyFill(true);');
     });
 
@@ -135,7 +145,7 @@ describe('Search with no results (CB-552)', () => {
             expect(source, file).not.toContain('Nothing matches');
         }
         expect(read('screens/board.tsx')).toContain('setPrefs({ ...prefs, filters: NO_FILTERS, components: [] })');
-        expect(read('screens/space.tsx')).toContain('{...(inBar && searches ? { keyboardInset: fill.keyboard } : {})}');
+        expect(read('screens/space.tsx')).toContain('{...(inBar && searches ? { barKeyboard: fill } : {})}');
     });
 });
 
@@ -149,23 +159,26 @@ describe('the keyboard on a screen whose field is the bar’s (CB-552)', () => {
         expect(keyboardFollow('android', true, true, true)).toEqual({ controller: true, uikit: false, inset: false });
         const screen = read('ui/screen.tsx');
         expect(screen).toContain('automaticallyAdjustKeyboardInsets={follow.uikit}');
-        expect(screen).toContain('{...(follow.inset ? { contentInset: { bottom: keyboardInset ?? 0 } } : {})}');
+        expect(screen).toMatch(
+            /follow\.inset && barKeyboard !== undefined\s*\? \{ contentInset: \{ bottom: barKeyboardInset\(barKeyboard, insets\.bottom\) \} \}/,
+        );
     });
 });
 
 describe('where the empty state centers (CB-552)', () => {
-    it('leaves out the home indicator and the Search tab’s bottom bar, or the keyboard', () => {
-        // iOS: the bottom search row, which rides on the keyboard.
-        expect(fillCovers('ios', { safeBottom: 34, keyboard: 0, searchTab: true })).toEqual({
-            bottom: 34 + IOS_BOTTOM_SEARCH_ROW,
+    it('leaves out what covers the bottom: the safe area (home indicator, bottom row, tab bar) or the keyboard', () => {
+        // iOS: Search's own safe area holds the home indicator and the bottom search row (84 pt).
+        expect(fillCovers('ios', { safeBottom: 84, keyboard: 0, searchTab: true })).toEqual({
+            bottom: 84,
             keyboard: 0,
         });
-        expect(fillCovers('ios', { safeBottom: 34, keyboard: 336, searchTab: true })).toEqual({
-            bottom: 34 + IOS_BOTTOM_SEARCH_ROW,
-            keyboard: 336 + IOS_BOTTOM_SEARCH_ROW,
+        // Up, the row rides on the keyboard.
+        expect(fillCovers('ios', { safeBottom: 84, keyboard: 336, searchTab: true })).toEqual({
+            bottom: 84,
+            keyboard: 336 + IOS_SEARCH_ROW_ON_KEYBOARD,
         });
-        // A page with its field at the top (a Space): the tab bar is in its safe area.
-        expect(fillCovers('ios', { safeBottom: 83, keyboard: 0, searchTab: false }).bottom).toBe(83);
+        // A page with its field at the top (a Space): no row on the keyboard.
+        expect(fillCovers('ios', { safeBottom: 83, keyboard: 336, searchTab: false }).keyboard).toBe(336);
         // Android: Search's frame runs under the bottom navigation, which the keyboard covers.
         expect(fillCovers('android', { safeBottom: 24, keyboard: 0, searchTab: true })).toEqual({
             bottom: 24 + MATERIAL_NAVIGATION_BAR,
@@ -174,12 +187,45 @@ describe('where the empty state centers (CB-552)', () => {
         expect(fillCovers('android', { safeBottom: 24, keyboard: 300, searchTab: true }).keyboard).toBe(300);
     });
 
-    it('fills what shows below what the screen draws above it, and never less than nothing', () => {
-        const covers = { bottom: 96, keyboard: 0 };
-        expect(emptyFill({ frame: 852, top: 116, covers, above: 16 })).toBe(852 - 116 - 96 - 16 - SCREEN_BOTTOM_PAD);
-        expect(emptyFill({ frame: 852, top: 116, covers: { bottom: 96, keyboard: 398 }, above: 16 })).toBe(
-            852 - 116 - 398 - 16 - SCREEN_BOTTOM_PAD,
+    it('fills from its own top on the screen, which counts the bar once, to what covers the bottom', () => {
+        // The coordinator's iPhone 17 Pro numbers: 874 pt tall, the box at 68, the row's top at 790.
+        const covers = fillCovers('ios', { safeBottom: 84, keyboard: 0, searchTab: true });
+        const fill = emptyFill({ screen: 874, top: 68, covers });
+        expect(fill).toBe(874 - 84 - 68 - SCREEN_BOTTOM_PAD);
+        // The box and the bottom padding end exactly at the row's top: centered, and nothing scrolls.
+        expect(68 + fill + SCREEN_BOTTOM_PAD).toBe(874 - 84);
+        expect(emptyFill({ screen: 874, top: 68, covers: { bottom: 84, keyboard: 398 } })).toBe(
+            874 - 398 - 68 - SCREEN_BOTTOM_PAD,
         );
-        expect(emptyFill({ frame: 300, top: 116, covers: { bottom: 96, keyboard: 398 }, above: 16 })).toBe(0);
+        expect(emptyFill({ screen: 300, top: 68, covers: { bottom: 84, keyboard: 398 } })).toBe(0);
+        // Whole points, rounded down, so it never pushes the content a fraction past the screen.
+        expect(emptyFill({ screen: 874.6, top: 68.2, covers })).toBe(Math.floor(874.6 - 84 - 68.2 - SCREEN_BOTTOM_PAD));
+    });
+
+    it('keeps the content ending where the keyboard’s row starts, so an empty state that fits never scrolls', () => {
+        const up = fillCovers('ios', { safeBottom: 84, keyboard: 336, searchTab: true });
+        // UIKit insets by the safe area already; the Screen adds only what the keyboard covers past it.
+        expect(keyboardInset(up, 84)).toBe(336 + IOS_SEARCH_ROW_ON_KEYBOARD - 84);
+        expect(keyboardInset(fillCovers('ios', { safeBottom: 84, keyboard: 0, searchTab: true }), 84)).toBe(0);
+    });
+
+    it('lets Search’s content be as tall as it is, so an empty state that fits never scrolls', () => {
+        // Grown to the frame, the content was taller than what shows by the bars: it scrolled, and
+        // VoiceOver said "2 pages" over an empty screen.
+        const screen = read('ui/screen.tsx');
+        expect(screen).toContain("const content = cx(!fit && 'grow', 'gap-5 px-4 pt-4 pb-4'");
+        expect(read('screens/search.tsx')).toContain('fit={inBar}');
+    });
+
+    it('measures itself on the screen, again as the keyboard moves, which it hears as the keyboard starts', () => {
+        const state = read('ui/empty-state.tsx');
+        const component = body(state, 'export function SearchEmptyState');
+        expect(component).toContain('box.current?.measureInWindow((_x, y) => setTop(y))');
+        expect(component).toContain('const later = setTimeout(place, KEYBOARD_SETTLE_MS);');
+        expect(component).toContain('}, [fill, keyboard]);');
+        const hook = body(state, 'export function useEmptyFill');
+        expect(hook).toContain("KeyboardEvents.addListener('keyboardWillShow', (event) => setKeyboard(event.height))");
+        expect(hook).toContain("KeyboardEvents.addListener('keyboardWillHide', () => setKeyboard(0))");
+        expect(state).not.toContain('FILL_DEBUG');
     });
 });
