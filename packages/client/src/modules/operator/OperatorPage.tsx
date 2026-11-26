@@ -14,6 +14,7 @@ import { groupOf } from '../settings/sections';
 import { SettingsLayout } from '../settings/SettingsLayout';
 
 import { backendPath, inputOf } from './BackendEditor';
+import { CloudConnectionCard } from './CloudConnectionCard';
 import { ContinuousCopyCard } from './ContinuousCopyCard';
 import { DomainsCard } from './DomainsCard';
 import { PageSearchCard } from './PageSearchCard';
@@ -368,6 +369,7 @@ export function OperatorPage({
                 </Card>
             </div>
             <UpdatesCard />
+            <CloudConnectionCard />
             <DomainsCard />
             <PageSearchCard />
             <ContinuousCopyCard />

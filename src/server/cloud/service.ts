@@ -63,6 +63,11 @@ interface CloudRecord {
     identity?: StoredIdentity;
     /** The enrollment token last tried to an end: its hash, never the token. */
     enrollment?: { tokenHash: string; outcome: 'used' | 'refused'; at: number };
+    /**
+     * The issuer's last answer to a sync, for the Cloud connection card:
+     * kept here, not only in the leader's memory, so every runtime shows it.
+     */
+    lastSync?: { at: number; paused: boolean };
 }
 
 function isRecord(value: unknown): value is CloudRecord {
@@ -129,6 +134,8 @@ export class CloudService implements CloudShape {
     /** An enrollment token refused in this process, when that couldn't or shouldn't be written down. */
     private refusedToken?: string;
     private pausedUntil = 0;
+    /** When this runtime last got a token: a stored "paused" sync older than that is over. */
+    private tokenAt = 0;
     private lastSyncAt?: number;
     private nextEnrollAt = 0;
     private enrollFailures = 0;
@@ -215,14 +222,16 @@ export class CloudService implements CloudShape {
             return { connection: 'not-connected', issuer, scopes: [] };
         }
         const revoked = identity.revokedAt !== undefined || identity.key.kid === this.refusedKid;
+        const lastSync = record.lastSync;
+        const paused = this.now() < this.pausedUntil || (!!lastSync?.paused && lastSync.at >= this.tokenAt);
         return {
-            connection: revoked ? 'revoked' : this.now() < this.pausedUntil ? 'paused' : 'connected',
+            connection: revoked ? 'revoked' : paused ? 'paused' : 'connected',
             issuer,
             deploymentId: identity.clientId,
             deploymentMode: identity.deploymentMode,
             scopes: revoked ? [] : [...identity.scopes],
             enrolledAt: identity.enrolledAt,
-            lastSyncAt: this.lastSyncAt,
+            lastSyncAt: Math.max(this.lastSyncAt ?? 0, lastSync?.at ?? 0) || undefined,
         };
     }
 
@@ -292,6 +301,7 @@ export class CloudService implements CloudShape {
                 expiresAt: started + life - MINUTE,
             });
             this.pausedUntil = 0;
+            this.tokenAt = this.now();
             return issued.accessToken;
         } catch (error) {
             const failure = error instanceof CloudRequestError ? error : undefined;
@@ -558,17 +568,13 @@ export class CloudService implements CloudShape {
         this.pausedUntil = answer.status === 'paused' ? this.now() + HELD_MS : 0;
         const { sealed, record } = this.read();
         const current = record?.identity;
-        if (
-            sealed &&
-            record &&
-            current?.key.kid === identity.key.kid &&
-            current.revokedAt === undefined &&
-            (current.deploymentMode !== answer.deploymentMode || current.scopes.join(' ') !== answer.scopes.join(' '))
-        ) {
+        if (sealed && record && current?.key.kid === identity.key.kid && current.revokedAt === undefined) {
             // For the app's own display only (§2.7): services read the token, never this copy.
+            // If another runtime wrote meanwhile, its newer record stands and this answer is dropped.
             await this.save(sealed, {
                 ...record,
                 identity: { ...current, deploymentMode: answer.deploymentMode, scopes: answer.scopes },
+                lastSync: { at: this.lastSyncAt, paused: answer.status === 'paused' },
             });
         }
     }
