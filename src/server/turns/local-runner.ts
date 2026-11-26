@@ -47,6 +47,7 @@ import {
     type RunTraceSummary,
     type TraceCycle,
 } from '@socio/shared/runs/run-trace';
+import { socioField, withoutSocioFields } from '@socio/shared/runs/socio-fields';
 import { SENDER_METADATA, SOCIO_METADATA, type AgentRunSource, type AgentRunStatus } from '@socio/shared/types';
 
 import type { CycleAdmission, CycleRequest, CycleStepShape } from '../cycles/contract.js';
@@ -870,10 +871,15 @@ export class LocalAgentRunner extends AgentRunner implements RunnerShape {
                         terminated = true;
                     }
                     let processed = event;
-                    if (event.type === EventType.RUN_ERROR && 'errorDetail' in event) {
-                        const { errorDetail, ...rest } = event;
+                    // The operator detail: in `metadata`, as AG-UI 1.0's client (which
+                    // `runAgent` ran the event through) keeps it, or at the top level.
+                    const errorDetail =
+                        event.type === EventType.RUN_ERROR ? socioField(event, 'errorDetail') : undefined;
+                    if (errorDetail !== undefined) {
                         run.errorDetail = String(errorDetail);
-                        processed = rest as BaseEvent;
+                    }
+                    if (event.type === EventType.RUN_ERROR) {
+                        processed = withoutSocioFields(event, ['errorDetail']);
                     }
                     if (event.type === EventType.RUN_STARTED && !(event as RunStartedEvent).input) {
                         processed = {

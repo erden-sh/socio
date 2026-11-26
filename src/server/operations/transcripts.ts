@@ -13,6 +13,7 @@ import type {
 } from '@socio/shared/operations/operations-access';
 import type { OpsChatGrounding } from '@socio/shared/operations/operations-grounding';
 import { inviteUsable } from '@socio/shared/rooms/rooms';
+import { withSocioFields } from '@socio/shared/runs/socio-fields';
 import { SENDER_METADATA, SENDER_NAME_METADATA, type Conversation, type MessageAuthor } from '@socio/shared/types';
 
 import type { RoomsShape } from '../rooms/contract.js';
@@ -76,11 +77,10 @@ function withAuthors(run: HistoryRun, names: ReadonlyMap<string, string>, owner:
                         : owner,
                 you: false,
             };
-            return {
-                ...message,
-                ...(message.metadata ? { metadata } : {}),
-                author,
-            };
+            const { metadata: _given, ...rest } = message;
+            // Its author in `metadata`, which AG-UI 1.0 keeps, and for now at
+            // the top level too (`withSocioFields`).
+            return withSocioFields({ ...rest, ...(Object.keys(metadata).length ? { metadata } : {}) }, { author });
         }),
     };
 }

@@ -3,6 +3,9 @@ import { CircleAlert, PhoneOff } from 'lucide-react';
 import { Fragment, useEffect, type ReactNode } from 'react';
 
 import { isApprovalNote } from '@socio/shared/approvals';
+import { contentText } from '@socio/shared/chat/content-text';
+import { attachmentRefs } from '@socio/shared/media/refs';
+import { messageAt, messageAuthor } from '@socio/shared/runs/socio-fields';
 import type { TraceTimes } from '@socio/shared/runs/trace-times';
 import { splitTurns, turnSteps } from '@socio/shared/runs/turn-steps';
 import type { CallReceipt, MessageAuthor } from '@socio/shared/types';
@@ -11,7 +14,7 @@ import { voiceReceiptMessagePrefix } from '@socio/shared/voice/voice-receipt';
 import { withoutPageLine } from '../pages/page-context';
 import { recordRender } from '../settings/performance/recorder';
 
-import { MessageAttachments, isAttachmentPart, type AttachmentPart } from './attachments/MessageAttachments';
+import { MessageAttachments, type AttachmentPart } from './attachments/MessageAttachments';
 import { Markdown } from './ChatMarkdown';
 import { MessageActions } from './MessageActions';
 import { MessageReactions, hasReactions } from './MessageReactions';
@@ -82,7 +85,7 @@ export function messageParts(content: unknown): {
             )
             .map((part) => part.text)
             .join('\n'),
-        attachments: content.filter(isAttachmentPart),
+        attachments: attachmentRefs(content),
     };
 }
 export { thoughtLabel } from '@socio/shared/runs/turn-steps';
@@ -96,7 +99,8 @@ function kind(message: Message & { author?: MessageAuthor }) {
     if (message.role === 'assistant') {
         return 'assistant';
     }
-    return message.author && !message.author.you ? 'other' : 'user';
+    const author = messageAuthor(message);
+    return author && !author.you ? 'other' : 'user';
 }
 
 /*
@@ -238,7 +242,7 @@ export function ChatTranscript({
     const results = new Map<string, string>();
     for (const message of messages) {
         if (message.role === 'tool') {
-            results.set(message.toolCallId, message.content);
+            results.set(message.toolCallId, contentText(message.content));
         }
     }
     const turns = splitTurns(messages);
@@ -272,7 +276,7 @@ export function ChatTranscript({
                                     // Only a reply is written as it shows: your message keeps
                                     // its action row from the start (CB-154).
                                     streaming={message.id === streamingId && message.role !== 'user'}
-                                    at={times?.messages.get(message.id) ?? message.at}
+                                    at={times?.messages.get(message.id) ?? messageAt(message)}
                                     dotName={dotName}
                                     reactions={reactions}
                                     delivery={delivery?.get(message.id)}
@@ -349,7 +353,7 @@ function MessageView({
                 ? speaker(message)
                 : kind(message) === 'other' && (
                       <span className="px-1 text-[12px] font-medium text-muted-foreground" data-chat-author>
-                          {message.author!.name}
+                          {messageAuthor(message)!.name}
                       </span>
                   )}
             <div className={bodyClass[kind(message)]} data-chat-body={kind(message)}>

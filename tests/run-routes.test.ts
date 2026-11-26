@@ -2,6 +2,7 @@ import { AbstractAgent, EventType, type BaseEvent, type Message, type RunAgentIn
 import { lastValueFrom, Observable } from 'rxjs';
 import { afterEach, expect, it, vi } from 'vitest';
 
+import { errorDetailFields } from '@socio/shared/runs/socio-fields';
 import type { AgentRunSource } from '@socio/shared/types';
 
 import { DEFAULT_MOCK_USERS } from '../src/server/auth/config.js';
@@ -44,7 +45,8 @@ class FailingAgent extends AbstractAgent {
                 type: EventType.RUN_ERROR,
                 message: 'Provider returned HTTP 500: upstream overloaded',
                 code: 'PROVIDER_ERROR',
-                errorDetail: '500 upstream overloaded (operator detail)',
+                // In metadata: AG-UI 1.0's runAgent takes the top-level copy off.
+                ...errorDetailFields('500 upstream overloaded (operator detail)'),
             } as BaseEvent);
             subscriber.complete();
         });

@@ -24,6 +24,7 @@ import {
     withMention,
 } from '@socio/shared/rooms/room-view';
 import type { RoomSocioView, RoomView } from '@socio/shared/rooms/rooms';
+import { messageAuthor } from '@socio/shared/runs/socio-fields';
 import type { Conversation, Dot, TranscriptTurnProblem } from '@socio/shared/types';
 
 import { useStickToBottom } from '../../hooks/use-stick-to-bottom';
@@ -182,7 +183,7 @@ export function RoomChat({ thread, dot }: { thread: Conversation; dot: Dot }) {
                     id: member.userId,
                     name: member.name,
                 })),
-                ...(feed.messages ?? []).flatMap((message) => (message.author ? [message.author] : [])),
+                ...(feed.messages ?? []).flatMap((message) => messageAuthor(message) ?? []),
             ]),
         [room?.members, feed.messages],
     );
@@ -287,14 +288,17 @@ export function RoomChat({ thread, dot }: { thread: Conversation; dot: Dot }) {
                         streamingId={feed.streamingId}
                         running={feed.running}
                         times={feed.times}
-                        speaker={(message) => (
-                            <RoomSpeaker
-                                message={message}
-                                {...replySocio(message as RoomMessage, room, dot, shell.workspace.dots)}
-                                tone={message.author?.id ? tones.get(message.author.id) : undefined}
-                                shownName={message.author?.id ? labels.get(message.author.id) : undefined}
-                            />
-                        )}
+                        speaker={(message) => {
+                            const author = messageAuthor(message)?.id;
+                            return (
+                                <RoomSpeaker
+                                    message={message}
+                                    {...replySocio(message as RoomMessage, room, dot, shell.workspace.dots)}
+                                    tone={author ? tones.get(author) : undefined}
+                                    shownName={author ? labels.get(author) : undefined}
+                                />
+                            );
+                        }}
                         notice={(message) => {
                             const { handoff } = message as RoomMessage;
                             return handoff ? (

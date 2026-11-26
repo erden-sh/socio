@@ -181,6 +181,20 @@ it('attributes a converted chat’s earlier messages to its former owner, never 
         name: 'Team member',
         you: false,
     });
+    // Each author and time travel in `metadata` too, which AG-UI 1.0 keeps,
+    // and for now at the top level as well, for the app builds already shipped.
+    const listed = ((await (await f.as('ada')(`/conversations/${privateId}/transcript`)).json()) as Transcript)
+        .messages as unknown as Array<{
+        id: string;
+        author?: unknown;
+        at?: number;
+        metadata?: Record<string, unknown>;
+    }>;
+    const old = listed.find((message) => message.id === 'u-old')!;
+    expect(old.metadata?.author).toEqual({ name: 'Olive', you: false, id: 'olive' });
+    expect(old.author).toEqual(old.metadata?.author);
+    expect(old.at).toEqual(expect.any(Number));
+    expect(old.metadata?.at).toBe(old.at);
     // A room made as a room has no former owner.
     expect(f.workspace.convertedFrom('nope')).toBeUndefined();
 

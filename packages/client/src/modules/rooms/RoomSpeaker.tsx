@@ -3,6 +3,7 @@ import { Bot } from 'lucide-react';
 
 import type { TranscriptMention } from '@socio/shared/rooms/room-notices';
 import { initials, personTones as personToneIndexes, toneIndex } from '@socio/shared/rooms/room-speakers';
+import { messageAuthor } from '@socio/shared/runs/socio-fields';
 import type { Dot, MessageAuthor } from '@socio/shared/types';
 
 import { Mascot } from '../../locals/Mascot';
@@ -114,14 +115,15 @@ export function RoomSpeaker({
     if (message.role !== 'user') {
         return null;
     }
-    if (message.author?.you) {
+    const author = messageAuthor(message);
+    if (author?.you) {
         return (
             <span className={label} data-room-speaker="you">
                 You
             </span>
         );
     }
-    const name = message.author?.name ?? 'Team member';
+    const name = author?.name ?? 'Team member';
     return (
         <span className={label} data-room-speaker="person" data-chat-author>
             <PersonAvatar name={name} tone={tone} />

@@ -1,5 +1,7 @@
 import { EventType } from '@ag-ui/core';
 
+import { errorDetailFields } from '@socio/shared/runs/socio-fields';
+
 import { failureDetail } from '../observability/failures.js';
 
 import { ChatGptError, chatGptFailure } from './chatgpt-errors.js';
@@ -20,6 +22,6 @@ export function connectionTurnError(error: unknown) {
         type: EventType.RUN_ERROR as const,
         message: known.message,
         code: known.code,
-        errorDetail: error instanceof ChatGptError ? error.detail : failureDetail(error),
+        ...errorDetailFields(error instanceof ChatGptError ? error.detail : failureDetail(error)),
     };
 }
