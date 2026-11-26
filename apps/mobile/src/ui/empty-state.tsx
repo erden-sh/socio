@@ -7,7 +7,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { characterFor, type LocalId } from '@socio/shared/mascot';
 
 import { useBarInset } from '../navigation/bar-inset';
-import { MATERIAL_NAVIGATION_BAR } from '../navigation/presets';
 import { useRootGate } from '../navigation/root-gate';
 import { wayOut } from '../navigation/routes';
 import { type ToneName } from '../theme/theme';
@@ -190,20 +189,15 @@ export interface EmptyFill {
 
 /**
  * Centers a screen's empty state in what shows of it (CB-552): below iOS's bar (`useBarInset`), above
- * the tab bar, the bottom search row (`bottomField`: Search's, on iOS 26) or the keyboard.
+ * the home indicator, the Search tab's bottom bar (`searchTab`) or the keyboard.
  */
-export function useEmptyFill(bottomField: boolean): EmptyFill {
+export function useEmptyFill(searchTab: boolean): EmptyFill {
     const keyboard = useKeyboardState((state) => (state.isVisible ? state.height : 0));
     const top = useBarInset();
     const insets = useSafeAreaInsets();
     const [frame, setFrame] = useState(0);
     const [above, setAbove] = useState<number | null>(null);
-    const covers = fillCovers(Platform.OS, {
-        safeBottom: insets.bottom,
-        keyboard,
-        bottomField,
-        navigation: MATERIAL_NAVIGATION_BAR + insets.bottom,
-    });
+    const covers = fillCovers(Platform.OS, { safeBottom: insets.bottom, keyboard, searchTab });
     return {
         keyboard,
         minHeight: frame === 0 || above === null ? null : emptyFill({ frame, top, covers, above }),

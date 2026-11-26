@@ -69,7 +69,7 @@ function ScopedSearch() {
     const inBar = barSearch(Platform.OS);
     useNativeBar({ title: 'Search', search: { placeholder: SEARCH_PLACEHOLDER, onChange: setQuery, ref: barField } });
     // No results centers in what shows, between the bar and the bottom field or the keyboard (CB-552).
-    const fill = useEmptyFill(inBar);
+    const fill = useEmptyFill(true);
     // Clear search: the field emptied (the bar's, which sends no change for it), the focus kept in it.
     const clearSearch = () => {
         barField.current?.clearText();

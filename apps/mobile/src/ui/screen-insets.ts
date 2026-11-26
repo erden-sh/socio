@@ -1,5 +1,7 @@
 import type { Edge } from 'react-native-safe-area-context';
 
+import { MATERIAL_NAVIGATION_BAR } from '../navigation/presets';
+
 // Which screens UIKit insets under a native bar (CB-420; screen.tsx). No React
 // Native here, so the Node tests read it as the app does.
 
@@ -27,26 +29,22 @@ export interface FillCovers {
 }
 
 /**
- * What covers a Screen's frame from below on `os`. iOS: the frame runs to the window's bottom under
- * the home indicator and the tab bar, `safeBottom` (a pushed page's counts its tab bar, tab-stack.tsx),
- * plus the bottom search row on a tab whose field is there (`bottomField`), which rides on the
- * keyboard once it is up. Android: the frame ends at the bottom navigation, `navigation` above the
- * window's bottom, and the keyboard, measured from the window's bottom, covers only what passes it.
+ * What covers a Screen's frame from below on `os`. The frame runs to the window's bottom on both
+ * platforms, under the home indicator or the system's navigation, `safeBottom` (a pushed page's
+ * counts its tab bar, tab-stack.tsx), and on the Search tab under its bottom bar too (`searchTab`):
+ * iOS 26's bottom search row, which rides on the keyboard once it is up, or Material's bottom
+ * navigation, which the keyboard covers.
  */
 export function fillCovers(
     os: string,
-    input: {
-        readonly safeBottom: number;
-        readonly keyboard: number;
-        readonly bottomField: boolean;
-        readonly navigation: number;
-    },
+    input: { readonly safeBottom: number; readonly keyboard: number; readonly searchTab: boolean },
 ): FillCovers {
-    if (os === 'ios') {
-        const row = input.bottomField ? IOS_BOTTOM_SEARCH_ROW : 0;
-        return { bottom: input.safeBottom + row, keyboard: input.keyboard > 0 ? input.keyboard + row : 0 };
-    }
-    return { bottom: 0, keyboard: Math.max(0, input.keyboard - input.navigation) };
+    const ios = os === 'ios';
+    const bar = input.searchTab ? (ios ? IOS_BOTTOM_SEARCH_ROW : MATERIAL_NAVIGATION_BAR) : 0;
+    return {
+        bottom: input.safeBottom + bar,
+        keyboard: input.keyboard > 0 ? input.keyboard + (ios ? bar : 0) : 0,
+    };
 }
 
 /**
