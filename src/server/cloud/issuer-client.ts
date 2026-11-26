@@ -25,7 +25,8 @@ const ASSERTION_TYPE = 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer';
 export class CloudRequestError extends Error {
     constructor(
         readonly kind: 'unreachable' | 'refused' | 'protocol',
-        what: string,
+        /** Which request: `registration` is the only one that carries the enrollment token. */
+        readonly what: string,
         readonly status?: number,
         readonly code?: string,
     ) {

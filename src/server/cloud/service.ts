@@ -388,7 +388,7 @@ export class CloudService implements CloudShape {
                 this.nextSyncAt = 0;
                 this.syncFailures = 0;
             } catch (error) {
-                this.enrollmentFailed(token, error);
+                await this.enrollmentFailed(token, error);
             }
         }
         if (this.now() >= this.nextSyncAt && this.usable()) {
@@ -477,9 +477,10 @@ export class CloudService implements CloudShape {
         );
     }
 
-    private enrollmentFailed(token: string, error: unknown) {
+    private async enrollmentFailed(token: string, error: unknown) {
         const failure = error instanceof CloudRequestError ? error : undefined;
-        if (failure?.kind === 'refused') {
+        // Only the registration carries the token: a refusal of discovery says nothing about it.
+        if (failure?.kind === 'refused' && failure.what === 'registration') {
             // Not tried again in this process. A 401 is the token's end (used, expired or unknown),
             // so that is written down too; another refusal may be this build's, and a later one may pass.
             this.refusedToken = tokenHash(token);
@@ -487,7 +488,8 @@ export class CloudService implements CloudShape {
                 `Cloud connection: the enrollment token was refused (${failure.code ?? failure.status}). It is not tried again; a new token enrolls the server.`,
             );
             if (failure.status === 401) {
-                void this.noteRefusal(token);
+                // Awaited, so a drain waits for it: a shutdown never loses the record that the token is spent.
+                await this.noteRefusal(token);
             }
             return;
         }

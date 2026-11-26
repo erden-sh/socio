@@ -220,6 +220,20 @@ describe('enrollment', () => {
         expect(cloud.status().connection).toBe('connected');
     });
 
+    it('does not count a refused discovery against the token', async () => {
+        const issuer = fakeIssuer();
+        const { token } = issuer.provision();
+        issuer.metadataStatus = 401;
+        const { cloud, path } = setup({ issuer, env: { SOCIO_CLOUD_ENROLLMENT_TOKEN: token } });
+        await cloud.work();
+        expect(issuer.requests.some((request) => request.path === '/oauth2/register')).toBe(false);
+        issuer.metadataStatus = undefined;
+        // A restart (no backoff) enrolls with the same token.
+        const again = setup({ path, issuer, env: { SOCIO_CLOUD_ENROLLMENT_TOKEN: token } });
+        await again.cloud.work();
+        expect(again.cloud.status().connection).toBe('connected');
+    });
+
     it('enrolls again with a new token for the same deployment: the new key replaces the old', async () => {
         const { path, issuer, deploymentId, store } = await enrolled();
         const firstKid = issuer.clients.get(deploymentId)!.jwk.kid;
@@ -449,6 +463,36 @@ describe('shutting down', () => {
         expect(cloud.status()).toMatchObject({ connection: 'connected', deploymentId });
     });
 
+    it('waits for the record that a token was refused before it lets the database close', async () => {
+        const issuer = fakeIssuer();
+        const token = 'iat_never-issued-0123456789';
+        const { cloud, store, path } = setup({ issuer, env: { SOCIO_CLOUD_ENROLLMENT_TOKEN: token } });
+        let release!: () => void;
+        const held = new Promise<void>((resolve) => (release = resolve));
+        const update = store.updateSettings.bind(store);
+        let writing = false;
+        store.updateSettings = async (...args: Parameters<typeof update>) => {
+            writing = true;
+            await held;
+            return update(...args);
+        };
+        void cloud.work();
+        while (!writing) {
+            await new Promise((resolve) => setTimeout(resolve, 5));
+        }
+        let drained = false;
+        const drain = cloud.drain().then(() => (drained = true));
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        expect(drained).toBe(false);
+        release();
+        await drain;
+        // Written down: a restart doesn't try the token again.
+        const before = issuer.requests.filter((request) => request.path === '/oauth2/register').length;
+        const again = setup({ path, issuer, env: { SOCIO_CLOUD_ENROLLMENT_TOKEN: token } });
+        await again.cloud.work();
+        expect(issuer.requests.filter((request) => request.path === '/oauth2/register').length).toBe(before);
+    });
+
     it('starts no work while drained, and again once resumed', async () => {
         const issuer = fakeIssuer();
         const { token } = issuer.provision();
@@ -463,6 +507,89 @@ describe('shutting down', () => {
 });
 
 describe('two runtimes on one database', () => {
+    /** Holds the next request to `path` until the returned release is called. */
+    function holdNext(issuer: FakeIssuer, path: string) {
+        let release!: () => void;
+        const gate = new Promise<void>((resolve) => (release = resolve));
+        let reached!: () => void;
+        const arrived = new Promise<void>((resolve) => (reached = resolve));
+        let armed = true;
+        issuer.before = async (requested) => {
+            if (armed && requested === path) {
+                armed = false;
+                reached();
+                await gate;
+            }
+        };
+        return { arrived, release };
+    }
+
+    it('does not mark a newer enrollment revoked when an older key is refused', async () => {
+        const issuer = fakeIssuer();
+        const path = database();
+        const first = issuer.provision();
+        const a = setup({ path, issuer, env: { SOCIO_CLOUD_ENROLLMENT_TOKEN: first.token } });
+        await a.cloud.work();
+        // B asks for a token with the first key, and its request waits.
+        const b = setup({ path, issuer });
+        const hold = holdNext(issuer, '/oauth2/token');
+        const pending = b.cloud.token(PUSH);
+        await hold.arrived;
+        // Meanwhile A enrolls again: the issuer now knows only the new key.
+        const second = issuer.provision(first.deploymentId);
+        const a2 = setup({ path, issuer, env: { SOCIO_CLOUD_ENROLLMENT_TOKEN: second.token } });
+        await a2.cloud.work();
+        hold.release();
+        // The old key is refused, but the record now holds the new one: nothing is marked revoked.
+        expect(await pending).toBeUndefined();
+        expect(b.notices).toEqual([]);
+        const fresh = setup({ path, issuer });
+        expect(fresh.cloud.status().connection).toBe('connected');
+        expect(await fresh.cloud.token(PUSH)).toMatch(/^at_/);
+    });
+
+    it('does not write a sync’s answer for an older key over a newer enrollment', async () => {
+        let now = Date.now();
+        const issuer = fakeIssuer();
+        const path = database();
+        const first = issuer.provision();
+        const a = setup({ path, issuer, env: { SOCIO_CLOUD_ENROLLMENT_TOKEN: first.token }, now: () => now });
+        await a.cloud.work();
+        now += 24 * 3600_000 + 1;
+        // A's next sync waits at the issuer, its token already taken with the first key.
+        const hold = holdNext(issuer, '/v1/sync');
+        const syncing = a.cloud.work();
+        await hold.arrived;
+        const second = issuer.provision(first.deploymentId);
+        const b = setup({ path, issuer, env: { SOCIO_CLOUD_ENROLLMENT_TOKEN: second.token } });
+        await b.cloud.work();
+        // The answer A is waiting for will carry scopes B's record doesn't have.
+        issuer.clients.get(first.deploymentId)!.scopes = 'push:send';
+        const sealed = b.store.secretSetting(CLOUD_IDENTITY_SETTING)!.value;
+        hold.release();
+        await syncing;
+        // A's answer was for the first key: the newer record stays as B wrote it.
+        expect(issuer.synced.length).toBeGreaterThanOrEqual(3);
+        expect(a.store.secretSetting(CLOUD_IDENTITY_SETTING)!.value).toBe(sealed);
+    });
+
+    it('does not reseal over a record another runtime changed meanwhile', async () => {
+        const { path, issuer, store } = await enrolled();
+        const stale = store.secretSetting(CLOUD_IDENTITY_SETTING)!.value;
+        const { token } = issuer.provision();
+        const b = setup({
+            path,
+            issuer,
+            env: { SOCIO_CLOUD_ENROLLMENT_TOKEN: token, SOCIO_CLOUD_REPLACE_LOST: 'true' },
+        });
+        await b.cloud.work();
+        const newer = b.store.secretSetting(CLOUD_IDENTITY_SETTING)!.value;
+        expect(newer).not.toBe(stale);
+        // A compare-and-set from the stale value changes nothing.
+        expect(await store.replaceSecretSetting(CLOUD_IDENTITY_SETTING, stale, 'v2.x.y')).toBe(false);
+        expect(store.secretSetting(CLOUD_IDENTITY_SETTING)!.value).toBe(newer);
+    });
+
     it('does not write over an enrollment the other stored meanwhile', async () => {
         const issuer = fakeIssuer();
         const path = database();

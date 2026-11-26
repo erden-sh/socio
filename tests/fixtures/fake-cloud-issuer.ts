@@ -50,6 +50,10 @@ export interface FakeIssuer {
     issued: Array<{ clientId: string; audience: string; token: string }>;
     /** Called inside registration, after the token is spent and before the answer. */
     onRegister?: () => Promise<void> | void;
+    /** Called before any request is answered: a test holds one in flight here. */
+    before?: (path: string) => Promise<void> | void;
+    /** Answers the metadata with this status instead (a proxy's 401, say). */
+    metadataStatus?: number;
 }
 
 const json = (status: number, body: unknown) =>
@@ -118,6 +122,7 @@ export function fakeIssuer(): FakeIssuer {
             new Headers(init?.headers).forEach((value, name) => (headers[name] = value));
             const body = typeof init?.body === 'string' ? init.body : '';
             issuer.requests.push({ method: init?.method ?? 'GET', path: url.pathname, headers, body });
+            await issuer.before?.(url.pathname);
             if (issuer.down === 'network') {
                 throw new TypeError('fetch failed');
             }
@@ -128,6 +133,9 @@ export function fakeIssuer(): FakeIssuer {
                 return json(404, {});
             }
             if (url.pathname === '/.well-known/oauth-authorization-server') {
+                if (issuer.metadataStatus) {
+                    return oauthError(issuer.metadataStatus, 'invalid_token');
+                }
                 return json(200, {
                     issuer: ISSUER,
                     registration_endpoint: `${ISSUER}/oauth2/register`,
