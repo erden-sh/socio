@@ -34,6 +34,10 @@ How this file is kept (scripts/release.mjs and the app's build read it):
 - **Organize a Space's pages in folders (CB-426).** **New folder**, next to **New page** in the library and inside every folder, asks for a name and makes a folder where you are. A folder shows its name and what it holds, never a body, and opens to its contents even when empty, from **All pages** too. Any page can become a folder with **Turn into folder** in its menu and go back with **Turn into page**: its text is kept, only hidden while it is a folder. Folders keep their place through moves, exports and imports, match search by their title, and socios can make and switch them with the page tools.
 - **See the cloud connection on the Platform page (CB-559).** A new **Cloud connection** card shows admins whether this server is connected to Socio's cloud services, its deployment id and mode, what it may use, and when it enrolled and last synced. If the key was revoked or the stored identity can't be opened, the card says so and what to do. See Cloud connection in docs/SETUP.md.
 
+### Fixed
+
+- The Add a device page on link.socio.sh now says to open the link from your camera or a message, or to reinstall Socio and scan the code again, instead of pointing to an in-app scanner that doesn't exist yet (CB-565).
+
 ## v0.55.0 (2026-11-26)
 
 A Space's library now opens at its top level, so you open a page to see the pages inside it, with All pages still one click away. Deployments can also enroll with Socio's cloud services; nothing uses the connection yet.

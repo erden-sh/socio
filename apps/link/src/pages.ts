@@ -189,11 +189,15 @@ function body(link: LinkPath): { title: string; html: string } {
 <p class="note">It works once, for 15 minutes. Never type it anywhere else.</p>`,
             };
         case 'd':
-            // Add a device: the pairing code stays in the fragment and is never shown here.
+            // Add a device: the pairing code stays in the fragment and is never shown here. People
+            // land here mostly when the installed app hasn't picked up the link association yet.
+            // There is no in-app scanner yet, so the "scan the code in the app" wording comes back
+            // when it ships (CB-566).
             return {
                 title: 'Add a device to Socio',
                 html: `<h1>Add a device</h1>
-<p>Open the Socio app on the device you're adding, and scan the code on your other screen again.</p>${INVALID}
+<p>If Socio is installed, open this link from your camera or a message so it opens in the app.</p>
+<p>If it still opens here, reinstall Socio, then scan the code again.</p>${INVALID}
 ${getTheApp(variant)}`,
             };
         case 'i':
