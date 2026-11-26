@@ -36,7 +36,7 @@ How this file is kept (scripts/release.mjs and the app's build read it):
 
 ### Fixed
 
-- The Add a device page on link.socio.sh now says to open the link from your camera or a message, or to reinstall Socio and scan the code again, instead of pointing to an in-app scanner that doesn't exist yet (CB-565).
+- The Add a device page on link.socio.sh now says to open the link from your camera or a message, or to update Socio (or reinstall it) and scan the code again, instead of pointing to an in-app scanner that doesn't exist yet (CB-565).
 
 ## v0.55.0 (2026-11-26)
 

@@ -40,7 +40,7 @@ custom domain. Both run the same code; each Worker only ever sees its own host.
       never the code.
     - `c`: the sign-in code, to type into the app.
     - `d` (Add a device): "open this link from your camera or a message so it opens in the app", or
-      reinstall Socio and scan the code again, or get the app. Never the pairing code.
+      update Socio (or reinstall it) and scan the code again, or get the app. Never the pairing code.
     - `i` (an invite): the workspace host, and "Set your password" on the web, only on a tap.
     - `w` (the workspace): an "Open the Socio app" link to the variant's bare scheme (`socio://`),
       which opens the app as it is.
