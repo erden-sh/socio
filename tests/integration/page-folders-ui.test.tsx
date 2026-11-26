@@ -4,6 +4,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { RouterProvider } from 'react-router';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
+import { AUTOSAVE_DEBOUNCE_MS } from '@socio/shared/pages/page-draft';
 import { pageSummary, type Page } from '@socio/shared/pages/page-library';
 import type { Role, State, WorkspaceState } from '@socio/shared/types';
 
@@ -82,6 +83,8 @@ const page = (id: string, title: string, extra: Partial<Page> = {}): Page => ({
 let pages: Page[] = [];
 let switches: Array<{ id: string; folder: boolean }> = [];
 let created: unknown[] = [];
+// Every PATCH (the autosave), with the page's folder mark when it came.
+let patches: Array<{ id: string; folder: boolean; body: Record<string, unknown> }> = [];
 const respond = (url: URL, init?: RequestInit): [number, unknown] => {
     const path = url.pathname;
     if (path === '/api/state') {
@@ -124,6 +127,17 @@ const respond = (url: URL, init?: RequestInit): [number, unknown] => {
     const one = path.match(/^\/api\/spaces\/s1\/pages\/([^/]+)$/);
     if (one) {
         const found = pages.find((item) => item.id === one[1]);
+        if (found && init?.method === 'PATCH') {
+            // Recorded and applied, as the server would: a stale revision is a conflict.
+            const { expectedRevision, ...fields } = JSON.parse(String(init.body)) as Record<string, unknown>;
+            patches.push({ id: found.id, folder: found.folder, body: { ...fields, expectedRevision } });
+            if (expectedRevision !== found.revision) {
+                return [409, { error: 'This page changed.' }];
+            }
+            const saved = { ...found, ...fields, revision: found.revision + 1, updatedAt: found.updatedAt + 1 } as Page;
+            pages = pages.map((item) => (item.id === found.id ? saved : item));
+            return [200, saved];
+        }
         if (found) {
             return [200, found];
         }
@@ -148,6 +162,7 @@ beforeEach(() => {
     pages = [];
     switches = [];
     created = [];
+    patches = [];
     vi.stubGlobal('fetch', async (input: string, init?: RequestInit) => {
         const [status, body] = respond(new URL(input, 'http://app.test'), init);
         return new Response(JSON.stringify(body), {
@@ -203,8 +218,9 @@ async function openPageMenu() {
 const menuItem = (name: string) =>
     [...document.querySelectorAll<HTMLElement>('[role="menuitem"]')].find((item) => item.textContent?.trim() === name);
 
-async function type(input: HTMLInputElement, value: string) {
-    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
+async function type(input: HTMLInputElement | HTMLTextAreaElement, value: string) {
+    const prototype = input instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+    const setter = Object.getOwnPropertyDescriptor(prototype, 'value')!.set!;
     await act(async () => {
         setter.call(input, value);
         input.dispatchEvent(new Event('input', { bubbles: true }));
@@ -251,6 +267,13 @@ it('turns a page into a folder from its menu and back, never saving over its tex
     await until(() => !!host.querySelector('[data-slot="folder-contents"]'), 'the folder view');
     expect(switches).toEqual([{ id: 'p1', folder: true }]);
     expect(host.querySelector('[data-slot="folder-kept-text"]')).not.toBeNull();
+    // Renamed as a folder: past the autosave's delay, the save sends the title and never the body.
+    await type(host.querySelector<HTMLTextAreaElement>('textarea.document-title')!, 'Garden');
+    await until(() => patches.length === 1 && text().includes('All changes saved'), 'the title save');
+    await act(() => new Promise((resolve) => setTimeout(resolve, AUTOSAVE_DEBOUNCE_MS + 200)));
+    expect(patches).toEqual([
+        { id: 'p1', folder: true, body: { title: 'Garden', parentId: null, expectedRevision: 2 } },
+    ]);
     await openPageMenu();
     expect(menuItem('Turn into folder')).toBeUndefined();
     expect(menuItem('Markdown source')).toBeUndefined();
@@ -260,8 +283,11 @@ it('turns a page into a folder from its menu and back, never saving over its tex
         { id: 'p1', folder: true },
         { id: 'p1', folder: false },
     ]);
-    // The body was never sent: the page's text is as it was.
-    expect(pages[0]).toMatchObject({ content: 'Beds and paths.', folder: false });
+    // Nothing saved after the switch back either, once the delay has passed.
+    await act(() => new Promise((resolve) => setTimeout(resolve, AUTOSAVE_DEBOUNCE_MS + 200)));
+    // No save of the folder carried a body, and the page's text is as it was.
+    expect(patches.filter((patch) => patch.folder && 'content' in patch.body)).toEqual([]);
+    expect(pages[0]).toMatchObject({ title: 'Garden', content: 'Beds and paths.', folder: false });
 });
 
 it('makes a new folder inside a folder, named in its dialog', async () => {

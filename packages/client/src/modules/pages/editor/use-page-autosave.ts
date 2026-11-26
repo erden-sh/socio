@@ -9,7 +9,11 @@ import { PageAutosave } from './autosave';
 export function usePageAutosave(page: Page, onSaved: (page: Page) => void) {
     const [controller] = useState(() => {
         const instance = new PageAutosave(async (id, patch, signal) => {
-            const result = await api<Page>(`/spaces/${page.spaceId}/pages/${id}`, 'PATCH', patch, signal);
+            // A folder's body is kept but hidden (CB-426): its saves (a new title) never send it, so
+            // nothing here can write over the kept text.
+            const { content: _content, ...withoutBody } = patch;
+            const body = instance.getSnapshot().page?.folder ? withoutBody : patch;
+            const result = await api<Page>(`/spaces/${page.spaceId}/pages/${id}`, 'PATCH', body, signal);
             onSaved(result);
             return result;
         });
