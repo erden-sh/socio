@@ -100,7 +100,7 @@ describe('the search fields', () => {
         const board = src('screens/board.tsx');
         // Android's drawn field; iOS's is the bar's own (CB-420, `barSearch`).
         expect(board).toMatch(
-            /\{barSearch\(Platform\.OS\) \? null : \(\s+<SearchField\s+ref=\{props\.fieldRef\}\s+label=\{ISSUE_SEARCH_LABEL\}/,
+            /\{barSearch\(Platform\.OS\) \? null : \(\s+<SearchField\s+ref=\{field\}\s+label=\{ISSUE_SEARCH_LABEL\}/,
         );
         expect(board).toContain(
             'search: { placeholder: ISSUE_SEARCH_PLACEHOLDER, onChange: setQuery, ref: barField },',

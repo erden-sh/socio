@@ -1,15 +1,7 @@
 import { LegendList, type LegendListRef } from '@legendapp/list/react-native';
 import { useNavigation } from '@react-navigation/native';
 import * as Clipboard from 'expo-clipboard';
-import {
-    type ReactNode,
-    type RefObject,
-    useEffect,
-    useLayoutEffect,
-    useRef,
-    useState,
-    useSyncExternalStore,
-} from 'react';
+import { type ReactNode, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import {
     Alert,
     Platform,
@@ -211,12 +203,17 @@ function Board() {
     };
     const [query, setQuery] = useState('');
     const barField = useRef<SearchBarCommands>(null);
-    const fieldRef = useRef<TextInputInstance>(null);
+    // Android's drawn field takes the focus when this counts up (BoardHead's own ref).
+    const [focusField, setFocusField] = useState(0);
     // Clear search (CB-552): the field emptied (the bar's sends no change for it), the focus kept in it.
     const clearSearch = () => {
         barField.current?.clearText();
         setQuery('');
-        (barSearch(Platform.OS) ? barField : fieldRef).current?.focus();
+        if (barSearch(Platform.OS)) {
+            barField.current?.focus();
+        } else {
+            setFocusField((count) => count + 1);
+        }
     };
     const [filtering, setFiltering] = useState(false);
     const { data: shell } = useLiveQuery({ query: shellQuery(collections) });
@@ -475,7 +472,7 @@ function Board() {
                             view={view}
                             query={query}
                             onQuery={setQuery}
-                            fieldRef={fieldRef}
+                            focusField={focusField}
                             onFilter={() => setFiltering(true)}
                             onColumn={(column) => setPrefs({ ...prefs, column })}
                             onLayout={(layout) => setPrefs({ ...prefs, view: layout })}
@@ -617,12 +614,19 @@ function BoardHead(props: {
     view: BoardView;
     query: string;
     onQuery: (text: string) => void;
-    fieldRef: RefObject<TextInputInstance | null>;
+    /** Counts up when Clear search wants Android's drawn field focused. */
+    focusField: number;
     onFilter: () => void;
     onColumn: (column: BoardColumn['status']) => void;
     onLayout: (layout: BoardLayout) => void;
 }) {
-    const { view } = props;
+    const { view, focusField } = props;
+    const field = useRef<TextInputInstance>(null);
+    useEffect(() => {
+        if (focusField > 0) {
+            field.current?.focus();
+        }
+    }, [focusField]);
     return (
         <View className="gap-3 pb-3" onLayout={(event) => props.onHeight(event.nativeEvent.layout.height)}>
             <StatusBanners />
@@ -633,7 +637,7 @@ function BoardHead(props: {
             />
             {barSearch(Platform.OS) ? null : (
                 <SearchField
-                    ref={props.fieldRef}
+                    ref={field}
                     label={ISSUE_SEARCH_LABEL}
                     placeholder={ISSUE_SEARCH_PLACEHOLDER}
                     value={props.query}
