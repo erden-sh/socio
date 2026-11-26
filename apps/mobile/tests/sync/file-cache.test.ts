@@ -218,13 +218,21 @@ function replaceableServer(options: { etags?: boolean } = {}) {
 }
 
 function replaceableSetup(options: { etags?: boolean; maxBytes?: number } = {}) {
+    /** Folders whose delete fails, as a binding's can: it throws as it is called. */
+    const undeletable = new Set<string>();
+    const errors: unknown[] = [];
     const root = mkdtempSync(join(tmpdir(), 'files-'));
     cleanups.push(() => rmSync(root, { recursive: true, force: true }));
     const layout = workspaceLayout(root, ID);
     const server = replaceableServer(options);
     const files: FileCacheFiles = {
         list: async (path) => (existsSync(path) ? readdirSync(path) : []),
-        remove: (path) => rm(path, { recursive: true, force: true }),
+        remove: (path) => {
+            if ([...undeletable].some((folder) => path.includes(folder))) {
+                throw new Error(`could not delete ${path}`);
+            }
+            return rm(path, { recursive: true, force: true });
+        },
         mkdir: async (path) => void (await mkdir(path, { recursive: true })),
         size: async (path) => (existsSync(path) ? statSync(path).size : 0),
         exists: async (path) => existsSync(path),
@@ -241,13 +249,21 @@ function replaceableSetup(options: { etags?: boolean; maxBytes?: number } = {}) 
             layout,
             setFileProtection: async () => {},
             now: tick,
+            onError: (error) => void errors.push(error),
             ...(maxBytes === undefined ? {} : { maxBytes }),
         });
     /** A page opening now: what it passes as `checkedSince`. */
     const pageOpens = () => tick();
     const text = (load: FileLoad) => readFileSync((load as { path: string }).path, 'utf8');
     const folders = () => (existsSync(layout.files) ? readdirSync(layout.files) : []);
-    return { layout, server, open, pageOpens, text, folders };
+    /** Makes deleting a key's copy fail from now on. */
+    const undeletableCopy = (key: string) => {
+        const folder = folders().find((name) => name.startsWith(`${key}.`));
+        expect(folder).toBeDefined();
+        undeletable.add(folder!);
+        return folder!;
+    };
+    return { layout, server, open, pageOpens, text, folders, undeletableCopy, errors };
 }
 
 describe('a copy of a file replaced under its id', () => {
@@ -419,5 +435,78 @@ describe('a copy an open page has', () => {
         expect(relaunched.path(pdf(1).key)).toBeNull();
         expect(relaunched.path(pdf(2).key)).not.toBeNull();
         expect(relaunched.path(pdf(3).key)).not.toBeNull();
+    });
+
+    it('keeps evicting after a pass fails: later releases, loads and idle() all go on', async () => {
+        const s = replaceableSetup({ maxBytes: 'aaaa'.length * 2 });
+        for (const n of [1, 2, 3, 4]) {
+            s.server.put(pdf(n).url, 'aaaa');
+        }
+        const cache = s.open();
+        const first = [1, 2, 3].map((n) => cache.hold(pdf(n).key));
+        for (const n of [1, 2, 3]) {
+            await cache.load(pdf(n));
+        }
+        // The oldest copy can't be deleted: the pass after the release meets that failure.
+        const stuck = s.undeletableCopy(pdf(1).key);
+        for (const release of first) {
+            release();
+        }
+        await expect(cache.idle()).resolves.toBeUndefined();
+        expect(s.errors).toHaveLength(1);
+        expect(cache.path(pdf(1).key)).toBeNull();
+
+        // A later load still answers its copy, and a later release still brings the cache within its bound.
+        const second = [2, 3, 4].map((n) => cache.hold(pdf(n).key));
+        const load = await cache.load(pdf(4));
+        expect(load.state).toBe('ready');
+        expect(s.text(load)).toBe('aaaa');
+        for (const release of second) {
+            release();
+        }
+        await expect(cache.idle()).resolves.toBeUndefined();
+        expect(cache.path(pdf(2).key)).toBeNull();
+        expect(cache.path(pdf(3).key)).not.toBeNull();
+        expect(cache.path(pdf(4).key)).not.toBeNull();
+        // Only the folder that couldn't be deleted is left over, for the next launch to take back.
+        expect(s.folders().filter((folder) => folder !== stuck)).toHaveLength(2);
+    });
+
+    it('answers a download’s copy when the eviction after it fails', async () => {
+        const s = replaceableSetup({ maxBytes: 'aaaa'.length * 2 });
+        for (const n of [1, 2, 3]) {
+            s.server.put(pdf(n).url, 'aaaa');
+        }
+        const cache = s.open();
+        await cache.load(pdf(1));
+        await cache.load(pdf(2));
+        s.undeletableCopy(pdf(1).key);
+        const load = await cache.load(pdf(3));
+        expect(load.state).toBe('ready');
+        expect(s.text(load)).toBe('aaaa');
+        expect(s.errors).toHaveLength(1);
+        await expect(cache.idle()).resolves.toBeUndefined();
+    });
+
+    it('reads a folder left over its bound even when a copy there can’t be deleted', async () => {
+        const s = replaceableSetup();
+        for (const n of [1, 2, 3, 4]) {
+            s.server.put(pdf(n).url, 'aaaa');
+        }
+        const first = s.open();
+        for (const n of [1, 2, 3]) {
+            await first.load(pdf(n));
+        }
+        s.undeletableCopy(pdf(1).key);
+        const relaunched = s.open('aaaa'.length * 2);
+        const load = await relaunched.load(pdf(3));
+        expect(load.state).toBe('ready');
+        expect(s.errors).toHaveLength(1);
+        expect(relaunched.path(pdf(1).key)).toBeNull();
+        expect(relaunched.path(pdf(2).key)).not.toBeNull();
+        // And the cache goes on: a new download, and the eviction after it.
+        expect((await relaunched.load(pdf(4))).state).toBe('ready');
+        expect(relaunched.path(pdf(2).key)).toBeNull();
+        await expect(relaunched.idle()).resolves.toBeUndefined();
     });
 });

@@ -213,13 +213,29 @@ export function createFileCache(options: FileCacheOptions): FileCache {
     const pathOf = (entry: Entry) => inFolder(folderOf(entry), entry.name);
     const readyOf = (entry: Entry): FileLoad => ({ state: 'ready', path: pathOf(entry), bytes: entry.bytes });
 
-    /** Forgets an entry and deletes its folder. */
+    /** Reports an error and goes on: nothing here fails because a report did. */
+    const report = (error: unknown) => {
+        try {
+            onError(error);
+        } catch {
+            // The reporter's own failure has nowhere else to go.
+        }
+    };
+
+    /**
+     * Forgets an entry and deletes its folder; never fails. A folder that can't be deleted stays on
+     * the disk unknown to this launch, and the next launch's first read takes it back (and evicts).
+     */
     async function drop(entry: Entry) {
         if (entries.get(entry.key) === entry) {
             entries.delete(entry.key);
             total -= entry.bytes;
         }
-        await files.remove(folderOf(entry)).catch(onError);
+        try {
+            await files.remove(folderOf(entry));
+        } catch (error) {
+            report(error);
+        }
     }
 
     /** Reads the folder once: what an earlier launch kept, and anything it can't name goes. */
@@ -236,14 +252,14 @@ export function createFileCache(options: FileCacheOptions): FileCache {
                         : (await files.list(path).catch(() => [] as string[])).filter((name) => name !== VALIDATOR);
                 const name = names.length === 1 ? names[0] : undefined;
                 if (match === null || name === undefined) {
-                    await files.remove(path).catch(onError);
+                    await files.remove(path).catch(report);
                     continue;
                 }
                 const key = match[1]!;
                 const stamp = Number.parseInt(match[2]!, 36);
                 const known = entries.get(key);
                 if (known !== undefined && known.stamp >= stamp) {
-                    await files.remove(path).catch(onError);
+                    await files.remove(path).catch(report);
                     continue;
                 }
                 if (known !== undefined) {
@@ -256,10 +272,14 @@ export function createFileCache(options: FileCacheOptions): FileCache {
             }
             ready = true;
             // An earlier launch may have left more than the bound (pages held past it as it closed).
-            await evict();
+            // A pass that fails is reported, never a reason the folder can't be read.
+            await evict().catch(report);
         })());
 
-    /** One eviction at a time: each pass starts once the one before it is done. */
+    /**
+     * One eviction at a time: each pass starts once the one before it is done, whatever it came to.
+     * Never rejects, so a failed pass never stops the ones after it.
+     */
     let evicting: Promise<void> = Promise.resolve();
     /** A pass asked for after a release and not started yet: releases until it starts share it. */
     let evictQueued = false;
@@ -269,7 +289,7 @@ export function createFileCache(options: FileCacheOptions): FileCache {
      * or one being loaded.
      */
     function evict(keep?: string): Promise<void> {
-        evicting = evicting.then(async () => {
+        const pass = evicting.then(async () => {
             if (stopped()) {
                 return;
             }
@@ -284,7 +304,9 @@ export function createFileCache(options: FileCacheOptions): FileCache {
                 await drop(entry);
             }
         });
-        return evicting;
+        // The caller sees its own pass fail; the chain goes on to the next.
+        evicting = pass.catch(report);
+        return pass;
     }
 
     /** After a release: one pass for however many holds go in the same moment. */
@@ -295,7 +317,7 @@ export function createFileCache(options: FileCacheOptions): FileCache {
         evictQueued = true;
         void Promise.resolve().then(() => {
             evictQueued = false;
-            return evict().catch(onError);
+            return evict().catch(report);
         });
     }
 
@@ -346,7 +368,7 @@ export function createFileCache(options: FileCacheOptions): FileCache {
             }
             await files.move(part, whole);
         } catch (error) {
-            onError(error);
+            report(error);
             await files.remove(part).catch(() => {});
             await files.remove(whole).catch(() => {});
             return { state: 'failed' };
@@ -363,7 +385,8 @@ export function createFileCache(options: FileCacheOptions): FileCache {
         const entry: Entry = { key, folder, name, bytes: bytes.byteLength, stamp, checkedAt: now() };
         entries.set(key, entry);
         total += bytes.byteLength;
-        await evict(key);
+        // The copy is whole: an eviction that fails is reported, never this load's failure.
+        await evict(key).catch(report);
         return readyOf(entry);
     }
 
