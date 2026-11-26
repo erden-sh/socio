@@ -59,6 +59,10 @@ function database() {
     const dir = mkdtempSync(join(tmpdir(), 'classify-sessions-'));
     cleanup.push(() => rmSync(dir, { recursive: true, force: true }));
     const db = openAppDatabase(join(dir, 'company-brain.sqlite'));
+    // A throwaway file: no sync per commit. Each label and turn is a transaction of
+    // its own, and their fsyncs were most of each test's time, past 15 s on a host
+    // whose disk was busy.
+    db.exec('PRAGMA synchronous=OFF');
     migrate(db, [operationsSchema, classifySchema]);
     cleanup.push(() => db.close());
     return db;
