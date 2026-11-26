@@ -30,6 +30,7 @@ import {
     variantCheckGradle,
     variantXcodeEnv,
 } from '../plugins/build-env';
+import { DOCUMENT_SCANNER_PROPERTY } from '../plugins/camera';
 import withNetworkSecurityConfig, {
     CLEARTEXT_HOSTS,
     DEBUG_SOURCE_SETS,
@@ -930,24 +931,52 @@ describe('the introspected Expo config', () => {
         );
     });
 
-    it.each(variants)('%s: the pickers ask for the camera only, with its purpose string', (variant) => {
-        const { android, ios } = of(variant)._internal.modResults;
-        const usage = Object.keys(ios.infoPlist).filter((key) => /^NS(Camera|Microphone|PhotoLibrary)/.test(key));
-        expect(usage).toEqual(['NSCameraUsageDescription']);
-        expect(ios.infoPlist.NSCameraUsageDescription).toBe(CAMERA_PURPOSE);
-        // No iCloud container for the document picker.
-        expect(of(variant).ios.usesIcloudStorage).toBeFalsy();
-        expect(Object.keys(ios.entitlements).filter((key) => /icloud|ubiquity/i.test(key))).toEqual([]);
+    it.each(variants)(
+        '%s: the pickers and the QR scanner ask for the camera only, with one purpose string',
+        (variant) => {
+            const { android, ios } = of(variant)._internal.modResults;
+            const usage = Object.keys(ios.infoPlist).filter((key) => /^NS(Camera|Microphone|PhotoLibrary)/.test(key));
+            expect(usage).toEqual(['NSCameraUsageDescription']);
+            expect(ios.infoPlist.NSCameraUsageDescription).toBe(CAMERA_PURPOSE);
+            // No iCloud container for the document picker.
+            expect(of(variant).ios.usesIcloudStorage).toBeFalsy();
+            expect(Object.keys(ios.entitlements).filter((key) => /icloud|ubiquity/i.test(key))).toEqual([]);
 
-        const permissions = attrs(android.manifest.manifest['uses-permission'] ?? []);
-        const removed = permissions.filter((at) => at?.['tools:node'] === 'remove').map((at) => at?.['android:name']);
-        expect(new Set(removed)).toEqual(new Set(BLOCKED_PERMISSIONS));
-        for (const name of ['RECORD_AUDIO', 'READ_EXTERNAL_STORAGE', 'READ_MEDIA_IMAGES', 'READ_MEDIA_VIDEO']) {
-            expect(removed).toContain(`android.permission.${name}`);
-        }
-        const held = permissions.filter((at) => at?.['tools:node'] !== 'remove').map((at) => at?.['android:name']);
-        expect(held.filter((name) => /RECORD_AUDIO|READ_MEDIA_|EXTERNAL_STORAGE/.test(name ?? ''))).toEqual([]);
-    });
+            const permissions = attrs(android.manifest.manifest['uses-permission'] ?? []);
+            const removed = permissions
+                .filter((at) => at?.['tools:node'] === 'remove')
+                .map((at) => at?.['android:name']);
+            expect(new Set(removed)).toEqual(new Set(BLOCKED_PERMISSIONS));
+            for (const name of ['RECORD_AUDIO', 'READ_EXTERNAL_STORAGE', 'READ_MEDIA_IMAGES', 'READ_MEDIA_VIDEO']) {
+                expect(removed).toContain(`android.permission.${name}`);
+            }
+            const held = permissions.filter((at) => at?.['tools:node'] !== 'remove').map((at) => at?.['android:name']);
+            expect(held.filter((name) => /RECORD_AUDIO|READ_MEDIA_|EXTERNAL_STORAGE/.test(name ?? ''))).toEqual([]);
+            expect(held).toContain('android.permission.CAMERA');
+        },
+    );
+
+    it.each(variants)(
+        '%s: the QR scanner (CB-566): expo-camera with no microphone, QR codes on, no document scanner',
+        (variant) => {
+            const config = of(variant);
+            expect(CAMERA_PURPOSE).toMatch(/scan the QR code/);
+            expect(CAMERA_PURPOSE).toMatch(/photo to attach/);
+            const plugin = config.plugins.find((entry) => Array.isArray(entry) && entry[0] === 'expo-camera');
+            expect(plugin?.[1]).toEqual({
+                cameraPermission: CAMERA_PURPOSE,
+                microphonePermission: false,
+                recordAudioAndroid: false,
+                barcodeScannerEnabled: true,
+            });
+            const { android, ios } = config._internal.modResults;
+            expect(ios.infoPlist.NSMicrophoneUsageDescription).toBeUndefined();
+            const gradle = android.gradleProperties.filter(
+                (line) => line.type === 'property' && line.key?.startsWith('expo.camera.'),
+            );
+            expect(gradle.map((line) => [line.key, line.value])).toEqual([[DOCUMENT_SCANNER_PROPERTY, 'false']]);
+        },
+    );
 
     it.each(variants)('%s: push: its APNs environment, the keychain groups in order, no background mode', (variant) => {
         const { ios } = of(variant)._internal.modResults;

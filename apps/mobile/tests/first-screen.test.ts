@@ -55,7 +55,7 @@ const ALL_WORDS = [
 ];
 
 describe('the first screen’s view model and words', () => {
-    it('offers the invite, the QR code, then the address, and only the address is a button', () => {
+    it('offers the invite, the QR code, then the address, and the QR code (the scanner) and the address are buttons', () => {
         const view = firstScreenView({ adding: false, testBuild: false, link: null });
         expect(view.title).toBe('Add a workspace');
         expect(view.ways.map((way) => way.id)).toEqual(['invite', 'qr', 'address']);
@@ -65,10 +65,8 @@ describe('the first screen’s view model and words', () => {
             'Enter your workspace address',
         ]);
         expect(view.ways[0]?.detail).toBe('Your admin sent it to you. Open it on this device.');
-        expect(view.ways[1]?.detail).toBe(
-            'Choose Get the app, or Add a device to sign in at once. Use this device’s camera.',
-        );
-        expect(view.ways.map((way) => way.pressable)).toEqual([false, false, true]);
+        expect(view.ways[1]?.detail).toBe('On Socio, choose Get the app, or Add a device to sign in at once.');
+        expect(view.ways.map((way) => way.pressable)).toEqual([false, true, true]);
         expect(view.ways.map((way) => way.testID)).toEqual([
             'first-screen-invite',
             'first-screen-qr',

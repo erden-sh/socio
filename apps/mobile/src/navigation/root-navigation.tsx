@@ -20,6 +20,7 @@ import { linkPrefix, pathFromUrl } from './linking';
 import { createExternalLinks, type LinkNavigator, linkResolver } from './links';
 import { type PresenceNavState, presencePath, screenPath } from './presence-path';
 import { RootStack } from './root-stack';
+import { setScannedLinkOpener } from './scanned-link';
 import { redirectSteps, type ShellNavState, tabPageRedirect } from './shell-actions';
 
 // The root stack's container, with its links. The variant, so the scheme its links use, comes from
@@ -48,6 +49,8 @@ setWorkspaceScreenOpener(() => externalLinks.openRoute('AddWorkspace', 'popTo'))
 // An invite link opens Invite the same way, its token in memory only: back to the one copy
 // of it when it shows, else pushed over the gate's root.
 setInviteScreenOpener(() => externalLinks.openRoute('Invite', 'popTo'));
+// A link the QR scanner read (CB-566) goes the way the same link from outside goes.
+setScannedLinkOpener((url) => openExternalUrl(url));
 
 /**
  * Opens a URL from outside the app, if it's one of this variant's links. This build's sign-in

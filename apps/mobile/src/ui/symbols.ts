@@ -79,6 +79,8 @@ export const SYMBOLS = {
     'file-text': { sf: 'doc.text' },
     'file-up': { sf: 'arrow.up.doc' },
     files: { sf: 'doc.on.doc' },
+    flashlight: { sf: 'flashlight.on.fill' },
+    'flashlight-off': { sf: 'flashlight.off.fill' },
     'flask-conical': { sf: 'flask' },
     folder: { sf: 'folder' },
     'folder-input': { sf: 'folder' },

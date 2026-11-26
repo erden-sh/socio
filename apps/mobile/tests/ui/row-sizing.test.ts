@@ -110,6 +110,8 @@ const FIXED_HEIGHTS: Record<string, readonly string[]> = {
     // Media (CB-558): a file's picture in its page, and the grid's and the list's square pictures.
     'screens/media-file.tsx': ['320'],
     'screens/media.tsx': ['size', 'cell', 'ROW_TILE'],
+    // The QR scanner's viewfinder (CB-566): a square mark over the camera, its width and height together.
+    'screens/scan-qr.tsx': ['FRAME'],
     // Swipe actions: the panes are the row's own height, whatever its text.
     // and an iOS action's circle, a square mark (iOS 26's).
     'screens/swipe-row.tsx': ["'100%'", 'look.circle'],

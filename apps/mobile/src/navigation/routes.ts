@@ -3,7 +3,7 @@ import type { ComponentType } from 'react';
 
 import type { VariantName } from '../../variant';
 
-import { immersive, onPlatform, page, pageSheet, type Preset, sheet } from './presets';
+import { immersive, modal, onPlatform, page, pageSheet, type Preset, sheet } from './presets';
 import { type RootGate, rootState, type RootStateSource, useRootGate } from './root-gate';
 import type { TabName } from './tabs';
 
@@ -248,6 +248,9 @@ export const ROUTES = {
     AddWorkspace: { gates: ['add-workspace'], preset: page({ header: false }) },
     // The workspace's address, typed, from the first screen's third way.
     WorkspaceAddress: { gates: ['add-workspace'], preset: page({ title: '' }) },
+    // The QR scanner, from the first screen's QR row (CB-566): the camera full screen with its own
+    // Cancel, no path. A code it reads opens as the same link from outside would (scanned-link.ts).
+    ScanQr: { gates: ['add-workspace'], preset: modal() },
     // The workspace the address led to, before signing in.
     ConfirmWorkspace: { gates: ['add-workspace'], preset: page({ title: '' }) },
     // Email and password, then the commit.

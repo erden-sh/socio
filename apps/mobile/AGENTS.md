@@ -365,9 +365,22 @@ fake fetch:
   `probe-copy.ts`, never the server's text, and test builds add the answer's status and origin under it.
   A workspace already on the device opens. The first screen (words and view model in
   `src/net/first-screen.ts`) says the ways in, in order: the invite link, the QR code from Socio on a
-  computer (Get the app or Add a device; the system camera opens it, the app has no scanner), then
-  "Enter your workspace address", its one button, to the address screen, and ends with the Privacy
-  Policy link (Settings, Legal). It never lists workspaces. A
+  computer (Get the app or Add a device), a button to the app's own scanner, then "Enter your
+  workspace address", a button to the address screen, and ends with the Privacy Policy link
+  (Settings, Legal). It never lists workspaces. The drawer's "Add a workspace" opens the same screen.
+  **The QR scanner** (CB-566, `ScanQr`, `modal()`, `screens/scan-qr.tsx`; words, rules and the
+  permission steps in `src/net/qr-scan.ts`) is expo-camera's `CameraView`, QR codes only, with the
+  torch and Cancel. The camera permission is asked only as it opens (the tap; one purpose string,
+  `CAMERA_PURPOSE`, shared with the pickers' camera); refused, it says so with Open Settings (and
+  Allow the camera while Android can still ask), and reads it again on each return to the front. A
+  code is this build's own `d`, `w` or `i` link (the same readers, link host and variant as a link
+  from outside; `cb` and `c` never come from a QR code) or nothing: it closes the scanner and hands
+  the URL to root-navigation's `openExternalUrl` (`src/navigation/scanned-link.ts`), so the app opens
+  it with no request to the link domain. A link of another build (another variant's path, or the
+  other known link host) says "This code is for another version of the Socio app.", anything else
+  "This isn't a Socio code.", each with Try again while the camera keeps reading. Development builds
+  (`__DEV__` only) add a field that stands in for the camera on simulators and emulators.
+  expo-camera's Android document scanner is off (`plugins/camera.ts`). A
   Get the app link (`…/<variant path>/w/<host>`, `readWorkspaceLink` through `parseAppLink`, this build's
   link host and variant only) is held in memory (`src/navigation/workspace-link.ts`, bound in
   `src/platform/workspace-link.ts`) and opens the first screen through links.ts `openRoute`, a cold start
