@@ -29,6 +29,10 @@ How this file is kept (scripts/release.mjs and the app's build read it):
 
 ## Unreleased
 
+### Changed
+
+- **AG-UI 1.0 and CopilotKit 1.90.** Socio moves to `@ag-ui/client` and `@ag-ui/core` 1.0.5 and `@copilotkit/*` 1.90; Telegram stays on `@copilotkit/channels-*` 0.11.1, the last release that has it. Attachments are now written as AG-UI 1.0 media parts (`image`, `audio`, `video` or `document`, by the file's type) whose `source` is `{ type: 'file', value: <attachment id>, provider: 'socio' }`, with the file name in the part's `metadata`, from the web app, Socio Mobile, the steering queue and Telegram. The old `{ type: 'binary', id, mimeType, filename }` reference is still read everywhere, from stored conversations and from Socio Mobile builds already installed, and the run endpoint rewrites it to the new shape before CopilotKit (whose 1.90 request parser drops it) and before it is stored. A transcript message's `author` and `at` now also come in its `metadata`, which AG-UI 1.0 keeps; the top-level copies stay until every supported Socio Mobile build reads `metadata`. Runs stored before the upgrade replay as before: their reasoning events (`THINKING_*`, now `REASONING_*`) and their attachments come through. Changing dependencies now goes through `pnpm deps` (docs/TOOLING.md).
+
 ## v0.53.1 (2026-11-24)
 
 A maintenance release: the docs and examples use generic names, and nothing changes in how Socio works.
