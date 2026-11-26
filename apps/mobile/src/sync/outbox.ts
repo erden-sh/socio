@@ -672,6 +672,13 @@ export async function openOutbox(options: OutboxOptions): Promise<Outbox> {
     let closed = false;
     let heldForSignIn = false;
     let heldForUpdate = false;
+    /**
+     * How many times the scope said the app is new enough (`holdForUpdate(false)`, CB-553). A 426
+     * settles after its answer, and a compat read begun by that answer can say "new enough" first:
+     * the settlement holds only when no release came since its request went, so a stale 426 never
+     * holds a workspace the newer answer released. The scope's compat state stays the authority.
+     */
+    let updateReleases = 0;
     let paused = false;
     let disposing: Promise<void> | null = null;
 
@@ -1114,6 +1121,7 @@ export async function openOutbox(options: OutboxOptions): Promise<Outbox> {
             return;
         }
         const { context, went } = contextFor(controller);
+        const releasesAtSend = updateReleases;
         let outcome: SendOutcome | Held;
         let thrown = false;
         try {
@@ -1138,7 +1146,7 @@ export async function openOutbox(options: OutboxOptions): Promise<Outbox> {
             ambiguous.add(row.id);
         }
         inflight.delete(row.id);
-        await serialize(() => settle(sending, outcome, thrown));
+        await serialize(() => settle(sending, outcome, thrown, releasesAtSend));
     }
 
     async function check(row: OutboxRow, write: OutboxWrite): Promise<void> {
@@ -1146,6 +1154,7 @@ export async function openOutbox(options: OutboxOptions): Promise<Outbox> {
         const controller = new AbortController();
         inflight.set(row.id, controller);
         const { context } = contextFor(controller);
+        const releasesAtCheck = updateReleases;
         let outcome: CheckOutcome | Held | 'failed';
         try {
             outcome = await (kind.check as NonNullable<OutboxKind<unknown>['check']>)(write, context);
@@ -1169,7 +1178,7 @@ export async function openOutbox(options: OutboxOptions): Promise<Outbox> {
             if (outcome === 'sign-in') {
                 holdForSignIn();
             } else if (outcome === 'update') {
-                holdForUpdateNow();
+                holdForUpdateAfter(row, releasesAtCheck, row.attempts + 1);
             } else if (outcome === 'failed' || outcome.action === 'later') {
                 backOff(row, row.attempts + 1);
                 await db.run('UPDATE outbox SET attempts = attempts + 1 WHERE id = ?', [row.id]);
@@ -1200,6 +1209,20 @@ export async function openOutbox(options: OutboxOptions): Promise<Outbox> {
         if (!heldForUpdate) {
             heldForUpdate = true;
             tellStatus();
+        }
+    };
+
+    /**
+     * A 426 to row `row`'s request, settled: every lane holds, unless the scope released the hold
+     * since that request went (`releases`, read as it went). Then the answer is older than what the
+     * scope knows, and the row only waits out a back-off; a 426 that still holds closes the gate
+     * through the scope again.
+     */
+    const holdForUpdateAfter = (row: OutboxRow, releases: number, attempts: number) => {
+        if (releases === updateReleases) {
+            holdForUpdateNow();
+        } else {
+            backOff(row, attempts);
         }
     };
 
@@ -1370,7 +1393,12 @@ export async function openOutbox(options: OutboxOptions): Promise<Outbox> {
     };
 
     /** Applies a send's outcome, in the queue. A closed outbox writes nothing more. */
-    async function settle(row: OutboxRow, outcome: SendOutcome | Held, thrown: boolean): Promise<void> {
+    async function settle(
+        row: OutboxRow,
+        outcome: SendOutcome | Held,
+        thrown: boolean,
+        releasesAtSend: number,
+    ): Promise<void> {
         const wasInterrupted = interrupted.delete(row.id);
         if (closed || rows.get(row.id) === undefined) {
             return;
@@ -1398,7 +1426,8 @@ export async function openOutbox(options: OutboxOptions): Promise<Outbox> {
         if (outcome === 'update') {
             // A 426 changed nothing on the server either: the row goes again after the update.
             await setState(row, 'queued', 'update');
-            holdForUpdateNow();
+            // Read after the write: a release that came while it was written wins.
+            holdForUpdateAfter(row, releasesAtSend, row.attempts);
             return;
         }
         switch (outcome.action) {
@@ -1772,6 +1801,7 @@ export async function openOutbox(options: OutboxOptions): Promise<Outbox> {
                 holdForUpdateNow();
                 return;
             }
+            updateReleases += 1;
             if (heldForUpdate) {
                 heldForUpdate = false;
                 tellStatus();
