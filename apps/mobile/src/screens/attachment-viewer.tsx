@@ -21,7 +21,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { ViewerImage } from '../chat/attachment-tray';
-import { backdropOpacity, dismissScale, fittedSize, type Size } from '../chat/image-viewer';
+import { backdropOpacity, dismissScale, DOUBLE_TAP_DELAY_MS, fittedSize, type Size } from '../chat/image-viewer';
 import { useHasWorkspaceScope } from '../live';
 import { useAttachmentPicture } from '../platform/image-cache';
 import { AppSymbol, Text } from '../ui';
@@ -108,6 +108,7 @@ function Viewer({ images, start }: { images: readonly ViewerImage[]; start: numb
                 getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
                 keyExtractor={(image) => image.id}
                 showsHorizontalScrollIndicator={false}
+                showsVerticalScrollIndicator={false}
                 renderItem={({ item, index }) => (
                     <Page
                         image={item}
@@ -197,9 +198,12 @@ function Page({ image, page, active, pager, dismiss, onPage, onDismiss }: PagePr
         onUpdate: callbacks.pinchUpdate,
         onDeactivate: callbacks.pinchDeactivate,
     });
+    // UIKit's double-tap window (about 0.35 s): gesture-handler's own default on iOS is 0.2 s, too
+    // short for most people's second tap, so on iOS a double-tap never zoomed.
     const doubleTap = useTapGesture({
         enabled: ready,
         numberOfTaps: 2,
+        maxDelay: DOUBLE_TAP_DELAY_MS,
         onActivate: callbacks.doubleTap,
     });
     // One finger: at fit it pages or dismisses, whichever way it goes more; zoomed in, it pans.

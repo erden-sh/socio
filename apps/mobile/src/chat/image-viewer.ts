@@ -39,6 +39,9 @@ export const MAX_SCALE = 5;
 /** Where a double-tap at fit zooms to. */
 export const DOUBLE_TAP_SCALE = 2.5;
 
+/** The longest pause between a double-tap's two taps, in milliseconds: UIKit's, about 0.35 s. */
+export const DOUBLE_TAP_DELAY_MS = 350;
+
 /** A scale this close to 1 counts as fit. */
 const FIT_EPSILON = 0.01;
 

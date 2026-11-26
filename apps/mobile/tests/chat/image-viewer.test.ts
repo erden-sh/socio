@@ -12,6 +12,7 @@ import {
     dismissDistance,
     dismissScale,
     dismissTarget,
+    DOUBLE_TAP_DELAY_MS,
     DOUBLE_TAP_SCALE,
     doubleTapZoom,
     DRAG_DECIDE,
@@ -274,6 +275,9 @@ describe('the viewer screen', () => {
     it('zooms its pictures: a pinch, a double-tap and a drag on each page, together (CB-536)', () => {
         expect(viewer).toContain('usePinchGesture({');
         expect(viewer).toMatch(/useTapGesture\(\{[^}]*numberOfTaps: 2/);
+        // gesture-handler's iOS default leaves 0.2 s between the taps: too short, so iOS never zoomed.
+        expect(viewer).toMatch(/useTapGesture\(\{[^}]*maxDelay: DOUBLE_TAP_DELAY_MS/);
+        expect(DOUBLE_TAP_DELAY_MS).toBeGreaterThanOrEqual(300);
         expect(viewer).toContain('usePanGesture({');
         expect(viewer).toContain('useSimultaneousGestures(pinch, drag, doubleTap)');
         expect(viewer).toContain('<GestureDetector gesture={gestures}>');
@@ -281,6 +285,9 @@ describe('the viewer screen', () => {
 
     it('moves the pager itself, so a pinch never races a native scroll: paging only at fit', () => {
         expect(viewer).toContain('scrollEnabled={false}');
+        // No scroll bars: VoiceOver read the pager's vertical one as "Vertical scroll bar, 3 pages".
+        expect(viewer).toContain('showsVerticalScrollIndicator={false}');
+        expect(viewer).toContain('showsHorizontalScrollIndicator={false}');
         expect(viewer).toContain('scrollTo(pagerRef, pagerX.get(), 0, false);');
         expect(viewer).toContain('pager={{ x: pagerX, index, count: images.length }}');
         expect(viewer).toContain('onPage={setShown}');
