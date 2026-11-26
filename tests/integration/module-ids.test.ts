@@ -27,6 +27,7 @@ const SERVER_ONLY: string[] = [
     'chat-skills',
     'mcp-connections', // Personal connection controls live in Account settings.
     'updates', // The Updates card on the Platform page (CB-259).
+    'cloud', // The cloud connection: no screen yet; Settings → Cloud connection comes later.
     'flags', // Settings → Optional features, Early access and In development (CB-169, CB-503).
     'rooms', // A Settings card until the room screens (CB-212) land.
     'cycles',

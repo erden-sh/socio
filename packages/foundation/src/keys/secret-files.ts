@@ -47,6 +47,8 @@ export const SECRET_SETTINGS = [
     // and the updater sidecar share; `none` leaves either off.
     'UPDATES_FEED_TOKEN',
     'UPDATER_TOKEN',
+    // The cloud connection: provisioning's single-use enrollment token; `none` leaves it unset.
+    'SOCIO_CLOUD_ENROLLMENT_TOKEN',
     // CB-239: the coding gateway's stamp and egress keys' source, shared with
     // the coding egress proxy; and the key the app and coding-git share.
     'CODING_EGRESS_SECRET',

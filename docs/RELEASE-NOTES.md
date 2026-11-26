@@ -29,6 +29,10 @@ How this file is kept (scripts/release.mjs and the app's build read it):
 
 ## Unreleased
 
+### New
+
+- **A deployment can enroll with Socio's cloud services (CB-559).** With a provisioning token in `SOCIO_CLOUD_ENROLLMENT_TOKEN_FILE`, the server makes its own Ed25519 key, registers the public half with the issuer and keeps the private half sealed under the data key. It then gets short-lived access tokens with signed requests, and syncs once a day: its version, origin and a fingerprint, nothing else. A deployment that sets none of the new settings runs exactly as before and sends nothing. Nothing uses the connection yet; the push relay and reply reports come next. See Cloud connection in docs/SETUP.md.
+
 ### Fixed
 
 - **A long socio name stays on one line in the sidebar (CB-430).** A long name next to the Personal badge wrapped out of its row into the rows below; it now ends in an ellipsis instead.

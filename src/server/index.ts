@@ -33,6 +33,7 @@ import { createApp } from './app.js';
 import { appsRuntimeFromEnv } from './apps/runtime-client.js';
 import { backupSettingsFromEnv } from './backup/backup-service.js';
 import { classifySettingsFromEnv } from './classify/settings.js';
+import { cloudFromEnv } from './cloud/settings.js';
 import { LeaderWork } from './composition/app/work.js';
 import { authFromEnv } from './composition/auth.js';
 import {
@@ -198,6 +199,9 @@ const config: PlatformConfig = {
     // Updates (CB-259): the release feed operators see, and the updater
     // sidecar that applies one; notify-only without UPDATER_URL.
     updates: updatesFromEnv(process.env),
+    // The cloud connection: sends nothing without an enrollment token or a
+    // stored identity, and never with SOCIO_CLOUD=off.
+    cloud: cloudFromEnv(process.env),
     // Feature flags' instance defaults (CB-169), under Settings' rules.
     featureFlags: flagDefaultsFromEnv(process.env, (line) => console.warn(line)),
     // CB-503: only an internal deployment may have flags in development.

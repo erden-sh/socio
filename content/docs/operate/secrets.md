@@ -5,7 +5,7 @@ description: 'Keep credentials out of configuration exports and rotate encryptio
 
 ## Use secret files
 
-The server supports `<NAME>_FILE` for its declared secret settings, including `SESSION_SECRET`, data-encryption keys, model and Telegram credentials, computer tokens, object-storage keys and off-site backup credentials. A nonempty explicit environment value takes precedence. Missing or unreadable configured files stop startup without echoing their contents.
+The server supports `<NAME>_FILE` for its declared secret settings, including `SESSION_SECRET`, data-encryption keys, model and Telegram credentials, computer tokens, object-storage keys, off-site backup credentials and the cloud connection's enrollment token (`SOCIO_CLOUD_ENROLLMENT_TOKEN`). A nonempty explicit environment value takes precedence. Missing or unreadable configured files stop startup without echoing their contents.
 
 Use the deployment's secret mechanism with narrow access. Keep the computer supervisor token, computer master token and session secret distinct. Do not put secret values in stack exports, issue comments, model instructions, screenshots or shell arguments. In particular, a one-time account link and a session cookie are credentials even when not called passwords.
 

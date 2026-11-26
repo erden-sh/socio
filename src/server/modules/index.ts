@@ -10,6 +10,7 @@ import { authSchema } from '../auth/schema.js';
 import { bundleSchema } from '../bundle/migrations.js';
 import { chatNamesModule } from '../chat-name-suggestions/module.js';
 import { classifyModule } from '../classify/module.js';
+import { cloudModule } from '../cloud/module.js';
 import { computersModule, domainsModule, telegramModule, webModule } from '../composition/integration-modules.js';
 import { chatModule } from '../context/module.js';
 import { cyclesModule } from '../cycles/module.js';
@@ -71,6 +72,7 @@ export const serverModules = [
     operationsModule,
     mcpConnectionsModule,
     updatesModule,
+    cloudModule,
     flagsModule,
     askModule,
     roomsModule,

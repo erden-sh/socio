@@ -34,6 +34,8 @@ export const MODULE_IDS = {
     operations: 'operations',
     mcpConnections: 'mcp-connections',
     updates: 'updates',
+    // The cloud connection: server only, no screen yet.
+    cloud: 'cloud',
     flags: 'flags',
     ask: 'ask',
     rooms: 'rooms',
