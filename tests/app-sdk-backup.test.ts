@@ -26,6 +26,21 @@ import { newSnapshotId } from '../packages/app-sdk/src/backup-check.js';
 import { defaultBackupHandler, globMatcher, type BackupHandler } from '../packages/app-sdk/src/backup.js';
 import { socioApp, type BackupServeOptions, type BackupServer } from '../packages/app-sdk/src/index.js';
 
+// Every lease renewal on a volume (the default handler's utimes), so a test
+// can wait for the one a request starts instead of polling for its effect: the
+// handler renews in the background, and on a loaded host the write can take
+// longer than any fixed wait.
+const renewals = vi.hoisted(() => [] as Array<Promise<void>>);
+vi.mock('node:fs/promises', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('node:fs/promises')>();
+    const utimes: typeof actual.utimes = (...args) => {
+        const done = actual.utimes(...args);
+        renewals.push(done);
+        return done;
+    };
+    return { ...actual, utimes, default: { ...actual, utimes } };
+});
+
 // CB-458 step 4: the SDK's backup side. The default handler's standalone
 // SQLite copies, the exclude list, custom handlers, the quiesce lease, restore
 // mode with its commit-then-exit, and the hold on outward work. Negative cases
@@ -393,8 +408,12 @@ describe('the default handler', () => {
         // A minute on, the host's request renews the lease on the volume too.
         const later = Date.now() + 61_000;
         vi.spyOn(Date, 'now').mockReturnValue(later);
+        renewals.length = 0;
         expect((await send(app, 'GET', `/__cb/backup/${snapshotId}`)).status).toBe(200);
-        await vi.waitFor(() => expect(statSync(dir).mtimeMs).toBeGreaterThan(later - 60_000));
+        // The request started the renewal; wait for that write itself, however slow the disk is.
+        expect(renewals).toHaveLength(1);
+        await Promise.all(renewals);
+        expect(statSync(dir).mtimeMs).toBeGreaterThan(later - 60_000);
         const late = serve(makeSocio(), { volumes: { data: shared } });
         await late.settled();
         const item = await send(app, 'GET', `/__cb/backup/${snapshotId}/items/0`);
