@@ -90,6 +90,9 @@ async function fixture() {
         db: workspace.db,
         dot,
         alice,
+        /** A GET as alice with headers of its own (If-None-Match). */
+        aliceWith: (path: string, headers: Record<string, string>) =>
+            app.request(`/api${path}`, { headers: { cookie, ...headers } }),
         upload,
         user: { kind: 'user' as const, userId: 'alice' },
         dotActor: { kind: 'dot' as const, userId: 'alice', dotId: dot.id },
@@ -200,6 +203,35 @@ it('keeps a version on copies onto a file and on API writes, and an attachment s
         await Promise.all(versions.map(async (row) => (await f.data.withDeletedContent(row.id)).toString())),
     ).toEqual(['original upload', 'edited by a job']);
     expect(await (await f.alice(`/media/attachments/${attachment!.id}/content`)).text()).toBe('from elsewhere');
+});
+
+it('answers a 304 to a copy whose bytes are still the file’s, and the new bytes once the file under an attachment is overwritten', async () => {
+    const f = await fixture();
+    const { item, attachment } = await f.upload(text('original upload'), 'notes.txt', 'purpose=attachment');
+    for (const url of [`/media/attachments/${attachment!.id}/content`, `/media/items/${item.id}/content`]) {
+        const first = await f.alice(url);
+        const etag = first.headers.get('etag');
+        expect(etag).toMatch(/^"[A-Za-z0-9_-]{43}"$/);
+        expect(await first.text()).toBe('original upload');
+        // The copy is current: no bytes, the same tag (weak or in a list, as a client may send it).
+        for (const ifNoneMatch of [etag!, `W/${etag!}`, `"other", ${etag!}`, '*']) {
+            const again = await f.aliceWith(url, { 'if-none-match': ifNoneMatch });
+            expect(again.status).toBe(304);
+            expect(again.headers.get('etag')).toBe(etag);
+            expect(again.headers.get('cache-control')).toBe('private, no-cache');
+            expect(await again.text()).toBe('');
+        }
+        expect((await f.aliceWith(url, { 'if-none-match': '"other"' })).status).toBe(200);
+    }
+    const before = (await f.alice(`/media/attachments/${attachment!.id}/content`)).headers.get('etag')!;
+    expect((await f.alice('/data/files', 'PUT', { path: item.path, content: 'edited by a job' })).status).toBe(200);
+    // Replaced under the same ids: the old tag no longer matches, and the answer is the new bytes.
+    for (const url of [`/media/attachments/${attachment!.id}/content`, `/media/items/${item.id}/content`]) {
+        const after = await f.aliceWith(url, { 'if-none-match': before });
+        expect(after.status).toBe(200);
+        expect(await after.text()).toBe('edited by a job');
+        expect(after.headers.get('etag')).not.toBe(before);
+    }
 });
 
 /** A data space over the local disk whose puts can be made to fail. */

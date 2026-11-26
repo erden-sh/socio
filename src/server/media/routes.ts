@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+
 import { Hono, type Context, type Handler, type MiddlewareHandler } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
 import { z } from 'zod';
@@ -31,6 +33,15 @@ const listQuery = z.object({
 function disposition(inline: boolean, name: string) {
     const ascii = name.replace(/[^\x20-\x7e]|["\\]/g, '_');
     return `${inline ? 'inline' : 'attachment'}; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(name)}`;
+}
+
+/** Whether an If-None-Match header names `etag` (weakly compared, as RFC 9110 asks for it). */
+function matches(header: string | undefined, etag: string) {
+    if (header === undefined) {
+        return false;
+    }
+    const tags = header.split(',').map((tag) => tag.trim().replace(/^W\//, ''));
+    return tags.includes('*') || tags.includes(etag);
 }
 
 /**
@@ -73,8 +84,19 @@ export function mediaRoutes(media: MediaService) {
         }
         return parsed.data;
     };
-    /** Stored bytes, served so a browser never runs them (see servedAs). */
+    /**
+     * Stored bytes, served so a browser never runs them (see servedAs), with
+     * their SHA-256 as the ETag: a file can be replaced under its id, so a
+     * copy (a browser's, the native app's `files/`) revalidates with
+     * If-None-Match and gets a 304 while the bytes are the same.
+     */
     const serve = (c: Context<AppEnv>, data: Uint8Array, name: string, cache: string) => {
+        const etag = `"${createHash('sha256').update(data).digest('base64url')}"`;
+        if (matches(c.req.header('if-none-match'), etag)) {
+            c.header('ETag', etag);
+            c.header('Cache-Control', cache);
+            return c.body(null, 304);
+        }
         const served = servedAs(data);
         const download = c.req.query('download') === '1';
         // Through c.header: these replace what the API middleware set
@@ -84,6 +106,7 @@ export function mediaRoutes(media: MediaService) {
         c.header('X-Content-Type-Options', 'nosniff');
         c.header('Content-Security-Policy', "default-src 'none'; sandbox");
         c.header('Cache-Control', cache);
+        c.header('ETag', etag);
         return c.body(new Uint8Array(data));
     };
 
