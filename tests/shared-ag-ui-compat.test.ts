@@ -177,6 +177,14 @@ describe('responses for the app builds already shipped (COMPAT(ag-ui-1.0))', () 
         expect(out).toBe(
             `: keep-alive\n\nevent: cursor\nid: 3\ndata: {"seq":3}\n\ndata: ${JSON.stringify(downgraded)}\n\n`,
         );
+        // CRLF lines, a spaced provider and data over several lines read the same.
+        const spaced = JSON.stringify(event, null, 1).split('\n');
+        const crlf = await legacyMediaStream(
+            new Response(`${spaced.map((line) => `data: ${line}`).join('\r\n')}\r\n\r\n`, {
+                headers: { 'Content-Type': 'text/event-stream' },
+            }),
+        ).text();
+        expect(crlf).toBe(`data: ${JSON.stringify(downgraded)}\n\n`);
         const json = Response.json({ a: 1 });
         expect(legacyMediaStream(json)).toBe(json);
     });

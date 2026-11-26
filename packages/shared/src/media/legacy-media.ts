@@ -16,28 +16,35 @@ export const wantsLegacyMedia = (headers: Headers) => !readsAgUiMedia(headers.ge
 export const legacyMediaJson = <T>(body: T): T => downgradeAttachmentParts(body);
 
 // Only a frame that names Socio's provider can hold an attachment part.
-const MAY_HOLD = '"provider":"socio"';
+const MAY_HOLD = /"provider"\s*:\s*"socio"/;
 
-/** One server-sent event frame with its `data:` lines' JSON downgraded. */
+/**
+ * One server-sent event frame (its lines, without the blank line that ends
+ * it) with its data downgraded. Its `data:` lines are one value, joined with
+ * newlines as a reader joins them; when that value changes it is sent back
+ * as one compact `data:` line, the other lines kept in place.
+ */
 function legacyFrame(frame: string): string {
-    if (!frame.includes(MAY_HOLD)) {
+    if (!MAY_HOLD.test(frame)) {
         return frame;
     }
-    return frame
-        .split('\n')
-        .map((line) => {
-            if (!line.startsWith('data:')) {
-                return line;
-            }
-            const raw = line.slice(5).trimStart();
-            try {
-                const parsed: unknown = JSON.parse(raw);
-                const down = downgradeAttachmentParts(parsed);
-                return down === parsed ? line : `data: ${JSON.stringify(down)}`;
-            } catch {
-                return line;
-            }
-        })
+    const lines = frame.split('\n');
+    const data = lines.filter((line) => line.startsWith('data:')).map((line) => line.slice(5).replace(/^ /, ''));
+    let down: unknown;
+    try {
+        const parsed: unknown = JSON.parse(data.join('\n'));
+        down = downgradeAttachmentParts(parsed);
+        if (down === parsed) {
+            return frame;
+        }
+    } catch {
+        return frame;
+    }
+    const first = lines.findIndex((line) => line.startsWith('data:'));
+    return lines
+        .flatMap((line, index) =>
+            !line.startsWith('data:') ? [line] : index === first ? [`data: ${JSON.stringify(down)}`] : [],
+        )
         .join('\n');
 }
 
@@ -53,9 +60,19 @@ export function legacyMediaStream(response: Response): Response {
     const decoder = new TextDecoder();
     const encoder = new TextEncoder();
     let pending = '';
+    // SSE lines end in \r\n, \n or \r: read as \n, keeping a trailing \r
+    // back, as its \n may come in the next chunk.
+    const lines = (text: string, final: boolean) => {
+        const held = !final && text.endsWith('\r');
+        const normal = (held ? text.slice(0, -1) : text).replace(/\r\n?/g, '\n');
+        return { normal, held: held ? '\r' : '' };
+    };
+    let carry = '';
     const frames = new TransformStream<Uint8Array, Uint8Array>({
         transform(chunk, controller) {
-            pending += decoder.decode(chunk, { stream: true });
+            const { normal, held } = lines(carry + decoder.decode(chunk, { stream: true }), false);
+            carry = held;
+            pending += normal;
             let end = pending.indexOf('\n\n');
             while (end !== -1) {
                 controller.enqueue(encoder.encode(`${legacyFrame(pending.slice(0, end))}\n\n`));
@@ -64,7 +81,7 @@ export function legacyMediaStream(response: Response): Response {
             }
         },
         flush(controller) {
-            pending += decoder.decode();
+            pending += lines(carry + decoder.decode(), true).normal;
             if (pending) {
                 controller.enqueue(encoder.encode(legacyFrame(pending)));
             }
