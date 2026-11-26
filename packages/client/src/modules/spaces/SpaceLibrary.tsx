@@ -1,4 +1,4 @@
-import { FileText, Plus, Search, LayoutGrid, List, ArrowUpRight, Trash2 } from 'lucide-react';
+import { ArrowUpRight, ChevronRight, FileText, FolderOpen, LayoutGrid, List, Plus, Search, Trash2 } from 'lucide-react';
 import { useContext, useMemo, useState, type ReactNode } from 'react';
 
 import { compareText, lowerText } from '@socio/shared/locale';
@@ -68,7 +68,8 @@ export function SpaceLibrary({
     tabs?: ReactNode;
     total?: number;
     onPage: (id: string) => void;
-    onNew: () => void;
+    /** New page, inside the level being browsed (CB-426): its parent's id, or null at the top. */
+    onNew: (parentId: string | null) => void;
     onDeleted: (ids: string[]) => void;
 }) {
     const user = useContext(CurrentUser);
@@ -79,9 +80,19 @@ export function SpaceLibrary({
     const [query, setQuery] = useState('');
     const [layout, setLayout] = useState<Layout>('grid');
     const [sort, setSort] = useState('recent');
+    // By level (CB-426): one level of the page tree at a time, opened from its parent; or every page
+    // at once, each with its path.
+    const [browse, setBrowse] = useState<Browse>('level');
+    const [at, setAt] = useState<string | null>(null);
+    // The first screen (before the first poll) is only part of the Space: its levels can't place a
+    // page whose parent it lacks, so they show only pages with no parent until every page is in.
+    const partial = total !== undefined && total > pages.length;
+    // The level's page, while it is still in the list (another tab may delete or move it).
+    const folder = at ? pages.find((page) => page.id === at && page.spaceId === space.id) : undefined;
+    const byLevel = browse === 'level' && !query;
     const filtered = useMemo(
         () =>
-            pages
+            (byLevel ? (folder ? hierarchy.children(folder) : hierarchy.roots(partial)) : pages)
                 .filter((page) => page.spaceId === space.id)
                 .filter((page) => lowerText(`${page.title} ${page.excerpt}`).includes(lowerText(query)))
                 .sort((a, b) =>
@@ -89,8 +100,10 @@ export function SpaceLibrary({
                         ? compareText(a.title, b.title)
                         : b.updatedAt - a.updatedAt || compareText(a.title, b.title),
                 ),
-        [pages, query, sort, space.id],
+        [pages, query, sort, space.id, byLevel, folder, hierarchy, partial],
     );
+    const trail = folder ? [...hierarchy.ancestors(folder), folder] : [];
+    const open = (id: string | null) => setAt(id);
     // Two or more characters: the server's search over titles and text, as
     // the user types.
     const [exact, setExact] = useState(false);
@@ -112,7 +125,7 @@ export function SpaceLibrary({
             ),
     );
     const hits = searching ? (remote.answer?.results ?? []) : [];
-    const count = searching ? hits.length : query || total === undefined ? filtered.length : total;
+    const count = searching ? hits.length : query || byLevel || total === undefined ? filtered.length : total;
     // The band's tile is the Spaces module's, in its tone.
     const tone = useModules().find((item) => item.id === MODULE_IDS.spaces)?.tone ?? 'sky';
     const card = (
@@ -153,7 +166,11 @@ export function SpaceLibrary({
                         {datasets && space.access === 'editor' && (
                             <SpaceDatasetActions space={space} admin={!!user && isAdmin(user)} />
                         )}
-                        <Button size="sm" onClick={onNew} data-tour="new-page">
+                        <Button
+                            size="sm"
+                            onClick={() => onNew(byLevel ? (folder?.id ?? null) : null)}
+                            data-tour="new-page"
+                        >
                             <Plus /> New page
                         </Button>
                     </>
@@ -177,6 +194,20 @@ export function SpaceLibrary({
                             }}
                         />
                     </label>
+                    {!query && (
+                        <Select value={browse} onValueChange={(value) => setBrowse(value as Browse)}>
+                            <SelectTrigger
+                                aria-label="Browse pages"
+                                className="h-8 gap-2 rounded-lg border-0 bg-transparent px-3 text-sm font-medium text-muted-foreground shadow-none hover:bg-accent hover:text-foreground max-[900px]:flex-1 pointer-coarse:text-base dark:bg-transparent dark:hover:bg-accent [&_svg:not([class*='text-'])]:text-current"
+                            >
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent position="popper" align="end">
+                                <SelectItem value="level">By level</SelectItem>
+                                <SelectItem value="all">All pages</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    )}
                     {searching ? (
                         <span className="flex min-h-8 items-center px-3 text-sm text-muted-foreground max-[900px]:flex-1 pointer-coarse:text-base">
                             Sorted by relevance
@@ -215,11 +246,55 @@ export function SpaceLibrary({
                         ))}
                     </div>
                 </div>
+                {byLevel && folder && (
+                    <nav
+                        aria-label="Library level"
+                        data-slot="library-trail"
+                        className="mb-2 flex flex-wrap items-center gap-1 text-sm"
+                    >
+                        <button
+                            type="button"
+                            className="rounded-md px-1 text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+                            onClick={() => open(null)}
+                        >
+                            Top level
+                        </button>
+                        {trail.map((item) => (
+                            <span key={item.id} className="flex min-w-0 items-center gap-1">
+                                <ChevronRight aria-hidden className="size-3.5 shrink-0 text-muted-foreground" />
+                                {item.id === folder.id ? (
+                                    <span
+                                        aria-current="location"
+                                        className="min-w-0 font-medium [overflow-wrap:anywhere]"
+                                    >
+                                        {item.title.trim() || 'Untitled page'}
+                                    </span>
+                                ) : (
+                                    <button
+                                        type="button"
+                                        className="min-w-0 rounded-md px-1 text-left text-muted-foreground underline-offset-2 [overflow-wrap:anywhere] hover:text-foreground hover:underline"
+                                        onClick={() => open(item.id)}
+                                    >
+                                        {item.title.trim() || 'Untitled page'}
+                                    </button>
+                                )}
+                            </span>
+                        ))}
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="ml-auto h-7 text-muted-foreground"
+                            onClick={() => onPage(folder.id)}
+                        >
+                            Open page <ArrowUpRight className="size-3.5" />
+                        </Button>
+                    </nav>
+                )}
                 <h2
                     className="m-0 mb-3 flex items-baseline gap-2 text-sm font-medium text-muted-foreground"
                     data-slot="library-count"
                 >
-                    {query ? 'Search results' : 'All pages'}
+                    {query ? 'Search results' : !byLevel ? 'All pages' : folder ? 'Inside this page' : 'Top level'}
                     <span
                         className="font-mono text-xs text-muted-foreground/80 tabular-nums"
                         aria-label={`${count}${searching && remote.answer?.more ? ' or more' : ''} ${count === 1 ? 'page' : 'pages'}`}
@@ -255,9 +330,16 @@ export function SpaceLibrary({
                                             'An empty page, ready to write.'
                                         )}
                                     </span>,
-                                    <span data-slot="library-freshness" className="font-mono">
-                                        {freshnessLabel(hit.freshness)}
-                                    </span>,
+                                    <>
+                                        <span data-slot="library-freshness" className="font-mono">
+                                            {freshnessLabel(hit.freshness)}
+                                        </span>
+                                        {page && (
+                                            <PagePath
+                                                titles={hierarchy.ancestors(page).map((parent) => parent.title)}
+                                            />
+                                        )}
+                                    </>,
                                     () => {
                                         notePageUse(space.id, hit.id);
                                         onPage(hit.id);
@@ -276,36 +358,50 @@ export function SpaceLibrary({
                     )
                 ) : filtered.length ? (
                     <LibraryPages layout={layout}>
-                        {filtered.map((page) =>
-                            card(
+                        {filtered.map((page) => {
+                            // By level, a page with pages inside opens its level (CB-426); the trail's
+                            // Open page opens the page itself.
+                            const inside = byLevel ? hierarchy.children(page).length : 0;
+                            return card(
                                 page,
                                 page.excerpt || 'An empty page, ready to write.',
                                 <>
+                                    {inside > 0 && (
+                                        <span
+                                            data-slot="library-inside"
+                                            className="flex shrink-0 items-center gap-1 font-medium text-foreground/80"
+                                        >
+                                            <FolderOpen aria-hidden className="size-3.5" />
+                                            {inside} inside
+                                        </span>
+                                    )}
                                     <span className="font-mono tabular-nums">
                                         Edited{' '}
                                         <LocalTime value={page.updatedAt} format={editedDate} title={editedTime} />
                                     </span>
-                                    {hierarchy.ancestors(page).length > 0 && (
-                                        <span className="min-w-0 [overflow-wrap:anywhere]" aria-label="Parent pages">
-                                            {hierarchy
-                                                .ancestors(page)
-                                                .map((parent) => parent.title.trim() || 'Untitled page')
-                                                .join(' › ')}
-                                        </span>
+                                    {/* A level already says where it is; All pages names each page's path. */}
+                                    {!byLevel && (
+                                        <PagePath titles={hierarchy.ancestors(page).map((parent) => parent.title)} />
                                     )}
                                 </>,
-                                () => onPage(page.id),
+                                inside > 0 ? () => open(page.id) : () => onPage(page.id),
                                 canDeletePage(user, page) ? page : undefined,
-                            ),
-                        )}
+                            );
+                        })}
                     </LibraryPages>
                 ) : (
                     <LibraryEmpty
                         icon={<FileText size={30} strokeWidth={1.3} />}
-                        title={query ? 'No matching pages' : 'No pages yet'}
+                        title={
+                            query
+                                ? 'No matching pages'
+                                : byLevel && folder
+                                  ? 'Nothing inside this page yet'
+                                  : 'No pages yet'
+                        }
                         action={
                             !query && (
-                                <PagePrimaryButton onClick={onNew}>
+                                <PagePrimaryButton onClick={() => onNew(byLevel ? (folder?.id ?? null) : null)}>
                                     <Plus className="size-4" /> New page
                                 </PagePrimaryButton>
                             )
@@ -313,7 +409,9 @@ export function SpaceLibrary({
                     >
                         {query
                             ? 'Try a different title or phrase.'
-                            : 'Create your first page to start organizing this Space.'}
+                            : byLevel && folder
+                              ? 'Pages you create here go inside it.'
+                              : 'Create your first page to start organizing this Space.'}
                     </LibraryEmpty>
                 )}
                 {deleting && (
@@ -335,6 +433,16 @@ export function SpaceLibrary({
 }
 
 type Layout = 'grid' | 'list';
+type Browse = 'level' | 'all';
+
+/** A page's parents, root first, on its card (CB-237); nothing for a top-level page. */
+function PagePath({ titles }: { titles: string[] }) {
+    return titles.length ? (
+        <span className="min-w-0 [overflow-wrap:anywhere]" aria-label="Parent pages">
+            {titles.map((title) => title.trim() || 'Untitled page').join(' › ')}
+        </span>
+    ) : null;
+}
 
 /** The library's pages: three columns of cards (two, then one, as it narrows) or rows. */
 function LibraryPages({ layout, children }: { layout: Layout; children: ReactNode }) {

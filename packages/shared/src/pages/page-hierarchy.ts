@@ -7,8 +7,8 @@ export interface HierarchyPage {
 }
 
 /** Reuse one scoped index when rendering a whole library. */
-export function pageHierarchy(pages: readonly HierarchyPage[], spaceId: string) {
-    const index = new Map<string, HierarchyPage>();
+export function pageHierarchy<P extends HierarchyPage>(pages: readonly P[], spaceId: string) {
+    const index = new Map<string, P>();
     const ambiguous = new Set<string>();
     for (const item of pages) {
         if (item.spaceId !== spaceId) {
@@ -19,13 +19,13 @@ export function pageHierarchy(pages: readonly HierarchyPage[], spaceId: string) 
         }
         index.set(item.id, item);
     }
-    const cache = new Map<HierarchyPage, { ancestors: HierarchyPage[]; cycle: boolean }>();
+    const cache = new Map<HierarchyPage, { ancestors: P[]; cycle: boolean }>();
     const lineage = (page: HierarchyPage) => {
         const cached = cache.get(page);
         if (cached) {
             return cached;
         }
-        const ancestors: HierarchyPage[] = [];
+        const ancestors: P[] = [];
         const seen = new Set([page.id]);
         let parentId = page.parentId;
         let cycle = false;
@@ -55,6 +55,25 @@ export function pageHierarchy(pages: readonly HierarchyPage[], spaceId: string) 
     return {
         /** Root first; never includes this page, missing records or a cyclic trail. */
         ancestors: (page: HierarchyPage) => lineage(page).ancestors,
+        /**
+         * The Space's top level, in list order (CB-426): pages with no parent, and pages a level view
+         * could not reach from the top otherwise, because their parent is missing from this list,
+         * listed twice, or part of a cycle. With `partial` (the list is only the library's first
+         * screen), only pages with no parent: a missing parent may just not be loaded yet.
+         */
+        roots: (partial = false) =>
+            pages.filter((item) => {
+                if (item.spaceId !== spaceId || (ambiguous.has(item.id) && index.get(item.id) !== item)) {
+                    return false;
+                }
+                if (!item.parentId) {
+                    return true;
+                }
+                if (partial) {
+                    return false;
+                }
+                return !index.has(item.parentId) || ambiguous.has(item.parentId) || lineage(item).cycle;
+            }),
         /** Direct children only, preserving list order; invalid self/cycle edges stay hidden. */
         children: (page: HierarchyPage) => {
             if (page.spaceId !== spaceId || lineage(page).cycle) {

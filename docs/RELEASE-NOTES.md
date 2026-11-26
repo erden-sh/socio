@@ -31,6 +31,7 @@ How this file is kept (scripts/release.mjs and the app's build read it):
 
 ### New
 
+- **Browse a Space's pages by level (CB-426).** The library opens at a Space's top level instead of listing every page at once. A page with pages inside shows how many, and opening it shows what's inside, with a trail back up and **Open page** for the page itself. **New page** creates the page inside the level you're in. **All pages**, in the new **Browse pages** menu, keeps the full list with each page's path, and search still covers the whole Space and now shows each result's path.
 - **A deployment can enroll with Socio's cloud services (CB-559).** With a provisioning token in `SOCIO_CLOUD_ENROLLMENT_TOKEN_FILE`, the server makes its own Ed25519 key, registers the public half with the issuer and keeps the private half sealed under the data key. It then gets short-lived access tokens with signed requests, and syncs once a day: its version, origin and a fingerprint, nothing else. A deployment that sets none of the new settings runs exactly as before and sends nothing. Nothing uses the connection yet; the push relay and reply reports come next. See Cloud connection in docs/SETUP.md.
 
 ### Fixed
