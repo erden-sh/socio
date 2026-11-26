@@ -1,5 +1,5 @@
 import { Bug } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { toast } from 'sonner';
 
@@ -27,9 +27,19 @@ import { ComponentPicker, componentsOf, draftedComponents, useComponentOptions }
 import { ChoiceField, Field } from './IssueFields';
 import { closeReport, notifyIssuesChanged, openReport, useReportRequest, type ReportDraft } from './report';
 
+import {
+    AlertDialog,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
+    DialogClose,
     DialogContent,
     DialogDescription,
     DialogFooter,
@@ -96,18 +106,7 @@ export function ReportIssue({ moduleId }: SlotProps['header.actions']) {
                     <Bug className="size-4.5" />
                 </Button>
             )}
-            <Dialog
-                open={!!request}
-                onOpenChange={(open) => {
-                    if (!open) {
-                        closeReport();
-                    }
-                }}
-            >
-                <DialogContent className="max-h-[calc(100svh-2rem)] overflow-y-auto sm:max-w-xl">
-                    {request && <ReportForm key={request.at} draft={request.draft} />}
-                </DialogContent>
-            </Dialog>
+            {request && <ReportDialog key={request.at} draft={request.draft} />}
         </DialogReturnFocus>
     );
 }
@@ -148,8 +147,7 @@ export function ReportIssueMenuItem({ moduleId }: SlotProps['header.menu']) {
     );
 }
 
-/** The form inside the report dialog; `draft` fills it in. */
-export function ReportForm({ draft }: { draft: ReportDraft }) {
+function ReportDialog({ draft }: { draft: ReportDraft }) {
     const navigate = useNavigate();
     const [title, setTitle] = useState(draft.title ?? '');
     const [body, setBody] = useState(draft.body ?? '');
@@ -160,9 +158,32 @@ export function ReportForm({ draft }: { draft: ReportDraft }) {
     // reader's options, so a prefill never names what they can't see.
     const options = useComponentOptions();
     const [picked, setPicked] = useState<string[]>();
-    const components = picked ?? draftedComponents(draft.components, options);
+    const initialComponents = draftedComponents(draft.components, options);
+    const components = picked ?? initialComponents;
     const [files, setFiles] = useState<File[]>([]);
     const [busy, setBusy] = useState(false);
+    const [discardOpen, setDiscardOpen] = useState(false);
+    const dialog = useRef<HTMLDivElement>(null);
+    const editingFocus = useRef<HTMLElement | null>(null);
+    const dirty =
+        title !== (draft.title ?? '') ||
+        body !== (draft.body ?? '') ||
+        kind !== (draft.kind ?? 'bug') ||
+        priority !== (draft.priority ?? 'medium') ||
+        area !== (draft.area ?? null) ||
+        components.length !== initialComponents.length ||
+        components.some((ref) => !initialComponents.includes(ref)) ||
+        files.length > 0;
+    const dismiss = () => {
+        if (busy) {
+            return;
+        }
+        if (!dirty) {
+            closeReport();
+            return;
+        }
+        setDiscardOpen(true);
+    };
     const addFiles = (picked: File[]) => {
         const { accepted, refused } = acceptFiles(picked, files.length);
         if (accepted.length) {
@@ -173,6 +194,9 @@ export function ReportForm({ draft }: { draft: ReportDraft }) {
         }
     };
     const submit = async () => {
+        if (busy) {
+            return;
+        }
         setBusy(true);
         try {
             const { issue } = await api<IssueDetail>('/issues', 'POST', {
@@ -209,10 +233,17 @@ export function ReportForm({ draft }: { draft: ReportDraft }) {
             setBusy(false);
         }
     };
-    return (
+    const form = (
         <form
             data-slot="report-issue-form"
             className="grid gap-4"
+            onFocusCapture={(event) => {
+                // The field to return to after "Keep editing". A click on Cancel focuses Cancel first, so the
+                // dismissal buttons don't count.
+                if (event.target instanceof HTMLElement && !event.target.closest('[data-slot="dialog-close"]')) {
+                    editingFocus.current = event.target;
+                }
+            }}
             onSubmit={(e) => {
                 e.preventDefault();
                 void submit();
@@ -296,13 +327,49 @@ export function ReportForm({ draft }: { draft: ReportDraft }) {
                 />
             </div>
             <DialogFooter>
-                <Button type="button" variant="outline" onClick={closeReport}>
-                    Cancel
-                </Button>
+                <DialogClose asChild>
+                    <Button type="button" variant="outline" disabled={busy}>
+                        Cancel
+                    </Button>
+                </DialogClose>
                 <Button type="submit" disabled={busy || title.trim().length < 3}>
                     {busy ? 'Filing…' : 'File issue'}
                 </Button>
             </DialogFooter>
         </form>
+    );
+    return (
+        <Dialog open onOpenChange={(open) => !open && dismiss()}>
+            <DialogContent
+                ref={dialog}
+                showCloseButton={!busy}
+                className="max-h-[calc(100svh-2rem)] overflow-y-auto sm:max-w-xl"
+            >
+                {form}
+            </DialogContent>
+            <AlertDialog open={discardOpen} onOpenChange={setDiscardOpen}>
+                <AlertDialogContent
+                    onCloseAutoFocus={(event) => {
+                        // Only the report itself returns focus to the page.
+                        event.preventDefault();
+                        const focused = editingFocus.current;
+                        (focused?.isConnected ? focused : dialog.current)?.focus();
+                    }}
+                >
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Discard issue draft?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            The changes and attachments in this report will be lost.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Keep editing</AlertDialogCancel>
+                        <Button type="button" variant="destructive" onClick={closeReport}>
+                            Discard draft
+                        </Button>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </Dialog>
     );
 }

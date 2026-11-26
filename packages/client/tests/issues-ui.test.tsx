@@ -40,7 +40,7 @@ import { IssueList } from '../src/modules/issues/IssueList';
 import { IssuesPage } from '../src/modules/issues/IssuesPage';
 import { IssueToolbar } from '../src/modules/issues/IssueToolbar';
 import { issuesModule } from '../src/modules/issues/module';
-import { openReport } from '../src/modules/issues/report';
+import { closeReport, openReport } from '../src/modules/issues/report';
 import { areaOf, ReportIssue } from '../src/modules/issues/ReportIssue';
 import { useIssues } from '../src/modules/issues/use-issues';
 import { setAppNavigator } from '../src/modules/pages/page-navigation';
@@ -256,6 +256,7 @@ beforeEach(() => {
 });
 afterEach(() => {
     act(() => root.unmount());
+    closeReport();
     host.remove();
     document.body.innerHTML = '';
     vi.unstubAllGlobals();
@@ -555,25 +556,29 @@ it('marks a deactivated assignee in the admin’s picker, which no longer offers
     await until(() => assignee() === 'Carol (Deactivated)', 'the deactivated assignee');
 });
 
+const reportForm = () => document.body.querySelector<HTMLFormElement>('[data-slot="report-issue-form"]');
+const discardPrompt = () => document.body.querySelector('[role="alertdialog"]');
+
+function setReportValue(element: HTMLInputElement | HTMLTextAreaElement, value: string) {
+    const proto = Object.getPrototypeOf(element) as object;
+    Object.getOwnPropertyDescriptor(proto, 'value')!.set!.call(element, value);
+    element.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
 it('files a report with kind, priority, area and an attachment', async () => {
     routes['POST /api/issues'] = () => [201, detailOf({ number: 9 })];
     routes['POST /api/issues/9/attachments'] = () => [201, { id: 'a1' }];
     render(<ReportIssue moduleId="learning" />, bob);
     act(() => byLabel('Report issue')!.click());
-    await until(() => !!document.body.querySelector('[data-slot="report-issue-form"]'), 'the form');
-    const form = document.body.querySelector<HTMLFormElement>('[data-slot="report-issue-form"]')!;
+    await until(() => !!reportForm(), 'the form');
+    const form = reportForm()!;
     expect(comboboxes()).toEqual(['Kind', 'Priority', 'Area']);
     // The area defaults to the page's module.
     const area = form.querySelectorAll('[role="combobox"]')[2]!;
     expect(area.textContent).toContain('Learning');
     const title = form.querySelector('input:not([type="file"])') as HTMLInputElement;
-    const setValue = (element: HTMLInputElement | HTMLTextAreaElement, value: string) => {
-        const proto = Object.getPrototypeOf(element) as object;
-        Object.getOwnPropertyDescriptor(proto, 'value')!.set!.call(element, value);
-        element.dispatchEvent(new Event('input', { bubbles: true }));
-    };
-    act(() => setValue(title, 'Skills page is blank'));
-    act(() => setValue(form.querySelector('textarea')!, 'Open Skills.'));
+    act(() => setReportValue(title, 'Skills page is blank'));
+    act(() => setReportValue(form.querySelector('textarea')!, 'Open Skills.'));
     // Pick a file and a refused one.
     const input = form.querySelector<HTMLInputElement>('input[type="file"]')!;
     const png = new File([new Uint8Array([0x89, 0x50, 0x4e, 0x47])], 'shot.png', {
@@ -604,7 +609,78 @@ it('files a report with kind, priority, area and an attachment', async () => {
         mediaType: 'image/png',
         data: btoa(String.fromCharCode(0x89, 0x50, 0x4e, 0x47)),
     });
-    await until(() => !document.body.querySelector('[data-slot="report-issue-form"]'), 'the dialog to close');
+    await until(() => !reportForm(), 'the dialog to close');
+    expect(discardPrompt()).toBeNull();
+    act(() => byLabel('Report issue')!.click());
+    expect(reportForm()!.querySelector('input:not([type="file"])')?.getAttribute('value')).toBe('');
+    expect(reportForm()!.querySelector('textarea')?.value).toBe('');
+});
+
+it.each([
+    ['Escape', () => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))],
+    [
+        'the close button',
+        () => {
+            // The dialog's own close button, not Cancel (which has the same slot inside the form).
+            const close = [...document.querySelectorAll<HTMLButtonElement>('[data-slot="dialog-close"]')].find(
+                (button) => !button.closest('form'),
+            )!;
+            // A pointer click focuses the button before it clicks.
+            close.focus();
+            close.click();
+        },
+    ],
+    [
+        'clicking outside',
+        () => {
+            const backdrop = document.querySelector<HTMLElement>('[data-slot="dialog-overlay"]')!;
+            backdrop.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, button: 0 }));
+            backdrop.click();
+        },
+    ],
+    [
+        'Cancel',
+        () => {
+            buttons('Cancel')[0]!.focus();
+            buttons('Cancel')[0]!.click();
+        },
+    ],
+] as const)('protects the issue draft when dismissed with %s', async (_name, dismiss) => {
+    render(<ReportIssue moduleId="issues" />);
+    act(() => openReport());
+    const form = reportForm()!;
+    const title = form.querySelector<HTMLInputElement>('input:not([type="file"])')!;
+    const body = form.querySelector('textarea')!;
+    await act(async () => {
+        setReportValue(title, 'Keyboard draft');
+        setReportValue(body, 'Steps that are still being written.');
+        body.focus();
+        await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    act(() => void dismiss());
+    expect(discardPrompt()?.textContent ?? '').toContain('Discard issue draft?');
+    expect(document.activeElement).toBe(buttons('Keep editing')[0]);
+    act(() => buttons('Keep editing')[0]!.click());
+    await until(() => document.activeElement === body, 'focus to return to the draft');
+    expect(title.value).toBe('Keyboard draft');
+    expect(body.value).toBe('Steps that are still being written.');
+
+    act(() => void dismiss());
+    act(() => buttons('Discard draft')[0]!.click());
+    expect(reportForm()).toBeNull();
+    expect(calls.some((call) => call.method === 'POST')).toBe(false);
+    act(() => openReport());
+    expect(reportForm()!.querySelector<HTMLInputElement>('input:not([type="file"])')!.value).toBe('');
+    expect(reportForm()!.querySelector('textarea')!.value).toBe('');
+});
+
+it('closes an untouched report without confirmation', () => {
+    render(<ReportIssue moduleId="issues" />);
+    act(() => openReport());
+    act(() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+    expect(reportForm()).toBeNull();
+    expect(discardPrompt()).toBeNull();
 });
 
 it('opens the report from anywhere, filled in, but hides its button on Issues', async () => {
