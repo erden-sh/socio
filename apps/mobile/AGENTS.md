@@ -2046,18 +2046,26 @@ Account sheet is a root stack route over them:
   its library item when the library has one (`findAttachmentItem`: the library lists only the
   reader's own files, so someone else's file in a room has none and shows from its attachment record;
   its bytes stay the attachment's either way). The bytes come through the scope's authedFetch into the
-  workspace's `files/` (`src/sync/file-cache.ts`, bound in `src/platform/media-files.ts`: iOS
-  `complete`, `files/<key>.<stamp>/<name>` so other apps see the file's own name, a `.part` folder
-  renamed once whole, 300 MB with the oldest dropped first, nothing over 100 MB; Clear cache and every
-  wipe delete it), never through a browser. A picture shows in the page and opens the
+  workspace's `files/` (`src/sync/file-cache.ts`, its file operations in
+  `src/platform/file-cache-files.ts`, the page's hook in `src/platform/media-files.ts`: iOS
+  `complete`, `files/<key>.<stamp>/<name>` so other apps see the file's own name, joined to the
+  file:// root as one encoded segment so `#`, `%` and `?` stay letters of it, a `.part` folder
+  renamed once whole, 300 MB with the oldest dropped first but never a copy an open page holds
+  (`hold`), nothing over 100 MB; Clear cache and every wipe delete it), never through a browser. A
+  file can be replaced under its id, an attachment's too, so a page checks its copy with the server
+  once as it opens (`checkedSince`): `If-None-Match` with the ETag the download had (the content
+  routes send the bytes' SHA-256 and answer 304 while it matches; kept beside the file as
+  `.validator`), a 200 replacing the copy and a 404 dropping it; offline the copy shows. The page
+  looks at its copy again on focus and before each action, downloading it again when it was deleted,
+  and an action that fails says so with Try again (`actionNotice`). A picture shows in the page and opens the
   `AttachmentViewer`; text shows its first 256 KB as the web does; anything else says so over Open,
   the system's preview through socio-device's `previewFile` (Quick Look on iOS; on Android
   `ACTION_VIEW` on the FileProvider URI expo-file-system's `getContentUriAsync` gives, `no-app` when
   nothing takes the type). Share is expo-sharing's sheet and Save socio-device's `saveFile` (iOS's
   export panel, Android's `ACTION_CREATE_DOCUMENT`: no storage permission), in place of the web's
   Download. Upload into Media, move, rename, delete, new folders and folder access stay the web's
-  until their follow-up. `tests/shell/media.test.ts`, `tests/sync/media-library.test.ts` and
-  `tests/sync/file-cache.test.ts`.
+  until their follow-up. `tests/shell/media.test.ts`, `tests/sync/media-library.test.ts`,
+  `tests/sync/file-cache.test.ts` and `tests/platform/file-cache-files.test.ts`.
 - **What needs attention, at the top of Chats** (CB-455: the Inbox tab until the owner dropped it;
   `src/shell/inbox.ts`, drawn by `screens/attention.tsx` in Chats' list header, nothing when it's empty)
   is built from what the scope holds, its parts in order (`sections`, an empty part left out): the

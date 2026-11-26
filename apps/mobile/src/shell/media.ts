@@ -537,7 +537,59 @@ export const SAVE_FILE = 'Save';
 export const NO_APP_OPENS = 'No app on this phone opens this file. You can still share or save it.';
 export const SHARE_UNAVAILABLE = 'Sharing isn’t available on this phone.';
 export const SAVE_FAILED = 'Could not save the file.';
+export const OPEN_FAILED = 'Could not open the file.';
+export const SHARE_FAILED = 'Could not share the file.';
 export const savedLine = (name: string) => `Saved ${name}.`;
+
+/** The file page's actions. */
+export type FileAction = 'open' | 'share' | 'save';
+
+/**
+ * What an action came to: the system's answer, or `no-copy` when the page's copy was gone and could
+ * not be downloaded again first.
+ */
+export type ActionOutcome =
+    | 'no-copy'
+    | 'shown'
+    | 'no-app'
+    | 'unavailable'
+    | 'shared'
+    | 'failed'
+    | 'saved'
+    | 'cancelled';
+
+/** The line under the actions after one, and whether it offers Try again: null when there is nothing to say. */
+export interface ActionNotice {
+    readonly line: string;
+    /** The action Try again runs, or null when trying again can't help (no app takes the type). */
+    readonly retry: FileAction | null;
+}
+
+export function actionNotice(action: FileAction, outcome: ActionOutcome, name: string): ActionNotice | null {
+    if (outcome === 'no-copy') {
+        return { line: FILE_OFFLINE, retry: action };
+    }
+    switch (action) {
+        case 'open':
+            return outcome === 'shown'
+                ? null
+                : outcome === 'no-app'
+                  ? { line: NO_APP_OPENS, retry: null }
+                  : { line: OPEN_FAILED, retry: 'open' };
+        case 'share':
+            return outcome === 'shared'
+                ? null
+                : outcome === 'unavailable'
+                  ? { line: SHARE_UNAVAILABLE, retry: null }
+                  : { line: SHARE_FAILED, retry: 'share' };
+        case 'save':
+            return outcome === 'saved'
+                ? { line: savedLine(name), retry: null }
+                : outcome === 'cancelled'
+                  ? null
+                  : { line: SAVE_FAILED, retry: 'save' };
+    }
+}
 
 /** What the file page's bytes are doing, as its actions and preview read it. */
 export type FileBytes =

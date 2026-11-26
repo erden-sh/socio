@@ -18,11 +18,15 @@ import {
     useTextPreview,
 } from '../platform/media-files';
 import {
+    type ActionNotice,
+    type ActionOutcome,
+    actionNotice,
     attachmentFileView,
     bytesLine,
     FILE_GONE,
     FILE_GONE_LINE,
     type FileBytes,
+    type FileAction,
     type FileDetail,
     fileSource,
     hintFileView,
@@ -30,15 +34,11 @@ import {
     type MediaFileParams,
     type MediaFileSource,
     type MediaFileView,
-    NO_APP_OPENS,
     NO_PREVIEW,
     OPEN_FILE,
     PREVIEW_FAILED,
-    SAVE_FAILED,
     SAVE_FILE,
-    savedLine,
     SHARE_FILE,
-    SHARE_UNAVAILABLE,
     TEXT_PREVIEW_MORE,
     TRY_AGAIN,
 } from '../shell/media';
@@ -188,38 +188,44 @@ function GoneBody() {
 function FileBody({ view, attempt, onRetry }: { view: MediaFileView; attempt: number; onRetry: () => void }) {
     const navigation = useNavigation();
     const openChat = useOpenChat();
-    const bytes = useFileBytes(view, attempt);
-    const [notice, setNotice] = useState<string | null>(null);
-    const [busy, setBusy] = useState<'open' | 'share' | 'save' | null>(null);
+    const { bytes, recheck } = useFileBytes(view, attempt);
+    const [notice, setNotice] = useState<ActionNotice | null>(null);
+    const [busy, setBusy] = useState<FileAction | null>(null);
     const uri = bytes.state === 'ready' ? bytes.uri : null;
-    const act = (name: 'open' | 'share' | 'save', work: (file: string) => Promise<string | null>) => () => {
-        if (uri === null || busy !== null) {
+    const works: Record<FileAction, (file: string) => Promise<ActionOutcome>> = {
+        open: (file) => openFilePreview(file, view.mediaType, view.name),
+        share: (file) => shareFile(file, view.mediaType, view.name),
+        save: (file) => saveFileCopy(file, view.mediaType, view.name),
+    };
+    // Each action looks at the copy first: one deleted since the page opened is downloaded again,
+    // and an action that can't go ahead says so with Try again.
+    const run = (name: FileAction) => {
+        if (busy !== null) {
             return;
         }
         setBusy(name);
         setNotice(null);
-        work(uri)
-            .then(setNotice)
-            .catch((error: unknown) => console.warn('[media] the action failed', error))
+        recheck()
+            .then(async (now) => (now.state === 'ready' ? works[name](now.uri) : 'no-copy'))
+            .then((outcome) => setNotice(actionNotice(name, outcome, view.name)))
+            .catch((error: unknown) => {
+                console.warn('[media] the action failed', error);
+                setNotice(actionNotice(name, 'failed', view.name));
+            })
             .finally(() => setBusy(null));
     };
-    const open = act('open', async (file) =>
-        (await openFilePreview(file, view.mediaType, view.name)) === 'shown' ? null : NO_APP_OPENS,
-    );
-    const share = act('share', async (file) =>
-        (await shareFile(file, view.mediaType, view.name)) === 'shared' ? null : SHARE_UNAVAILABLE,
-    );
-    const save = act('save', async (file) => {
-        const outcome = await saveFileCopy(file, view.mediaType, view.name);
-        return outcome === 'saved' ? savedLine(view.name) : outcome === 'cancelled' ? null : SAVE_FAILED;
-    });
     const viewPicture = () => {
-        if (uri !== null) {
-            navigation.navigate('AttachmentViewer', {
-                images: [{ id: view.cacheKey, name: view.name, local: uri }],
-                index: 0,
-            });
+        if (uri === null) {
+            return;
         }
+        void recheck().then((now) => {
+            if (now.state === 'ready') {
+                navigation.navigate('AttachmentViewer', {
+                    images: [{ id: view.cacheKey, name: view.name, local: now.uri }],
+                    index: 0,
+                });
+            }
+        });
     };
     // Text can run to 256 KB: its actions and details come first, so they are never a long scroll away.
     const textLast = view.preview === 'text' && uri !== null;
@@ -237,7 +243,7 @@ function FileBody({ view, attempt, onRetry }: { view: MediaFileView; attempt: nu
                             variant={view.preview === 'text' ? 'secondary' : 'primary'}
                             disabled={uri === null}
                             busy={busy === 'open'}
-                            onPress={open}
+                            onPress={() => run('open')}
                             accessibilityHint="Opens the file in a preview"
                             testID="media-file-open"
                         />
@@ -248,7 +254,7 @@ function FileBody({ view, attempt, onRetry }: { view: MediaFileView; attempt: nu
                         variant="secondary"
                         disabled={uri === null}
                         busy={busy === 'share'}
-                        onPress={share}
+                        onPress={() => run('share')}
                         testID="media-file-share"
                     />
                     <Button
@@ -257,15 +263,33 @@ function FileBody({ view, attempt, onRetry }: { view: MediaFileView; attempt: nu
                         variant="secondary"
                         disabled={uri === null}
                         busy={busy === 'save'}
-                        onPress={save}
+                        onPress={() => run('save')}
                         accessibilityHint="Saves a copy where you choose"
                         testID="media-file-save"
                     />
                 </View>
                 {notice === null ? null : (
-                    <Text variant="footnote" tone="muted" accessibilityLiveRegion="polite" testID="media-file-notice">
-                        {notice}
-                    </Text>
+                    <View className="gap-2">
+                        <Text
+                            variant="footnote"
+                            tone="muted"
+                            accessibilityLiveRegion="polite"
+                            testID="media-file-notice"
+                        >
+                            {notice.line}
+                        </Text>
+                        {notice.retry === null ? null : (
+                            <View className="flex-row">
+                                <Button
+                                    label={TRY_AGAIN}
+                                    variant="secondary"
+                                    busy={busy === notice.retry}
+                                    onPress={() => notice.retry !== null && run(notice.retry)}
+                                    testID="media-file-action-retry"
+                                />
+                            </View>
+                        )}
+                    </View>
                 )}
                 {view.details.length === 0 ? null : (
                     <GroupedCard testID="media-file-details">

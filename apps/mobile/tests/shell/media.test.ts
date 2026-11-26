@@ -8,6 +8,7 @@ import type { AttachmentView, MediaItem, MediaListing } from '@socio/shared/medi
 import { ROUTES } from '../../src/navigation/routes';
 import { mediaFileAction, mediaFolderAction, MORE_ITEMS, moreItemAction } from '../../src/navigation/tabs';
 import {
+    actionNotice,
     attachedFrom,
     attachmentFileView,
     bytesLine,
@@ -358,6 +359,42 @@ describe('a file’s page', () => {
         expect(bytesLine({ state: 'too-large' })).toBe('This file is too large to open here.');
         expect(bytesLine({ state: 'failed' })).toBe('This file shows once you’re online.');
     });
+
+    it('says what an action came to, with Try again wherever trying again can help', () => {
+        expect(actionNotice('open', 'shown', 'plan.pdf')).toBeNull();
+        expect(actionNotice('open', 'no-app', 'plan.pdf')).toEqual({
+            line: 'No app on this phone opens this file. You can still share or save it.',
+            retry: null,
+        });
+        expect(actionNotice('open', 'unavailable', 'plan.pdf')).toEqual({
+            line: 'Could not open the file.',
+            retry: 'open',
+        });
+        expect(actionNotice('share', 'shared', 'plan.pdf')).toBeNull();
+        expect(actionNotice('share', 'unavailable', 'plan.pdf')).toEqual({
+            line: 'Sharing isn’t available on this phone.',
+            retry: null,
+        });
+        expect(actionNotice('share', 'failed', 'plan.pdf')).toEqual({
+            line: 'Could not share the file.',
+            retry: 'share',
+        });
+        expect(actionNotice('save', 'saved', 'report #1.pdf')).toEqual({ line: 'Saved report #1.pdf.', retry: null });
+        expect(actionNotice('save', 'cancelled', 'plan.pdf')).toBeNull();
+        for (const outcome of ['failed', 'unavailable'] as const) {
+            expect(actionNotice('save', outcome, 'plan.pdf')).toEqual({
+                line: 'Could not save the file.',
+                retry: 'save',
+            });
+        }
+        // The copy was gone and couldn't be downloaded again: Try again runs the same action.
+        for (const action of ['open', 'share', 'save'] as const) {
+            expect(actionNotice(action, 'no-copy', 'plan.pdf')).toEqual({
+                line: 'This file shows once you’re online.',
+                retry: action,
+            });
+        }
+    });
 });
 
 describe('where Media opens', () => {
@@ -403,8 +440,20 @@ describe('where Media opens', () => {
         expect(files).toContain('previewFile(uri, mimeType, name, contentUri)');
         expect(files).toContain('saveFile(uri, mimeType, name)');
         const page = src('screens/media-file.tsx');
-        for (const id of ['media-file-open', 'media-file-share', 'media-file-save', 'media-file-details']) {
+        for (const id of [
+            'media-file-open',
+            'media-file-share',
+            'media-file-save',
+            'media-file-details',
+            'media-file-action-retry',
+        ]) {
             expect(page).toContain(`testID="${id}"`);
         }
+        // Every action looks at the copy first (gone since the page opened: downloaded again).
+        expect(page).toContain('recheck()');
+        // The page holds its copy out of the eviction, and looks at it again on focus.
+        expect(files).toContain('cache.hold(cacheKey)');
+        expect(files).toContain('useFocusEffect(');
+        expect(files).toContain('checkedSince: opened');
     });
 });
