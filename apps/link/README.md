@@ -58,7 +58,10 @@ In `src/apps.ts`, each pinned by `tests/apps.test.ts`:
 
 - `APPLE_TEAM_ID`: the team id that signs the three iOS apps.
 - The production Android fingerprint: the Play app signing key's SHA-256 (Play Console, App signing).
-- The preview Android fingerprint: the preview keystore's SHA-256.
+
+Filled in: the preview Android fingerprints, Socio Preview's Play app signing keys (Play Console,
+Deep links; never the upload key). Preview APKs installed outside Play are signed with the public
+debug key, so their links don't verify on `link.socio.sh`, by design.
 
 Development uses the React Native template's public debug key, which every `expo prebuild` writes.
 `STORE_LINKS` in `src/pages.ts` is empty until the launch; the pages then say to ask the admin.
@@ -112,9 +115,9 @@ Nothing here deploys; the deploy pipeline does. Always with `--env staging` or
 `--env production`, staging first, with `WRANGLER_SEND_METRICS=false DO_NOT_TRACK=1`. Deploying
 attaches each environment's custom domain, with its DNS record and certificate, on the socio.sh zone.
 The account comes from `CLOUDFLARE_ACCOUNT_ID` in the deploy pipeline's environment, never from the file. The
-deployed Workers have no secret, no variable and no binding. Production can go up with the Android
-placeholders above still in place: until the owner fills them in (a reviewed change to `src/apps.ts`
-and `tests/apps.test.ts`, then a redeploy), the production and preview builds' Android links don't
+deployed Workers have no secret, no variable and no binding. Production can go up with the production Android
+placeholder above still in place: until the owner fills it in (a reviewed change to `src/apps.ts`
+and `tests/apps.test.ts`, then a redeploy), the production build's Android links don't
 verify. The Apple team id is already filled in.
 
 Checking a deploy (a generic User-Agent, nothing about anyone):
