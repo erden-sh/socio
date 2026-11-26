@@ -11,9 +11,9 @@
         "build": "pnpm -w run build:pages"
     },
     "dependencies": {
-        "@ag-ui/client": "^0.0.59",
-        "@ag-ui/core": "^0.0.59",
-        "@copilotkit/react-core": "^1.75.0",
+        "@ag-ui/client": "1.0.5",
+        "@ag-ui/core": "1.0.5",
+        "@copilotkit/react-core": "~1.90.2",
         "@react-router/node": "8.5.3",
         "@simplewebauthn/browser": "14.0.0",
         "@socio/plugin-ui": "workspace:*",

@@ -25,6 +25,8 @@ pnpm --filter @socio/mobile test  # an app's tests (also @socio/site, link, push
 pnpm run build                    # the production build
 ```
 
+Change dependencies with `pnpm deps` (`pnpm deps add -w <pkg>`), never a bare `pnpm add` or `pnpm install` that rewrites the lockfile: it keeps one copy of AG-UI (docs/TOOLING.md).
+
 `check:cached`, `test:cached` and `build:cached` run the same through Turborepo and skip what a change can't affect; `test:cached` includes the apps' tests. Run Turborepo only through `node scripts/turbo.mjs`, which keeps its telemetry off. `pnpm run format` fixes formatting. Before you push, run `check` and the full suite.
 
 ## Enforced conventions
