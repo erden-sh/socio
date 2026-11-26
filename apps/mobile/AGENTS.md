@@ -1170,8 +1170,13 @@ check. The web, MCP and agents are never refused for a version. Under Node excep
   neither the jar nor the session, and it never counts as contact (`contact.ts` leaves out
   `CLIENT_COMPAT_PATH`; a 426 is never 2xx either), so the public endpoint can't move the lease.
 - **Below the minimum** (or since a 426, until a read says otherwise) `ClientUpdateGate`
-  (`screens/client-update.tsx`, inside `ActiveWorkspace` in `src/app.tsx`) draws Update Socio in place of
-  the workspace's screens, as `workspace-failed.tsx` does: the words (`src/shell/client-update.ts`: the
+  (`screens/client-update.tsx`, inside `ActiveWorkspace` in `src/app.tsx`) draws Update Socio over the
+  workspace's screens, which stay mounted (`UpdateGateLayer`, `screens/update-gate-layer.tsx`), so a form
+  being filled in (New Space, New room, an issue's edits) keeps what was typed and is as it was once the
+  server takes the app again. While it is up the screens take no touch and no screen reader's focus
+  (`pointerEvents`, `importantForAccessibility`), the gate is the accessibility modal, the keyboard goes
+  down as it closes and Android's back is the gate's; on iOS it is a `FullWindowOverlay`, above the page
+  sheets and modals the navigator presents (`tests/shell/update-gate-layer.test.ts` renders it). It holds the words (`src/shell/client-update.ts`: the
   version it needs and the one the phone has, and that everything is kept), Open TestFlight on iOS
   (`itms-beta://`), Android only saying where to look (the app knows no download page), Check again
   (`compat.check()`) and the switcher with Add a workspace. Another workspace opens and works as before.

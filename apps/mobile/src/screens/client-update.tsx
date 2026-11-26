@@ -8,12 +8,13 @@ import { workspaceTitle } from '../shell/session';
 import { Banner, Button, Screen, Text, ToneTile } from '../ui';
 
 import { Switcher } from './account';
+import { UpdateGateLayer } from './update-gate-layer';
 
 // Update Socio (CB-553): the open workspace's server needs a newer app than
-// this one (src/sync/client-compat.ts). It draws in place of the workspace's
-// screens, as a workspace that didn't open does (workspace-failed.tsx), and only
-// for that workspace: the switcher opens another one on the phone, which works
-// as before, and Add a workspace signs in to a new one. Nothing is signed out
+// this one (src/sync/client-compat.ts). It draws over the workspace's screens,
+// which stay mounted under it (update-gate-layer.tsx), and only for that
+// workspace: the switcher opens another one on the phone, which works as
+// before, and Add a workspace signs in to a new one. Nothing is signed out
 // or deleted: drafts, the outbox and the cache wait for the update. On iOS
 // Open TestFlight opens TestFlight's app; Android only says where to look.
 // Check again reads the server's numbers now; a return to the foreground does too.
@@ -21,13 +22,20 @@ import { Switcher } from './account';
 const PLATFORM: 'ios' | 'android' = Platform.OS === 'ios' ? 'ios' : 'android';
 const APP_NAME = Constants.expoConfig?.name ?? 'Socio';
 
-/** The open workspace's screens, or Update Socio while its server needs a newer app. */
+/**
+ * The open workspace's screens, with Update Socio over them while its server needs a newer app. The
+ * screens stay mounted under the gate (update-gate-layer.tsx), so nothing typed is lost.
+ */
 export function ClientUpdateGate({ children }: { children: ReactNode }) {
     return useHasWorkspaceScope() ? <Gate>{children}</Gate> : children;
 }
 
 function Gate({ children }: { children: ReactNode }) {
-    return useClientCompat().required ? <UpdateRequired /> : children;
+    return (
+        <UpdateGateLayer closed={useClientCompat().required} gate={<UpdateRequired />}>
+            {children}
+        </UpdateGateLayer>
+    );
 }
 
 function openLink(link: string) {
