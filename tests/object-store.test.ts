@@ -207,11 +207,20 @@ describe('S3 object store', () => {
 
     it('times out a request that never answers', async () => {
         fake = await startFakeS3();
-        const objects = store({ timeoutMs: 50, retries: 0 });
-        await objects.ensureReady();
-        fake.faults.delayMs = 500;
+        // A server that never answers: only the request's own timeout ends it. The
+        // fake's slow answer raced the timer, and the 50 ms timeout also fired early
+        // on the HEAD before it when the host was loaded.
+        const signals: AbortSignal[] = [];
+        const silent: typeof fetch = (_url, init) =>
+            new Promise((_resolve, reject) => {
+                const signal = init!.signal!;
+                signals.push(signal);
+                signal.addEventListener('abort', () => reject(signal.reason), { once: true });
+            });
+        const objects = store({ timeoutMs: 50, retries: 0, fetch: silent });
         await expect(objects.get('k/slow')).rejects.toThrow('Object storage GET failed: timed out.');
-        fake.faults.delayMs = 0;
+        expect(signals).toHaveLength(1);
+        expect(signals[0]!.reason).toMatchObject({ name: 'TimeoutError' });
     });
 
     it('answers unavailable when nothing listens', async () => {

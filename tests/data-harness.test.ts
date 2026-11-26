@@ -3,7 +3,7 @@ import { mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { fakeSocio, harnessData } from '../packages/app-sdk/src/check.js';
 import { startDataHarness, type DataHarness } from '../src/data-harness/harness.js';
@@ -280,15 +280,18 @@ describe('the data API test harness (CB-476)', () => {
     });
 
     it('leaves nothing behind when it can’t start', async () => {
-        const ours = () =>
-            readdirSync(tmpdir())
-                .filter((name) => name.startsWith('socio-data-harness-'))
-                .sort();
-        const before = ours();
+        // A temp root of its own (the harness makes its directories in os.tmpdir(),
+        // which reads TMPDIR): the shared one has other processes' directories
+        // coming and going while this runs.
+        const root = mkdtempSync(join(tmpdir(), 'cb-harness-root-'));
+        cleanup.push(() => rmSync(root, { recursive: true, force: true }));
+        vi.stubEnv('TMPDIR', root);
+        cleanup.push(() => vi.unstubAllEnvs());
+        expect(tmpdir()).toBe(root);
         await expect(startDataHarness({ manifest: { id: 'acme-empty' }, analyticsMode: 'off' })).rejects.toThrow(
             /answered 404: This plugin has no datasets/,
         );
-        expect(ours()).toEqual(before);
+        expect(readdirSync(root)).toEqual([]);
     });
     it('runs as a process: one JSON line on stdout, /healthz for the image’s check, a clean SIGTERM', async () => {
         const dir = mkdtempSync(join(tmpdir(), 'cb476-process-'));

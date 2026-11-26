@@ -42,6 +42,11 @@ it('evaluates the workspace model against the golden set and records it', async 
     // migrating every module's schema here took seconds, and past 90 s on a
     // loaded host (CB-467). The CLI still checks it is on this release's schema.
     const db = new DatabaseSync(testDatabaseFile(path));
+    // Seeding only: without a sync per commit. Each of the 48 seeding writes
+    // below was its own fsync'd transaction, most of the test's time on a quiet
+    // host and past 15 s when other work kept the disk busy. The CLI opens the
+    // file itself, with its own settings.
+    db.exec('PRAGMA synchronous=OFF');
     const inference = new InferenceService(db, {
         secret: SECRET,
         log: () => {},
