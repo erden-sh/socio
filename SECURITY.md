@@ -167,6 +167,22 @@ Encryption at rest protects against stolen disks and backups. It doesn't protect
 
 The platforms' push services see the push token, the ciphertext and the timing. A workspace can leave the relay out (`PUSH_ENDPOINT_HOSTS`); its phones then get no notifications.
 
+**Cloud connection.** A deployment can hold an identity at Socio's cloud services, which Ingenio Ventures runs (`cloud.socio.sh`; docs/specs/CLOUD-SERVICES-PROTOCOL.md). It enrolls only with a single-use enrollment token its provisioning gives it (`SOCIO_CLOUD_ENROLLMENT_TOKEN`); without one, and without a stored identity, the server calls none of these services. The private key never leaves the server: it is sealed under the data key, and the server signs short-lived assertions for access tokens, which stay in memory, one per service. The issuer learns:
+
+- the deployment's public key and id, and the terms it accepted;
+- once a day, the running version, the app's origin and a fingerprint (a hash of the origin and a random id the server made);
+- when the deployment asks for a token, and for which service.
+
+Ingenio can revoke a deployment; the server then stops calling and tells its admins. `SOCIO_CLOUD=off` stops every call, whatever is stored.
+
+**AI reply reports.** While a workspace's admins turn on **Share AI reply reports with Ingenio** (off by default; it is offered only when the cloud connection grants `reports:write`), a person who gives a socio's reply a thumbs-down may report it. They pick a reason, may add a note, and confirm each time on a screen that says what goes, and that another person's message goes too when the reply answered someone else. The report goes to `reports.socio.sh` and holds only:
+
+- the reply's text and when it was written, and the message it answered (text only; attachments as `[attachment: …]`), each cut to the collector's caps, marked when that message is another person's;
+- the reason, the note, when it was reported, the model's id, where it was given (web or the app) and the app's version;
+- two per-deployment hashes (HMAC-SHA256 under a key that never leaves the server): one of the conversation, to group reports on one thread, and one of the socio. Neither can be turned back into an id.
+
+Not the person's name, email or user id, the conversation's or message's ids, the rest of the conversation, tool calls, files, or the workspace's origin; the deployment id travels in the access token. Both texts, and the note, go through Socio's token redaction and a pass for keys with a known shape, bearer and `key=value` secrets and URL credentials before they are queued. Ingenio keeps a report for one year, then deletes it. In the workspace, a report waits in an outbox, its body sealed under the data key; once it is sent or has failed, the body is cleared and the row is deleted after 30 days. Removing the thumbs-down before the report goes withdraws it; a sent report stays at Ingenio for its year. Turning sharing off drops every report not yet sent. Who turned sharing on, when, and the version of the text they agreed to are in the workspace audit; only admins can change it, and Ingenio never turns it on for a workspace.
+
 **Link domain.** The links that open the app (sign-in, device pairing, invites) use `link.socio.sh` (`apps/link`), which serves the app-association files and a static fallback page. Codes and tokens travel in the URL fragment, which browsers don't send. The service can still see a link's path, which for some links names the workspace host, plus the connecting address, the User-Agent and the time, whenever a link opens in a browser rather than the app. It keeps no logs or storage of its own. A workspace can point its links at its own host (`AUTH_APP_LINK_HOST`).
 
 **Other outside services** are the ones you configure: identity providers, model providers, SMTP, Telegram, GitHub, DNS and others. Each receives what its integration needs, as the architecture document describes.

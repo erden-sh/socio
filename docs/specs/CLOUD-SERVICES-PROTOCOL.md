@@ -187,7 +187,7 @@ A new server module, `src/server/cloud/`.
 ### 3.3 The forwarder and its queue
 
 - **The trigger** is a thumbs-down (`kind: 'down'`) added through `PUT /conversations/:id/messages/:messageId/reactions/down` (`src/server/context/reaction-routes.ts`), or through the Telegram path, while the setting is on.
-- **A reason.** Reactions carry no reason today. A small reason picker after a thumbs-down (offensive, harmful, wrong, other, plus free text) would be a web and mobile change **(open)**.
+- **A reason.** A reason picker after a thumbs-down (offensive, harmful, wrong, other, plus a note of at most 1,000 characters), and a confirmation each time, on web and mobile; the client contract is docs/specs/REPLY-REPORTS.md. Telegram has no confirmation, so a thumbs-down there is never a report.
 - **The outbox.** In the same unit of work as the reaction row, a row is added to a new `cloud_outbox` table: `{id, kind: 'ai-report', payload (sealed JSON), createdAt, attempts, nextAt, sentAt, failedAt, lastError}`. `id` is a **report id**: a new UUIDv7 made for this report, which is also its idempotency key. It isn't the workspace's id, the deployment's id or a message id. The payload is snapshotted at that moment, so a later edit or deletion of the chat doesn't change what was reported.
 - **Sending.** A loop runs every minute and sends up to 20 due rows, oldest first. With several app replicas, each row is claimed with a lease before it is sent.
     - `201`, or `200` (already stored): `sentAt` is set, and the reaction shows **Shared**.
@@ -196,7 +196,7 @@ A new server module, `src/server/cloud/`.
     - Network errors and other `5xx`: back off 1 min, 5 min, 30 min, 2 h, then every 6 h.
     - `400`, `403` and `413` are permanent: `failedAt` is set, and admins see a count on the Cloud connection card.
     - A row still unsent after 7 days fails.
-- **Removing the thumbs-down** before the report is sent deletes the outbox row. After it is sent, it stays sent. Whether to send a retraction is **(open)**.
+- **Removing the thumbs-down** (or replacing it with a thumbs-up) before the report is sent deletes the outbox row. After it is sent, it stays sent, and at the collector for its year: no retraction is sent.
 - **Retention in the workspace:** sent and failed rows are deleted after 30 days. The reaction's "shared" mark stays.
 
 ### 3.4 Privacy promises: what leaves the workspace
@@ -205,12 +205,12 @@ A new server module, `src/server/cloud/`.
 | -------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
 | The reply's text (the message the person reacted to, as shown)                               | The person's name, email and user id                                               |
 | The user message it answered (text only; attachments become `[attachment: image]` and so on) | The rest of the conversation, the run's steps, tool calls and their output, files  |
-| The model id, the socio's name **(open: or a hashed id)**, the reason and the reaction time  | The conversation and message ids (only a per-deployment hash, to group duplicates) |
+| The model id, a per-deployment hash of the socio's id, the reason, the note and the time     | The conversation and message ids (only a per-deployment hash, to group duplicates) |
 | The surface (web, mobile, Telegram) and the app version                                      | Anything about other people in a room                                              |
 | The deployment id (from the token)                                                           | The workspace's origin (the issuer knows it; the report doesn't repeat it)         |
 
 - Both texts go through `redactSocioTokens()` (`packages/foundation/src/actors/redact.ts`) and a secret-pattern pass before they are queued, so a reply that echoes a credential doesn't carry it out.
-- While sharing is on, the person who reacts sees a line under the thumbs-down: "Reported replies are shared to keep Socio safe." Whether that is enough, or each report needs that person's own confirmation, is **(open)**.
+- While sharing is on, the person who reacts confirms each report on a screen that says what goes, and that another person's message goes too when the reply answered someone else (`promptByOther`).
 - Reports are kept for 1 year, then deleted.
 - Sync sends the version, origin and fingerprint only (§2.7). Anything more is a new published section, behind a scope and the terms.
 - The push relay learns which deployment sends each push (§5.1). It never learns the push's content, which stays end-to-end encrypted.
@@ -227,15 +227,16 @@ A new server module, `src/server/cloud/`.
     "note": "optional, ≤ 1000 chars",
     "reply": { "text": "…", "truncated": false, "at": 1763299990000 },
     "prompt": { "text": "…", "truncated": false },
+    "promptByOther": false,
     "model": "<model id>",
-    "socio": "Sebas",
+    "socio": "<per-deployment hash of the socio's id>",
     "surface": "mobile",
     "appVersion": "0.34.1",
     "threadHash": "…"
 }
 ```
 
-`id` is the report id from §3.3.
+`id` is the report id from §3.3. `promptByOther` comes only with `prompt`: true when the person who reacted didn't write the message the reply answered (a room). `socio` and `threadHash` are HMAC-SHA256 values under keys derived from one the deployment makes and never sends, with a label each, so they group a deployment's reports without naming the socio or the conversation. Every field but `id`, `reportedAt`, `reason` and `reply` is optional; the collector refuses any other.
 
 | Answer | When                                                            |
 | ------ | --------------------------------------------------------------- |
