@@ -147,7 +147,7 @@ describe('lists', () => {
         expect(read('screens/socio.tsx')).toContain('grouped onScrollY');
         expect(read('screens/socio.tsx')).toContain('<GroupedCard testID={testID}>');
         expect(read('screens/spaces.tsx')).toMatch(/\sgrouped\s+refreshControl=\{refreshControl\}/);
-        expect(read('screens/space.tsx')).toContain('grouped refreshControl={refreshControl}');
+        expect(read('screens/space.tsx')).toMatch(/\sgrouped\s+refreshControl=\{refreshControl\}/);
         const issue = read('screens/issue.tsx');
         expect(issue).toContain('<GroupedRoot testID="issue-screen">');
         expect(issue).not.toContain('rounded-xl border border-border bg-card">');

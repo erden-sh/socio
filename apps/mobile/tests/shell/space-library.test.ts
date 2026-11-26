@@ -249,7 +249,13 @@ describe('a Space’s page search', () => {
         expect(found.local).toHaveLength(2);
         expect(found.line).toBe('Searching page text needs a connection');
         const none = librarySearch({ query: 'zzz', spaceId: 'ops', rows, pages, server: idle });
-        expect(none.empty).toBe('Nothing matches “zzz”.');
+        // The web's LibraryEmpty (CB-552), with Clear search.
+        expect(none.empty).toMatchObject({
+            title: 'No matching pages',
+            line: 'Try a different title or phrase.',
+            clearSearch: true,
+            clearFilters: false,
+        });
         const waiting = librarySearch({
             query: 'zzz',
             spaceId: 'ops',

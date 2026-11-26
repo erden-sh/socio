@@ -1,6 +1,6 @@
 import { type StaticScreenProps, useNavigation } from '@react-navigation/native';
 import { useRef, useState, useSyncExternalStore } from 'react';
-import { Platform, Pressable, ScrollView, View } from 'react-native';
+import { Platform, Pressable, ScrollView, type TextInputInstance, View } from 'react-native';
 
 import { MODULE_IDS } from '@socio/shared/modules';
 import { GOAL_COMMENT_MAX, type GoalView, type JobRunView } from '@socio/shared/schedule-types';
@@ -35,7 +35,8 @@ import {
     NO_JOBS,
     NO_RUNS,
     NO_SCHEDULES,
-    NO_SCHEDULES_MATCH,
+    ANY_SCHEDULE_FILTERS,
+    schedulesEmpty,
     OLDER_RUNS_OFFLINE,
     type OlderRuns,
     olderRunsFor,
@@ -77,6 +78,7 @@ import {
 } from '../sync/schedule-writes';
 import { goalRow, jobRow, scheduleLimitsRow, scheduleRow } from '../sync/schedules';
 import { Button, Field, AppSymbol, keyboardScroll, SearchField, SegmentedControl, Text } from '../ui';
+import { SearchEmptyState } from '../ui/empty-state';
 
 import { ActionMenu, type MenuRequest } from './action-menu';
 import { useDraft } from './chat-composer';
@@ -167,6 +169,7 @@ function Schedules() {
     const action = useOnlineAction();
     useFirstFrameWithData('Schedules', data.limits !== null);
     const [filter, setFilter] = useState<ScheduleFilter>(ANY_SCHEDULE);
+    const searchRef = useRef<TextInputInstance>(null);
     const socios = scheduleSocioOptions(data.shown.schedules);
     const rows = scheduleRows(data.shown.schedules.filter((schedule) => matchesSchedule(schedule, filter)));
     // A pop-up button's menu: the choices, the one held checked.
@@ -257,6 +260,7 @@ function Schedules() {
                             {data.shown.schedules.length === 0 ? null : (
                                 <View className="gap-2" testID="schedules-find">
                                     <SearchField
+                                        ref={searchRef}
                                         label={SCHEDULE_SEARCH_LABEL}
                                         value={filter.query}
                                         onChangeText={(query) => setFilter({ ...filter, query })}
@@ -284,9 +288,15 @@ function Schedules() {
                                         />
                                     </View>
                                     {rows.length === 0 ? (
-                                        <Text variant="subheadline" tone="muted" testID="schedules-no-match">
-                                            {NO_SCHEDULES_MATCH}
-                                        </Text>
+                                        <SearchEmptyState
+                                            view={schedulesEmpty(filter)}
+                                            onClearSearch={() => {
+                                                setFilter({ ...filter, query: '' });
+                                                searchRef.current?.focus();
+                                            }}
+                                            onClearFilters={() => setFilter({ ...filter, ...ANY_SCHEDULE_FILTERS })}
+                                            testID="schedules-no-match"
+                                        />
                                     ) : null}
                                 </View>
                             )}

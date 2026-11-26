@@ -1,7 +1,9 @@
 import type { NativeBottomTabNavigationProp } from '@react-navigation/bottom-tabs/unstable';
 import { type ParamListBase, useFocusEffect, useIsFocused, useNavigation } from '@react-navigation/native';
-import { type RefObject, useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { type ReactNode, type RefObject, useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Platform, type TextInputInstance, View } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import type { SearchBarCommands } from 'react-native-screens';
 
 import { useCollections, useHasWorkspaceScope, useLiveQuery, useSyncStatus, useWorkspaceScope } from '../live';
 import { barSearch } from '../navigation/bar-items';
@@ -16,6 +18,8 @@ import { addMemoryAction, type SearchIconName, type SearchItem, type SearchTarge
 import { spaceList } from '../shell/spaces';
 import { createServerSearch } from '../sync/server-search';
 import { AppSymbol, Screen, SearchField, Text, ToneTile } from '../ui';
+import { SearchEmptyState, useEmptyFill } from '../ui/empty-state';
+import { searchEmpty } from '../ui/search-empty';
 import type { SymbolName } from '../ui/symbols';
 
 import { ChatListRow } from './chat-rows';
@@ -42,9 +46,14 @@ import { TAB_STACK_EDGES } from './tab-edges';
 // comes later. It isn't kept as the last screen: a workspace never
 // opens on Search. Tapping its tab (or iOS's glass Search button) again while
 // Search shows puts the focus in its field, as iOS's own apps do (CB-418).
+// A search that finds nothing shows "No results for “…”" centered in what
+// shows of the screen, with Clear search (CB-552; ui/search-empty.ts).
 
 /** The field's placeholder, the bar's on iOS and the drawn field's on Android. */
 const SEARCH_PLACEHOLDER = 'Chats, issues, pages and more';
+
+/** The line under "No results for “…”" (CB-552), after the web library's "Try a different title or phrase.". */
+export const SEARCH_EMPTY_LINE = 'Try a different word, name or issue key.';
 
 export function SearchScreen() {
     return useHasWorkspaceScope() ? <ScopedSearch /> : null;
@@ -55,9 +64,19 @@ function ScopedSearch() {
     const collections = useCollections();
     const [query, setQuery] = useState('');
     const field = useRef<TextInputInstance>(null);
+    const barField = useRef<SearchBarCommands>(null);
     useRetapFocus(field);
-    // iOS: the system's search field, in the bar; Android draws its own below.
-    useNativeBar({ title: 'Search', search: { placeholder: SEARCH_PLACEHOLDER, onChange: setQuery } });
+    // iOS: the system's search field, in the bar (at the bottom on iOS 26); Android draws its own below.
+    const inBar = barSearch(Platform.OS);
+    useNativeBar({ title: 'Search', search: { placeholder: SEARCH_PLACEHOLDER, onChange: setQuery, ref: barField } });
+    // No results centers in what shows, between the bar and the bottom field or the keyboard (CB-552).
+    const fill = useEmptyFill(true);
+    // Clear search: the field emptied (the bar's, which sends no change for it), the focus kept in it.
+    const clearSearch = () => {
+        barField.current?.clearText();
+        setQuery('');
+        (inBar ? barField : field).current?.focus();
+    };
     const { data: shell } = useLiveQuery({ query: shellQuery(collections) });
     const { data: dots } = useLiveQuery({ query: sociosQuery(collections) });
     const { data: spaces } = useLiveQuery({ query: spacesQuery(collections) });
@@ -121,36 +140,57 @@ function ScopedSearch() {
         }
     };
     return (
-        <Screen testID="search-screen" edges={TAB_STACK_EDGES}>
-            {barSearch(Platform.OS) ? null : (
-                <SearchField
-                    ref={field}
-                    label="Search Socio"
-                    value={query}
-                    onChangeText={setQuery}
-                    placeholder={SEARCH_PLACEHOLDER}
-                    testID="search-field"
-                />
-            )}
-            {view.sections.map((section) => (
-                <Section key={section.id} title={section.title} testID={`search-${section.id}`}>
-                    {section.items.map((item, index) => (
-                        <SearchRow key={item.key} item={item} first={index === 0} onGo={go} />
-                    ))}
-                </Section>
-            ))}
-            {view.serverLine === null ? null : (
-                <Text variant="subheadline" tone="muted" className="text-center" testID="search-server-line">
-                    {view.serverLine}
-                </Text>
-            )}
-            {view.noMatches ? (
-                <Text variant="subheadline" tone="muted" className="text-center" testID="search-no-matches">
-                    Nothing matches “{query.trim()}”.
-                </Text>
-            ) : null}
-        </Screen>
+        <SearchTabInsets>
+            <Screen
+                testID="search-screen"
+                edges={TAB_STACK_EDGES}
+                // The field is the bar's on iOS: the screen pads by the keyboard itself (CB-552).
+                {...(inBar ? { barKeyboard: fill } : {})}
+                // Its empty state fills what shows itself: grown to the frame, it would scroll (CB-552).
+                fit={inBar}
+            >
+                {inBar ? null : (
+                    <SearchField
+                        ref={field}
+                        label="Search Socio"
+                        value={query}
+                        onChangeText={setQuery}
+                        placeholder={SEARCH_PLACEHOLDER}
+                        testID="search-field"
+                    />
+                )}
+                {view.sections.map((section) => (
+                    <Section key={section.id} title={section.title} testID={`search-${section.id}`}>
+                        {section.items.map((item, index) => (
+                            <SearchRow key={item.key} item={item} first={index === 0} onGo={go} />
+                        ))}
+                    </Section>
+                ))}
+                {view.serverLine === null ? null : (
+                    <Text variant="subheadline" tone="muted" className="text-center" testID="search-server-line">
+                        {view.serverLine}
+                    </Text>
+                )}
+                {view.noMatches ? (
+                    <SearchEmptyState
+                        view={searchEmpty({ query, line: SEARCH_EMPTY_LINE })}
+                        onClearSearch={clearSearch}
+                        fill={fill}
+                        testID="search-no-matches"
+                    />
+                ) : null}
+            </Screen>
+        </SearchTabInsets>
     );
+}
+
+/**
+ * Search's safe area on iOS: its own provider, measured by UIKit, whose bottom holds the home
+ * indicator and iOS 26's bottom search row (as a pushed page's holds the tab bar, tab-stack.tsx), so
+ * the empty state centers above the row (CB-552). Android keeps the window's.
+ */
+function SearchTabInsets(props: { readonly children: ReactNode }) {
+    return Platform.OS === 'ios' ? <SafeAreaProvider>{props.children}</SafeAreaProvider> : props.children;
 }
 
 /**

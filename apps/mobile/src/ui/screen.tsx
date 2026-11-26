@@ -7,9 +7,10 @@ import { useBarInset } from '../navigation/bar-inset';
 import { useScreenFocused } from '../navigation/screen-focus';
 
 import { cx } from './cx';
+import type { EmptyFill } from './empty-state';
 import { GroupedPage, useGroupedColor } from './grouped';
 import { keyboardFollow, keyboardScroll } from './keyboard-scroll';
-import { uikitInsets } from './screen-insets';
+import { fillCovers, keyboardInset, uikitInsets } from './screen-insets';
 
 // A screen's frame: the scheme's screen color edge to edge, its content inside
 // the safe areas, and the web's page spacing (px-4, --page-top, --page-gap).
@@ -55,6 +56,19 @@ export interface ScreenProps {
     readonly grouped?: boolean;
     /** Pull to refresh: a `RefreshControl` from `usePullToRefresh`, for a page that syncs. */
     readonly refreshControl?: ReactElement<RefreshControlProps>;
+    /**
+     * The keyboard (`useEmptyFill`), for a screen whose field is the bar's (iOS's search field): it
+     * pads its bottom for it (`keyboardInset`) instead of following the keyboard with UIKit's insets,
+     * which scrolled it under the bar (CB-552; keyboard-scroll.ts).
+     */
+    readonly barKeyboard?: EmptyFill;
+    /**
+     * Content as tall as it is, not grown to the frame (CB-552). Under UIKit's insets a content grown
+     * to the frame is taller than what shows by the bars' height, so a screen with little on it
+     * still scrolls (VoiceOver: "2 pages"). For a screen that fills what shows itself (Search's
+     * empty state, `useEmptyFill`).
+     */
+    readonly fit?: boolean;
 }
 
 export function Screen({
@@ -67,12 +81,14 @@ export function Screen({
     onScrollY,
     grouped = false,
     refreshControl,
+    barKeyboard,
+    fit = false,
 }: ScreenProps) {
     const insets = useSafeAreaInsets();
     const groupedPage = useGroupedColor('page');
-    const content = cx('grow gap-5 px-4 pt-4 pb-4', centered && 'items-center justify-center');
+    const content = cx(!fit && 'grow', 'gap-5 px-4 pt-4 pb-4', centered && 'items-center justify-center');
     const uikit = uikitInsets(edges, Platform.OS);
-    const follow = keyboardFollow(Platform.OS, keyboardAware, useScreenFocused());
+    const follow = keyboardFollow(Platform.OS, keyboardAware, useScreenFocused(), barKeyboard !== undefined);
     const frame = (
         // `collapsable={false}`: a View with only a background forms no stacking context, so
         // Fabric mounts its children beside it, and UIKit's walk down the first subviews meets
@@ -99,6 +115,9 @@ export function Screen({
                     bottomOffset={KEYBOARD_GAP}
                     {...(refreshControl === undefined ? {} : { refreshControl })}
                     automaticallyAdjustKeyboardInsets={follow.uikit}
+                    {...(follow.inset && barKeyboard !== undefined
+                        ? { contentInset: { bottom: barKeyboardInset(barKeyboard, insets.bottom) } }
+                        : {})}
                     // A tab screen (no bottom edge) scrolls under iOS 26's glass tab bar: let UIKit
                     // inset its content by the bar, so the last row can rest above it (owner,
                     // 2026-11-08). The native tabs only set this when the ScrollView is the
@@ -124,6 +143,13 @@ export function Screen({
     );
     return grouped ? <GroupedPage>{frame}</GroupedPage> : frame;
 }
+
+/** What the keyboard covers past the safe area UIKit already insets by: the bottom inset kept for it. */
+const barKeyboardInset = (fill: EmptyFill, safeBottom: number) =>
+    keyboardInset(
+        fillCovers(Platform.OS, { safeBottom, keyboard: fill.keyboard, searchTab: fill.searchTab }),
+        safeBottom,
+    );
 
 /** A screen that doesn't scroll, under iOS's native bar: its content starts below the bar. */
 function BarPadded({ className, children }: { className: string; children: ReactNode }) {

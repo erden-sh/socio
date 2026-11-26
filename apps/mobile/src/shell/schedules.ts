@@ -15,6 +15,7 @@ import { OUTBOX_COPY } from '../sync/outbox';
 import type { OverlayItem } from '../sync/outbox-overlay';
 import { runNowBlocked, type ShownGoal, type ShownSchedule, type TaskAction } from '../sync/schedule-writes';
 import type { ToneName } from '../theme/theme';
+import { searchEmpty, type SearchEmptyView } from '../ui/search-empty';
 
 import { UNSENT_FALLBACK, UNSENT_REASON_COPY } from './unsent';
 
@@ -393,6 +394,27 @@ export interface ScheduleFilter {
 }
 
 export const ANY_SCHEDULE: ScheduleFilter = { query: '', status: '', socio: '' };
+
+/** The filters off, the words kept: Clear filters (CB-552). */
+export const ANY_SCHEDULE_FILTERS = { status: '', socio: '' } as const satisfies Omit<ScheduleFilter, 'query'>;
+
+/** The line under Schedules' "no results" (CB-552). */
+export const SCHEDULES_EMPTY_LINE = 'Try other words, or another status or socio.';
+
+/**
+ * What Schedules shows when its search and filters let no schedule through (CB-552): "No results
+ * for “…”" while words are typed, the web's "No schedules match" for the filters alone, with Clear
+ * search and Clear filters for what is set.
+ */
+export function schedulesEmpty(filter: ScheduleFilter): SearchEmptyView {
+    const typed = filter.query.trim() !== '';
+    return searchEmpty({
+        query: filter.query,
+        line: SCHEDULES_EMPTY_LINE,
+        filtered: filter.status !== '' || filter.socio !== '',
+        ...(typed ? {} : { title: NO_SCHEDULES_MATCH.replace(/\.$/, '') }),
+    });
+}
 
 export interface FilterOption {
     /** '' for any. */
