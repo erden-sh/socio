@@ -20,7 +20,7 @@ import {
     useWorkspaceScope,
 } from '../live';
 import { useNativeBar } from '../navigation/native-bar';
-import { issueAction } from '../navigation/tabs';
+import { issueAction, mediaFileAction } from '../navigation/tabs';
 import { useFirstFrameWithData } from '../platform/cold-start';
 import { randomId } from '../platform/crypto';
 import { useAttachmentPicture } from '../platform/image-cache';
@@ -73,7 +73,6 @@ import { Composer, useDraft } from './chat-composer';
 import { ReplyMarkdown } from './chat-markdown';
 import { AdminFields } from './issue-admin';
 import { ComponentChip, ComponentChipList } from './issue-components';
-import { useOpenLink } from './open-link';
 import { StatusBanners, useRememberScreen } from './shell-parts';
 
 // An issue: the `Issue` route at
@@ -573,10 +572,9 @@ function Description({ view, issueKey: key }: { view: IssueDetailView; issueKey:
 /** A side of a picture tile. */
 const PICTURE = 96;
 
-/** Files: pictures open the viewer (the image cache), other files the web; a file still waiting says so. */
+/** Files: pictures open the viewer (the image cache), other files their page in Media (CB-558); a file still waiting says so. */
 function Files({ files, testID }: { files: readonly DetailFile[]; testID: string }) {
     const navigation = useNavigation();
-    const openLink = useOpenLink();
     if (files.length === 0) {
         return null;
     }
@@ -606,9 +604,13 @@ function Files({ files, testID }: { files: readonly DetailFile[]; testID: string
                         testID={`issue-file-${file.id}`}
                         accessibilityRole="button"
                         accessibilityLabel={file.accessibilityLabel}
-                        accessibilityHint={file.pending === null ? 'Opens in your browser' : undefined}
+                        accessibilityHint={file.pending === null ? 'Opens the file' : undefined}
                         disabled={file.pending !== null}
-                        onPress={() => openLink(`/api/issue-attachments/${encodeURIComponent(file.id)}`, { web: true })}
+                        onPress={() =>
+                            navigation.dispatch(
+                                mediaFileAction({ issueFile: file.id, name: file.name, mediaType: file.mediaType }),
+                            )
+                        }
                         className="min-h-11 max-w-full flex-row items-center gap-2 rounded-2xl border border-border bg-card p-2 active:bg-accent"
                     >
                         <AppSymbol name="file" size={16} color="muted-foreground" />

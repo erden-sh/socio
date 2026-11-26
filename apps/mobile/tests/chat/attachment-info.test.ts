@@ -51,17 +51,17 @@ describe('loadAttachmentInfo', () => {
 });
 
 describe('fileChipView', () => {
-    it('downloads a stored file, its size beside its name once known (the web’s FileChip)', () => {
+    it('opens a stored file’s page in Media by its attachment id, its size beside its name once known (CB-558)', () => {
         expect(fileChipView(file(), null)).toEqual({
             note: 'PDF',
             removed: false,
-            href: '/api/media/attachments/cbatt_1/content?download=1',
-            accessibilityLabel: 'Download report.pdf',
+            opens: { attachment: 'cbatt_1', name: 'report.pdf', mediaType: 'application/pdf' },
+            accessibilityLabel: 'Open report.pdf',
         });
         expect(fileChipView(file(), { state: 'there', size: 12_800 })).toMatchObject({
             note: '13 KB',
-            href: '/api/media/attachments/cbatt_1/content?download=1',
-            accessibilityLabel: 'Download report.pdf, 13 KB',
+            opens: { attachment: 'cbatt_1', name: 'report.pdf', mediaType: 'application/pdf', size: 12_800 },
+            accessibilityLabel: 'Open report.pdf, 13 KB',
         });
     });
 
@@ -69,24 +69,33 @@ describe('fileChipView', () => {
         expect(fileChipView(file(), { state: 'gone' })).toEqual({
             note: 'Removed',
             removed: true,
-            href: null,
+            opens: null,
             accessibilityLabel: 'report.pdf, removed',
         });
-        expect(fileChipView(file(), null, true).href).toBeNull();
+        expect(fileChipView(file(), null, true).opens).toBeNull();
         expect(fileChipView(file({ local: 'file:///x/report.pdf', extension: '' }), null)).toEqual({
             note: 'File',
             removed: false,
-            href: null,
+            opens: null,
             accessibilityLabel: 'report.pdf',
         });
     });
 
-    it('is a link the chip opens through useOpenLink, asked once per file (attachments.tsx)', () => {
+    it('never opens a browser: the chip pushes the Media file page, asked once per file (attachments.tsx)', () => {
         const source = read('screens/attachments.tsx');
         expect(source).toContain('fileChipView(file, info, removed)');
-        expect(source).toContain('openLink(href)');
-        expect(source).toContain("accessibilityRole={href === null ? 'text' : 'link'}");
+        expect(source).toContain('navigation.dispatch(mediaFileAction(opens))');
+        expect(source).not.toContain('useOpenLink');
+        expect(source).not.toContain('WebBrowser');
         expect(source).toContain('loadAttachmentInfo(scope.fetch, id, scope.signal)');
+        // No download address is left for a browser to open.
+        expect(read('chat/attachment-info.ts')).not.toContain('attachmentContentUrl');
+    });
+
+    it('sends an issue’s files to the same page, by their own id (issue.tsx)', () => {
+        const source = read('screens/issue.tsx');
+        expect(source).toContain('mediaFileAction({ issueFile: file.id, name: file.name, mediaType: file.mediaType })');
+        expect(source).not.toContain('Opens in your browser');
     });
 });
 

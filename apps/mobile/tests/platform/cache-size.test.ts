@@ -61,16 +61,19 @@ afterEach(() => {
 });
 
 describe('the local cache size', () => {
-    it('is what Clear cache deletes: cache.db, its -wal and -shm, and every image', async () => {
+    it('is what Clear cache deletes: cache.db, its -wal and -shm, every image and every opened file', async () => {
         const layout = workspaceLayout(root, ID);
         expect(cachePaths(root, ID)).toEqual([
             join(layout.directory, 'cache.db'),
             join(layout.directory, 'cache.db-wal'),
             join(layout.directory, 'cache.db-shm'),
             layout.images,
+            layout.files,
         ]);
         mkdirSync(join(layout.images, 'thumbs'), { recursive: true });
         mkdirSync(layout.attachments, { recursive: true });
+        mkdirSync(join(layout.files, 'att-1.abc'), { recursive: true });
+        writeFileSync(join(layout.files, 'att-1.abc', 'plan.pdf'), Buffer.alloc(55));
         writeFileSync(join(layout.directory, 'cache.db'), Buffer.alloc(4096));
         writeFileSync(join(layout.directory, 'cache.db-wal'), Buffer.alloc(1000));
         writeFileSync(join(layout.images, 'a.jpg'), Buffer.alloc(300));
@@ -79,7 +82,7 @@ describe('the local cache size', () => {
         writeFileSync(join(layout.directory, 'user.db'), Buffer.alloc(9999));
         writeFileSync(join(layout.attachments, 'c.jpg'), Buffer.alloc(7777));
 
-        expect(await cacheSize(createSizeOf(fakeExpo), root, ID)).toBe(4096 + 1000 + 300 + 20);
+        expect(await cacheSize(createSizeOf(fakeExpo), root, ID)).toBe(4096 + 1000 + 300 + 20 + 55);
     });
 
     it('counts nothing for what isn’t there', async () => {

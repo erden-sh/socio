@@ -197,7 +197,8 @@ function HomeLists() {
             kept === 'Activity' ||
             kept === 'Schedules' ||
             kept === 'Learning' ||
-            kept === 'Runs'
+            kept === 'Runs' ||
+            kept === 'Media'
         );
     });
     const opensPage = spaceKept !== null || pageKept !== null || pageScreenKept || issueKept !== null;

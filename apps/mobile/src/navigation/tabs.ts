@@ -7,6 +7,7 @@ import { normalizeRole } from '@socio/shared/roles';
 import type { Role } from '@socio/shared/types';
 
 import { issueParam, type ShellScreen } from '../shell/last-screen';
+import type { MediaFileParams } from '../shell/media';
 import { moduleEntry, moduleNavLabel } from '../shell/modules';
 
 // The tab table (the owner's 2026-11-08 choice, modelled on Slack's
@@ -136,14 +137,15 @@ export const TAB_LUCIDE_ICONS = TAB_NAMES.map((name) => TABS[name].lucide);
 
 /**
  * What More holds, in order: Approvals, Scheduled & activity and
- * Schedules (both, as the web shows them), Memories, Learning (Skills for
- * members), Runs and Settings.
+ * Schedules (both, as the web shows them), Memories, Media (CB-558), Learning
+ * (Skills for members), Runs and Settings.
  */
 export const MORE_ITEMS = [
     MODULE_IDS.approvals,
     MODULE_IDS.activity,
     MODULE_IDS.schedules,
     MODULE_IDS.memories,
+    MODULE_IDS.media,
     MODULE_IDS.learning,
     MODULE_IDS.runs,
     MODULE_IDS.settings,
@@ -239,7 +241,7 @@ export function staticTabs<
 }
 
 /** The pages Home's tiles push (routes.ts), and the Spaces tab, which its tile switches to (CB-459). */
-export type ShellPage = 'Spaces' | 'Board' | 'Memories' | 'Activity' | 'Schedules' | 'Learning' | 'Runs';
+export type ShellPage = 'Spaces' | 'Board' | 'Memories' | 'Activity' | 'Schedules' | 'Learning' | 'Runs' | 'Media';
 
 /**
  * The action that goes to a tab or a shell page from inside the tabs. The
@@ -253,7 +255,7 @@ export const tabAction = (name: TabName | ShellPage) => ({ type: 'NAVIGATE', pay
 
 /**
  * A More module's page, pushed in the tab it is opened from: Settings' own route, the approvals
- * list's, Memories', Scheduled & activity's and Schedules', Learning's and Runs', else the
+ * list's, Memories', Scheduled & activity's and Schedules', Learning's, Runs' and Media's, else the
  * module's placeholder.
  */
 export const moreItemAction = (id: MoreItem, label: string) => {
@@ -271,7 +273,20 @@ const MORE_PAGES: Partial<Record<MoreItem, 'Settings' | 'Approvals' | ShellPage>
     [MODULE_IDS.schedules]: 'Schedules',
     [MODULE_IDS.learning]: 'Learning',
     [MODULE_IDS.runs]: 'Runs',
+    [MODULE_IDS.media]: 'Media',
 };
+
+/** A Media folder (CB-558), pushed over the one it is in, so Back is the way up. */
+export const mediaFolderAction = (folder: string) =>
+    ({ type: 'PUSH', payload: { name: 'Media', params: { folder } } }) as const;
+
+/**
+ * A file's page in Media (CB-558), pushed in the tab it is opened from: by library item, by chat
+ * attachment (a file chip in a chat or room) or by issue attachment, with what the caller knows of
+ * the file so the page draws at once.
+ */
+export const mediaFileAction = (params: MediaFileParams) =>
+    ({ type: 'PUSH', payload: { name: 'MediaFile', params } }) as const;
 
 /** A schedule's page, pushed from Schedules, a task's detail and links; PUSH, so Back returns. */
 export const scheduleAction = (scheduleId: string) =>

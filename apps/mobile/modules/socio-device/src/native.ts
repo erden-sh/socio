@@ -46,7 +46,21 @@ export interface SocioDeviceNative extends EventEmitter<SocioDeviceEvents> {
      * has no Auth Tab. iOS: always `unavailable` (its sheet is expo-web-browser's).
      */
     openAuthTab(url: string, host: string, path: string): Promise<AuthTabResult>;
+    /**
+     * Shows a file of the app's in the system's preview (CB-558). iOS: Quick Look over the app,
+     * answering once it closes. Android: the app the person picks for `contentUri` (the app's
+     * FileProvider URI for the file, which iOS ignores), answering as it opens.
+     */
+    previewFile(path: string, mimeType: string, name: string, contentUri: string | null): Promise<FilePreviewResult>;
+    /** Asks where to keep a copy of a file of the app's, with the system's own panel, and writes it there. */
+    saveFile(path: string, mimeType: string, name: string): Promise<FileSaveResult>;
 }
+
+/** `no-app`: nothing on the phone previews the file's type. `unavailable`: no screen to show it over. */
+export type FilePreviewResult = 'shown' | 'no-app' | 'unavailable';
+
+/** What the save panel came to. */
+export type FileSaveResult = 'saved' | 'cancelled' | 'failed' | 'unavailable';
 
 /** What `openAuthTab` answers, as AuthTab.kt maps Chrome's result codes. */
 export type AuthTabResult =

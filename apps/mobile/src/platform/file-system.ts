@@ -22,9 +22,12 @@ import type { FileSystem } from '../data/layout';
 // Paths are file:// URIs, as `Paths.document.uri` gives the store's root, or
 // absolute paths, which become file:// URIs here.
 
-/** A store path as the file:// URI expo-file-system takes. */
+/**
+ * A store path as the file:// URI expo-file-system takes: a URI as it is, an absolute path with each
+ * name encoded as one segment (so `#`, `?` and `%` in a name stay letters of it).
+ */
 export function fileUri(path: string): string {
-    return path.startsWith('file://') ? path : `file://${encodeURI(path)}`;
+    return path.startsWith('file://') ? path : `file://${path.split('/').map(encodeURIComponent).join('/')}`;
 }
 
 /** The parent of `path` and its last name (as a listing gives it, decoded), or null for the root. */

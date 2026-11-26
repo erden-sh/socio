@@ -149,6 +149,7 @@ export const SYMBOLS = {
     'server-cog': { sf: 'server.rack' },
     settings: { sf: 'gearshape' },
     'settings-2': { sf: 'gearshape' },
+    share: { sf: 'square.and.arrow.up' },
     'shield-alert': { sf: 'exclamationmark.shield' },
     'shield-check': { sf: 'checkmark.shield' },
     'sliders-horizontal': { sf: 'slider.horizontal.3' },

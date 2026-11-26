@@ -11,7 +11,8 @@
 // (a newer build's screen, a damaged value) opens Home. The modules' own
 // screens join as their routes land (`Memories`, `Activity` and `Schedules`,
 // `Learning` and `Runs`; a run's page never: reopening it would read a trace
-// no one tapped).
+// no one tapped; `Media`, its root folder: a file's page never, so a relaunch
+// downloads nothing no one tapped).
 
 import { issueNumber } from '@socio/shared/issues/issue-board';
 
@@ -29,6 +30,7 @@ export const SHELL_SCREENS = [
     'Schedules',
     'Learning',
     'Runs',
+    'Media',
     'More',
 ] as const;
 export type ShellScreen = (typeof SHELL_SCREENS)[number];

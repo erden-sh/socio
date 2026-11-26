@@ -24,6 +24,7 @@ import {
     viewerImages,
 } from '../chat/attachment-tray';
 import { useWorkspaceScope } from '../live';
+import { mediaFileAction } from '../navigation/tabs';
 import { useAttachmentPicture } from '../platform/image-cache';
 import { clearPickerCache, pick, removePasted, sizeOf } from '../platform/pickers';
 import type { Attachment, Attachments } from '../sync/attachments';
@@ -32,8 +33,6 @@ import { useScheme } from '../theme/scheme';
 import { theme, type ToneName } from '../theme/theme';
 import { AppSymbol, Text } from '../ui';
 import { Squircle } from '../ui/squircle';
-
-import { useOpenLink } from './open-link';
 
 // Attachments on the phone (src/chat/attachment-tray.ts has the rules):
 // - `useTray(draftScope)`: the composer's tray from the scope's attachments,
@@ -480,17 +479,19 @@ function FileChip({ file, removed = false }: { file: MessageFile; removed?: bool
     const tone = theme[useScheme()].tones[file.tone as ToneName];
     const info = useAttachmentInfo(removed || file.local !== null ? null : file.id);
     const view = fileChipView(file, info, removed);
-    const openLink = useOpenLink();
-    const href = view.href;
+    const navigation = useNavigation();
+    const opens = view.opens;
     return (
         <Pressable
             testID={`chat-file-${file.id}`}
-            accessibilityRole={href === null ? 'text' : 'link'}
+            accessibilityRole={opens === null ? 'text' : 'button'}
             accessibilityLabel={view.accessibilityLabel}
-            disabled={href === null}
+            accessibilityHint={opens === null ? undefined : 'Opens the file in Media'}
+            disabled={opens === null}
             onPress={() => {
-                if (href !== null) {
-                    openLink(href);
+                // The file's page in Media, in this tab, over the chat: Back returns to it (CB-558).
+                if (opens !== null) {
+                    navigation.dispatch(mediaFileAction(opens));
                 }
             }}
             className="max-w-full flex-row items-center gap-2 rounded-2xl border border-border bg-card p-2 active:opacity-70"
@@ -510,7 +511,7 @@ function FileChip({ file, removed = false }: { file: MessageFile; removed?: bool
                     {view.note}
                 </Text>
             </View>
-            {href === null ? null : <AppSymbol name="download" size={14} color="muted-foreground" />}
+            {opens === null ? null : <AppSymbol name="chevron-right" size={14} color="muted-foreground" />}
         </Pressable>
     );
 }

@@ -126,6 +126,7 @@ import SendIcon from 'lucide-react-native/icons/send';
 import ServerCog from 'lucide-react-native/icons/server-cog';
 import SettingsIcon from 'lucide-react-native/icons/settings';
 import Settings2 from 'lucide-react-native/icons/settings-2';
+import ShareIcon from 'lucide-react-native/icons/share';
 import ShieldAlert from 'lucide-react-native/icons/shield-alert';
 import ShieldCheck from 'lucide-react-native/icons/shield-check';
 import SlidersHorizontal from 'lucide-react-native/icons/sliders-horizontal';
@@ -283,6 +284,7 @@ export const GLYPHS: Readonly<Record<SymbolName, LucideIcon>> = {
     'server-cog': ServerCog,
     settings: SettingsIcon,
     'settings-2': Settings2,
+    share: ShareIcon,
     'shield-alert': ShieldAlert,
     'shield-check': ShieldCheck,
     'sliders-horizontal': SlidersHorizontal,

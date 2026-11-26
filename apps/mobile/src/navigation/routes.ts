@@ -91,6 +91,13 @@ export const ROUTES = {
     Learning: { gates: ['shell'], linking: 'learning', preset: page({ header: 'large' }), tab: 'Home' },
     Runs: { gates: ['shell'], linking: 'runs', preset: page({ header: 'large' }), tab: 'Home' },
     Run: { gates: ['shell'], preset: page(), tab: 'Home' },
+    // Media (CB-558), from More and Search, at the web's path (`?folder=` names a folder, as the
+    // web's address does): a folder of the person's files, a large title; a subfolder pushes the
+    // same route again, so Back is the breadcrumb. A file's page is the app's own, with no path
+    // (the web previews a file in a dialog): from the list, and from a file chip in a chat, a room
+    // or an issue, which open it in the tab they are in.
+    Media: { gates: ['shell'], linking: 'media', preset: page({ header: 'large' }), tab: 'More' },
+    MediaFile: { gates: ['shell'], preset: page(), tab: 'More' },
     // A Space's library, pushed from the Spaces, Search and links at
     // the web's path. Its large title is its Space's name, with the Keep offline
     // toggle in the bar.

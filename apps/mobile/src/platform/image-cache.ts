@@ -81,10 +81,15 @@ export function useEmbedPicture(id: string): Picture {
     return usePicture(id, null, 'embed');
 }
 
-function usePicture(id: string, local: string | null, kind: ImageKind): Picture {
+/** A picture of the person's Media library (CB-558), by its item's id and `updatedAt` (a file can be replaced). */
+export function useMediaPicture(id: string, updatedAt: number): Picture {
+    return usePicture(id, null, 'media', updatedAt);
+}
+
+function usePicture(id: string, local: string | null, kind: ImageKind, version = 0): Picture {
     const scope = useWorkspaceScope();
     const cache = cacheOf(scope);
-    const path = useSyncExternalStore(cache.subscribe, () => (local === null ? cache.path(id, 0, kind) : null));
+    const path = useSyncExternalStore(cache.subscribe, () => (local === null ? cache.path(id, version, kind) : null));
     const [outcome, setOutcome] = useState<{ id: string; state: 'gone' | 'failed' } | null>(null);
     useEffect(() => {
         if (local !== null || path !== null) {
@@ -92,7 +97,7 @@ function usePicture(id: string, local: string | null, kind: ImageKind): Picture 
         }
         let live = true;
         cache
-            .load(id, 0, kind)
+            .load(id, version, kind)
             .then((load) => {
                 if (live && load.state !== 'ready') {
                     setOutcome({ id, state: load.state });
@@ -102,7 +107,7 @@ function usePicture(id: string, local: string | null, kind: ImageKind): Picture 
         return () => {
             live = false;
         };
-    }, [cache, id, local, path, kind]);
+    }, [cache, id, local, path, kind, version]);
     if (local !== null) {
         return { state: 'ready', uri: local };
     }

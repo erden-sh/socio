@@ -117,6 +117,17 @@ class SocioDeviceModule : Module() {
       AuthTab.open(appContext.currentActivity, url, host, path, promise)
     }.runOnQueue(Queues.MAIN)
 
+    // A downloaded file shown in another app, or saved where the person picks (CB-558,
+    // FileHandOff.kt). The preview takes the content URI JavaScript made with the app's
+    // FileProvider; the save reads the file's own path.
+    AsyncFunction("previewFile") { _: String, mimeType: String, name: String, contentUri: String?, promise: Promise ->
+      FileHandOff.preview(appContext.currentActivity, contentUri, mimeType, name, promise)
+    }.runOnQueue(Queues.MAIN)
+
+    AsyncFunction("saveFile") { path: String, mimeType: String, name: String, promise: Promise ->
+      FileHandOff.save(appContext.currentActivity, path, mimeType, name, promise)
+    }.runOnQueue(Queues.MAIN)
+
     // Sign-out: nothing a WebView kept stays. The page editor runs
     // incognito with DOM storage off, so this is the second lock: every
     // cookie, the Web Storage and IndexedDB data (WebStorage), and the HTTP

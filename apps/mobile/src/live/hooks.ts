@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 
 
 import type { IssueComponentOptions } from '@socio/shared/issues/issue-components';
 import type { IssueAssignees, IssueDetail } from '@socio/shared/issues/issue-types';
+import type { MediaKind, MediaListing } from '@socio/shared/media-types';
 import type { Page } from '@socio/shared/pages/page-library';
 import type { RunTraceView } from '@socio/shared/runs/run-trace';
 
@@ -11,6 +12,7 @@ import type { ScopeCollections } from '../sync/collections';
 import { ASSIGNEES_KEY } from '../sync/issue-assignees';
 import { OPTIONS_KEY } from '../sync/issue-component-options';
 import type { KeptSpaces } from '../sync/kept-spaces';
+import { mediaListing } from '../sync/media-library';
 import { allPageConflicts, type PageConflict, pageConflicts, type PageMergeChange } from '../sync/page-conflicts';
 import type { SpacePages } from '../sync/page-store';
 import type { ScheduleDetailItems } from '../sync/schedule-details';
@@ -213,6 +215,23 @@ export function useRunTrace(runId: string): BoundedItemState<RunTraceView> {
     const item = runTraces.item(runId);
     useEffect(() => item.use(), [item]);
     return useBoundedState(item);
+}
+
+/**
+ * A Media folder's first page under a kind filter (CB-558), held while its screen shows it: the
+ * phone's last copy first, then the server's, read as it opens.
+ */
+export function useMediaListing(
+    folder: string,
+    kind: MediaKind | '',
+): BoundedItemState<MediaListing> & {
+    readonly refresh: () => Promise<unknown>;
+} {
+    const { mediaListings } = useWorkspaceScope();
+    const item = mediaListing(mediaListings, folder, kind);
+    useEffect(() => item.use(), [item]);
+    const state = useBoundedState(item);
+    return { ...state, refresh: () => item.refresh() };
 }
 
 /**

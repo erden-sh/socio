@@ -97,7 +97,8 @@ export interface DetailFile {
     /** The server's id, or the outbox row's while it waits. */
     readonly id: string;
     readonly name: string;
-    /** A picture the viewer shows (the server's copy only); other files open the web. */
+    readonly mediaType: string;
+    /** A picture the viewer shows (the server's copy only); other files open their page in Media (CB-558). */
     readonly picture: boolean;
     /** The outbox's words while it waits; null once it is the server's. */
     readonly pending: string | null;
@@ -358,6 +359,7 @@ function fileOf(file: Pick<IssueAttachment, 'id' | 'name' | 'mediaType'>, pendin
     return {
         id: file.id,
         name: file.name,
+        mediaType: file.mediaType,
         picture: pending === null && PICTURE.test(file.mediaType),
         pending,
         accessibilityLabel: pending === null ? file.name : `${file.name}, ${pending}`,

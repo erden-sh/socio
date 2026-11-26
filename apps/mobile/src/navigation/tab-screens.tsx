@@ -9,6 +9,8 @@ import { DatasetPreviewScreen } from '../screens/dataset-preview';
 import { DatasetViewScreen } from '../screens/dataset-view';
 import { IssueScreen } from '../screens/issue';
 import { LearningScreen } from '../screens/learning';
+import { MediaScreen } from '../screens/media';
+import { MediaFileScreen } from '../screens/media-file';
 import { MemoriesScreen } from '../screens/memories';
 import { MoreItemScreen } from '../screens/more-item';
 import { NewChatScreen } from '../screens/new-chat';
@@ -41,6 +43,8 @@ export const TAB_ROUTE_COMPONENTS = {
     Learning: LearningScreen,
     Runs: RunsScreen,
     Run: RunScreen,
+    Media: MediaScreen,
+    MediaFile: MediaFileScreen,
     Space: SpaceScreen,
     SpaceMemory: SpaceMemoryScreen,
     SpaceRadar: SpaceRadarScreen,

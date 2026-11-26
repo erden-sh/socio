@@ -1,6 +1,13 @@
 import type { EventSubscription } from 'expo';
 
-import { type AppBuild, type AuthTabResult, native, type FileProtection } from './native';
+import {
+    type AppBuild,
+    type AuthTabResult,
+    type FilePreviewResult,
+    type FileProtection,
+    type FileSaveResult,
+    native,
+} from './native';
 
 const FILE_SCHEME = 'file://';
 
@@ -159,4 +166,29 @@ export function appBuild(): AppBuild {
  */
 export function openAuthTab(url: string, host: string, path: string): Promise<AuthTabResult> {
     return native().openAuthTab(url, host, path);
+}
+
+/**
+ * Shows a file of the app's in the system's preview (CB-558): Quick Look on iOS (resolves once it
+ * closes), the app the person picks on Android (resolves as it opens), which reads `contentUri`,
+ * the app's FileProvider URI for the file. `no-app` when nothing previews its type.
+ * `src/platform/media-files.ts` is the only caller.
+ */
+export function previewFile(
+    pathOrUri: string,
+    mimeType: string,
+    name: string,
+    contentUri: string | null = null,
+): Promise<FilePreviewResult> {
+    const path = toFilePath(pathOrUri);
+    return native().previewFile(path, mimeType, name, contentUri);
+}
+
+/**
+ * Asks where to keep a copy of a file of the app's with the system's own panel (Files on iOS, the
+ * documents panel on Android: no storage permission) and writes it there, under `name`.
+ */
+export function saveFile(pathOrUri: string, mimeType: string, name: string): Promise<FileSaveResult> {
+    const path = toFilePath(pathOrUri);
+    return native().saveFile(path, mimeType, name);
 }
