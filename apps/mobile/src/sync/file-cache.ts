@@ -22,7 +22,10 @@ import type { AuthedFetch } from '../net/authed-fetch';
 // - Written as `<key>.<stamp>.part/` and renamed once whole, so a kill
 //   mid-write leaves a part folder the next launch deletes.
 // - Bounded at 300 MB, the oldest dropped first, never one an open page holds
-//   (`hold`); a file over 100 MB is never downloaded. A copy that is gone from
+//   (`hold`) or one being loaded. Checked after each download, after the
+//   folder is first read (an earlier launch may have left more), and once
+//   holds are let go (pages held over the bound; several releases at once
+//   make one pass). A file over 100 MB is never downloaded. A copy that is gone from
 //   the disk all the same is downloaded again on its next load. Clear cache
 //   and the sign-out wipe delete the folder.
 // No React Native: src/platform/file-cache-files.ts binds the file operations,
@@ -99,6 +102,8 @@ export interface FileCache {
     load(source: FileSource, options?: LoadOptions): Promise<FileLoad>;
     /** Keeps a key's copy out of the eviction until the returned release is called (an open page). */
     hold(key: string): () => void;
+    /** Resolves once the eviction the cache has started (after a release) is done. */
+    idle(): Promise<void>;
 }
 
 /** What a download's answer said about its version, sent back on the next check. */
@@ -250,20 +255,48 @@ export function createFileCache(options: FileCacheOptions): FileCache {
                 lastStamp = Math.max(lastStamp, stamp);
             }
             ready = true;
+            // An earlier launch may have left more than the bound (pages held past it as it closed).
+            await evict();
         })());
 
-    /** Drops the oldest until the folder is within its bound, never `keep` or a copy an open page holds. */
-    async function evict(keep: string) {
-        const oldest = [...entries.values()].sort((a, b) => a.stamp - b.stamp);
-        for (const entry of oldest) {
-            if (total <= maxBytes) {
-                break;
+    /** One eviction at a time: each pass starts once the one before it is done. */
+    let evicting: Promise<void> = Promise.resolve();
+    /** A pass asked for after a release and not started yet: releases until it starts share it. */
+    let evictQueued = false;
+
+    /**
+     * Drops the oldest until the folder is within its bound, never `keep`, a copy an open page holds
+     * or one being loaded.
+     */
+    function evict(keep?: string): Promise<void> {
+        evicting = evicting.then(async () => {
+            if (stopped()) {
+                return;
             }
-            if (entry.key === keep || held.has(entry.key)) {
-                continue;
+            const oldest = [...entries.values()].sort((a, b) => a.stamp - b.stamp);
+            for (const entry of oldest) {
+                if (total <= maxBytes) {
+                    break;
+                }
+                if (entry.key === keep || held.has(entry.key) || loading.has(entry.key)) {
+                    continue;
+                }
+                await drop(entry);
             }
-            await drop(entry);
+        });
+        return evicting;
+    }
+
+    /** After a release: one pass for however many holds go in the same moment. */
+    function evictSoon() {
+        if (evictQueued) {
+            return;
         }
+        evictQueued = true;
+        void Promise.resolve().then(() => {
+            evictQueued = false;
+            return evict().catch(onError);
+        });
     }
 
     const cancel = (response: Response) => response.body?.cancel().catch(() => {});
@@ -453,8 +486,17 @@ export function createFileCache(options: FileCacheOptions): FileCache {
                     held.set(key, count);
                 } else {
                     held.delete(key);
+                    // Pages held past the bound: their copies count again, so the bound is checked again.
+                    if (total > maxBytes) {
+                        evictSoon();
+                    }
                 }
             };
+        },
+        async idle() {
+            // A pass queued by a release starts on the next microtask; wait for it, then for the chain.
+            await Promise.resolve();
+            await evicting;
         },
     };
 }

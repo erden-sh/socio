@@ -2051,7 +2051,8 @@ Account sheet is a root stack route over them:
   `complete`, `files/<key>.<stamp>/<name>` so other apps see the file's own name, joined to the
   file:// root as one encoded segment so `#`, `%` and `?` stay letters of it, a `.part` folder
   renamed once whole, 300 MB with the oldest dropped first but never a copy an open page holds
-  (`hold`), nothing over 100 MB; Clear cache and every wipe delete it), never through a browser. A
+  (`hold`), checked after each download, after the folder is first read and once holds are let go
+  (one pass for releases together), nothing over 100 MB; Clear cache and every wipe delete it), never through a browser. A
   file can be replaced under its id, an attachment's too, so a page checks its copy with the server
   once as it opens (`checkedSince`): `If-None-Match` with the ETag the download had (the content
   routes send the bytes' SHA-256 and answer 304 while it matches; kept beside the file as

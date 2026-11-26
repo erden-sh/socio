@@ -234,14 +234,14 @@ function replaceableSetup(options: { etags?: boolean; maxBytes?: number } = {}) 
     };
     let clock = 1_000;
     const tick = () => (clock += 1);
-    const open = () =>
+    const open = (maxBytes = options.maxBytes) =>
         createFileCache({
             fetch: server.fetch,
             files,
             layout,
             setFileProtection: async () => {},
             now: tick,
-            ...(options.maxBytes === undefined ? {} : { maxBytes: options.maxBytes }),
+            ...(maxBytes === undefined ? {} : { maxBytes }),
         });
     /** A page opening now: what it passes as `checkedSince`. */
     const pageOpens = () => tick();
@@ -358,5 +358,66 @@ describe('a copy an open page has', () => {
         rmSync(join(s.layout.files, s.folders()[0]!), { recursive: true });
         s.server.setOffline(true);
         expect(await cache.load(source, { checkedSince: opened })).toEqual({ state: 'failed' });
+    });
+
+    it('comes back within its bound once pages held past it let go, never dropping one still held', async () => {
+        const s = replaceableSetup({ maxBytes: 'aaaa'.length * 2 });
+        for (const n of [1, 2, 3, 4]) {
+            s.server.put(pdf(n).url, 'aaaa');
+        }
+        const cache = s.open();
+        // Three file pages, each pushed over the last (In Media, then another file): all held.
+        const releases = [];
+        for (const n of [1, 2, 3]) {
+            releases.push(cache.hold(pdf(n).key));
+            await cache.load(pdf(n));
+        }
+        expect(s.folders()).toHaveLength(3);
+        // Back from the top two at once: one pass, and the held oldest stays.
+        releases[2]!();
+        releases[1]!();
+        await cache.idle();
+        expect(cache.path(pdf(1).key)).not.toBeNull();
+        expect(cache.path(pdf(2).key)).toBeNull();
+        expect(cache.path(pdf(3).key)).not.toBeNull();
+        expect(s.folders()).toHaveLength(2);
+        // Within the bound: letting go of the last changes nothing.
+        releases[0]!();
+        await cache.idle();
+        expect(s.folders()).toHaveLength(2);
+
+        // Over the bound again, with every page let go: back within it, the oldest gone.
+        const held = [cache.hold(pdf(4).key), cache.hold(pdf(3).key), cache.hold(pdf(1).key)];
+        await cache.load(pdf(4));
+        expect(s.folders()).toHaveLength(3);
+        for (const release of held) {
+            release();
+        }
+        await cache.idle();
+        expect(s.folders()).toHaveLength(2);
+        expect(cache.path(pdf(1).key)).toBeNull();
+        expect(cache.path(pdf(3).key)).not.toBeNull();
+        expect(cache.path(pdf(4).key)).not.toBeNull();
+    });
+
+    it('comes back within its bound as it first reads a folder an earlier launch left over it', async () => {
+        const s = replaceableSetup();
+        for (const n of [1, 2, 3]) {
+            s.server.put(pdf(n).url, 'aaaa');
+        }
+        const first = s.open();
+        for (const n of [1, 2, 3]) {
+            await first.load(pdf(n));
+        }
+        expect(s.folders()).toHaveLength(3);
+        const requests = s.server.sent.length;
+        // Relaunched with the folder over its bound: the first load reads it and drops the oldest.
+        const relaunched = s.open('aaaa'.length * 2);
+        expect((await relaunched.load(pdf(3))).state).toBe('ready');
+        expect(s.server.sent).toHaveLength(requests);
+        expect(s.folders()).toHaveLength(2);
+        expect(relaunched.path(pdf(1).key)).toBeNull();
+        expect(relaunched.path(pdf(2).key)).not.toBeNull();
+        expect(relaunched.path(pdf(3).key)).not.toBeNull();
     });
 });
