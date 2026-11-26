@@ -86,7 +86,13 @@ export function clientCompatRoutes(compat: ClientCompat) {
     };
 }
 
-/** The guard on `/api/*`: an app below its platform's minimum gets the one refusal. */
+/**
+ * The guard on `/api/*`: an app below its platform's minimum gets the one refusal.
+ *
+ * A compatibility aid, not access control: it trusts the User-Agent the app reports about itself,
+ * which any client can set or leave out. It only spares an old app the errors of shapes it can't
+ * read; every route still checks the session and permissions on its own.
+ */
 export function clientCompatGuard(compat: ClientCompat): MiddlewareHandler<AppEnv> {
     return async function clientVersion(c, next) {
         if (exemptFromClientCompat(c.req.path)) {
