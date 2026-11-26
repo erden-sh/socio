@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 import {
     backdropOpacity,
     clampOffset,
+    decideDrag,
     DISMISS_VELOCITY,
     dismisses,
     dismissDistance,
@@ -13,12 +14,15 @@ import {
     dismissTarget,
     DOUBLE_TAP_SCALE,
     doubleTapZoom,
-    dragActivation,
+    DRAG_DECIDE,
     dragMode,
     FIT,
     fittedSize,
     isZoomed,
     MAX_SCALE,
+    pagerOffset,
+    PAGE_VELOCITY,
+    pageTarget,
     pagingEnabled,
     panBounds,
     pinchZoom,
@@ -147,16 +151,52 @@ describe('paging and dragging', () => {
         expect(pagingEnabled(1.5)).toBe(false);
         expect(isZoomed(1)).toBe(false);
         expect(isZoomed(2.5)).toBe(true);
-        expect(dragMode(1)).toBe('dismiss');
-        expect(dragMode(2)).toBe('pan');
     });
 
-    it('takes only an up or down drag at fit, so a sideways one pages; any drag zoomed in', () => {
-        expect(dragActivation(false)).toEqual({ maxPointers: 1, activeOffsetY: [-10, 10], failOffsetX: [-12, 12] });
-        const zoomed = dragActivation(true);
-        expect(zoomed).not.toHaveProperty('failOffsetX');
-        expect(zoomed).not.toHaveProperty('activeOffsetY');
-        expect(zoomed.maxPointers).toBe(1);
+    it('at fit, pages on a sideways drag and dismisses on an up or down one; zoomed in, pans either way', () => {
+        expect(dragMode(1, -30, 4)).toBe('page');
+        expect(dragMode(1, 12, -10)).toBe('page');
+        expect(dragMode(1, 4, 30)).toBe('dismiss');
+        expect(dragMode(1, -3, -25)).toBe('dismiss');
+        expect(dragMode(2, -30, 4)).toBe('pan');
+        expect(dragMode(2, 4, 30)).toBe('pan');
+    });
+
+    it('waits until the finger has moved to decide, since a drag’s first events can carry no translation', () => {
+        expect(decideDrag(1, 0, 0)).toBeNull();
+        expect(decideDrag(1, 3, -3)).toBeNull();
+        expect(decideDrag(1, 0, DRAG_DECIDE)).toBe('dismiss');
+        expect(decideDrag(1, -DRAG_DECIDE, 1)).toBe('page');
+        expect(decideDrag(2, 0, 0)).toBeNull();
+        expect(decideDrag(2, 6, 0)).toBe('pan');
+    });
+
+    it('turns the page past half a page, or on a fling, never past the ends', () => {
+        const width = PAGE.width;
+        expect(pageTarget(1, -width / 2 - 1, 0, width, 3)).toBe(2);
+        expect(pageTarget(1, width / 2 + 1, 0, width, 3)).toBe(0);
+        expect(pageTarget(1, -60, 0, width, 3)).toBe(1);
+        expect(pageTarget(1, -60, -PAGE_VELOCITY, width, 3)).toBe(2);
+        expect(pageTarget(1, 60, PAGE_VELOCITY, width, 3)).toBe(0);
+        // Flung back toward where it started: stays.
+        expect(pageTarget(1, -60, PAGE_VELOCITY, width, 3)).toBe(1);
+        expect(pageTarget(2, -width, -2000, width, 3)).toBe(2);
+        expect(pageTarget(0, width, 2000, width, 3)).toBe(0);
+        expect(pageTarget(0, -width, 0, width, 1)).toBe(0);
+    });
+
+    it('follows the finger between the first and the last page, with the rubber band past them', () => {
+        const width = PAGE.width;
+        expect(pagerOffset(width * 1.3, 3, width)).toBeCloseTo(width * 1.3);
+        const before = pagerOffset(-100, 3, width);
+        expect(before).toBeLessThan(0);
+        expect(before).toBeGreaterThan(-100);
+        const after = pagerOffset(2 * width + 100, 3, width);
+        expect(after).toBeGreaterThan(2 * width);
+        expect(after).toBeLessThan(2 * width + 100);
+        // One picture: only the band.
+        expect(pagerOffset(50, 1, width)).toBeGreaterThan(0);
+        expect(pagerOffset(50, 1, width)).toBeLessThan(50);
     });
 });
 
@@ -193,12 +233,36 @@ describe('dragging to dismiss', () => {
 });
 
 describe('the math', () => {
-    it('can run on reanimated’s UI thread: every function is a worklet but the pan’s activation', () => {
+    it('can run on reanimated’s UI thread: every function is a worklet', () => {
         const math = read('chat/image-viewer.ts');
         const functions = [...math.matchAll(/^export function (\w+)/gm)].map((match) => match[1]);
         expect(functions.length).toBeGreaterThan(10);
-        for (const name of functions.filter((fn) => fn !== 'dragActivation')) {
+        for (const name of functions) {
             expect(math, name).toMatch(new RegExp(`export function ${name}\\([^]*?\\{\\n {4}'worklet';`));
+        }
+    });
+});
+
+describe('the worklets’ order', () => {
+    // The worklets plugin makes each worklet a variable, built when the module loads with the
+    // worklets it calls: one declared further down is still undefined then, so calling it throws
+    // "undefined is not a function" on the UI thread (a double-tap crashed the app that way).
+    it('declares every worklet before any worklet that calls it', () => {
+        for (const file of ['chat/image-viewer.ts', 'screens/attachment-viewer-gesture.ts']) {
+            const text = read(file);
+            const declared = [...text.matchAll(/^export function (\w+)\(/gm)].map((match) => ({
+                name: match[1],
+                at: match.index,
+            }));
+            for (const caller of declared) {
+                const end = text.indexOf('\n}\n', caller.at);
+                const body = text.slice(caller.at, end);
+                for (const callee of declared) {
+                    if (callee.name !== caller.name && new RegExp(`\\b${callee.name}\\(`).test(body)) {
+                        expect(callee.at, `${file}: ${caller.name} calls ${callee.name}`).toBeLessThan(caller.at);
+                    }
+                }
+            }
         }
     });
 });
@@ -213,17 +277,29 @@ describe('the viewer screen', () => {
         expect(viewer).toContain('usePanGesture({');
         expect(viewer).toContain('useSimultaneousGestures(pinch, drag, doubleTap)');
         expect(viewer).toContain('<GestureDetector gesture={gestures}>');
-        // The pager is gesture-handler's, so a pinch takes over from its scroll.
-        expect(viewer).toMatch(/import \{[^}]*\bFlatList\b[^}]*\} from 'react-native-gesture-handler'/);
     });
 
-    it('pages only at fit, and puts a page the pager left back to fit', () => {
-        expect(viewer).toContain('scrollEnabled={paging}');
-        expect(viewer).toContain('const activation = dragActivation(active && !paging);');
-        expect(viewer).toContain('failOffsetX: activation.failOffsetX,');
+    it('moves the pager itself, so a pinch never races a native scroll: paging only at fit', () => {
+        expect(viewer).toContain('scrollEnabled={false}');
+        expect(viewer).toContain('scrollTo(pagerRef, pagerX.get(), 0, false);');
+        expect(viewer).toContain('pager={{ x: pagerX, index, count: images.length }}');
+        expect(viewer).toContain('onPage={setShown}');
+        // Decided on the drag's first move: its activation carries no translation yet, so a vertical drag
+        // would read as sideways and page instead of dismissing.
+        expect(gesture).toContain('zoom.start.set({ ...current(), fx: 0, fy: 0, mode: null, px: pager.x.get() });');
+        expect(gesture).toMatch(
+            /if \(start\.mode === null\) \{[^}]*const mode = decideDrag\(start\.scale, event\.translationX, event\.translationY\);\s+if \(mode === null\) \{\s+return;/,
+        );
+        expect(gesture).toContain('pager.x.set(pagerOffset(start.px - event.translationX, pager.count, page.width));');
+        expect(gesture).toMatch(/const next = pageTarget\(pager\.index, event\.translationX, event\.velocityX/);
+        // A page the pager left goes back to fit.
         expect(viewer).toMatch(/if \(!active\) \{\n\s+resetZoom\(\{ scale, x, y, start \}\);/);
-        expect(gesture).toContain('scheduleOnRN(onPaging, pagingEnabled(target.scale))');
-        expect(gesture).toContain('scheduleOnRN(onPaging, false)');
+    });
+
+    it('lets VoiceOver and TalkBack turn the page with actions, since the pager doesn’t scroll by itself', () => {
+        expect(viewer).toContain("{ name: 'next', label: 'Next picture' }");
+        expect(viewer).toContain("{ name: 'previous', label: 'Previous picture' }");
+        expect(viewer).toContain("turnTo(event.nativeEvent.actionName === 'next' ? shown + 1 : shown - 1)");
     });
 
     it('drags to dismiss through the stack’s own goBack, fading the backdrop and the chrome (CB-537)', () => {

@@ -1,7 +1,8 @@
 // The attachment viewer's gestures (CB-536, CB-537), after iOS Photos and
 // Android's Material viewers: pinch to zoom about the fingers, double-tap to
 // zoom in on a spot and back to fit, pan while zoomed (clamped to the
-// picture's edges, with a rubber band past them), page sideways only at fit,
+// picture's edges, with a rubber band past them), page sideways only at fit
+// (the drag moves the pager itself, so a pinch never races a native scroll),
 // and drag down (or up) at fit to dismiss, with the black backdrop and the
 // chrome fading as the picture moves. This file holds the math, no React
 // Native, so tests/chat runs it under Node; every function is a worklet, so
@@ -60,6 +61,9 @@ const FADE_SHARE = 0.4;
 /** How small a dismiss drag shrinks the picture, at its farthest. */
 const DISMISS_SHRINK = 0.2;
 
+// The worklets plugin turns each worklet below into a variable made when the module loads, holding
+// the worklets it calls: a worklet must come after every one it calls (tests/chat/image-viewer.test.ts).
+
 /** The picture's size fitted into `page` (contentFit contain), or the page's own while its size is unknown. */
 export function fittedSize(page: Size, picture: Size | null): Size {
     'worklet';
@@ -77,6 +81,49 @@ export function panBounds(scale: number, fitted: Size, page: Size): Point {
         x: Math.max(0, (fitted.width * scale - page.width) / 2),
         y: Math.max(0, (fitted.height * scale - page.height) / 2),
     };
+}
+
+/** Whether a picture at `scale` is zoomed in (past fit). */
+export function isZoomed(scale: number): boolean {
+    'worklet';
+    return scale - 1 >= FIT_EPSILON;
+}
+
+/** Whether the pager pages: only at fit; zoomed in, a sideways drag pans the picture instead. */
+export function pagingEnabled(scale: number): boolean {
+    'worklet';
+    return !isZoomed(scale);
+}
+
+/**
+ * What a one-finger drag does, from where it was when it started: zoomed in, pan
+ * the picture; at fit, page sideways (`page`) or move the picture toward a
+ * dismiss (`dismiss`), whichever way it went more.
+ */
+export type DragMode = 'pan' | 'page' | 'dismiss';
+
+export function dragMode(scale: number, translationX: number, translationY: number): DragMode {
+    'worklet';
+    if (!pagingEnabled(scale)) {
+        return 'pan';
+    }
+    return Math.abs(translationY) > Math.abs(translationX) ? 'dismiss' : 'page';
+}
+
+/** How far, in points, a drag goes before it decides what it does. */
+export const DRAG_DECIDE = 4;
+
+/**
+ * What a drag that has gone (`translationX`, `translationY`) does, or null while it has
+ * hardly moved: gesture-handler's first events after a pan activates can carry no
+ * translation yet, which would read as sideways.
+ */
+export function decideDrag(scale: number, translationX: number, translationY: number): DragMode | null {
+    'worklet';
+    if (Math.abs(translationX) < DRAG_DECIDE && Math.abs(translationY) < DRAG_DECIDE) {
+        return null;
+    }
+    return dragMode(scale, translationX, translationY);
 }
 
 /** `value` held within ±`bound`. */
@@ -167,45 +214,6 @@ export function doubleTapZoom(current: Zoom, tap: Point, fitted: Size, page: Siz
     };
 }
 
-/** Whether a picture at `scale` is zoomed in (past fit). */
-export function isZoomed(scale: number): boolean {
-    'worklet';
-    return scale - 1 >= FIT_EPSILON;
-}
-
-/** Whether the pager pages: only at fit; zoomed in, a sideways drag pans the picture instead. */
-export function pagingEnabled(scale: number): boolean {
-    'worklet';
-    return !isZoomed(scale);
-}
-
-/** What a one-finger drag does: pan the zoomed picture, or at fit, move it toward a dismiss. */
-export type DragMode = 'pan' | 'dismiss';
-
-export function dragMode(scale: number): DragMode {
-    'worklet';
-    return isZoomed(scale) ? 'pan' : 'dismiss';
-}
-
-/** The one-finger pan's activation, in gesture-handler's terms. */
-export interface DragActivation {
-    maxPointers: number;
-    minDistance?: number;
-    activeOffsetY?: [number, number];
-    failOffsetX?: [number, number];
-}
-
-/**
- * When the one-finger pan starts. At fit it takes only an up or down drag
- * (a sideways one fails it, so the pager pages); zoomed in, any drag, since
- * the pager is off.
- */
-export function dragActivation(zoomed: boolean): DragActivation {
-    return zoomed
-        ? { maxPointers: 1, minDistance: 4 }
-        : { maxPointers: 1, activeOffsetY: [-10, 10], failOffsetX: [-12, 12] };
-}
-
 /** How far a dismiss drag must go on a page `height` tall. */
 export function dismissDistance(height: number): number {
     'worklet';
@@ -254,4 +262,36 @@ export function dismissScale(dy: number, height: number): number {
 export function dismissTarget(dy: number, height: number): number {
     'worklet';
     return (dy < 0 ? -1 : 1) * height;
+}
+
+/** A paging drag let go at least this fast, in points a second, turns the page whatever its distance. */
+export const PAGE_VELOCITY = 500;
+
+/**
+ * The page a paging drag settles on: the next or the previous one when it went
+ * past half a page, or was flung that way; else the one it started on. Never
+ * past the first or the last.
+ */
+export function pageTarget(
+    index: number,
+    translationX: number,
+    velocityX: number,
+    width: number,
+    count: number,
+): number {
+    'worklet';
+    let next = index;
+    if (translationX < -width / 2 || (translationX < 0 && velocityX <= -PAGE_VELOCITY)) {
+        next = index + 1;
+    } else if (translationX > width / 2 || (translationX > 0 && velocityX >= PAGE_VELOCITY)) {
+        next = index - 1;
+    }
+    return Math.min(Math.max(0, count - 1), Math.max(0, next));
+}
+
+/** The pager's scroll offset for a drag to `raw`: past the first or the last page, with the rubber band. */
+export function pagerOffset(raw: number, count: number, width: number): number {
+    'worklet';
+    const half = ((Math.max(1, count) - 1) * width) / 2;
+    return half + rubberOffset(raw - half, half, width);
 }

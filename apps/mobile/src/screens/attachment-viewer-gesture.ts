@@ -10,9 +10,11 @@ import {
     dismisses,
     dismissTarget,
     doubleTapZoom,
-    dragMode,
+    decideDrag,
+    type DragMode,
     FIT,
-    pagingEnabled,
+    pagerOffset,
+    pageTarget,
     panBounds,
     pinchZoom,
     rubberOffset,
@@ -24,28 +26,43 @@ import {
 import { systemSpring } from '../ui/motion';
 
 // The attachment viewer's gestures on the UI thread (CB-536, CB-537): a
-// page's pinch, double-tap and one-finger drag move its picture frame by frame
-// and settle with the platform's spring, with no JavaScript in between; the
-// math is image-viewer.ts's. Only what React draws goes back to it: whether
-// the pager may page (`onPaging`: only at fit) and a dismiss
-// (`onDismiss`, the stack's own goBack).
+// page's pinch, double-tap and one-finger drag move its picture, or the pager,
+// frame by frame and settle with the platform's spring, with no JavaScript in
+// between; the math is image-viewer.ts's. The pager doesn't scroll by itself:
+// the drag moves it (`pager.x`, which the viewer scrolls to), so a pinch never
+// races a native scroll for the fingers. Only what React draws goes back to it:
+// the page the pager settled on (`onPage`) and a dismiss (`onDismiss`, the
+// stack's own goBack).
 //
 // The callbacks are worklets made here, in a plain function the React
 // Compiler leaves alone (it compiles only components and hooks), as the
 // drawer's are (drawer-gesture.ts). Under Reduce Motion nothing springs: a
-// zoom jumps, a dismiss fades out quickly and a drag let go short of it jumps back.
+// zoom or a page jumps, a dismiss fades out quickly and a drag let go short of it jumps back.
 
 /** How long Reduce Motion's dismiss fade and a flung picture's exit take, in milliseconds. */
 export const DISMISS_FADE_MS = 150;
 const TOSS_MS = 200;
+
+/**
+ * Where a pinch or a drag began: the zoom, the fingers' midpoint (from the page's center), what the
+ * drag does (`null` until its first move: a drag's activation carries no translation yet) and the
+ * pager's offset.
+ */
+export interface GestureStart extends Zoom {
+    readonly fx: number;
+    readonly fy: number;
+    readonly mode: DragMode | null;
+    readonly px: number;
+}
+
+export const NO_START: GestureStart = { ...FIT, fx: 0, fy: 0, mode: null, px: 0 };
 
 /** A page's picture: its zoom, and what a gesture began from. */
 export interface PageZoom {
     readonly scale: SharedValue<number>;
     readonly x: SharedValue<number>;
     readonly y: SharedValue<number>;
-    /** The zoom and the fingers' midpoint (from the page's center) when a pinch or drag began. */
-    readonly start: SharedValue<Zoom & { readonly fx: number; readonly fy: number }>;
+    readonly start: SharedValue<GestureStart>;
 }
 
 /** What the viewer moves for a dismiss: the shown picture's drag, and a fade (1 shown, 0 gone). */
@@ -54,15 +71,23 @@ export interface ViewerDismiss {
     readonly fade: SharedValue<number>;
 }
 
+/** The pager: its scroll offset, which the viewer scrolls to, and this page's place in it. */
+export interface PagerDrive {
+    readonly x: SharedValue<number>;
+    readonly index: number;
+    readonly count: number;
+}
+
 export interface PageGestures {
     readonly zoom: PageZoom;
     readonly dismiss: ViewerDismiss;
+    readonly pager: PagerDrive;
     readonly page: Size;
     readonly fitted: Size;
     readonly os: string;
     readonly reduceMotion: boolean;
-    /** Told on the JavaScript thread whether the pager may page: only with the picture at fit. */
-    readonly onPaging: (paging: boolean) => void;
+    /** Told on the JavaScript thread the page a paging drag settled on, when it changed. */
+    readonly onPage: (index: number) => void;
     /** Called on the JavaScript thread once a dismissed picture is gone. */
     readonly onDismiss: () => void;
 }
@@ -96,25 +121,46 @@ export function resetZoom(zoom: PageZoom): void {
     zoom.y.set(FIT.y);
 }
 
+/** Moves the pager to page `index` (`width` wide): the platform's spring carrying `velocity`, or at once under Reduce Motion. */
+export function movePager(
+    x: SharedValue<number>,
+    index: number,
+    width: number,
+    os: string,
+    reduceMotion: boolean,
+    velocity = 0,
+): void {
+    'worklet';
+    const target = index * width;
+    x.set(
+        reduceMotion
+            ? target
+            : withSpring(target, { ...systemSpring(os, 'spatial'), velocity, reduceMotion: ReduceMotion.System }),
+    );
+}
+
 /** The page's gesture callbacks, every one a worklet. */
 export function pageGestureCallbacks(gestures: PageGestures) {
-    const { zoom, dismiss, page, fitted, os, reduceMotion, onPaging, onDismiss } = gestures;
+    const { zoom, dismiss, pager, page, fitted, os, reduceMotion, onPage, onDismiss } = gestures;
     const current = (): Zoom => {
         'worklet';
         return { scale: zoom.scale.get(), x: zoom.x.get(), y: zoom.y.get() };
     };
     const settle = (velocity?: { readonly x: number; readonly y: number }) => {
         'worklet';
-        const target = settleZoom(current(), fitted, page);
-        moveZoom(zoom, target, os, reduceMotion, velocity);
-        scheduleOnRN(onPaging, pagingEnabled(target.scale));
+        moveZoom(zoom, settleZoom(current(), fitted, page), os, reduceMotion, velocity);
     };
     return {
         pinchActivate: (event: PinchGestureActiveEvent) => {
             'worklet';
             // Setting the values stops a settle still running: the fingers take the picture where it is.
-            zoom.start.set({ ...current(), fx: event.focalX - page.width / 2, fy: event.focalY - page.height / 2 });
-            scheduleOnRN(onPaging, false);
+            zoom.start.set({
+                ...current(),
+                fx: event.focalX - page.width / 2,
+                fy: event.focalY - page.height / 2,
+                mode: 'pan',
+                px: pager.x.get(),
+            });
         },
         pinchUpdate: (event: PinchGestureActiveEvent) => {
             'worklet';
@@ -142,17 +188,29 @@ export function pageGestureCallbacks(gestures: PageGestures) {
                 page,
             );
             moveZoom(zoom, target, os, reduceMotion);
-            scheduleOnRN(onPaging, pagingEnabled(target.scale));
         },
         dragActivate: () => {
             'worklet';
-            zoom.start.set({ ...current(), fx: 0, fy: 0 });
+            zoom.start.set({ ...current(), fx: 0, fy: 0, mode: null, px: pager.x.get() });
         },
         dragUpdate: (event: PanGestureActiveEvent) => {
             'worklet';
-            const start = zoom.start.get();
-            if (dragMode(start.scale) === 'dismiss') {
+            let start = zoom.start.get();
+            if (start.mode === null) {
+                // Decided once the finger has moved, by which way it went.
+                const mode = decideDrag(start.scale, event.translationX, event.translationY);
+                if (mode === null) {
+                    return;
+                }
+                start = { ...start, mode };
+                zoom.start.set(start);
+            }
+            if (start.mode === 'dismiss') {
                 dismiss.dy.set(event.translationY);
+                return;
+            }
+            if (start.mode === 'page') {
+                pager.x.set(pagerOffset(start.px - event.translationX, pager.count, page.width));
                 return;
             }
             const bounds = panBounds(start.scale, fitted, page);
@@ -161,8 +219,20 @@ export function pageGestureCallbacks(gestures: PageGestures) {
         },
         dragDeactivate: (event: PanGestureActiveEvent) => {
             'worklet';
-            if (dragMode(zoom.start.get().scale) === 'pan') {
+            const start = zoom.start.get();
+            if (start.mode === null) {
+                return;
+            }
+            if (start.mode === 'pan') {
                 settle({ x: event.velocityX, y: event.velocityY });
+                return;
+            }
+            if (start.mode === 'page') {
+                const next = pageTarget(pager.index, event.translationX, event.velocityX, page.width, pager.count);
+                movePager(pager.x, next, page.width, os, reduceMotion, -event.velocityX);
+                if (next !== pager.index) {
+                    scheduleOnRN(onPage, next);
+                }
                 return;
             }
             const dy = dismiss.dy.get();
