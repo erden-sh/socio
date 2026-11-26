@@ -177,18 +177,24 @@ export function SpaceLibrary({
                             }}
                         />
                     </label>
-                    <Select value={sort} onValueChange={setSort}>
-                        <SelectTrigger
-                            aria-label="Sort pages"
-                            className="h-8 gap-2 rounded-lg border-0 bg-transparent px-3 text-sm font-medium text-muted-foreground shadow-none hover:bg-accent hover:text-foreground max-[900px]:flex-1 pointer-coarse:text-base dark:bg-transparent dark:hover:bg-accent [&_svg:not([class*='text-'])]:text-current"
-                        >
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent position="popper" align="end">
-                            <SelectItem value="recent">Recently edited</SelectItem>
-                            <SelectItem value="name">Name A–Z</SelectItem>
-                        </SelectContent>
-                    </Select>
+                    {searching ? (
+                        <span className="flex min-h-8 items-center px-3 text-sm text-muted-foreground max-[900px]:flex-1 pointer-coarse:text-base">
+                            Sorted by relevance
+                        </span>
+                    ) : (
+                        <Select value={sort} onValueChange={setSort}>
+                            <SelectTrigger
+                                aria-label="Sort pages"
+                                className="h-8 gap-2 rounded-lg border-0 bg-transparent px-3 text-sm font-medium text-muted-foreground shadow-none hover:bg-accent hover:text-foreground max-[900px]:flex-1 pointer-coarse:text-base dark:bg-transparent dark:hover:bg-accent [&_svg:not([class*='text-'])]:text-current"
+                            >
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent position="popper" align="end">
+                                <SelectItem value="recent">Recently edited</SelectItem>
+                                <SelectItem value="name">Name A–Z</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    )}
                     <div className="flex rounded-[9px] border p-[3px]" role="group" aria-label="Library view">
                         {(
                             [
