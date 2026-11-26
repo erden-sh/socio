@@ -96,6 +96,7 @@ describe('the paths', () => {
             user: { directory: `/data/files/socio/${id}`, name: USER_DB },
             images: `/data/files/socio/${id}/images`,
             attachments: `/data/files/socio/${id}/attachments`,
+            files: `/data/files/socio/${id}/files`,
         });
     });
 

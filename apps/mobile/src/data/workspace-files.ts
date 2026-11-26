@@ -1,7 +1,7 @@
 import type { FileSystem, WorkspaceLayout } from './layout';
 
-// The data protection of a workspace's two folders of plain files.
-// Neither is SQLCipher:
+// The data protection of a workspace's folders of plain files.
+// None is SQLCipher:
 //
 // - `images/`, the app's own image cache, is `complete` on iOS: unreadable
 //   whenever the phone is locked, as nothing needs an image then.
@@ -9,6 +9,9 @@ import type { FileSystem, WorkspaceLayout } from './layout';
 //   level (`completeUntilFirstUserAuthentication`, as secure-store's
 //   AFTER_FIRST_UNLOCK), so the outbox can still upload them while the phone
 //   is locked.
+// - `files/`, the files the Media file page downloaded to open (CB-558), is
+//   `complete` too: a file is only previewed, shared or saved while the app
+//   shows.
 //
 // On iOS a directory's class is also the class new files in it get, so each
 // folder is made and given its class before anything goes in it, and again
@@ -25,6 +28,8 @@ export type SetFileProtection = (path: string, level: FileProtectionLevel) => Pr
 
 /** The image cache's class: locked with the phone. */
 export const IMAGES_PROTECTION: FileProtectionLevel = 'complete';
+/** The opened files' class: locked with the phone. */
+export const FILES_PROTECTION: FileProtectionLevel = 'complete';
 /** Picked attachments' class: the keys' unlock level, readable while locked after the first unlock. */
 export const ATTACHMENTS_PROTECTION: FileProtectionLevel = 'completeUntilFirstUserAuthentication';
 
@@ -43,6 +48,12 @@ export async function prepareImagesFolder(deps: WorkspaceFilesDeps, layout: Work
 export async function prepareAttachmentsFolder(deps: WorkspaceFilesDeps, layout: WorkspaceLayout): Promise<void> {
     await deps.fs.mkdir(layout.attachments);
     await deps.setFileProtection(layout.attachments, ATTACHMENTS_PROTECTION);
+}
+
+/** Makes `files/` if needed and gives it its class. Call it before writing a downloaded file. */
+export async function prepareFilesFolder(deps: WorkspaceFilesDeps, layout: WorkspaceLayout): Promise<void> {
+    await deps.fs.mkdir(layout.files);
+    await deps.setFileProtection(layout.files, FILES_PROTECTION);
 }
 
 /** Both folders, each with its class: as a workspace's scope opens. */

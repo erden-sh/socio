@@ -161,12 +161,13 @@ describe('the tab table', () => {
 });
 
 describe('More', () => {
-    it('holds Approvals, Scheduled & activity, Schedules, Memories, Learning, Runs and Settings, in that order', () => {
+    it('holds Approvals, Scheduled & activity, Schedules, Memories, Media, Learning, Runs and Settings, in that order', () => {
         expect(MORE_ITEMS).toEqual([
             MODULE_IDS.approvals,
             MODULE_IDS.activity,
             MODULE_IDS.schedules,
             MODULE_IDS.memories,
+            MODULE_IDS.media,
             MODULE_IDS.learning,
             MODULE_IDS.runs,
             MODULE_IDS.settings,
@@ -176,6 +177,7 @@ describe('More', () => {
             'Scheduled & activity',
             'Schedules',
             'Memories',
+            'Media',
             'Learning',
             'Runs',
             'Settings & setup',

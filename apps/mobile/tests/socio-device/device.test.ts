@@ -20,6 +20,10 @@ const mocks = vi.hoisted(() => {
             type: 'unavailable',
             reason: 'no-auth-tab',
         })),
+        previewFile: vi.fn(
+            async (_path: string, _mimeType: string, _name: string, _contentUri: string | null) => 'shown',
+        ),
+        saveFile: vi.fn(async (_path: string, _mimeType: string, _name: string) => 'saved'),
         addListener: vi.fn((event: string, listener: Change) => {
             const set = listeners.get(event) ?? new Set();
             listeners.set(event, set.add(listener));
@@ -163,6 +167,33 @@ describe('each call', () => {
             reason: 'no-auth-tab',
         });
         expect(mocks.native.openAuthTab).toHaveBeenCalledWith('https://acme.example/start', 'link.socio.sh', '/app/cb');
+    });
+
+    it('hands a downloaded file to the system by its path: a preview (with Android’s content URI) and a save (CB-558)', async () => {
+        const device = await load();
+        const uri = 'file:///data/files/socio/ab/files/att-1.abc/Q3%20plan.pdf';
+        const path = '/data/files/socio/ab/files/att-1.abc/Q3 plan.pdf';
+        await expect(device.previewFile(uri, 'application/pdf', 'Q3 plan.pdf')).resolves.toBe('shown');
+        expect(mocks.native.previewFile).toHaveBeenLastCalledWith(path, 'application/pdf', 'Q3 plan.pdf', null);
+        mocks.native.previewFile.mockResolvedValueOnce('no-app');
+        await expect(
+            device.previewFile(
+                uri,
+                'application/zip',
+                'a.zip',
+                'content://app.FileSystemFileProvider/expo_files/a.zip',
+            ),
+        ).resolves.toBe('no-app');
+        expect(mocks.native.previewFile).toHaveBeenLastCalledWith(
+            path,
+            'application/zip',
+            'a.zip',
+            'content://app.FileSystemFileProvider/expo_files/a.zip',
+        );
+        await expect(device.saveFile(uri, 'application/pdf', 'Q3 plan.pdf')).resolves.toBe('saved');
+        expect(mocks.native.saveFile).toHaveBeenCalledWith(path, 'application/pdf', 'Q3 plan.pdf');
+        // Never a web address: only a file of the app's.
+        expect(() => device.previewFile('https://example.test/a.pdf', 'application/pdf', 'a.pdf')).toThrow(TypeError);
     });
 });
 

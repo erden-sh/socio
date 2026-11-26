@@ -107,6 +107,9 @@ const FIXED_HEIGHTS: Record<string, readonly string[]> = {
     'screens/chat-composer.tsx': ['composerInputHeight(Platform.OS, props.text)'],
     // The attachment viewer's full-screen pager: a page is the window.
     'screens/attachment-viewer.tsx': ["'100%'"],
+    // Media (CB-558): a file's picture in its page, and the grid's and the list's square pictures.
+    'screens/media-file.tsx': ['320'],
+    'screens/media.tsx': ['size', 'cell', 'ROW_TILE'],
     // Swipe actions: the panes are the row's own height, whatever its text.
     // and an iOS action's circle, a square mark (iOS 26's).
     'screens/swipe-row.tsx': ["'100%'", 'look.circle'],
@@ -146,6 +149,8 @@ const FIXED_HEIGHT_CLASSES: Record<string, readonly string[]> = {
     'screens/page-editor-toolbar.tsx': ['h-6'],
     // An upload's progress bar and its fill.
     'screens/attachments.tsx': ['h-1', 'h-1'],
+    // Media's usage bar and its fill (CB-558, the web's h-2).
+    'screens/media.tsx': ['h-2', 'h-2'],
     // An empty spacer between the transcript's rows.
     'screens/chat.tsx': ['h-4'],
 };

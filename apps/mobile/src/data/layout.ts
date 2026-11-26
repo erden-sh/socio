@@ -8,6 +8,7 @@ import { CACHE_DB, USER_DB } from './schema';
 //   <root>/socio/<id>/user.db         with their -wal and -shm files,
 //   <root>/socio/<id>/images/         the app's own image cache
 //   <root>/socio/<id>/attachments/    and picked attachments
+//   <root>/socio/<id>/files/          the files the Media file page opened
 //
 // `<root>` is the app's document directory, which the platform gives.
 // `<id>` is the hex SHA-256 of the workspace's full origin (scheme, host and
@@ -27,6 +28,8 @@ export const STORE_DIR = 'socio';
 export const REGISTRY_DB = 'registry.db';
 /** The app's own image cache in a workspace's directory: Clear cache deletes it. */
 export const IMAGES_DIR = 'images';
+/** The files the Media file page downloaded to open (CB-558): Clear cache deletes it. */
+export const FILES_DIR = 'files';
 /** Attachments picked and not sent yet (user.db's `files`): Clear cache keeps them. */
 export const ATTACHMENTS_DIR = 'attachments';
 
@@ -157,6 +160,7 @@ export interface WorkspaceLayout {
     readonly user: DbFile;
     readonly images: string;
     readonly attachments: string;
+    readonly files: string;
 }
 
 /** The paths of workspace `id` under `root`. */
@@ -172,6 +176,7 @@ export function workspaceLayout(root: string, id: string): WorkspaceLayout {
         user: { directory, name: USER_DB },
         images: joinPath(directory, IMAGES_DIR),
         attachments: joinPath(directory, ATTACHMENTS_DIR),
+        files: joinPath(directory, FILES_DIR),
     };
 }
 

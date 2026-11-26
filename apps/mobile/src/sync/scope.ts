@@ -41,6 +41,7 @@ import { createKeepOffline, type KeepOffline } from './keep-offline';
 import { type KeptSpaces, openKeptSpaces } from './kept-spaces';
 import { firstFrameSnapshots, MODULE_KINDS, MODULE_SNAPSHOTS } from './kinds';
 import { chatLanes, CONVERSATION_IDS, isLocalChat, isLocalIssue, ISSUE_IDS } from './local-ids';
+import { createMediaListings, type MediaListings } from './media-library';
 import { createLocalChats, type LocalChats } from './new-chat';
 import { createNoticeFeed, type NoticeFeed } from './notices';
 import { createNotificationSettings, type NotificationSettings } from './notification-settings';
@@ -333,6 +334,8 @@ export interface WorkspaceScope {
     readonly scheduleDetails: ScheduleDetails;
     /** Runs' traces, read only on a tap; the person's own kept offline (run-traces.ts, a bounded kind). */
     readonly runTraces: BoundedStore<RunTraceView>;
+    /** The Media library's folders, each one's first page kept offline (media-library.ts, a bounded kind; CB-558). */
+    readonly mediaListings: MediaListings;
     /** Each Space's page summaries and the page bodies (page-store.ts). */
     readonly pages: PagesStore;
     /** The Spaces kept offline (user.db's `prefs`). */
@@ -619,6 +622,8 @@ export async function openWorkspaceScope(options: WorkspaceScopeOptions): Promis
             },
         });
         opens.push(() => runTraces.close());
+        const mediaListings = createMediaListings({ db: cacheDb.db, fetch: authed, signal, onError, now });
+        opens.push(() => mediaListings.close());
         /** Set once the scheduler exists: each Space a screen shows gets its job. */
         let schedulerRef: SyncScheduler | null = null;
         const pages = createPagesStore({
@@ -1105,6 +1110,7 @@ export async function openWorkspaceScope(options: WorkspaceScopeOptions): Promis
                 () => issueComponentOptions.close(),
                 () => scheduleDetails.close(),
                 () => runTraces.close(),
+                () => mediaListings.close(),
                 () => roomViews.close(),
                 () => pages.close(),
                 () => cache.close(),
@@ -1148,6 +1154,7 @@ export async function openWorkspaceScope(options: WorkspaceScopeOptions): Promis
             issueComponentOptions,
             scheduleDetails,
             runTraces,
+            mediaListings,
             pages,
             keptSpaces,
             keepOffline,

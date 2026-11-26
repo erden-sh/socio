@@ -57,6 +57,7 @@ const TAB_PATHS = {
             initialRouteName: 'MoreRoot',
             screens: {
                 Approvals: { path: 'approvals' },
+                Media: { path: 'media' },
                 Approval: { path: 'approvals/:id' },
                 Settings: { path: 'settings' },
                 Notifications: { path: 'settings/notifications' },
@@ -234,11 +235,12 @@ describe('the route table as React Navigation reads it', () => {
             ['/schedules', 'Schedules'],
             ['/learning', 'Learning'],
             ['/runs', 'Runs'],
+            ['/media', 'Media'],
             ['/settings', 'Settings'],
         ] as const) {
             const state = getStateFromPath(path, pathConfig);
             // In its own tab's stack, over the tab's root.
-            const tab = page === 'Settings' ? 'More' : page === 'Spaces' ? 'Spaces' : 'Home';
+            const tab = page === 'Settings' || page === 'Media' ? 'More' : page === 'Spaces' ? 'Spaces' : 'Home';
             // The Spaces list is the Spaces tab's root (CB-459).
             expect(chain(state), path).toEqual(
                 page === 'Spaces' ? ['Tabs', 'Spaces', 'SpacesRoot'] : ['Tabs', tab, `${tab}Root+${page}`],

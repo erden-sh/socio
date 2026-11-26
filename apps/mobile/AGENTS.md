@@ -317,12 +317,13 @@ file system, secure storage, SHA-256 and random bytes:
   so nothing writes during the wipe. `resumeWipes` finishes only rows marked 'wiping'; a
   pending row is a sign-in being committed, and only launch wipes one. A new per-workspace secret a
   wipe must delete joins `WORKSPACE_KEYS`; one that must outlive it takes another name. Clear cache is
-  `clearCache()`: cache.db and `images/` only. Settings runs it on the open workspace through
+  `clearCache()`: cache.db, `images/` and `files/` only. Settings runs it on the open workspace through
   `clearWorkspaceCache` (`src/sync/clear-cache.ts`): the scope is held closed, the cache goes, and the
   scope opens again, the outbox's overlays back from user.db; `cacheSize` measures the same paths.
 - **Plain files keep their iOS protection class** (`workspace-files.ts`): `images/` is `complete`,
   `attachments/` the keys' unlock level (`completeUntilFirstUserAuthentication`), so the outbox can upload
-  while the phone is locked. Whatever writes in one calls `prepareImagesFolder` or
+  while the phone is locked, and `files/` (what the Media file page opened, CB-558) `complete`, made by
+  `prepareFilesFolder` before its first download. Whatever writes in one calls `prepareImagesFolder` or
   `prepareAttachmentsFolder` first (a folder's class is the one its new files get); every scope open does
   both too (`src/platform/active-scope.ts`), so Clear cache's reopen makes `images/` again with its class.
 
@@ -1636,7 +1637,8 @@ Picked files and their uploads are `src/sync/attachments.ts` on user.db's `files
   shown as `file://` with expo-image's `cachePolicy: 'memory'`; only PNG, JPEG, GIF and WebP answers
   are kept. A pending bubble shows its row's copies. Other files are chips (CB-413, the web's FileChip:
   the size from `GET /api/media/attachments/:id`, asked once per scope, "Removed" on a 404; a tap
-  downloads `…/content?download=1` through `useOpenLink`, so in the browser; `chat/attachment-info.ts`). A picture opens the
+  opens the file's page in Media by its attachment id, `MediaFile`, never a browser: CB-558, Shell
+  screens' Media; `chat/attachment-info.ts`). A picture opens the
   `AttachmentViewer` route (immersive, no path). Maestro's `attach-photo.yaml` picks a seeded photo and
   sends it.
 - **Issue files never upload to media:** a file picked into an issue's box (`issue:new`,
@@ -2023,6 +2025,39 @@ Account sheet is a root stack route over them:
   issue" opens FileIssue with `runId` (above). `tests/shell/runs.test.ts`,
   `tests/sync/run-traces.test.ts` and `tests/sync/scope.test.ts` (no `/trace` while Runs shows; a tap
   keeps only the person's own).
+- **Media** (CB-558; the web's modules/media) is the `Media` route at `/media` (`screens/media.tsx`,
+  view model `src/shell/media.ts`), from More (`MORE_ITEMS`) and Search, shown to everyone as the web
+  shows it (the module has no `access` rule), kept as the last screen: one folder of the person's own
+  files as `GET /api/media` answers it (`?folder=` as the web's address), its subfolders, then its
+  files newest first, in the web's Grid or List (`SegmentedControl`, the choice kept in `kv`,
+  `MEDIA_LAYOUT_KEY`), with its usage bar, its kind filter (a menu: five choices), search (the bar's
+  field on iOS, `SearchField` on Android; under the whole folder, 250 ms after typing stops) and "Load
+  more". A subfolder pushes the route again (`mediaFolderAction`), so Back is the breadcrumb and the
+  first line says the path (`mediaIntro`). A folder's first page per kind filter is the scope's
+  `mediaListings` (`src/sync/media-library.ts`, the `media-listing` bounded kind, 60 on disk, read as
+  the screen holds it and on pull to refresh, never polled), so it shows offline; a search and the
+  pages after the first are read online and never kept (`readMediaListing`). Pictures in the grid come
+  through the image cache (kind `media`, versioned by `updatedAt`).
+  **A file's page** is `MediaFile` (no path; `screens/media-file.tsx`, `mediaFileAction`, PUSH, never
+  kept as the last screen), opened by library item (`item`), by chat attachment (`attachment`: a file
+  chip in a chat or room) or by issue attachment (`issueFile`: an issue's non-picture files), with what
+  the caller knew of the file (`MediaFileHint`) so it draws at once. It reads the record online: an
+  item (`GET /api/media/items/:id`), or the attachment (`GET /api/media/attachments/:id`) and then
+  its library item when the library has one (`findAttachmentItem`: the library lists only the
+  reader's own files, so someone else's file in a room has none and shows from its attachment record;
+  its bytes stay the attachment's either way). The bytes come through the scope's authedFetch into the
+  workspace's `files/` (`src/sync/file-cache.ts`, bound in `src/platform/media-files.ts`: iOS
+  `complete`, `files/<key>.<stamp>/<name>` so other apps see the file's own name, a `.part` folder
+  renamed once whole, 300 MB with the oldest dropped first, nothing over 100 MB; Clear cache and every
+  wipe delete it), never through a browser. A picture shows in the page and opens the
+  `AttachmentViewer`; text shows its first 256 KB as the web does; anything else says so over Open,
+  the system's preview through socio-device's `previewFile` (Quick Look on iOS; on Android
+  `ACTION_VIEW` on the FileProvider URI expo-file-system's `getContentUriAsync` gives, `no-app` when
+  nothing takes the type). Share is expo-sharing's sheet and Save socio-device's `saveFile` (iOS's
+  export panel, Android's `ACTION_CREATE_DOCUMENT`: no storage permission), in place of the web's
+  Download. Upload into Media, move, rename, delete, new folders and folder access stay the web's
+  until their follow-up. `tests/shell/media.test.ts`, `tests/sync/media-library.test.ts` and
+  `tests/sync/file-cache.test.ts`.
 - **What needs attention, at the top of Chats** (CB-455: the Inbox tab until the owner dropped it;
   `src/shell/inbox.ts`, drawn by `screens/attention.tsx` in Chats' list header, nothing when it's empty)
   is built from what the scope holds, its parts in order (`sections`, an empty part left out): the

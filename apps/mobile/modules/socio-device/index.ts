@@ -12,11 +12,13 @@ export {
     isExcludedFromBackup,
     isProtectedDataAvailable,
     openAuthTab,
+    previewFile,
     processStartTime,
     reportFullyDrawn,
+    saveFile,
     setFileProtection,
     toFilePath,
     wasPrewarmed,
 } from './src/device';
-export type { AppBuild, AuthTabResult, FileProtection } from './src/native';
+export type { AppBuild, AuthTabResult, FilePreviewResult, FileProtection, FileSaveResult } from './src/native';
 export { whenProtectedDataAvailable } from './src/protected-data';

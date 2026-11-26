@@ -308,7 +308,8 @@ export class CacheKeyMissingError extends Error {
 
 /**
  * Clear cache: closes cache.db, deletes it with its `-wal` and `-shm`,
- * deletes the app's image cache (`images/`), and builds an empty cache.db
+ * deletes the app's image cache (`images/`) and the files the Media file page
+ * opened (`files/`), and builds an empty cache.db
  * again with the same key, which it resolves for the caller to use. user.db,
  * picked attachments, the keys and the registry (where the session, lease and
  * lock state live) are untouched. Throws CacheKeyMissingError when the key is
@@ -326,5 +327,6 @@ export async function clearCache(store: Store, id: string): Promise<CacheDb> {
         await store.driver.delete(layout.cache);
     }
     await store.fs.remove(layout.images);
+    await store.fs.remove(layout.files);
     return openCacheDb(store.driver, layout.directory, key);
 }

@@ -118,6 +118,22 @@ public final class SocioDeviceModule: Module {
       false
     }
 
+    // A downloaded file shown in Quick Look, or saved where the person picks (CB-558,
+    // FileHandOff.swift). Android's content URI is unused here.
+    AsyncFunction("previewFile") { (path: String, _: String, _: String, _: String?, promise: Promise) in
+      let url = try existingItem(path)
+      let presenter = self.appContext?.utilities?.currentViewController()
+      MainActor.assumeIsolated { FileHandOff.shared.preview(url, from: presenter, promise: promise) }
+    }
+    .runOnQueue(.main)
+
+    AsyncFunction("saveFile") { (path: String, _: String, _: String, promise: Promise) in
+      let url = try existingItem(path)
+      let presenter = self.appContext?.utilities?.currentViewController()
+      MainActor.assumeIsolated { FileHandOff.shared.save(url, from: presenter, promise: promise) }
+    }
+    .runOnQueue(.main)
+
     // Sign-out: nothing a WebView kept stays. The page editor runs
     // incognito (a non-persistent data store), so this is the second lock:
     // every kind of website data in the default store (cookies, storage,

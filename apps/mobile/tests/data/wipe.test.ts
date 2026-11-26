@@ -718,13 +718,16 @@ describe('resumeWipes', () => {
 });
 
 describe('clearCache', () => {
-    it('rebuilds cache.db and drops the images, keeping user.db byte-identical, attachments, keys and registry', async () => {
+    it('rebuilds cache.db and drops the images and the opened files, keeping user.db byte-identical, attachments, keys and registry', async () => {
         const { store, driver } = await launch(device);
         const ada = await addWorkspace(store, 'https://acme.example.test', 'u-ada', { plant: true });
         await store.registry.setActive(ada.id);
         // Close the workspace's files, which checkpoints user.db's write-ahead log into the main file.
         await store.driver.closeAll(dir(ada.id));
         const layout = workspaceLayout(device.root, ada.id);
+        // A file the Media file page opened (CB-558): part of the cache.
+        mkdirSync(join(layout.files, 'att-1.abc'), { recursive: true });
+        writeFileSync(join(layout.files, 'att-1.abc', 'plan.pdf'), 'made up');
         const userBefore = readFileSync(join(dir(ada.id), USER_DB));
         const rowBefore = await store.registry.get(ada.id);
         const keychainBefore = new Map(device.keychain);

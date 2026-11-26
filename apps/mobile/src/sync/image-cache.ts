@@ -1,4 +1,4 @@
-import { attachmentContentUrl } from '@socio/shared/media-types';
+import { attachmentContentUrl, mediaContentUrl } from '@socio/shared/media-types';
 import { coverUrl } from '@socio/shared/pages/page-library';
 
 import { joinPath } from '../data';
@@ -51,13 +51,20 @@ export interface ImageCacheOptions {
 
 /**
  * What a picture is: an attachment (a chat's, by `cbatt_` id), a media embed
- * (a page's cover, `/api/media/embeds/<id>/content`), or an issue's
- * attachment (`/api/issue-attachments/<id>`). Each is immutable by
- * id, so version 0, and each kind has its own path on the workspace.
+ * (a page's cover, `/api/media/embeds/<id>/content`), an issue's
+ * attachment (`/api/issue-attachments/<id>`), or a file of the person's Media
+ * library (`/api/media/items/<id>/content`, CB-558). The first three are
+ * immutable by id, so version 0; a library file can be replaced under its id,
+ * so its version is its `updatedAt`. Each kind has its own path on the workspace.
  */
-export type ImageKind = 'attachment' | 'embed' | 'issue';
+export type ImageKind = 'attachment' | 'embed' | 'issue' | 'media';
 
-const KEY_PREFIX: Readonly<Record<ImageKind, string>> = { attachment: '', embed: 'embed-', issue: 'issue-' };
+const KEY_PREFIX: Readonly<Record<ImageKind, string>> = {
+    attachment: '',
+    embed: 'embed-',
+    issue: 'issue-',
+    media: 'media-',
+};
 
 /** What a picture's load came to: its file, gone from the server, or not now (offline, refused). */
 export type ImageLoad =
@@ -83,7 +90,8 @@ interface Entry {
 
 /**
  * A key safe as a file name: the attachment ids are `cbatt_` base64url, the rest is dropped. An
- * embed's key starts `embed-` and an issue file's `issue-`, so neither meets an attachment's.
+ * embed's key starts `embed-`, an issue file's `issue-` and a library file's `media-`, so none meets
+ * an attachment's.
  */
 const keyOf = (id: string, version: number, kind: ImageKind = 'attachment') =>
     `${KEY_PREFIX[kind]}${id.replace(/[^A-Za-z0-9_-]/g, '')}.${Math.max(0, Math.floor(version))}`;
@@ -94,7 +102,9 @@ const urlOf = (id: string, kind: ImageKind) =>
         ? coverUrl(encodeURIComponent(id))
         : kind === 'issue'
           ? `/api/issue-attachments/${encodeURIComponent(id)}`
-          : attachmentContentUrl(id);
+          : kind === 'media'
+            ? mediaContentUrl(id)
+            : attachmentContentUrl(id);
 
 /** `<key>.<stamp>`: the stamp (base 36) orders the eviction across launches. */
 const NAME = /^([A-Za-z0-9_-]+\.\d+)\.([0-9a-z]+)$/;
