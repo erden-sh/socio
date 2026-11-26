@@ -5,6 +5,7 @@ import android.content.Context
 import android.os.SystemClock
 import android.util.Log
 import android.util.Size
+import android.view.View
 import android.view.ViewGroup
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
@@ -60,6 +61,18 @@ class SocioScannerView(context: Context, appContext: AppContext) : ExpoView(cont
 
   init {
     addView(previewView, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+    // PreviewView adds its TextureView once the camera asks for a surface, and asks for a layout that
+    // React Native never runs, so the preview stayed black: lay it out here as the child comes.
+    previewView.setOnHierarchyChangeListener(object : OnHierarchyChangeListener {
+      override fun onChildViewRemoved(parent: View?, child: View?) = Unit
+      override fun onChildViewAdded(parent: View?, child: View?) {
+        parent?.measure(
+          MeasureSpec.makeMeasureSpec(measuredWidth, MeasureSpec.EXACTLY),
+          MeasureSpec.makeMeasureSpec(measuredHeight, MeasureSpec.EXACTLY)
+        )
+        parent?.layout(0, 0, parent.measuredWidth, parent.measuredHeight)
+      }
+    })
   }
 
   // React Native lays this view out but not the PreviewView inside it, so measure and place it here.
