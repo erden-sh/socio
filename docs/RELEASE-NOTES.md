@@ -29,6 +29,15 @@ How this file is kept (scripts/release.mjs and the app's build read it):
 
 ## Unreleased
 
+## v0.55.0 (2026-11-26)
+
+A Space's library now opens at its top level, so you open a page to see the pages inside it, with All pages still one click away. Deployments can also enroll with Socio's cloud services; nothing uses the connection yet.
+
+- Browse a Space's pages by level (CB-426)
+- A deployment can enroll with Socio's cloud services (CB-559)
+- Closing an issue report you have edited asks first (CB-495)
+- Search in a Space's library says it's sorted by relevance (CB-497)
+
 ### New
 
 - **Browse a Space's pages by level (CB-426).** The library opens at a Space's top level instead of listing every page at once. A page with pages inside shows how many, and opening it shows what's inside, with a trail back up and **Open page** for the page itself. **New page** creates the page inside the level you're in. **All pages**, in the new **Browse pages** menu, keeps the full list with each page's path, and search still covers the whole Space and now shows each result's path.
