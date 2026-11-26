@@ -9,6 +9,8 @@ import type { Space } from '@socio/shared/types';
 
 import { SpaceLibrary } from '../src/modules/spaces/SpaceLibrary';
 
+Element.prototype.scrollIntoView ??= () => {};
+
 // The Space library's search box asks the server.
 declare global {
     var IS_REACT_ACT_ENVIRONMENT: boolean;
@@ -82,18 +84,23 @@ async function type(input: HTMLInputElement, value: string) {
     });
 }
 
+function page(id: string, title: string, excerpt: string, updatedAt = 1): PageSummary {
+    return {
+        id,
+        spaceId: 'space',
+        parentId: null,
+        title,
+        excerpt,
+        revision: 1,
+        createdAt: 1,
+        updatedAt,
+        sourceThreadId: null,
+        createdBy: null,
+        cover: null,
+    };
+}
+
 it('searches the Space on the server and marks the matched words', async () => {
-    const page = (id: string, title: string, content: string) =>
-        ({
-            id,
-            spaceId: 'space',
-            parentId: null,
-            title,
-            excerpt: content,
-            revision: 1,
-            createdAt: 1,
-            updatedAt: 1,
-        }) as unknown as PageSummary;
     const opened: string[] = [];
     act(() =>
         root.render(
@@ -133,4 +140,60 @@ it('searches the Space on the server and marks the matched words', async () => {
     act(() => host.querySelector<HTMLElement>('[data-slot="library-correction"] button')!.click());
     await until(() => calls.some((call) => call.url.searchParams.get('exact') === 'true'), 'the exact search');
     await until(() => host.textContent!.includes('No matching pages'), 'nothing found');
+});
+
+it('shows relevance during a search and restores the chosen library sort when cleared', async () => {
+    const alpha = page('alpha', 'Alpha notes', 'Invoice details.');
+    const zulu = page('zulu', 'Zulu notes', 'Invoice status and invoice totals.', 2);
+    const response: PageSearchResult = {
+        query: 'invoice',
+        corrected: null,
+        more: false,
+        results: [zulu, alpha].map(({ id, spaceId, title, updatedAt }) => ({
+            id,
+            spaceId,
+            title,
+            updatedAt,
+            matched: 'word',
+            snippet: [{ text: 'Invoice', match: true }],
+            freshness: { basis: 'edited', at: updatedAt },
+        })),
+    };
+    vi.stubGlobal('fetch', async (input: string) => {
+        const url = new URL(input, 'http://app.test');
+        if (url.pathname !== '/api/spaces/search' || url.searchParams.get('q') !== 'invoice') {
+            return new Response(null, { status: 404 });
+        }
+        return Response.json(response);
+    });
+    act(() =>
+        root.render(
+            <SpaceLibrary
+                space={{ id: 'space', name: 'Team' } as Space}
+                pages={[alpha, zulu]}
+                onPage={() => {}}
+                onNew={() => {}}
+                onDeleted={() => {}}
+            />,
+        ),
+    );
+    const sort = () => host.querySelector('[role="combobox"][aria-label="Sort pages"]');
+    const titles = () => [...host.querySelectorAll('[data-slot="library-page-card"] h3')].map((el) => el.textContent);
+    act(() =>
+        sort()!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true })),
+    );
+    const byName = [...document.querySelectorAll('[role="option"]')].find((el) => el.textContent === 'Name A–Z');
+    act(() => byName!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true })));
+    expect(titles()).toEqual(['Alpha notes', 'Zulu notes']);
+
+    const input = host.querySelector<HTMLInputElement>('[aria-label="Search pages"]')!;
+    await type(input, 'invoice');
+    await until(() => titles().length === 2, 'both search hits');
+    expect(titles()).toEqual(['Zulu notes', 'Alpha notes']);
+    expect(host.textContent).toContain('Sorted by relevance');
+    expect(sort()).toBeNull();
+
+    await type(input, '');
+    expect(sort()?.textContent).toBe('Name A–Z');
+    expect(titles()).toEqual(['Alpha notes', 'Zulu notes']);
 });
