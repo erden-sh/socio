@@ -19,6 +19,19 @@ describe('the AG-UI install', () => {
         expect(snapshots.map((match) => match[1])).toEqual(['', '']);
     });
 
+    // The server build keeps @a2ui/web_core external only because Socio names
+    // it (vite.config.ts); at another version than CopilotKit's, the server
+    // would load Socio's copy in place of CopilotKit's.
+    it("names CopilotKit's @a2ui/web_core version, the only one installed", () => {
+        const pinned = JSON.parse(readFileSync(join(import.meta.dirname, '..', 'package.json'), 'utf8')).dependencies[
+            '@a2ui/web_core'
+        ] as string;
+        const used = new Set([...lockfile.matchAll(/^ {6}'@a2ui\/web_core': (\S+)$/gm)].map((match) => match[1]));
+        const installed = [...lockfile.matchAll(/^ {2}'@a2ui\/web_core@([^']+)':$/gm)].map((match) => match[1]);
+        expect(used).toEqual(new Set([pinned]));
+        expect(installed).toEqual([pinned, pinned]);
+    });
+
     it('keeps no pnpmfileChecksum, which the --ignore-pnpmfile install in CI refuses', () => {
         expect(lockfile).not.toMatch(/^pnpmfileChecksum:/m);
     });

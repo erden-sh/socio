@@ -65,6 +65,7 @@
     },
     "type": "module",
     "dependencies": {
+        "@a2ui/web_core": "0.15.0",
         "@ag-ui/client": "1.0.5",
         "@ag-ui/core": "1.0.5",
         "@better-auth/oauth-provider": "1.7.28",
