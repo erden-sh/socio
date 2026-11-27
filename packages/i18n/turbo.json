@@ -3,24 +3,13 @@
     "extends": ["//"],
     "tasks": {
         "typecheck": {
-            "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/packages/shared/src/**"],
+            "description": "tsc, and the dictionaries' checks (scripts/i18n-build.mjs --check: the files, and that the typed keys in src/resources.gen.ts are current).",
+            "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/packages/shared/src/**", "$TURBO_ROOT$/scripts/i18n-build.mjs"],
             "outputs": []
         },
         "lint": {
-            "description": "oxlint, and the dictionaries' checks (scripts/i18n-build.mjs --check), which read shared's locale.ts.",
-            "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/scripts/i18n-build.mjs", "$TURBO_ROOT$/packages/shared/src/**"],
+            "inputs": ["$TURBO_DEFAULT$"],
             "outputs": []
-        },
-        "build": {
-            "description": "dist/i18n: the dictionaries and their manifest (scripts/i18n-build.mjs).",
-            "inputs": [
-                "$TURBO_DEFAULT$",
-                "!tests/**",
-                "$TURBO_ROOT$/scripts/i18n-build.mjs",
-                "$TURBO_ROOT$/packages/shared/src/**",
-                "$TURBO_ROOT$/package.json"
-            ],
-            "outputs": ["$TURBO_ROOT$/dist/i18n/**"]
         }
     }
 }

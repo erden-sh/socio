@@ -15,6 +15,9 @@
 // coding-egress). Third-party imports walk on up to /app/node_modules, which is
 // the root manifest's install: a package's dependencies stay in the root's too
 // (scripts/check-package-boundary.mjs). packages/shared/README.md has the design.
+//
+// Then the dictionaries: scripts/i18n-build.mjs checks @socio/i18n's locales
+// and writes dist/i18n, which the server serves (docs/I18N.md).
 import { execFileSync } from 'node:child_process';
 import { cpSync, mkdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
@@ -36,3 +39,5 @@ for (const { name, dir, build } of builtPackages(root)) {
     cpSync(join(pkg, 'package.json'), join(shipped, 'package.json'));
     cpSync(join(pkg, 'dist'), join(shipped, 'dist'), { recursive: true, filter: (file) => !file.endsWith('.d.ts') });
 }
+
+execFileSync(process.execPath, ['--import', 'tsx', 'scripts/i18n-build.mjs'], { cwd: root, stdio: 'inherit' });

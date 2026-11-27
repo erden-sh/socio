@@ -11,7 +11,7 @@
     "scripts": {
         "deps": "node scripts/deps.mjs",
         "dev": "cross-env NODE_ENV=development node --env-file-if-exists=.env --import tsx --watch-path=src/server --watch-path=packages/shared/src --watch-path=packages/foundation/src --watch-path=packages/data/src --watch-path=src/apps-runtime src/server/index.ts",
-        "build": "node scripts/check-docs-boundary.mjs && node --import tsx scripts/i18n-build.mjs && react-router build && node scripts/check-ssr-deps.mjs && node scripts/precompress.mjs && node scripts/build-packages.mjs && tsc -p tsconfig.server.json && node scripts/build-planner-ui.mjs && node scripts/release-data.mjs && node scripts/released-migrations.mjs",
+        "build": "node scripts/check-docs-boundary.mjs && react-router build && node scripts/check-ssr-deps.mjs && node scripts/precompress.mjs && node scripts/build-packages.mjs && tsc -p tsconfig.server.json && node scripts/build-planner-ui.mjs && node scripts/release-data.mjs && node scripts/released-migrations.mjs",
         "build:cached": "node scripts/turbo.mjs build",
         "build:pages": "node scripts/check-docs-boundary.mjs && react-router build && node scripts/check-ssr-deps.mjs && node scripts/precompress.mjs && node scripts/build-planner-ui.mjs",
         "build:packages": "node scripts/build-packages.mjs",

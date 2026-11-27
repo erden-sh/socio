@@ -5,9 +5,8 @@
     "type": "module",
     "description": "Socio's translations: the i18next setup shared by the server and the clients, locale negotiation, formatters, the dictionaries' manifest and the en-US source strings.",
     "scripts": {
-        "typecheck": "pnpm -w exec tsc -p packages/i18n/tsconfig.json --noEmit",
-        "lint": "pnpm -w exec oxlint packages/i18n && pnpm -w run --silent check:i18n",
-        "build": "pnpm -w run --silent build:i18n"
+        "typecheck": "pnpm -w exec tsc -p packages/i18n/tsconfig.json --noEmit && pnpm -w run --silent check:i18n",
+        "lint": "pnpm -w exec oxlint packages/i18n"
     },
     "exports": {
         ".": {

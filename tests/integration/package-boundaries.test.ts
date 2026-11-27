@@ -244,7 +244,7 @@ describe('a planted violation', () => {
             // It declares it, so this check has nothing to say; the layers do.
             expect(packageBoundaryProblems(join(dir, 'packages/foundation'))).toEqual([]);
             expect(packageGraphProblems(dir)).toEqual([
-                '@socio/foundation: @socio/data (not in a lower layer: @socio/shared < @socio/foundation < @socio/data)',
+                '@socio/foundation: @socio/data (not in a lower layer: @socio/shared < @socio/i18n < @socio/foundation < @socio/data)',
             ]);
             expect(workspaceProblems(dir)).toEqual(packageGraphProblems(dir));
         });

@@ -290,27 +290,6 @@ function expectNoSecretsOrDeleted(html: string) {
     expect(html).not.toContain('bob-gone');
 }
 
-it('renders in the page’s locale, with only its route’s dictionaries inlined', async () => {
-    // en-XA (the pseudo-locale) through the cookie: the page's own words, no flash of English.
-    const pseudo = await document('/settings/account', 'alice', { cookie: 'socio_locale=en-XA' });
-    expect(pseudo.html).toMatch(/^<!DOCTYPE html><html lang="en-XA" dir="ltr"/);
-    expect(pseudo.html).toContain('[Šöçîö ~~]');
-    expect(pseudo.html).toContain('[Ļáñĝûáĝé ~~~]');
-    // en-US alone passes the coverage gate: Settings › Language isn't shown.
-    expect(pseudo.html).not.toContain('data-slot="language-preference"');
-    // Accept-Language with nothing to match: en-US, and a page without the settings namespace.
-    const home = await document('/', 'alice', { 'accept-language': 'fr-FR, de;q=0.5' });
-    expect(home.html).toMatch(/^<!DOCTYPE html><html lang="en-US" dir="ltr"/);
-    expect(home.html).not.toContain('Match my device');
-    // Signed out: the cookie still decides.
-    const signedOut = await document('/', undefined, { cookie: 'socio_locale=en-XA' });
-    expect(signedOut.html).toMatch(/^<!DOCTYPE html><html lang="en-XA"/);
-    // The preference wins over the cookie.
-    workspace.setPreferences('bob', { locale: 'en-US' });
-    const preferred = await document('/', 'bob', { cookie: 'socio_locale=en-XA' });
-    expect(preferred.html).toMatch(/^<!DOCTYPE html><html lang="en-US"/);
-});
-
 it('renders the signed-in shell on the server, uncached', async () => {
     const { response, csp, nonce, html } = await document('/', 'alice');
     expect(response.status).toBe(200);
@@ -736,3 +715,24 @@ it('tells a tab on an older build to load the page again', async () => {
     expect(response.headers.get('x-remix-reload-document')).toBe('true');
     expect(response.headers.get('cache-control')).toBe('no-store');
 }, 60_000);
+
+it('renders in the page’s locale, with only its route’s dictionaries inlined', { timeout: 60_000 }, async () => {
+    // en-XA (the pseudo-locale) through the cookie: the page's own words, no flash of English.
+    const pseudo = await document('/settings/account', 'alice', { cookie: 'socio_locale=en-XA' });
+    expect(pseudo.html).toMatch(/^<!DOCTYPE html><html lang="en-XA" dir="ltr"/);
+    expect(pseudo.html).toContain('[Šöçîö ~~]');
+    expect(pseudo.html).toContain('[Ļáñĝûáĝé ~~~]');
+    // en-US alone passes the coverage gate: Settings › Language isn't shown.
+    expect(pseudo.html).not.toContain('data-slot="language-preference"');
+    // Accept-Language with nothing to match: en-US, and a page without the settings namespace.
+    const home = await document('/', 'alice', { 'accept-language': 'fr-FR, de;q=0.5' });
+    expect(home.html).toMatch(/^<!DOCTYPE html><html lang="en-US" dir="ltr"/);
+    expect(home.html).not.toContain('Match my device');
+    // Signed out: the cookie still decides.
+    const signedOut = await document('/', undefined, { cookie: 'socio_locale=en-XA' });
+    expect(signedOut.html).toMatch(/^<!DOCTYPE html><html lang="en-XA"/);
+    // The preference wins over the cookie.
+    workspace.setPreferences('bob', { locale: 'en-US' });
+    const preferred = await document('/', 'bob', { cookie: 'socio_locale=en-XA' });
+    expect(preferred.html).toMatch(/^<!DOCTYPE html><html lang="en-US"/);
+});

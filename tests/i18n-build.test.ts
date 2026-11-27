@@ -40,6 +40,10 @@ const build = (dir: string, ...flags: string[]) =>
             join(dir, 'out'),
             '--routes',
             join(dir, 'routes.json'),
+            // Typed keys of the scratch locales, not the repository's.
+            '--types',
+            join(dir, 'resources.gen.ts'),
+            '--write-types',
             ...flags,
         ],
         { cwd: root, encoding: 'utf8' },
