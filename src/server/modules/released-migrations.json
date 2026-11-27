@@ -1,5 +1,5 @@
 {
-    "release": "v0.56.0",
+    "release": "v0.57.0",
     "checksums": {
         "actors 1": "9fc7cb2d0be2e471",
         "agent-grants 1": "a35fe99c70199332",
@@ -34,6 +34,7 @@
         "auth 14": "0c9e7f05b05b51ee",
         "auth 15": "ed54994867c144e1",
         "auth 16": "9923e502c2815c78",
+        "auth 17": "f2683b692ea280aa",
         "bundle 1": "aec758088207fcc7",
         "bundle 2": "2f9376eca801f6a6",
         "change-counters 1": "2f4f263d026b4cd8",
@@ -151,6 +152,7 @@
         "pages 12": "087fb8de1ea81aa5",
         "pages 13": "67baaca76710c98c",
         "pages 14": "73f9b6fe07acd9e2",
+        "pages 15": "0dcaf0a435986894",
         "plugins 1": "23000b2431102840",
         "plugins 2": "e9e007aaa6ceffb9",
         "plugins 3": "6997c16a695293cc",
