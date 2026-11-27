@@ -24,7 +24,7 @@ const AUTHORIZATION =
 const URL_CREDENTIALS = /(?<![a-z0-9+.-])([a-z][a-z0-9+.-]{0,30}:\/\/)[^\s/@:]{1,256}:[^\s/@]{1,256}@/gi;
 /** The names a credential goes by, as a key: `password`, `apiKey`, `client_secret`, `refresh-token`… */
 const CREDENTIAL_KEYS =
-    'api[_-]?key|access[_-]?token|refresh[_-]?token|auth[_-]?token|id[_-]?token|session[_-]?token|token|client[_-]?secret|secret[_-]?key|secret|password|passwd|passphrase|private[_-]?key';
+    'api[_-]?key|access[_-]?token|refresh[_-]?token|auth[_-]?token|id[_-]?token|session[_-]?token|token|client[_-]?secret|secret[_-]?access[_-]?key|secret[_-]?key|secret|password|passwd|passphrase|private[_-]?key';
 /**
  * The last word of a camelCase or PascalCase credential key, capitalized:
  * `userPassword`, `githubToken`, `stripeSecretKey`, `awsSecretAccessKey`,
