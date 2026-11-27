@@ -7,11 +7,11 @@ import { DatabaseSync } from 'node:sqlite';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { migrateDatabase } from '@socio/data/migrate';
-import { INSTALL_HEADER, LINK_STAGING_HOST, parseAppLink } from '@socio/shared/device-sign-in';
+import { INSTALL_HEADER, LINK_STAGING_HOST, PAIR_CLAIM_MS, parseAppLink } from '@socio/shared/device-sign-in';
 
 import { BetterAuthProvider } from '../src/server/auth/better-auth.js';
 import type { DeviceSignInEvent } from '../src/server/auth/contract.js';
-import { CLAIM_POLL_MS } from '../src/server/auth/device-sign-in.js';
+import { CLAIM_MS, CLAIM_POLL_MS } from '../src/server/auth/device-sign-in.js';
 import { authFromEnv } from '../src/server/composition/auth.js';
 import { schemas } from '../src/server/modules/index.js';
 
@@ -216,6 +216,10 @@ const deviceSessions = (b: Brain) =>
     b.db.prepare('SELECT count(*) AS n FROM auth_session WHERE deviceId IS NOT NULL').get() as { n: number };
 
 describe('Add a device', () => {
+    it('gives the web the claim’s real lifetime for its countdown (CB-567)', () => {
+        expect(PAIR_CLAIM_MS).toBe(CLAIM_MS);
+    });
+
     it('signs the new device in once the web types the digits it shows, as that web session’s person and method', async () => {
         const b = await brain();
         const ada = await b.account('ada@example.com', 'Ada');

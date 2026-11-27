@@ -293,6 +293,12 @@ export const pairClaimAnswerSchema = z.object({
 });
 export type PairClaimAnswer = z.infer<typeof pairClaimAnswerSchema>;
 
+/**
+ * How long a claim lives from its `claimedAt` (the server's CLAIM_MS, which a
+ * test holds equal): the web's countdown while it waits for the digits.
+ */
+export const PAIR_CLAIM_MS = 2 * 60_000;
+
 /** `unclaimed`: the QR code waits for a device; `waiting`: claimed, the web hasn't typed the digits. */
 export const PAIR_STATES = ['unclaimed', 'waiting', 'allowed', 'denied', 'expired', 'signed_in'] as const;
 export type PairState = (typeof PAIR_STATES)[number];
