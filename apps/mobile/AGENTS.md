@@ -587,7 +587,7 @@ Signing in is `src/net/sign-in.ts` and `sign-in-copy.ts`, then
 - **Google and Apple (CB-570):** the phone's own sign-in, link-only (the owner, 2026-11-26: no sign-up,
   no email matching; Google signs in only an account that linked Google before, Apple likewise). SignIn
   shows the buttons `socialWays` (`src/net/social-sign-in.ts`) gives: what the manifest's `methods.social`
-  offers that this build can carry out (`SOCIAL_BUILD`, `src/platform/social-sign-in.ts`), Apple first,
+  offers that this build can carry out (`SOCIAL_BUILD`, `src/platform/social-sign-in.ts`; in a development build a typed test account stands in for both, `socialBuildWith`), Apple first,
   then "or" over the other ways; none without a manifest. Apple is iOS only, in a build with the
   entitlement (`extra.appleSignIn`: production and preview, never development or a Personal Team build),
   drawn with Apple's own button (`screens/social-buttons.tsx`); Google is Credential Manager on Android

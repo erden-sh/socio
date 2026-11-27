@@ -216,6 +216,7 @@ export function SignInScreen({ route }: StaticScreenProps<SignInParams>) {
     const channel = ways.includes('code') ? codeChannel(manifest) : null;
     const [socialBusy, setSocialBusy] = useState<SocialProvider | null>(null);
     const [testAccount, setTestAccount] = useState('');
+    const [shownBySocial, setShownBySocial] = useState(false);
     const social = socialWays(manifest, socialBuildWith(testAccountOf(testAccount)));
     const footer = signInFooter(methods, password);
     const [email, setEmail] = useState('');
@@ -258,6 +259,7 @@ export function SignInScreen({ route }: StaticScreenProps<SignInParams>) {
         controller.current = own;
         setBusy(true);
         setShown(null);
+        setShownBySocial(false);
         let next: Shown | null;
         try {
             next = await settle(await signIn({ origin, email, password: secret, logo, manifest, signal: own.signal }));
@@ -281,6 +283,7 @@ export function SignInScreen({ route }: StaticScreenProps<SignInParams>) {
         }
         setBusy(true);
         setShown(null);
+        setShownBySocial(false);
         let start: SheetStart;
         try {
             start = await sheetSignIns.start({ origin, name, logo, manifest });
@@ -305,6 +308,7 @@ export function SignInScreen({ route }: StaticScreenProps<SignInParams>) {
         setBusy(true);
         setSocialBusy(provider);
         setShown(null);
+        setShownBySocial(true);
         let next: Shown | null;
         try {
             next = await socialShown(
@@ -333,6 +337,26 @@ export function SignInScreen({ route }: StaticScreenProps<SignInParams>) {
         setShown(next !== null && next.line === '' ? null : next);
     };
 
+    // A Google or Apple refusal shows under its buttons, the other ways' with the form.
+    const problemView = (
+        <>
+            {shown === null ? null : (
+                <Banner
+                    tone="error"
+                    testID="sign-in-problem"
+                    action={shown.openWeb ? { label: 'Open in browser', onPress: openWeb } : undefined}
+                >
+                    {shown.line}
+                </Banner>
+            )}
+            {shown?.detail == null ? null : (
+                <Text variant="footnote" tone="muted" className="self-stretch" testID="sign-in-detail">
+                    {shown.detail}
+                </Text>
+            )}
+        </>
+    );
+
     return (
         <Screen testID="sign-in-screen" centered edges={['right', 'bottom', 'left']}>
             <View className="items-center gap-2" testID="sign-in-welcome">
@@ -353,6 +377,7 @@ export function SignInScreen({ route }: StaticScreenProps<SignInParams>) {
                 disabled={busy}
                 onPress={(provider) => void continueWithSocial(provider)}
             />
+            {shownBySocial ? problemView : null}
             {TEST_ACCOUNTS && showsTestAccount(manifest) ? (
                 // Development builds only: a made-up account stands in for Google and Apple (e2e/fake-cloud.mjs).
                 <Field
@@ -440,20 +465,7 @@ export function SignInScreen({ route }: StaticScreenProps<SignInParams>) {
                     {NO_WAY_IN}
                 </Banner>
             ) : null}
-            {shown === null ? null : (
-                <Banner
-                    tone="error"
-                    testID="sign-in-problem"
-                    action={shown.openWeb ? { label: 'Open in browser', onPress: openWeb } : undefined}
-                >
-                    {shown.line}
-                </Banner>
-            )}
-            {shown?.detail == null ? null : (
-                <Text variant="footnote" tone="muted" className="self-stretch" testID="sign-in-detail">
-                    {shown.detail}
-                </Text>
-            )}
+            {shownBySocial ? null : problemView}
             {password ? (
                 <Button
                     label="Sign in"

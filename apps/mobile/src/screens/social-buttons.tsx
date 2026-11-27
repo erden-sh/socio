@@ -81,13 +81,14 @@ function AppleButton({ onPress, busy, disabled }: { onPress: () => void; busy: b
     const inactive = busy || disabled;
     return (
         <View
+            // The testID is the wrapper's: Apple's native button keeps its own identifier.
+            testID="sign-in-apple"
             className="self-stretch"
             style={{ opacity: inactive && !busy ? 0.5 : 1 }}
             pointerEvents={inactive ? 'none' : 'auto'}
             accessibilityState={{ disabled: inactive, busy }}
         >
             <AppleAuthentication.AppleAuthenticationButton
-                testID="sign-in-apple"
                 buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
                 buttonStyle={
                     scheme === 'dark'

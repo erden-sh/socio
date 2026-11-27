@@ -200,12 +200,15 @@ from T3 Code are in `vendor/t3code/plugins/` (`vendor/t3code/SYNC.md`).
   iOS builds have no Google; unset, the iOS Google button doesn't show. `ios/.xcode.env` keeps the
   variant's variable for the config Xcode embeds (a generated file, never committed); Android needs
   neither (Credential Manager takes the server's client id from the server), so Gradle records nothing.
-  The preview and release builders pass it to prebuild without printing it, sourcing the file that
-  holds it:
+  The preview and release builders pass it to prebuild without printing it. On the build box the ids
+  sit in a mode-600 file under their own names (`GOOGLE_IOS_CLIENT_ID`, `GOOGLE_IOS_PREVIEW_CLIENT_ID`),
+  so a builder sources it and hands the variant's id on under the name prebuild reads:
 
     ```sh
-    set -a; . ~/.config/socio-google/ids.env; set +a   # mode 600; never echo it
-    APP_VARIANT=preview EXPO_NO_TELEMETRY=1 npx expo prebuild --clean -p ios
+    set -a; . ~/.config/socio-google/ids.env; set +a   # never echo it
+    SOCIO_GOOGLE_IOS_PREVIEW_CLIENT_ID="$GOOGLE_IOS_PREVIEW_CLIENT_ID" \
+      APP_VARIANT=preview EXPO_NO_TELEMETRY=1 npx expo prebuild --clean -p ios
+    # production: SOCIO_GOOGLE_IOS_CLIENT_ID="$GOOGLE_IOS_CLIENT_ID" ... APP_VARIANT=production
     ```
 
     Sign in with Apple's entitlement (`com.apple.developer.applesignin`) is in production and preview
@@ -562,10 +565,19 @@ refusals (`invalid_token`, `nonce_invalid`, `too_many`, `provider_unavailable`),
 linked gets `not_linked`, and `cy-test` is linked to Cy, who is deactivated (`deactivated`). `POST
 /web/social?google=off` (or `apple=`, `on` again) has Opal turn a provider off in the access policy
 (`method_off`). Link `ada-test` in Settings as Ada first, sign out, then Continue with Google with the
-same account. Nothing reaches Google, Apple or the real cloud.
+same account. Nothing reaches Google, Apple or the real cloud. With the test account empty an iOS
+development build shows neither button (no client id, no entitlement); Android keeps Google.
+
+`flows/social-sign-in.yaml` runs that whole path on a development build (`--env PROVIDER=google`): the
+buttons, `not_linked`, `provider_unavailable` and `deactivated` in the app's words, Ada's link in
+Settings, a fresh install signing in as `ada-test`, then Unlink (after its question), which locks the
+copy as Ended. It unlinks a link an earlier run left first, so it runs again against the same servers.
+Maestro's element taps don't reach Apple's native button (an `ASAuthorizationAppleIDButton`): only a
+tap at its point does, so the flow takes Google on both platforms.
 
 ```sh
 node apps/mobile/e2e/servers.mjs --social --device emulator-5554
+node apps/mobile/e2e/run.mjs --credentials <file> --env PROVIDER=google apps/mobile/e2e/flows/social-sign-in.yaml
 ```
 
 ### Chaos
