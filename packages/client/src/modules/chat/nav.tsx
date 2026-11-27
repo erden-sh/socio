@@ -117,6 +117,8 @@ function DotRow({ dot }: { dot: Dot }) {
                 >
                     <Link
                         to={dotPath(dot)}
+                        // Its home page's code and data (its words too) before the click.
+                        prefetch="intent"
                         title={t('chat.nav:dot.title', { context: personal })}
                         aria-current={active ? 'page' : undefined}
                         onClick={nav.close}
@@ -258,6 +260,8 @@ function ChatRow({ thread, dotName }: { thread: Conversation; dotName?: string }
             ) : (
                 <NavButton
                     to={`/chats/${encodeURIComponent(thread.id)}`}
+                    // The chat's code is on its way before the click.
+                    prefetch="intent"
                     title={title}
                     onNavigate={nav.close}
                     // With a mouse the ⋯ takes the Dot's name's place while shown;

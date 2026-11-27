@@ -43,11 +43,14 @@ export function NavButton({
     to,
     onNavigate,
     reloadDocument,
+    prefetch,
     activeBelow = false,
     ...props
 }: Omit<React.ComponentProps<typeof SidebarMenuButton>, 'asChild'> & {
     to: string;
     reloadDocument?: boolean;
+    /** React Router's link prefetch: `intent` loads the page's code (and data) on hover or focus. */
+    prefetch?: React.ComponentProps<typeof NavLink>['prefetch'];
     /** Active on any address below `to` too, segment by segment (a plugin's deep links). */
     activeBelow?: boolean;
     onNavigate: () => void;
@@ -56,7 +59,14 @@ export function NavButton({
     const { children, title, ...button } = props;
     return (
         <SidebarMenuButton asChild isActive={active} {...button}>
-            <NavLink to={to} reloadDocument={reloadDocument} end={!activeBelow} title={title} onClick={onNavigate}>
+            <NavLink
+                to={to}
+                reloadDocument={reloadDocument}
+                prefetch={prefetch}
+                end={!activeBelow}
+                title={title}
+                onClick={onNavigate}
+            >
                 {children}
             </NavLink>
         </SidebarMenuButton>

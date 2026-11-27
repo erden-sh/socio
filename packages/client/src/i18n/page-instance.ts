@@ -37,8 +37,32 @@ function create(page: PageI18n, inBrowser: boolean): I18n {
     return instance;
 }
 
+/** The browser's page instance, once the page has made it (one a page). */
+let browserInstance: I18n | undefined;
+
 /** A page's instance: in the browser it loads more and drives `@socio/shared/locale`; on the server it doesn't. */
-export const pageInstance = (page: PageI18n): I18n => create(page, typeof document !== 'undefined');
+export function pageInstance(page: PageI18n): I18n {
+    const inBrowser = typeof document !== 'undefined';
+    const instance = create(page, inBrowser);
+    if (inBrowser) {
+        browserInstance = instance;
+    }
+    return instance;
+}
+
+/**
+ * Starts loading `namespaces` in the page's language, outside React: from a
+ * route's `clientLoader`, so what its page loads on demand is on its way
+ * together with the route's data, not after it. Resolves once they're in
+ * (at once for those already in, or with no page instance yet).
+ */
+export function preloadNamespaces(namespaces: readonly string[]): Promise<void> {
+    const instance = browserInstance;
+    if (!instance) {
+        return Promise.resolve();
+    }
+    return new Promise((resolve) => void instance.loadNamespaces([...namespaces], () => resolve()));
+}
 
 /** Adds what a route's loader inlined (only what isn't there yet); safe to call while rendering. */
 export function addPageResources(instance: I18n, page: PageI18n | undefined) {

@@ -236,6 +236,7 @@ export function Home() {
                                 <Link
                                     data-slot="dot-link"
                                     to={dotPath(dot)}
+                                    prefetch="intent"
                                     aria-label={t('shell.home:open-socio', { name: dot.name, state: stateLabel(now) })}
                                     className="flex min-w-0 flex-1 items-start gap-4 rounded-lg py-2 outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
                                 >
@@ -259,6 +260,7 @@ export function Home() {
                                 <Link
                                     data-slot="dot-new-chat"
                                     to={newChatPath(dot)}
+                                    prefetch="intent"
                                     aria-label={t('shell.home:new-chat-with', { name: dot.name })}
                                     title={t('shell.home:new-chat')}
                                     className="flex size-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground outline-none hover:bg-accent hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 md:size-9"
@@ -310,6 +312,7 @@ export function Home() {
                                             <Link
                                                 data-slot="home-recent-link"
                                                 to={`/chats/${encodeURIComponent(thread.id)}`}
+                                                prefetch="intent"
                                                 className="flex min-w-0 items-center gap-2.5 rounded-lg px-2 py-2 text-sm outline-none hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50"
                                             >
                                                 {dot && (

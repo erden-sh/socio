@@ -9,6 +9,7 @@ import { importOrReload } from '../../shell/chunk-reload';
 
 import type { Chat as ChatView } from './Chat';
 import { ChatFrame, ChatHeader, type ChatPlacement } from './chat-chrome';
+import { CHAT_NAMESPACES } from './live-namespaces';
 
 // Loaded on demand, in the browser only: the server never runs CopilotKit's
 // chat, the agent connection or the call.
@@ -38,12 +39,6 @@ function ChatLoading({ dot, paused, placement }: { dot: Dot; paused: boolean; pl
         </ChatFrame>
     );
 }
-
-/**
- * The words the live chat shows. Chat routes inline them; the Ask panel and
- * pages don't, so the chat waits for them here, behind its loading state.
- */
-const CHAT_NAMESPACES = ['chat', 'chat.composer', 'chat.model', 'chat.trace', 'chat.menu'] as const;
 
 /** A conversation's live chat (`Chat`), rendered in the browser only. */
 export function ClientChat(props: ComponentProps<typeof ChatView>) {

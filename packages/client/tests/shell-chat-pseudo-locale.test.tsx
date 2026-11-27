@@ -370,6 +370,54 @@ it.each(['/chats/c1', '/dots/d1/new'])('renders the chat page %s in en-XA with o
     expect(untranslated(readable(body))).toEqual([]);
 });
 
+it('loads a chat’s namespaces together with its data when navigating to it, never after', async () => {
+    // Every loader's dictionaries arrive a moment after it asks, so what
+    // starts after one has answered is a step behind it.
+    const events: string[] = [];
+    let route = 0;
+    const router = createTestRouter('/', {
+        services: () => ({
+            ...fetchServices(),
+            i18n: async (namespaces) => {
+                const id = `data${++route}`;
+                events.push(`${id} asked`);
+                await new Promise((resolve) => setTimeout(resolve, 30));
+                events.push(`${id} answered`);
+                return pseudoPage(namespaces);
+            },
+        }),
+    });
+    const fetching = globalThis.fetch;
+    vi.stubGlobal('fetch', (input: string, init?: RequestInit) => {
+        const file = /^\/i18n\/en-XA\/(.+)\.test\.json$/.exec(String(input));
+        if (file) {
+            events.push(`namespace ${file[1]}`);
+        }
+        return fetching(input, init);
+    });
+    root = createRoot(host);
+    await act(async () => root!.render(<RouterProvider router={router} />));
+    await settle();
+    // The first load: the root's and Home's loaders both ask before either
+    // answers (the shell's asks only signed out).
+    const first = events.indexOf(events.find((event) => event.endsWith('answered'))!);
+    expect(events.slice(0, first).filter((event) => event.endsWith('asked'))).toHaveLength(2);
+    events.length = 0;
+    await act(async () => router.navigate('/chats/c1'));
+    await settle(20);
+    expect($('[data-slot="app-body"] textarea')).not.toBeNull();
+    // Only the chat's loader runs (the root's and the shell's hold), and what
+    // the page loads on demand (the live chat's, the reactions') starts with
+    // it: no namespace is asked for after its data.
+    expect(events.filter((event) => event.startsWith('data'))).toEqual(['data3 asked', 'data3 answered']);
+    const answered = events.indexOf('data3 answered');
+    const namespaces = events.filter((event) => event.startsWith('namespace'));
+    expect(namespaces.sort()).toEqual(['namespace chat.composer', 'namespace chat.model', 'namespace chat.report']);
+    for (const event of namespaces) {
+        expect(events.indexOf(event), event).toBeLessThan(answered);
+    }
+});
+
 it('opens the palette, the Help menu and the connection details with their on-demand words', async () => {
     await open('/');
     await act(async () => {

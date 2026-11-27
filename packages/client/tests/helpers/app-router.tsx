@@ -41,6 +41,7 @@ export interface RouteModule {
     handle?: unknown;
     ErrorBoundary?: ComponentType;
     loader?: LoaderFunction;
+    clientLoader?: (args: Parameters<LoaderFunction>[0] & { serverLoader: () => Promise<unknown> }) => unknown;
     shouldRevalidate?: ShouldRevalidateFunction;
     middleware?: MiddlewareFunction[];
 }
@@ -76,7 +77,12 @@ function routeFields(module: RouteModule) {
         fields.ErrorBoundary = module.ErrorBoundary;
     }
     if (module.loader) {
-        fields.loader = module.loader;
+        const { loader, clientLoader } = module;
+        // As in the browser: a client loader runs for navigations, the
+        // server's loader through its `serverLoader`.
+        fields.loader = clientLoader
+            ? (args) => clientLoader({ ...args, serverLoader: async () => loader(args) })
+            : loader;
     }
     if (module.shouldRevalidate) {
         fields.shouldRevalidate = module.shouldRevalidate;
