@@ -13,6 +13,10 @@ Chats
 
 - Give a socio's reply a thumbs-down to report it to Ingenio, with a reason and an optional note, when your workspace shares AI reply reports.
 
+Update Socio
+
+- The Update Socio screen now covers the whole screen on iPhone, down to the bottom edge.
+
 ## 0.2.9 (build 3974, 2026-11-27)
 
 Your notes on 0.2.7: a QR scanner inside the app, a clearer Add a device screen, and quote-reply; plus folders in Spaces, and Google and Apple sign-in.
