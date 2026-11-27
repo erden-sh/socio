@@ -197,8 +197,13 @@ export async function signInAndCommit(request: SignInRequest, deps: SignInFlowDe
         confirm: async () => {
             once();
             try {
+                // Gone back meanwhile: the other person's copy stays as it is, and the new
+                // session is signed out. Checked before each sign-out and each wipe; the commit
+                // checks again before its first write.
                 for (const person of check.previous) {
+                    throwIfAborted(request.signal, request.origin);
                     await signOutPrevious(person.id, request.origin, deps);
+                    throwIfAborted(request.signal, request.origin);
                     await wipe(store, person.id, 'other-person');
                 }
             } catch (error) {
@@ -208,6 +213,13 @@ export async function signInAndCommit(request: SignInRequest, deps: SignInFlowDe
             return commit(staged, request, manifest, deps);
         },
     };
+}
+
+/** Throws AbortedError once `signal` has aborted. */
+function throwIfAborted(signal: AbortSignal | undefined, origin: string): void {
+    if (signal?.aborted) {
+        throw new AbortedError(origin, signal.reason);
+    }
 }
 
 /** Signs the staged session out and rejects with AbortedError once `signal` has aborted. */
@@ -274,7 +286,8 @@ async function commit(
         const committed = await commitSignIn(
             deps.store,
             { ...staged, name: staged.workspaceName, logo: request.logo, manifest },
-            { hash: deps.hash },
+            // Checked right before the commit's first write, every method's (a release on abort).
+            { hash: deps.hash, signal: request.signal },
         );
         return { kind: 'committed', id: committed.id, committed: committed.kind };
     } catch (error) {

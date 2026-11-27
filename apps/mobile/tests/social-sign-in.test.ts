@@ -493,6 +493,116 @@ describe('signing in with Google or Apple', { timeout: 20_000 }, () => {
             expect(server.sessions.size).toBe(0);
             expect(await store.registry.list()).toEqual([]);
         });
+
+        /** Everything the registry and the keychain say about the phone's copies, to compare whole. */
+        async function snapshot(store: SignInFlowDeps['store']) {
+            const rows = await store.registry.list();
+            return {
+                rows,
+                active: await store.registry.active(),
+                sessions: await Promise.all(rows.map((row) => store.registry.session(row.id))),
+                keychain: [...device.keychain.entries()].sort(),
+            };
+        }
+        const bob: Account = { appUserId: 'u-bob', email: 'bob@example.test', name: 'Bob', banned: false };
+        const cookieOf = (call: Parameters<typeof sentHeaders>[0]) => sentHeaders(call).cookie ?? '';
+
+        it('the same person signing in again, during the old session’s read: the copy stays exactly as it was', async () => {
+            const server = workspace();
+            server.link('google', 'ada-test');
+            const { store } = await launch(device, { now: () => T0 });
+            expect(
+                await signInWithSocial(request('google', testAccount('ada-test')), deps(store, server)),
+            ).toMatchObject({ kind: 'signed', outcome: { kind: 'committed', committed: 'new' } });
+            const before = await snapshot(store);
+            const kept = [...server.sessions.keys()];
+            const back = new AbortController();
+            const read = store.keys.read.bind(store.keys);
+            // The replaced session's read (the copy's jar) comes once the second redeem is staged.
+            vi.spyOn(store.keys, 'read').mockImplementation(async (name) => {
+                const redeems = server.fetch.calls.filter((call) => call.url.endsWith(SOCIAL_REDEEM_PATH));
+                if (redeems.length === 2 && name.endsWith('.jar')) {
+                    back.abort();
+                }
+                return read(name);
+            });
+            await expect(
+                signInWithSocial(
+                    { ...request('google', testAccount('ada-test')), signal: back.signal },
+                    deps(store, server),
+                ),
+            ).rejects.toMatchObject({ name: 'AbortError' });
+            vi.mocked(store.keys.read).mockRestore();
+            expect(await snapshot(store)).toEqual(before);
+            // The copy's own session lives on; the abandoned one was signed out.
+            expect([...server.sessions.keys()]).toEqual(kept);
+            const logouts = server.fetch.calls.filter((call) => call.url.endsWith(LOGOUT_PATH));
+            expect(logouts.map(cookieOf)).toEqual([expect.not.stringContaining(kept[0]!)]);
+        });
+
+        /** Bob's copy on the phone, then Ada's Google sign-in, which asks the another-person question. */
+        async function otherPerson(fetch?: (server: ReturnType<typeof workspace>) => FetchFunction) {
+            const server = workspace();
+            server.links.set('google:bob-test', { provider: 'google', sub: 'bob-test', account: bob });
+            server.link('google', 'ada-test');
+            const { store } = await launch(device, { now: () => T0 });
+            expect(
+                await signInWithSocial(request('google', testAccount('bob-test')), deps(store, server)),
+            ).toMatchObject({ kind: 'signed', outcome: { kind: 'committed' } });
+            const bobSession = [...server.sessions.keys()][0]!;
+            const before = await snapshot(store);
+            const back = new AbortController();
+            const outcome = await signInWithSocial(
+                { ...request('google', testAccount('ada-test')), signal: back.signal },
+                { ...deps(store, server), fetch: fetch?.(server) ?? server.fetch },
+            );
+            if (outcome.kind !== 'signed' || outcome.outcome.kind !== 'other-person') {
+                throw new Error(`expected the another-person question, got ${outcome.kind}`);
+            }
+            const adaSession = [...server.sessions.keys()].find((token) => token !== bobSession)!;
+            return { server, store, back, question: outcome.outcome, before, bobSession, adaSession };
+        }
+
+        it('the another-person question, gone back before Confirm: Bob’s copy is untouched', async () => {
+            const { server, store, back, question, before, bobSession, adaSession } = await otherPerson();
+            back.abort();
+            await expect(question.confirm()).rejects.toMatchObject({ name: 'AbortError' });
+            expect(await snapshot(store)).toEqual(before);
+            expect(server.sessions.has(bobSession)).toBe(true);
+            expect(server.sessions.has(adaSession)).toBe(false);
+            const logouts = server.fetch.calls.filter((call) => call.url.endsWith(LOGOUT_PATH));
+            expect(logouts.map(cookieOf)).toEqual([expect.stringContaining(adaSession)]);
+        });
+
+        it('the another-person question, gone back while Bob’s session is being signed out: his copy stays', async () => {
+            let abort = () => undefined as void;
+            let bobToken = '';
+            const { server, store, back, question, before, adaSession } = await otherPerson((server) => {
+                bobToken = [...server.sessions.keys()][0]!;
+                return (url, init) => {
+                    if (url.endsWith(LOGOUT_PATH) && String(sentHeaders({ url, init }).cookie).includes(bobToken)) {
+                        abort();
+                    }
+                    return server.fetch(url, init);
+                };
+            });
+            abort = () => back.abort();
+            await expect(question.confirm()).rejects.toMatchObject({ name: 'AbortError' });
+            // His copy stays: the row, its files and keys. Only the sign-out already on its way
+            // landed, so his jar holds the server's clearing cookie and no session.
+            const after = await snapshot(store);
+            const jarless = (state: typeof before) => ({
+                ...state,
+                keychain: state.keychain.filter(([name]) => !name.endsWith('.jar')),
+            });
+            expect(jarless(after)).toEqual(jarless(before));
+            const jar = after.keychain.find(([name]) => name.endsWith('.jar'))!;
+            expect(JSON.parse(jar[1])).toMatchObject({ cookies: [] });
+            expect(server.sessions.has(bobToken)).toBe(false);
+            expect(server.sessions.has(adaSession)).toBe(false);
+            const logouts = server.fetch.calls.filter((call) => call.url.endsWith(LOGOUT_PATH)).map(cookieOf);
+            expect(logouts).toEqual([expect.stringContaining(bobToken), expect.stringContaining(adaSession)]);
+        });
     });
 
     it.each([
