@@ -2,7 +2,7 @@ import { createInstance, type i18n, type InitOptions, type Module, type Newable,
 
 import { setActiveLocale } from '@socio/shared/locale';
 
-import { addFormatters } from './format.js';
+import { createFormatter } from './format.js';
 import { SOURCE_LOCALE, fallbackLanguages } from './registry.js';
 
 /** The namespace a key without `ns:` reads. */
@@ -39,7 +39,7 @@ export interface CreateI18nOptions {
  * One per request on the server, one per page in the browser.
  */
 export function createI18n(options: CreateI18nOptions): i18n {
-    const instance = createInstance();
+    const instance = createInstance().use(createFormatter());
     if (options.backend) {
         instance.use(options.backend);
     }
@@ -68,7 +68,6 @@ export function createI18n(options: CreateI18nOptions): i18n {
         interpolation: { escapeValue: options.escapeValue ?? true },
         ...(options.react && { react: options.react }),
     });
-    addFormatters(instance);
     if (options.drivesActiveLocale) {
         setActiveLocale(options.locale);
     }

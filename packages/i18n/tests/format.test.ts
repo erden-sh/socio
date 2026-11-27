@@ -1,3 +1,6 @@
+import { readdirSync, readFileSync } from 'node:fs';
+
+import { createInstance } from 'i18next';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import {
@@ -11,7 +14,7 @@ import {
 } from '@socio/shared/locale';
 
 import { createI18n } from '../src/create.js';
-import { formatBytes, formatDuration } from '../src/format.js';
+import { FORMATTERS, formatBytes, formatDuration } from '../src/format.js';
 import { createReactI18n } from '../src/react.js';
 
 afterEach(() => {
@@ -50,6 +53,92 @@ describe('the formatters', () => {
         expect(es.t('who', { names: ['Ada', 'Alice', 'Bob'] })).toBe('Ada, Alice y Bob');
         const de = i18n('de-DE', strings);
         expect(de.t('n', { n: 12345.5 })).toBe('12.345,5');
+    });
+
+    it('take Intl options only from the format string, never from the call’s other variables', () => {
+        const strings = {
+            n: '{{n, number}}',
+            price: '{{p, currency(currency: EUR)}}',
+            when: '{{d, datetime(dateStyle: medium; timeZone: UTC)}}',
+            ago: '{{days, relativetime(range: day)}}',
+            who: '{{names, list}}',
+            size: '{{bytes, bytes}}',
+            took: '{{ms, duration}}',
+        };
+        const en = i18n('en-US', strings);
+        const day = new Date(Date.UTC(2026, 9, 15, 12));
+        // Each variable is named after an Intl option the formatter reads; a valid value would change the output.
+        const cases: [string, Record<string, unknown>, Record<string, unknown>][] = [
+            ['n', { n: 12345.5 }, { unit: 'files', style: 'percent', minimumFractionDigits: 3, notation: 'compact' }],
+            ['n', { n: 12345.5 }, { style: 'currency', currency: 'USD', useGrouping: false }],
+            ['price', { p: 3.5 }, { currency: 'JPY', currencyDisplay: 'name', unit: 'files' }],
+            ['when', { d: day }, { dateStyle: 'full', timeZone: 'Asia/Tokyo', year: '2-digit', unit: 'files' }],
+            ['ago', { days: -1 }, { range: 'year', numeric: 'always', style: 'narrow', unit: 'files' }],
+            ['who', { names: ['Ada', 'Alice', 'Bob'] }, { type: 'disjunction', style: 'narrow' }],
+            ['size', { bytes: 1_234_567 }, { unit: 'files', style: 'percent', maximumFractionDigits: 4 }],
+            ['took', { ms: 3_905_000 }, { unit: 'files', type: 'disjunction', style: 'long' }],
+        ];
+        for (const [key, values, clashing] of cases) {
+            expect(en.t(key, { ...values, ...clashing }), key).toBe(en.t(key, values));
+        }
+    });
+
+    it('still apply the format string’s options and the call’s formatParams', () => {
+        const en = i18n('en-US', {
+            fixed: '{{n, number(minimumFractionDigits: 2)}}',
+            share: '{{n, number(style: percent)}}',
+            yen: '{{p, currency(JPY)}}',
+            or: '{{names, list(type: disjunction)}}',
+            hours: '{{n, relativetime(hour)}}',
+            time: '{{d, datetime(hour: numeric; minute: 2-digit; timeZone: UTC)}}',
+        });
+        expect(en.t('fixed', { n: 5, minimumFractionDigits: 0, unit: 'files' })).toBe('5.00');
+        expect(en.t('share', { n: 0.5, style: 'decimal' })).toBe('50%');
+        expect(en.t('yen', { p: 1200, currency: 'EUR' })).toBe('¥1,200');
+        expect(en.t('or', { names: ['Ada', 'Bob'], type: 'conjunction' })).toBe('Ada or Bob');
+        expect(en.t('hours', { n: 2, range: 'day' })).toBe('in 2 hours');
+        expect(nbsp(en.t('time', { d: new Date(Date.UTC(2026, 9, 15, 14, 5)) }))).toBe('2:05 PM');
+        expect(en.t('fixed', { n: 5, formatParams: { n: { minimumFractionDigits: 3 } } })).toBe('5.000');
+    });
+
+    it('render every en-US string as the formatters did before they ignored the call’s variables', () => {
+        const folder = new URL('../locales/en-US/', import.meta.url);
+        const resources = Object.fromEntries(
+            readdirSync(folder)
+                .filter((file) => file.endsWith('.json'))
+                .map((file) => [
+                    file.slice(0, -'.json'.length),
+                    JSON.parse(readFileSync(new URL(file, folder), 'utf8')),
+                ]),
+        ) as Record<string, Record<string, string>>;
+        // The old setup: Socio's formatters added over i18next's own formatter, which merges in the call's variables.
+        const before = createInstance();
+        void before.init({ lng: 'en-US', resources: { 'en-US': resources }, initAsync: false, defaultNS: 'common' });
+        for (const [name, format] of Object.entries(FORMATTERS)) {
+            before.services.formatter!.add(name, (value, locale, options) => format(value, locale ?? 'en-US', options));
+        }
+        const after = createI18n({ locale: 'en-US', resources: { 'en-US': resources } });
+        const sample: Record<string, unknown> = {
+            number: 12345.5,
+            currency: 3.5,
+            datetime: new Date(Date.UTC(2026, 9, 15, 12)),
+            relativetime: -1,
+            list: ['Ada', 'Alice', 'Bob'],
+            bytes: 1_234_567,
+            duration: 3_905_000,
+        };
+        let checked = 0;
+        for (const [namespace, strings] of Object.entries(resources)) {
+            for (const [key, text] of Object.entries(strings)) {
+                const values: Record<string, unknown> = {};
+                for (const [, name, format] of text.matchAll(/\{\{\s*([\w.]+)\s*(?:,\s*(\w+))?[^}]*\}\}/g)) {
+                    values[name!] = format ? sample[format.toLowerCase()] : 'Ada';
+                }
+                expect(after.t(`${namespace}:${key}`, values), key).toBe(before.t(`${namespace}:${key}`, values));
+                checked++;
+            }
+        }
+        expect(checked).toBeGreaterThan(0);
     });
 
     it('formats bytes and durations', () => {
