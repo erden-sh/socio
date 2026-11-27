@@ -21,6 +21,7 @@ import { LogRedactor } from '@socio/foundation/apps/log-redact';
 import type { SealState, SecretBox } from '@socio/foundation/keys/secret-box';
 import {
     REPLY_REPORTS_TEXT_VERSION,
+    REPORT_NOTE_MAX,
     type ReplyReportsAdminView,
     type ReplyReportsState,
     type ReportMark,
@@ -63,6 +64,8 @@ export const REPORT_BODY_MAX_BYTES = 64 * 1024;
 const RETRY_AFTER_MIN = 1_000;
 const RETRY_AFTER_MAX = 6 * HOUR;
 const SETTING_KEY = 'reply-reports';
+/** The collector's last `Retry-After`, shared by every runtime. */
+const COOLDOWN_KEY = 'reports-collector-cooldown';
 
 /** The body the collector accepts (§4), exactly: it refuses any other field. */
 export interface ReportBody {
@@ -175,7 +178,8 @@ export function reportBody(input: ReplyReportInput, hashes: ReportHashes, id: st
         id,
         reportedAt: now,
         reason: input.reason,
-        ...(note ? { note: redactReportText(note) } : {}),
+        // Redaction may lengthen it ("[redacted]"): cut to the collector's cap again.
+        ...(note ? { note: cut(redactReportText(note), REPORT_NOTE_MAX).text } : {}),
         reply: { text: reply.text, truncated: reply.truncated, ...(input.reply.at ? { at: input.reply.at } : {}) },
         ...(prompt && input.prompt
             ? { prompt: { text: prompt.text, truncated: prompt.truncated }, promptByOther: input.prompt.byOther }
@@ -604,10 +608,55 @@ export class ReplyReportsService implements ReplyReportsShape {
         });
     }
 
+    /** Until when the collector asked every report to wait (`Retry-After` on a 429 or 503). */
+    private cooldownUntil(): number {
+        const row = this.db.prepare('SELECT value FROM cloud_settings WHERE key=?').get(COOLDOWN_KEY) as
+            | { value: string }
+            | undefined;
+        try {
+            const until = row ? Number((JSON.parse(row.value) as { until?: unknown }).until) : 0;
+            return Number.isFinite(until) ? until : 0;
+        } catch {
+            return 0;
+        }
+    }
+
+    /**
+     * Whether this row may go now: sharing is still on and possible, and
+     * the row is still this runtime's lease and not withdrawn. Checked
+     * right before each POST, so a report withdrawn or dropped (sharing
+     * turned off) while the batch was sending never starts.
+     */
+    private mayStill(row: { id: string; leaseId: string }): boolean {
+        if (!this.state()) {
+            return false;
+        }
+        const current = this.db.prepare('SELECT leaseId, withdrawnAt FROM cloud_outbox WHERE id=?').get(row.id) as
+            | { leaseId: string | null; withdrawnAt: number | null }
+            | undefined;
+        return current?.leaseId === row.leaseId && current.withdrawnAt === null;
+    }
+
+    /** Rows that may not go: withdrawn ones are deleted, the rest released as they were. */
+    private async putBack(rows: readonly { id: string; leaseId: string }[]) {
+        if (!rows.length) {
+            return;
+        }
+        await transaction(this.db, 'reply reports put back', () => {
+            const drop = this.db.prepare(
+                'DELETE FROM cloud_outbox WHERE id=? AND leaseId=? AND withdrawnAt IS NOT NULL AND sentAt IS NULL',
+            );
+            for (const row of rows) {
+                drop.run(row.id, row.leaseId);
+            }
+        });
+        await this.release(rows);
+    }
+
     private async sendDue() {
         await this.sweep(this.now());
         const origin = this.options.reportsOrigin;
-        if (!origin || !this.available()) {
+        if (!origin || !this.available() || this.now() < this.cooldownUntil()) {
             return;
         }
         const rows = await this.claim(this.now());
@@ -620,8 +669,13 @@ export class ReplyReportsService implements ReplyReportsShape {
             const row = rows[index]!;
             if (this.draining || !token) {
                 // No token (the issuer is out of reach, holds tokens back or refused the key): they wait.
-                await this.release(rows.slice(index));
+                await this.putBack(rows.slice(index));
                 return;
+            }
+            if (!this.mayStill(row)) {
+                // Sharing went off (every row is then withdrawn), or this one was withdrawn or taken over.
+                await this.putBack([row]);
+                continue;
             }
             let sent = await this.post(origin, row.payload, token);
             if (sent.kind === 'unauthorized' && !renewed) {
@@ -629,15 +683,24 @@ export class ReplyReportsService implements ReplyReportsShape {
                 renewed = true;
                 token = await this.options.cloud.token(origin, { renew: true });
                 if (!token) {
-                    await this.release(rows.slice(index));
+                    await this.putBack(rows.slice(index));
                     return;
                 }
                 sent = await this.post(origin, row.payload, token);
             }
             await this.settle(row, sent.kind === 'unauthorized' ? { kind: 'retry', error: 'http 401' } : sent);
             if (sent.kind === 'later') {
-                // The collector asked to wait: the rest wait too.
-                await this.release(rows.slice(index + 1));
+                // The collector asked to wait: every report waits, these and any queued meanwhile.
+                const until = this.now() + sent.afterMs;
+                await transaction(this.db, 'reply reports cooldown', () => {
+                    this.db
+                        .prepare(
+                            `INSERT INTO cloud_settings(key, value, updatedAt) VALUES (?, ?, ?)
+                             ON CONFLICT(key) DO UPDATE SET value=excluded.value, updatedAt=excluded.updatedAt`,
+                        )
+                        .run(COOLDOWN_KEY, JSON.stringify({ until }), this.now());
+                });
+                await this.putBack(rows.slice(index + 1));
                 return;
             }
         }
@@ -701,19 +764,19 @@ export class ReplyReportsService implements ReplyReportsShape {
                     .run(now, row.id, row.leaseId);
                 return;
             }
+            // Not sent, for good or for now: one withdrawn meanwhile goes now.
+            if (
+                this.db.prepare(`DELETE FROM cloud_outbox ${held} AND withdrawnAt IS NOT NULL`).run(row.id, row.leaseId)
+                    .changes
+            ) {
+                return;
+            }
             if (sent.kind === 'failed') {
                 this.db
                     .prepare(
                         `UPDATE cloud_outbox SET failedAt=?, payload=NULL, attempts=attempts+1, lastError=?, leaseId=NULL, leaseUntil=NULL ${held}`,
                     )
                     .run(now, sent.error, row.id, row.leaseId);
-                return;
-            }
-            // Not sent: one withdrawn meanwhile goes now; the rest wait.
-            if (
-                this.db.prepare(`DELETE FROM cloud_outbox ${held} AND withdrawnAt IS NOT NULL`).run(row.id, row.leaseId)
-                    .changes
-            ) {
                 return;
             }
             const wait =

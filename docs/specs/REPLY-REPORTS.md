@@ -77,7 +77,7 @@ takes an optional JSON body:
   today, plus:
 
 ```ts
-report?: 'queued' | 'already' | 'not-sharing' | 'consent-changed';
+report?: 'queued' | 'already' | 'not-sharing' | 'consent-changed' | 'unavailable';
 ```
 
 - `queued`: confirmed and queued for Ingenio. This also holds when the person's thumbs-down was
@@ -88,6 +88,9 @@ report?: 'queued' | 'already' | 'not-sharing' | 'consent-changed';
   and note are dropped, not kept.
 - `consent-changed`: `consent` isn't the current one (sharing was turned off and on again since
   the client showed the confirmation): a plain thumbs-down; nothing is reported.
+- `unavailable`: the server couldn't make the report this time (it couldn't read the
+  conversation): a plain thumbs-down; nothing is reported. The person may give the thumbs-down
+  again with a report later.
 
 None of these is an error, so an offline outbox sending later never retries or shows a failure.
 The server checks them in this order: sharing, consent, an existing report.

@@ -479,6 +479,27 @@ describe('the report', () => {
         expect(body.note).toBe('It printed [redacted]');
     });
 
+    it('keeps a note within 1,000 code points after redaction lengthens it', () => {
+        const note = `${'x'.repeat(990)} token=a`;
+        expect([...note].length).toBeLessThanOrEqual(1000);
+        const body = reportBody(
+            {
+                threadId: SOLO,
+                messageId: SOLO_REPLY,
+                userId: ADA.id,
+                consent: 'c',
+                reason: 'other',
+                note,
+                reply: { text: 'ok' },
+            },
+            reportHashes(randomBytes(32)),
+            'id',
+            1,
+        );
+        expect(body.note).toMatch(/^x{990} token=/);
+        expect([...body.note!].length).toBe(1000);
+    });
+
     it('cuts the texts to the collector’s caps and keeps the body under 64 KiB', () => {
         const hashes = reportHashes(randomBytes(32));
         const input: ReactionReportInput = {
@@ -739,6 +760,55 @@ describe('removing the thumbs-down', () => {
         await sending;
         expect(server.outbox()).toEqual([]);
     });
+
+    it('while it is being sent and then refused for good: dropped, so a new report is a new one', async () => {
+        const server = await runtime();
+        const consent = await server.share();
+        await server.report(consent);
+        const hold = holdNextPost(server.collector);
+        server.collector.answers.push(400);
+        const sending = server.reports.send();
+        await hold.arrived;
+        expect((await server.call(ADA, server.reaction(SOLO, SOLO_REPLY), 'DELETE')).body.report).toBe('kept');
+        hold.release();
+        await sending;
+        expect(server.outbox()).toEqual([]);
+        expect((await server.report(consent)).body.report).toBe('queued');
+    });
+});
+
+describe('sharing turned off while a batch is sending', () => {
+    it('sends nothing more of it', async () => {
+        const server = await runtime();
+        const consent = await server.share();
+        await server.report(consent);
+        await server.report(consent, {}, BOB, ROOM, ROOM_REPLY);
+        const hold = holdNextPost(server.collector);
+        const sending = server.reports.send();
+        await hold.arrived;
+        await server.reports.setSharing(false, ADA.id);
+        hold.release();
+        await sending;
+        // The one in flight could not be called back; the other never started.
+        expect(server.collector.posts).toHaveLength(1);
+        expect(server.outbox().filter((row) => row.sentAt === null)).toEqual([]);
+        server.clock.advance(MINUTE);
+        await server.reports.send();
+        expect(server.collector.posts).toHaveLength(1);
+    });
+});
+
+describe('when the report can’t be made', () => {
+    it('keeps the thumbs-down and says so', async () => {
+        const server = await runtime();
+        const consent = await server.share();
+        server.reports.prepare = () => Promise.reject(new Error('replay timed out'));
+        const answer = await server.report(consent);
+        expect(answer.status).toBe(200);
+        expect(answer.body.report).toBe('unavailable');
+        expect(answer.body.messages[SOLO_REPLY]).toEqual({ counts: { down: 1 }, mine: ['down'] });
+        expect(server.outbox()).toEqual([]);
+    });
 });
 
 describe('what the server refuses', () => {
@@ -863,29 +933,37 @@ describe('sending', () => {
         });
     });
 
-    it('429 and 503 wait for Retry-After, and the rest of the batch waits too', async () => {
+    it('429 and 503 hold every report back for Retry-After, across ticks and for new ones too', async () => {
         const server = await queued(2);
+        const start = server.clock.now();
         server.collector.answers.push({ status: 429, headers: { 'retry-after': '120' } });
         await server.reports.send();
         expect(server.collector.posts).toHaveLength(1);
-        const start = server.clock.now();
         const [first, second] = server.outbox();
         expect(first).toMatchObject({ nextAt: start + 120_000, lastError: 'http 429', attempts: 1 });
-        expect(second).toMatchObject({ attempts: 0, nextAt: second!.nextAt });
-        // The second one is free again at once; the first after two minutes.
-        server.collector.answers.push({
-            status: 503,
-            headers: { 'retry-after': new Date(start + 300_000).toUTCString() },
-        });
+        expect(second).toMatchObject({ attempts: 0 });
+        // A minute on, nothing goes: neither the second nor one queued meanwhile.
+        const consent = server.reports.state()!.consent;
+        await server.report(consent, {}, ADA, ROOM, ROOM_REPLY);
         server.clock.advance(MINUTE);
         await server.reports.send();
-        expect(server.collector.posts.map((post) => post.body.promptByOther)).toEqual([false, true]);
-        expect(server.outbox()[1]).toMatchObject({ lastError: 'http 503' });
-        expect(Math.abs(server.outbox()[1]!.nextAt - (start + 300_000))).toBeLessThan(1_000);
+        expect(server.collector.posts).toHaveLength(1);
+        // After the wait, the oldest goes and is answered 503 with a date: all wait again.
+        server.clock.advance(MINUTE + 1_000);
+        server.collector.answers.push({
+            status: 503,
+            headers: { 'retry-after': new Date(server.clock.now() + 300_000).toUTCString() },
+        });
+        await server.reports.send();
+        expect(server.collector.posts).toHaveLength(2);
+        expect(server.outbox()[0]).toMatchObject({ lastError: 'http 503', attempts: 2 });
+        server.clock.advance(4 * MINUTE);
+        await server.reports.send();
+        expect(server.collector.posts).toHaveLength(2);
         server.clock.advance(MINUTE + 1_000);
         await server.reports.send();
-        expect(server.reports.mark(SOLO, SOLO_REPLY, ADA.id)).toBe('shared');
-        expect(server.reports.mark(ROOM, ROOM_REPLY, BOB.id)).toBe('queued');
+        expect(server.reports.admin()).toMatchObject({ queued: 0, failed: 0 });
+        expect(server.collector.stored.size).toBe(3);
     });
 
     it('network errors and other 5xx back off 1 min, 5 min, 30 min, 2 h, then every 6 h', async () => {

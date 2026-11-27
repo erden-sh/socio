@@ -173,12 +173,17 @@ export function reactionRoutes(platform: ReactionRouteSources, replay: Pick<Even
                         ? 'already'
                         : undefined;
             if (!outcome && reports) {
-                prepared = await reports.prepare(
-                    await reportInput(platform, thread, messageId, userId, request, {
-                        reply: message,
-                        ...surfaceOf(c.req.header('user-agent'), platform.version?.()),
-                    }),
-                );
+                try {
+                    prepared = await reports.prepare(
+                        await reportInput(platform, thread, messageId, userId, request, {
+                            reply: message,
+                            ...surfaceOf(c.req.header('user-agent'), platform.version?.()),
+                        }),
+                    );
+                } catch {
+                    // The conversation couldn't be read (a replay that timed out, say): the thumbs-down still counts.
+                    outcome = 'unavailable';
+                }
             }
         }
         // The reaction and its report in one unit of work: the thumbs-down is stored whatever becomes of the report.

@@ -83,9 +83,11 @@ export const fillReportText = (template: string, values: Readonly<Record<string,
 
 /**
  * `PUT …/reactions/down` with a report: none is an error, so an offline
- * outbox sending later never retries or shows a failure.
+ * outbox sending later never retries or shows a failure. `unavailable`:
+ * the server couldn't make the report this time (it couldn't read the
+ * conversation), so the thumbs-down is a plain one and nothing is reported.
  */
-export type ReportOutcome = 'queued' | 'already' | 'not-sharing' | 'consent-changed';
+export type ReportOutcome = 'queued' | 'already' | 'not-sharing' | 'consent-changed' | 'unavailable';
 
 /**
  * A reader's own report on a reply (`GET …/reactions`). `failed` is final:
