@@ -34,9 +34,15 @@ describe('the shared empty state', () => {
     });
 
     it('says the web’s line and way back', () => {
-        const notFound = web('views/NotFound.tsx');
-        expect(notFound).toContain('Back to your socios');
-        expect(notFound).toContain('It may have been removed, or it isn&apos;t shared with you.');
+        expect(web('views/NotFound.tsx')).toContain("t('shell:error.not-found.back')");
+        // The web's words are its en-US dictionary's (shell).
+        const words = (
+            JSON.parse(
+                readFileSync(new URL('../../../../packages/i18n/locales/en-US/shell.json', import.meta.url), 'utf8'),
+            ) as { error: { 'not-found': Record<string, string> } }
+        ).error['not-found'];
+        expect(words.back).toBe('Back to your socios');
+        expect(words.why).toBe("It may have been removed, or it isn't shared with you.");
         expect(state).toContain("BACK_TO_SOCIOS = 'Back to your socios'");
         expect(state).toContain("NOT_SHARED_LINE = 'It may have been removed, or it isn’t shared with you.'");
     });

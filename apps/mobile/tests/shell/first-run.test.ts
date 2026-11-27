@@ -299,11 +299,21 @@ describe('starter prompts on New chat (CB-359)', () => {
     const read = (file: string) => readFileSync(join(import.meta.dirname, '../../../..', file), 'utf8');
 
     it("are the web's three, in its order, from the web's own list", () => {
-        const web = read('packages/client/src/views/ChatViews.tsx');
-        const list = /const starters = \[([^\]]*)\];/.exec(web)?.[1];
-        expect(list).toBeDefined();
-        const words = [...list!.matchAll(/'([^']*)'/g)].map((match) => match[1]);
+        // The web's starters are its en-US dictionary's (chat.composer), in order.
+        const words = Object.values(
+            (
+                JSON.parse(
+                    readFileSync(
+                        new URL('../../../../packages/i18n/locales/en-US/chat.composer.json', import.meta.url),
+                        'utf8',
+                    ),
+                ) as { new: { starters: Record<string, string> } }
+            ).new.starters,
+        );
         expect(words).toEqual([...STARTERS]);
+        expect(read('packages/client/src/views/ChatViews.tsx')).toContain(
+            "const STARTERS = ['think', 'research', 'plan']",
+        );
         expect(STARTERS).toEqual(['Help me think this through', 'Research a public page', 'Make a plan I can follow']);
     });
 

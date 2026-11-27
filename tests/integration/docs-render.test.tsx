@@ -11,6 +11,8 @@ import { it, expect } from 'vitest';
 import type { WebServices } from '@socio/shared/web/web';
 
 import { webContext } from '../../packages/client/src/lib/web-context';
+// The page renders inside its translations (root.tsx's I18nRoot): en-US here.
+import '../../packages/client/tests/setup/en-us-i18n';
 import DocsRoute, { DocsView, ErrorBoundary, loader } from '../../packages/client/src/modules/docs/Docs.route';
 import { buildDocsCatalog } from '../../src/server/docs/catalog';
 
@@ -138,7 +140,9 @@ it('shows the same Not found page, with a 404, for a missing article and a hidde
             // The help center's own frame, with the viewer's navigation.
             expect(page.html).toContain('Socio help');
             expect(page.html).toContain('User guides');
-            expect(page.html).not.toMatch(/Something went wrong|Reloading usually fixes it|failed to load/);
+            expect(page.html.replace(/<script\b[\s\S]*?<\/script>/g, '')).not.toMatch(
+                /Something went wrong|Reloading usually fixes it|failed to load/,
+            );
             expect(page.html).not.toMatch(
                 /DO_NOT_SHIP_SENTINEL|Restricted sentinel|ADMIN_SENTINEL|Admin sentinel|Admin guides|Running Socio/,
             );

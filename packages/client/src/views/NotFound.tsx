@@ -31,10 +31,14 @@ export function NotFound({ what = 'Page' }: { what?: keyof typeof WHAT }) {
  * dictionary: then it reads en-US's, which come with the code.
  */
 export function useErrorWords() {
-    const translation = useTranslation(['shell']);
+    // Never suspends: an error page may render outside the page's own instance.
+    const translation = useTranslation(['shell'], { useSuspense: false });
     const { i18n } = translation;
-    if (!i18n.exists('shell:error.reload')) {
-        i18n.addResourceBundle(SOURCE_LOCALE, 'shell', { error: EN_US_ERRORS }, true, false);
+    if (
+        !i18n.getResource?.(i18n.language, 'shell', 'error.reload') &&
+        !i18n.getResource?.(SOURCE_LOCALE, 'shell', 'error.reload')
+    ) {
+        i18n.addResourceBundle?.(SOURCE_LOCALE, 'shell', { error: EN_US_ERRORS }, true, false);
     }
     return translation;
 }
