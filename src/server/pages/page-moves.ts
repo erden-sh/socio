@@ -3,7 +3,7 @@ import type { DatabaseSync } from 'node:sqlite';
 import { sqliteData } from '@socio/data/open';
 import { LIVE, byDot } from '@socio/data/soft-delete';
 import { PageError } from '@socio/foundation/pages/page-error';
-import { pageText } from '@socio/shared/pages/page-text';
+import { searchBody } from '@socio/shared/pages/page-text';
 
 import { SPACE_NOT_FOUND, type SpaceReader } from '../spaces/contract.js';
 
@@ -111,7 +111,7 @@ export class SqlitePageMoves implements PageMovesShape {
                             pageId: item.id,
                             spaceId: to,
                             title: item.title,
-                            body: pageText(rewritten),
+                            body: searchBody(rewritten, item.folder),
                         });
                     }
                     // A review receipt opens its page where it is now.

@@ -26,7 +26,7 @@ import {
 } from '@socio/shared/pages/page-radar';
 import { pageReviewSchema, type PageReviewDraft } from '@socio/shared/pages/page-review';
 import type { PageRevisionStats } from '@socio/shared/pages/page-search';
-import { pageText } from '@socio/shared/pages/page-text';
+import { pageText, searchBody } from '@socio/shared/pages/page-text';
 import { spaceItemKey, type SpacePageItem } from '@socio/shared/spaces/space-items';
 
 import {
@@ -325,6 +325,17 @@ export const pagesSchema: SchemaSet = {
             phase: 'expand',
             up: 'ALTER TABLE pages ADD COLUMN folder INTEGER NOT NULL DEFAULT 0',
         },
+        {
+            // CB-426: a folder matches search by its title only. Its search
+            // row holds no body (the page keeps it), so nothing of a hidden
+            // body is found, suggested or shown; turning it back into a page
+            // indexes the text again. Backfills the folders there are; the
+            // triggers of migration 5 update both FTS5 indexes.
+            version: 15,
+            name: 'folder search rows without body',
+            phase: 'expand',
+            up: "UPDATE page_search SET body = '' WHERE body <> '' AND pageId IN (SELECT id FROM pages WHERE folder = 1)",
+        },
     ],
 };
 /**
@@ -486,13 +497,16 @@ export class Pages implements PageStoreShape {
         const live = this.db.prepare(`SELECT 1 FROM pages WHERE id=? AND spaceId=? AND ${LIVE}`).get(id, spaceId);
         return live ? this.index.recordUse(id, userId, now) : false;
     }
-    /** Keeps a page's search row in step with its title and body. */
-    private indexPage(spaceId: string, id: string, title: string, content: string) {
+    /**
+     * Keeps a page's search row in step with its title and body. A folder's
+     * row holds no body (CB-426): it matches by its title only.
+     */
+    private indexPage(spaceId: string, id: string, title: string, content: string, folder: boolean) {
         return this.repos.search.put({
             pageId: id,
             spaceId,
             title,
-            body: pageText(content),
+            body: searchBody(content, folder),
         });
     }
     /** Whether a Space is there (live). */
@@ -833,6 +847,8 @@ export class Pages implements PageStoreShape {
                 { title: page.title, content: page.content, parentId: page.parentId, folder },
                 now,
             );
+            // In the same unit: a folder's body leaves the index, a page's comes back.
+            await this.indexPage(spaceId, id, page.title, page.content, folder);
             return this.get(spaceId, id);
         });
     }
@@ -891,7 +907,7 @@ export class Pages implements PageStoreShape {
                 sourceTitle: data.sourceTitle ?? null,
                 folder: data.folder,
             });
-            await this.indexPage(spaceId, id, data.title, data.content);
+            await this.indexPage(spaceId, id, data.title, data.content, data.folder ?? false);
         });
         return this.get(spaceId, id);
     }
@@ -995,8 +1011,9 @@ export class Pages implements PageStoreShape {
                 },
                 now,
             );
-            if (changed) {
-                await this.indexPage(spaceId, id, data.title ?? page.title, data.content ?? page.content);
+            const folder = data.folder ?? page.folder;
+            if (changed || folder !== page.folder) {
+                await this.indexPage(spaceId, id, data.title ?? page.title, data.content ?? page.content, folder);
             }
             return this.get(spaceId, id);
         });

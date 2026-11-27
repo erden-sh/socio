@@ -29,7 +29,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import type { DatabaseSync, SQLInputValue } from 'node:sqlite';
 
 import { transaction } from '@socio/data/open';
-import { pageText } from '@socio/shared/pages/page-text';
+import { searchBody } from '@socio/shared/pages/page-text';
 
 import type { FileSink } from './file-sink.js';
 import { BundleError, ByteBudget, type BundleReader } from './files.js';
@@ -1083,7 +1083,7 @@ export async function importBundle(options: ImportOptions): Promise<ImportReport
                         page.sourceTitle,
                         page.folder ? 1 : 0,
                     );
-                    putSearch.run(page.id, target, page.title, pageText(content));
+                    putSearch.run(page.id, target, page.title, searchBody(content, !!page.folder));
                 },
                 stillPrivate,
             );
@@ -1122,7 +1122,7 @@ export async function importBundle(options: ImportOptions): Promise<ImportReport
                         Math.max(page.updatedAt, Number(before.updatedAt)),
                         page.id,
                     );
-                    putSearch.run(page.id, target, page.title, pageText(content));
+                    putSearch.run(page.id, target, page.title, searchBody(content, !!page.folder));
                 },
                 stillPrivate,
             );

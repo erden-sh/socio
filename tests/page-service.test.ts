@@ -76,7 +76,7 @@ it('scopes agent tools to the socio Space and re-reads current context with CAS 
     });
     await expect(access.read(foreign.id)).rejects.toThrow();
     await access.edit(page.id, { expectedRevision: 1, content: 'Fresh' });
-    expect(access.context()?.content).toBe('Fresh');
+    expect(access.context()).toMatchObject({ content: 'Fresh' });
     await expect(access.edit(page.id, { expectedRevision: 1, content: 'Stale' })).rejects.toThrow();
     paused = true;
     await expect(access.create({ title: 'No write' })).rejects.toThrow('Paused');

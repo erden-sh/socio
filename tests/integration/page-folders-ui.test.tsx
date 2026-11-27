@@ -37,6 +37,8 @@ const users = {
     bob: { id: 'bob', name: 'Bob', role: 'member' as Role },
 };
 let me: keyof typeof users = 'alice';
+// What the assistant still needs set up: with nothing, a page offers "Ask about this page".
+let missing: string[] = ['model'];
 const workspace = (): WorkspaceState => ({
     user: users[me],
     spaces: [{ id: 's1', name: 'Everyday', description: '', createdAt: 1 }],
@@ -57,7 +59,7 @@ const workspace = (): WorkspaceState => ({
         model: false,
         voice: false,
         telegram: 'not_configured',
-        missing: ['model'],
+        missing,
     },
     calls: [],
 });
@@ -85,6 +87,8 @@ let switches: Array<{ id: string; folder: boolean }> = [];
 let created: unknown[] = [];
 // Every PATCH (the autosave), with the page's folder mark when it came.
 let patches: Array<{ id: string; folder: boolean; body: Record<string, unknown> }> = [];
+// The Ask panel's lookups, by query.
+let asked: string[] = [];
 const respond = (url: URL, init?: RequestInit): [number, unknown] => {
     const path = url.pathname;
     if (path === '/api/state') {
@@ -98,6 +102,24 @@ const respond = (url: URL, init?: RequestInit): [number, unknown] => {
     }
     if (path.startsWith('/api/learning/')) {
         return [200, []];
+    }
+    // The Ask panel's lookup: the server answers as of the page's state when the panel opened
+    // (folder or not), so only the view's own report can move the panel after a switch here.
+    if (path === '/api/ask/conversation') {
+        asked.push(url.search);
+        const id = url.searchParams.get('id') ?? '';
+        const kind = url.searchParams.get('kind');
+        return [
+            200,
+            {
+                context:
+                    kind === 'page'
+                        ? { kind, id, title: 'Garden plan', path: `/spaces/s1/pages/${id}` }
+                        : { kind: 'general', id: '', title: null, path: null },
+                dotId: 'd1',
+                conversation: null,
+            },
+        ];
     }
     if (path === '/api/spaces/s1/pages' && init?.method === 'POST') {
         const body = JSON.parse(String(init.body)) as Partial<Page>;
@@ -159,10 +181,12 @@ beforeEach(() => {
             removeEventListener: () => {},
         }) as unknown as MediaQueryList;
     me = 'alice';
+    missing = ['model'];
     pages = [];
     switches = [];
     created = [];
     patches = [];
+    asked = [];
     vi.stubGlobal('fetch', async (input: string, init?: RequestInit) => {
         const [status, body] = respond(new URL(input, 'http://app.test'), init);
         return new Response(JSON.stringify(body), {
@@ -302,4 +326,52 @@ it('makes a new folder inside a folder, named in its dialog', async () => {
     await until(() => !dialog(), 'the dialog to close');
     expect(created).toEqual([{ title: 'Designs', content: '', parentId: 'f1', folder: true }]);
     await until(() => text().includes('Designs'), 'the new folder inside');
+});
+
+it('offers "Ask about this page" on a page and never on a folder', async () => {
+    missing = [];
+    const ask = () => host.querySelector<HTMLInputElement>('input[placeholder="Ask about this page…"]');
+    pages = [
+        page('p1', 'Garden plan', { content: 'Beds and paths.' }),
+        page('f1', 'Projects', { folder: true, content: 'Text from when it was a page.' }),
+    ];
+    await open('/spaces/s1/pages/p1');
+    await until(() => !!ask(), 'the page chat');
+    expect(host.querySelector('label[for="page-prompt"]')!.textContent).toBe('Ask about this page');
+    // Turned into a folder from its menu, the page chat goes.
+    await openPageMenu();
+    click(menuItem('Turn into folder'));
+    await until(() => !!host.querySelector('[data-slot="folder-contents"]'), 'the folder view');
+    expect(ask()).toBeNull();
+    expect(host.querySelector('[data-slot="page-chat-dock"]')).toBeNull();
+    expect(text()).not.toContain('Ask about this page');
+    // Back into a page, it is offered again.
+    await openPageMenu();
+    click(menuItem('Turn into page'));
+    await until(() => !!ask(), 'the page chat again');
+    // A folder opened directly has none either.
+    await open('/spaces/s1/pages/f1');
+    await until(() => !!host.querySelector('[data-slot="folder-contents"]'), 'the folder');
+    expect(ask()).toBeNull();
+    expect(text()).not.toContain('Ask about this page');
+});
+
+it('switches the open Ask panel when the page shown here turns into a folder and back', async () => {
+    missing = [];
+    // Its own page id: the tab's folder reports outlive a test.
+    pages = [page('p9', 'Garden plan', { content: 'Beds and paths.' })];
+    await open('/spaces/s1/pages/p9');
+    await until(() => !!button('Ask a socio'), 'the Ask button');
+    click(button('Ask a socio'));
+    const askBox = () => document.querySelector<HTMLTextAreaElement>('#ask-prompt');
+    await until(() => askBox()?.placeholder === 'Ask about this page…', 'the Ask panel on the page');
+    await openPageMenu();
+    click(menuItem('Turn into folder'));
+    await until(() => switches.length === 1, 'the switch');
+    await until(() => askBox()?.placeholder === 'Ask anything…', 'the Ask panel on the folder');
+    expect(asked.at(-1)).toBe('?kind=general&id=');
+    await openPageMenu();
+    click(menuItem('Turn into page'));
+    await until(() => askBox()?.placeholder === 'Ask about this page…', 'the Ask panel on the page again');
+    expect(asked.at(-1)).toBe('?kind=page&id=p9');
 });

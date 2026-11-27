@@ -27,6 +27,7 @@ import { HeaderMenuItem } from '../../shell/header-menu';
 import { useRouteParams, useShell } from '../../shell/shell-context';
 import { useUiHints } from '../../shell/ui-hints';
 import { ClientChat } from '../chat/ClientChat';
+import { usePageFolder } from '../pages/page-events';
 import type { SlotProps } from '../types';
 
 import { askableSocios, askContextOf, askShortcut, isAskShortcut, OPEN_ASK, openAsk } from './ask-context';
@@ -160,7 +161,20 @@ export function AskPanel({
     const shell = useShell();
     const { workspace, state } = shell;
     const params = useRouteParams();
-    const ref = askContextOf(params);
+    const screen = askContextOf(params);
+    // A folder (CB-426) hides its body: no "Ask about this page" on it, so the panel asks as on
+    // a screen with no item of its own. Whether the page is one comes from the page this tab
+    // shows (it follows a switch here or in another tab), else from the server's last answer
+    // about it on this visit. The server decides what a socio is told either way.
+    const shown = usePageFolder(screen.kind === 'page' ? screen.id : undefined);
+    const [answered, setAnswered] = useState<{ id: string; folder: boolean }>();
+    const [visit, setVisit] = useState(screen.id);
+    if (visit !== screen.id) {
+        setVisit(screen.id);
+        setAnswered(undefined);
+    }
+    const folder = screen.kind === 'page' && (shown ?? (answered?.id === screen.id ? answered.folder : false));
+    const ref: ReturnType<typeof askContextOf> = folder ? { kind: 'general', id: '' } : screen;
     const dots = askableSocios(workspace.dots, ref.spaceId);
     const [picked, setPicked] = useState<string>();
     // A pick that can't answer here gives way to the person's default.
@@ -181,6 +195,9 @@ export function AskPanel({
         void api<AskLookup>(path)
             .then((data) => {
                 if (active) {
+                    if (data.context.kind === 'page') {
+                        setAnswered({ id: data.context.id, folder: !!data.context.folder });
+                    }
                     setLookup({ path, data });
                 }
             })

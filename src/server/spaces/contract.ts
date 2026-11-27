@@ -27,7 +27,7 @@ import { Context } from 'effect';
 
 import type { DotTurn } from '@socio/foundation/turns/turn';
 import type { OwnedList, TransferParties, TransferTally } from '@socio/shared/auth';
-import type { Page } from '@socio/shared/pages/page-library';
+import type { FolderContext, Page } from '@socio/shared/pages/page-library';
 import type { RunRefRecorder } from '@socio/shared/runs/run-refs';
 import type { SpaceAccessLevel, SpacePeopleView, SpaceRole } from '@socio/shared/space-memory';
 import type { SpaceCreateRequest, SpaceVisibility } from '@socio/shared/spaces/create-input';
@@ -254,8 +254,8 @@ export interface SpacePagesShape {
      * where nothing approves one (a turn a test builds on its own).
      */
     readonly createSpace?: (turn: DotTurn) => ToolDefinition;
-    /** The chat's page, while this socio may read its Space. */
-    readonly pageContext: (input: SpacePageInput) => Page | undefined;
+    /** The chat's page, while this socio may read its Space; a folder without its body (CB-426). */
+    readonly pageContext: (input: SpacePageInput) => Page | FolderContext | undefined;
 }
 
 export class SpacePages extends Context.Service<SpacePages, SpacePagesShape>()('socio/spaces/SpacePages') {}

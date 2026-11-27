@@ -24,6 +24,12 @@ export interface AskContext extends AskContextRef {
     title: string | null;
     /** Null for `general`. */
     path: string | null;
+    /**
+     * A page that is a folder (CB-426): its body is hidden, so the panel
+     * offers no "Ask about this page" on it and asks as on a screen with no
+     * item of its own. Left out for everything else.
+     */
+    folder?: true;
 }
 
 /** `GET /api/ask/conversation`: the context, the socio, and the thread if any. */

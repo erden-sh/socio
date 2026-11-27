@@ -136,6 +136,38 @@ export interface PageTreeItem {
 }
 
 /**
+ * A folder as a socio is told about it (CB-426): its name and the pages
+ * and folders directly inside it, by title. Never its body, which a
+ * folder keeps but hides: nothing derived from it reaches a socio for
+ * "this page" (the page chat's turns, the Ask panel).
+ */
+export interface FolderContext {
+    id: string;
+    spaceId: string;
+    parentId: string | null;
+    title: string;
+    folder: true;
+    revision: number;
+    updatedAt: number;
+    /** What it holds, in the tree's order. */
+    pages: Array<{ id: string; title: string; folder: boolean }>;
+}
+
+/** The folder context of `page`, a folder, from its Space's page tree. */
+export function folderContext(page: Page, tree: readonly PageTreeItem[]): FolderContext {
+    return {
+        id: page.id,
+        spaceId: page.spaceId,
+        parentId: page.parentId,
+        title: page.title,
+        folder: true,
+        revision: page.revision,
+        updatedAt: page.updatedAt,
+        pages: tree.filter((item) => item.parentId === page.id).map(({ id, title, folder }) => ({ id, title, folder })),
+    };
+}
+
+/**
  * A page as the library lists it (CB-71): its excerpt instead of its
  * body. The same on the server and in the browser, after a save.
  */
