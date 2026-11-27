@@ -14,6 +14,7 @@ import { type MessageFile, messageFiles } from './attachment-tray';
 import { type CardRow, cardsOf, isInternalNote, lastScreenshotCall, receiptRow } from './cards';
 import { liveSteps } from './live-steps';
 import { withoutPageLine } from './page-line';
+import { spokenMessage, splitQuote } from './quote-reply';
 import { NO_LIFECYCLE, type ThreadLifecycle } from './run-lifecycle';
 import {
     chatTurns,
@@ -389,14 +390,17 @@ export const rowTime = (row: Pick<UserRow, 'at'>, now?: number): string | null =
     row.at === undefined ? null : messageTime(row.at, now);
 
 /**
- * What a screen reader says for the person's bubble: in a room who wrote it, then its words, then
- * when it was sent; undefined when that is only its words (the Text says them).
+ * What a screen reader says for the person's bubble: in a room who wrote it, then its words (a quote
+ * as "Quoting Ben: …"), then when it was sent; undefined when that is only its words (the Text says them).
  */
 export function bubbleLabel(row: Pick<UserRow, 'text' | 'speaker' | 'at'>, now?: number): string | undefined {
     const time = rowTime(row, now);
-    if (row.speaker === undefined && time === null) {
+    // A quote-reply (CB-571) says whom it quotes in words, never its Markdown.
+    const quoted = splitQuote(row.text).quote !== null;
+    if (row.speaker === undefined && time === null && !quoted) {
         return undefined;
     }
-    const words = row.speaker === undefined ? row.text : `${row.speaker.name}: ${row.text}`;
+    const text = spokenMessage(row.text);
+    const words = row.speaker === undefined ? text : `${row.speaker.name}: ${text}`;
     return time === null ? words : `${words}, ${time}`;
 }
