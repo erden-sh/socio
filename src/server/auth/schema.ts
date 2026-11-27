@@ -297,6 +297,8 @@ CREATE INDEX auth_device_request_createdAt_idx ON auth_device_request(createdAt)
             version: 17,
             name: 'native google and apple sign-in',
             phase: 'expand',
+            compatible:
+                'The unique index covers only google-native and apple-native rows, which no earlier release writes and no generic provider can use (its ids are refused); the table is new and the column nullable.',
             up: `CREATE TABLE auth_social_nonce(nonceHash TEXT PRIMARY KEY, provider TEXT NOT NULL CHECK(provider IN ('google','apple')), purpose TEXT NOT NULL CHECK(purpose IN ('signin','link')), sessionId TEXT, createdAt INTEGER NOT NULL, expiresAt INTEGER NOT NULL, usedAt INTEGER);
 CREATE INDEX auth_social_nonce_expiresAt_idx ON auth_social_nonce(expiresAt);
 ALTER TABLE "auth_account" ADD COLUMN "linkEmail" text;
