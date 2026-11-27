@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
+import { useTranslation } from '@socio/i18n/react';
 import type { OperationsSettingsView } from '@socio/shared/operations/operations';
 import { ianaTimeZone } from '@socio/shared/time-zone';
 
@@ -18,6 +19,7 @@ import { Input } from '@/components/ui/input';
  * chart cuts its days, weeks and months in it.
  */
 export function OpsSettingsSection() {
+    const { t } = useTranslation(['operations.settings', 'operations']);
     const { settings, saved } = useOpsSettings();
     const [zone, setZone] = useState('');
     const [busy, setBusy] = useState(false);
@@ -35,9 +37,9 @@ export function OpsSettingsSection() {
             const view = await api<OperationsSettingsView>('/operations/settings', 'PUT', { timeZone });
             saved(view);
             setZone(view.timeZone);
-            toast.success('Settings saved');
+            toast.success(t('operations.settings:saved'));
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Could not save.');
+            setError(e instanceof Error ? e.message : t('operations.settings:save-failed'));
         } finally {
             setBusy(false);
         }
@@ -56,14 +58,13 @@ export function OpsSettingsSection() {
                 }}
             >
                 <div className="grid gap-1">
-                    <h3 className="font-medium">Reporting time zone</h3>
+                    <h3 className="font-medium">{t('operations.settings:time-zone.title')}</h3>
                     <p className="text-muted-foreground">
-                        Where a day starts in Operations: every tile, chart and range cuts its days, weeks and months in
-                        this time zone, for every admin. The server’s is {settings?.defaults.timeZone ?? 'UTC'}.
+                        {t('operations.settings:time-zone.description', { zone: settings?.defaults.timeZone ?? 'UTC' })}
                     </p>
                 </div>
                 <label className="grid max-w-sm gap-1.5">
-                    <span className="font-medium">Time zone</span>
+                    <span className="font-medium">{t('operations.settings:time-zone.label')}</span>
                     <Input
                         list="ops-time-zones"
                         value={zone}
@@ -77,9 +78,7 @@ export function OpsSettingsSection() {
                         ))}
                     </datalist>
                     {zone && !valid && (
-                        <small className="text-destructive">
-                            Not a time zone name. Pick one from the list, like Europe/Madrid.
-                        </small>
+                        <small className="text-destructive">{t('operations.settings:time-zone.invalid')}</small>
                     )}
                 </label>
                 {error && (
@@ -89,11 +88,11 @@ export function OpsSettingsSection() {
                 )}
                 <div className="flex flex-wrap gap-2">
                     <Button type="submit" disabled={busy || !settings || !valid || zone === settings.timeZone}>
-                        Save
+                        {t('operations.settings:save')}
                     </Button>
                     {settings && settings.timeZone !== settings.defaults.timeZone && (
                         <Button type="button" variant="outline" disabled={busy} onClick={() => void save(null)}>
-                            Use the server’s ({settings.defaults.timeZone})
+                            {t('operations.settings:time-zone.reset', { zone: settings.defaults.timeZone })}
                         </Button>
                     )}
                 </div>

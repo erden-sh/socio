@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { toast } from 'sonner';
 
+import { Trans, useTranslation } from '@socio/i18n/react';
 import {
     CLASSIFY_PER_DAY,
     CLASSIFY_THRESHOLD,
@@ -10,7 +11,7 @@ import {
     type ClassifyUse,
     type ClassifyUseView,
 } from '@socio/shared/classify';
-import { formatNumber } from '@socio/shared/locale';
+import { formatNumber, numberFormat } from '@socio/shared/locale';
 
 import { api } from '../../lib/api';
 import { SettingsCard } from '../settings/AccountSettings';
@@ -23,7 +24,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
-const share = (value: number | null) => (value === null ? '–' : `${Math.round(value * 100)}%`);
+const percent = numberFormat({ style: 'percent', maximumFractionDigits: 0 });
+const dollars = numberFormat({
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 4,
+    maximumFractionDigits: 4,
+});
+const share = (value: number | null) => (value === null ? '–' : percent.format(value));
 
 export interface ClassifyUseCardProps {
     use: ClassifyUse;
@@ -62,6 +70,7 @@ export function ClassifyUseCard({
     labelName = (label) => label,
     extra,
 }: ClassifyUseCardProps) {
+    const { t } = useTranslation(['operations.labeling']);
     const PATH = `/classify/uses/${use}`;
     const { timeZone } = useOpsSettings();
     const [view, setView] = useState<ClassifyUseView>();
@@ -94,7 +103,7 @@ export function ClassifyUseCard({
                 })
                 .catch((e: unknown) => {
                     if (!controller.signal.aborted) {
-                        setError(e instanceof Error ? e.message : 'Could not load these settings.');
+                        setError(e instanceof Error ? e.message : t('operations.labeling:load-failed'));
                     }
                 });
         void load();
@@ -105,7 +114,7 @@ export function ClassifyUseCard({
                 clearInterval(timer);
             }
         };
-    }, [loaded, evaluating, PATH]);
+    }, [loaded, evaluating, PATH, t]);
 
     const percent = Number(threshold);
     const cap = Number(perDay);
@@ -124,7 +133,7 @@ export function ClassifyUseCard({
             loaded(await api<ClassifyUseView>(path, method, body));
             return true;
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Could not save.');
+            setError(e instanceof Error ? e.message : t('operations.labeling:save-failed'));
             return false;
         } finally {
             setBusy(false);
@@ -132,6 +141,25 @@ export function ClassifyUseCard({
     };
 
     const pass = view?.versionPassed;
+    const golden = view ? t('operations.labeling:card.golden-count', { count: view.golden }) : '';
+    const goldenLine =
+        view && view.golden < MIN_GOLDEN
+            ? t('operations.labeling:card.golden-needs', { golden, min: MIN_GOLDEN })
+            : golden;
+    const calls = view
+        ? t('operations.labeling:card.calls', {
+              calls: view.callsToday,
+              perDay: view.perDay,
+              evaluating: view.evalCallsToday,
+              tokens: view.tokensToday,
+              cost:
+                  view.costToday === null ? t('operations.labeling:card.cost-unknown') : dollars.format(view.costToday),
+          })
+        : '';
+    const dayLine =
+        view?.unknownCostCalls && view.costToday !== null
+            ? t('operations.labeling:card.no-cost', { text: calls, count: view.unknownCostCalls })
+            : calls;
     return (
         <SettingsCard>
             <form
@@ -149,7 +177,7 @@ export function ClassifyUseCard({
                             perDay: cap,
                         })
                     ) {
-                        toast.success('Settings saved');
+                        toast.success(t('operations.labeling:saved'));
                     }
                 }}
             >
@@ -167,7 +195,7 @@ export function ClassifyUseCard({
                 </PermissionRow>
                 <div className="flex flex-wrap gap-4">
                     <label className="grid gap-1.5">
-                        <span className="font-medium">Threshold, percent</span>
+                        <span className="font-medium">{t('operations.labeling:card.threshold')}</span>
                         <Input
                             inputMode="numeric"
                             className="w-32"
@@ -178,7 +206,7 @@ export function ClassifyUseCard({
                         />
                     </label>
                     <label className="grid gap-1.5">
-                        <span className="font-medium">Most calls a day</span>
+                        <span className="font-medium">{t('operations.labeling:card.per-day')}</span>
                         <Input
                             inputMode="numeric"
                             className="w-32"
@@ -190,13 +218,16 @@ export function ClassifyUseCard({
                     </label>
                 </div>
                 <p className="m-0 text-muted-foreground">
-                    The threshold is how sure the model must be for a label to count, and how often it must be right,
-                    when that sure, in an evaluation. From {CLASSIFY_THRESHOLD.min * 100} to{' '}
-                    {CLASSIFY_THRESHOLD.max * 100}. The server’s are{' '}
-                    {view
-                        ? `${Math.round(view.defaults.threshold * 100)}% and ${formatNumber(view.defaults.perDay)} calls`
-                        : '…'}
-                    ; 0 calls asks about none.
+                    {t('operations.labeling:card.limits', {
+                        min: CLASSIFY_THRESHOLD.min * 100,
+                        max: CLASSIFY_THRESHOLD.max * 100,
+                        defaults: view
+                            ? t('operations.labeling:card.defaults_known', {
+                                  threshold: view.defaults.threshold,
+                                  count: view.defaults.perDay,
+                              })
+                            : t('operations.labeling:card.defaults'),
+                    })}
                 </p>
                 {error && (
                     <p className="rounded-lg bg-destructive/10 p-3 text-destructive" role="alert">
@@ -205,7 +236,7 @@ export function ClassifyUseCard({
                 )}
                 <div className="flex flex-wrap gap-2">
                     <Button type="submit" disabled={busy || !view || !valid}>
-                        Save
+                        {t('operations.labeling:save')}
                     </Button>
                     <Button
                         type="button"
@@ -219,42 +250,30 @@ export function ClassifyUseCard({
                             })
                         }
                     >
-                        Use the server’s
+                        {t('operations.labeling:card.reset')}
                     </Button>
                 </div>
             </form>
 
             {view && (
                 <section
-                    aria-label="Model and evaluation"
+                    aria-label={t('operations.labeling:card.status')}
                     className="mt-6 grid gap-3 border-t pt-4"
                     data-slot={`${slot}-status`}
                 >
                     <dl className="m-0 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
-                        <dt className="text-muted-foreground">Model</dt>
+                        <dt className="text-muted-foreground">{t('operations.labeling:card.model')}</dt>
                         <dd className="m-0 min-w-0 break-words">
-                            {view.available ? view.version : 'None: set up a default shared model first.'}
+                            {view.available ? view.version : t('operations.labeling:card.no-model')}
                         </dd>
-                        <dt className="text-muted-foreground">Its labels</dt>
+                        <dt className="text-muted-foreground">{t('operations.labeling:card.its-labels')}</dt>
                         <dd className="m-0" data-slot={`${slot}-pass`}>
-                            {pass
-                                ? 'Count: this version passed an evaluation.'
-                                : 'Suggestions only, until this version passes an evaluation.'}
+                            {pass ? t('operations.labeling:card.passed') : t('operations.labeling:card.not-passed')}
                         </dd>
-                        <dt className="text-muted-foreground">Golden set</dt>
-                        <dd className="m-0">
-                            {formatNumber(view.golden)} admin labels
-                            {view.golden < MIN_GOLDEN ? ` (an evaluation needs ${MIN_GOLDEN})` : ''}
-                        </dd>
-                        <dt className="text-muted-foreground">Last 24 hours</dt>
-                        <dd className="m-0">
-                            {formatNumber(view.callsToday)} of {formatNumber(view.perDay)} calls,{' '}
-                            {formatNumber(view.evalCallsToday)} evaluating · {formatNumber(view.tokensToday)} tokens ·{' '}
-                            {view.costToday === null ? 'cost not reported' : `$${view.costToday.toFixed(4)}`}
-                            {view.unknownCostCalls && view.costToday !== null
-                                ? ` (${formatNumber(view.unknownCostCalls)} calls without a cost)`
-                                : ''}
-                        </dd>
+                        <dt className="text-muted-foreground">{t('operations.labeling:card.golden')}</dt>
+                        <dd className="m-0">{goldenLine}</dd>
+                        <dt className="text-muted-foreground">{t('operations.labeling:card.day')}</dt>
+                        <dd className="m-0">{dayLine}</dd>
                     </dl>
                     <div className="flex flex-wrap items-center gap-2">
                         <Button
@@ -263,10 +282,12 @@ export function ClassifyUseCard({
                             disabled={busy || evaluating || !view.available || view.golden < MIN_GOLDEN}
                             onClick={() => void send('POST', `${PATH}/evaluate`)}
                         >
-                            {evaluating ? 'Evaluating…' : 'Evaluate'}
+                            {evaluating
+                                ? t('operations.labeling:card.evaluating')
+                                : t('operations.labeling:card.evaluate')}
                         </Button>
                         <span className="text-xs text-muted-foreground">
-                            Asks the model about every golden label: one call each.
+                            {t('operations.labeling:card.evaluate-help')}
                         </span>
                     </div>
                     {view.lastEval && (
@@ -290,32 +311,47 @@ function EvalSummary({
     slot: string;
     labelName: (label: string) => string;
 }) {
+    const { t } = useTranslation(['operations.labeling']);
     const verdict =
         report.status === 'running'
-            ? 'Running…'
+            ? t('operations.labeling:eval.running')
             : report.status === 'failed'
-              ? `Failed: ${report.error ?? 'unknown'}`
+              ? t('operations.labeling:eval.failed', { error: report.error ?? t('operations.labeling:eval.unknown') })
               : report.passed
-                ? 'Passed'
+                ? t('operations.labeling:eval.passed')
                 : report.answered < MIN_ANSWERED
-                  ? `Did not pass: it was sure of ${report.answered}, fewer than ${MIN_ANSWERED}`
-                  : `Did not pass: ${share(report.precision)} right, under ${share(report.threshold)}`;
+                  ? t('operations.labeling:eval.few-answered', { answered: report.answered, min: MIN_ANSWERED })
+                  : t('operations.labeling:eval.imprecise', {
+                        precision: share(report.precision),
+                        threshold: share(report.threshold),
+                    });
     return (
         <div className="grid gap-2" data-slot={`${slot}-eval`}>
             <p className="m-0 text-sm">
-                <span className="font-medium">Last evaluation</span>, {formatWhen(report.startedAt, timeZone)}, of{' '}
-                {report.version}: {verdict}. {formatNumber(report.golden)} labels, {formatNumber(report.answered)}{' '}
-                answered, {share(report.precision)} of those right, {share(report.accuracy)} right overall.
+                <Trans
+                    t={t}
+                    i18nKey="operations.labeling:eval.summary"
+                    values={{
+                        when: formatWhen(report.startedAt, timeZone),
+                        version: report.version,
+                        verdict,
+                        golden: report.golden,
+                        answered: report.answered,
+                        precision: share(report.precision),
+                        accuracy: share(report.accuracy),
+                    }}
+                    components={{ strong: <span className="font-medium" /> }}
+                />
             </p>
             {report.status === 'done' && (
-                <Table aria-label="Per label">
+                <Table aria-label={t('operations.labeling:eval.per-label')}>
                     <TableHeader>
                         <TableRow>
-                            <TableHead>Label</TableHead>
-                            <TableHead className="text-right">Admin labels</TableHead>
-                            <TableHead className="text-right">Model said</TableHead>
-                            <TableHead className="text-right">Precision</TableHead>
-                            <TableHead className="text-right">Recall</TableHead>
+                            <TableHead>{t('operations.labeling:eval.label')}</TableHead>
+                            <TableHead className="text-right">{t('operations.labeling:eval.admin-labels')}</TableHead>
+                            <TableHead className="text-right">{t('operations.labeling:eval.model-said')}</TableHead>
+                            <TableHead className="text-right">{t('operations.labeling:eval.precision')}</TableHead>
+                            <TableHead className="text-right">{t('operations.labeling:eval.recall')}</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>

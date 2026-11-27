@@ -2,12 +2,13 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router';
 import { toast } from 'sonner';
 
-import { compareText, formatNumber } from '@socio/shared/locale';
+import { useTranslation } from '@socio/i18n/react';
+import { compareText } from '@socio/shared/locale';
 import {
     DEFAULT_POOL_WEIGHTS,
     POOL_CATEGORIES,
     POOL_PERIODS,
-    PRICE_SOURCES,
+    PRICE_SOURCE_IDS,
     type CostPool,
     type OpsCostPool,
     type PoolCategory,
@@ -16,9 +17,10 @@ import {
     type PricingView,
 } from '@socio/shared/operations/operations-cost';
 
+import { onDemand } from '../../i18n/on-demand';
 import { api } from '../../lib/api';
 
-import { dayInput, dayOf, formatPerM, formatUsd, originLabel } from './cost-format';
+import { dayInput, dayOf, formatUsd, useFormatPerM, useOriginLabel } from './cost-format';
 import { formatWhen } from './format';
 import { opsPath } from './sections';
 import { useOpsSettings } from './use-ops';
@@ -33,20 +35,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 type Reload = () => Promise<void>;
-
-const CATEGORY_LABELS: Record<PoolCategory, string> = {
-    hardware: 'Hardware',
-    power: 'Power',
-    hosting: 'Hosting',
-    subscription: 'Subscription',
-    other: 'Other',
-};
-const PERIOD_LABELS: Record<PoolPeriod, string> = {
-    hour: 'an hour',
-    day: 'a day',
-    month: 'a month',
-    year: 'a year',
-};
 
 const field = 'grid min-w-0 gap-1.5 text-sm';
 /** A non-negative number from a field, or null when it isn't one. */
@@ -65,6 +53,7 @@ function ErrorLine({ error }: { error: string }) {
 
 /** Runs a change, tells how it went, and reads the prices again. */
 function useChange(reload: Reload) {
+    const { t } = useTranslation(['operations.cost-admin']);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
     const run = async (work: () => Promise<unknown>, done: string) => {
@@ -76,7 +65,7 @@ function useChange(reload: Reload) {
             await reload();
             return true;
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Could not save.');
+            setError(e instanceof Error ? e.message : t('operations.cost-admin:save-failed'));
             return false;
         } finally {
             setBusy(false);
@@ -86,14 +75,18 @@ function useChange(reload: Reload) {
 }
 
 /** What a pool costs, in a phrase. */
-function poolTerms(pool: CostPool) {
-    if (pool.kind === 'variable') {
-        return `${formatUsd(pool.amount)} a unit, from meter readings`;
-    }
-    if (pool.depreciationMonths) {
-        return `${formatUsd(pool.amount)} written off over ${pool.depreciationMonths} months`;
-    }
-    return `${formatUsd(pool.amount)} ${PERIOD_LABELS[pool.period]}`;
+function usePoolTerms() {
+    const { t } = useTranslation(['operations.cost-admin']);
+    return (pool: CostPool) => {
+        const amount = formatUsd(pool.amount);
+        if (pool.kind === 'variable') {
+            return t('operations.cost-admin:pools.terms.variable', { amount });
+        }
+        if (pool.depreciationMonths) {
+            return t('operations.cost-admin:pools.terms.depreciated', { amount, count: pool.depreciationMonths });
+        }
+        return t('operations.cost-admin:pools.terms.per', { amount, context: pool.period });
+    };
 }
 
 /**
@@ -101,7 +94,7 @@ function poolTerms(pool: CostPool) {
  * over the range, what their turns took and what idled, with the forms
  * to add, change and remove them and a metered pool's readings.
  */
-export function CostPools({
+function CostPoolsCard({
     view,
     pools,
     loaded,
@@ -112,6 +105,8 @@ export function CostPools({
     loaded: boolean;
     reload: Reload;
 }) {
+    const { t } = useTranslation(['operations.cost-admin']);
+    const poolTerms = usePoolTerms();
     const [editing, setEditing] = useState<CostPool | 'new'>();
     const [metering, setMetering] = useState<string>();
     const change = useChange(reload);
@@ -120,12 +115,8 @@ export function CostPools({
     return (
         <Card className="min-w-0 gap-4" data-slot="ops-cost-pools">
             <CardHeader>
-                <CardTitle>Cost pools</CardTitle>
-                <CardDescription>
-                    What self-hosted backends and subscriptions cost: each hour’s cost is shared among that hour’s turns
-                    on the pool’s backends by weighted tokens; hours without turns are idle capacity. Pools are the
-                    workspace’s, whatever the filters. Subscription pools are estimates.
-                </CardDescription>
+                <CardTitle>{t('operations.cost-admin:pools.title')}</CardTitle>
+                <CardDescription>{t('operations.cost-admin:pools.description')}</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4">
                 <ErrorLine error={change.error} />
@@ -135,12 +126,12 @@ export function CostPools({
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Pool</TableHead>
-                                <TableHead className="text-right">Cost</TableHead>
-                                <TableHead className="text-right">Turns took</TableHead>
-                                <TableHead className="text-right">Idle</TableHead>
+                                <TableHead>{t('operations.cost-admin:pools.pool')}</TableHead>
+                                <TableHead className="text-right">{t('operations.cost-admin:pools.cost')}</TableHead>
+                                <TableHead className="text-right">{t('operations.cost-admin:pools.took')}</TableHead>
+                                <TableHead className="text-right">{t('operations.cost-admin:pools.idle')}</TableHead>
                                 <TableHead>
-                                    <span className="sr-only">Actions</span>
+                                    <span className="sr-only">{t('operations.cost-admin:actions')}</span>
                                 </TableHead>
                             </TableRow>
                         </TableHeader>
@@ -152,19 +143,25 @@ export function CostPools({
                                         <TableCell className="max-w-72 align-top">
                                             <div className="flex flex-wrap items-center gap-1.5">
                                                 <span className="font-medium">{pool.name}</span>
-                                                <Badge variant="outline">{CATEGORY_LABELS[pool.category]}</Badge>
+                                                <Badge variant="outline">
+                                                    {t(`operations.cost-admin:categories.${pool.category}`)}
+                                                </Badge>
                                                 {pool.category === 'subscription' && (
-                                                    <Badge variant="secondary">Estimate</Badge>
+                                                    <Badge variant="secondary">
+                                                        {t('operations.cost-admin:pools.estimate')}
+                                                    </Badge>
                                                 )}
                                                 {pool.allocation === 'gpu_seconds' && (
-                                                    <Badge variant="secondary">By GPU time: no meter yet</Badge>
+                                                    <Badge variant="secondary">
+                                                        {t('operations.cost-admin:pools.gpu')}
+                                                    </Badge>
                                                 )}
                                             </div>
                                             <div className="text-xs text-muted-foreground">
                                                 {poolTerms(pool)} ·{' '}
                                                 {pool.backendIds.length
                                                     ? pool.backendIds.map((id) => labels.get(id) ?? id).join(', ')
-                                                    : 'no backends'}
+                                                    : t('operations.cost-admin:pools.no-backends')}
                                             </div>
                                         </TableCell>
                                         <TableCell className="text-right align-top tabular-nums">
@@ -186,11 +183,11 @@ export function CostPools({
                                                             setMetering(metering === pool.id ? undefined : pool.id)
                                                         }
                                                     >
-                                                        Readings
+                                                        {t('operations.cost-admin:pools.readings')}
                                                     </Button>
                                                 )}
                                                 <Button size="sm" variant="ghost" onClick={() => setEditing(pool)}>
-                                                    Edit
+                                                    {t('operations.cost-admin:pools.edit')}
                                                 </Button>
                                                 <Button
                                                     size="sm"
@@ -203,11 +200,11 @@ export function CostPools({
                                                                     `/operations/pricing/pools/${encodeURIComponent(pool.id)}`,
                                                                     'DELETE',
                                                                 ),
-                                                            'Cost pool removed',
+                                                            t('operations.cost-admin:pools.removed'),
                                                         )
                                                     }
                                                 >
-                                                    Remove
+                                                    {t('operations.cost-admin:remove')}
                                                 </Button>
                                             </div>
                                         </TableCell>
@@ -217,10 +214,7 @@ export function CostPools({
                         </TableBody>
                     </Table>
                 ) : (
-                    <p className="m-0 text-sm text-muted-foreground">
-                        No cost pools yet. Add one for a self-hosted backend (its hardware, power, hosting) or for
-                        ChatGPT subscriptions.
-                    </p>
+                    <p className="m-0 text-sm text-muted-foreground">{t('operations.cost-admin:pools.none')}</p>
                 )}
                 {view && metering && (
                     <Readings view={view} pool={view.pools.find((pool) => pool.id === metering)} reload={reload} />
@@ -236,7 +230,7 @@ export function CostPools({
                     view && (
                         <div>
                             <Button variant="outline" onClick={() => setEditing('new')}>
-                                Add a cost pool
+                                {t('operations.cost-admin:pools.add')}
                             </Button>
                         </div>
                     )
@@ -257,6 +251,7 @@ function PoolForm({
     done: () => void;
     reload: Reload;
 }) {
+    const { t } = useTranslation(['operations.cost-admin']);
     const [name, setName] = useState(pool?.name ?? '');
     const [category, setCategory] = useState<PoolCategory>(pool?.category ?? 'hardware');
     const [metered, setMetered] = useState(pool?.kind === 'variable');
@@ -312,7 +307,7 @@ function PoolForm({
                 pool
                     ? api(`/operations/pricing/pools/${encodeURIComponent(pool.id)}`, 'PUT', body)
                     : api('/operations/pricing/pools', 'POST', body),
-            pool ? 'Cost pool saved' : 'Cost pool added',
+            pool ? t('operations.cost-admin:pool-form.saved') : t('operations.cost-admin:pool-form.added'),
         );
         if (saved) {
             done();
@@ -324,14 +319,18 @@ function PoolForm({
             data-slot="ops-pool-form"
             onSubmit={(event) => void submit(event)}
         >
-            <h3 className="m-0 font-medium">{pool ? `Change ${pool.name}` : 'New cost pool'}</h3>
+            <h3 className="m-0 font-medium">
+                {pool
+                    ? t('operations.cost-admin:pool-form.change', { name: pool.name })
+                    : t('operations.cost-admin:pool-form.new')}
+            </h3>
             <div className="grid gap-4 sm:grid-cols-2">
                 <label className={field}>
-                    Name
+                    {t('operations.cost-admin:pool-form.name')}
                     <Input value={name} maxLength={120} onChange={(event) => setName(event.target.value)} />
                 </label>
                 <div className={field}>
-                    <span id="pool-category">Category</span>
+                    <span id="pool-category">{t('operations.cost-admin:pool-form.category')}</span>
                     <Select value={category} onValueChange={(next) => setCategory(next as PoolCategory)}>
                         <SelectTrigger aria-labelledby="pool-category">
                             <SelectValue />
@@ -339,7 +338,7 @@ function PoolForm({
                         <SelectContent>
                             {POOL_CATEGORIES.map((item) => (
                                 <SelectItem key={item} value={item}>
-                                    {CATEGORY_LABELS[item]}
+                                    {t(`operations.cost-admin:categories.${item}`)}
                                 </SelectItem>
                             ))}
                         </SelectContent>
@@ -347,14 +346,12 @@ function PoolForm({
                 </div>
                 <label className="flex items-center gap-2 text-sm sm:col-span-2">
                     <Checkbox checked={metered} onCheckedChange={(checked) => setMetered(checked === true)} />
-                    Metered: its cost comes from meter readings (power, for one)
+                    {t('operations.cost-admin:pool-form.metered')}
                 </label>
                 <label className={field}>
-                    {metered
-                        ? 'US dollars a unit (unless a reading says)'
-                        : depreciation
-                          ? 'Purchase price, US dollars'
-                          : 'US dollars'}
+                    {t('operations.cost-admin:pool-form.amount', {
+                        context: metered ? 'metered' : depreciation ? 'purchase' : undefined,
+                    })}
                     <Input
                         inputMode="decimal"
                         value={amount}
@@ -365,7 +362,7 @@ function PoolForm({
                 {!metered && (
                     <>
                         <div className={field}>
-                            <span id="pool-period">Per</span>
+                            <span id="pool-period">{t('operations.cost-admin:pool-form.per')}</span>
                             <Select
                                 value={period}
                                 disabled={!!depreciation}
@@ -377,14 +374,14 @@ function PoolForm({
                                 <SelectContent>
                                     {POOL_PERIODS.map((item) => (
                                         <SelectItem key={item} value={item}>
-                                            {item}
+                                            {t(`operations.cost-admin:periods.${item}`)}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
                         </div>
                         <label className={field}>
-                            Write off over months (a purchase; empty for a running cost)
+                            {t('operations.cost-admin:pool-form.months')}
                             <Input
                                 inputMode="numeric"
                                 value={months}
@@ -394,11 +391,11 @@ function PoolForm({
                     </>
                 )}
                 <label className={field}>
-                    From (UTC)
+                    {t('operations.cost-admin:pool-form.from')}
                     <Input type="date" value={starts} onChange={(event) => setStarts(event.target.value)} />
                 </label>
                 <label className={field}>
-                    Until (UTC, optional)
+                    {t('operations.cost-admin:pool-form.until')}
                     <Input
                         type="date"
                         value={ends}
@@ -408,7 +405,7 @@ function PoolForm({
                 </label>
             </div>
             <fieldset className="m-0 grid gap-2 border-0 p-0">
-                <legend className="mb-1 text-sm font-medium">Backends it pays for</legend>
+                <legend className="mb-1 text-sm font-medium">{t('operations.cost-admin:pool-form.backends')}</legend>
                 {view.backends.length ? (
                     view.backends.map((backend) => (
                         <label key={backend.id} className="flex items-center gap-2 text-sm">
@@ -432,15 +429,17 @@ function PoolForm({
                         </label>
                     ))
                 ) : (
-                    <p className="m-0 text-sm text-muted-foreground">No backends yet: add one on the Platform page.</p>
+                    <p className="m-0 text-sm text-muted-foreground">
+                        {t('operations.cost-admin:pool-form.no-backends')}
+                    </p>
                 )}
             </fieldset>
             <fieldset className="m-0 grid gap-2 border-0 p-0">
-                <legend className="mb-1 text-sm font-medium">Token weights for sharing an hour</legend>
+                <legend className="mb-1 text-sm font-medium">{t('operations.cost-admin:pool-form.weights')}</legend>
                 <div className="grid grid-cols-3 gap-3">
                     {(['input', 'cached', 'output'] as const).map((key) => (
                         <label key={key} className={field}>
-                            {key === 'input' ? 'Input' : key === 'cached' ? 'Cached input' : 'Output'}
+                            {t(`operations.cost-admin:pool-form.${key}`)}
                             <Input
                                 inputMode="decimal"
                                 value={weights[key]}
@@ -454,10 +453,10 @@ function PoolForm({
             <ErrorLine error={change.error} />
             <div className="flex flex-wrap gap-2">
                 <Button type="submit" disabled={!valid || change.busy}>
-                    {pool ? 'Save' : 'Add'}
+                    {pool ? t('operations.cost-admin:pool-form.save') : t('operations.cost-admin:pool-form.add')}
                 </Button>
                 <Button type="button" variant="outline" onClick={done}>
-                    Cancel
+                    {t('operations.cost-admin:pool-form.cancel')}
                 </Button>
             </div>
         </form>
@@ -466,6 +465,7 @@ function PoolForm({
 
 /** A metered pool's readings, newest first, and a form for the next one. */
 function Readings({ view, pool, reload }: { view: PricingView; pool: CostPool | undefined; reload: Reload }) {
+    const { t } = useTranslation(['operations.cost-admin']);
     const { timeZone } = useOpsSettings();
     const [at, setAt] = useState(dayInput(Date.now()));
     const [quantity, setQuantity] = useState('');
@@ -482,19 +482,19 @@ function Readings({ view, pool, reload }: { view: PricingView; pool: CostPool | 
     const valid = when !== null && amount !== null && unit.trim() !== '' && (unitPrice.trim() === '' || price !== null);
     return (
         <div className="grid gap-3 rounded-lg border p-4" data-slot="ops-readings">
-            <h3 className="m-0 font-medium">{pool.name}: meter readings</h3>
-            <p className="m-0 text-sm text-muted-foreground">
-                Each reading is what was used since the one before (or since the pool started), spread evenly over that
-                time.
-            </p>
+            <h3 className="m-0 font-medium">{t('operations.cost-admin:readings.title', { name: pool.name })}</h3>
+            <p className="m-0 text-sm text-muted-foreground">{t('operations.cost-admin:readings.description')}</p>
             {readings.length > 0 && (
                 <ul className="m-0 grid list-none gap-1 p-0 text-sm">
                     {readings.map((reading) => (
                         <li key={reading.id} className="flex flex-wrap items-center gap-2">
                             <span className="tabular-nums">{formatWhen(reading.at, timeZone)}</span>
                             <span>
-                                {formatNumber(reading.quantity)} {reading.unit} at{' '}
-                                {formatUsd(reading.unitPrice ?? pool.amount)}
+                                {t('operations.cost-admin:readings.reading', {
+                                    quantity: reading.quantity,
+                                    unit: reading.unit,
+                                    price: formatUsd(reading.unitPrice ?? pool.amount),
+                                })}
                             </span>
                             <Button
                                 size="sm"
@@ -507,11 +507,11 @@ function Readings({ view, pool, reload }: { view: PricingView; pool: CostPool | 
                                                 `/operations/pricing/readings/${encodeURIComponent(reading.id)}`,
                                                 'DELETE',
                                             ),
-                                        'Reading removed',
+                                        t('operations.cost-admin:readings.removed'),
                                     )
                                 }
                             >
-                                Remove
+                                {t('operations.cost-admin:remove')}
                             </Button>
                         </li>
                     ))}
@@ -533,17 +533,17 @@ function Readings({ view, pool, reload }: { view: PricingView; pool: CostPool | 
                                     unit: unit.trim(),
                                     unitPrice: price,
                                 }),
-                            'Reading added',
+                            t('operations.cost-admin:readings.added'),
                         )
                         .then((saved) => saved && setQuantity(''));
                 }}
             >
                 <label className={field}>
-                    Read on (UTC)
+                    {t('operations.cost-admin:readings.read-on')}
                     <Input type="date" value={at} onChange={(event) => setAt(event.target.value)} />
                 </label>
                 <label className={field}>
-                    Used
+                    {t('operations.cost-admin:readings.used')}
                     <Input
                         inputMode="decimal"
                         value={quantity}
@@ -551,11 +551,11 @@ function Readings({ view, pool, reload }: { view: PricingView; pool: CostPool | 
                     />
                 </label>
                 <label className={field}>
-                    Unit
+                    {t('operations.cost-admin:readings.unit')}
                     <Input value={unit} maxLength={32} onChange={(event) => setUnit(event.target.value)} />
                 </label>
                 <label className={field}>
-                    US dollars a unit (optional)
+                    {t('operations.cost-admin:readings.unit-price')}
                     <Input
                         inputMode="decimal"
                         value={unitPrice}
@@ -566,7 +566,7 @@ function Readings({ view, pool, reload }: { view: PricingView; pool: CostPool | 
                 <ErrorLine error={change.error} />
                 <div className="sm:col-span-4">
                     <Button type="submit" disabled={!valid || change.busy}>
-                        Add reading
+                        {t('operations.cost-admin:readings.add')}
                     </Button>
                 </div>
             </form>
@@ -578,7 +578,8 @@ function Readings({ view, pool, reload }: { view: PricingView; pool: CostPool | 
  * The daily price sync's state (CB-195): on or off (switched in
  * Settings), each source's last run, and "Sync now".
  */
-export function PriceSyncStatus({ view, reload }: { view: PricingView | undefined; reload: Reload }) {
+function PriceSyncCard({ view, reload }: { view: PricingView | undefined; reload: Reload }) {
+    const { t } = useTranslation(['operations.cost-admin']);
     const { timeZone } = useOpsSettings();
     const change = useChange(reload);
     const sync = view?.sync;
@@ -586,24 +587,17 @@ export function PriceSyncStatus({ view, reload }: { view: PricingView | undefine
     return (
         <Card className="min-w-0 gap-4" data-slot="ops-price-sync">
             <CardHeader>
-                <CardTitle>Price sync</CardTitle>
+                <CardTitle>{t('operations.cost-admin:sync.title')}</CardTitle>
                 <CardDescription>
                     {sync ? (
-                        sync.enabled ? (
-                            <>
-                                On: once a day Socio reads providers’ and community price lists and keeps the prices of
-                                the {formatNumber(sync.watched.length)} models in use. The requests carry nothing about
-                                this workspace.{' '}
-                            </>
-                        ) : (
-                            <>
-                                Off: Socio reads no price lists, and turns are priced only by the prices it already has
-                                and admins’ own.{' '}
-                            </>
-                        )
+                        <>
+                            {sync.enabled
+                                ? t('operations.cost-admin:sync.on', { count: sync.watched.length })
+                                : t('operations.cost-admin:sync.off')}{' '}
+                        </>
                     ) : null}
                     <Link to={opsPath('settings')} className="underline">
-                        Switch it in Settings
+                        {t('operations.cost-admin:sync.switch')}
                     </Link>
                 </CardDescription>
             </CardHeader>
@@ -615,32 +609,41 @@ export function PriceSyncStatus({ view, reload }: { view: PricingView | undefine
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>List</TableHead>
-                                <TableHead>Last read</TableHead>
-                                <TableHead className="text-right">Models kept</TableHead>
+                                <TableHead>{t('operations.cost-admin:sync.list')}</TableHead>
+                                <TableHead>{t('operations.cost-admin:sync.last-read')}</TableHead>
+                                <TableHead className="text-right">{t('operations.cost-admin:sync.kept')}</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {Object.entries(PRICE_SOURCES).map(([id, source]) => {
-                                const run = runs.get(id as keyof typeof PRICE_SOURCES);
+                            {PRICE_SOURCE_IDS.map((id) => {
+                                const run = runs.get(id);
                                 return (
                                     <TableRow key={id} data-source={id}>
-                                        <TableCell className="font-medium">{source.label}</TableCell>
+                                        <TableCell className="font-medium">
+                                            {t(`operations.cost-admin:sources.${id}`)}
+                                        </TableCell>
                                         <TableCell>
                                             {run ? (
                                                 <>
                                                     {formatWhen(run.at, timeZone)}{' '}
                                                     {run.ok ? null : (
-                                                        <Badge variant="destructive">Failed: {run.error}</Badge>
+                                                        <Badge variant="destructive">
+                                                            {t('operations.cost-admin:sync.failed', {
+                                                                error: run.error ?? '',
+                                                            })}
+                                                        </Badge>
                                                     )}
                                                 </>
                                             ) : (
-                                                'Never'
+                                                t('operations.cost-admin:sync.never')
                                             )}
                                         </TableCell>
                                         <TableCell className="text-right tabular-nums">
                                             {run?.ok
-                                                ? `${formatNumber(run.matched)} of ${formatNumber(run.fetched)}`
+                                                ? t('operations.cost-admin:sync.matched', {
+                                                      matched: run.matched,
+                                                      fetched: run.fetched,
+                                                  })
                                                 : '–'}
                                         </TableCell>
                                     </TableRow>
@@ -657,15 +660,19 @@ export function PriceSyncStatus({ view, reload }: { view: PricingView | undefine
                             onClick={() =>
                                 void change.run(
                                     () => api<PriceSyncView>('/operations/pricing/sync', 'POST', {}),
-                                    'Price sync started',
+                                    t('operations.cost-admin:sync.started'),
                                 )
                             }
                         >
-                            {sync.running ? 'Syncing…' : 'Sync now'}
+                            {sync.running
+                                ? t('operations.cost-admin:sync.syncing')
+                                : t('operations.cost-admin:sync.now')}
                         </Button>
                         {sync.nextAt !== null && !sync.running && (
                             <span className="text-sm text-muted-foreground">
-                                Next: {formatWhen(Math.max(sync.nextAt, Date.now()), timeZone)}
+                                {t('operations.cost-admin:sync.next', {
+                                    when: formatWhen(Math.max(sync.nextAt, Date.now()), timeZone),
+                                })}
                             </span>
                         )}
                     </div>
@@ -679,7 +686,7 @@ export function PriceSyncStatus({ view, reload }: { view: PricingView | undefine
  * The prices Socio keeps (CB-195): synced ones, and admins’, which win
  * from their date onward; a form for an admin’s price.
  */
-export function Prices({
+function PricesCard({
     view,
     error,
     reload,
@@ -690,6 +697,9 @@ export function Prices({
     reload: Reload;
     prefill?: { model: string; provider: string };
 }) {
+    const { t } = useTranslation(['operations.cost-admin']);
+    const formatPerM = useFormatPerM();
+    const originLabel = useOriginLabel();
     const { timeZone } = useOpsSettings();
     const [filter, setFilter] = useState('');
     const change = useChange(reload);
@@ -708,17 +718,13 @@ export function Prices({
     return (
         <Card className="min-w-0 gap-4" data-slot="ops-prices">
             <CardHeader>
-                <CardTitle>Prices</CardTitle>
-                <CardDescription>
-                    US dollars per million tokens. A turn takes its provider’s price in force when it started: an
-                    admin’s from its date onward, then the provider’s own list, then a community list. Provider * holds
-                    for every provider, such as a self-hosted one.
-                </CardDescription>
+                <CardTitle>{t('operations.cost-admin:prices.title')}</CardTitle>
+                <CardDescription>{t('operations.cost-admin:prices.description')}</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4">
                 <ErrorLine error={error || change.error} />
                 <label className="grid max-w-sm gap-1.5 text-sm">
-                    Find a model or provider
+                    {t('operations.cost-admin:prices.find')}
                     <Input value={filter} onChange={(event) => setFilter(event.target.value)} />
                 </label>
                 {!view ? (
@@ -727,15 +733,15 @@ export function Prices({
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Model</TableHead>
-                                <TableHead>Provider</TableHead>
-                                <TableHead className="text-right">Input</TableHead>
-                                <TableHead className="text-right">Cached</TableHead>
-                                <TableHead className="text-right">Output</TableHead>
-                                <TableHead>From</TableHead>
-                                <TableHead>Source</TableHead>
+                                <TableHead>{t('operations.cost-admin:prices.model')}</TableHead>
+                                <TableHead>{t('operations.cost-admin:prices.provider')}</TableHead>
+                                <TableHead className="text-right">{t('operations.cost-admin:prices.input')}</TableHead>
+                                <TableHead className="text-right">{t('operations.cost-admin:prices.cached')}</TableHead>
+                                <TableHead className="text-right">{t('operations.cost-admin:prices.output')}</TableHead>
+                                <TableHead>{t('operations.cost-admin:prices.from')}</TableHead>
+                                <TableHead>{t('operations.cost-admin:prices.source')}</TableHead>
                                 <TableHead>
-                                    <span className="sr-only">Actions</span>
+                                    <span className="sr-only">{t('operations.cost-admin:actions')}</span>
                                 </TableHead>
                             </TableRow>
                         </TableHeader>
@@ -770,11 +776,11 @@ export function Prices({
                                                                 `/operations/pricing/prices/${encodeURIComponent(price.id)}`,
                                                                 'DELETE',
                                                             ),
-                                                        'Price removed',
+                                                        t('operations.cost-admin:prices.removed'),
                                                     )
                                                 }
                                             >
-                                                Remove
+                                                {t('operations.cost-admin:remove')}
                                             </Button>
                                         )}
                                     </TableCell>
@@ -784,7 +790,7 @@ export function Prices({
                     </Table>
                 ) : (
                     <p className="m-0 text-sm text-muted-foreground">
-                        {wanted ? 'No price matches.' : 'No prices yet. Turn the price sync on, or add a price.'}
+                        {wanted ? t('operations.cost-admin:prices.no-match') : t('operations.cost-admin:prices.none')}
                     </p>
                 )}
                 {view && <PriceForm reload={reload} prefill={prefill} />}
@@ -794,6 +800,7 @@ export function Prices({
 }
 
 function PriceForm({ reload, prefill }: { reload: Reload; prefill?: { model: string; provider: string } }) {
+    const { t } = useTranslation(['operations.cost-admin']);
     const [provider, setProvider] = useState('*');
     const [model, setModel] = useState('');
     const [input, setInput] = useState('');
@@ -840,7 +847,7 @@ function PriceForm({ reload, prefill }: { reload: Reload; prefill?: { model: str
                                 reasoningPerM: null,
                                 effectiveFrom,
                             }),
-                        'Price saved',
+                        t('operations.cost-admin:price-form.saved'),
                     )
                     .then((saved) => {
                         if (saved) {
@@ -851,22 +858,22 @@ function PriceForm({ reload, prefill }: { reload: Reload; prefill?: { model: str
                     });
             }}
         >
-            <h3 className="m-0 font-medium">Add a price</h3>
+            <h3 className="m-0 font-medium">{t('operations.cost-admin:price-form.title')}</h3>
             <div className="grid gap-3 sm:grid-cols-3">
                 <label className={field}>
-                    Model
+                    {t('operations.cost-admin:price-form.model')}
                     <Input value={model} maxLength={200} onChange={(event) => setModel(event.target.value)} />
                 </label>
                 <label className={field}>
-                    Provider (* for any)
+                    {t('operations.cost-admin:price-form.provider')}
                     <Input value={provider} maxLength={64} onChange={(event) => setProvider(event.target.value)} />
                 </label>
                 <label className={field}>
-                    From (UTC)
+                    {t('operations.cost-admin:price-form.from')}
                     <Input type="date" value={from} onChange={(event) => setFrom(event.target.value)} />
                 </label>
                 <label className={field}>
-                    Input, $ per million
+                    {t('operations.cost-admin:price-form.input')}
                     <Input
                         inputMode="decimal"
                         value={input}
@@ -874,7 +881,7 @@ function PriceForm({ reload, prefill }: { reload: Reload; prefill?: { model: str
                     />
                 </label>
                 <label className={field}>
-                    Cached input (optional)
+                    {t('operations.cost-admin:price-form.cached')}
                     <Input
                         inputMode="decimal"
                         value={cached}
@@ -882,7 +889,7 @@ function PriceForm({ reload, prefill }: { reload: Reload; prefill?: { model: str
                     />
                 </label>
                 <label className={field}>
-                    Output, $ per million
+                    {t('operations.cost-admin:price-form.output')}
                     <Input
                         inputMode="decimal"
                         value={output}
@@ -893,9 +900,16 @@ function PriceForm({ reload, prefill }: { reload: Reload; prefill?: { model: str
             <ErrorLine error={change.error} />
             <div>
                 <Button type="submit" disabled={!valid || change.busy}>
-                    Save price
+                    {t('operations.cost-admin:price-form.save')}
                 </Button>
             </div>
         </form>
     );
 }
+
+// Words of the cards at the foot of Cost, below the fold: they load when
+// the page shows them (docs/I18N.md), so the route inlines less.
+const ADMIN_WORDS = ['operations.cost-admin'] as const;
+export const CostPools = onDemand(ADMIN_WORDS, CostPoolsCard);
+export const PriceSyncStatus = onDemand(ADMIN_WORDS, PriceSyncCard);
+export const Prices = onDemand(ADMIN_WORDS, PricesCard);

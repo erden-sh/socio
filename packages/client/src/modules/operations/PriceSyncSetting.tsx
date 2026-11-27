@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
+import { useTranslation } from '@socio/i18n/react';
 import type { PriceSyncView, PricingView } from '@socio/shared/operations/operations-cost';
 
 import { api } from '../../lib/api';
@@ -16,6 +17,7 @@ import { Switch } from '@/components/ui/switch';
  * are written to the workspace audit.
  */
 export function PriceSyncSetting() {
+    const { t } = useTranslation(['operations.settings', 'operations']);
     const [sync, setSync] = useState<PriceSyncView>();
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
@@ -25,11 +27,11 @@ export function PriceSyncSetting() {
             .then((view) => !controller.signal.aborted && setSync(view.sync))
             .catch((e: unknown) => {
                 if (!controller.signal.aborted) {
-                    setError(e instanceof Error ? e.message : 'Could not load.');
+                    setError(e instanceof Error ? e.message : t('operations:load-failed'));
                 }
             });
         return () => controller.abort();
-    }, []);
+    }, [t]);
     const save = async (enabled: boolean | null) => {
         setBusy(true);
         setError('');
@@ -39,9 +41,9 @@ export function PriceSyncSetting() {
                     enabled,
                 }),
             );
-            toast.success('Settings saved');
+            toast.success(t('operations.settings:saved'));
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Could not save.');
+            setError(e instanceof Error ? e.message : t('operations.settings:save-failed'));
         } finally {
             setBusy(false);
         }
@@ -50,14 +52,13 @@ export function PriceSyncSetting() {
         <SettingsCard>
             <div className="grid gap-4" data-slot="ops-price-sync-setting">
                 <div className="grid gap-1">
-                    <h3 className="font-medium">Price sync</h3>
+                    <h3 className="font-medium">{t('operations.settings:price-sync.title')}</h3>
                     <p className="text-muted-foreground">
-                        Once a day, Socio downloads the public price lists of model providers (OpenRouter, DeepInfra,
-                        Azure, AWS) and community lists (models.dev, LiteLLM) and keeps the prices of the models in use,
-                        so Cost can price turns. The requests carry a generic user agent and nothing about this
-                        workspace, its people or this server. Turn it off for an offline install: then no list is read,
-                        and turns are priced by the prices kept and admins’ own. The server’s is{' '}
-                        {sync ? (sync.serverDefault ? 'on' : 'off') : '…'}.
+                        {t('operations.settings:price-sync.description', {
+                            state: t('operations.settings:price-sync.state', {
+                                context: sync ? (sync.serverDefault ? 'on' : 'off') : undefined,
+                            }),
+                        })}
                     </p>
                 </div>
                 <label className="flex items-center gap-2 text-sm">
@@ -72,7 +73,7 @@ export function PriceSyncSetting() {
                             }
                         }}
                     />
-                    Sync prices daily
+                    {t('operations.settings:price-sync.switch')}
                 </label>
                 {error && (
                     <p className="rounded-lg bg-destructive/10 p-3 text-destructive" role="alert">
@@ -82,7 +83,11 @@ export function PriceSyncSetting() {
                 {sync?.saved && (
                     <div>
                         <Button type="button" variant="outline" disabled={busy} onClick={() => void save(null)}>
-                            Use the server’s ({sync.serverDefault ? 'on' : 'off'})
+                            {t('operations.settings:price-sync.reset', {
+                                state: t('operations.settings:price-sync.state', {
+                                    context: sync.serverDefault ? 'on' : 'off',
+                                }),
+                            })}
                         </Button>
                     </div>
                 )}
