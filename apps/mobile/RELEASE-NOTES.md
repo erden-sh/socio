@@ -5,7 +5,7 @@ build's "What to Test" in TestFlight (AGENTS.md, Versions). An entry is `## <ver
 <YYYY-MM-DD>)`, or `(build pending)` until it is uploaded, then a short **What to test** list in plain
 words, grouped by screen.
 
-## 0.2.8 (build pending)
+## 0.2.8 (build 3887, 2026-11-27)
 
 Media in the app, files that open in the app instead of the browser, and a clear Update Socio screen when a workspace needs a newer app.
 
