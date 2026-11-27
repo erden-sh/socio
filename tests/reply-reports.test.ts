@@ -300,6 +300,7 @@ async function runtime(options: Options = {}) {
                     return thread?.members.includes(userId) ? thread : undefined;
                 },
                 access: () => ({ decision: { allowed: true } }) as never,
+                users: () => USERS,
             },
             runner: {
                 rowsMentioning: (threadId, text) =>
@@ -1071,7 +1072,8 @@ describe('in a room', () => {
         const server = await runtime();
         const consent = await server.share();
         const preview = (user: User) => server.call(user, `/conversations/${ROOM}/messages/${ROOM_REPLY}/report`);
-        expect((await preview(BOB)).body).toEqual({ sharing: true, consent, promptByOther: true });
+        // Bob reacting to Ada's message: her name fills `{author}`; Ada's own has none.
+        expect((await preview(BOB)).body).toEqual({ sharing: true, consent, promptByOther: true, author: 'Ada' });
         expect((await preview(ADA)).body).toEqual({ sharing: true, consent, promptByOther: false });
         await server.report(consent, {}, BOB, ROOM, ROOM_REPLY);
         await server.report(consent, {}, ADA, ROOM, ROOM_REPLY);
@@ -1084,7 +1086,7 @@ describe('in a room', () => {
             expect(body.threadHash).toBe(bodies[0]!.threadHash);
         }
         await server.reports.setSharing(false, ADA.id);
-        expect((await preview(BOB)).body).toEqual({ sharing: false, promptByOther: true });
+        expect((await preview(BOB)).body).toEqual({ sharing: false, promptByOther: true, author: 'Ada' });
     });
 
     it('never sends another member’s approval continuation, and the next reply answers the person’s message', async () => {
@@ -1099,7 +1101,10 @@ describe('in a room', () => {
         const preview = (user: User) => server.call(user, `/conversations/${ROOM}/messages/${ROOM_NEXT_REPLY}/report`);
         // Ada wrote the message the next reply answers: for her it is her own, for Bob another person's.
         expect((await preview(ADA)).body.promptByOther).toBe(false);
+        expect((await preview(ADA)).body).not.toHaveProperty('author');
         expect((await preview(BOB)).body.promptByOther).toBe(true);
+        // The note the server wrote for Bob's approval is never named: the author is Ada's.
+        expect((await preview(BOB)).body.author).toBe('Ada');
         expect((await server.report(consent, { shownByOther: false }, ADA, ROOM, ROOM_NEXT_REPLY)).body.report).toBe(
             'queued',
         );
