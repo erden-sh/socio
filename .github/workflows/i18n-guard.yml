@@ -35,9 +35,10 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: i18n-guard-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+# No `concurrency:` group: one push can raise two events (synchronize plus
+# ready_for_review or edited), and cancel-in-progress would leave a cancelled
+# run of a required check on the pull request. The job is cheap, so every run
+# finishes on its own.
 
 jobs:
   i18n-guard:
