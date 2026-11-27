@@ -5,7 +5,7 @@ import { useTranslation } from '@socio/i18n/react';
 import type { ApprovalView } from '@socio/shared/approvals';
 import { approvalAsk, decidedOnCard, mustOpenFirst } from '@socio/shared/approvals-view';
 
-import { onDemand } from '../../i18n/on-demand';
+import { inlinedOrOnDemand } from '../../i18n/on-demand';
 import { useAllowLabel } from '../settings/SocioAccessCard';
 
 import { Button } from '@/components/ui/button';
@@ -102,7 +102,7 @@ export function useAsksTo() {
  * scrolls to its card. A request decided on its card only has no
  * Approve here. The text box below stays usable throughout.
  */
-export const ApprovalBar = onDemand(['approvals.card'], WordedApprovalBar);
+export const ApprovalBar = inlinedOrOnDemand(['approvals.card'], WordedApprovalBar);
 
 function WordedApprovalBar({
     pending,

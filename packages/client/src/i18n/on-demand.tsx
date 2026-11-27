@@ -36,3 +36,26 @@ export function onDemand<P extends object>(namespaces: Namespaces, Component: Co
     OnDemand.displayName = `OnDemand(${Component.displayName ?? Component.name})`;
     return OnDemand;
 }
+
+/**
+ * `useOnDemand` for words some routes inline and other pages load on
+ * demand (a module's card on its own page and in a chat): true at once,
+ * on the server too, where the page inlined them (they are in the
+ * instance, for its locale or a fallback); elsewhere, once they've loaded
+ * after hydration. Either way the server and the hydrating browser agree.
+ */
+export function useInlinedOrOnDemand(namespaces: readonly string[]): boolean {
+    const { i18n } = useTranslation();
+    const loaded = useOnDemand(namespaces as Namespaces);
+    const inlined = namespaces.every((ns) => i18n.languages?.some((lng) => i18n.hasResourceBundle(lng, ns)));
+    return inlined || loaded;
+}
+
+/** `Component`, once its namespaces are in (`useInlinedOrOnDemand`); nothing until then. */
+export function inlinedOrOnDemand<P extends object>(namespaces: readonly string[], Component: ComponentType<P>) {
+    function InlinedOrOnDemand(props: P) {
+        return useInlinedOrOnDemand(namespaces) ? <Component {...props} /> : null;
+    }
+    InlinedOrOnDemand.displayName = `InlinedOrOnDemand(${Component.displayName ?? Component.name})`;
+    return InlinedOrOnDemand;
+}

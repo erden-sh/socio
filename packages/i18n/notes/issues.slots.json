@@ -4,7 +4,7 @@
     "file-run-label": "Accessible name of that button; {{run}} is the run's chat title or id.",
     "notice.done": "Toast title: a capability a socio (AI agent) asked for is now built; {{capability}} names it, in the socio's words.",
     "notice.wont-fix": "Toast title: a capability a socio asked for won't be built.",
-    "notice.asked-by": "Under the toast's title: {{key}} is the issue's key (CB-12), {{dots}} the socios that asked.",
+    "notice.asked-by": "Under the toast's title: {{key}} is the issue's key (CB-12), {{socios}} the socios that asked.",
     "notice.resolution": "Adds the issue's resolution, as written on the tracker, to the line above ({{text}}).",
     "notice.view": "Button in the toast that opens the issue.",
     "widget.title": "Home page card for the team's issue tracker.",

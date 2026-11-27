@@ -5,7 +5,7 @@ import { useTranslation } from '@socio/i18n/react';
 import { issuePath } from '@socio/shared/issues/issue-board';
 import { issueKey } from '@socio/shared/issues/issue-types';
 
-import { useOnDemand } from '../../i18n/on-demand';
+import { useInlinedOrOnDemand } from '../../i18n/on-demand';
 import { AppLink } from '../../shell/AppLink';
 
 import { issueLinkNumber, useIssueCard } from './issue-cards';
@@ -32,7 +32,7 @@ export function IssueLinkCard({ number, children }: { number: number; children?:
     const card = useIssueCard(number);
     const alone = use(StandsAlone);
     // The card's words (issues.terms) load on demand: the plain link until they're in.
-    const worded = useOnDemand(['issues.terms']);
+    const worded = useInlinedOrOnDemand(['issues.terms']);
     const { t } = useTranslation(['issues.terms']);
     const terms = useIssueTerms();
     const path = issuePath(number);

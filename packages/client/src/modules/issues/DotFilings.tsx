@@ -5,7 +5,7 @@ import { issuePath } from '@socio/shared/issues/issue-board';
 import { issueKey, type DotFiledItem } from '@socio/shared/issues/issue-types';
 import type { Dot } from '@socio/shared/types';
 
-import { useOnDemand } from '../../i18n/on-demand';
+import { useInlinedOrOnDemand } from '../../i18n/on-demand';
 import { DotPanel, DotPanelItem, DotPanelAction, useDotPanelData } from '../../shell/DotPanel';
 
 import { useIssueTerms } from './issue-words';
@@ -20,7 +20,7 @@ export function DotFilings({ dot }: { dot: Dot }) {
         `/issues/filed?dot=${encodeURIComponent(dot.id)}`,
         'issues',
     );
-    const worded = useOnDemand(['issues.slots', 'issues.terms']);
+    const worded = useInlinedOrOnDemand(['issues.slots', 'issues.terms']);
     const { t } = useTranslation(['issues.slots']);
     const terms = useIssueTerms();
     if (!worded) {

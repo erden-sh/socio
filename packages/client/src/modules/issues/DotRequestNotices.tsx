@@ -14,7 +14,7 @@ export function useNoticeText() {
     const { t } = useTranslation(['issues.slots']);
     return (notice: DotRequestNotice) => {
         const key = issueKey(notice.number);
-        const by = notice.dots.length ? t('issues.slots:notice.asked-by', { key, dots: notice.dots }) : key;
+        const by = notice.dots.length ? t('issues.slots:notice.asked-by', { key, socios: notice.dots }) : key;
         return {
             title:
                 notice.status === 'done'

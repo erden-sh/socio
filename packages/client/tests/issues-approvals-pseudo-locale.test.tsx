@@ -495,12 +495,13 @@ it('opens an issue from the board with no request for its words', async () => {
     expect(fetched).toEqual([]);
 });
 
-/** A server render with the root's namespaces only (its instance has no backend). */
-function serverRender(node: ReactNode) {
+/** A server render with the root's namespaces and `more` (its instance has no backend). */
+function serverRender(node: ReactNode, more: readonly string[] = []) {
+    const namespaces = [...routes.root!, ...more];
     const server = createReactI18n({
         locale: 'en-XA',
-        resources: { 'en-XA': Object.fromEntries(routes.root!.map((ns) => [ns, pseudo(ns)])) },
-        namespaces: routes.root!,
+        resources: { 'en-XA': Object.fromEntries(namespaces.map((ns) => [ns, pseudo(ns)])) },
+        namespaces,
     });
     return renderToString(<I18nextProvider i18n={server}>{node}</I18nextProvider>);
 }
@@ -511,4 +512,8 @@ it('renders nothing on the server for what loads on demand, never its keys', () 
     expect(serverRender(<OpenIssuesWidget />)).toBe('');
     expect(serverRender(<ApprovalCard id="ap1" initial={pending} />)).toBe('');
     expect(serverRender(<ApprovalBar pending={[]} onShow={() => {}} />)).toBe('');
+    // Where a route inlines them, they render on the server too.
+    expect(serverRender(<ApprovalCard id="ap1" initial={pending} />, routes.approvals)).toContain(
+        'data-slot="approval-card"',
+    );
 });

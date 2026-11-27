@@ -4,7 +4,7 @@ import { useTranslation } from '@socio/i18n/react';
 import { issuePath } from '@socio/shared/issues/issue-board';
 import { CLOSED_ISSUE_STATUSES, issueKey } from '@socio/shared/issues/issue-types';
 
-import { useOnDemand } from '../../i18n/on-demand';
+import { useInlinedOrOnDemand } from '../../i18n/on-demand';
 import { AppLink } from '../../shell/AppLink';
 
 import { useIssueCard } from './issue-cards';
@@ -29,7 +29,7 @@ const chipTitle = (title: string) =>
 export function IssueRefChip({ number, children }: { number: number; children?: ReactNode }) {
     const card = useIssueCard(number);
     // Its tooltip's words (issues.terms) load on demand: the words as written until they're in.
-    const worded = useOnDemand(['issues.terms']);
+    const worded = useInlinedOrOnDemand(['issues.terms']);
     const { t } = useTranslation(['issues.terms']);
     if (!card || !worded) {
         return <>{children}</>;

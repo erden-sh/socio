@@ -1091,7 +1091,7 @@ export interface EnglishResources {
         notice: {
             done: 'Socio request done: {{capability}}';
             'wont-fix': 'Socio request won’t be built: {{capability}}';
-            'asked-by': '{{key}} (asked by {{dots, list(type: unit; style: short)}})';
+            'asked-by': '{{key}} (asked by {{socios, list(type: unit; style: short)}})';
             resolution: '{{text}} · {{resolution}}';
             view: 'View';
         };

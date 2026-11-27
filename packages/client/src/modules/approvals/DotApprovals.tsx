@@ -4,7 +4,7 @@ import { useTranslation } from '@socio/i18n/react';
 import type { ApprovalsState } from '@socio/shared/approvals';
 import type { Dot } from '@socio/shared/types';
 
-import { useOnDemand } from '../../i18n/on-demand';
+import { useInlinedOrOnDemand } from '../../i18n/on-demand';
 import { LocalTime } from '../../lib/local-time';
 import { DotPanel, DotPanelItem, DotPanelAction, useDotPanelData } from '../../shell/DotPanel';
 
@@ -30,7 +30,7 @@ function useAgo() {
  */
 export function DotApprovals({ dot }: { dot: Dot }) {
     const { data, failed } = useDotPanelData<ApprovalsState>('/approvals', 'approvals');
-    const worded = useOnDemand(['approvals.card']);
+    const worded = useInlinedOrOnDemand(['approvals.card']);
     const { t } = useTranslation(['approvals.card']);
     const ago = useAgo();
     const pending = data?.pending.filter((item) => item.dotId === dot.id) ?? [];

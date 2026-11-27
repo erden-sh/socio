@@ -6,7 +6,7 @@ import { autoReasonLine, type ApprovalView } from '@socio/shared/approvals';
 import { carryingOn, mustOpenFirst } from '@socio/shared/approvals-view';
 import { dateTimeFormat } from '@socio/shared/locale';
 
-import { onDemand } from '../../i18n/on-demand';
+import { inlinedOrOnDemand } from '../../i18n/on-demand';
 import { api } from '../../lib/api';
 import { useLiveTopic } from '../../lib/change-channel';
 import { LocalTime } from '../../lib/local-time';
@@ -203,7 +203,7 @@ export function AutoReview({ view }: { view: ApprovalView }) {
  * (CB-58), and a chat follows that turn through `onContinuation`, called
  * once the turn runs (or ran) after a decision this card saw being made.
  */
-export const ApprovalCard = onDemand(['approvals.card'], WordedApprovalCard);
+export const ApprovalCard = inlinedOrOnDemand(['approvals.card'], WordedApprovalCard);
 
 function WordedApprovalCard({
     id,
