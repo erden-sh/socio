@@ -12,6 +12,7 @@ import type { Dictionary } from '@socio/i18n/keys';
 import { pseudoDictionary } from '@socio/i18n/pseudo';
 import { createReactI18n, I18nextProvider } from '@socio/i18n/react';
 import ROUTES from '@socio/i18n/route-namespaces.json';
+import { SOUL_HINTS, SOUL_LABELS, type SoulVersion, type SoulView } from '@socio/shared/soul';
 import type { State, WorkspaceState } from '@socio/shared/types';
 import type { PageI18n } from '@socio/shared/web/web';
 
@@ -136,7 +137,7 @@ const workspace = {
 } as unknown as WorkspaceState;
 
 /** The data words: names in the fixtures. */
-const FIXTURE_TEXT = ['Alpha', 'Gamma', 'Delta', 'Epsilon', 'Bob', 'Ada'];
+const FIXTURE_TEXT = ['Alpha', 'Gamma', 'Delta', 'Epsilon', 'Zeta', 'Theta', 'Iota', 'Kappa', 'Eta', 'Bob', 'Ada'];
 /**
  * Shared components' words, not translated yet: the sidebar's toggle, the
  * breadcrumb's landmark, a dialog's close button and the palette's list
@@ -153,10 +154,32 @@ const SHARED_TEXT = [
     'Ctrl',
 ];
 
+/** Bob's Soul: two versions, Ada may edit it. */
+const version = (n: number, source: SoulVersion['source'], createdBy: string): SoulVersion => ({
+    version: n,
+    createdAt: Date.UTC(2026, 10, n),
+    createdBy,
+    source,
+    restoredFrom: null,
+    instructions: `Zeta ${n}`,
+    voice: 'Eta',
+    values: 'Theta',
+    style: n === 2 ? 'Iota' : 'Kappa',
+});
+const soul: SoulView = {
+    dot: { id: 'd1', name: 'Bob', ownerId: null, archived: false },
+    versions: [version(2, 'edited', 'u-ada'), version(1, 'created', 'system')],
+    canEdit: true,
+    users: { 'u-ada': 'Ada' },
+};
+
 let signedIn = true;
 const respond = (path: string): [number, unknown] => {
     if (path === '/api/workspace' || path === '/api/state') {
         return signedIn ? [200, path === '/api/state' ? state : workspace] : [401, { error: 'Sign in.' }];
+    }
+    if (path === '/api/dots/d1/soul') {
+        return [200, soul];
     }
     if (path === '/api/auth/session') {
         return [
@@ -265,6 +288,10 @@ const $ = (selector: string) => {
     return found!;
 };
 
+// The Soul's part names and hints are packages/shared's (SOUL_LABELS, SOUL_HINTS).
+const SOUL_SKIP: string[] = [];
+SHARED_TEXT.push(...Object.values(SOUL_LABELS), ...Object.values(SOUL_HINTS));
+
 // The header's slots hold other modules' buttons (Ask a socio, Report issue).
 const HEADER_SKIP = ['[data-slot="header-actions"]'];
 
@@ -315,10 +342,22 @@ it('renders a socio’s home page in en-XA with only its namespaces', async () =
     expect(untranslated(readable($('[data-slot="app-body"]'), others))).toEqual([]);
 });
 
-it('renders a socio’s Soul in en-XA with only its namespaces', async () => {
+it('renders a socio’s Soul in en-XA with only its namespaces: the version in use, its history and the editor', async () => {
     await open('/dots/d1/soul');
     expect(untranslated(readable($('[data-slot="app-header"]'), HEADER_SKIP))).toEqual([]);
-    expect(untranslated(readable($('[data-slot="app-body"]')))).toEqual([]);
+    $('[data-slot="soul-current"]');
+    $('[data-slot="soul-history"]');
+    // A past version's changes, then the editor.
+    for (const button of document.querySelectorAll<HTMLButtonElement>('[data-slot="soul-version"] button')) {
+        await act(async () => button.click());
+    }
+    await settle();
+    expect(untranslated(readable($('[data-slot="app-body"]'), SOUL_SKIP))).toEqual([]);
+    const edit = document.querySelector<HTMLButtonElement>('[data-slot="soul-current"] button');
+    await act(async () => edit!.click());
+    await settle();
+    $('[data-slot="soul-editor"]');
+    expect(untranslated(readable($('[data-slot="app-body"]'), SOUL_SKIP))).toEqual([]);
 });
 
 it.each(['/chats/c1', '/dots/d1/new'])('renders the chat page %s in en-XA with only its namespaces', async (path) => {
