@@ -421,6 +421,12 @@ export interface PersonalContextTurn {
 /** The turn's lines about its person, and the ids of what they used. */
 export interface PersonalContext {
     lines: string[];
+    /**
+     * Whether `lines` give the person's profile with a language in it: the
+     * turn's note then has no line for their app language, which the
+     * profile's words win over.
+     */
+    language: boolean;
     memoryIds: string[];
     episodeIds: string[];
     spaceEntryIds: string[];

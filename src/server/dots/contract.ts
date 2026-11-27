@@ -189,7 +189,7 @@ export interface DotTurnStore extends Pick<WorkspaceSettingsShape, 'settings'> {
 
 /** The workspace, as a Dot's turn reads it: its socio, the conversation and its people. */
 export type DotTurnWorkspace = Pick<SociosShape, 'dot'> &
-    Pick<PeopleShape, 'users' | 'isDeactivated'> &
+    Pick<PeopleShape, 'users' | 'isDeactivated' | 'preferences'> &
     Pick<ConversationsShape, 'requireThread' | 'answers' | 'allows' | 'thread' | 'convertedFrom' | 'saveCapture'> & {
         /** The Telegram chat a thread came from, if any (CB-66). */
         readonly telegram: { readonly threadInfo: (threadId: string) => Promise<TelegramThreadInfo | undefined> };

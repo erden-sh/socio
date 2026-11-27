@@ -64,6 +64,11 @@ export interface VoiceHostShape {
     ): Promise<TurnOutcome>;
     /** Set on SIGTERM (CB-37), read at the moment of use. */
     draining(): boolean;
+    /**
+     * The Language field of a person's profile, alone (CB-106), for a cloud
+     * call's language line; undefined when it is empty or there is none.
+     */
+    profileLanguage(userId: string): Promise<string | undefined>;
 }
 
 export class VoiceHost extends Context.Service<VoiceHost, VoiceHostShape>()('socio/voice/VoiceHost') {}
@@ -155,6 +160,7 @@ export const voiceService = (transport?: typeof fetch) =>
                 history: (threadId) => host.history(threadId),
                 turn: (...args) => host.turn(...args),
                 turnOutcome: (...args) => host.turnOutcome(...args),
+                profileLanguage: (userId) => host.profileLanguage(userId),
             },
             transport,
         );

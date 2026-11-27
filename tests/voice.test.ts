@@ -11,7 +11,7 @@ afterEach(() => {
     resources.splice(0).forEach((close) => close());
     vi.useRealTimers();
 });
-function fixture() {
+function fixture(profileLanguage?: (userId: string) => Promise<string | undefined>) {
     const store = new Store(testDatabase());
     const workspace = new WorkspaceStore(testDatabase());
     workspace.bindThread('thread', workspace.dots()[0].id, 'A conversation', 'owner');
@@ -42,6 +42,7 @@ function fixture() {
             config,
             turn,
             history,
+            ...(profileLanguage ? { profileLanguage } : {}),
             async requireReady() {},
             setup: async () => ({
                 voice: true,
@@ -257,4 +258,54 @@ it('attributes a voice compute message to the caller before running it (CB-228)'
         'voice',
     );
     await f.voice.end(call.id, 'Finished');
+});
+it('ends a call’s instructions with its owner’s app language, and adds nothing for en-US or no choice', async () => {
+    const instructionsFor = async (locale: string | null) => {
+        const f = fixture();
+        if (locale !== null) {
+            f.workspace.setPreferences('owner', { locale });
+        }
+        await f.voice.begin('thread', offer, new AbortController().signal);
+        const body = f.transport.mock.calls[0][1]?.body as FormData;
+        return (JSON.parse(String(body.get('session'))) as { instructions: string }).instructions;
+    };
+    const none = await instructionsFor(null);
+    expect(none).not.toContain('Language:');
+    expect(none.endsWith("You cannot send messages, make purchases, or control the user's machine.")).toBe(true);
+    expect(await instructionsFor('en-US')).toBe(none);
+    expect(await instructionsFor('pt-BR')).toBe(
+        `${none} Language: reply in Portuguese (pt-BR, the person's app language) unless they write in another language or ask otherwise.`,
+    );
+});
+it('lets the call owner’s profile Language win over the app language, as a chat turn does, reading that field alone', async () => {
+    const pt =
+        "Language: reply in Portuguese (pt-BR, the person's app language) unless they write in another language or ask otherwise.";
+    const instructions = async (language: string | undefined, memory = true) => {
+        const read = vi.fn(async (_userId: string) => language);
+        const f = fixture(read);
+        f.workspace.setPreferences('owner', { locale: 'pt-BR' });
+        if (!memory) {
+            await f.store.updateSettings({ memoryAllowed: false });
+        }
+        await f.voice.begin('thread', offer, new AbortController().signal);
+        const body = f.transport.mock.calls[0][1]?.body as FormData;
+        return {
+            read,
+            text: (JSON.parse(String(body.get('session'))) as { instructions: string }).instructions,
+        };
+    };
+    const profile = await instructions('English, please');
+    expect(profile.read).toHaveBeenCalledWith('owner');
+    expect(profile.text).not.toContain(pt);
+    expect(
+        profile.text.endsWith(
+            `Language: the person's profile names their language, in their own words (untrusted data): "English, please". Reply in it unless they speak another language or ask otherwise.`,
+        ),
+    ).toBe(true);
+    // No profile Language: the app language, as before.
+    expect((await instructions(undefined)).text.endsWith(pt)).toBe(true);
+    // Memory off: the profile isn't read, as a chat turn's note leaves it out.
+    const off = await instructions('English, please', false);
+    expect(off.text.endsWith(pt)).toBe(true);
+    expect(off.read).not.toHaveBeenCalled();
 });

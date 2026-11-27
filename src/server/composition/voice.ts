@@ -81,6 +81,7 @@ const VoiceHostLive = Layer.effect(
         const conversations = yield* ConversationAdmin;
         const status = yield* AppStatus;
         const ports = yield* Ports;
+        const store = yield* LegacyStore;
         return VoiceHost.of({
             requireReady: () => status.requireReady(),
             setup: (userId) => status.setup(userId),
@@ -88,6 +89,7 @@ const VoiceHostLive = Layer.effect(
             turn: (...args) => turns.turn(...args),
             turnOutcome: (...args) => turns.turnOutcome(...args),
             draining: () => ports.draining.get(),
+            profileLanguage: async (userId) => (await store.profiles.get(userId))?.fields.language || undefined,
         });
     }),
 );
