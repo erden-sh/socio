@@ -5,6 +5,30 @@ build's "What to Test" in TestFlight (AGENTS.md, Versions). An entry is `## <ver
 <YYYY-MM-DD>)`, or `(build pending)` until it is uploaded, then a short **What to test** list in plain
 words, grouped by screen.
 
+## 0.2.9 (build pending)
+
+Your notes on 0.2.7: a QR scanner inside the app, a clearer Add a device screen, and quote-reply; plus folders in Spaces, and Google and Apple sign-in.
+
+**What to test**
+
+Your notes
+
+- Add a workspace: tap Scan a QR code, allow the camera, and point it at the QR code from Socio on a computer (Get the app or Add a device). It opens the workspace to confirm. Try the torch in dim light. Any other QR code says it isn't a Socio code.
+- Add a device: scan the code from Socio on a computer. The code you type on the computer is large at the top, with a countdown; Cancel is the only way out.
+- Sign-in codes go through by themselves once you type or paste the last character. A wrong code clears the field and says how many tries are left.
+- Long-press a socio's answer, or someone's message in a room, and choose Reply. A "Replying to" bar shows above the message box; your message goes out with a quote of theirs.
+
+Folders in Spaces
+
+- In a Space, ⋯ on a page, then Turn into folder: its text is hidden and its pages show inside. Turn into page brings the text back.
+- New folder, then a page inside it. Open a folder to see what's in it.
+
+Google and Apple sign-in (once your workspace's server is updated)
+
+- Settings › Account › Sign-in methods: link your Google account, and your Apple ID on iPhone.
+- Sign out, then sign in again with Continue with Google or Continue with Apple.
+- Unlink one: it asks first.
+
 ## 0.2.8 (build 3887, 2026-11-27)
 
 Media in the app, files that open in the app instead of the browser, and a clear Update Socio screen when a workspace needs a newer app.
