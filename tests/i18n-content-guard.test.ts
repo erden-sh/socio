@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import {
+    LOOKALIKE_BRACKETS,
     checkLocales,
     contentItems,
     newContent,
@@ -146,6 +147,31 @@ describe('markup', () => {
         );
     });
 
+    it('refuses a spaced pseudo-tag unless the source has it verbatim', () => {
+        const pseudoTags = ['< 0 href="/x"/>', '<\n0>', '< /0>', '<  strong>', '< 0 href="/logout"/>'];
+        for (const source of ['Read', 'a < b and c > d', 'x < 5 and y > 2', 'Settings > Language', 'a < b']) {
+            for (const tag of pseudoTags) {
+                refused(source, `Lee ${tag}`);
+            }
+        }
+        expect(newMarkup('a < b and c > d', 'Lee < 0 href="/logout"/>')).toEqual([
+            'markup "< 0 href=\\"/logout\\"/>" is not allowed: a tag holds only its name, as in <0> or <0/>',
+        ]);
+        // The same snippet in the source lets it through: it's held to the source, like any stray.
+        ok('Use < 0 href="/x"/> here', 'Usa < 0 href="/x"/> aquí');
+        ok('Use <  strong> here', 'Usa <  strong> aquí');
+        // A `<` with no `>` before the next `<` is text.
+        ok('x < 5', 'x < 5');
+        ok('a < b', 'a < b');
+        ok('Read <0>if x < 5</0>', 'Lee <0>si x < 5</0>');
+        // `a < b > c` reads as markup: fine only when that part is the same.
+        ok('a < b > c', 'a < b > c');
+        ok('if a < b > c then', 'si a < b > c entonces');
+        refused('a < b > c', 'a < c > b');
+        refused('a < b > c', 'a < b href="/x"> c');
+        refused('Read', 'a < b > c');
+    });
+
     it('refuses extra, missing, renamed and renested tags, and self-closing for paired', () => {
         refused('Read <0>the guide</0>', 'Lee <1>la guía</1>');
         refused('Read <0>the guide</0>', 'Lee <0>la</0> <0>guía</0>');
@@ -183,6 +209,37 @@ describe('markup', () => {
         expect(newMarkup('Read', 'Lee\u200besto')).toEqual(['invisible character U+200B is not in the en-US source']);
     });
 
+    it('holds every character NFKC makes a bracket to the source', () => {
+        const nfkcBrackets: string[] = [];
+        for (let code = 0; code <= 0xffff; code++) {
+            const char = String.fromCharCode(code);
+            if (char !== '<' && char !== '>' && (code < 0xd800 || code > 0xdfff)) {
+                const normalized = char.normalize('NFKC');
+                if (normalized.includes('<') || normalized.includes('>')) {
+                    nfkcBrackets.push(char);
+                }
+            }
+        }
+        const pattern = new RegExp(LOOKALIKE_BRACKETS.source, 'u');
+        const matched: string[] = [];
+        for (let code = 0; code <= 0xffff; code++) {
+            if (pattern.test(String.fromCharCode(code))) {
+                matched.push(String.fromCharCode(code));
+            }
+        }
+        expect(matched).toEqual(nfkcBrackets);
+        expect(nfkcBrackets.map((char) => char.codePointAt(0))).toEqual([0xfe64, 0xfe65, 0xff1c, 0xff1e]);
+        for (const char of nfkcBrackets) {
+            expect(newMarkup('Read', `Lee ${char}0${char}`), `U+${char.codePointAt(0)?.toString(16)}`).toEqual([
+                `look-alike bracket ${JSON.stringify(char)} is not in the en-US source`,
+            ]);
+            ok(`Read ${char}0${char}`, `Lee ${char}0${char}`);
+        }
+        refused('Read', 'Lee ＜0 href＞');
+        refused('Read', 'Lee ﹤0﹥');
+        refused('Read <0>the guide</0>', 'Lee ＜0 href="/logout"＞la guía＜/0＞');
+    });
+
     it('reads the structure of a text', () => {
         expect(tagStructure('<1/> y <0>la <2>guía</2></0>')).toEqual({
             canonical: '0(2()),1/',
@@ -190,7 +247,9 @@ describe('markup', () => {
             stray: [],
         });
         expect(tagStructure('<0 href="x">a</0>').stray).toEqual(['<0 href="x">']);
-        expect(tagStructure('a < b > c').stray).toEqual(['<', '>']);
+        expect(tagStructure('a < b > c').stray).toEqual(['< b >']);
+        expect(tagStructure('x < 5').stray).toEqual(['<']);
+        expect(tagStructure('Lee < 0 href="/x"/>').stray).toEqual(['< 0 href="/x"/>']);
     });
 });
 
