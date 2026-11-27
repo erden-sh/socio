@@ -5,6 +5,7 @@ import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { REACTIONS, REACTION_LABELS, type ReactionKind } from '@socio/shared/chat/reactions';
 import { REPORT_CONFIRMATION, type ReportPreview } from '@socio/shared/chat/reply-reports';
 import { socioField } from '@socio/shared/runs/socio-fields';
+import { SOCIO_METADATA } from '@socio/shared/types';
 
 import { api } from '../../lib/api';
 import { ShellContext } from '../../shell/shell-context';
@@ -28,9 +29,7 @@ const ICONS: Record<ReactionKind, LucideIcon> = {
  * socio whose reply it is. Whose message the reply answered is the
  * server's to say (`GET …/report`), never read from here.
  */
-export const ReportTranscript = createContext<{ messages: readonly Message[]; dotName?: string } | undefined>(
-    undefined,
-);
+export const ReportTranscript = createContext<{ messages: readonly Message[] } | undefined>(undefined);
 
 /** Said when the server couldn't say what a report would include. */
 export const PREVIEW_FAILED = 'Couldn’t check what this report would include. Try again.';
@@ -67,15 +66,15 @@ export function MessageReactions({ messageId, reactions }: { messageId: string; 
             mounted.current = false;
         };
     }, []);
-    // The reply's own socio (a room's, CB-212); one this reader can't name
-    // is "The socio", never the chat's current one. A reply without one is
-    // the chat's socio's.
+    // The reply's own socio: the runner stamps it on the stored reply's
+    // metadata (`SOCIO_METADATA`); a room's transcript gives it as
+    // `socioId` (CB-212). One missing or this reader can't name is "The
+    // socio", never the socio the chat has selected now.
     const reply = transcript?.messages.find((message) => message.id === messageId);
-    const socioId = socioField(reply, 'socioId');
-    const socio =
-        typeof socioId === 'string' && socioId
-            ? (dots?.find((dot) => dot.id === socioId)?.name ?? GENERIC_SOCIO)
-            : transcript?.dotName || GENERIC_SOCIO;
+    const stamped = socioField(reply, SOCIO_METADATA);
+    const listed = (reply as { socioId?: unknown } | undefined)?.socioId;
+    const socioId = typeof stamped === 'string' && stamped ? stamped : typeof listed === 'string' ? listed : '';
+    const socio = (socioId && dots?.find((dot) => dot.id === socioId)?.name) || GENERIC_SOCIO;
     const send = (kind: ReactionKind, add = !current.mine.includes(kind)) => {
         setSaid(`${REACTION_LABELS[kind]} ${add ? 'added' : 'removed'}`);
         reactions.toggle(messageId, kind, { add });

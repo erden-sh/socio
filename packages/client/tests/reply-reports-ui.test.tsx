@@ -16,7 +16,7 @@ import {
     type ReportOutcome,
     type ReportPreview,
 } from '@socio/shared/chat/reply-reports';
-import type { User } from '@socio/shared/types';
+import { SOCIO_METADATA, type User } from '@socio/shared/types';
 
 import { CHANGES_CHANNEL, closeChangeChannel, refreshShown } from '../src/lib/change-channel';
 import { ChatTranscript } from '../src/modules/chat/ChatTranscript';
@@ -60,7 +60,7 @@ beforeEach(() => {
     calls = [];
     refreshes = 0;
     shown = messages;
-    dots = [];
+    dots = DOTS;
     vi.stubGlobal('fetch', async (input: string, init?: RequestInit) => {
         const method = init?.method ?? 'GET';
         const path = new URL(input, 'http://app.test').pathname;
@@ -110,7 +110,12 @@ afterEach(() => {
 const messages: Message[] = [
     // The transcript names someone else: the dialog never reads it for `{author}`.
     { id: 'u1', role: 'user', content: 'Plan the offsite', metadata: { author: { name: 'Bob', you: false } } },
-    { id: 'a1', role: 'assistant', content: 'Talks, then lunch.' },
+    // As the runner stores a reply: its socio on the metadata (SOCIO_METADATA, tests/rooms-transcript.test.ts).
+    { id: 'a1', role: 'assistant', content: 'Talks, then lunch.', metadata: { [SOCIO_METADATA]: 'dot-pilot' } },
+];
+const DOTS = [
+    { id: 'dot-pilot', name: 'Pilot' },
+    { id: 'dot-scout', name: 'Scout' },
 ];
 let shown: Message[] = messages;
 let dots: Array<{ id: string; name: string }> = [];
@@ -329,25 +334,38 @@ it('says “Another person” when the server’s answer names nobody, never the
     expect(dialog()!.textContent).not.toContain('Bob');
 });
 
-it('names the reply’s own socio, and never another one for a socio it can’t name', async () => {
-    const roomReply = (socioId: string): Message[] => [
-        messages[0]!,
-        { id: 'a1', role: 'assistant', content: 'Talks, then lunch.', socioId } as Message,
-    ];
-    dots = [{ id: 'dot-scout', name: 'Scout' }];
-    shown = roomReply('dot-scout');
+const withReply = (reply: Partial<Message>): Message[] => [
+    messages[0]!,
+    { id: 'a1', role: 'assistant', content: 'Talks, then lunch.', ...reply } as Message,
+];
+async function socioShown(reply: Partial<Message>) {
+    shown = withReply(reply);
     await chat();
     await pressDown();
-    expect(dialog()!.textContent).toContain(fillReportText(REPORT_CONFIRMATION.body, { socio: 'Scout' }));
+    const body = dialog()!.textContent ?? '';
     act(() => root!.unmount());
     host!.remove();
     document.body.innerHTML = '';
-    // A former member's private socio: not in this reader's list, and not the room's current one.
-    shown = roomReply('dot-gone');
-    await chat();
-    await pressDown();
-    expect(dialog()!.textContent).toContain(fillReportText(REPORT_CONFIRMATION.body, { socio: GENERIC_SOCIO }));
-    expect(dialog()!.textContent).not.toContain('Pilot');
+    root = undefined;
+    return body;
+}
+const bodyFor = (socio: string) => fillReportText(REPORT_CONFIRMATION.body, { socio });
+
+it('names the socio that wrote the reply, not the one the chat has selected now', async () => {
+    // Scout answered; the transcript's selected socio (dotName) is Pilot.
+    const body = await socioShown({ metadata: { [SOCIO_METADATA]: 'dot-scout' } });
+    expect(body).toContain(bodyFor('Scout'));
+    expect(body).not.toContain(bodyFor('Pilot'));
+    // A room's transcript gives it as `socioId` (RoomMessage, workspace-routes.ts).
+    expect(await socioShown({ socioId: 'dot-scout' } as Partial<Message>)).toContain(bodyFor('Scout'));
+});
+
+it('says “The socio” for a reply without its socio, or one this reader can’t name, never the selected one', async () => {
+    for (const reply of [{}, { metadata: {} }, { metadata: { [SOCIO_METADATA]: 'dot-gone' } }]) {
+        const body = await socioShown(reply);
+        expect(body).toContain(bodyFor(GENERIC_SOCIO));
+        expect(body).not.toContain('Pilot');
+    }
 });
 
 it('sends the consent the server answered with when it is newer', async () => {

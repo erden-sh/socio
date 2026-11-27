@@ -247,7 +247,7 @@ export function ChatTranscript({
     }
     const turns = splitTurns(messages);
     return (
-        <ReportTranscript.Provider value={{ messages, dotName }}>
+        <ReportTranscript.Provider value={{ messages }}>
             {calls
                 .filter((call) => !call.anchorMessageId || !ids.has(call.anchorMessageId))
                 .map((call) => (
