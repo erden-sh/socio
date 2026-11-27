@@ -258,3 +258,21 @@ it('attributes a voice compute message to the caller before running it (CB-228)'
     );
     await f.voice.end(call.id, 'Finished');
 });
+it('ends a call’s instructions with its owner’s app language, and adds nothing for en-US or no choice', async () => {
+    const instructionsFor = async (locale: string | null) => {
+        const f = fixture();
+        if (locale !== null) {
+            f.workspace.setPreferences('owner', { locale });
+        }
+        await f.voice.begin('thread', offer, new AbortController().signal);
+        const body = f.transport.mock.calls[0][1]?.body as FormData;
+        return (JSON.parse(String(body.get('session'))) as { instructions: string }).instructions;
+    };
+    const none = await instructionsFor(null);
+    expect(none).not.toContain('Language:');
+    expect(none.endsWith("You cannot send messages, make purchases, or control the user's machine.")).toBe(true);
+    expect(await instructionsFor('en-US')).toBe(none);
+    expect(await instructionsFor('pt-BR')).toBe(
+        `${none} Language: reply in Portuguese (pt-BR, the person's app language) unless they write in another language or ask otherwise.`,
+    );
+});

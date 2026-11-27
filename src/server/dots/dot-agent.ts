@@ -37,6 +37,7 @@ import { limitedOutput } from '@socio/foundation/turns/output-limit';
 import { checkedToolCalls } from '@socio/foundation/turns/tool-call-args';
 import type { DotTurn, TurnCause } from '@socio/foundation/turns/turn';
 import { senderMetadata, senderOf, type MessageSender } from '@socio/foundation/workspace/client-messages';
+import { replyLanguageLine } from '@socio/i18n/reply-language';
 import { SKILL_ANSWER_PREFIX } from '@socio/shared/chat/chat-skills';
 import type { QueuedMessage } from '@socio/shared/chat/steering';
 import type { ModelChoice } from '@socio/shared/inference';
@@ -702,7 +703,7 @@ export class DotAgentCore extends AbstractAgent {
                     const now = new Date();
                     const markers = this.services.markers();
                     let newestUserId: string | undefined;
-                    let personal: Promise<string[]> | undefined;
+                    let personal: Promise<{ lines: string[]; language: boolean }> | undefined;
                     // The adapter's layers, inside out:
                     // 1. tracer.adapter: the model's own stream, so each request is
                     //    timed as the model ran it (a too-long refusal and its retry
@@ -894,7 +895,13 @@ export class DotAgentCore extends AbstractAgent {
                     if (ended || controller.signal.aborted) {
                         return fail();
                     }
-                    const turnNote = (personal: readonly string[]) =>
+                    // The person's app language (`user_preferences.locale`), as a
+                    // line after the time; none when they never chose one or chose
+                    // en-US, so their note stays as it was, byte for byte. Never in
+                    // the system prompt, a marker or the history: only this note,
+                    // which is gone from the message on the next turn, so the
+                    // cached prefix is the same whatever the language.
+                    const turnNote = (personal: readonly string[], language?: string) =>
                         [
                             "[This turn's context, from Socio:]",
                             `Current time: ${timeText(now.getTime(), timeZone.zone)}.${
@@ -904,6 +911,7 @@ export class DotAgentCore extends AbstractAgent {
                                       ? ' Other people read this chat and the person hasn’t shared their time zone with team chats, so this is the workspace’s time zone: say so when you give a time.'
                                       : ''
                             }`,
+                            ...(language ? [language] : []),
                             ...personal,
                             ...(pageContext != null
                                 ? [
@@ -1097,25 +1105,30 @@ export class DotAgentCore extends AbstractAgent {
                                           userId: actingUser,
                                           query,
                                       }),
-                                  ])
-                                      .then(([shared, spaceMemory]) =>
-                                          this.services.memory.personalContext({
-                                              userId: actingUser,
-                                              recallTokens,
-                                              shared,
-                                              threadId: input.threadId,
-                                              // An episode's chat (CB-180), if still theirs.
-                                              chatTitle: (id) => {
-                                                  const thread = this.workspace.thread(id);
-                                                  return thread?.ownerId === actingUser ? thread.title : undefined;
-                                              },
-                                              query,
-                                              spaceMemory,
-                                          }),
-                                      )
-                                      .then((context) => context.lines)
-                                : Promise.resolve([]);
-                            const personalLines = await personal;
+                                  ]).then(([shared, spaceMemory]) =>
+                                      this.services.memory.personalContext({
+                                          userId: actingUser,
+                                          recallTokens,
+                                          shared,
+                                          threadId: input.threadId,
+                                          // An episode's chat (CB-180), if still theirs.
+                                          chatTitle: (id) => {
+                                              const thread = this.workspace.thread(id);
+                                              return thread?.ownerId === actingUser ? thread.title : undefined;
+                                          },
+                                          query,
+                                          spaceMemory,
+                                      }),
+                                  )
+                                : Promise.resolve({ lines: [], language: false });
+                            const { lines: personalLines, language: profileLanguage } = await personal;
+                            // The person who addressed the socio (a room's sender, a
+                            // schedule's or job's person): their app language, unless
+                            // the profile in this note names one, which wins. What
+                            // they write in wins over both: the line says so.
+                            const languageLine = profileLanguage
+                                ? undefined
+                                : replyLanguageLine(this.workspace.preferences(actingUser).locale);
                             check();
                             // The reply before this message asked for approval in prose (CB-492).
                             const proseCorrection = textOnly ? undefined : approvalProseCorrection(ctx.input.messages);
@@ -1132,19 +1145,22 @@ export class DotAgentCore extends AbstractAgent {
                                             sharedTurn,
                                         ),
                                     ),
-                                    turnNote([
-                                        ...(sharedTurn
-                                            ? [
-                                                  roomNote(speakers, {
-                                                      id: actingUser,
-                                                      name: nameOf(actingUser),
-                                                  }),
-                                                  ...personalLines,
-                                              ]
-                                            : personalLines),
-                                        // The previous reply asked for approval in prose (CB-492).
-                                        ...(proseCorrection ? [proseCorrection] : []),
-                                    ]),
+                                    turnNote(
+                                        [
+                                            ...(sharedTurn
+                                                ? [
+                                                      roomNote(speakers, {
+                                                          id: actingUser,
+                                                          name: nameOf(actingUser),
+                                                      }),
+                                                      ...personalLines,
+                                                  ]
+                                                : personalLines),
+                                            // The previous reply asked for approval in prose (CB-492).
+                                            ...(proseCorrection ? [proseCorrection] : []),
+                                        ],
+                                        languageLine,
+                                    ),
                                 ),
                                 // Prompt skills' instructions, for this turn (CB-143), and
                                 // a voice call's note (CB-265).

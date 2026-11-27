@@ -189,10 +189,12 @@ export async function personalContext(
             : Promise.resolve([] as Episode[]),
     ]);
     const lines: string[] = [];
+    let language = false;
     const scope = turn.shared
         ? ' This chat has other people in it: this is only what the person chose to share with team chats.'
         : '';
     if (profile && (!turn.shared || profile.shareable)) {
+        language = Boolean(profile.fields.language);
         const fields = Object.fromEntries(
             PROFILE_FIELDS.flatMap((field) =>
                 profile.fields[field] ? [[PROFILE_LABELS[field], profile.fields[field]]] : [],
@@ -262,6 +264,7 @@ export async function personalContext(
     }
     return {
         lines,
+        language,
         memoryIds: chosen.map((memory) => memory.id),
         episodeIds: episodes.map((episode) => episode.id),
         spaceEntryIds: space.map((hit) => hit.entryId),

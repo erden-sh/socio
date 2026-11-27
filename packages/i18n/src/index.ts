@@ -55,4 +55,5 @@ export {
     type LocaleSources,
 } from './negotiate.js';
 export { pseudoDictionary, pseudoText } from './pseudo.js';
+export { LANGUAGE_NAMES, replyLanguageLine } from './reply-language.js';
 export { sha256Hex } from './sha256.js';
