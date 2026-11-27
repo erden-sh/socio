@@ -256,8 +256,9 @@ describe('how a page gets back to the app', () => {
         expect(cb).toContain('Go back to the Socio app and choose Continue again.');
         expect(cb).not.toMatch(/<a\s|<output|id="code"/);
         const device = await text('/app/d/brain.example.com');
-        expect(device).toContain('open this link from your camera or a message so it opens in the app');
-        expect(device).toContain('If it still opens here, update Socio (or reinstall it), then scan the code again.');
+        expect(device).toContain('on Add a workspace, choose Scan the QR code from Socio on a computer.');
+        expect(device).toContain('Opening this link from your camera or a message also works.');
+        expect(device).toContain('If it keeps opening here, update Socio and scan again.');
         expect(device).not.toMatch(/<output|id="code"/);
         expect(await text('/app/c')).toContain('type this code there');
         const invite = await text('/app/i/brain.example.com');
