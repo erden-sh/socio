@@ -427,7 +427,12 @@ it('never hands a folder’s hidden body to a socio: its name and what it holds 
         toolNames: () => [],
     } satisfies DotTurn;
     const current = JSON.stringify(await f.platform.dotExtensions.pageContext!(pageTurn));
-    expect(JSON.parse(current)).toMatchObject({ id: folder.id, title: 'Clients', folder: true, pages: inside });
+    // The children come in the page tree's order; these two are made in the same millisecond, so
+    // their order is the tree's tie-break, not something this test pins.
+    const context = JSON.parse(current) as { pages: { title: string; folder: boolean }[] };
+    expect(context).toMatchObject({ id: folder.id, title: 'Clients', folder: true });
+    expect(context.pages).toHaveLength(inside.length);
+    expect(context.pages).toEqual(expect.arrayContaining(inside.map((item) => expect.objectContaining(item))));
     expect(current).not.toContain('Sprocket');
     expect(current).not.toContain('"content"');
 
