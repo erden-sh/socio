@@ -1,5 +1,5 @@
 # Quote-reply (CB-571), with workspace A up (servers.mjs; run.mjs --credentials):
-# Ada opens A's marker chat, long-presses the socio's reply and picks Reply: the
+# Ada opens A's marker chat from Chats, long-presses the socio's reply and picks Reply: the
 # chip over the box says "Replying to …", the box takes the keyboard. She types,
 # leaves for Home and comes back: the quote and her words are still there (the
 # draft). The chip's x takes the quote out and keeps her words; Reply again and
@@ -8,7 +8,36 @@
 appId: ${APP_ID}
 name: quote-reply
 ---
-- runFlow: chat-open.yaml
+# chat-open.yaml's sign-in, then the chat from the Chats tab: on a short screen Home's row for it
+# can sit under the tab bar.
+- runFlow: launch.yaml
+- runFlow:
+    file: common/add-workspace.yaml
+    env:
+      ORIGIN: ${ORIGIN_A}
+- runFlow:
+    file: common/sign-in.yaml
+    env:
+      EMAIL: ada@example.test
+      SECRET: ${PASSWORD}
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 30000
+- runFlow:
+    file: common/tab.yaml
+    env:
+      TAB: Chats
+- extendedWaitUntil:
+    visible:
+      text: '.*${CHAT_A}.*'
+    timeout: 30000
+- tapOn:
+    text: '.*${CHAT_A}.*'
+- extendedWaitUntil:
+    visible:
+      text: '(?s).*That is the end of the long answer.*'
+    timeout: 30000
 - longPressOn:
     text: '(?s).*That is the end of the long answer.*'
 - tapOn: 'Reply'
@@ -24,6 +53,12 @@ name: quote-reply
     id: chat-composer-quote-remove
 - inputText: 'QR1 kept in the draft'
 - takeScreenshot: quote-reply-chat-chip
+# Android's first back would only close the keyboard (iOS's bar Back leaves at once).
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - hideKeyboard
 - runFlow: common/back.yaml
 - extendedWaitUntil:
     visible:
@@ -68,6 +103,11 @@ name: quote-reply
       id: chat-composer-stop
     timeout: 60000
 # The room: Reply on another person's message names them.
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - hideKeyboard
 - runFlow: common/back.yaml
 - extendedWaitUntil:
     visible:
