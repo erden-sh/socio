@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { toast } from 'sonner';
 
-import { formatNumber } from '@socio/shared/locale';
+import { useTranslation } from '@socio/i18n/react';
 import {
     ROOM_PIN_CHARS,
     type RoomNotesView,
@@ -14,6 +14,7 @@ import { LocalTime } from '../../lib/local-time';
 import { useShell } from '../../shell/shell-context';
 
 import { failure, pinsApi } from './api';
+import { openedOnDemand } from './RoomDialogs';
 import { touchTarget } from './touch';
 
 import { Badge } from '@/components/ui/badge';
@@ -26,11 +27,10 @@ import { cn } from '@/lib/utils';
 export const ROOM_PINS_POLL_MS = 10_000;
 
 /** "Oct 12", in the reader's words once hydrated. */
-const day = (value: number) =>
-    new Date(value).toLocaleDateString(undefined, {
-        month: 'short',
-        day: 'numeric',
-    });
+function useDay() {
+    const { t } = useTranslation(['rooms.pins']);
+    return (value: number) => t('rooms.pins:day', { at: new Date(value) });
+}
 
 /**
  * A room's pinned facts while its panel is open (`GET /api/rooms/:id/pins`):
@@ -38,6 +38,7 @@ const day = (value: number) =>
  * after each change, whose answer is shown at once.
  */
 export function useRoomPins(roomId: string, open: boolean) {
+    const { t } = useTranslation(['rooms.pins']);
     const [state, setState] = useState<RoomPinsState>();
     const [error, setError] = useState('');
     const reads = useRef(0);
@@ -51,10 +52,10 @@ export function useRoomPins(roomId: string, open: boolean) {
             }
         } catch (cause) {
             if (read === reads.current) {
-                setError(failure(cause, 'Could not load the pinned facts.'));
+                setError(failure(cause, t('rooms.pins:load-failed')));
             }
         }
-    }, [roomId]);
+    }, [roomId, t]);
     useEffect(() => {
         if (!open) {
             return;
@@ -75,12 +76,12 @@ export function useRoomPins(roomId: string, open: boolean) {
 }
 
 /** What a change did, for its toast. */
-const said: Record<RoomPinOutcome['outcome'], string> = {
-    pinned: 'Pinned. The socio reads it from the next message.',
-    proposed: 'Proposed. A room admin decides whether to pin it.',
-    unchanged: 'That is pinned or proposed already.',
-    done: 'Done.',
-};
+const SAID_KEYS = {
+    pinned: 'rooms.pins:outcome.pinned',
+    proposed: 'rooms.pins:outcome.proposed',
+    unchanged: 'rooms.pins:outcome.unchanged',
+    done: 'rooms.pins:outcome.done',
+} as const satisfies Record<RoomPinOutcome['outcome'], string>;
 
 /**
  * A room's pinned facts and notes (CB-217), in a panel beside the room
@@ -91,7 +92,7 @@ const said: Record<RoomPinOutcome['outcome'], string> = {
  * says who did what, and when. The notes Socio keeps as the room gets
  * long are shown as they are, with their versions.
  */
-export function PinsPanel({
+function Pins({
     roomId,
     open,
     onOpenChange,
@@ -102,6 +103,7 @@ export function PinsPanel({
     onOpenChange: (open: boolean) => void;
     returnFocus?: () => HTMLElement | null | undefined;
 }) {
+    const { t } = useTranslation(['rooms.pins']);
     const { state, error, reload, update } = useRoomPins(roomId, open);
     const [busy, setBusy] = useState(false);
     const run = async (work: () => Promise<RoomPinOutcome>, fallback: string) => {
@@ -109,7 +111,7 @@ export function PinsPanel({
         try {
             const answer = await work();
             update(answer.state);
-            toast.success(said[answer.outcome]);
+            toast.success(t(SAID_KEYS[answer.outcome]));
             return true;
         } catch (cause) {
             toast.error(failure(cause, fallback));
@@ -142,15 +144,17 @@ export function PinsPanel({
                 className="w-full gap-0 overflow-y-auto sm:max-w-md"
             >
                 <SheetHeader className="border-b pr-12">
-                    <SheetTitle>Pinned facts</SheetTitle>
+                    <SheetTitle>{t('rooms.pins:title')}</SheetTitle>
                     <SheetDescription>
-                        {!state
-                            ? 'Facts the room’s socio reads with every message.'
-                            : state.can.manage
-                              ? 'The socio reads these with every message. As a room admin you pin, edit and unpin them, and decide what others propose.'
-                              : state.can.propose
-                                ? 'The socio reads these with every message. Propose a fact and a room admin decides; you can edit or unpin the ones you pinned.'
-                                : 'The socio reads these with every message. This room is read-only now, so nothing changes here.'}
+                        {t('rooms.pins:description', {
+                            context: !state
+                                ? 'loading'
+                                : state.can.manage
+                                  ? 'manage'
+                                  : state.can.propose
+                                    ? 'propose'
+                                    : undefined,
+                        })}
                     </SheetDescription>
                 </SheetHeader>
                 {error && !state && (
@@ -158,12 +162,12 @@ export function PinsPanel({
                         {error}
                     </p>
                 )}
-                {!state && !error && <p className="p-4 text-sm text-muted-foreground">Loading…</p>}
+                {!state && !error && <p className="p-4 text-sm text-muted-foreground">{t('rooms.pins:loading')}</p>}
                 {state && (
                     <>
-                        <Section title={`Pinned (${state.quota.pins} of ${state.quota.maxPins})`}>
+                        <Section title={t('rooms.pins:pinned', { pins: state.quota.pins, max: state.quota.maxPins })}>
                             {state.pins.length ? (
-                                <ul className="grid gap-2" aria-label="Pinned facts">
+                                <ul className="grid gap-2" aria-label={t('rooms.pins:pinned-list')}>
                                     {state.pins.map((pin) => (
                                         <PinRow
                                             key={pin.id}
@@ -176,24 +180,28 @@ export function PinsPanel({
                                     ))}
                                 </ul>
                             ) : (
-                                <p className="text-sm text-muted-foreground">Nothing pinned yet.</p>
+                                <p className="text-sm text-muted-foreground">{t('rooms.pins:nothing')}</p>
                             )}
                             <p className="text-xs text-muted-foreground">
-                                {`${formatNumber(state.quota.chars)} of ${formatNumber(state.quota.maxChars)} characters used.`}
+                                {t('rooms.pins:chars', { chars: state.quota.chars, max: state.quota.maxChars })}
                             </p>
                         </Section>
                         {state.can.propose && (
-                            <Section title={state.can.manage ? 'Pin a fact' : 'Propose a fact'}>
+                            <Section
+                                title={state.can.manage ? t('rooms.pins:pin-a-fact') : t('rooms.pins:propose-a-fact')}
+                            >
                                 <FactForm
-                                    label={state.can.manage ? 'Pin' : 'Propose'}
+                                    label={state.can.manage ? t('rooms.pins:pin') : t('rooms.pins:propose')}
                                     busy={busy}
-                                    onSubmit={(text) => run(() => pinsApi.pin(roomId, text), 'Could not pin that.')}
+                                    onSubmit={(text) =>
+                                        run(() => pinsApi.pin(roomId, text), t('rooms.pins:pin-failed'))
+                                    }
                                 />
                             </Section>
                         )}
                         {state.proposals.length > 0 && (
-                            <Section title={`Proposed (${state.proposals.length})`}>
-                                <ul className="grid gap-2" aria-label="Proposed facts">
+                            <Section title={t('rooms.pins:proposed', { n: state.proposals.length })}>
+                                <ul className="grid gap-2" aria-label={t('rooms.pins:proposed-list')}>
                                     {state.proposals.map((proposal) => (
                                         <ProposalRow
                                             key={proposal.id}
@@ -214,6 +222,7 @@ export function PinsPanel({
         </Sheet>
     );
 }
+export const PinsPanel = openedOnDemand(['rooms.pins'], Pins);
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
     const id = useId();
@@ -248,6 +257,8 @@ function PinRow({
     busy: boolean;
     run: Run;
 }) {
+    const { t } = useTranslation(['rooms.pins']);
+    const day = useDay();
     const me = useShell().workspace.user.id;
     const [editing, setEditing] = useState(false);
     const [history, setHistory] = useState(false);
@@ -267,7 +278,7 @@ function PinRow({
         <li data-room-pin={pin.pinId} className="grid gap-1.5 rounded-md border bg-card px-3 py-2">
             {editing ? (
                 <FactForm
-                    label={change ? 'Save' : 'Propose change'}
+                    label={change ? t('rooms.pins:pin-row.save') : t('rooms.pins:pin-row.propose-change')}
                     initial={pin.text}
                     autoFocus
                     busy={busy}
@@ -275,7 +286,7 @@ function PinRow({
                     onSubmit={async (text) => {
                         const ok = await run(
                             () => pinsApi.edit(roomId, pin.pinId, text, pin.version ?? 1),
-                            'Could not change it.',
+                            t('rooms.pins:pin-row.change-failed'),
                         );
                         if (ok) {
                             setEditing(false);
@@ -287,15 +298,28 @@ function PinRow({
                 <p className="m-0 text-sm [overflow-wrap:anywhere]">{pin.text}</p>
             )}
             <p className="m-0 text-xs text-muted-foreground">
-                {`Pinned by ${pin.pinnedBy === me ? 'you' : (pin.pinnedByName ?? 'a former member')}`}
-                {pin.version && pin.version > 1 ? ` · version ${pin.version}` : ''}
+                {t('rooms.pins:pin-row.pinned-by', {
+                    name: pin.pinnedByName ?? t('rooms.pins:former-member'),
+                    context: pin.pinnedBy === me ? 'you' : undefined,
+                })}
+                {pin.version && pin.version > 1 ? (
+                    <>
+                        {' · '}
+                        {t('rooms.pins:pin-row.version', { version: pin.version })}
+                    </>
+                ) : null}
                 {pin.decidedAt ? (
                     <>
                         {' · '}
                         <LocalTime value={pin.decidedAt} format={day} />
                     </>
                 ) : null}
-                {pin.origin === 'notes' ? ' · from the notes' : ''}
+                {pin.origin === 'notes' ? (
+                    <>
+                        {' · '}
+                        {t('rooms.pins:pin-row.from-notes')}
+                    </>
+                ) : null}
             </p>
             {!editing && (
                 <div className="flex flex-wrap gap-1.5">
@@ -308,7 +332,7 @@ function PinRow({
                             disabled={busy}
                             onClick={() => setEditing(true)}
                         >
-                            {change ? 'Edit' : 'Suggest a change'}
+                            {change ? t('rooms.pins:pin-row.edit') : t('rooms.pins:pin-row.suggest')}
                         </Button>
                     )}
                     {change && (
@@ -320,11 +344,11 @@ function PinRow({
                             onClick={() =>
                                 void run(
                                     () => pinsApi.unpin(roomId, pin.pinId, pin.version ?? 1),
-                                    'Could not unpin it.',
+                                    t('rooms.pins:pin-row.unpin-failed'),
                                 )
                             }
                         >
-                            Unpin
+                            {t('rooms.pins:pin-row.unpin')}
                         </Button>
                     )}
                     <Button
@@ -334,7 +358,7 @@ function PinRow({
                         aria-expanded={history}
                         onClick={() => setHistory(!history)}
                     >
-                        {history ? 'Hide history' : 'History'}
+                        {history ? t('rooms.pins:pin-row.hide-history') : t('rooms.pins:pin-row.history')}
                     </Button>
                 </div>
             )}
@@ -343,34 +367,50 @@ function PinRow({
     );
 }
 
-const statusWord: Record<RoomPinVersion['status'], string> = {
-    proposed: 'Proposed',
-    pinned: 'In use',
-    superseded: 'Replaced',
-    unpinned: 'Unpinned',
-    rejected: 'Not pinned',
-    withdrawn: 'Withdrawn',
-};
+const STATUS_KEYS = {
+    proposed: 'rooms.pins:status.proposed',
+    pinned: 'rooms.pins:status.pinned',
+    superseded: 'rooms.pins:status.superseded',
+    unpinned: 'rooms.pins:status.unpinned',
+    rejected: 'rooms.pins:status.rejected',
+    withdrawn: 'rooms.pins:status.withdrawn',
+} as const satisfies Record<RoomPinVersion['status'], string>;
 
-/** Who did what to a version, in one line. */
-export function versionLine(row: RoomPinVersion) {
-    const who = (name: string | null) => name ?? 'a former member';
-    const parts = [
-        row.decidedBy === row.proposedBy && row.version !== null
-            ? `${row.version === 1 ? 'Pinned' : 'Edited'} by ${who(row.proposedByName)}`
-            : `Proposed by ${who(row.proposedByName)}`,
-    ];
-    if (row.decidedBy && row.decidedBy !== row.proposedBy) {
-        parts.push(`${row.status === 'rejected' ? 'turned down' : 'approved'} by ${who(row.decidedByName)}`);
-    }
-    if (row.endedBy && row.status !== 'withdrawn') {
-        parts.push(`${row.status === 'unpinned' ? 'unpinned' : 'replaced'} by ${who(row.endedByName)}`);
-    }
-    return parts.join(', ');
+/** Who did what to a version, in one line: its `versionLine`. */
+export function useVersionLine() {
+    const { t } = useTranslation(['rooms.pins']);
+    return (row: RoomPinVersion) => {
+        const who = (name: string | null) => name ?? t('rooms.pins:former-member');
+        const parts: string[] = [
+            row.decidedBy === row.proposedBy && row.version !== null
+                ? row.version === 1
+                    ? t('rooms.pins:line.pinned', { name: who(row.proposedByName) })
+                    : t('rooms.pins:line.edited', { name: who(row.proposedByName) })
+                : t('rooms.pins:line.proposed', { name: who(row.proposedByName) }),
+        ];
+        if (row.decidedBy && row.decidedBy !== row.proposedBy) {
+            parts.push(
+                row.status === 'rejected'
+                    ? t('rooms.pins:line.turned-down', { name: who(row.decidedByName) })
+                    : t('rooms.pins:line.approved', { name: who(row.decidedByName) }),
+            );
+        }
+        if (row.endedBy && row.status !== 'withdrawn') {
+            parts.push(
+                row.status === 'unpinned'
+                    ? t('rooms.pins:line.unpinned', { name: who(row.endedByName) })
+                    : t('rooms.pins:line.replaced', { name: who(row.endedByName) }),
+            );
+        }
+        return t('rooms.pins:line.joined', { parts });
+    };
 }
 
 /** A pin's versions and proposals, newest first, with who and when. */
 function PinHistory({ roomId, pinId }: { roomId: string; pinId: string }) {
+    const { t } = useTranslation(['rooms.pins']);
+    const day = useDay();
+    const versionLine = useVersionLine();
     const [rows, setRows] = useState<RoomPinVersion[]>();
     const [error, setError] = useState('');
     useEffect(() => {
@@ -380,11 +420,11 @@ function PinHistory({ roomId, pinId }: { roomId: string; pinId: string }) {
             .then((next) => !controller.signal.aborted && setRows(next))
             .catch((cause: unknown) => {
                 if (!controller.signal.aborted) {
-                    setError(failure(cause, 'Could not load its history.'));
+                    setError(failure(cause, t('rooms.pins:history.failed')));
                 }
             });
         return () => controller.abort();
-    }, [roomId, pinId]);
+    }, [roomId, pinId, t]);
     if (error) {
         return (
             <p role="alert" className="m-0 text-xs text-destructive">
@@ -393,15 +433,23 @@ function PinHistory({ roomId, pinId }: { roomId: string; pinId: string }) {
         );
     }
     if (!rows) {
-        return <p className="m-0 text-xs text-muted-foreground">Loading…</p>;
+        return <p className="m-0 text-xs text-muted-foreground">{t('rooms.pins:loading')}</p>;
     }
     return (
-        <ol aria-label="History" data-slot="room-pin-history" className="m-0 grid list-none gap-1.5 border-t p-0 pt-2">
+        <ol
+            aria-label={t('rooms.pins:history.list')}
+            data-slot="room-pin-history"
+            className="m-0 grid list-none gap-1.5 border-t p-0 pt-2"
+        >
             {rows.map((row) => (
                 <li key={row.id} className="grid gap-0.5 text-xs">
                     <span className="flex flex-wrap items-center gap-1.5">
-                        <Badge variant="outline">{row.version ? `v${row.version}` : 'proposal'}</Badge>
-                        <span className="text-muted-foreground">{statusWord[row.status]}</span>
+                        <Badge variant="outline">
+                            {row.version
+                                ? t('rooms.pins:history.version', { version: row.version })
+                                : t('rooms.pins:history.proposal')}
+                        </Badge>
+                        <span className="text-muted-foreground">{t(STATUS_KEYS[row.status])}</span>
                         <LocalTime
                             className="ml-auto text-muted-foreground tabular-nums"
                             value={row.endedAt ?? row.decidedAt ?? row.proposedAt}
@@ -430,6 +478,8 @@ function ProposalRow({
     busy: boolean;
     run: Run;
 }) {
+    const { t } = useTranslation(['rooms.pins']);
+    const day = useDay();
     const me = useShell().workspace.user.id;
     const changes = proposal.supersedes ? state.pins.find((pin) => pin.pinId === proposal.pinId) : undefined;
     const decide = (action: 'approve' | 'reject' | 'withdraw', fallback: string) =>
@@ -438,12 +488,18 @@ function ProposalRow({
         <li data-room-pin-proposal={proposal.id} className="grid gap-1.5 rounded-md border border-dashed px-3 py-2">
             <p className="m-0 text-sm [overflow-wrap:anywhere]">{proposal.text}</p>
             <p className="m-0 text-xs text-muted-foreground">
-                {`Proposed by ${proposal.proposedBy === me ? 'you' : (proposal.proposedByName ?? 'a former member')}`}
-                {proposal.supersedes
-                    ? changes
-                        ? ` · changes “${changes.text}”`
-                        : ' · changes a pin that has changed since'
-                    : ''}
+                {t('rooms.pins:proposal.proposed-by', {
+                    name: proposal.proposedByName ?? t('rooms.pins:former-member'),
+                    context: proposal.proposedBy === me ? 'you' : undefined,
+                })}
+                {proposal.supersedes ? (
+                    <>
+                        {' · '}
+                        {changes
+                            ? t('rooms.pins:proposal.changes', { text: changes.text })
+                            : t('rooms.pins:proposal.changes-stale')}
+                    </>
+                ) : null}
                 {' · '}
                 <LocalTime value={proposal.proposedAt} format={day} />
             </p>
@@ -455,18 +511,18 @@ function ProposalRow({
                                 size="sm"
                                 className={touchTarget}
                                 disabled={busy}
-                                onClick={() => decide('approve', 'Could not pin it.')}
+                                onClick={() => decide('approve', t('rooms.pins:proposal.approve-failed'))}
                             >
-                                Approve
+                                {t('rooms.pins:proposal.approve')}
                             </Button>
                             <Button
                                 size="sm"
                                 variant="outline"
                                 className={touchTarget}
                                 disabled={busy}
-                                onClick={() => decide('reject', 'Could not turn it down.')}
+                                onClick={() => decide('reject', t('rooms.pins:proposal.turn-down-failed'))}
                             >
-                                Turn down
+                                {t('rooms.pins:proposal.turn-down')}
                             </Button>
                         </>
                     )}
@@ -476,9 +532,9 @@ function ProposalRow({
                             variant="outline"
                             className={touchTarget}
                             disabled={busy}
-                            onClick={() => decide('withdraw', 'Could not withdraw it.')}
+                            onClick={() => decide('withdraw', t('rooms.pins:proposal.withdraw-failed'))}
                         >
-                            Withdraw
+                            {t('rooms.pins:proposal.withdraw')}
                         </Button>
                     )}
                 </div>
@@ -507,6 +563,7 @@ function FactForm({
     onSubmit: (text: string) => Promise<boolean>;
     onCancel?: () => void;
 }) {
+    const { t } = useTranslation(['rooms.pins']);
     const [text, setText] = useState(initial);
     const id = useId();
     const submit = async () => {
@@ -528,14 +585,14 @@ function FactForm({
             }}
         >
             <label htmlFor={id} className="sr-only">
-                The fact
+                {t('rooms.pins:fact.label')}
             </label>
             <Textarea
                 id={id}
                 autoFocus={autoFocus}
                 rows={2}
                 maxLength={ROOM_PIN_CHARS}
-                placeholder="Decision: launch on 3 November"
+                placeholder={t('rooms.pins:fact.placeholder')}
                 value={text}
                 onChange={(event) => setText(event.target.value)}
                 onKeyDown={(event) => {
@@ -552,11 +609,11 @@ function FactForm({
             />
             <div className="flex items-center gap-2">
                 <span className="min-w-0 flex-1 text-xs text-muted-foreground">
-                    {`One fact, up to ${ROOM_PIN_CHARS} characters.`}
+                    {t('rooms.pins:fact.limit', { max: ROOM_PIN_CHARS })}
                 </span>
                 {onCancel && (
                     <Button type="button" size="sm" variant="ghost" className={touchTarget} onClick={onCancel}>
-                        Cancel
+                        {t('rooms.pins:fact.cancel')}
                     </Button>
                 )}
                 <Button type="submit" size="sm" className={touchTarget} disabled={busy || !text.trim()}>
@@ -585,19 +642,19 @@ function NotesSection({
     busy: boolean;
     run: Run;
 }) {
+    const { t } = useTranslation(['rooms.pins']);
+    const day = useDay();
     const current = notes.current;
     const pinned = new Set(state.pins.map((pin) => pin.text.toLowerCase()));
     return (
-        <Section title="Notes on earlier messages">
+        <Section title={t('rooms.pins:notes.title')}>
             {!current ? (
-                <p className="text-sm text-muted-foreground">
-                    None yet. When the room gets long, Socio keeps notes on its earlier messages for everyone in it,
-                    with who said what. They never hold what a socio found with someone’s own access.
-                </p>
+                <p className="text-sm text-muted-foreground">{t('rooms.pins:notes.none')}</p>
             ) : (
                 <>
                     <p className="m-0 text-xs text-muted-foreground">
-                        {`Version ${current.version}, covering the first ${current.turns} turns · `}
+                        {t('rooms.pins:notes.current', { version: current.version, count: current.turns })}
+                        {' · '}
                         <LocalTime value={current.updatedAt} format={day} />
                     </p>
                     <p
@@ -607,7 +664,7 @@ function NotesSection({
                         {current.summary}
                     </p>
                     {current.facts.length > 0 && (
-                        <ul className="m-0 grid list-none gap-1 p-0" aria-label="Facts">
+                        <ul className="m-0 grid list-none gap-1 p-0" aria-label={t('rooms.pins:notes.facts')}>
                             {current.facts.map((fact) => (
                                 <li key={fact} className="flex items-start gap-2 text-sm [overflow-wrap:anywhere]">
                                     <span className="min-w-0 flex-1">{fact}</span>
@@ -617,15 +674,19 @@ function NotesSection({
                                             variant="ghost"
                                             className={cn('h-7 shrink-0', touchTarget)}
                                             disabled={busy}
-                                            aria-label={`${state.can.manage ? 'Pin' : 'Propose'}: ${fact}`}
+                                            aria-label={
+                                                state.can.manage
+                                                    ? t('rooms.pins:notes.pin-fact', { fact })
+                                                    : t('rooms.pins:notes.propose-fact', { fact })
+                                            }
                                             onClick={() =>
                                                 void run(
                                                     () => pinsApi.pin(roomId, fact, 'notes'),
-                                                    'Could not pin that.',
+                                                    t('rooms.pins:pin-failed'),
                                                 )
                                             }
                                         >
-                                            {state.can.manage ? 'Pin' : 'Propose'}
+                                            {state.can.manage ? t('rooms.pins:pin') : t('rooms.pins:propose')}
                                         </Button>
                                     )}
                                 </li>
@@ -638,15 +699,31 @@ function NotesSection({
                 <details data-slot="room-notes-versions">
                     {/* 44 px tall on a touch screen, keeping its marker. */}
                     <summary className="cursor-pointer text-xs font-medium pointer-coarse:py-3.5">
-                        {`Versions (${notes.versions.length})`}
+                        {t('rooms.pins:notes.versions', { n: notes.versions.length })}
                     </summary>
                     <ol className="m-0 mt-2 grid list-none gap-1 p-0 text-xs text-muted-foreground">
                         {notes.versions.map((version) => (
                             <li key={version.version}>
-                                {`v${version.version} · turns ${version.fromTurns + 1}–${version.turns}`}
-                                {version.dotName ? ` · by ${version.dotName}` : ''}
-                                {version.actingName ? ` in ${version.actingName}’s turn` : ''}
-                                {version.method === 'fallback' ? ' · kept plainly (the notes’ model failed)' : ''}
+                                {t('rooms.pins:notes.version-turns', {
+                                    version: version.version,
+                                    from: version.fromTurns + 1,
+                                    to: version.turns,
+                                })}
+                                {version.dotName ? (
+                                    <>
+                                        {' · '}
+                                        {t('rooms.pins:notes.by', { name: version.dotName })}
+                                    </>
+                                ) : null}
+                                {version.actingName ? (
+                                    <> {t('rooms.pins:notes.in-turn', { name: version.actingName })}</>
+                                ) : null}
+                                {version.method === 'fallback' ? (
+                                    <>
+                                        {' · '}
+                                        {t('rooms.pins:notes.fallback')}
+                                    </>
+                                ) : null}
                                 {' · '}
                                 <LocalTime value={version.at} format={day} />
                             </li>

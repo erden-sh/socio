@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
+import { useTranslation } from '@socio/i18n/react';
 import { ROOM_PRESENCE_POLL_MS, type RoomPresenceView } from '@socio/shared/rooms/room-notices';
-import { presenceLine } from '@socio/shared/rooms/room-view';
 
 import { api, ApiError } from '../../lib/api';
 
@@ -88,11 +88,17 @@ export function RoomPresence({
     /** Same-named people's names in words (`personLabels`). */
     labels?: ReadonlyMap<string, string>;
 }) {
+    const { t } = useTranslation(['rooms']);
     const people = useRoomPresence(roomId, enabled);
     if (!people.length) {
         return null;
     }
-    const line = `${presenceLine(people.map((person) => labels?.get(person.userId) ?? person.name))} ${people.length === 1 ? 'is' : 'are'} here`;
+    const names = people.map((person) => labels?.get(person.userId) ?? person.name);
+    // Two names at most, then how many more ("Ana, Bo and 2 others are here").
+    const line =
+        names.length <= 2
+            ? t('rooms:presence.here', { names, count: names.length })
+            : t('rooms:presence.more', { first: names[0]!, second: names[1]!, count: names.length - 2 });
     return (
         <div data-slot="room-presence" title={line} className="flex shrink-0 items-center">
             <span className="sr-only">{line}</span>

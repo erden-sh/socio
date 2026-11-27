@@ -2,6 +2,8 @@ import { Radar, RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router';
 
+import { Trans, useTranslation } from '@socio/i18n/react';
+import { dateTimeFormat } from '@socio/shared/locale';
 import { MODULE_IDS } from '@socio/shared/modules';
 import type { RadarEntry, SpaceRadar as RadarState } from '@socio/shared/pages/page-radar';
 import type { Space } from '@socio/shared/types';
@@ -17,22 +19,19 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 
-const day = (value: number) => new Date(value).toLocaleDateString(undefined, { dateStyle: 'medium' });
-const relative = (value: number) => {
-    const diff = Date.now() - value;
-    const days = Math.floor(diff / 86_400_000);
-    if (days <= 0) {
-        return 'today';
-    }
-    if (days === 1) {
-        return '1 day ago';
-    }
-    if (days < 30) {
-        return `${days} days ago`;
-    }
-    const months = Math.floor(days / 30);
-    return months === 1 ? 'about a month ago' : `${months} months ago`;
-};
+const mediumDate = dateTimeFormat({ dateStyle: 'medium' });
+const day = (value: number) => mediumDate.format(value);
+
+/** How long ago a page changed, in the reader's words: days, then months past 30. */
+function useRelative() {
+    const { t } = useTranslation(['spaces.radar']);
+    return (value: number) => {
+        const days = Math.max(0, Math.floor((Date.now() - value) / 86_400_000));
+        return days < 30
+            ? t('spaces.radar:ago-days', { days: -days })
+            : t('spaces.radar:ago-months', { months: -Math.floor(days / 30) });
+    };
+}
 const failure = (error: unknown, fallback: string) => (error instanceof Error ? error.message : fallback);
 
 /**
@@ -47,6 +46,7 @@ const failure = (error: unknown, fallback: string) => (error instanceof Error ? 
  * light existing mechanism, neither warranted yet.
  */
 export function SpaceRadar({ space }: { space: Space }) {
+    const { t } = useTranslation(['spaces.radar']);
     const [state, setState] = useState<RadarState>();
     const [missing, setMissing] = useState(false);
     const [error, setError] = useState('');
@@ -62,10 +62,10 @@ export function SpaceRadar({ space }: { space: Space }) {
             if ((failed as { status?: number }).status === 404) {
                 setMissing(true);
             } else {
-                setError(failure(failed, 'Could not load the change radar.'));
+                setError(failure(failed, t('spaces.radar:load-failed')));
             }
         }
-    }, [base]);
+    }, [base, t]);
     useEffect(() => {
         void load();
     }, [load]);
@@ -74,19 +74,28 @@ export function SpaceRadar({ space }: { space: Space }) {
     const keep = <T extends RadarEntry>(items: T[]) => items.filter((item) => !dismissed.has(item.id));
 
     return (
-        <section data-slot="space-radar" className="w-full pb-8" aria-label={`${space.name} change radar`}>
+        <section
+            data-slot="space-radar"
+            className="w-full pb-8"
+            aria-label={t('spaces.radar:label', { space: space.name })}
+        >
             <PageHeader
                 module={MODULE_IDS.spaces}
                 title={spaceTitle(space)}
                 actions={
                     state && (
-                        <Button size="sm" variant="outline" onClick={() => void load()} aria-label="Refresh radar">
-                            <RefreshCw className="size-4" /> Refresh
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => void load()}
+                            aria-label={t('spaces.radar:refresh-label')}
+                        >
+                            <RefreshCw className="size-4" /> {t('spaces.radar:refresh')}
                         </Button>
                     )
                 }
             >
-                A project change radar: what changed, what stays open, and what may be stale across this Space's pages.
+                {t('spaces.radar:description')}
             </PageHeader>
             <SpaceTabs space={space} />
             <div className="px-4 pt-5 md:px-6">
@@ -95,41 +104,37 @@ export function SpaceRadar({ space }: { space: Space }) {
                         data-slot="space-radar-missing"
                         className="rounded-xl border border-dashed p-4 text-xs text-muted-foreground"
                     >
-                        Space not found.
+                        {t('spaces.radar:missing')}
                     </p>
                 ) : !state ? (
-                    <p className="text-xs text-muted-foreground">{error || 'Loading radar…'}</p>
+                    <p className="text-xs text-muted-foreground">{error || t('spaces.radar:loading')}</p>
                 ) : (
                     <>
                         <p
                             data-slot="space-radar-scope"
                             className="mb-6 max-w-3xl text-xs leading-[1.7] text-muted-foreground"
                         >
-                            {state.total} live {state.total === 1 ? 'page' : 'pages'} in this Space. Stale is older than{' '}
-                            {state.staleDays} days, relative to the most recent change. Markers are a simple heuristic,
-                            not deep scan. Dismissals last only this session.
+                            {t('spaces.radar:scope', { count: state.total, days: state.staleDays })}
                         </p>
 
                         <section aria-labelledby="radar-recent" className="mb-8">
-                            <SectionTitle id="radar-recent">Recent changes</SectionTitle>
+                            <SectionTitle id="radar-recent">{t('spaces.radar:recent.title')}</SectionTitle>
                             <RadarList
                                 slot="space-radar-recent"
                                 entries={keep(state.recent)}
-                                empty="No pages yet."
+                                empty={t('spaces.radar:recent.empty')}
                                 spaceId={space.id}
                             />
                         </section>
 
                         <section aria-labelledby="radar-open" className="mb-8">
-                            <SectionTitle id="radar-open">Open decisions &amp; experiments</SectionTitle>
+                            <SectionTitle id="radar-open">{t('spaces.radar:open.title')}</SectionTitle>
                             {keep(state.open).length === 0 ? (
                                 <p
                                     data-slot="space-radar-open-empty"
                                     className="max-w-3xl text-xs leading-[1.8] text-muted-foreground"
                                 >
-                                    Nothing flagged. A page shows here when its title or excerpt carries a marker like{' '}
-                                    <em>todo</em>, <em>decision</em>,<em> experiment</em>, <em>tbd</em> or{' '}
-                                    <em>unresolved</em>.
+                                    <Trans t={t} i18nKey="spaces.radar:open.empty" components={{ em: <em /> }} />
                                 </p>
                             ) : (
                                 <div
@@ -159,14 +164,13 @@ export function SpaceRadar({ space }: { space: Space }) {
                         </section>
 
                         <section aria-labelledby="radar-stale" className="mb-8">
-                            <SectionTitle id="radar-stale">Potentially stale</SectionTitle>
+                            <SectionTitle id="radar-stale">{t('spaces.radar:stale.title')}</SectionTitle>
                             {keep(state.stale).length === 0 ? (
                                 <p
                                     data-slot="space-radar-stale-empty"
                                     className="max-w-3xl text-xs leading-[1.8] text-muted-foreground"
                                 >
-                                    Nothing stale. Every page was updated within {state.staleDays} days of the most
-                                    recent change.
+                                    {t('spaces.radar:stale.empty', { count: state.staleDays })}
                                 </p>
                             ) : (
                                 <div
@@ -183,10 +187,13 @@ export function SpaceRadar({ space }: { space: Space }) {
                                             <RadarCardHead entry={entry} spaceId={space.id} />
                                             <small className="mt-1 mb-3 block text-xs text-muted-foreground">
                                                 {entry.ageDays === 0
-                                                    ? 'Updated today'
-                                                    : `${entry.ageDays} ${entry.ageDays === 1 ? 'day' : 'days'} since the last edit`}
+                                                    ? t('spaces.radar:stale.today')
+                                                    : t('spaces.radar:stale.age', { count: entry.ageDays })}
                                             </small>
-                                            <DismissButton label="Not stale" onClick={() => dismiss(entry.id)} />
+                                            <DismissButton
+                                                label={t('spaces.radar:stale.dismiss')}
+                                                onClick={() => dismiss(entry.id)}
+                                            />
                                         </Card>
                                     ))}
                                 </div>
@@ -196,7 +203,7 @@ export function SpaceRadar({ space }: { space: Space }) {
                         {dismissed.size > 0 && (
                             <p className="text-xs text-muted-foreground">
                                 <Button variant="link" size="sm" className="h-auto px-0 text-xs" onClick={clear}>
-                                    Clear {dismissed.size} dismissed this session
+                                    {t('spaces.radar:clear', { count: dismissed.size })}
                                 </Button>
                             </p>
                         )}
@@ -209,6 +216,8 @@ export function SpaceRadar({ space }: { space: Space }) {
 
 /** The head of a radar card: title link, excerpt, and last-edited time. */
 function RadarCardHead({ entry, spaceId }: { entry: RadarEntry; spaceId: string }) {
+    const { t } = useTranslation(['spaces.radar']);
+    const relative = useRelative();
     return (
         <>
             <div className="flex h-4.5 items-center gap-2">
@@ -217,7 +226,7 @@ function RadarCardHead({ entry, spaceId }: { entry: RadarEntry; spaceId: string 
                     className="min-w-0 flex-1 truncate text-[13px] font-medium hover:underline underline-offset-2"
                     to={`/spaces/${encodeURIComponent(spaceId)}/pages/${encodeURIComponent(entry.id)}`}
                 >
-                    {entry.title.trim() || 'Untitled page'}
+                    {entry.title.trim() || t('spaces.radar:untitled')}
                 </Link>
             </div>
             {entry.excerpt && (
@@ -230,7 +239,7 @@ function RadarCardHead({ entry, spaceId }: { entry: RadarEntry; spaceId: string 
                 {entry.revisions > 0 && (
                     <>
                         {' · '}
-                        {entry.revisions} {entry.revisions === 1 ? 'revision' : 'revisions'} kept
+                        {t('spaces.radar:revisions', { count: entry.revisions })}
                     </>
                 )}
             </small>
@@ -239,10 +248,11 @@ function RadarCardHead({ entry, spaceId }: { entry: RadarEntry; spaceId: string 
 }
 
 /** A small dismiss/clear button for a radar entry. */
-function DismissButton({ onClick, label = 'Resolved' }: { onClick: () => void; label?: string }) {
+function DismissButton({ onClick, label }: { onClick: () => void; label?: string }) {
+    const { t } = useTranslation(['spaces.radar']);
     return (
         <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={onClick}>
-            {label}
+            {label ?? t('spaces.radar:resolved')}
         </Button>
     );
 }
@@ -259,6 +269,8 @@ function RadarList({
     empty: string;
     spaceId: string;
 }) {
+    const { t } = useTranslation(['spaces.radar']);
+    const relative = useRelative();
     if (!entries.length) {
         return (
             <p data-slot={`${slot}-empty`} className="max-w-3xl text-xs leading-[1.8] text-muted-foreground">
@@ -274,7 +286,7 @@ function RadarList({
                         className="min-w-0 flex-1 truncate font-medium hover:underline underline-offset-2"
                         to={`/spaces/${encodeURIComponent(spaceId)}/pages/${encodeURIComponent(entry.id)}`}
                     >
-                        {entry.title.trim() || 'Untitled page'}
+                        {entry.title.trim() || t('spaces.radar:untitled')}
                     </Link>
                     <small className="shrink-0 text-xs text-muted-foreground">
                         <LocalTime value={entry.updatedAt} format={day} title={relative} />

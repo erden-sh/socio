@@ -1,0 +1,12 @@
+{
+    "legend": "Who can see it",
+    "whole": {
+        "title": "Whole workspace",
+        "detail": "Everyone in the workspace sees it and everything in it.",
+        "detail_member": "Everyone in the workspace sees it and everything in it. Only workspace admins make a Space for everyone."
+    },
+    "private": {
+        "title": "Only its people",
+        "detail": "Private: only the people added to it, and workspace admins, see it, its pages and their history, page chats, search results, apps, datasets and files shared with it, and its memory. Socios use it only when everyone in the chat may. Anyone else doesn’t see it exists."
+    }
+}

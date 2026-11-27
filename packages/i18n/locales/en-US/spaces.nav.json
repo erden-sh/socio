@@ -1,0 +1,12 @@
+{
+    "group": "Spaces",
+    "create": "Create Space",
+    "untitled-page": "Untitled page",
+    "crumbs": {
+        "spaces": "Spaces",
+        "pages": "Pages",
+        "memory": "Memory",
+        "radar": "Radar",
+        "settings": "Settings"
+    }
+}

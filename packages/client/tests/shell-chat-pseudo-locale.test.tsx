@@ -411,7 +411,7 @@ it('loads a chat’s namespaces together with its data when navigating to it, ne
     expect($('[data-slot="app-body"] textarea')).not.toBeNull();
     // Only the chat's loader runs (the root's and the shell's hold), and what
     // the page loads on demand (the live chat's, the reactions', the approval
-    // cards') starts with it: no namespace is asked for after its data.
+    // cards', a room's) starts with it: no namespace is asked for after its data.
     expect(events.filter((event) => event.startsWith('data'))).toEqual(['data3 asked', 'data3 answered']);
     const answered = events.indexOf('data3 answered');
     const namespaces = events.filter((event) => event.startsWith('namespace'));
@@ -420,6 +420,7 @@ it('loads a chat’s namespaces together with its data when navigating to it, ne
         'namespace chat.composer',
         'namespace chat.model',
         'namespace chat.report',
+        'namespace rooms',
     ]);
     for (const event of namespaces) {
         expect(events.indexOf(event), event).toBeLessThan(answered);

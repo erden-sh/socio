@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { useTranslation } from '@socio/i18n/react';
 import {
     pageSummary,
     type Page,
@@ -71,6 +72,7 @@ export function SpaceWorkspace({
     onSettings: () => void;
     onCreateDot: () => void;
 }) {
+    const { t } = useTranslation(['spaces', 'spaces.nav']);
     // Every page without its body (CB-71); the open page's body is `open`.
     const [pages, setPages] = useState<PageSummary[]>([]);
     const [open, setOpen] = useState<Page>();
@@ -120,7 +122,7 @@ export function SpaceWorkspace({
                 }
             } catch (e) {
                 if (active) {
-                    setError(e instanceof Error ? e.message : 'Could not load pages.');
+                    setError(e instanceof Error ? e.message : t('spaces:workspace.errors.load-pages'));
                 }
             }
         };
@@ -134,7 +136,7 @@ export function SpaceWorkspace({
             }
             clearInterval(timer);
         };
-    }, [space.id]);
+    }, [space.id, t]);
     // The open page with its body: read when it opens, and again when the
     // list shows a newer revision (someone else saved it). A failed read is
     // tried again 3 s later; a page that is gone (404, or 410 deleted)
@@ -162,7 +164,7 @@ export function SpaceWorkspace({
                 if (e instanceof ApiError && (e.status === 404 || e.status === 410)) {
                     return;
                 }
-                setError(e instanceof Error ? e.message : 'Could not load the page.');
+                setError(e instanceof Error ? e.message : t('spaces:workspace.errors.load-page'));
                 timer = setTimeout(() => setRetry((count) => count + 1), 3000);
             },
         );
@@ -170,7 +172,7 @@ export function SpaceWorkspace({
             active = false;
             clearTimeout(timer);
         };
-    }, [space.id, pageId, stale, listed?.revision, retry]);
+    }, [space.id, pageId, stale, listed?.revision, retry, t]);
     // Shown once its body is here, unless the list says it is gone.
     const page = body && (listed || !loaded) ? body : undefined;
     // Whether the page shown is a folder, for the Ask panel (CB-426): as read, saved or switched.
@@ -230,7 +232,7 @@ export function SpaceWorkspace({
     /** Makes a page, or a folder named `title` (CB-426), under `parentId`. */
     const make = async (parentId: string | null, folder?: { title: string }) => {
         const next = await api<Page>(`/spaces/${space.id}/pages`, 'POST', {
-            title: folder?.title ?? 'Untitled page',
+            title: folder?.title ?? t('spaces.nav:untitled-page'),
             content: '',
             parentId,
             ...(folder ? { folder: true } : {}),
@@ -250,7 +252,7 @@ export function SpaceWorkspace({
             setOpen(next);
             onPage(next.id);
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Could not create page.');
+            setError(e instanceof Error ? e.message : t('spaces:workspace.errors.create-page'));
         }
     };
     // A new folder stays where the person is: it shows among the pages there (its dialog says
@@ -299,7 +301,7 @@ export function SpaceWorkspace({
     return (
         // No data-slot on the frames around a page (page-chrome.tsx).
         <main
-            aria-label="Space documents"
+            aria-label={t('spaces:workspace.label')}
             className={cn(
                 'flex min-h-0 flex-[1_1_auto] flex-col bg-card text-foreground',
                 (!pageId || memory || radar || settings) && 'overflow-auto',
@@ -399,6 +401,7 @@ const newer = (current: Page | undefined, next: Page) =>
  * the page's usual loading line.
  */
 function PageLoading({ pageId, title }: { pageId: string; title: string }) {
+    const { t } = useTranslation(['spaces']);
     useCrumbTitle(pageId, title);
-    return <LibraryEmpty title="Loading page…" />;
+    return <LibraryEmpty title={t('spaces:workspace.loading-page')} />;
 }

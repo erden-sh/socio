@@ -132,6 +132,8 @@
                 "packages/client/src/modules/approvals/**",
                 "packages/client/src/modules/issues/**",
                 "packages/client/src/modules/chat/**",
+                "packages/client/src/modules/rooms/**",
+                "packages/client/src/modules/spaces/**",
                 "packages/client/src/shell/**",
                 "packages/client/src/root.tsx",
                 "packages/client/src/views/ChatViews.tsx",

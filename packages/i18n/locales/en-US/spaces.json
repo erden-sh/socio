@@ -1,0 +1,87 @@
+{
+    "workspace": {
+        "label": "Space documents",
+        "loading-page": "Loading page…",
+        "errors": {
+            "load-pages": "Could not load pages.",
+            "load-page": "Could not load the page.",
+            "create-page": "Could not create page."
+        }
+    },
+    "tabs": {
+        "label": "{{space}} sections",
+        "pages": "Pages",
+        "memory": "Memory",
+        "radar": "Radar",
+        "settings": "Settings"
+    },
+    "library": {
+        "label": "{{space}} page library",
+        "new-folder": "New folder",
+        "new-page": "New page",
+        "search": "Search pages",
+        "browse": {
+            "label": "Browse pages",
+            "level": "By level",
+            "all": "All pages"
+        },
+        "relevance": "Sorted by relevance",
+        "sort": {
+            "label": "Sort pages",
+            "recent": "Recently edited",
+            "name": "Name A–Z"
+        },
+        "view": {
+            "label": "Library view",
+            "grid": "Grid view",
+            "list": "List view"
+        },
+        "trail": {
+            "label": "Library level",
+            "top": "Top level",
+            "open-folder": "Open folder",
+            "open-page": "Open page"
+        },
+        "heading": {
+            "search": "Search results",
+            "all": "All pages",
+            "folder": "In this folder",
+            "page": "Inside this page",
+            "top": "Top level"
+        },
+        "count_one": "{{count, number}} page",
+        "count_other": "{{count, number}} pages",
+        "count_more_one": "{{count, number}} or more pages",
+        "count_more_other": "{{count, number}} or more pages",
+        "corrected": "Showing results for <words>{{words}}</words>.",
+        "search-instead": "Search instead for {{query}}",
+        "empty-page": "An empty page, ready to write.",
+        "searching": "Searching pages…",
+        "no-matches": "No matching pages",
+        "try-different": "Try a different title or phrase.",
+        "inside_one": "{{count, number}} inside",
+        "inside_other": "{{count, number}} inside",
+        "edited": "Edited <time></time>",
+        "empty": {
+            "folder": "This folder is empty",
+            "page": "Nothing inside this page yet",
+            "none": "No pages yet"
+        },
+        "empty-hint": {
+            "folder": "Pages and folders you create here go inside it.",
+            "page": "Pages you create here go inside it.",
+            "none": "Create your first page to start organizing this Space."
+        },
+        "folder-line_one": "Folder · {{count, number}} inside",
+        "folder-line_other": "Folder · {{count, number}} inside",
+        "empty-folder": "Empty folder",
+        "parents": "Parent pages",
+        "delete": "Delete {{title}}",
+        "delete-title": "Delete page"
+    },
+    "dataset-menu": {
+        "button": "Dataset",
+        "new": "New dataset",
+        "existing": "Add existing dataset"
+    }
+}

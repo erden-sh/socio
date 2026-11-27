@@ -97,6 +97,7 @@ const pseudo = (ns: string) =>
 const NAMESPACES = [
     'settings.dialogs',
     'settings.person-dialogs',
+    'settings.person-tabs',
     'settings.workspace-apps',
     'settings.workspace-github',
     'settings.workspace-limits',

@@ -1,0 +1,10 @@
+{
+    "group": "Heading of the sidebar's list of Spaces. \"Space\" is a product noun: a shared area of the team's pages.",
+    "create": "Accessible name and tooltip of the + button beside the sidebar's Spaces heading; it opens the dialog that creates a Space (product noun).",
+    "untitled-page": "What a page with no title is called: in the breadcrumb, the library's cards and trail, and the title a new page starts with.",
+    "crumbs.spaces": "Breadcrumb in the header for a Space that can't be found (or isn't loaded yet). \"Space\" is a product noun.",
+    "crumbs.pages": "Last breadcrumb in the header on a Space's page library, before a page is open.",
+    "crumbs.memory": "Last breadcrumb in the header on a Space's Memory tab: what the Space's socios remember for everyone in it.",
+    "crumbs.radar": "Last breadcrumb in the header on a Space's Radar tab: a feed of what changed in the Space.",
+    "crumbs.settings": "Last breadcrumb in the header on a Space's Settings tab: who sees the Space and its people."
+}

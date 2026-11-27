@@ -9,6 +9,8 @@ import type { Page } from '@socio/shared/pages/page-library';
 import type { Dot, WorkspaceState } from '@socio/shared/types';
 
 import { PromoteFindingDialog } from '../../packages/client/src/modules/spaces/PromoteFindingDialog';
+// The dialog's words (spaces.promote), as the client's tests read them.
+import '../../packages/client/tests/setup/en-us-i18n';
 
 declare global {
     var IS_REACT_ACT_ENVIRONMENT: boolean;
