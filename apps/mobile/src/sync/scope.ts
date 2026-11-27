@@ -1,3 +1,4 @@
+import { CLIENT_UPDATE_STATUS } from '@socio/shared/client-compat';
 import { installIdSchema } from '@socio/shared/device-sign-in';
 import type { Page } from '@socio/shared/pages/page-library';
 import type { LiveTurn } from '@socio/shared/rooms/live-turn';
@@ -24,6 +25,7 @@ import { type AttachmentFiles, type Attachments, type ImageProcessor, openAttach
 import type { BoundedStore } from './bounded-kind';
 import { type Drafts, openDrafts } from './chat-drafts';
 import { followStoredChats } from './chat-send';
+import { type ClientCompat, createClientCompat } from './client-compat';
 import {
     cleanupScopeCollections,
     createScopeCollections,
@@ -311,6 +313,8 @@ export interface WorkspaceScope {
     readonly cache: SnapshotCache;
     /** The server's versions and the minimum-version gate. */
     readonly versions: ServerVersions;
+    /** Whether this app is new enough for the server (CB-553): Update Socio, or the banner. */
+    readonly compat: ClientCompat;
     readonly contact: ContactTracker;
     /** The newest Date header the scope's answers carried: the checks' watermarks. */
     readonly serverClock: ServerClock;
@@ -471,6 +475,8 @@ export async function openWorkspaceScope(options: WorkspaceScopeOptions): Promis
         const { signal } = controller;
         /** Set once the scheduler exists; an Ended 401 stops it. */
         let stopSync = () => {};
+        /** Set once the view state opens: a 426 closes the app's gate (CB-553). */
+        let compatRef: ClientCompat | null = null;
         const authed = createAuthedFetch({
             origin: workspace.origin,
             jar,
@@ -494,11 +500,18 @@ export async function openWorkspaceScope(options: WorkspaceScopeOptions): Promis
                 contact.onAnswer(answer);
                 serverClock.observe(answer);
                 session.check();
+                if (answer.status === CLIENT_UPDATE_STATUS) {
+                    compatRef?.refused();
+                }
             },
         });
         // The view state first: the kept screen decides which module kind the first frame reads (kinds.ts).
         const viewState = await openViewState(cacheDb.db, onError);
         opens.push(() => viewState.close());
+        // The kept numbers first, so a cold start offline shows Update Socio before any answer.
+        const compat = createClientCompat({ fetch: authed, userAgent, viewState, signal, onError });
+        compatRef = compat;
+        opens.push(async () => compat.dispose());
         const cache = await openSnapshotCache({
             db: cacheDb.db,
             definitions: [...SHELL_SNAPSHOTS, ...firstFrameSnapshots(viewState)],
@@ -767,6 +780,8 @@ export async function openWorkspaceScope(options: WorkspaceScopeOptions): Promis
         });
         outboxRef = outbox;
         opens.push(() => outbox.dispose());
+        // Kept numbers below the minimum hold every lane from the start (CB-553).
+        outbox.holdForUpdate(compat.state().required);
         const drafts = await openDrafts({ db: userDb.db, state: userDb.state, outbox, onError, now });
         opens.push(() => drafts.close());
         draftsRef = drafts;
@@ -1004,6 +1019,8 @@ export async function openWorkspaceScope(options: WorkspaceScopeOptions): Promis
                 }
             }),
             outbox.onStatus((status) => keepWaiting(status.waiting)),
+            // Below the server's minimum every lane waits for the update, and goes after it (CB-553).
+            compat.subscribe(() => outbox.holdForUpdate(compat.state().required)),
             // Typing counts as using the app (the web counts keys): the keyboard's taps never reach the app's views.
             drafts.subscribe(() => presence.touch()),
             // A message's row sent while its chat's history already holds it goes at once.
@@ -1051,6 +1068,10 @@ export async function openWorkspaceScope(options: WorkspaceScopeOptions): Promis
                     background = false;
                     follows.foreground();
                     syncKept();
+                    // An update may have been installed, or the server's numbers moved (CB-553).
+                    if (started) {
+                        void compat.check();
+                    }
                 }
             }),
             network.subscribe((state) => {
@@ -1068,6 +1089,7 @@ export async function openWorkspaceScope(options: WorkspaceScopeOptions): Promis
         let disposing: Promise<void> | null = null;
         const dispose = async () => {
             scheduler.stop();
+            compat.dispose();
             rooms.close();
             const stoppingKeep = keepOffline.close();
             approvals.dispose();
@@ -1139,6 +1161,7 @@ export async function openWorkspaceScope(options: WorkspaceScopeOptions): Promis
             signal,
             cache,
             versions,
+            compat,
             contact,
             serverClock,
             session,
@@ -1194,6 +1217,8 @@ export async function openWorkspaceScope(options: WorkspaceScopeOptions): Promis
                 outbox.start();
                 notices.start();
                 started = true;
+                // Whether this app is new enough for the server, at every start (CB-553).
+                void compat.check();
                 // In the background it waits for the foreground, as the scheduler does.
                 if (isForeground(appState.current())) {
                     syncKept();

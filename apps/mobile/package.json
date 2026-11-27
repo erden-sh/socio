@@ -70,6 +70,7 @@
         "@babel/core": "7.29.7",
         "@bacons/apple-targets": "5.0.0",
         "@types/react": "19.3.2",
+        "@types/react-test-renderer": "19.3.0",
         "babel-plugin-react-compiler": "1.0.0",
         "babel-preset-expo": "58.0.26",
         "cross-env": "10.1.0",
@@ -77,6 +78,7 @@
         "metro-cache": "0.87.1",
         "metro-transform-worker": "0.87.1",
         "react-refresh": "0.14.2",
+        "react-test-renderer": "19.3.0",
         "tailwindcss": "4.3.5",
         "vitest": "5.1.2"
     },

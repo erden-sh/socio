@@ -8,6 +8,7 @@ import type { Page } from '@socio/shared/pages/page-library';
 import type { RunTraceView } from '@socio/shared/runs/run-trace';
 
 import type { BoundedItem, BoundedItemState, BoundedStore } from '../sync/bounded-kind';
+import type { ClientCompatState } from '../sync/client-compat';
 import type { ScopeCollections } from '../sync/collections';
 import { ASSIGNEES_KEY } from '../sync/issue-assignees';
 import { OPTIONS_KEY } from '../sync/issue-component-options';
@@ -38,6 +39,7 @@ import { useWorkspaceScope } from './scope-context';
 //   it stays in view (scheduler.ts);
 // - the connection, for the header's "Reconnecting…" (`useSyncStatus`);
 // - the minimum-version gate, for the update banner (`useVersionGate`);
+// - whether this app is new enough for the server, for Update Socio and its banner (`useClientCompat`, CB-553);
 // - the session, signed in or Expired, for its banner (`useSessionState`), and
 //   why writes wait (`useWriteHold`);
 // - the view state in cache.db's `kv`, such as the last screen (`useViewState`);
@@ -104,6 +106,12 @@ export function useSyncStatus(): SyncStatus {
 export function useVersionGate(): VersionGate | null {
     const { versions } = useWorkspaceScope();
     return useSyncExternalStore(versions.subscribe, versions.gate);
+}
+
+/** Whether this app is new enough for the server (CB-553): `required` draws Update Socio, `recommended` its banner. */
+export function useClientCompat(): ClientCompatState {
+    const { compat } = useWorkspaceScope();
+    return useSyncExternalStore(compat.subscribe, compat.state);
 }
 
 /** The session: 'expired' once its stored expiry has passed (src/sync/session.ts). */

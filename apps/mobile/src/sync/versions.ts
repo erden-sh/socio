@@ -48,8 +48,12 @@ import { parseCookieDate } from '../net/cookie-date';
 // (the registry, out of Clear cache's reach, so the gate shows at cold start)
 // whenever it changes: rarely, since a steady server repeats itself.
 
-/** The lowest server version this build works with. */
-export const MINIMUM_SERVER_VERSION = '0.32.0';
+/**
+ * The lowest server version this build works with: v0.54.0, the first that takes AG-UI 1.0's media
+ * parts, the only attachments this build sends (a server before it refuses them). Raise it when the
+ * app starts to need something newer; the server's side is shared's client-compat.ts (CB-553).
+ */
+export const MINIMUM_SERVER_VERSION = '0.54.0';
 
 /** What a server run from source reports when it can't read its package.json. */
 export const UNKNOWN_SERVER_VERSION = '0.0.0';

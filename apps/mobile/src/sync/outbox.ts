@@ -1,3 +1,5 @@
+import { CLIENT_UPDATE_STATUS } from '@socio/shared/client-compat';
+
 import { type SqlConnection, type SqlStatements, UPDATE_TO_SEND, type UserDbState } from '../data';
 import type { AuthedFetch, AuthedRequestInit } from '../net/authed-fetch';
 import { AbortedError, NetworkError } from '../net/errors';
@@ -48,6 +50,10 @@ import type { PendingWrite } from './pending';
 // - **A 401** (Expired or Ended: authedFetch only answers 401 for the session)
 //   holds every lane until `resume()` or the next scope, published as
 //   `heldForSignIn`. Nothing is dropped.
+// - **A 426** (`client_update_required`, CB-553: this app is below the
+//   server's minimum) holds every lane the same way, as `heldForUpdate`, until
+//   `holdForUpdate(false)`: the scope sets it from the server's numbers
+//   (client-compat.ts), so the rows wait through the update and go after it.
 // - **Rows this build can't decode** (a kind it doesn't know, a newer
 //   `payloadVersion`, a payload its kind refuses) are kept, never sent and
 //   never changed: "Update Socio to send these". A user.db opened read-only
@@ -327,6 +333,8 @@ export interface OutboxStatus {
     readonly inflight: number;
     /** Every lane waits for the person to sign in again. */
     readonly heldForSignIn: boolean;
+    /** Every lane waits for the app's update: the server answered 426, or its numbers say so (CB-553). */
+    readonly heldForUpdate: boolean;
     /** Rows this build can't send ("Update Socio to send these"); every row while user.db is read-only. */
     readonly undecodable: number;
     /** user.db opened read-only: nothing is sent or written. */
@@ -352,8 +360,20 @@ export class OutboxError extends Error {
 
 /** A 401 to a row's request: every lane holds for sign-in. A kind that catches its fetch's errors throws it on. */
 export class HeldForSignIn extends Error {
-    override readonly name = 'HeldForSignIn';
+    override readonly name: string = 'HeldForSignIn';
 }
+
+/**
+ * A 426 to a row's request (CB-553): this app is below the server's minimum, and every lane holds
+ * until the update. A HeldForSignIn, so every kind that throws a 401 on throws this one on too.
+ */
+export class HeldForUpdate extends HeldForSignIn {
+    override readonly name: string = 'HeldForUpdate';
+}
+
+/** Why every lane holds: a 401 (sign in again) or a 426 (update the app). */
+type Held = 'sign-in' | 'update';
+const isHeld = (outcome: unknown): outcome is Held => outcome === 'sign-in' || outcome === 'update';
 
 export interface OutboxOptions {
     /** user.db, open; the scope closes it after `dispose()`. */
@@ -457,6 +477,11 @@ export interface Outbox {
     wake(): void;
     /** Ends the hold for sign-in. */
     resume(): void;
+    /**
+     * Holds every lane for the app's update (CB-553), or ends that hold (and looks for work): the
+     * scope follows the server's numbers. A 426 to a row's request holds it too.
+     */
+    holdForUpdate(held: boolean): void;
     /**
      * Stops the requests in flight, their rows `unknown` first. The outbox keeps
      * running, unless `pause` (iOS's grace expiry): then nothing goes until `unpause()`.
@@ -646,6 +671,14 @@ export async function openOutbox(options: OutboxOptions): Promise<Outbox> {
     let started = false;
     let closed = false;
     let heldForSignIn = false;
+    let heldForUpdate = false;
+    /**
+     * How many times the scope said the app is new enough (`holdForUpdate(false)`, CB-553). A 426
+     * settles after its answer, and a compat read begun by that answer can say "new enough" first:
+     * the settlement holds only when no release came since its request went, so a stale 426 never
+     * holds a workspace the newer answer released. The scope's compat state stays the authority.
+     */
+    let updateReleases = 0;
     let paused = false;
     let disposing: Promise<void> | null = null;
 
@@ -694,6 +727,7 @@ export async function openOutbox(options: OutboxOptions): Promise<Outbox> {
             unsent: unsentWrites.size,
             inflight: inflightCount,
             heldForSignIn,
+            heldForUpdate,
             undecodable,
             readOnly: !writable,
         };
@@ -706,6 +740,7 @@ export async function openOutbox(options: OutboxOptions): Promise<Outbox> {
             next.unsent === lastStatus.unsent &&
             next.inflight === lastStatus.inflight &&
             next.heldForSignIn === lastStatus.heldForSignIn &&
+            next.heldForUpdate === lastStatus.heldForUpdate &&
             next.undecodable === lastStatus.undecodable
         ) {
             return;
@@ -923,7 +958,7 @@ export async function openOutbox(options: OutboxOptions): Promise<Outbox> {
 
     // ---- The drain ---------------------------------------------------------
 
-    const canSend = () => started && !closed && writable && !heldForSignIn && !paused;
+    const canSend = () => started && !closed && writable && !heldForSignIn && !heldForUpdate && !paused;
 
     /** Whether row `id` has settled for its dependents: gone from the outbox (or `sent`), and not refused. */
     const settled = (id: string) => {
@@ -1033,14 +1068,21 @@ export async function openOutbox(options: OutboxOptions): Promise<Outbox> {
                 if (response.status === 401) {
                     throw new HeldForSignIn(`401 from ${input}`);
                 }
+                if (response.status === CLIENT_UPDATE_STATUS) {
+                    // Refused before anything was done, as a 401 is: the row goes again after the update.
+                    throw new HeldForUpdate(`426 from ${input}`);
+                }
                 return response;
             },
         };
         return { context, went: () => went };
     };
 
-    /** A throw from a kind's send: a 401, or a request that may or may not have reached the server. */
-    const fromThrow = (error: unknown, kind: OutboxKind<unknown>, went: boolean): SendOutcome | 'sign-in' => {
+    /** A throw from a kind's send: a 401 or a 426, or a request that may or may not have reached the server. */
+    const fromThrow = (error: unknown, kind: OutboxKind<unknown>, went: boolean): SendOutcome | Held => {
+        if (error instanceof HeldForUpdate) {
+            return 'update';
+        }
         if (error instanceof HeldForSignIn) {
             return 'sign-in';
         }
@@ -1079,7 +1121,8 @@ export async function openOutbox(options: OutboxOptions): Promise<Outbox> {
             return;
         }
         const { context, went } = contextFor(controller);
-        let outcome: SendOutcome | 'sign-in';
+        const releasesAtSend = updateReleases;
+        let outcome: SendOutcome | Held;
         let thrown = false;
         try {
             outcome = await kind.send(
@@ -1096,12 +1139,14 @@ export async function openOutbox(options: OutboxOptions): Promise<Outbox> {
             thrown = true;
             outcome = fromThrow(error, kind, went());
         }
-        if ((thrown && went()) || (outcome !== 'sign-in' && outcome.action === 'unknown')) {
+        // A 426 is the version guard's, before anything ran on the server: the row isn't ambiguous,
+        // so its next send isn't matched against what is already there (CB-553).
+        if ((thrown && went() && outcome !== 'update') || (!isHeld(outcome) && outcome.action === 'unknown')) {
             // It may have reached the server, even when a repeatable kind just goes again.
             ambiguous.add(row.id);
         }
         inflight.delete(row.id);
-        await serialize(() => settle(sending, outcome, thrown));
+        await serialize(() => settle(sending, outcome, thrown, releasesAtSend));
     }
 
     async function check(row: OutboxRow, write: OutboxWrite): Promise<void> {
@@ -1109,11 +1154,14 @@ export async function openOutbox(options: OutboxOptions): Promise<Outbox> {
         const controller = new AbortController();
         inflight.set(row.id, controller);
         const { context } = contextFor(controller);
-        let outcome: CheckOutcome | 'sign-in' | 'failed';
+        const releasesAtCheck = updateReleases;
+        let outcome: CheckOutcome | Held | 'failed';
         try {
             outcome = await (kind.check as NonNullable<OutboxKind<unknown>['check']>)(write, context);
         } catch (error) {
-            if (error instanceof HeldForSignIn) {
+            if (error instanceof HeldForUpdate) {
+                outcome = 'update';
+            } else if (error instanceof HeldForSignIn) {
                 outcome = 'sign-in';
             } else {
                 if (!(error instanceof NetworkError) && !(error instanceof AbortedError)) {
@@ -1129,6 +1177,8 @@ export async function openOutbox(options: OutboxOptions): Promise<Outbox> {
             }
             if (outcome === 'sign-in') {
                 holdForSignIn();
+            } else if (outcome === 'update') {
+                holdForUpdateAfter(row, releasesAtCheck, row.attempts + 1);
             } else if (outcome === 'failed' || outcome.action === 'later') {
                 backOff(row, row.attempts + 1);
                 await db.run('UPDATE outbox SET attempts = attempts + 1 WHERE id = ?', [row.id]);
@@ -1152,6 +1202,27 @@ export async function openOutbox(options: OutboxOptions): Promise<Outbox> {
         if (!heldForSignIn) {
             heldForSignIn = true;
             tellStatus();
+        }
+    };
+
+    const holdForUpdateNow = () => {
+        if (!heldForUpdate) {
+            heldForUpdate = true;
+            tellStatus();
+        }
+    };
+
+    /**
+     * A 426 to row `row`'s request, settled: every lane holds, unless the scope released the hold
+     * since that request went (`releases`, read as it went). Then the answer is older than what the
+     * scope knows, and the row only waits out a back-off; a 426 that still holds closes the gate
+     * through the scope again.
+     */
+    const holdForUpdateAfter = (row: OutboxRow, releases: number, attempts: number) => {
+        if (releases === updateReleases) {
+            holdForUpdateNow();
+        } else {
+            backOff(row, attempts);
         }
     };
 
@@ -1322,17 +1393,22 @@ export async function openOutbox(options: OutboxOptions): Promise<Outbox> {
     };
 
     /** Applies a send's outcome, in the queue. A closed outbox writes nothing more. */
-    async function settle(row: OutboxRow, outcome: SendOutcome | 'sign-in', thrown: boolean): Promise<void> {
+    async function settle(
+        row: OutboxRow,
+        outcome: SendOutcome | Held,
+        thrown: boolean,
+        releasesAtSend: number,
+    ): Promise<void> {
         const wasInterrupted = interrupted.delete(row.id);
         if (closed || rows.get(row.id) === undefined) {
             return;
         }
-        if (outcome !== 'sign-in' && outcome.action === 'done') {
+        if (!isHeld(outcome) && outcome.action === 'done') {
             // The server has it: that settles the row even after it was marked unknown.
             await finish(row, outcome);
             return;
         }
-        if (outcome !== 'sign-in' && outcome.action === 'unsent') {
+        if (!isHeld(outcome) && outcome.action === 'unsent') {
             // A refusal is an answer too: nothing happened on the server.
             await toUnsent(row, outcome);
             return;
@@ -1345,6 +1421,13 @@ export async function openOutbox(options: OutboxOptions): Promise<Outbox> {
             // A 401 changed nothing on the server: the row goes again once the person is back.
             await setState(row, 'queued', 'sign-in');
             holdForSignIn();
+            return;
+        }
+        if (outcome === 'update') {
+            // A 426 changed nothing on the server either: the row goes again after the update.
+            await setState(row, 'queued', 'update');
+            // Read after the write: a release that came while it was written wins.
+            holdForUpdateAfter(row, releasesAtSend, row.attempts);
             return;
         }
         switch (outcome.action) {
@@ -1712,6 +1795,18 @@ export async function openOutbox(options: OutboxOptions): Promise<Outbox> {
                 tellStatus();
             }
             poke();
+        },
+        holdForUpdate(held) {
+            if (held) {
+                holdForUpdateNow();
+                return;
+            }
+            updateReleases += 1;
+            if (heldForUpdate) {
+                heldForUpdate = false;
+                tellStatus();
+                poke();
+            }
         },
         interrupt(options) {
             // Before the queue: a send begun but not yet in flight sees it and stays queued.

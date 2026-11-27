@@ -9,6 +9,7 @@ For the agent cutting a release for a developer, and for the developer. The mech
 - **Never push without the owner's go.** The script commits and tags locally and never pushes. Show the owner the version, summary and highlights, then wait. Only then `git push origin main <tag>`.
 - **Releases are cut on `main`, with a clean tree.** `--dry-run` is safe anywhere it can run; a real run changes package.json and the notes (pnpm-lock.yaml holds no version of the project's own, CB-183).
 - Say "socio" and "socios", never "Dot", in the summary, highlights and notes.
+- **A breaking server change raises the minimum app version in the same release.** When a server change stops older Socio Mobile builds from working (a request shape, a response field or a protocol they rely on), raise `minimum` in `CLIENT_COMPAT` (`packages/shared/src/client-compat.ts`) for iOS and Android in that release, with `recommended` at least as high, and say it under `### Breaking`. Apps below it then get one clear refusal (426 `client_update_required`) and show Update Socio instead of failing at random (CB-553). Deploy that release only after an app meeting the new minimum is installable: on TestFlight for iOS and as Socio Preview for Android. A change that only works better with a newer app raises `recommended` alone, which shows a banner the person can dismiss.
 
 ## Cutting one
 

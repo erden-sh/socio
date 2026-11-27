@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
+import { CLIENT_COMPAT_PATH, CLIENT_UPDATE_STATUS } from '@socio/shared/client-compat';
+
 import type { Answered } from '../../src/net/authed-fetch';
 import { CONTACT_WRITE_MS, countsAsContact, createContactTracker } from '../../src/sync/contact';
-import { DAY, httpDate, MINUTE, ORIGIN, settle, T0 } from '../net/helpers';
+import { DAY, httpDate, MINUTE, ORIGIN, SESSION, settle, T0 } from '../net/helpers';
 
 import { syncSetup } from './helpers';
 
@@ -35,6 +37,28 @@ describe('the last contact', () => {
         for (const path of ['/api/auth/session', '/api/auth', '/api/auth/sign-in/email', '/ping', '/apiary', '/']) {
             expect(countsAsContact(url(path), 200), path).toBe(false);
         }
+    });
+
+    it('never counts the public app versions, nor a 426, which both come before the session check (CB-553)', () => {
+        const url = (path: string) => new URL(path, ORIGIN);
+        expect(countsAsContact(url(CLIENT_COMPAT_PATH), 200)).toBe(false);
+        expect(countsAsContact(url(CLIENT_COMPAT_PATH), 304)).toBe(false);
+        for (const path of ['/api/state', '/api/workspace', '/api/conversations']) {
+            expect(countsAsContact(url(path), CLIENT_UPDATE_STATUS), path).toBe(false);
+        }
+    });
+
+    it('records no contact from a compat answer, even one sent with the session cookie', () => {
+        const writes: number[] = [];
+        const jar = { sessionCookie: SESSION, serverNow: () => T0 } as unknown as Parameters<
+            typeof createContactTracker
+        >[0]['jar'];
+        const tracker = createContactTracker({ jar, persist: async (at) => void writes.push(at) });
+        const sent = { cookie: `${SESSION}=t1`, sessionExpiresAt: T0 + DAY, sessionWithheld: false };
+        tracker.onAnswer({ url: new URL(CLIENT_COMPAT_PATH, ORIGIN), status: 200, date: httpDate(T0), sent });
+        tracker.onAnswer({ url: new URL('/api/state', ORIGIN), status: 426, date: httpDate(T0), sent });
+        expect(tracker.last()).toBeNull();
+        expect(writes).toEqual([]);
     });
 
     it('records a 200 and a 304 from the sync sources, in the server’s time', async () => {

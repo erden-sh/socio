@@ -30,6 +30,7 @@ import { signedIn, wire } from './wire';
 // row; and the server versions and gate, contact and the back-off are wired in.
 
 const B_ORIGIN = 'https://b.example.test';
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 let device: Phone;
 const scopes: WorkspaceScope[] = [];
@@ -504,8 +505,8 @@ describe('what the scope wires together', () => {
         await scope.scheduler.idle();
         await advance(COALESCE_MS);
         await scope.scheduler.idle();
-        expect(scope.versions.highest()).toBe('0.32.0');
-        // The workspace's pull began before 0.32.0 was taken, so it ran once more, with its ETag.
+        expect(scope.versions.highest()).toBe('0.54.0');
+        // The workspace's pull began before 0.54.0 was taken, so it ran once more, with its ETag.
         expect(paths()).toEqual([
             ['/api/state', false],
             ['/api/workspace', false],
@@ -515,14 +516,14 @@ describe('what the scope wires together', () => {
 
         // A deploy, seen by the state's next answer: the workspace is pulled once, with its ETag.
         await advance(5000);
-        s.server.deploy('0.33.0');
+        s.server.deploy('0.55.0');
         s.net.calls.length = 0;
         scope.scheduler.poke(['state']);
         await advance(COALESCE_MS);
         await scope.scheduler.idle();
         await advance(COALESCE_MS);
         await scope.scheduler.idle();
-        expect(scope.versions.highest()).toBe('0.33.0');
+        expect(scope.versions.highest()).toBe('0.55.0');
         // The issues and approvals kinds, stamped with the old version too, go once more after the
         // shell (the approvals with no If-None-Match: the path sends no ETag, `hashBody`).
         expect(paths()).toEqual([
@@ -536,8 +537,8 @@ describe('what the scope wires together', () => {
         expect(scope.versions.gate()).toBe('open');
         await scope.versions.flush();
         expect(await s.store.registry.serverVersions(s.id)).toMatchObject({
-            serverVersion: '0.33.0',
-            lastVersion: '0.33.0',
+            serverVersion: '0.55.0',
+            lastVersion: '0.55.0',
             versionGate: 'open',
         });
     });
@@ -598,7 +599,7 @@ describe('what the scope wires together', () => {
         await turns();
         expect(await readDisk()).toEqual(['c0', 'c1', 'c2']);
         expect((await s.store.registry.get(s.id))?.lastContact).toBe(T0 + 30_000);
-        expect((await s.store.registry.serverVersions(s.id))?.serverVersion).toBe('0.32.0');
+        expect((await s.store.registry.serverVersions(s.id))?.serverVersion).toBe('0.54.0');
         // Going offline writes at once too.
         s.server.change('workspace', (data) => {
             data.conversations.push(conversation('c7', 'Late', 7));
@@ -681,5 +682,121 @@ describe('what the scope wires together', () => {
         expect(rerun?.ifNoneMatch).toMatch(/^W\//);
         expect(rerun?.ifNoneMatch).not.toBe(held?.ifNoneMatch);
         expect(scope.collections.conversations.get('c9')?.title).toBe('Written here');
+    });
+});
+
+describe('the app’s version against the server (CB-553)', () => {
+    const APP = 'Socio/0.2.7 (Android; Android 16)';
+
+    /** The fake server behind a compat endpoint at `minimum`, refusing the app below it with a 426. */
+    function compatServer(s: Awaited<ReturnType<typeof setup>>, compat: { minimum: string | null }) {
+        const fetch: typeof s.net.fetch = async (url, init) => {
+            const path = new URL(url).pathname;
+            if (compat.minimum === null) {
+                return s.net.fetch(url, init);
+            }
+            if (path === '/api/client/compat') {
+                const numbers = { minimum: compat.minimum, recommended: compat.minimum };
+                return new Response(JSON.stringify({ platforms: { ios: numbers, android: numbers } }), {
+                    status: 200,
+                    headers: { 'Content-Type': 'application/json' },
+                });
+            }
+            if (path.startsWith('/api/') && !path.startsWith('/api/auth') && compat.minimum > '0.2.7') {
+                return new Response(
+                    JSON.stringify({ code: 'client_update_required', minimum: compat.minimum, platform: 'android' }),
+                    { status: 426, headers: { 'Content-Type': 'application/json' } },
+                );
+            }
+            return s.net.fetch(url, init);
+        };
+        return fetch;
+    }
+
+    it('closes the gate on a 426, holds the outbox, keeps the cache, and opens on the foreground once lowered', async () => {
+        const s = await setup();
+        const compat = { minimum: '0.2.7' as string | null };
+        const scope = await s.open({ userAgent: APP, fetch: compatServer(s, compat) });
+        scope.start();
+        await advance(COALESCE_MS);
+        await scope.scheduler.idle();
+        await turns();
+        expect(scope.compat.state()).toMatchObject({ required: false, minimum: '0.2.7' });
+        const rows = ids(scope.collections.conversations.toArray);
+        expect(rows.length).toBeGreaterThan(0);
+
+        // The server raises its minimum: the next pull is refused, and the gate closes.
+        compat.minimum = '0.2.8';
+        scope.scheduler.poke(['state']);
+        await advance(COALESCE_MS);
+        await scope.scheduler.idle();
+        await turns();
+        expect(scope.compat.state()).toMatchObject({ required: true, minimum: '0.2.8', version: '0.2.7' });
+        expect(scope.outbox.status().heldForUpdate).toBe(true);
+        // Nothing of the copy goes.
+        expect(ids(scope.collections.conversations.toArray)).toEqual(rows);
+
+        // Lowered again: the next return to the foreground reads it and opens.
+        compat.minimum = '0.2.7';
+        s.appState.set('background');
+        await advance(15_000);
+        s.appState.set('active');
+        await turns();
+        await advance(COALESCE_MS);
+        await turns();
+        expect(scope.compat.state().required).toBe(false);
+        expect(scope.outbox.status().heldForUpdate).toBe(false);
+    });
+
+    it('opens a scope whose kept numbers say too old with the gate closed and the outbox held, before any answer', async () => {
+        const s = await setup();
+        const compat = { minimum: '0.2.8' as string | null };
+        const first = await s.open({ userAgent: APP, fetch: compatServer(s, compat) });
+        first.start();
+        await advance(COALESCE_MS);
+        await turns();
+        expect(first.compat.state().required).toBe(true);
+        await first.dispose();
+        s.net.calls.length = 0;
+
+        const scope = await s.open({ userAgent: APP, fetch: compatServer(s, compat) });
+        expect(scope.compat.state().required).toBe(true);
+        expect(scope.outbox.status().heldForUpdate).toBe(true);
+        expect(s.net.calls).toEqual([]);
+    });
+
+    it('never moves the lease with its compat reads: no cookie goes, and the answer is no contact', async () => {
+        const s = await setup();
+        const cookies: (string | null)[] = [];
+        const fetch: typeof s.net.fetch = async (url, init) => {
+            if (new URL(url).pathname === '/api/client/compat') {
+                cookies.push(((init.headers ?? {}) as Record<string, string>).cookie ?? null);
+                const numbers = { minimum: '0.2.7', recommended: '0.2.7' };
+                return new Response(JSON.stringify({ platforms: { ios: numbers, android: numbers } }), {
+                    status: 200,
+                    headers: { 'Content-Type': 'application/json', Date: new Date(Date.now() + DAY_MS).toUTCString() },
+                });
+            }
+            // Everything else: no answer, as for a copy whose session the server no longer honors.
+            throw new TypeError('Network request failed');
+        };
+        const scope = await s.open({ userAgent: APP, fetch });
+        const before = scope.contact.last();
+        await scope.compat.check();
+        await scope.compat.check();
+        expect(cookies).toEqual([null, null]);
+        expect(scope.contact.last()).toBe(before);
+        expect(scope.compat.known()).toMatchObject({ kind: 'known', minimum: '0.2.7' });
+    });
+
+    it('never gates a server without the endpoint (older than CB-553)', async () => {
+        const s = await setup();
+        const scope = await s.open({ userAgent: APP, fetch: compatServer(s, { minimum: null }) });
+        scope.start();
+        await advance(COALESCE_MS);
+        await scope.scheduler.idle();
+        await turns();
+        expect(scope.compat.known()).toEqual({ kind: 'none' });
+        expect(scope.compat.state().required).toBe(false);
     });
 });
