@@ -1,0 +1,8 @@
+{
+    "continuous.behind": "Part of the \"Continuous copy: …\" status line for admins, lowercase because it follows a colon. The continuous copy is Litestream's copy of the database. {{changed}} and {{copied}} are formatted dates and times. \"litestream\" is the name of a server process (a Docker service): keep it as is.",
+    "continuous.noCopy": "Part of the \"Continuous copy: …\" status line, lowercase after a colon. \"litestream\" is a server process name: keep it.",
+    "continuous.upToDate": "Part of the \"Continuous copy: …\" status line, lowercase after a colon. {{at}} is a formatted date and time.",
+    "continuous.waiting": "Part of the \"Continuous copy: …\" status line, lowercase after a colon: no copy has been made yet.",
+    "continuous.wal": "Appended to the continuous copy line: the size of the database's write-ahead log (WAL, a SQLite term). {{size}} is a size such as \"12 MB\".",
+    "continuous.level": "Appended to the continuous copy line when it needs attention: the alert level, a single lowercase word."
+}

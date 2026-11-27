@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
+import { useTranslation } from '@socio/i18n/react';
 import {
     GITHUB_REPOSITORY,
     type GitHubAppInput,
@@ -12,6 +13,7 @@ import { api } from '../../lib/api';
 
 import { SettingsCard } from './AccountSettings';
 import { AutosaveHeader, SaveError, useAutosave } from './autosave';
+import { onDemand } from './on-demand';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,20 +23,26 @@ const RETURN_PARAMS = ['code', 'state', 'installation_id', 'setup_action'];
 
 const message = (error: unknown, fallback: string) => (error instanceof Error ? error.message : fallback);
 
-function appLine(view: GitHubAppView) {
-    const { app, installation } = view;
-    if (view.unreadable) {
-        return 'The GitHub App saved here can’t be read: its data key is gone. Select Disconnect, then Connect GitHub.';
-    }
-    if (!app) {
-        return 'GitHub is not connected.';
-    }
-    const name = app.slug ? `GitHub App ${app.slug}` : `GitHub App ${app.id}`;
-    const where = app.source === 'env' ? ' (from the server’s GITHUB_APP_ID)' : '';
-    if (installation) {
-        return `Connected: ${name}${where}, installed${installation.account ? ` on ${installation.account}` : ''}.`;
-    }
-    return `Connected: ${name}${where}. Its installation is looked up from each repository.`;
+/** The card's "Connected: …" line. */
+function useAppLine() {
+    const { t } = useTranslation(['settings.workspace-github']);
+    return (view: GitHubAppView) => {
+        const { app, installation } = view;
+        if (view.unreadable) {
+            return t('settings.workspace-github:status.unreadable');
+        }
+        if (!app) {
+            return t('settings.workspace-github:status.notConnected');
+        }
+        const name = app.slug || String(app.id);
+        const context = app.source === 'env' ? 'env' : undefined;
+        if (installation) {
+            return installation.account
+                ? t('settings.workspace-github:status.installedOn', { name, account: installation.account, context })
+                : t('settings.workspace-github:status.installed', { name, context });
+        }
+        return t('settings.workspace-github:status.connected', { name, context });
+    };
 }
 
 /**
@@ -50,7 +58,9 @@ function appLine(view: GitHubAppView) {
  * `repositorySet`: saved here, over the server's; Undo of a first change
  * goes back to the server's value rather than saving it here.
  */
-export function GitHubAppSetting() {
+function GitHubAppSettingBody() {
+    const { t } = useTranslation(['settings.workspace-github']);
+    const appLine = useAppLine();
     const [view, setView] = useState<GitHubAppView>();
     const [busy, setBusy] = useState(false);
     const returned = useRef(false);
@@ -66,7 +76,7 @@ export function GitHubAppSetting() {
             try {
                 setView(await api<GitHubAppView>('/github', 'PUT', body));
             } catch (failure) {
-                throw new Error(message(failure, 'Could not save. Retry.'));
+                throw new Error(message(failure, t('settings.workspace-github:saveFailed')));
             }
         },
     );
@@ -114,19 +124,20 @@ export function GitHubAppSetting() {
                 }
                 if (installationId && state) {
                     setView(await api<GitHubAppView>('/github/installed', 'POST', { installationId, state }));
-                    toast.success('GitHub connected');
+                    toast.success(t('settings.workspace-github:connected'));
                 } else
                 // Installed from GitHub itself: found from each repository.
                 {
                     setView(await api<GitHubAppView>('/github'));
                 }
             } catch (failure) {
-                setError(message(failure, 'Could not finish connecting GitHub.'));
+                setError(message(failure, t('settings.workspace-github:finishFailed')));
             }
             setBusy(false);
         })();
-        // setError is the hook's state setter: the same on every render.
-    }, [setError]);
+        // setError is the hook's state setter, and t changes only with the
+        // language: `returned` keeps it to the one return from GitHub.
+    }, [setError, t]);
     if (!view) {
         return null;
     }
@@ -138,10 +149,13 @@ export function GitHubAppSetting() {
             repositorySet: repository === saved.repository ? saved.repositorySet : true,
         });
         void auto.commit(
-            (next) => (next.repository ? `GitHub App owner from ${next.repository}` : 'Repository cleared'),
+            (next) =>
+                next.repository
+                    ? t('settings.workspace-github:ownerFrom', { repository: next.repository })
+                    : t('settings.workspace-github:repositoryCleared'),
             (value) => {
                 if (value.repository && !GITHUB_REPOSITORY.test(value.repository)) {
-                    return 'Name the repository as owner/name, such as acme/app.';
+                    return t('settings.workspace-github:repositoryInvalid');
                 }
             },
         );
@@ -153,7 +167,7 @@ export function GitHubAppSetting() {
             const { url } = await api<GitHubConnectNext>('/github/connect', 'POST', {});
             location.assign(url);
         } catch (failure) {
-            setError(message(failure, 'Could not start connecting GitHub.'));
+            setError(message(failure, t('settings.workspace-github:startFailed')));
             setBusy(false);
         }
     };
@@ -162,9 +176,9 @@ export function GitHubAppSetting() {
         setError('');
         try {
             setView(await api<GitHubAppView>('/github/app', 'DELETE'));
-            toast.success('GitHub disconnected here');
+            toast.success(t('settings.workspace-github:disconnected'));
         } catch (failure) {
-            setError(message(failure, 'Could not disconnect. Retry.'));
+            setError(message(failure, t('settings.workspace-github:disconnectFailed')));
         }
         setBusy(false);
     };
@@ -179,26 +193,24 @@ export function GitHubAppSetting() {
                     commit();
                 }}
             >
-                <AutosaveHeader title="GitHub App" status={auto.status}>
-                    Coding sessions push their branches and open draft pull requests through this GitHub App, for a
-                    person to review. Never to a base branch, and never forced. The repositories they may work on are
-                    listed under Coding → Repositories.
+                <AutosaveHeader title={t('settings.workspace-github:title')} status={auto.status}>
+                    {t('settings.workspace-github:intro')}
                 </AutosaveHeader>
                 <div className="grid gap-1.5 sm:max-w-sm">
                     <label htmlFor="github-app-repository" className="font-medium">
-                        Repository
+                        {t('settings.workspace-github:repository')}
                     </label>
                     <Input
                         id="github-app-repository"
                         autoComplete="off"
                         spellCheck={false}
                         maxLength={140}
-                        placeholder="owner/name"
+                        placeholder={t('settings.workspace-github:repositoryPlaceholder')}
                         value={auto.value.repository}
                         onChange={(event) => auto.edit({ repository: event.target.value })}
                         onBlur={commit}
                     />
-                    <p className="text-muted-foreground">Connect GitHub makes the App for this repository’s owner.</p>
+                    <p className="text-muted-foreground">{t('settings.workspace-github:repositoryHint')}</p>
                 </div>
                 {view.repositorySource === 'settings' && (
                     <div className="flex flex-wrap gap-2">
@@ -206,9 +218,11 @@ export function GitHubAppSetting() {
                             type="button"
                             variant="outline"
                             disabled={busy || auto.status === 'saving'}
-                            onClick={() => void auto.change({ repositorySet: false }, 'Using the server’s default')}
+                            onClick={() =>
+                                void auto.change({ repositorySet: false }, t('settings.workspace-github:usingDefault'))
+                            }
                         >
-                            Use the server’s default
+                            {t('settings.workspace-github:useDefault')}
                         </Button>
                     </div>
                 )}
@@ -216,16 +230,9 @@ export function GitHubAppSetting() {
                     <p className="text-muted-foreground" data-slot="github-app-status">
                         {appLine(view)}
                     </p>
-                    <p className="text-muted-foreground">
-                        Connect GitHub makes a GitHub App for the repository’s owner that may only write code and pull
-                        requests. On GitHub, select Create, then Install on the repositories. Each push gets a token for
-                        one repository that lasts only for it. Nothing is pasted, and coding agents never see a GitHub
-                        credential.
-                    </p>
+                    <p className="text-muted-foreground">{t('settings.workspace-github:explain')}</p>
                     {!view.canConnect && (
-                        <p className="text-muted-foreground">
-                            Set APP_ORIGIN on the server first: GitHub sends you back to that address.
-                        </p>
+                        <p className="text-muted-foreground">{t('settings.workspace-github:needsOrigin')}</p>
                     )}
                     <div className="flex flex-wrap gap-2">
                         <Button
@@ -234,19 +241,18 @@ export function GitHubAppSetting() {
                             disabled={busy || !view.canConnect || !view.repository || view.unreadable}
                             onClick={() => void connectGitHub()}
                         >
-                            {view.app?.source === 'settings' ? 'Connect again' : 'Connect GitHub'}
+                            {view.app?.source === 'settings'
+                                ? t('settings.workspace-github:connectAgain')
+                                : t('settings.workspace-github:connect')}
                         </Button>
                         {(view.app?.source === 'settings' || view.unreadable) && (
                             <Button type="button" variant="outline" disabled={busy} onClick={() => void disconnect()}>
-                                Disconnect
+                                {t('settings.workspace-github:disconnect')}
                             </Button>
                         )}
                     </div>
                     {view.app?.source === 'settings' && (
-                        <p className="text-muted-foreground">
-                            Disconnect forgets the App here; delete it on GitHub too, in your account or organization’s
-                            Developer settings → GitHub Apps.
-                        </p>
+                        <p className="text-muted-foreground">{t('settings.workspace-github:disconnectNote')}</p>
                     )}
                 </div>
                 <SaveError error={auto.error} />
@@ -254,3 +260,6 @@ export function GitHubAppSetting() {
         </SettingsCard>
     );
 }
+
+/** Below the fold: its words load when it mounts (settings.workspace-github, in no route's entry). */
+export const GitHubAppSetting = onDemand(['settings.workspace-github'], GitHubAppSettingBody);

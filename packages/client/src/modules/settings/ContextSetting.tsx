@@ -1,12 +1,11 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 
+import { useTranslation } from '@socio/i18n/react';
 import {
     DEFAULT_CONTEXT_SETTINGS,
     NOTES_SELECTIONS,
-    NOTES_SELECTION_LABELS,
     SUMMARY_MODELS,
-    SUMMARY_MODEL_LABELS,
     type ContextSettings,
 } from '@socio/shared/context-settings';
 
@@ -28,12 +27,13 @@ export function ContextSetting({
     readOnly: boolean;
     mutate: (path: string, method: string, body?: unknown) => Promise<boolean>;
 }) {
+    const { t } = useTranslation(['settings.workspace']);
     const [value, setValue] = useState<ContextSettings>(settings ?? DEFAULT_CONTEXT_SETTINGS);
     const save = async (change: Partial<ContextSettings>) => {
         const previous = value;
         setValue({ ...value, ...change });
         if (await mutate('/settings', 'PATCH', { context: change })) {
-            toast.success('Long chats saved');
+            toast.success(t('settings.workspace:context.saved'));
         } else {
             setValue(previous);
         }
@@ -42,15 +42,12 @@ export function ContextSetting({
         <SettingsCard>
             <section className="grid gap-4" data-slot="context-settings">
                 <div className="grid gap-1">
-                    <h3 className="font-medium">Long chats</h3>
-                    <p className="text-muted-foreground">
-                        When a chat outgrows its model, its oldest turns are kept as notes: a summary and pinned facts,
-                        such as decisions and ids. Nothing is deleted; socios can read any of it again.
-                    </p>
+                    <h3 className="font-medium">{t('settings.workspace:context.title')}</h3>
+                    <p className="text-muted-foreground">{t('settings.workspace:context.intro')}</p>
                 </div>
                 <div className="grid gap-2">
                     <label htmlFor="context-summary-model" className="font-medium">
-                        Notes are written by
+                        {t('settings.workspace:context.summaryModel')}
                     </label>
                     <select
                         id="context-summary-model"
@@ -65,19 +62,15 @@ export function ContextSetting({
                     >
                         {SUMMARY_MODELS.map((model) => (
                             <option key={model} value={model}>
-                                {SUMMARY_MODEL_LABELS[model]}
+                                {t(`settings.workspace:context.models.${model}`)}
                             </option>
                         ))}
                     </select>
-                    <p className="text-muted-foreground">
-                        The shared model is the workspace’s default backend, without reasoning: notes come in seconds
-                        and cost the chat’s model nothing. The chat’s own model can write fuller notes, but with
-                        reasoning it may take minutes.
-                    </p>
+                    <p className="text-muted-foreground">{t('settings.workspace:context.summaryModelHint')}</p>
                 </div>
                 <div className="grid gap-2">
                     <label htmlFor="context-selection" className="font-medium">
-                        Each reply sees
+                        {t('settings.workspace:context.selection')}
                     </label>
                     <select
                         id="context-selection"
@@ -92,17 +85,13 @@ export function ContextSetting({
                     >
                         {NOTES_SELECTIONS.map((selection) => (
                             <option key={selection} value={selection}>
-                                {NOTES_SELECTION_LABELS[selection]}
+                                {t(`settings.workspace:context.selections.${selection}`)}
                             </option>
                         ))}
                     </select>
-                    <p className="text-muted-foreground">
-                        Which pinned facts go with each message once there are too many to send them all; the others
-                        stay stored either way. Matching each request answered the most questions in testing. A short
-                        core makes the socio search its notes, which takes more rounds.
-                    </p>
+                    <p className="text-muted-foreground">{t('settings.workspace:context.selectionHint')}</p>
                 </div>
-                {readOnly && <p className="text-muted-foreground">Only an admin can change these settings.</p>}
+                {readOnly && <p className="text-muted-foreground">{t('settings.workspace:readOnly.settings')}</p>}
             </section>
         </SettingsCard>
     );

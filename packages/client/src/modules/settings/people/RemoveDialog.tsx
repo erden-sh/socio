@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 
+import { Trans, useTranslation } from '@socio/i18n/react';
 import type { StepUpChallenge, StepUpMethod, StepUpProof } from '@socio/shared/access-policy';
 import type { PersonPurgePlan, PersonPurgeResult } from '@socio/shared/auth';
 
 import { ApiError, api } from '../../../lib/api';
 import { importOrReload } from '../../../shell/chunk-reload';
+import { onDemand } from '../on-demand';
 
-import { blockerOf, byteSize, firstName, plural } from './people-format';
+import { blockerOf, byteSize, firstName, type BlockerHelp } from './people-format';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -22,6 +24,17 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 const purgePath = (id: string, rest = '') => `/accounts/${encodeURIComponent(id)}/purge${rest}`;
 
+const HELP_KEYS = {
+    owned: 'settings.person-dialogs:remove.help.owned',
+    deactivate: 'settings.person-dialogs:remove.help.deactivate',
+    self: 'settings.person-dialogs:remove.help.self',
+    lastAdmin: 'settings.person-dialogs:remove.help.lastAdmin',
+    owner: 'settings.person-dialogs:remove.help.owner',
+    listed: 'settings.person-dialogs:remove.help.listed',
+    unpurged: 'settings.person-dialogs:remove.help.unpurged',
+    protected: 'settings.person-dialogs:remove.help.protected',
+} as const satisfies Record<BlockerHelp, string>;
+
 /** The dry run: blockers (each explained), what goes, and what stays as history. */
 function DryRun({
     plan,
@@ -32,6 +45,7 @@ function DryRun({
     onTransfer: () => void;
     onDeactivate: () => void;
 }) {
+    const { t } = useTranslation(['settings.person-dialogs', 'settings.person']);
     // Each "do this first" once, on the first blocker it answers.
     const offered = new Set<string>();
     const all = plan.refusals.map(blockerOf).map((blocker) => {
@@ -51,20 +65,22 @@ function DryRun({
         <div className="grid gap-4 text-sm" data-slot="remove-dry-run">
             {blockers.length > 0 && (
                 <section
-                    aria-label="What blocks it"
+                    aria-label={t('settings.person-dialogs:remove.blocks')}
                     data-slot="remove-blockers"
                     className="grid gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-3"
                 >
-                    <h3 className="font-medium text-destructive">What blocks it</h3>
+                    <h3 className="font-medium text-destructive">{t('settings.person-dialogs:remove.blocks')}</h3>
                     <ul className="grid gap-2">
                         {blockers.map((blocker) => (
                             <li key={blocker.text} className="grid gap-1" data-slot="remove-blocker">
                                 <span className="text-destructive">{blocker.text}</span>
-                                {blocker.help && <span className="text-xs text-muted-foreground">{blocker.help}</span>}
+                                {blocker.help && (
+                                    <span className="text-xs text-muted-foreground">{t(HELP_KEYS[blocker.help])}</span>
+                                )}
                                 {/still own/i.test(blocker.text) && records.length > 0 && (
                                     <details className="text-xs text-muted-foreground" data-slot="remove-owned-records">
                                         <summary className="cursor-pointer">
-                                            {plural(records.length, 'record')} the planner lists for this
+                                            {t('settings.person-dialogs:remove.records', { count: records.length })}
                                         </summary>
                                         <ul className="mt-1 grid gap-1 break-all">
                                             {records.map((record) => (
@@ -75,12 +91,12 @@ function DryRun({
                                 )}
                                 {blocker.action === 'transfer' && (
                                     <Button variant="outline" size="sm" className="w-fit" onClick={onTransfer}>
-                                        Transfer first…
+                                        {t('settings.person-dialogs:remove.transferFirst')}
                                     </Button>
                                 )}
                                 {blocker.action === 'deactivate' && (
                                     <Button variant="outline" size="sm" className="w-fit" onClick={onDeactivate}>
-                                        Deactivate first…
+                                        {t('settings.person-dialogs:remove.deactivateFirst')}
                                     </Button>
                                 )}
                             </li>
@@ -88,8 +104,12 @@ function DryRun({
                     </ul>
                 </section>
             )}
-            <section aria-label="What goes" data-slot="remove-goes" className="grid gap-1">
-                <h3 className="font-medium">What goes</h3>
+            <section
+                aria-label={t('settings.person-dialogs:remove.goes')}
+                data-slot="remove-goes"
+                className="grid gap-1"
+            >
+                <h3 className="font-medium">{t('settings.person-dialogs:remove.goes')}</h3>
                 <ul className="grid divide-y">
                     {targets.map(([kind, n]) => (
                         <li key={kind} className="flex justify-between gap-2 py-1.5">
@@ -98,29 +118,31 @@ function DryRun({
                         </li>
                     ))}
                     <li className="flex justify-between gap-2 py-1.5">
-                        <span>Rows, across {plural(plan.tables.length, 'table')}</span>
+                        <span>{t('settings.person-dialogs:remove.rowsAcross', { count: plan.tables.length })}</span>
                         <span className="text-muted-foreground">{plan.tables.reduce((a, t) => a + t.rows, 0)}</span>
                     </li>
                     {plan.files.count > 0 && (
                         <li className="flex justify-between gap-2 py-1.5">
-                            <span>{plural(plan.files.count, 'file')}</span>
+                            <span>{t('settings.person-dialogs:remove.files', { count: plan.files.count })}</span>
                             <span className="text-muted-foreground">{byteSize(plan.files.bytes)}</span>
                         </li>
                     )}
                     {plan.objects.count > 0 && (
                         <li className="flex justify-between gap-2 py-1.5">
-                            <span>{plural(plan.objects.count, 'stored object')}</span>
+                            <span>{t('settings.person-dialogs:remove.objects', { count: plan.objects.count })}</span>
                             <span className="text-muted-foreground">{byteSize(plan.objects.bytes)}</span>
                         </li>
                     )}
                 </ul>
             </section>
             {plan.kept.length > 0 && (
-                <section aria-label="Stays as history" data-slot="remove-kept" className="grid gap-1">
-                    <h3 className="font-medium">Stays as history</h3>
-                    <p className="text-xs text-muted-foreground">
-                        These records stay and still name them by an id that no longer resolves to a person.
-                    </p>
+                <section
+                    aria-label={t('settings.person-dialogs:remove.kept')}
+                    data-slot="remove-kept"
+                    className="grid gap-1"
+                >
+                    <h3 className="font-medium">{t('settings.person-dialogs:remove.kept')}</h3>
+                    <p className="text-xs text-muted-foreground">{t('settings.person-dialogs:remove.keptNote')}</p>
                     <ul className="grid divide-y">
                         {plan.kept.map((k) => (
                             <li key={`${k.table}.${k.column}`} className="flex justify-between gap-2 py-1.5">
@@ -129,7 +151,9 @@ function DryRun({
                                         {k.table}.{k.column}
                                     </code>
                                 </span>
-                                <span className="text-muted-foreground">{plural(k.rows, 'row')}</span>
+                                <span className="text-muted-foreground">
+                                    {t('settings.person-dialogs:remove.rows', { count: k.rows })}
+                                </span>
                             </li>
                         ))}
                     </ul>
@@ -145,7 +169,7 @@ function DryRun({
  * blocks it), then their name typed exactly and the admin's step-up (as
  * Settings → Access), then the result with the backup's location.
  */
-export function RemoveDialog({
+function RemoveDialogBody({
     person,
     onClose,
     onTransfer,
@@ -161,6 +185,7 @@ export function RemoveDialog({
     /** Done: back to the People list. */
     onRemoved: () => void;
 }) {
+    const { t } = useTranslation(['settings.person-dialogs', 'settings.person']);
     const [step, setStep] = useState<'plan' | 'confirm'>('plan');
     const [plan, setPlan] = useState<PersonPurgePlan>();
     const [result, setResult] = useState<PersonPurgeResult>();
@@ -177,11 +202,11 @@ export function RemoveDialog({
             .then(setPlan)
             .catch((e: unknown) => {
                 if (!controller.signal.aborted) {
-                    setError(e instanceof Error ? e.message : 'Could not plan the removal.');
+                    setError(e instanceof Error ? e.message : t('settings.person-dialogs:remove.planFailed'));
                 }
             });
         return () => controller.abort();
-    }, [person.id]);
+    }, [person.id, t]);
     // Each challenge works once and is bound to this person and name.
     // The one in hand is dropped first: nothing can send a spent one.
     const challengeAgain = useCallback(() => {
@@ -194,8 +219,10 @@ export function RemoveDialog({
                     setError(next.reason);
                 }
             })
-            .catch((e: unknown) => setError(e instanceof Error ? e.message : 'Could not start the confirmation.'));
-    }, [person.id]);
+            .catch((e: unknown) =>
+                setError(e instanceof Error ? e.message : t('settings.person-dialogs:confirm.startFailed')),
+            );
+    }, [person.id, t]);
     useEffect(() => {
         if (step === 'confirm') {
             void challengeAgain();
@@ -216,7 +243,7 @@ export function RemoveDialog({
             });
             setResult(done);
         } catch (e) {
-            const message = e instanceof Error ? e.message : 'Could not remove them.';
+            const message = e instanceof Error ? e.message : t('settings.person-dialogs:remove.failed');
             setError(message);
             // The server spends a challenge before it applies: every retry needs a new one.
             void challengeAgain();
@@ -255,35 +282,55 @@ export function RemoveDialog({
             <DialogContent data-slot="remove-dialog" className="max-h-[90dvh] overflow-y-auto sm:max-w-xl">
                 <DialogHeader>
                     <DialogTitle>
-                        {result ? `${person.name} is removed` : `Remove ${person.name} permanently?`}
+                        {t('settings.person-dialogs:remove.title', {
+                            context: result ? 'done' : undefined,
+                            name: person.name,
+                        })}
                     </DialogTitle>
                     <DialogDescription>
-                        {result
-                            ? 'Their records are gone. A backup was made first.'
-                            : 'This deletes them and what is only theirs for good, after a backup. It can’t be undone in the app. Deactivating is the reversible choice.'}
+                        {t('settings.person-dialogs:remove.description', { context: result ? 'done' : undefined })}
                     </DialogDescription>
                 </DialogHeader>
                 {result ? (
                     <div className="grid gap-2 text-sm" data-slot="remove-result">
                         <p>
-                            {plural(result.rows, 'row')} deleted across {plural(result.tables.length, 'table')}.
+                            {t('settings.person-dialogs:remove.deleted', {
+                                rows: t('settings.person-dialogs:remove.rows', { count: result.rows }),
+                                tables: t('settings.person-dialogs:remove.tables', { count: result.tables.length }),
+                            })}
                         </p>
                         {result.backup && (
                             <p data-slot="remove-backup">
-                                Backed up first to <code className="text-xs break-all">{result.backup}</code>
+                                <Trans
+                                    t={t}
+                                    i18nKey="settings.person-dialogs:remove.backup"
+                                    components={{ code: <code className="text-xs break-all">{result.backup}</code> }}
+                                />
                             </p>
                         )}
                         {'error' in result.cleanup ? (
                             <p role="alert" className="text-destructive" data-slot="remove-cleanup-error">
-                                Removing their files didn’t finish: {result.cleanup.error} Run{' '}
-                                <code className="text-xs break-all">pnpm run purge --resume {result.backup}</code> on
-                                the server to finish it.
+                                <Trans
+                                    t={t}
+                                    i18nKey="settings.person-dialogs:remove.cleanupFailed"
+                                    values={{ error: result.cleanup.error }}
+                                    components={{
+                                        // The command to run on the server, not copy.
+                                        code: (
+                                            <code className="text-xs break-all">{`pnpm run purge --resume ${result.backup}`}</code>
+                                        ),
+                                    }}
+                                />
                             </p>
                         ) : (
                             <p className="text-muted-foreground">
-                                {plural(result.cleanup.files, 'file')} and{' '}
-                                {plural(result.cleanup.objects, 'stored object')} removed (
-                                {byteSize(result.cleanup.bytes)}).
+                                {t('settings.person-dialogs:remove.cleaned', {
+                                    files: t('settings.person-dialogs:remove.files', { count: result.cleanup.files }),
+                                    objects: t('settings.person-dialogs:remove.objects', {
+                                        count: result.cleanup.objects,
+                                    }),
+                                    size: byteSize(result.cleanup.bytes),
+                                })}
                             </p>
                         )}
                     </div>
@@ -297,10 +344,15 @@ export function RemoveDialog({
                     <div className="grid gap-4 text-sm" data-slot="remove-confirm">
                         <label className="grid gap-1">
                             <span>
-                                Type <strong className="select-all">{person.name}</strong> to confirm
+                                <Trans
+                                    t={t}
+                                    i18nKey="settings.person-dialogs:confirm.typeName"
+                                    values={{ name: person.name }}
+                                    components={{ strong: <strong className="select-all" /> }}
+                                />
                             </span>
                             <Input
-                                aria-label="Their name"
+                                aria-label={t('settings.person-dialogs:confirm.nameField')}
                                 value={typed}
                                 onChange={(e) => setTyped(e.target.value)}
                                 autoComplete="off"
@@ -309,22 +361,24 @@ export function RemoveDialog({
                             />
                             {typed && !matches && (
                                 <span className="text-xs text-muted-foreground" data-slot="remove-name-mismatch">
-                                    Type it exactly as shown.
+                                    {t('settings.person-dialogs:confirm.mismatch')}
                                 </span>
                             )}
                         </label>
                         {waiting && (
                             <p className="text-xs text-muted-foreground" data-slot="remove-step-up-waiting">
-                                Getting a fresh confirmation…
+                                {t('settings.person-dialogs:confirm.waiting')}
                             </p>
                         )}
-                        <p className="text-xs text-muted-foreground">
-                            Then confirm it’s you. Every admin can see the removal in the audit log.
-                        </p>
+                        <p className="text-xs text-muted-foreground">{t('settings.person-dialogs:remove.stepUp')}</p>
                         {methods.includes('password') && (
-                            <form className="grid gap-2" onSubmit={withPassword} aria-label="Confirm with password">
+                            <form
+                                className="grid gap-2"
+                                onSubmit={withPassword}
+                                aria-label={t('settings.person-dialogs:confirm.passwordForm')}
+                            >
                                 <label className="grid gap-1">
-                                    Your password
+                                    {t('settings.person-dialogs:confirm.password')}
                                     <Input
                                         type="password"
                                         autoComplete="current-password"
@@ -338,7 +392,7 @@ export function RemoveDialog({
                                         variant="destructive"
                                         disabled={busy || waiting || !matches || !password}
                                     >
-                                        Remove {first} permanently
+                                        {t('settings.person-dialogs:remove.withPassword', { first })}
                                     </Button>
                                 </div>
                             </form>
@@ -350,7 +404,7 @@ export function RemoveDialog({
                                     disabled={busy || waiting || !matches}
                                     onClick={withPasskey}
                                 >
-                                    Remove {first} with a passkey
+                                    {t('settings.person-dialogs:remove.withPasskey', { first })}
                                 </Button>
                             </div>
                         )}
@@ -361,7 +415,7 @@ export function RemoveDialog({
                                     disabled={busy || waiting || !matches}
                                     onClick={() => void remove(async (id) => ({ id, confirm: true }))}
                                 >
-                                    Remove {first} permanently (development sign-in)
+                                    {t('settings.person-dialogs:remove.withConfirm', { first })}
                                 </Button>
                             </div>
                         )}
@@ -374,15 +428,15 @@ export function RemoveDialog({
                 )}
                 <DialogFooter>
                     {result ? (
-                        <Button onClick={onRemoved}>Back to People</Button>
+                        <Button onClick={onRemoved}>{t('settings.person-dialogs:remove.back')}</Button>
                     ) : (
                         <>
                             <Button variant="ghost" disabled={busy} onClick={onClose}>
-                                Cancel
+                                {t('settings.person:cancel')}
                             </Button>
                             {step === 'plan' && (
                                 <Button variant="destructive" disabled={blocked} onClick={() => setStep('confirm')}>
-                                    Continue
+                                    {t('settings.person-dialogs:remove.continue')}
                                 </Button>
                             )}
                         </>
@@ -392,3 +446,6 @@ export function RemoveDialog({
         </Dialog>
     );
 }
+
+/** Its words load when it opens (`settings.person-dialogs`, in no route's entry). */
+export const RemoveDialog = onDemand(['settings.person-dialogs', 'settings.person'], RemoveDialogBody);

@@ -121,14 +121,16 @@ describe('socio/no-literal-text', () => {
         expect(of('packages/client/src/modules/chat/Literal.tsx')).toEqual([]);
     });
 
-    it('starts with Settings › Language, and its list only grows', () => {
+    it('covers all of Settings (Settings › Language first), and its list only grows', () => {
         const { overrides } = JSON.parse(readFileSync(join(root, '.oxlintrc.json'), 'utf8')) as {
             overrides: { files: string[]; rules: Record<string, unknown> }[];
         };
         const folders = overrides
             .filter((entry) => 'socio/no-literal-text' in entry.rules)
             .flatMap((entry) => entry.files);
-        expect(folders).toContain(`${LANGUAGE}/**`);
+        // What has moved to t(): Settings, Language included.
+        expect(folders).toContain('packages/client/src/modules/settings/**');
+        expect(folders.some((glob) => `${LANGUAGE}/`.startsWith(glob.replace(/\*\*$/, '')))).toBe(true);
     });
 });
 

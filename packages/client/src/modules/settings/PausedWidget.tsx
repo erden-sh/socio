@@ -1,5 +1,7 @@
 import { Pause, Play } from 'lucide-react';
 
+import { useTranslation } from '@socio/i18n/react';
+
 import { HomeWidget } from '../../shell/HomeWidget';
 import { useShell } from '../../shell/shell-context';
 
@@ -7,14 +9,15 @@ import { Button } from '@/components/ui/button';
 
 /** Whether the Dots are working or paused; admins switch it here too. */
 export function PausedWidget() {
+    const { t } = useTranslation(['settings']);
     const { state, admin, mutate } = useShell();
     const paused = state.settings.paused;
     return (
         <HomeWidget
             icon={paused ? Pause : Play}
             tone={paused ? 'amber' : 'mint'}
-            title="Socios"
-            value={paused ? 'All socios are paused' : 'All socios are active'}
+            title={t('settings:paused.title')}
+            value={paused ? t('settings:paused.paused') : t('settings:paused.active')}
             action={
                 admin && (
                     <Button
@@ -22,14 +25,12 @@ export function PausedWidget() {
                         size="sm"
                         onClick={() => void mutate('/settings', 'PATCH', { paused: !paused })}
                     >
-                        {paused ? 'Resume' : 'Pause'}
+                        {paused ? t('settings:paused.resume') : t('settings:paused.pause')}
                     </Button>
                 )
             }
         >
-            {paused
-                ? 'Scheduled tasks wait until they resume.'
-                : `${state.tasks.length} scheduled ${state.tasks.length === 1 ? 'task' : 'tasks'}`}
+            {paused ? t('settings:paused.waiting') : t('settings:paused.scheduled', { count: state.tasks.length })}
         </HomeWidget>
     );
 }

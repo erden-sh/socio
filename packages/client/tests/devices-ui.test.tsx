@@ -5,7 +5,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
 import type { DeviceSummary } from '@socio/shared/device-sign-in';
 
-import { DevicesCard, deviceDetails } from '../src/modules/settings/DevicesCard';
+import { DevicesCard, useDeviceDetails } from '../src/modules/settings/DevicesCard';
 
 declare global {
     var IS_REACT_ACT_ENVIRONMENT: boolean;
@@ -79,10 +79,19 @@ const confirmButton = (label: string) =>
 const labelled = (label: string) => document.body.querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`);
 const deletes = () => requests.filter((entry) => entry.method === 'DELETE').map((entry) => entry.path);
 
-it('words a device’s row', () => {
-    expect(deviceDetails(phone(), NOW)).toBe('iPhone or iPad · by Passkey · last seen 1 h ago · since Nov 1');
-    expect(deviceDetails(phone({ state: 'revoked_and_erase', signInMethod: null, lastSeenAt: null }), NOW)).toBe(
+it('words a device’s row', async () => {
+    let details: ReturnType<typeof useDeviceDetails> | undefined;
+    function Probe() {
+        details = useDeviceDetails();
+        return null;
+    }
+    await act(() => root.render(<Probe />));
+    expect(details!(phone(), NOW)).toBe('iPhone or iPad · by Passkey · last seen 1 h ago · since Nov 1');
+    expect(details!(phone({ state: 'revoked_and_erase', signInMethod: null, lastSeenAt: null }), NOW)).toBe(
         'iPhone or iPad · Signed out; erase requested · since Nov 1',
+    );
+    expect(details!(phone({ lastSeenAt: '2026-09-02T12:00:00Z', createdAt: '2025-08-01T12:00:00Z' }), NOW)).toBe(
+        'iPhone or iPad · by Passkey · last seen Sep 2 · since Aug 1, 2025',
     );
 });
 

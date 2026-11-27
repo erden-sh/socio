@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router';
 
+import { useTranslation } from '@socio/i18n/react';
 import type { AssetKind, OwnedKind, PersonAssets } from '@socio/shared/auth';
 import type { PersonDetail, PersonTrail, PersonTrailLine, PersonTrailSource } from '@socio/shared/people';
 import { isAdmin } from '@socio/shared/roles';
@@ -13,17 +14,7 @@ import { DevicesCard } from '../DevicesCard';
 import { settingsPath } from '../sections';
 
 import { PermissionBadges } from './GroupsPanel';
-import {
-    ASSET_INFO,
-    assetCount,
-    deviceLabel,
-    firstName,
-    lastActive,
-    providerLabel,
-    serviceAccountPath,
-    shortDate,
-    signInMethodLabel,
-} from './people-format';
+import { firstName, serviceAccountPath, useAssetWords, usePeopleFormat, useProviderLabel } from './people-format';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -76,19 +67,23 @@ const Muted = ({ children }: { children: ReactNode }) => (
 );
 const Empty = ({ children }: { children: ReactNode }) => <p className="text-muted-foreground">{children}</p>;
 
-const LEVEL_LABELS = { editor: 'Editor', member: 'Member', everyone: 'Everyone' } as const;
+const LEVEL_KEYS = {
+    editor: 'settings.person:access.levels.editor',
+    member: 'settings.person:access.levels.member',
+    everyone: 'settings.person:access.levels.everyone',
+} as const;
 
-/** A socio access grant's reach in words: `app:<id>` is an app, and so on. */
-const audienceLabel = (audience: string) =>
+/** A socio access grant's reach, as a key: `app:<id>` is an app, and so on; unknown ones as they are. */
+const audienceKey = (audience: string) =>
     audience === 'gateway:model'
-        ? 'models'
+        ? 'settings.person:access.audiences.models'
         : audience === 'gateway:git'
-          ? 'git'
+          ? 'settings.person:access.audiences.git'
           : audience.startsWith('app:')
-            ? 'an app'
+            ? 'settings.person:access.audiences.app'
             : audience.startsWith('plugin:')
-              ? 'a plugin'
-              : audience;
+              ? 'settings.person:access.audiences.plugin'
+              : null;
 
 /**
  * The Access tab (CB-360): the Spaces they read with their
@@ -109,13 +104,15 @@ export function AccessTab({
     locked: boolean;
     run: Run;
 }) {
+    const { t } = useTranslation(['settings.person']);
+    const { shortDate } = usePeopleFormat();
     const { person, access } = detail;
     const first = firstName(person.name);
     const [adding, setAdding] = useState({ spaceId: '', role: 'member' as 'member' | 'editor' });
     const [removing, setRemoving] = useState<{ id: string; name: string }>();
     const [revoking, setRevoking] = useState<{ kind: 'socio' | 'agent'; id: string; name: string }>();
     if (!access) {
-        return <Empty>What {first} can reach isn’t known here: the account has no workspace user yet.</Empty>;
+        return <Empty>{t('settings.person:access.unknown', { first })}</Empty>;
     }
     // A workspace admin edits every Space: their level there isn't a row to change.
     const adminEverywhere = isAdmin({ role: person.role });
@@ -124,18 +121,18 @@ export function AccessTab({
     const rowed = new Set(access.spaces.filter((space) => space.level !== 'everyone').map((space) => space.id));
     const addable = spaces.filter((space) => !rowed.has(space.id));
     const setLevel = (spaceId: string, role: 'member' | 'editor') =>
-        run(() => api(spacePeople(spaceId, person.userId), 'PUT', { role }), 'Could not change their role there.');
+        run(() => api(spacePeople(spaceId, person.userId), 'PUT', { role }), t('settings.person:access.levelFailed'));
     return (
         <div className="grid gap-4 lg:grid-cols-2" data-slot="person-access">
             <PanelCard
-                title="Spaces"
+                title={t('settings.person:access.spaces')}
                 slot="person-spaces"
                 action={
                     editable &&
                     addable.length > 0 && (
                         <form
                             className="flex flex-wrap items-center gap-1"
-                            aria-label="Add to a Space"
+                            aria-label={t('settings.person:access.addForm')}
                             onSubmit={(e) => {
                                 e.preventDefault();
                                 const { spaceId, role } = adding;
@@ -146,12 +143,12 @@ export function AccessTab({
                         >
                             <select
                                 data-slot="native-select"
-                                aria-label="Space to add them to"
+                                aria-label={t('settings.person:access.addSelect')}
                                 className={cn(nativeSelect, 'h-8 w-36')}
                                 value={adding.spaceId}
                                 onChange={(e) => setAdding({ ...adding, spaceId: e.target.value })}
                             >
-                                <option value="">Add to a Space…</option>
+                                <option value="">{t('settings.person:access.addPlaceholder')}</option>
                                 {addable.map((space) => (
                                     <option key={space.id} value={space.id}>
                                         {space.name}
@@ -160,23 +157,23 @@ export function AccessTab({
                             </select>
                             <select
                                 data-slot="native-select"
-                                aria-label="Role in the Space"
+                                aria-label={t('settings.person:access.addRole')}
                                 className={cn(nativeSelect, 'h-8 w-auto')}
                                 value={adding.role}
                                 onChange={(e) => setAdding({ ...adding, role: e.target.value as 'member' | 'editor' })}
                             >
-                                <option value="member">Member</option>
-                                <option value="editor">Editor</option>
+                                <option value="member">{t(LEVEL_KEYS.member)}</option>
+                                <option value="editor">{t(LEVEL_KEYS.editor)}</option>
                             </select>
                             <Button type="submit" size="sm" variant="outline" disabled={!adding.spaceId}>
-                                Add
+                                {t('settings.person:access.add')}
                             </Button>
                         </form>
                     )
                 }
             >
                 {access.spaces.length ? (
-                    <ul aria-label="Spaces">
+                    <ul aria-label={t('settings.person:access.spaces')}>
                         {access.spaces.map((space) => (
                             <Row
                                 key={space.id}
@@ -186,41 +183,48 @@ export function AccessTab({
                                         <>
                                             <select
                                                 data-slot="native-select"
-                                                aria-label={`Role in ${space.name}`}
+                                                aria-label={t('settings.person:access.roleIn', { space: space.name })}
                                                 className={cn(nativeSelect, 'h-8 w-auto')}
                                                 value={space.level}
                                                 onChange={(e) =>
                                                     void setLevel(space.id, e.target.value as 'member' | 'editor')
                                                 }
                                             >
-                                                <option value="editor">Editor</option>
-                                                <option value="member">Member</option>
+                                                <option value="editor">{t(LEVEL_KEYS.editor)}</option>
+                                                <option value="member">{t(LEVEL_KEYS.member)}</option>
                                             </select>
                                             <Button
                                                 variant="ghost"
                                                 size="icon-sm"
-                                                aria-label={`Remove from ${space.name}`}
+                                                aria-label={t('settings.person:access.removeFrom', {
+                                                    space: space.name,
+                                                })}
                                                 onClick={() => setRemoving(space)}
                                             >
                                                 ×
                                             </Button>
                                         </>
                                     ) : (
-                                        <Muted>{LEVEL_LABELS[space.level]}</Muted>
+                                        <Muted>{t(LEVEL_KEYS[space.level])}</Muted>
                                     )
                                 }
                             >
-                                {space.name} <Muted>{space.membersOnly ? 'private' : 'everyone'}</Muted>
+                                {space.name}{' '}
+                                <Muted>
+                                    {space.membersOnly
+                                        ? t('settings.person:access.private')
+                                        : t('settings.person:access.everyone')}
+                                </Muted>
                             </Row>
                         ))}
                     </ul>
                 ) : (
-                    <Empty>No Spaces.</Empty>
+                    <Empty>{t('settings.person:access.noSpaces')}</Empty>
                 )}
-                {adminEverywhere && <Muted>As an admin, {first} edits every Space.</Muted>}
+                {adminEverywhere && <Muted>{t('settings.person:access.adminEverywhere', { first })}</Muted>}
             </PanelCard>
-            <PanelCard title="Socios, agents and code" slot="person-actors">
-                <ul aria-label="Socios, agents and code">
+            <PanelCard title={t('settings.person:access.actors')} slot="person-actors">
+                <ul aria-label={t('settings.person:access.actors')}>
                     {access.socioGrants.map((grant) => (
                         <Row
                             key={grant.id}
@@ -234,18 +238,29 @@ export function AccessTab({
                                             setRevoking({
                                                 kind: 'socio',
                                                 id: grant.id,
-                                                name: `${grant.socioName ?? 'A removed socio'}’s access`,
+                                                name: t('settings.person:access.grantName', {
+                                                    socio: grant.socioName ?? t('settings.person:access.removedSocio'),
+                                                }),
                                             })
                                         }
                                     >
-                                        Revoke
+                                        {t('settings.person:access.revoke')}
                                     </Button>
                                 )
                             }
                         >
-                            {grant.socioName ?? 'A removed socio'} may use{' '}
-                            {grant.audiences.map(audienceLabel).join(', ') || 'what it was granted'} for {first}{' '}
-                            <Muted>socio access · until {shortDate(grant.expiresAt)}</Muted>
+                            {t('settings.person:access.grant', {
+                                socio: grant.socioName ?? t('settings.person:access.removedSocio'),
+                                audiences:
+                                    grant.audiences
+                                        .map((audience) => {
+                                            const key = audienceKey(audience);
+                                            return key ? t(key) : audience;
+                                        })
+                                        .join(', ') || t('settings.person:access.grantAnything'),
+                                first,
+                            })}{' '}
+                            <Muted>{t('settings.person:access.grantMeta', { date: shortDate(grant.expiresAt) })}</Muted>
                         </Row>
                     ))}
                     {access.connectedAgents.map((agent) => (
@@ -261,14 +276,17 @@ export function AccessTab({
                                             setRevoking({ kind: 'agent', id: agent.grantId, name: agent.label })
                                         }
                                     >
-                                        Disconnect
+                                        {t('settings.person:access.disconnect')}
                                     </Button>
                                 )
                             }
                         >
                             {agent.label}{' '}
                             <Muted>
-                                connected agent{agent.clientDomain ? ` (${agent.clientDomain})` : ''}
+                                {t('settings.person:access.agentKind', {
+                                    context: agent.clientDomain ? 'domain' : undefined,
+                                    domain: agent.clientDomain ?? '',
+                                })}
                                 {agent.scopes.length ? ` · ${agent.scopes.join(', ')}` : ''}
                             </Muted>
                         </Row>
@@ -277,16 +295,18 @@ export function AccessTab({
                         slot="person-code-access"
                         aside={
                             <Badge variant={access.codeAccess ? 'default' : 'secondary'}>
-                                {access.codeAccess ? 'Yes' : 'No'}
+                                {access.codeAccess ? t('settings.person:access.yes') : t('settings.person:access.no')}
                             </Badge>
                         }
                     >
-                        Code access{' '}
+                        {t('settings.person:access.codeAccess')}{' '}
                         <Muted>
-                            {adminEverywhere ? 'as an admin' : 'from a group that gives “Run code”'}
+                            {t('settings.person:access.codeAccessVia', {
+                                context: adminEverywhere ? 'admin' : undefined,
+                            })}
                             {' · '}
                             <Link to={GROUPS_PATH} className="underline underline-offset-2">
-                                Groups
+                                {t('settings.person:access.groupsLink')}
                             </Link>
                         </Muted>
                     </Row>
@@ -294,31 +314,35 @@ export function AccessTab({
                         slot="person-telegram"
                         aside={
                             <Badge variant={access.telegram ? 'default' : 'secondary'}>
-                                {access.telegram ? 'Linked' : 'Not linked'}
+                                {access.telegram
+                                    ? t('settings.person:access.telegramLinked')
+                                    : t('settings.person:access.telegramNotLinked')}
                             </Badge>
                         }
                     >
-                        Telegram{' '}
+                        {t('settings.person:access.telegram')}{' '}
                         {access.telegram && (
                             <Muted>
-                                {access.telegram.username ? `@${access.telegram.username} ` : ''}(linked{' '}
-                                {shortDate(access.telegram.linkedAt)})
+                                {access.telegram.username ? `@${access.telegram.username} ` : ''}
+                                {t('settings.person:access.telegramSince', {
+                                    date: shortDate(access.telegram.linkedAt),
+                                })}
                             </Muted>
                         )}
                     </Row>
                 </ul>
             </PanelCard>
             <PanelCard
-                title="Groups"
+                title={t('settings.person:access.groups')}
                 slot="person-groups"
                 action={
                     <Link to={GROUPS_PATH} className="text-xs underline underline-offset-2">
-                        Manage groups
+                        {t('settings.person:access.manageGroups')}
                     </Link>
                 }
             >
                 {detail.groups.length ? (
-                    <ul aria-label="Groups">
+                    <ul aria-label={t('settings.person:access.groups')}>
                         {detail.groups.map((group) => (
                             <Row
                                 key={group.id}
@@ -335,12 +359,12 @@ export function AccessTab({
                                                             `/groups/${encodeURIComponent(group.id)}/members/${encodeURIComponent(person.id)}`,
                                                             'DELETE',
                                                         ),
-                                                    'Could not take them out of the group.',
-                                                    `${first} is no longer in ${group.name}`,
+                                                    t('settings.person:access.leaveFailed'),
+                                                    t('settings.person:access.left', { first, group: group.name }),
                                                 )
                                             }
                                         >
-                                            Remove
+                                            {t('settings.person:access.remove')}
                                         </Button>
                                     )
                                 }
@@ -353,28 +377,39 @@ export function AccessTab({
                         ))}
                     </ul>
                 ) : (
-                    <Empty>In no group.</Empty>
+                    <Empty>{t('settings.person:access.noGroups')}</Empty>
                 )}
             </PanelCard>
             {removing && (
                 <ConfirmDelete
-                    title={`Remove ${first} from ${removing.name}?`}
-                    action="Remove"
+                    title={t('settings.person:access.removeTitle', { first, space: removing.name })}
+                    action={t('settings.person:access.remove')}
                     slot="confirm-remove-space"
                     onClose={() => setRemoving(undefined)}
                     onConfirm={async () => {
                         const { id } = removing;
-                        await run(() => api(spacePeople(id, person.userId), 'DELETE'), 'Could not remove them.');
+                        await run(
+                            () => api(spacePeople(id, person.userId), 'DELETE'),
+                            t('settings.person:access.removeFailed'),
+                        );
                         setRemoving(undefined);
                     }}
                 >
-                    If it is private, {first} stops seeing it at once. What they added there stays.
+                    {t('settings.person:access.removeBody', { first })}
                 </ConfirmDelete>
             )}
             {revoking && (
                 <ConfirmDelete
-                    title={revoking.kind === 'socio' ? `Revoke ${revoking.name}?` : `Disconnect ${revoking.name}?`}
-                    action={revoking.kind === 'socio' ? 'Revoke' : 'Disconnect'}
+                    title={
+                        revoking.kind === 'socio'
+                            ? t('settings.person:access.revokeTitle', { name: revoking.name })
+                            : t('settings.person:access.disconnectTitle', { name: revoking.name })
+                    }
+                    action={
+                        revoking.kind === 'socio'
+                            ? t('settings.person:access.revoke')
+                            : t('settings.person:access.disconnect')
+                    }
                     slot="confirm-revoke-grant"
                     onClose={() => setRevoking(undefined)}
                     onConfirm={async () => {
@@ -387,12 +422,14 @@ export function AccessTab({
                                         : `/admin/agent-grants/${encodeURIComponent(id)}`,
                                     'DELETE',
                                 ),
-                            kind === 'socio' ? 'Could not revoke the access.' : 'Could not disconnect the agent.',
+                            kind === 'socio'
+                                ? t('settings.person:access.revokeFailed')
+                                : t('settings.person:access.disconnectFailed'),
                         );
                         setRevoking(undefined);
                     }}
                 >
-                    It stops working for {first} at once. {first} can grant it again.
+                    {t('settings.person:access.revokeBody', { first })}
                 </ConfirmDelete>
             )}
         </div>
@@ -417,13 +454,16 @@ export function SignInTab({
     /** A device signed out from the card: the sessions above reload too. */
     onChanged?: () => void;
 }) {
+    const { t } = useTranslation(['settings.person']);
+    const { deviceLabel, lastActive, shortDate, signInMethodLabel } = usePeopleFormat();
+    const providerLabel = useProviderLabel();
     const { person, signIn } = detail;
     const off = person.status === 'deactivated';
     return (
         <div className="grid gap-4 lg:grid-cols-2" data-slot="person-sign-in">
-            <PanelCard title="Devices signed in" slot="person-sessions">
+            <PanelCard title={t('settings.person:signIn.sessions')} slot="person-sessions">
                 {signIn.sessions.length ? (
-                    <ul aria-label="Devices signed in">
+                    <ul aria-label={t('settings.person:signIn.sessions')}>
                         {signIn.sessions.map((session) => {
                             const method = signInMethodLabel(session.signInMethod);
                             return (
@@ -435,7 +475,9 @@ export function SignInTab({
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
-                                                aria-label={`Sign out ${deviceLabel(session.userAgent)}`}
+                                                aria-label={t('settings.person:signIn.signOutDevice', {
+                                                    device: deviceLabel(session.userAgent),
+                                                })}
                                                 onClick={() =>
                                                     void run(
                                                         () =>
@@ -443,12 +485,12 @@ export function SignInTab({
                                                                 `/accounts/${encodeURIComponent(person.id)}/sessions/${encodeURIComponent(session.id)}`,
                                                                 'DELETE',
                                                             ),
-                                                        'Could not sign the device out.',
-                                                        'Signed out on that device',
+                                                        t('settings.person:signIn.signOutFailed'),
+                                                        t('settings.person:signIn.signedOut'),
                                                     )
                                                 }
                                             >
-                                                Sign out
+                                                {t('settings.person:signIn.signOut')}
                                             </Button>
                                         )
                                     }
@@ -456,10 +498,12 @@ export function SignInTab({
                                     <span title={session.userAgent ?? undefined}>{deviceLabel(session.userAgent)}</span>{' '}
                                     <Muted>
                                         {[
-                                            method && `by ${method}`,
-                                            `last used ${lastActive(Date.parse(session.renewedAt)).toLocaleLowerCase('en-US')}`,
+                                            method && t('settings.person:signIn.by', { method }),
+                                            t('settings.person:signIn.lastUsed', {
+                                                ago: lastActive(Date.parse(session.renewedAt), undefined, true),
+                                            }),
                                             session.ip,
-                                            `since ${shortDate(session.createdAt)}`,
+                                            t('settings.person:signIn.since', { date: shortDate(session.createdAt) }),
                                         ]
                                             .filter(Boolean)
                                             .join(' · ')}
@@ -469,36 +513,54 @@ export function SignInTab({
                         })}
                     </ul>
                 ) : (
-                    <Empty>{off ? 'Deactivated: signed in nowhere.' : 'Not signed in anywhere now.'}</Empty>
+                    <Empty>{t('settings.person:signIn.nowhere', { context: off ? 'deactivated' : undefined })}</Empty>
                 )}
             </PanelCard>
-            <PanelCard title="The Socio app" slot="person-devices">
+            <PanelCard title={t('settings.person:signIn.app')} slot="person-devices">
                 <DevicesCard accountId={person.id} locked={locked} onChanged={onChanged} version={detail} />
             </PanelCard>
-            <PanelCard title="How they sign in" slot="person-methods">
-                <ul aria-label="How they sign in">
-                    <Row slot="person-passkeys" aside={<Muted>{signIn.passkeys.length || 'None'}</Muted>}>
-                        Passkeys
+            <PanelCard title={t('settings.person:signIn.methods')} slot="person-methods">
+                <ul aria-label={t('settings.person:signIn.methods')}>
+                    <Row
+                        slot="person-passkeys"
+                        aside={<Muted>{signIn.passkeys.length || t('settings.person:signIn.none')}</Muted>}
+                    >
+                        {t('settings.person:signIn.passkeys')}
                         {signIn.passkeys.length > 0 && (
                             <span className="block">
                                 {signIn.passkeys.map((passkey) => (
                                     <Muted key={passkey.id}>
-                                        {passkey.name || 'Passkey'}
-                                        {passkey.createdAt ? `, added ${shortDate(passkey.createdAt)}` : ''}
+                                        {passkey.name || t('settings.person:signIn.passkey')}
+                                        {passkey.createdAt
+                                            ? t('settings.person:signIn.passkeyAdded', {
+                                                  date: shortDate(passkey.createdAt),
+                                              })
+                                            : ''}
                                         <br />
                                     </Muted>
                                 ))}
                             </span>
                         )}
                     </Row>
-                    <Row slot="person-password" aside={<Muted>{signIn.password ? 'Set' : 'Not set'}</Muted>}>
-                        Password
+                    <Row
+                        slot="person-password"
+                        aside={
+                            <Muted>
+                                {signIn.password ? t('settings.person:signIn.set') : t('settings.person:signIn.notSet')}
+                            </Muted>
+                        }
+                    >
+                        {t('settings.person:signIn.password')}
                     </Row>
                     <Row
                         slot="person-providers"
-                        aside={<Muted>{signIn.providers.map(providerLabel).join(', ') || 'None'}</Muted>}
+                        aside={
+                            <Muted>
+                                {signIn.providers.map(providerLabel).join(', ') || t('settings.person:signIn.none')}
+                            </Muted>
+                        }
                     >
-                        Sign-in providers
+                        {t('settings.person:signIn.providers')}
                     </Row>
                     <Row
                         slot="person-password-link"
@@ -506,18 +568,18 @@ export function SignInTab({
                             !off &&
                             !locked && (
                                 <Button variant="outline" size="sm" onClick={onPasswordLink}>
-                                    New password link
+                                    {t('settings.person:signIn.newLink')}
                                 </Button>
                             )
                         }
                     >
-                        Newest password link{' '}
+                        {t('settings.person:signIn.newestLink')}{' '}
                         <Muted>
                             {person.invite
                                 ? person.invite.expired
-                                    ? `expired ${shortDate(person.invite.expiresAt)}`
-                                    : `expires ${shortDate(person.invite.expiresAt)}`
-                                : 'none made'}
+                                    ? t('settings.person:dates.expired', { date: shortDate(person.invite.expiresAt) })
+                                    : t('settings.person:dates.expires', { date: shortDate(person.invite.expiresAt) })
+                                : t('settings.person:signIn.noLink')}
                         </Muted>
                     </Row>
                 </ul>
@@ -527,22 +589,28 @@ export function SignInTab({
 }
 
 /** Where a key they made stands: live, expired or revoked. */
-function keyStanding(key: { expiresAt: number; revokedAt: number | null }, now: number) {
-    if (key.revokedAt !== null) {
-        return { live: false, label: `revoked ${shortDate(key.revokedAt)}` };
-    }
-    return key.expiresAt > now
-        ? { live: true, label: `expires ${shortDate(key.expiresAt)}` }
-        : { live: false, label: `expired ${shortDate(key.expiresAt)}` };
+function useKeyStanding() {
+    const { t } = useTranslation(['settings.person']);
+    const { shortDate } = usePeopleFormat();
+    return (key: { expiresAt: number; revokedAt: number | null }, now: number) => {
+        if (key.revokedAt !== null) {
+            return { live: false, label: t('settings.person:dates.revoked', { date: shortDate(key.revokedAt) }) };
+        }
+        return key.expiresAt > now
+            ? { live: true, label: t('settings.person:dates.expires', { date: shortDate(key.expiresAt) }) }
+            : { live: false, label: t('settings.person:dates.expired', { date: shortDate(key.expiresAt) }) };
+    };
 }
 
 /** One kind's card on the Owns tab: its items (live first), with how many more there are. */
 function OwnedCard({ kind, onTransfer }: { kind: OwnedKind; onTransfer?: (kind: AssetKind) => void }) {
-    const info = ASSET_INFO[kind.kind];
+    const { t } = useTranslation(['settings.person']);
+    const { assetTitle, assetCount } = useAssetWords();
+    const title = assetTitle(kind.kind);
     const more = kind.count - kind.items.length;
     return (
         <PanelCard
-            title={info.title}
+            title={title}
             slot="person-owned-kind"
             action={
                 <span className="flex items-center gap-2">
@@ -551,27 +619,31 @@ function OwnedCard({ kind, onTransfer }: { kind: OwnedKind; onTransfer?: (kind: 
                         <Button
                             variant="outline"
                             size="sm"
-                            aria-label={`Transfer ${info.title}`}
+                            aria-label={t('settings.person:owns.transferKind', { kind: title })}
                             onClick={() => onTransfer(kind.kind)}
                         >
-                            Transfer…
+                            {t('settings.person:owns.transfer')}
                         </Button>
                     )}
                 </span>
             }
         >
-            <ul aria-label={info.title} data-kind={kind.kind}>
+            <ul aria-label={title} data-kind={kind.kind}>
                 {kind.items.map((item) => (
                     <Row
                         key={`${item.type}:${item.id}`}
                         slot="person-owned-item"
-                        aside={<Muted>{item.deleted ? `${item.type} · deleted, kept` : item.type}</Muted>}
+                        aside={
+                            <Muted>
+                                {item.deleted ? t('settings.person:owns.deletedKept', { type: item.type }) : item.type}
+                            </Muted>
+                        }
                     >
                         <span className={cn(item.deleted && 'text-muted-foreground')}>{item.name}</span>
                     </Row>
                 ))}
             </ul>
-            {more > 0 && <Muted>and {more} more</Muted>}
+            {more > 0 && <Muted>{t('settings.person:owns.more', { count: more })}</Muted>}
         </PanelCard>
     );
 }
@@ -593,6 +665,10 @@ export function OwnsTab({
     /** Opens the transfer dialog: all kinds, or one kind's alone. */
     onTransfer?: (only?: AssetKind[]) => void;
 }) {
+    const { t } = useTranslation(['settings.person']);
+    const { lastActive } = usePeopleFormat();
+    const { assetCount } = useAssetWords();
+    const keyStanding = useKeyStanding();
     const { person, access } = detail;
     const first = firstName(person.name);
     const [assets, setAssets] = useState<PersonAssets>();
@@ -607,13 +683,13 @@ export function OwnsTab({
             .then(setAssets)
             .catch((e: unknown) => {
                 if (!controller.signal.aborted) {
-                    setError(e instanceof Error ? e.message : 'Could not load what they own.');
+                    setError(e instanceof Error ? e.message : t('settings.person:owns.loadFailed'));
                 }
             });
         return () => controller.abort();
-    }, [person.id, access, version]);
+    }, [person.id, access, version, t]);
     if (!access) {
-        return <Empty>What {first} owns isn’t known here: the account has no workspace user yet.</Empty>;
+        return <Empty>{t('settings.person:owns.unknown', { first })}</Empty>;
     }
     const now = Date.now();
     const kinds = assets?.kinds.filter((kind) => kind.count > 0) ?? [];
@@ -628,19 +704,22 @@ export function OwnsTab({
                     {error ? (
                         <span className="text-destructive">{error}</span>
                     ) : !assets ? (
-                        <Muted>Loading what {first} owns…</Muted>
+                        <Muted>{t('settings.person:owns.loading', { first })}</Muted>
                     ) : kinds.length ? (
                         <>
-                            {first} owns {kinds.map((kind) => assetCount(kind.kind, kind.count)).join(', ')}.{' '}
-                            <Muted>The company owns it: hand it to another active person at any time.</Muted>
+                            {t('settings.person:owns.owns', {
+                                first,
+                                list: kinds.map((kind) => assetCount(kind.kind, kind.count)).join(', '),
+                            })}{' '}
+                            <Muted>{t('settings.person:owns.companyOwns')}</Muted>
                         </>
                     ) : (
-                        <Muted>{first} owns nothing that can be transferred.</Muted>
+                        <Muted>{t('settings.person:owns.nothing', { first })}</Muted>
                     )}
                 </span>
                 {transferable && kinds.length > 0 && (
                     <Button size="sm" onClick={() => onTransfer()}>
-                        Transfer everything…
+                        {t('settings.person:owns.transferAll')}
                     </Button>
                 )}
             </div>
@@ -653,12 +732,12 @@ export function OwnsTab({
                     />
                 ))}
                 <PanelCard
-                    title={`Service keys ${first} made`}
+                    title={t('settings.person:owns.keys', { first })}
                     slot="person-keys"
-                    action={<Muted>revoked if {first} is deactivated</Muted>}
+                    action={<Muted>{t('settings.person:owns.keysNote', { first })}</Muted>}
                 >
                     {access.keysMade.length ? (
-                        <ul aria-label="Service keys">
+                        <ul aria-label={t('settings.person:owns.keysList')}>
                             {access.keysMade.map((key) => {
                                 const standing = keyStanding(key, now);
                                 return (
@@ -677,18 +756,25 @@ export function OwnsTab({
                                         <span className={cn(!standing.live && 'text-muted-foreground line-through')}>
                                             {key.name}
                                         </span>{' '}
+                                        {/* oxlint-disable-next-line socio/no-literal-text -- the key's prefix, an identifier */}
                                         <code className="text-xs text-muted-foreground">cbk_{key.hint}…</code>{' '}
                                         <Muted>
                                             {standing.label}
                                             {standing.live &&
-                                                ` · ${key.lastUsedAt === null ? 'never used' : `used ${lastActive(key.lastUsedAt).toLocaleLowerCase('en-US')}`}`}
+                                                ` · ${
+                                                    key.lastUsedAt === null
+                                                        ? t('settings.person:owns.neverUsed')
+                                                        : t('settings.person:owns.used', {
+                                                              ago: lastActive(key.lastUsedAt, undefined, true),
+                                                          })
+                                                }`}
                                         </Muted>
                                     </Row>
                                 );
                             })}
                         </ul>
                     ) : (
-                        <Empty>{first} made no service keys.</Empty>
+                        <Empty>{t('settings.person:owns.noKeys', { first })}</Empty>
                     )}
                 </PanelCard>
             </div>
@@ -696,26 +782,19 @@ export function OwnsTab({
     );
 }
 
-const SOURCE_LABELS: Record<PersonTrailSource, string> = {
-    workspace: 'Workspace',
-    access_policy: 'Access',
-    socio_access: 'Socio access',
-    room: 'Room',
-};
-
-const timeFormat = new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-});
+const SOURCE_KEYS = {
+    workspace: 'settings.person:activity.sources.workspace',
+    access_policy: 'settings.person:activity.sources.access_policy',
+    socio_access: 'settings.person:activity.sources.socio_access',
+    room: 'settings.person:activity.sources.room',
+} as const satisfies Record<PersonTrailSource, string>;
 
 /**
  * The Activity tab: their audit trail, newest first, a page at a time
  * (`GET /api/accounts/:id/audit`), with "Load more" while there is more.
  */
 export function ActivityTab({ accountId }: { accountId: string }) {
+    const { t } = useTranslation(['settings.person']);
     const [lines, setLines] = useState<PersonTrailLine[]>();
     const [next, setNext] = useState<string | null>(null);
     const [error, setError] = useState<string>();
@@ -736,7 +815,7 @@ export function ActivityTab({ accountId }: { accountId: string }) {
                 setError(undefined);
             } catch (e) {
                 if (!signal?.aborted) {
-                    setError(e instanceof Error ? e.message : 'Could not load the activity.');
+                    setError(e instanceof Error ? e.message : t('settings.person:activity.loadFailed'));
                 }
             } finally {
                 if (!signal?.aborted) {
@@ -744,7 +823,7 @@ export function ActivityTab({ accountId }: { accountId: string }) {
                 }
             }
         },
-        [accountId],
+        [accountId, t],
     );
     useEffect(() => {
         const controller = new AbortController();
@@ -753,35 +832,37 @@ export function ActivityTab({ accountId }: { accountId: string }) {
         return () => controller.abort();
     }, [page]);
     return (
-        <PanelCard title="Activity" slot="person-activity">
+        <PanelCard title={t('settings.person:activity.title')} slot="person-activity">
             {lines === undefined ? (
-                <Empty>{error ?? 'Loading…'}</Empty>
+                <Empty>{error ?? t('settings.person:activity.loading')}</Empty>
             ) : lines.length ? (
-                <ul aria-label="Activity">
+                <ul aria-label={t('settings.person:activity.title')}>
                     {lines.map((line) => (
                         <Row
                             key={line.id}
                             slot="person-trail-line"
                             aside={
                                 <Muted>
-                                    <time dateTime={new Date(line.at).toISOString()}>{timeFormat.format(line.at)}</time>
+                                    <time dateTime={new Date(line.at).toISOString()}>
+                                        {t('settings.person:activity.at', { at: new Date(line.at) })}
+                                    </time>
                                 </Muted>
                             }
                         >
                             <span className="font-medium">{line.actorName}</span> {line.detail}{' '}
                             <Badge variant="outline" className="font-normal">
-                                {SOURCE_LABELS[line.source] ?? line.source}
+                                {line.source in SOURCE_KEYS ? t(SOURCE_KEYS[line.source]) : line.source}
                             </Badge>
                         </Row>
                     ))}
                 </ul>
             ) : (
-                <Empty>Nothing recorded yet.</Empty>
+                <Empty>{t('settings.person:activity.empty')}</Empty>
             )}
             {lines !== undefined && error && <p className="text-destructive">{error}</p>}
             {lines !== undefined && next && (
                 <Button variant="outline" size="sm" className="w-fit" disabled={busy} onClick={() => void page(next)}>
-                    Load more
+                    {t('settings.person:activity.more')}
                 </Button>
             )}
         </PanelCard>

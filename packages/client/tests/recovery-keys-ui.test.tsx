@@ -5,7 +5,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
 import type { DataKeyStatus, RestoreDrillStatus, State, User, WorkspaceState } from '@socio/shared/types';
 
-import { keyCheckLine, keyIdsLine, legacySealedLine, resealLine } from '../src/modules/settings/setup-lines';
+import { useSetupLines } from '../src/modules/settings/setup-lines';
 import { WorkspaceSettings } from '../src/modules/settings/WorkspaceSettings';
 
 // Service setup's recovery key parts (CB-322): key ids, the legacy-sealed
@@ -34,6 +34,19 @@ afterEach(() => {
     host.remove();
     vi.unstubAllGlobals();
 });
+
+/** What a hook returns, from a component rendered once on its own root. */
+function hook<T>(use: () => T): T {
+    let value: T | undefined;
+    function Probe() {
+        value = use();
+        return null;
+    }
+    const probe = createRoot(document.createElement('div'));
+    act(() => probe.render(<Probe />));
+    act(() => probe.unmount());
+    return value as T;
+}
 
 const admin: User = { id: 'alice', name: 'Alice', role: 'admin' };
 const member: User = { id: 'bob', name: 'Bob', role: 'member' };
@@ -79,7 +92,7 @@ it('shows the key ids and the legacy-sealed count, and lets admins re-seal', asy
     await page(admin, dataKey, mutate);
     expect(slot('setup-key-ids')).toBe('Key ids: current 0123456789abcdef, previous fedcba9876543210.');
     expect(slot('setup-legacy-sealed')).toBe(
-        'Legacy-sealed: 3 item(s) (inference credentials 2, files 1) still need SESSION_SECRET; keep it in the recovery kit until this is zero.',
+        'Legacy-sealed: 3 items (inference credentials 2, files 1) still need SESSION_SECRET; keep it in the recovery kit until this is zero.',
     );
     await act(async () => button(/Re-seal under the data key/)!.click());
     expect(mutate).toHaveBeenCalledWith('/data-key/reseal', 'POST');
@@ -158,12 +171,13 @@ it('sends a recovery key once and clears the field; shows only its id and the re
 });
 
 it('words each re-seal and key check state', () => {
+    const { keyCheckLine, keyIdsLine, legacySealedLine, resealLine } = hook(useSetupLines);
     const base: DataKeyStatus = { configured: true, legacy: 0, previous: 0, unknown: 0 };
     const at = Date.UTC(2026, 10, 1, 3, 0);
     const when = () => 'then';
     expect(keyIdsLine({ ...base, keyId: 'aa' })).toBe('current aa');
     expect(legacySealedLine({ ...base, legacy: 2 })).toBe(
-        '2 item(s) still need SESSION_SECRET; keep it in the recovery kit until this is zero',
+        '2 items still need SESSION_SECRET; keep it in the recovery kit until this is zero',
     );
     expect(resealLine(base)).toBeUndefined();
     expect(

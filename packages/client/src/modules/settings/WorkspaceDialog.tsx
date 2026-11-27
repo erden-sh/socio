@@ -1,6 +1,7 @@
 import { Check, X } from 'lucide-react';
 import { useState } from 'react';
 
+import { Trans, useTranslation } from '@socio/i18n/react';
 import type { ModelChoice } from '@socio/shared/inference';
 import { characterOf, LOCAL_NAMES, LOCALS, type LocalId } from '@socio/shared/mascot';
 import { isAdmin } from '@socio/shared/roles';
@@ -51,6 +52,9 @@ export function WorkspaceDialog({
     onClose: () => void;
     mutate: (path: string, method: string, body?: unknown) => Promise<boolean>;
 }) {
+    // Loaded on demand (route-namespaces.json inlines it nowhere): the
+    // dialog opens only after a click.
+    const { t, ready } = useTranslation(['settings', 'settings.dialogs']);
     const [name, setName] = useState(dialog.type === 'dot' ? (dialog.dot?.name ?? '') : '');
     const [text, setText] = useState(
         dialog.type === 'dot'
@@ -97,16 +101,19 @@ export function WorkspaceDialog({
     const [error, setError] = useState('');
     // Board filing, web identity and Learning reach beyond one person: admins'.
     const admin = isAdmin(workspace.user);
+    if (!ready) {
+        return null;
+    }
     const title =
         dialog.type === 'space'
-            ? 'A space for something.'
+            ? t('settings.dialogs:title.space')
             : dialog.type === 'dot'
               ? dialog.dot
-                  ? 'Make this socio yours.'
-                  : 'Meet your next specialist.'
+                  ? t('settings.dialogs:title.dotEdit')
+                  : t('settings.dialogs:title.dotNew')
               : dialog.type === 'memory'
-                ? 'Something to remember.'
-                : 'Let your socio keep time.';
+                ? t('settings.dialogs:title.memory')
+                : t('settings.dialogs:title.schedule');
     return (
         <DialogRoot open onOpenChange={(open) => !open && onClose()}>
             <DialogContent
@@ -135,11 +142,12 @@ export function WorkspaceDialog({
                         variant="ghost"
                         size="icon"
                         className="absolute top-[15px] right-[15px] size-7.5 text-muted-foreground"
-                        aria-label="Close dialog"
+                        aria-label={t('settings.dialogs:close')}
                     >
                         <X className="size-4.5" />
                     </Button>
                 </DialogClose>
+                {/* oxlint-disable-next-line socio/no-literal-text -- the brand's wordmark, not words */}
                 <span className="text-xs font-semibold tracking-[1.7px] text-muted-foreground">SOCIO</span>
                 <DialogTitle className="mt-[13px] mb-2 text-[25px] leading-tight font-[550] tracking-[-0.04em] sm:text-[27px]">
                     {title}
@@ -194,10 +202,10 @@ export function WorkspaceDialog({
                                 await web.save();
                                 onClose();
                             } catch (cause) {
-                                setError(cause instanceof Error ? cause.message : 'Could not save the web identity.');
+                                setError(cause instanceof Error ? cause.message : t('settings.dialogs:webSaveFailed'));
                             }
                         } else {
-                            setError('Could not save. Review the workspace error and retry.');
+                            setError(t('settings:save.failed'));
                         }
                         setBusy(false);
                     }}
@@ -205,7 +213,7 @@ export function WorkspaceDialog({
                     {(dialog.type === 'space' || dialog.type === 'dot') && (
                         <>
                             <label className={label} htmlFor="entity-name">
-                                Name
+                                {t('settings.dialogs:name')}
                             </label>
                             <Input
                                 id="entity-name"
@@ -223,13 +231,7 @@ export function WorkspaceDialog({
                     ) : (
                         <>
                             <label className={label} htmlFor="entity-text">
-                                {dialog.type === 'dot'
-                                    ? 'Role instructions'
-                                    : dialog.type === 'space'
-                                      ? 'What belongs here?'
-                                      : dialog.type === 'memory'
-                                        ? 'Preference or context'
-                                        : 'Task to revisit'}
+                                {t(`settings.dialogs:text.${dialog.type}`)}
                             </label>
                             <Textarea
                                 id="entity-text"
@@ -239,11 +241,7 @@ export function WorkspaceDialog({
                                 required={dialog.type !== 'space'}
                                 value={text}
                                 onChange={(e) => setText(e.target.value)}
-                                placeholder={
-                                    dialog.type === 'dot'
-                                        ? 'You are a thoughtful research partner. Compare evidence and be clear about uncertainty.'
-                                        : ''
-                                }
+                                placeholder={dialog.type === 'dot' ? t('settings.dialogs:dotPlaceholder') : ''}
                             />
                         </>
                     )}
@@ -251,8 +249,8 @@ export function WorkspaceDialog({
                         <SpaceAudienceField admin={admin} value={privateSpace} onChange={setPrivateSpace} />
                     )}
                     {dialog.type === 'dot' && (
-                        <DialogFieldset legend="Space access">
-                            <p className={cn(note, 'mt-2')}>Choose where this socio can read and edit pages.</p>
+                        <DialogFieldset legend={t('settings.dialogs:spaces.legend')}>
+                            <p className={cn(note, 'mt-2')}>{t('settings.dialogs:spaces.note')}</p>
                             {workspace.spaces.map((space) => (
                                 <label className="my-4 flex cursor-pointer items-center gap-3" key={space.id}>
                                     <Checkbox
@@ -272,7 +270,7 @@ export function WorkspaceDialog({
                                 </label>
                             ))}
                             <label className={label} htmlFor="default-space">
-                                Default destination for saved pages
+                                {t('settings.dialogs:spaces.default')}
                             </label>
                             <select
                                 id="default-space"
@@ -283,7 +281,7 @@ export function WorkspaceDialog({
                                 onChange={(event) => setDefaultSpace(event.target.value)}
                             >
                                 <option value="" disabled>
-                                    Choose a Space
+                                    {t('settings.dialogs:spaces.choose')}
                                 </option>
                                 {workspace.spaces
                                     .filter((space) => spaceIds.includes(space.id))
@@ -299,19 +297,19 @@ export function WorkspaceDialog({
                         <>
                             <PermissionRow
                                 compact
-                                title="Public-page research"
+                                title={t('settings.dialogs:research.title')}
                                 checked={research}
                                 onCheckedChange={setResearch}
                             >
-                                Allow the server-side read-only browser tool. Global settings always take precedence.
+                                {t('settings.dialogs:research.body')}
                             </PermissionRow>
                             <PermissionRow
                                 compact
-                                title="Use saved memories"
+                                title={t('settings.dialogs:memories.title')}
                                 checked={memory}
                                 onCheckedChange={setMemory}
                             >
-                                Include your preferences in new turns. Changing permission stops active work.
+                                {t('settings.dialogs:memories.body')}
                             </PermissionRow>
                         </>
                     )}
@@ -320,36 +318,36 @@ export function WorkspaceDialog({
                             {admin && !dialog.dot && (
                                 <PermissionRow
                                     compact
-                                    title="Share with the workspace"
+                                    title={t('settings.dialogs:share.title')}
                                     checked={shared}
                                     onCheckedChange={setShared}
                                 >
-                                    Let everyone see and use this socio, including its shared computer files. Leave off
-                                    to create a socio of your own.
+                                    {t('settings.dialogs:share.body')}
                                 </PermissionRow>
                             )}
                             <p className={note} data-slot="dot-visibility">
-                                {(dialog.dot ? !dialog.dot.ownerId : admin && shared)
-                                    ? 'Workspace socio: everyone can see and use it. Conversations belong to each person; its shared computer files are available to everyone who uses it.'
-                                    : 'Personal socio: only its owner sees it in their sidebar and chats with it. Admins can manage its settings.'}
+                                {t('settings.dialogs:visibility', {
+                                    context: (dialog.dot ? !dialog.dot.ownerId : admin && shared)
+                                        ? 'workspace'
+                                        : undefined,
+                                })}
                             </p>
                         </>
                     )}
                     {dialog.type === 'dot' && admin && (
                         <PermissionRow
                             compact
-                            title="File to the Improvements board"
+                            title={t('settings.dialogs:issues.title')}
                             checked={issues}
                             onCheckedChange={setIssues}
                         >
-                            When someone asks, this socio can search the board and file an item in triage, recorded with
-                            the socio and that person.
+                            {t('settings.dialogs:issues.body')}
                         </PermissionRow>
                     )}
                     {dialog.type === 'dot' && (
                         <div data-slot="dot-model">
                             <label className={label} htmlFor="dot-model">
-                                Default model
+                                {t('settings.dialogs:model.label')}
                             </label>
                             <ModelSelect
                                 id="dot-model"
@@ -358,22 +356,18 @@ export function WorkspaceDialog({
                                 onChange={setModel}
                                 options={models?.options ?? []}
                                 disabled={!models}
-                                inheritLabel="Automatic: each person’s own subscription, else the workspace’s"
+                                inheritLabel={t('settings.dialogs:model.inherit')}
                             />
-                            <p className={note}>
-                                New chats with this socio start on this model; people can pick another when they start a
-                                chat. Subscription models run on each person’s own connection; anyone not connected gets
-                                the automatic model.
-                            </p>
+                            <p className={note}>{t('settings.dialogs:model.note')}</p>
                         </div>
                     )}
                     {dialog.type === 'dot' && admin && (
                         <WebIdentityField status={web.status} choice={web.choice} onChange={web.setChoice} />
                     )}
                     {dialog.type === 'dot' && admin && (
-                        <DialogFieldset legend="Automatic Learning">
+                        <DialogFieldset legend={t('settings.dialogs:learning.legend')}>
                             <label className={label} htmlFor="learning-container">
-                                Learning container ID
+                                {t('settings.dialogs:learning.container')}
                             </label>
                             <Input
                                 id="learning-container"
@@ -381,7 +375,7 @@ export function WorkspaceDialog({
                                 value={learningContainer}
                                 maxLength={64}
                                 pattern="[a-z0-9]+(-[a-z0-9]+)*"
-                                placeholder="research-workflow"
+                                placeholder={t('settings.dialogs:learning.placeholder')}
                                 aria-describedby="learning-help"
                                 onChange={(event) => {
                                     setLearningContainer(event.target.value);
@@ -391,19 +385,16 @@ export function WorkspaceDialog({
                                 }}
                             />
                             <p className={note} id="learning-help">
-                                New conversations with this socio are assigned to this container and become Learning
-                                evidence once they finish. Admins review proposed skills under Learning before anything
-                                is published. Leave blank to keep new conversations out of Learning.
+                                {t('settings.dialogs:learning.help')}
                             </p>
                             <PermissionRow
                                 compact
-                                title="Use published skills"
+                                title={t('settings.dialogs:learning.skillsTitle')}
                                 checked={skillDelivery}
                                 disabled={!learningContainer.trim()}
                                 onCheckedChange={setSkillDelivery}
                             >
-                                Let this socio load the container’s published skills. Turning this off stops skill
-                                loading; it does not stop evidence collection.
+                                {t('settings.dialogs:learning.skillsBody')}
                             </PermissionRow>
                         </DialogFieldset>
                     )}
@@ -412,24 +403,30 @@ export function WorkspaceDialog({
                     )}
                     {dialog.type === 'dot' && dialog.dot && (
                         <p className={note} data-slot="dot-data-links">
-                            Approvals and data access are each person’s own: your{' '}
-                            <a
-                                className="underline underline-offset-2 hover:text-foreground"
-                                href={`/approvals?dot=${encodeURIComponent(dialog.dot.id)}`}
-                            >
-                                approval policies
-                            </a>{' '}
-                            and{' '}
-                            <a className="underline underline-offset-2 hover:text-foreground" href="/data?tab=dots">
-                                data grants
-                            </a>{' '}
-                            for this socio.
+                            <Trans
+                                t={t}
+                                i18nKey="settings.dialogs:dataLinks"
+                                components={{
+                                    approvals: (
+                                        <a
+                                            className="underline underline-offset-2 hover:text-foreground"
+                                            href={`/approvals?dot=${encodeURIComponent(dialog.dot.id)}`}
+                                        />
+                                    ),
+                                    grants: (
+                                        <a
+                                            className="underline underline-offset-2 hover:text-foreground"
+                                            href="/data?tab=dots"
+                                        />
+                                    ),
+                                }}
+                            />
                         </p>
                     )}
                     {dialog.type === 'schedule' && (
                         <>
                             <label className={label} htmlFor="schedule-interval">
-                                Repeat after each successful run
+                                {t('settings.dialogs:schedule.label')}
                             </label>
                             <select
                                 id="schedule-interval"
@@ -438,24 +435,15 @@ export function WorkspaceDialog({
                                 value={interval}
                                 onChange={(e) => setInterval(e.target.value)}
                             >
-                                <option value="60">Every minute (testing)</option>
-                                <option value="3600">Every hour</option>
-                                <option value="86400">Every day</option>
-                                <option value="604800">Every week</option>
+                                <option value="60">{t('settings.dialogs:schedule.minute')}</option>
+                                <option value="3600">{t('settings.dialogs:schedule.hour')}</option>
+                                <option value="86400">{t('settings.dialogs:schedule.day')}</option>
+                                <option value="604800">{t('settings.dialogs:schedule.week')}</option>
                             </select>
-                            <p className={cn(note, 'mt-2')}>
-                                Runs on the server in this same conversation, even with the tab closed. Failed or
-                                interrupted runs wait for manual retry. Review completed work before retrying an
-                                interrupted run.
-                            </p>
+                            <p className={cn(note, 'mt-2')}>{t('settings.dialogs:schedule.note')}</p>
                         </>
                     )}
-                    {dialog.type === 'memory' && (
-                        <p className={cn(note, 'mt-2')}>
-                            Memories are explicit preferences, not automatic learning. Avoid secrets; enabled memories
-                            go to your model provider.
-                        </p>
-                    )}
+                    {dialog.type === 'memory' && <p className={cn(note, 'mt-2')}>{t('settings.dialogs:memoryNote')}</p>}
                     {error && (
                         <p
                             className="mt-4 rounded-lg bg-destructive/10 p-3 text-[11px] leading-[1.8] text-destructive"
@@ -465,7 +453,7 @@ export function WorkspaceDialog({
                         </p>
                     )}
                     <Button className="mt-[15px] w-full text-xs" disabled={busy}>
-                        {busy ? 'Saving…' : 'Save'}
+                        {busy ? t('settings:save.saving') : t('settings.dialogs:save')}
                     </Button>
                 </form>
             </DialogContent>
@@ -484,9 +472,12 @@ export function WorkspaceDialog({
  * Several socios may share one.
  */
 function CharacterPicker({ value, onChange }: { value: LocalId; onChange: (value: LocalId) => void }) {
+    const { t } = useTranslation(['settings.dialogs']);
     return (
         <fieldset data-slot="dot-character" className="mt-[23px]">
-            <legend className="mb-2 text-[11px] font-medium text-muted-foreground">Character</legend>
+            <legend className="mb-2 text-[11px] font-medium text-muted-foreground">
+                {t('settings.dialogs:character.legend')}
+            </legend>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                 {LOCALS.map((local) => (
                     <label
@@ -499,7 +490,10 @@ function CharacterPicker({ value, onChange }: { value: LocalId; onChange: (value
                             value={local}
                             checked={value === local}
                             onChange={() => onChange(local)}
-                            aria-label={`${LOCAL_NAMES[local].name}, the ${LOCAL_NAMES[local].kind}`}
+                            aria-label={t('settings.dialogs:character.label', {
+                                name: LOCAL_NAMES[local].name,
+                                kind: LOCAL_NAMES[local].kind,
+                            })}
                             className="sr-only"
                         />
                         {/* Not by color alone: a tick marks the choice. */}
@@ -515,10 +509,7 @@ function CharacterPicker({ value, onChange }: { value: LocalId; onChange: (value
                     </label>
                 ))}
             </div>
-            <p className={cn(note, 'mt-2')}>
-                How this socio looks everywhere it appears, including notifications. Other socios can have the same
-                character.
-            </p>
+            <p className={cn(note, 'mt-2')}>{t('settings.dialogs:character.note')}</p>
         </fieldset>
     );
 }
@@ -531,6 +522,7 @@ function ArchiveDot({
     mutate: (path: string, method: string, body?: unknown) => Promise<boolean>;
     onDone: () => void;
 }) {
+    const { t } = useTranslation(['settings.dialogs']);
     const [confirming, setConfirming] = useState(false);
     const archived = !!dot.archivedAt;
     const run = async () => {
@@ -541,11 +533,11 @@ function ArchiveDot({
     return (
         <div className="my-5.5 flex items-center gap-3" data-slot="dot-archive">
             <span className="grid flex-1 gap-1">
-                <strong className="text-[11px] font-[550]">{archived ? 'Archived' : 'Archive this socio'}</strong>
+                <strong className="text-[11px] font-[550]">
+                    {t('settings.dialogs:archive.title', { context: archived ? 'archived' : undefined })}
+                </strong>
                 <small className="text-[10px] leading-[1.7] text-muted-foreground">
-                    {archived
-                        ? 'Bring it back to the lists; its paused schedules stay paused until resumed.'
-                        : 'It leaves every list and stops working; its chats, filings and history are kept. Nothing is deleted.'}
+                    {t('settings.dialogs:archive.body', { context: archived ? 'archived' : undefined })}
                 </small>
             </span>
             <Button
@@ -555,7 +547,11 @@ function ArchiveDot({
                 className="shrink-0 text-xs"
                 onClick={() => (archived || confirming ? void run() : setConfirming(true))}
             >
-                {archived ? 'Unarchive' : confirming ? 'Archive now' : 'Archive…'}
+                {archived
+                    ? t('settings.dialogs:archive.unarchive')
+                    : confirming
+                      ? t('settings.dialogs:archive.confirm')
+                      : t('settings.dialogs:archive.archive')}
             </Button>
         </div>
     );

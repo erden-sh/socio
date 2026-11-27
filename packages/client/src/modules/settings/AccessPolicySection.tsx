@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react
 import { Link } from 'react-router';
 import { toast } from 'sonner';
 
+import { Trans, useTranslation } from '@socio/i18n/react';
 import {
     normalizePolicy,
     type AccessPolicyImpact,
@@ -11,7 +12,6 @@ import {
     type StepUpChallenge,
     type StepUpProof,
 } from '@socio/shared/access-policy';
-import { dateTimeFormat } from '@socio/shared/locale';
 
 import { api, ApiError } from '../../lib/api';
 import { LocalTime } from '../../lib/local-time';
@@ -32,8 +32,6 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 
-const dateTime = dateTimeFormat({ dateStyle: 'medium', timeStyle: 'short' });
-const when = (at: number) => dateTime.format(at);
 const failed = (e: unknown, fallback: string) => toast.error(e instanceof Error ? e.message : fallback);
 
 type Flag = 'password' | 'passkey' | 'signInLink' | 'emailLinks' | 'google' | 'apple' | 'openSignUp';
@@ -45,36 +43,47 @@ interface Draft {
     lists: Record<ListKey, string[]>;
 }
 
-/** `optIn`: off unless turned on here (CB-352); the others are on unless turned off. */
-const FLAGS: { key: Flag; label: string; env: string; help?: string; optIn?: boolean }[] = [
-    { key: 'password', label: 'Email and password', env: 'AUTH_PASSWORD' },
-    { key: 'passkey', label: 'Passkeys', env: 'AUTH_PASSKEY' },
-    {
-        key: 'signInLink',
-        label: 'Sign-in links by Telegram',
-        env: 'the Telegram bot',
-    },
+/**
+ * `optIn`: off unless turned on here (CB-352); the others are on unless
+ * turned off. `env`: the variable that turns it off, or `off`, the badge's
+ * context when no variable does.
+ */
+const FLAGS: {
+    key: Flag;
+    label: `settings.access:methods.${Flag}`;
+    env: string;
+    off?: 'telegram' | 'email' | 'cloud';
+    help?: `settings.access:methods.${'emailLinks' | 'google' | 'apple'}Help`;
+    optIn?: boolean;
+}[] = [
+    { key: 'password', label: 'settings.access:methods.password', env: 'AUTH_PASSWORD' },
+    { key: 'passkey', label: 'settings.access:methods.passkey', env: 'AUTH_PASSKEY' },
+    { key: 'signInLink', label: 'settings.access:methods.signInLink', env: '', off: 'telegram' },
     {
         key: 'emailLinks',
-        label: 'Sign-in links by email',
+        label: 'settings.access:methods.emailLinks',
         // Offered once an email channel delivers sign-in links (it needs SMTP_URL).
-        env: 'this server: no email channel',
-        help: 'Codes and links go by email to every account. Off by default.',
+        env: '',
+        off: 'email',
+        help: 'settings.access:methods.emailLinksHelp',
         optIn: true,
     },
     {
         key: 'google',
-        label: 'Google in the Socio app',
-        env: 'the cloud connection',
-        help: 'For people who linked a Google account. Works while this server is connected to Socio’s cloud services.',
+        label: 'settings.access:methods.google',
+        // Offered while this server is connected to Socio's cloud services (CB-570).
+        env: '',
+        off: 'cloud',
+        help: 'settings.access:methods.googleHelp',
     },
     {
         key: 'apple',
-        label: 'Sign in with Apple in the Socio app',
-        env: 'the cloud connection',
-        help: 'For people who linked an Apple account. Works while this server is connected to Socio’s cloud services.',
+        label: 'settings.access:methods.apple',
+        env: '',
+        off: 'cloud',
+        help: 'settings.access:methods.appleHelp',
     },
-    { key: 'openSignUp', label: 'Open sign-up', env: 'AUTH_OPEN_SIGNUP' },
+    { key: 'openSignUp', label: 'settings.access:methods.openSignUp', env: 'AUTH_OPEN_SIGNUP' },
 ];
 
 /** The environment's entries of a list, with their labels. */
@@ -157,13 +166,14 @@ function ListEditor({
     help: string;
     onChange: (next: string[]) => void;
 }) {
+    const { t } = useTranslation(['settings.access']);
     const entries = ceilingOf(view, field);
     const kept = draft.lists[field];
     return (
         <fieldset className="grid gap-1">
             <legend className="font-medium">{title}</legend>
             <p className="text-muted-foreground">
-                {help} The environment ({env}) sets who can be here; untick to take someone off.
+                {help} {t('settings.access:lists.ceiling', { env })}
             </p>
             {entries.length ? (
                 <ul className="grid gap-1">
@@ -186,13 +196,14 @@ function ListEditor({
                     ))}
                 </ul>
             ) : (
-                <p className="text-muted-foreground">{env} lists nobody, so there is nothing to narrow.</p>
+                <p className="text-muted-foreground">{t('settings.access:lists.empty', { env })}</p>
             )}
         </fieldset>
     );
 }
 
 function ImpactSummary({ impact }: { impact: AccessPolicyImpact }) {
+    const { t } = useTranslation(['settings.access']);
     return (
         <div className="grid gap-1" data-slot="access-impact" aria-live="polite">
             {impact.changes.length ? (
@@ -202,15 +213,22 @@ function ImpactSummary({ impact }: { impact: AccessPolicyImpact }) {
                     ))}
                 </ul>
             ) : null}
-            {impact.sessionsEnded > 0 && <p>{impact.sessionsEnded} session(s) will end.</p>}
-            {impact.signsYouOut && <p className="font-medium">This signs you out: sign in again another way.</p>}
+            {impact.sessionsEnded > 0 && (
+                <p>{t('settings.access:impact.sessionsEnded', { count: impact.sessionsEnded })}</p>
+            )}
+            {impact.signsYouOut && <p className="font-medium">{t('settings.access:impact.signsYouOut')}</p>}
             {impact.withoutWayIn.length > 0 && (
                 <p>
-                    Left without a way to sign in: {impact.withoutWayIn.map((p) => `${p.name} (${p.email})`).join(', ')}
-                    .
+                    {t('settings.access:impact.withoutWayIn', {
+                        people: impact.withoutWayIn.map((p) =>
+                            t('settings.access:impact.person', { name: p.name, email: p.email }),
+                        ),
+                    })}
                 </p>
             )}
-            {impact.codeRunsStopped > 0 && <p>{impact.codeRunsStopped} queued or running code run(s) will stop.</p>}
+            {impact.codeRunsStopped > 0 && (
+                <p>{t('settings.access:impact.codeRunsStopped', { count: impact.codeRunsStopped })}</p>
+            )}
             {impact.refusal && (
                 <p className="text-destructive" role="alert">
                     {impact.refusal}
@@ -237,6 +255,7 @@ function ConfirmChange({
     onClose: () => void;
     onSaved: (saved: AccessPolicySaved) => void;
 }) {
+    const { t } = useTranslation(['settings.access']);
     const [challenge, setChallenge] = useState<StepUpChallenge>();
     const [password, setPassword] = useState('');
     const [busy, setBusy] = useState(false);
@@ -249,8 +268,8 @@ function ConfirmChange({
                     setChallenge(next);
                     setError(next.reason);
                 })
-                .catch((e) => setError(e instanceof Error ? e.message : 'Could not start.')),
-        [body],
+                .catch((e) => setError(e instanceof Error ? e.message : t('settings.access:errors.start'))),
+        [body, t],
     );
     useEffect(() => void open(), [open]);
     const save = async (proof: (id: string) => Promise<StepUpProof>) => {
@@ -266,7 +285,7 @@ function ConfirmChange({
             });
             onSaved(saved);
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Could not save.');
+            setError(e instanceof Error ? e.message : t('settings.access:errors.save'));
             // Each challenge works once: get a fresh one for another try.
             if (!(e instanceof ApiError && e.status === 409)) {
                 void open();
@@ -292,16 +311,14 @@ function ConfirmChange({
         <Dialog open onOpenChange={(next) => !next && onClose()}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Confirm the change</DialogTitle>
-                    <DialogDescription>
-                        Every change to sign-in needs you to confirm it is you. Every admin is told about it.
-                    </DialogDescription>
+                    <DialogTitle>{t('settings.access:confirm.title')}</DialogTitle>
+                    <DialogDescription>{t('settings.access:confirm.description')}</DialogDescription>
                 </DialogHeader>
                 <ImpactSummary impact={impact} />
                 {methods.includes('password') && (
                     <form className="grid gap-2" onSubmit={withPassword}>
                         <label className="grid gap-1">
-                            Your password
+                            {t('settings.access:confirm.password')}
                             <Input
                                 type="password"
                                 autoComplete="current-password"
@@ -312,7 +329,7 @@ function ConfirmChange({
                         </label>
                         <div>
                             <Button type="submit" disabled={busy || !password}>
-                                Confirm with password
+                                {t('settings.access:confirm.withPassword')}
                             </Button>
                         </div>
                     </form>
@@ -324,14 +341,14 @@ function ConfirmChange({
                             disabled={busy}
                             onClick={withPasskey}
                         >
-                            Confirm with a passkey
+                            {t('settings.access:confirm.withPasskey')}
                         </Button>
                     </div>
                 )}
                 {methods.includes('confirm') && (
                     <div>
                         <Button disabled={busy} onClick={() => void save(async (id) => ({ id, confirm: true }))}>
-                            Confirm (development sign-in)
+                            {t('settings.access:confirm.withConfirm')}
                         </Button>
                     </div>
                 )}
@@ -342,7 +359,7 @@ function ConfirmChange({
                 )}
                 <DialogFooter>
                     <Button variant="ghost" onClick={onClose}>
-                        Cancel
+                        {t('settings.access:confirm.cancel')}
                     </Button>
                 </DialogFooter>
             </DialogContent>
@@ -356,6 +373,8 @@ function ConfirmChange({
  * ceiling: nothing here can add a method, a person or a domain.
  */
 export function AccessPolicySection({ onSignedOut }: { onSignedOut?: () => void }) {
+    const { t } = useTranslation(['settings.access']);
+    const when = (at: number) => t('settings.access:when', { at: new Date(at) });
     const [view, setView] = useState<AccessPolicyView>();
     const [draft, setDraft] = useState<Draft>();
     const [impact, setImpact] = useState<AccessPolicyImpact>();
@@ -368,8 +387,8 @@ export function AccessPolicySection({ onSignedOut }: { onSignedOut?: () => void 
                     setDraft(draftOf(next));
                     setImpact(undefined);
                 })
-                .catch((e) => failed(e, 'Could not load the access policy.')),
-        [],
+                .catch((e) => failed(e, t('settings.access:errors.load'))),
+        [t],
     );
     useEffect(() => void load(), [load]);
     const policy = useMemo(() => (view && draft ? policyOf(view, draft) : undefined), [view, draft]);
@@ -392,7 +411,7 @@ export function AccessPolicySection({ onSignedOut }: { onSignedOut?: () => void 
                     if (!controller.signal.aborted) {
                         setImpact({
                             changes: [],
-                            refusal: e instanceof Error ? e.message : 'Could not check.',
+                            refusal: e instanceof Error ? e.message : t('settings.access:errors.check'),
                             sessionsEnded: 0,
                             withoutWayIn: [],
                             signsYouOut: false,
@@ -405,7 +424,7 @@ export function AccessPolicySection({ onSignedOut }: { onSignedOut?: () => void 
             clearTimeout(timer);
             controller.abort();
         };
-    }, [view, policy, dirty]);
+    }, [view, policy, dirty, t]);
     if (!view || !draft) {
         return null;
     }
@@ -416,32 +435,30 @@ export function AccessPolicySection({ onSignedOut }: { onSignedOut?: () => void 
         <>
             <SettingsCard>
                 <section className="grid gap-3" data-slot="access-policy">
-                    <h3 className="font-medium">Sign-in</h3>
-                    <p className="text-muted-foreground">
-                        The server&apos;s environment is the ceiling: here you can only turn a sign-in method off and
-                        take people or domains off its lists. Adding anything needs a stack update. Every change needs
-                        you to confirm it with your password or a passkey, ends the sessions that no longer qualify, and
-                        is shown to every admin.
-                    </p>
+                    <h3 className="font-medium">{t('settings.access:title')}</h3>
+                    <p className="text-muted-foreground">{t('settings.access:intro')}</p>
                     {view.unreadable && (
                         <p className="text-destructive" role="alert">
-                            The saved policy could not be read, so the environment applies. Save it again to fix it.
+                            {t('settings.access:unreadable')}
                         </p>
                     )}
                     <p className="text-muted-foreground">
                         {view.updatedAt ? (
-                            <>
-                                Version {view.version}, saved <LocalTime value={view.updatedAt} format={when} />.
-                            </>
+                            <Trans
+                                t={t}
+                                i18nKey="settings.access:version"
+                                values={{ version: view.version }}
+                                components={{ when: <LocalTime value={view.updatedAt} format={when} /> }}
+                            />
                         ) : (
-                            'Nothing narrowed yet: the environment applies.'
+                            t('settings.access:nothingNarrowed')
                         )}
                     </p>
                     {ceiling ? (
                         <>
                             <fieldset className="grid gap-1">
-                                <legend className="font-medium">Ways to sign in</legend>
-                                {FLAGS.map(({ key, label, env, help }) => (
+                                <legend className="font-medium">{t('settings.access:methods.title')}</legend>
+                                {FLAGS.map(({ key, label, env, off, help }) => (
                                     <label key={key} className="flex items-center gap-2">
                                         <input
                                             type="checkbox"
@@ -455,9 +472,13 @@ export function AccessPolicySection({ onSignedOut }: { onSignedOut?: () => void 
                                                 })
                                             }
                                         />
-                                        {label}
-                                        {!ceiling[key] && <Badge variant="secondary">off in {env}</Badge>}
-                                        {help && <span className="text-xs text-muted-foreground">{help}</span>}
+                                        {t(label)}
+                                        {!ceiling[key] && (
+                                            <Badge variant="secondary">
+                                                {t('settings.access:methods.offIn', { env, context: off })}
+                                            </Badge>
+                                        )}
+                                        {help && <span className="text-xs text-muted-foreground">{t(help)}</span>}
                                     </label>
                                 ))}
                             </fieldset>
@@ -465,84 +486,99 @@ export function AccessPolicySection({ onSignedOut }: { onSignedOut?: () => void 
                                 view={view}
                                 draft={draft}
                                 field="providers"
-                                title="Sign-in providers"
+                                title={t('settings.access:lists.providers')}
                                 env="AUTH_OAUTH_PROVIDERS"
-                                help="OAuth and OpenID Connect providers on the sign-in screen."
+                                help={t('settings.access:lists.providersHelp')}
                                 onChange={setList('providers')}
                             />
                             <ListEditor
                                 view={view}
                                 draft={draft}
                                 field="adminEmails"
-                                title="Admin emails"
+                                title={t('settings.access:lists.adminEmails')}
                                 env="AUTH_ADMIN_EMAILS"
-                                help="Verified emails that are always admins. Taking one off makes that person a member at their next request, unless their own role is admin."
+                                help={t('settings.access:lists.adminEmailsHelp')}
                                 onChange={setList('adminEmails')}
                             />
                             <ListEditor
                                 view={view}
                                 draft={draft}
                                 field="allowedEmails"
-                                title="Allowed emails"
+                                title={t('settings.access:lists.allowedEmails')}
                                 env="AUTH_ALLOWED_EMAILS"
-                                help="Who may create their own account through a provider."
+                                help={t('settings.access:lists.allowedEmailsHelp')}
                                 onChange={setList('allowedEmails')}
                             />
                             <ListEditor
                                 view={view}
                                 draft={draft}
                                 field="allowedDomains"
-                                title="Allowed domains"
+                                title={t('settings.access:lists.allowedDomains')}
                                 env="AUTH_ALLOWED_DOMAINS"
-                                help="Email domains whose people may create their own account through a provider."
+                                help={t('settings.access:lists.allowedDomainsHelp')}
                                 onChange={setList('allowedDomains')}
                             />
                         </>
                     ) : (
-                        <p className="text-muted-foreground">
-                            This server signs in with the local picker (mock auth), so there are no sign-in methods to
-                            narrow.
-                        </p>
+                        <p className="text-muted-foreground">{t('settings.access:mockAuth')}</p>
                     )}
                     <p className="text-muted-foreground" data-slot="code-access-moved">
-                        Who may run code is now a permission: admins have it, and others get it from a group under{' '}
-                        <Link to={`${settingsPath('people')}?tab=groups`} className="underline underline-offset-2">
-                            People → Groups
-                        </Link>
-                        .
+                        <Trans
+                            t={t}
+                            i18nKey="settings.access:codeAccess"
+                            components={{
+                                groupsLink: (
+                                    <Link
+                                        to={`${settingsPath('people')}?tab=groups`}
+                                        className="underline underline-offset-2"
+                                    />
+                                ),
+                            }}
+                        />
                     </p>
                     {dirty && impact && <ImpactSummary impact={impact} />}
                     <div className="flex flex-wrap gap-2">
                         <Button disabled={!dirty || !impact || !!impact.refusal} onClick={() => setConfirming(true)}>
-                            Review and confirm
+                            {t('settings.access:review')}
                         </Button>
                         <Button variant="ghost" disabled={!dirty} onClick={() => setDraft(draftOf(view))}>
-                            Undo changes
+                            {t('settings.access:undo')}
                         </Button>
                     </div>
                 </section>
             </SettingsCard>
             <SettingsCard>
                 <section className="grid gap-2">
-                    <h3 className="font-medium">History</h3>
+                    <h3 className="font-medium">{t('settings.access:history.title')}</h3>
                     {view.audit.length ? (
-                        <ul className="grid gap-2" aria-label="Access policy history">
+                        <ul className="grid gap-2" aria-label={t('settings.access:history.label')}>
                             {view.audit.map((entry) => (
                                 <li key={entry.id} className="grid gap-0.5">
                                     <span>
-                                        <LocalTime value={entry.at} format={when} /> · {entry.actorName}
-                                        {entry.stepUp ? ` · confirmed with ${entry.stepUp}` : ''}
+                                        <Trans
+                                            t={t}
+                                            i18nKey="settings.access:history.entry"
+                                            values={{ actor: entry.actorName }}
+                                            components={{ when: <LocalTime value={entry.at} format={when} /> }}
+                                        />
+                                        {entry.stepUp
+                                            ? ` · ${t('settings.access:history.confirmed', { method: entry.stepUp, context: entry.stepUp })}`
+                                            : ''}
                                     </span>
                                     <span className="text-muted-foreground break-words">
                                         {entry.detail}
-                                        {entry.sessionsEnded ? ` ${entry.sessionsEnded} session(s) ended.` : ''}
-                                        {entry.codeRunsStopped ? ` ${entry.codeRunsStopped} code run(s) stopped.` : ''}
+                                        {entry.sessionsEnded
+                                            ? ` ${t('settings.access:history.sessionsEnded', { count: entry.sessionsEnded })}`
+                                            : ''}
+                                        {entry.codeRunsStopped
+                                            ? ` ${t('settings.access:history.codeRunsStopped', { count: entry.codeRunsStopped })}`
+                                            : ''}
                                     </span>
                                 </li>
                             ))}
                         </ul>
                     ) : (
-                        <p className="text-muted-foreground">No changes yet.</p>
+                        <p className="text-muted-foreground">{t('settings.access:history.empty')}</p>
                     )}
                 </section>
             </SettingsCard>
@@ -554,7 +590,7 @@ export function AccessPolicySection({ onSignedOut }: { onSignedOut?: () => void 
                     onClose={() => setConfirming(false)}
                     onSaved={(saved) => {
                         setConfirming(false);
-                        toast.success('Access policy saved; every admin was told.');
+                        toast.success(t('settings.access:confirm.saved'));
                         if (saved.impact.signsYouOut) {
                             onSignedOut?.();
                         } else {

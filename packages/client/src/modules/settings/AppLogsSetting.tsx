@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 
+import { useTranslation } from '@socio/i18n/react';
 import {
     APP_LOG_ATTEMPTS_RANGE,
     APP_LOG_DAYS_RANGE,
@@ -9,6 +10,7 @@ import {
 } from '@socio/shared/apps/app-log-retention';
 
 import { SettingsCard } from './AccountSettings';
+import { onDemand } from './on-demand';
 
 import { Input } from '@/components/ui/input';
 
@@ -19,7 +21,7 @@ import { Input } from '@/components/ui/input';
  * more. Saved over `APPS_LOG_DAYS` and `APPS_LOG_ATTEMPTS` when a field is
  * left. Members read it; only admins change it.
  */
-export function AppLogsSetting({
+function AppLogsSettingBody({
     settings,
     readOnly,
     mutate,
@@ -28,6 +30,7 @@ export function AppLogsSetting({
     readOnly: boolean;
     mutate: (path: string, method: string, body?: unknown) => Promise<boolean>;
 }) {
+    const { t } = useTranslation(['settings.workspace-apps', 'settings.workspace']);
     const saved = settings ?? DEFAULT_APP_LOG_RETENTION;
     const [value, setValue] = useState({
         days: String(saved.days),
@@ -37,7 +40,7 @@ export function AppLogsSetting({
         const range = key === 'days' ? APP_LOG_DAYS_RANGE : APP_LOG_ATTEMPTS_RANGE;
         const number = Number(value[key]);
         if (!Number.isInteger(number) || number < range.min || number > range.max) {
-            toast.error(`Use a whole number from ${range.min} to ${range.max}.`);
+            toast.error(t('settings.workspace-apps:logs.invalid', { min: range.min, max: range.max }));
             setValue({ ...value, [key]: String(saved[key]) });
             return;
         }
@@ -45,7 +48,7 @@ export function AppLogsSetting({
             return;
         }
         if (await mutate('/settings', 'PATCH', { appLogs: { [key]: number } })) {
-            toast.success('Mini app logs saved');
+            toast.success(t('settings.workspace-apps:logs.saved'));
         } else {
             setValue({ ...value, [key]: String(saved[key]) });
         }
@@ -54,17 +57,21 @@ export function AppLogsSetting({
         <SettingsCard>
             <section className="grid gap-4" data-slot="app-logs-settings">
                 <div className="grid gap-1">
-                    <h3 className="font-medium">Mini app logs</h3>
-                    <p className="text-muted-foreground">
-                        Each build and start of a mini app keeps its log. An attempt is kept for the days below or while
-                        it is one of the app’s last attempts, whichever keeps more; older ones are removed in the
-                        background, and the one running now never is. Only the app’s owner and admins can read them.
-                    </p>
+                    <h3 className="font-medium">{t('settings.workspace-apps:logs.title')}</h3>
+                    <p className="text-muted-foreground">{t('settings.workspace-apps:logs.intro')}</p>
                 </div>
                 {(
                     [
-                        ['days', 'Keep for', 'days'],
-                        ['attempts', 'Or keep the last', 'attempts per app'],
+                        [
+                            'days',
+                            t('settings.workspace-apps:logs.days.label'),
+                            t('settings.workspace-apps:logs.days.unit'),
+                        ],
+                        [
+                            'attempts',
+                            t('settings.workspace-apps:logs.attempts.label'),
+                            t('settings.workspace-apps:logs.attempts.unit'),
+                        ],
                     ] as const
                 ).map(([key, label, unit]) => (
                     <div className="grid gap-2" key={key}>
@@ -89,8 +96,11 @@ export function AppLogsSetting({
                         </div>
                     </div>
                 ))}
-                {readOnly && <p className="text-muted-foreground">Only an admin can change these settings.</p>}
+                {readOnly && <p className="text-muted-foreground">{t('settings.workspace:readOnly.settings')}</p>}
             </section>
         </SettingsCard>
     );
 }
+
+/** Below the fold: its words load when it mounts (settings.workspace-apps, in no route's entry). */
+export const AppLogsSetting = onDemand(['settings.workspace-apps'], AppLogsSettingBody);

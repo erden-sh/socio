@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 
+import { useTranslation } from '@socio/i18n/react';
 import type { McpConnectionsState, McpDiscoveryView } from '@socio/shared/mcp-connections';
 
 import { api } from '../../lib/api';
@@ -12,7 +13,7 @@ type Connection = McpConnectionsState['connections'][number];
 const field = 'flex min-w-0 flex-col gap-1 text-sm';
 // The shared native select, full width under its label (CB-258).
 const select = `${nativeSelect} w-full`;
-const message = (error: unknown) => (error instanceof Error ? error.message : 'The connection operation failed.');
+const message = (error: unknown, fallback: string) => (error instanceof Error ? error.message : fallback);
 function ConnectionCard({
     row,
     socios,
@@ -22,6 +23,7 @@ function ConnectionCard({
     socios: McpConnectionsState['socios'];
     reload: () => Promise<void>;
 }) {
+    const { t } = useTranslation(['settings.mcp']);
     const [busy, setBusy] = useState(false),
         [error, setError] = useState(''),
         [discovery, setDiscovery] = useState<McpDiscoveryView>(),
@@ -40,7 +42,7 @@ function ConnectionCard({
         try {
             await work();
         } catch (e) {
-            setError(message(e));
+            setError(message(e, t('settings.mcp:failed')));
         } finally {
             setBusy(false);
         }
@@ -50,7 +52,7 @@ function ConnectionCard({
             <div className="min-w-0">
                 <h4 className="break-words font-medium">{row.name}</h4>
                 <p className="break-all text-sm text-muted-foreground">{row.url}</p>
-                <p className="text-sm">Status: {row.state}</p>
+                <p className="text-sm">{t('settings.mcp:status', { context: row.state, state: row.state })}</p>
             </div>
             <div className="flex flex-wrap gap-2">
                 {row.authentication === 'oauth' && (
@@ -68,7 +70,7 @@ function ConnectionCard({
                             })
                         }
                     >
-                        Review authorization
+                        {t('settings.mcp:actions.review')}
                     </Button>
                 )}
                 <Button
@@ -82,7 +84,7 @@ function ConnectionCard({
                         })
                     }
                 >
-                    Refresh tool catalog
+                    {t('settings.mcp:actions.refresh')}
                 </Button>
                 <Button
                     variant="outline"
@@ -96,7 +98,7 @@ function ConnectionCard({
                         })
                     }
                 >
-                    Disconnect
+                    {t('settings.mcp:actions.disconnect')}
                 </Button>
                 <Button
                     variant="outline"
@@ -108,19 +110,20 @@ function ConnectionCard({
                         })
                     }
                 >
-                    Remove connection
+                    {t('settings.mcp:actions.remove')}
                 </Button>
             </div>
             {discovery && (
-                <div className="min-w-0 space-y-3 rounded-md border p-3" aria-label="Authorization review">
-                    <p className="text-sm">
-                        You will authorize this external provider. Review its identity and select the scopes you want to
-                        request.
+                <div className="min-w-0 space-y-3 rounded-md border p-3" aria-label={t('settings.mcp:authorize.label')}>
+                    <p className="text-sm">{t('settings.mcp:authorize.intro')}</p>
+                    <p className="break-all text-sm">
+                        {t('settings.mcp:authorize.issuer', { issuer: discovery.issuer })}
                     </p>
-                    <p className="break-all text-sm">Authorization issuer: {discovery.issuer}</p>
-                    <p className="break-all text-sm">Protected resource: {discovery.resource}</p>
+                    <p className="break-all text-sm">
+                        {t('settings.mcp:authorize.resource', { resource: discovery.resource })}
+                    </p>
                     <fieldset className="min-w-0 space-y-2">
-                        <legend className="text-sm font-medium">Requested OAuth scopes</legend>
+                        <legend className="text-sm font-medium">{t('settings.mcp:authorize.scopes')}</legend>
                         {discovery.scopes.length ? (
                             discovery.scopes.map((scope) => (
                                 <label key={scope} className="flex min-w-0 items-start gap-2 text-sm">
@@ -138,24 +141,20 @@ function ConnectionCard({
                                 </label>
                             ))
                         ) : (
-                            <p className="text-sm">The provider publishes no optional scopes.</p>
+                            <p className="text-sm">{t('settings.mcp:authorize.noScopes')}</p>
                         )}
                     </fieldset>
                     {discovery.requiredScopes.length > 0 && (
                         <p className="break-words text-sm">
-                            The server requested: {discovery.requiredScopes.join(', ')}. A scope selection does not
-                            guarantee provider access.
+                            {t('settings.mcp:authorize.required', { scopes: discovery.requiredScopes.join(', ') })}
                         </p>
                     )}
                     <details>
-                        <summary className="cursor-pointer text-sm">Use a pre-registered OAuth client</summary>
+                        <summary className="cursor-pointer text-sm">{t('settings.mcp:authorize.client')}</summary>
                         <div className="mt-2 space-y-2">
-                            <p className="text-sm text-muted-foreground">
-                                Optional when this provider requires a client registered for Socio’s callback. The
-                                client must belong to the issuer above.
-                            </p>
+                            <p className="text-sm text-muted-foreground">{t('settings.mcp:authorize.clientNote')}</p>
                             <label className={field}>
-                                Client ID
+                                {t('settings.mcp:authorize.clientId')}
                                 <Input
                                     value={clientId}
                                     maxLength={500}
@@ -165,7 +164,7 @@ function ConnectionCard({
                                 />
                             </label>
                             <label className={field}>
-                                Client secret (if required)
+                                {t('settings.mcp:authorize.clientSecret')}
                                 <Input
                                     type="password"
                                     value={clientSecret}
@@ -178,7 +177,7 @@ function ConnectionCard({
                         </div>
                     </details>
                     {!discovery.registration.clientMetadata && !discovery.registration.dynamic && !clientId && (
-                        <p className="text-sm">This provider requires a pre-registered client.</p>
+                        <p className="text-sm">{t('settings.mcp:authorize.clientRequired')}</p>
                     )}
                     <Button
                         disabled={
@@ -204,25 +203,21 @@ function ConnectionCard({
                                 setClientSecret('');
                                 const target = new URL(result.authorizationUrl);
                                 if (target.protocol !== 'https:' || target.username || target.password) {
-                                    throw new Error('The provider returned an invalid authorization URL.');
+                                    throw new Error(t('settings.mcp:authorize.invalidUrl'));
                                 }
                                 window.location.assign(target.href);
                             })
                         }
                     >
-                        Continue to provider
+                        {t('settings.mcp:authorize.continue')}
                     </Button>
                 </div>
             )}
             {row.catalogRevision && (
                 <div className="min-w-0 space-y-3">
-                    <p className="text-sm">
-                        Review the external tool definitions, then grant specific tools to a socio. The descriptions and
-                        permission hints come from the provider. Every call still needs your approval with its complete
-                        arguments. Refreshing the catalog clears existing grants so you can review them again.
-                    </p>
+                    <p className="text-sm">{t('settings.mcp:tools.intro')}</p>
                     <label className={field}>
-                        Socio
+                        {t('settings.mcp:tools.socio')}
                         <select
                             data-slot="native-select"
                             className={select}
@@ -238,7 +233,7 @@ function ConnectionCard({
                         </select>
                     </label>
                     <fieldset className="min-w-0 space-y-2">
-                        <legend className="text-sm font-medium">Allowed external tools</legend>
+                        <legend className="text-sm font-medium">{t('settings.mcp:tools.allowed')}</legend>
                         {row.tools.length ? (
                             row.tools.map((tool) => (
                                 <div key={tool.name} className="min-w-0 rounded-md border p-2">
@@ -259,11 +254,13 @@ function ConnectionCard({
                                     </label>
                                     <p className="mt-1 whitespace-pre-wrap break-words text-sm">{tool.description}</p>
                                     {!tool.supported && (
-                                        <p className="text-sm text-destructive">Unavailable: {tool.refusal}</p>
+                                        <p className="text-sm text-destructive">
+                                            {t('settings.mcp:tools.unavailable', { reason: tool.refusal ?? '' })}
+                                        </p>
                                     )}
                                     <details className="min-w-0">
                                         <summary className="cursor-pointer text-sm">
-                                            Full schema and provider hints
+                                            {t('settings.mcp:tools.schema')}
                                         </summary>
                                         <pre className="mt-2 max-h-72 max-w-full overflow-auto whitespace-pre-wrap break-all rounded bg-muted p-2 text-xs">
                                             {JSON.stringify(
@@ -280,7 +277,7 @@ function ConnectionCard({
                                 </div>
                             ))
                         ) : (
-                            <p className="text-sm">This catalog contains no tools.</p>
+                            <p className="text-sm">{t('settings.mcp:tools.empty')}</p>
                         )}
                     </fieldset>
                     <Button
@@ -297,7 +294,7 @@ function ConnectionCard({
                             })
                         }
                     >
-                        Save tool access for this socio
+                        {t('settings.mcp:tools.save')}
                     </Button>
                 </div>
             )}
@@ -310,6 +307,8 @@ function ConnectionCard({
     );
 }
 export function McpConnectionsSection() {
+    const { t } = useTranslation(['settings.mcp']);
+    const failed = t('settings.mcp:failed');
     const [state, setState] = useState<McpConnectionsState>(),
         [error, setError] = useState(''),
         [busy, setBusy] = useState(false),
@@ -329,13 +328,13 @@ export function McpConnectionsSection() {
             })
             .catch((e) => {
                 if (live) {
-                    setError(message(e));
+                    setError(message(e, failed));
                 }
             });
         return () => {
             live = false;
         };
-    }, []);
+    }, [failed]);
     const create = async (event: FormEvent) => {
         event.preventDefault();
         setBusy(true);
@@ -346,26 +345,19 @@ export function McpConnectionsSection() {
             setUrl('');
             await reload();
         } catch (e) {
-            setError(message(e));
+            setError(message(e, failed));
         } finally {
             setBusy(false);
         }
     };
     return (
-        <section className="min-w-0 space-y-4" aria-label="External MCP connections">
-            <h3 className="font-medium">External MCP connections</h3>
-            <p className="text-sm text-muted-foreground">
-                Connect a public HTTPS MCP server for your account, review its tools, and choose which socios may
-                request them. Other people do not inherit your connection. Disconnecting here clears Socio’s credentials
-                and access; revoke the provider’s own grant there if needed.
-            </p>
-            <p className="text-sm text-muted-foreground">
-                Tools are available in your web chats. External calls need your approval every time and cannot be undone
-                here. Interrupted calls are not automatically repeated.
-            </p>
+        <section className="min-w-0 space-y-4" aria-label={t('settings.mcp:title')}>
+            <h3 className="font-medium">{t('settings.mcp:title')}</h3>
+            <p className="text-sm text-muted-foreground">{t('settings.mcp:intro')}</p>
+            <p className="text-sm text-muted-foreground">{t('settings.mcp:approval')}</p>
             <form className="min-w-0 space-y-3" onSubmit={(event) => void create(event)}>
                 <label className={field}>
-                    Connection name
+                    {t('settings.mcp:form.name')}
                     <Input
                         required
                         maxLength={80}
@@ -375,11 +367,12 @@ export function McpConnectionsSection() {
                     />
                 </label>
                 <label className={field}>
-                    MCP server URL
+                    {t('settings.mcp:form.url')}
                     <Input
                         required
                         type="url"
                         maxLength={2048}
+                        // oxlint-disable-next-line socio/no-literal-text -- an example URL, not copy
                         placeholder="https://provider.example/mcp"
                         value={url}
                         disabled={busy}
@@ -387,7 +380,7 @@ export function McpConnectionsSection() {
                     />
                 </label>
                 <label className={field}>
-                    Authentication
+                    {t('settings.mcp:form.authentication')}
                     <select
                         data-slot="native-select"
                         className={select}
@@ -395,12 +388,12 @@ export function McpConnectionsSection() {
                         disabled={busy}
                         onChange={(e) => setAuthentication(e.target.value as 'oauth' | 'none')}
                     >
-                        <option value="oauth">OAuth</option>
-                        <option value="none">No authentication (public server)</option>
+                        <option value="oauth">{t('settings.mcp:form.oauth')}</option>
+                        <option value="none">{t('settings.mcp:form.none')}</option>
                     </select>
                 </label>
                 <Button type="submit" disabled={busy || !state || state.connections.length >= 20}>
-                    Add connection
+                    {t('settings.mcp:form.add')}
                 </Button>
             </form>
             {error && (
@@ -410,7 +403,7 @@ export function McpConnectionsSection() {
             )}
             {!state && !error && (
                 <p role="status" className="text-sm">
-                    Loading your connections…
+                    {t('settings.mcp:loading')}
                 </p>
             )}
             {state?.connections.map((row) => (

@@ -133,6 +133,10 @@ it('narrows only what the environment allows, previews it, and confirms with the
         ),
     );
     await until(() => !!host!.querySelector('[data-slot=access-policy]'), 'the page');
+    // Code access moved to People → Groups: the link holds its words.
+    const groups = host!.querySelector<HTMLAnchorElement>('[data-slot="code-access-moved"] a')!;
+    expect(groups.textContent).toBe('People → Groups');
+    expect(groups.getAttribute('href')).toBe('/settings/people?tab=groups');
     // What the environment leaves off can't be turned on here.
     expect(checkbox('Sign-in links by Telegram').disabled).toBe(true);
     expect(checkbox('Open sign-up').disabled).toBe(true);
@@ -141,7 +145,7 @@ it('narrows only what the environment allows, previews it, and confirms with the
     expect(button('Review and confirm').disabled).toBe(true);
     act(() => checkbox('Passkeys').click());
     await until(() => !!host!.querySelector('[data-slot=access-impact]'), 'the preview');
-    expect(host!.textContent).toContain('1 session(s) will end.');
+    expect(host!.textContent).toContain('1 session will end.');
     expect(calls.find((call) => call.path === '/api/access-policy/preview')?.body).toEqual({
         policy: { passkey: false },
         version: 3,

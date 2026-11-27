@@ -1,0 +1,9 @@
+{
+    "intro": "Intro of Settings › Connected agents: external AI agents (Claude Code is a product name; don't translate it) that act in Socio for the person. {{command}} is a terminal command (code); keep the tags around it.",
+    "listLabel": "Accessible name of the list of connected agents.",
+    "disconnect": "Button: ends an external agent's access at once.",
+    "used": "Line under a connected agent. {{connected}} and {{used}} are dates and times, or \"never\".",
+    "never": "Stands in for a date in \"last used …\" when the agent never acted.",
+    "confirmTitle": "Title of the confirmation before disconnecting. {{agent}} is the agent's label.",
+    "disconnected": "Toast after disconnecting. {{agent}} is the agent's label."
+}

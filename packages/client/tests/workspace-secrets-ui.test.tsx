@@ -191,7 +191,6 @@ function type(input: HTMLInputElement, value: string) {
 
 it('is an admins’ Settings page', () => {
     expect(SETTINGS_GROUPS.flatMap((group) => group.entries).find((entry) => entry.id === 'secrets')).toMatchObject({
-        label: 'Secrets',
         role: 'admin',
         path: '/settings/secrets',
     });

@@ -1,0 +1,63 @@
+{
+    "title": "Settings",
+    "groups": {
+        "workspace": {
+            "title": "Workspace",
+            "description": "Your workspace, your rules: what socios may do, who signs in, and how this server is set up."
+        },
+        "account": {
+            "title": "Account",
+            "description": "The model your chats use, how socios reach you, your archived chats, and how you sign in to $t(common:product)."
+        }
+    },
+    "sections": {
+        "workspace": "General",
+        "people": "People",
+        "access": "Access",
+        "secrets": "Secrets",
+        "data-api": "Data API",
+        "chat-skills": "Chat skills",
+        "deleted-spaces": "Deleted Spaces",
+        "features": "Optional features",
+        "early-access": "Early access",
+        "features-dev": "In development",
+        "coding": "Coding",
+        "operator": "Platform",
+        "account": "Profile",
+        "notifications": "Notifications",
+        "inference": "Inference",
+        "archived-chats": "Archived chats",
+        "connected-agents": "Connected agents",
+        "telegram": "Telegram",
+        "socio-access": "Socio access",
+        "performance": "Performance"
+    },
+    "version": "$t(common:product) v{{version}}",
+    "versionCommit": "({{commit}})",
+    "releaseNotes": "Release notes",
+    "needsSignIn": "This needs real accounts (Better Auth); this server signs in with the local picker.",
+    "save": {
+        "saving": "Saving…",
+        "saved": "Saved",
+        "failed": "Could not save. Review the workspace error and retry.",
+        "undo": "Undo",
+        "undone": "Change undone"
+    },
+    "paused": {
+        "title": "Socios",
+        "paused": "All socios are paused",
+        "active": "All socios are active",
+        "resume": "Resume",
+        "pause": "Pause",
+        "waiting": "Scheduled tasks wait until they resume.",
+        "scheduled_one": "{{count}} scheduled task",
+        "scheduled_other": "{{count}} scheduled tasks"
+    },
+    "crumbs": {
+        "person": "Person"
+    },
+    "providers": {
+        "google-native": "Google (app)",
+        "apple-native": "Apple (app)"
+    }
+}

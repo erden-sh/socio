@@ -1,12 +1,14 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { toast } from 'sonner';
 
+import { useTranslation } from '@socio/i18n/react';
 import type { Account, PasswordLink } from '@socio/shared/auth';
-import { roleLabel } from '@socio/shared/roles';
 import type { Role, User } from '@socio/shared/types';
 
 import { nativeSelect } from '../../../components/form-fields';
 import { api } from '../../../lib/api';
+
+import { usePeopleFormat } from './people-format';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -24,21 +26,32 @@ export type ShownLink = PasswordLink & { email: string };
 
 /** The link to send privately: one use, until it expires. */
 export function PasswordLinkPanel({ link }: { link: ShownLink }) {
+    const { t } = useTranslation(['settings.people']);
     return (
         <div className="grid gap-1 rounded-md border border-dashed p-2 text-sm" data-slot="password-link">
             <span>
-                Password link for {link.email} (one use, until {new Date(link.expiresAt).toLocaleString()})
-                {link.emailed ? ', also emailed' : ''}. Send it to them privately:
+                {t('settings.people:passwordLink.for', {
+                    context: link.emailed ? 'emailed' : undefined,
+                    email: link.email,
+                    until: new Date(link.expiresAt),
+                })}
             </span>
             <span className="flex gap-2">
-                <Input aria-label="Password link" readOnly value={link.url} onFocus={(e) => e.target.select()} />
+                <Input
+                    aria-label={t('settings.people:passwordLink.field')}
+                    readOnly
+                    value={link.url}
+                    onFocus={(e) => e.target.select()}
+                />
                 <Button
                     variant="outline"
                     onClick={() =>
-                        void navigator.clipboard?.writeText(link.url).then(() => toast.success('Link copied'))
+                        void navigator.clipboard
+                            ?.writeText(link.url)
+                            .then(() => toast.success(t('settings.people:passwordLink.copied')))
                     }
                 >
-                    Copy
+                    {t('settings.people:passwordLink.copy')}
                 </Button>
             </span>
         </div>
@@ -47,16 +60,17 @@ export function PasswordLinkPanel({ link }: { link: ShownLink }) {
 
 /** A password link made from a row (Password link, the expired-invite callout's resend). */
 export function PasswordLinkDialog({ link, onClose }: { link: ShownLink; onClose: () => void }) {
+    const { t } = useTranslation(['settings.people']);
     return (
         <Dialog open onOpenChange={(open) => !open && onClose()}>
             <DialogContent data-slot="password-link-dialog">
                 <DialogHeader>
-                    <DialogTitle>Password link</DialogTitle>
-                    <DialogDescription>It sets or resets their password. A newer link replaces it.</DialogDescription>
+                    <DialogTitle>{t('settings.people:passwordLink.title')}</DialogTitle>
+                    <DialogDescription>{t('settings.people:passwordLink.description')}</DialogDescription>
                 </DialogHeader>
                 <PasswordLinkPanel link={link} />
                 <DialogFooter>
-                    <Button onClick={onClose}>Done</Button>
+                    <Button onClick={onClose}>{t('settings.people:passwordLink.done')}</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -78,6 +92,8 @@ export function InviteDialog({
     onClose: () => void;
     onAdded: () => void;
 }) {
+    const { t } = useTranslation(['settings.people']);
+    const { roleLabel } = usePeopleFormat();
     const [unlinked, setUnlinked] = useState<User[]>([]);
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
@@ -105,7 +121,7 @@ export function InviteDialog({
             if (created.link) {
                 setLink({ ...created.link, email });
             } else {
-                toast.success(`${name} added`);
+                toast.success(t('settings.people:invite.added', { name }));
             }
             setUnlinked((list) => list.filter((user) => user.id !== userId));
             setName('');
@@ -113,7 +129,7 @@ export function InviteDialog({
             setUserId('');
             onAdded();
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Could not add the account.');
+            toast.error(error instanceof Error ? error.message : t('settings.people:invite.failed'));
         } finally {
             setBusy(false);
         }
@@ -122,16 +138,18 @@ export function InviteDialog({
         <Dialog open onOpenChange={(open) => !open && onClose()}>
             <DialogContent data-slot="invite-people">
                 <DialogHeader>
-                    <DialogTitle>Invite people</DialogTitle>
-                    <DialogDescription>
-                        Add a person with a role. You get a password link to send them; they set a password and sign in.
-                    </DialogDescription>
+                    <DialogTitle>{t('settings.people:invite.title')}</DialogTitle>
+                    <DialogDescription>{t('settings.people:invite.description')}</DialogDescription>
                 </DialogHeader>
                 {link && <PasswordLinkPanel link={link} />}
-                <form className="grid gap-2 sm:grid-cols-2" onSubmit={submit} aria-label="Add a person">
+                <form
+                    className="grid gap-2 sm:grid-cols-2"
+                    onSubmit={submit}
+                    aria-label={t('settings.people:invite.form')}
+                >
                     <Input
-                        aria-label="New person's name"
-                        placeholder="Name"
+                        aria-label={t('settings.people:invite.name')}
+                        placeholder={t('settings.people:invite.namePlaceholder')}
                         required
                         maxLength={80}
                         value={name}
@@ -139,15 +157,15 @@ export function InviteDialog({
                     />
                     <Input
                         type="email"
-                        aria-label="New person's email"
-                        placeholder="Email"
+                        aria-label={t('settings.people:invite.email')}
+                        placeholder={t('settings.people:invite.emailPlaceholder')}
                         required
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                     />
                     <select
                         data-slot="native-select"
-                        aria-label="New person's role"
+                        aria-label={t('settings.people:invite.role')}
                         className={nativeSelect}
                         value={role}
                         onChange={(e) => setRole(e.target.value as Role)}
@@ -160,24 +178,24 @@ export function InviteDialog({
                     </select>
                     <select
                         data-slot="native-select"
-                        aria-label="Existing user to link"
+                        aria-label={t('settings.people:invite.link')}
                         className={nativeSelect}
                         value={userId}
                         onChange={(e) => setUserId(e.target.value)}
                     >
-                        <option value="">New user</option>
+                        <option value="">{t('settings.people:invite.newUser')}</option>
                         {unlinked.map((user) => (
                             <option key={user.id} value={user.id}>
-                                Existing: {user.name} ({user.id})
+                                {t('settings.people:invite.existing', { name: user.name, id: user.id })}
                             </option>
                         ))}
                     </select>
                     <DialogFooter className="sm:col-span-2">
                         <Button type="button" variant="outline" onClick={onClose}>
-                            {link ? 'Done' : 'Cancel'}
+                            {link ? t('settings.people:invite.done') : t('settings.people:invite.cancel')}
                         </Button>
                         <Button type="submit" disabled={busy}>
-                            Add and make a password link
+                            {t('settings.people:invite.submit')}
                         </Button>
                     </DialogFooter>
                 </form>

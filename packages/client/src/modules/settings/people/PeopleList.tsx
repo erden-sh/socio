@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { Link } from 'react-router';
 import { toast } from 'sonner';
 
+import { useTranslation } from '@socio/i18n/react';
 import type { PasswordLink, RosterPerson, SentSignInLink } from '@socio/shared/auth';
-import { lowerText } from '@socio/shared/locale';
-import { roleLabel, ROLES } from '@socio/shared/roles';
+import { ROLES } from '@socio/shared/roles';
 import type { Role } from '@socio/shared/types';
 
 import { DataGrid, GridFilter, GridSearch, GridToolbar, RowActionsMenu } from '../../../components/data-grid/DataGrid';
@@ -17,24 +17,18 @@ import { PasswordLinkDialog, type ShownLink } from './InviteDialog';
 import {
     ACTIVE_NOW_MS,
     byStatusThenName,
-    demotionEnds,
     firstName,
     initials,
     isDemotion,
-    lastActive,
     matches,
-    OWNER_LOCK_TITLES,
     ownerLock,
+    PERSON_STATES,
     personPath,
-    plural,
-    reachSummary,
-    signInChips,
-    STATE_LABELS,
     stateOf,
     type OwnerLock,
     type PeopleFilter,
     type PersonState,
-    signInLinkWords,
+    usePeopleFormat,
 } from './people-format';
 
 import {
@@ -65,46 +59,51 @@ const STATE_BADGE: Record<PersonState, string> = {
 
 /** The workspace owner's badge (CB-390), beside their name. */
 export function OwnerBadge({ person }: { person: { owner?: boolean } }) {
+    const { t } = useTranslation(['settings.people']);
     if (!person.owner) {
         return null;
     }
     return (
-        <Badge variant="outline" data-slot="owner-badge" title="The workspace owner: other admins can't remove them">
-            Owner
+        <Badge variant="outline" data-slot="owner-badge" title={t('settings.people:owner.title')}>
+            {t('settings.people:owner.badge')}
         </Badge>
     );
 }
 
 export function StateBadge({ person }: { person: RosterPerson }) {
+    const { stateLabel } = usePeopleFormat();
     const state = stateOf(person);
     return (
         <Badge data-state={state} className={STATE_BADGE[state]}>
-            {STATE_LABELS[state]}
+            {stateLabel(state)}
         </Badge>
     );
 }
 
 function LastActive({ person }: { person: RosterPerson }) {
+    const { t } = useTranslation(['settings.people']);
+    const { lastActive, exactTime, devices } = usePeopleFormat();
     if (!person.lastActiveAt) {
-        return <span className="text-muted-foreground">Never</span>;
+        return <span className="text-muted-foreground">{t('settings.people:lastActive.never')}</span>;
     }
     const at = Date.parse(person.lastActiveAt);
     const now = Date.now() - at < ACTIVE_NOW_MS && person.status === 'active';
     return (
-        <span title={new Date(at).toLocaleString()} className="inline-flex flex-wrap items-center gap-x-1">
+        <span title={exactTime(at)} className="inline-flex flex-wrap items-center gap-x-1">
             <span
                 aria-hidden
                 className={cn('size-2 rounded-full', now ? 'bg-emerald-500' : 'bg-muted-foreground/40')}
             />
             {lastActive(at)}
             {person.status === 'active' && person.sessions > 0 && (
-                <span className="basis-full text-xs text-muted-foreground">{plural(person.sessions, 'device')}</span>
+                <span className="basis-full text-xs text-muted-foreground">{devices(person.sessions)}</span>
             )}
         </span>
     );
 }
 
 function SignInMethods({ person }: { person: RosterPerson }) {
+    const { signInChips } = usePeopleFormat();
     const chips = signInChips(person);
     if (typeof chips === 'string') {
         return <span className="text-muted-foreground">{chips}</span>;
@@ -164,32 +163,37 @@ interface RowActions {
 }
 
 function RowMenu({ person, lock, actions }: { person: RosterPerson; lock?: OwnerLock; actions: RowActions }) {
+    const { t } = useTranslation(['settings.people']);
+    const { ownerLockTitle, signInLinkWords } = usePeopleFormat();
     const off = person.status === 'deactivated';
     // The owner's account (CB-390): only the owner changes it, and the owner
     // can't deactivate themselves.
     const locked = lock === 'others';
+    const signInLink = signInLinkWords(person.signInLinkVia);
     return (
-        <RowActionsMenu name={person.name} slot="person-actions" title={lock ? OWNER_LOCK_TITLES[lock] : undefined}>
+        <RowActionsMenu name={person.name} slot="person-actions" title={lock ? ownerLockTitle(lock) : undefined}>
             <DropdownMenuItem asChild>
-                <Link to={personPath(person.id)}>Open</Link>
+                <Link to={personPath(person.id)}>{t('settings.people:actions.open')}</Link>
             </DropdownMenuItem>
             {off ? (
                 <DropdownMenuItem disabled={locked} onSelect={() => actions.reactivate(person)}>
-                    Reactivate…
+                    {t('settings.people:actions.reactivate')}
                 </DropdownMenuItem>
             ) : (
                 <>
                     <DropdownMenuItem disabled={locked} onSelect={() => actions.passwordLink(person)}>
-                        Password link
+                        {t('settings.people:actions.passwordLink')}
                     </DropdownMenuItem>
-                    {signInLinkWords(person.signInLinkVia) && (
+                    {signInLink && (
                         <DropdownMenuItem onSelect={() => actions.signInLink(person)}>
-                            {signInLinkWords(person.signInLinkVia)?.action}
+                            {signInLink.action}
                         </DropdownMenuItem>
                     )}
-                    <DropdownMenuItem onSelect={() => actions.releases(person)}>Releases seen</DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => actions.releases(person)}>
+                        {t('settings.people:releases.action')}
+                    </DropdownMenuItem>
                     <DropdownMenuItem disabled={locked} onSelect={() => actions.signOut(person)}>
-                        Sign out everywhere
+                        {t('settings.people:actions.signOutEverywhere')}
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
@@ -197,7 +201,7 @@ function RowMenu({ person, lock, actions }: { person: RosterPerson; lock?: Owner
                         disabled={!!lock}
                         onSelect={() => actions.deactivate(person)}
                     >
-                        Deactivate…
+                        {t('settings.people:actions.deactivate')}
                     </DropdownMenuItem>
                 </>
             )}
@@ -216,21 +220,23 @@ export function RolePicker({
     lock?: OwnerLock;
     onPick: (role: Role) => void;
 }) {
+    const { t } = useTranslation(['settings.people']);
+    const { ownerLockTitle, roleLabel } = usePeopleFormat();
     const off = person.status === 'deactivated';
     return (
         <select
             data-slot="native-select"
-            aria-label={`Role of ${person.name}`}
+            aria-label={t('settings.people:role.label', { name: person.name })}
             className={cn(nativeSelect, 'h-8 w-auto')}
             value={person.role}
             disabled={!!lock || off}
             title={
                 lock
-                    ? OWNER_LOCK_TITLES[lock]
+                    ? ownerLockTitle(lock)
                     : off
-                      ? 'Reactivate them to change their role'
+                      ? t('settings.people:role.reactivateFirst')
                       : person.adminByRule
-                        ? 'Admin by AUTH_ADMIN_EMAILS'
+                        ? t('settings.people:role.byRule')
                         : undefined
             }
             onChange={(e) => onPick(e.target.value as Role)}
@@ -246,11 +252,12 @@ export function RolePicker({
 
 /** "Releases Ben Admin has seen": the ⋯ menu's Releases seen. */
 export function ReleasesDialog({ person, onClose }: { person: RosterPerson; onClose: () => void }) {
+    const { t } = useTranslation(['settings.people']);
     return (
         <Dialog open onOpenChange={(open) => !open && onClose()}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Releases {person.name} has seen</DialogTitle>
+                    <DialogTitle>{t('settings.people:releases.title', { name: person.name })}</DialogTitle>
                 </DialogHeader>
                 <PersonReleases userId={person.userId} name={person.name} />
             </DialogContent>
@@ -270,21 +277,22 @@ export function DemoteDialog({
     onClose: () => void;
     onConfirm: () => void;
 }) {
+    const { t } = useTranslation(['settings.people']);
     return (
         <AlertDialog open onOpenChange={(open) => !open && onClose()}>
             <AlertDialogContent data-slot="confirm-role">
                 <AlertDialogHeader>
                     <AlertDialogTitle>
-                        Make {person.name} {to === 'admin' ? 'an' : 'a'} {lowerText(roleLabel(to))}?
+                        {t('settings.people:demote.title', { context: to, name: person.name })}
                     </AlertDialogTitle>
                     <AlertDialogDescription>
-                        {firstName(person.name)} loses {demotionEnds(person.role, to).join('; and ')}.
+                        {t('settings.people:demote.loses', { first: firstName(person.name) })}
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogCancel>{t('settings.people:demote.cancel')}</AlertDialogCancel>
                     <Button variant="destructive" onClick={onConfirm}>
-                        Make {lowerText(roleLabel(to))}
+                        {t('settings.people:demote.confirm', { context: to })}
                     </Button>
                 </AlertDialogFooter>
             </AlertDialogContent>
@@ -311,6 +319,8 @@ export function PeopleList({
     me: string | undefined;
     reload: () => Promise<void>;
 }) {
+    const { t } = useTranslation(['settings.people']);
+    const { reachSummary, roleLabel, signInLinkWords, stateLabel } = usePeopleFormat();
     const [filter, setFilter] = useState<PeopleFilter>({ query: '', role: '', state: '' });
     const [link, setLink] = useState<ShownLink>();
     const [releasesOf, setReleasesOf] = useState<RosterPerson>();
@@ -326,7 +336,7 @@ export function PeopleList({
         }
     };
     const setRole = (person: RosterPerson, role: Role) =>
-        act(() => api(path(person.id), 'PATCH', { role }), 'Could not change the role.');
+        act(() => api(path(person.id), 'PATCH', { role }), t('settings.people:role.changeFailed'));
     const pickRole = (person: RosterPerson, role: Role) => {
         if (role === person.role) {
             return;
@@ -341,20 +351,23 @@ export function PeopleList({
         void act(async () => {
             const made = await api<PasswordLink>(path(person.id, '/password-link'), 'POST', {});
             setLink({ ...made, email: person.email });
-        }, 'Could not make a link.');
+        }, t('settings.people:actions.passwordLinkFailed'));
     const actions: RowActions = {
         passwordLink,
         signInLink: (person) =>
             void act(async () => {
                 await api<SentSignInLink>(path(person.id, '/sign-in-link'), 'POST', {});
-                toast.success(`Sign-in link sent to ${person.name} ${signInLinkWords(person.signInLinkVia)?.sent}`);
-            }, 'Could not send the link.'),
+                const sent = signInLinkWords(person.signInLinkVia)?.sent(person.name);
+                if (sent) {
+                    toast.success(sent);
+                }
+            }, t('settings.people:signInLink.failed')),
         releases: setReleasesOf,
         signOut: (person) =>
             void act(async () => {
                 await api(path(person.id, '/sessions'), 'DELETE');
-                toast.success(`${person.name} is signed out everywhere`);
-            }, 'Could not sign the account out.'),
+                toast.success(t('settings.people:actions.signedOut', { name: person.name }));
+            }, t('settings.people:actions.signOutFailed')),
         deactivate: setDeactivating,
         reactivate: setReactivating,
     };
@@ -364,27 +377,24 @@ export function PeopleList({
     const lockOf = (person: RosterPerson) => ownerLock(person, me);
     return (
         <div className="grid gap-3" data-slot="people-list">
-            <GridToolbar label="Find people">
+            <GridToolbar label={t('settings.people:list.toolbar')}>
                 <GridSearch
-                    label="Search name or email"
+                    label={t('settings.people:list.search')}
                     value={filter.query}
                     onChange={(query) => setFilter({ ...filter, query })}
                 />
                 <GridFilter
-                    label="Role filter"
-                    any="Role: any"
+                    label={t('settings.people:list.roleFilter')}
+                    any={t('settings.people:list.roleAny')}
                     value={filter.role}
                     options={ROLES.map((r) => ({ value: r, label: roleLabel(r) }))}
                     onChange={(role) => setFilter({ ...filter, role })}
                 />
                 <GridFilter
-                    label="Status filter"
-                    any="Status: any"
+                    label={t('settings.people:list.statusFilter')}
+                    any={t('settings.people:list.statusAny')}
                     value={filter.state}
-                    options={(Object.keys(STATE_LABELS) as PersonState[]).map((state) => ({
-                        value: state,
-                        label: STATE_LABELS[state],
-                    }))}
+                    options={PERSON_STATES.map((state: PersonState) => ({ value: state, label: stateLabel(state) }))}
                     onChange={(state) => setFilter({ ...filter, state })}
                 />
             </GridToolbar>
@@ -394,10 +404,7 @@ export function PeopleList({
                     data-slot="expired-invites"
                     className="grid gap-1 rounded-md border border-paused-banner-border bg-paused-banner px-3 py-2 text-xs text-paused-banner-foreground"
                 >
-                    <span>
-                        {expired.length === 1 ? '1 invite' : `${expired.length} invites`} expired without being used.
-                        Make a new password link to send:
-                    </span>
+                    <span>{t('settings.people:list.expired', { count: expired.length })}</span>
                     <span className="flex flex-wrap gap-x-3 gap-y-1">
                         {expired.map((person) => (
                             <span key={person.id}>
@@ -408,7 +415,7 @@ export function PeopleList({
                                     disabled={lockOf(person) === 'others'}
                                     onClick={() => passwordLink(person)}
                                 >
-                                    Password link
+                                    {t('settings.people:actions.passwordLink')}
                                 </button>
                             </span>
                         ))}
@@ -416,14 +423,14 @@ export function PeopleList({
                 </div>
             )}
             {!people ? (
-                <p className="text-muted-foreground">Loading…</p>
+                <p className="text-muted-foreground">{t('settings.people:list.loading')}</p>
             ) : !shown.length ? (
                 <p className="text-muted-foreground" data-slot="people-empty">
-                    {people.length ? 'Nobody matches.' : 'Nobody yet.'}
+                    {people.length ? t('settings.people:list.noMatch') : t('settings.people:list.empty')}
                 </p>
             ) : (
                 <DataGrid
-                    label="People"
+                    label={t('settings.people:list.label')}
                     tableSlot="people-table"
                     cardsSlot="people-cards"
                     rows={shown}
@@ -433,13 +440,13 @@ export function PeopleList({
                     columns={[
                         {
                             id: 'person',
-                            header: 'Person',
+                            header: t('settings.people:list.columns.person'),
                             className: 'max-w-72 min-w-52',
                             cell: (person) => <PersonName person={person} />,
                         },
                         {
                             id: 'role',
-                            header: 'Role',
+                            header: t('settings.people:list.columns.role'),
                             cell: (person) => (
                                 <RolePicker
                                     person={person}
@@ -448,22 +455,26 @@ export function PeopleList({
                                 />
                             ),
                         },
-                        { id: 'status', header: 'Status', cell: (person) => <StateBadge person={person} /> },
+                        {
+                            id: 'status',
+                            header: t('settings.people:list.columns.status'),
+                            cell: (person) => <StateBadge person={person} />,
+                        },
                         {
                             id: 'last-active',
-                            header: 'Last active',
+                            header: t('settings.people:list.columns.lastActive'),
                             className: 'whitespace-normal',
                             cell: (person) => <LastActive person={person} />,
                         },
                         {
                             id: 'sign-in',
-                            header: 'Signs in with',
+                            header: t('settings.people:list.columns.signIn'),
                             className: 'whitespace-normal',
                             cell: (person) => <SignInMethods person={person} />,
                         },
                         {
                             id: 'reach',
-                            header: 'Can reach',
+                            header: t('settings.people:list.columns.reach'),
                             className: 'max-w-48 text-xs whitespace-normal text-muted-foreground',
                             cell: reachSummary,
                         },
@@ -511,8 +522,8 @@ export function PeopleList({
                         const { id, name } = deactivating;
                         await act(async () => {
                             await api(path(id, '/deactivate'), 'POST', {});
-                            toast.success(`${name} deactivated`);
-                        }, 'Could not deactivate the account.');
+                            toast.success(t('settings.people:actions.deactivated', { name }));
+                        }, t('settings.people:actions.deactivateFailed'));
                         setDeactivating(undefined);
                     }}
                 />
@@ -525,8 +536,8 @@ export function PeopleList({
                         const { id, name } = reactivating;
                         await act(async () => {
                             await api(path(id, '/reactivate'), 'POST', {});
-                            toast.success(`${name} can sign in again`);
-                        }, 'Could not reactivate the account.');
+                            toast.success(t('settings.people:actions.reactivated', { name }));
+                        }, t('settings.people:actions.reactivateFailed'));
                         setReactivating(undefined);
                     }}
                 />

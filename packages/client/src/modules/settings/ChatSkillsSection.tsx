@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { toast } from 'sonner';
 
+import { Trans, useTranslation } from '@socio/i18n/react';
 import {
     CHAT_SKILL_MODES,
-    CHAT_SKILL_MODE_LABELS,
     CHAT_SKILL_NAME,
     RESERVED_SKILL_NAMES,
     SKILL_DESCRIPTION_MAX,
@@ -34,28 +34,48 @@ const empty = {
     instructions: '',
     mode: 'turn' as ChatSkillMode,
 };
-const when = (at: number) => new Date(at).toLocaleString();
 
 /** Where a skill came from, as its lock record says, in a line. */
-function lockLine(lock: ChatSkillLock) {
-    const digest = `sha256 ${lock.sha256.slice(0, 12)}`;
-    if (lock.url) {
-        return `Adapted from ${lock.url.replace(/^https:\/\/github\.com\//, '')}${lock.path ? `/${lock.path}` : ''}${lock.commit ? ` @ ${lock.commit.slice(0, 7)}` : ''}${lock.license ? ` (${lock.license})` : ''}${lock.locallyModified ? ' · locally edited' : ''} · ${digest}`;
-    }
-    return lock.source === 'builtin'
-        ? `Built in · ${digest}`
-        : `Revision ${lock.revision} · ${digest}${lock.updatedAt ? ` · ${when(lock.updatedAt)}` : ''}`;
+function useLockLine() {
+    const { t } = useTranslation(['settings.chat-skills']);
+    return (lock: ChatSkillLock) => {
+        const digest = t('settings.chat-skills:lock.digest', { hash: lock.sha256.slice(0, 12) });
+        let parts: string[];
+        if (lock.url) {
+            // The repository path and commit, as git writes them: not words.
+            const source = `${lock.url.replace(/^https:\/\/github\.com\//, '')}${lock.path ? `/${lock.path}` : ''}${lock.commit ? ` @ ${lock.commit.slice(0, 7)}` : ''}`;
+            parts = [
+                t('settings.chat-skills:lock.adapted', {
+                    source,
+                    license: lock.license ?? '',
+                    context: lock.license ? 'license' : undefined,
+                }),
+                ...(lock.locallyModified ? [t('settings.chat-skills:lock.edited')] : []),
+                digest,
+            ];
+        } else if (lock.source === 'builtin') {
+            parts = [t('settings.chat-skills:lock.builtIn'), digest];
+        } else {
+            parts = [
+                t('settings.chat-skills:lock.revision', { revision: lock.revision ?? '' }),
+                digest,
+                ...(lock.updatedAt ? [t('settings.chat-skills:when', { when: new Date(lock.updatedAt) })] : []),
+            ];
+        }
+        return parts.join(' · ');
+    };
 }
 
 /** A workspace skill's revisions, newest first, each one a rollback away. */
 function History({ name, onRolledBack }: { name: string; onRolledBack: () => void }) {
+    const { t } = useTranslation(['settings.chat-skills']);
     const [revisions, setRevisions] = useState<ChatSkillRevisionView[]>();
     const load = useCallback(
         () =>
             api<{ revisions: ChatSkillRevisionView[] }>(`/chat-skills/${encodeURIComponent(name)}/revisions`)
                 .then((answer) => setRevisions(answer.revisions))
-                .catch((e) => failed(e, 'Could not load the history.')),
-        [name],
+                .catch((e) => failed(e, t('settings.chat-skills:history.loadFailed'))),
+        [name, t],
     );
     useEffect(() => void load(), [load]);
     const rollback = (revision: number) =>
@@ -63,32 +83,46 @@ function History({ name, onRolledBack }: { name: string; onRolledBack: () => voi
             revision,
         })
             .then(() => {
-                toast.success(`/${name} is back to revision ${revision}`);
+                toast.success(t('settings.chat-skills:history.rolledBack', { name, revision }));
                 onRolledBack();
                 return load();
             })
-            .catch((error) => failed(error, 'Could not roll back.'));
+            .catch((error) => failed(error, t('settings.chat-skills:history.rollBackFailed')));
     const current = revisions?.[0]?.revision;
     return (
-        <ol className="grid basis-full gap-1 border-t pt-2" aria-label={`History of /${name}`}>
+        <ol
+            className="grid basis-full gap-1 border-t pt-2"
+            aria-label={t('settings.chat-skills:history.label', { name })}
+        >
             {revisions?.map((revision) => (
                 <li
                     key={revision.revision}
                     className="flex flex-wrap items-center gap-x-2"
                     data-revision={revision.revision}
                 >
-                    <span className="font-medium">Revision {revision.revision}</span>
+                    <span className="font-medium">
+                        {t('settings.chat-skills:history.revision', { revision: revision.revision })}
+                    </span>
                     <span className="min-w-0 flex-1 text-muted-foreground">
-                        {when(revision.createdAt)} · {revision.createdByName ?? revision.createdBy} ·{' '}
-                        {CHAT_SKILL_MODE_LABELS[revision.mode]} ·{' '}
-                        <code className="text-xs">{revision.sha256.slice(0, 12)}</code>
-                        {revision.restoredFrom ? ` · restored revision ${revision.restoredFrom}` : ''}
+                        <Trans
+                            t={t}
+                            i18nKey="settings.chat-skills:history.line"
+                            context={revision.restoredFrom ? 'restored' : undefined}
+                            values={{
+                                when: t('settings.chat-skills:when', { when: new Date(revision.createdAt) }),
+                                who: revision.createdByName ?? revision.createdBy,
+                                mode: t(`settings.chat-skills:mode.${revision.mode}`),
+                                hash: revision.sha256.slice(0, 12),
+                                restored: revision.restoredFrom ?? 0,
+                            }}
+                            components={{ hash: <code className="text-xs" /> }}
+                        />
                     </span>
                     {revision.revision === current ? (
-                        <span className="text-muted-foreground">Current</span>
+                        <span className="text-muted-foreground">{t('settings.chat-skills:history.current')}</span>
                     ) : (
                         <Button variant="ghost" size="sm" onClick={() => rollback(revision.revision)}>
-                            Roll back
+                            {t('settings.chat-skills:history.rollBack')}
                         </Button>
                     )}
                 </li>
@@ -106,6 +140,8 @@ function History({ name, onRolledBack }: { name: string; onRolledBack: () => voi
  * once, for the next message.
  */
 export function ChatSkillsSection() {
+    const { t } = useTranslation(['settings', 'settings.chat-skills']);
+    const lockLine = useLockLine();
     const [skills, setSkills] = useState<ChatSkillView[]>();
     // The skill being edited: its name, or '' for a new one.
     const [editing, setEditing] = useState<string>();
@@ -116,8 +152,8 @@ export function ChatSkillsSection() {
         () =>
             api<{ skills: ChatSkillView[] }>('/chat-skills')
                 .then((answer) => setSkills(answer.skills))
-                .catch((e) => failed(e, 'Could not load the chat skills.')),
-        [],
+                .catch((e) => failed(e, t('settings.chat-skills:loadFailed'))),
+        [t],
     );
     useEffect(() => void load(), [load]);
     const refresh = async () => {
@@ -135,9 +171,9 @@ export function ChatSkillsSection() {
     const nameError =
         editing === '' && name
             ? !CHAT_SKILL_NAME.test(name)
-                ? 'Lowercase letters, digits and hyphens, up to 32.'
+                ? t('settings.chat-skills:form.invalidName')
                 : RESERVED_SKILL_NAMES.includes(name) || skills?.some((skill) => skill.name === name)
-                  ? `/${name} is taken.`
+                  ? t('settings.chat-skills:form.takenName', { name })
                   : ''
             : '';
     const save = (e: FormEvent) => {
@@ -148,36 +184,35 @@ export function ChatSkillsSection() {
             mode: form.mode,
         })
             .then(() => {
-                toast.success(`/${name} saved`);
+                toast.success(t('settings.chat-skills:saved', { name }));
                 return done();
             })
-            .catch((error) => failed(error, 'Could not save the skill.'));
+            .catch((error) => failed(error, t('settings.chat-skills:saveFailed')));
     };
     const remove = (skill: ChatSkillView) => {
-        if (
-            !globalThis.confirm(
-                `Remove /${skill.name}? People can no longer use it; chats that used it stay as they are.`,
-            )
-        ) {
+        if (!globalThis.confirm(t('settings.chat-skills:confirmRemove', { name: skill.name }))) {
             return;
         }
         void api(`/chat-skills/${encodeURIComponent(skill.name)}`, 'DELETE')
             .then(done)
-            .catch((error) => failed(error, 'Could not remove the skill.'));
+            .catch((error) => failed(error, t('settings.chat-skills:removeFailed')));
     };
     const editor = (
         <form
             className="grid gap-2 rounded-md border border-dashed p-3"
-            aria-label={editing ? `Edit /${editing}` : 'New skill'}
+            aria-label={
+                editing ? t('settings.chat-skills:form.edit', { name: editing }) : t('settings.chat-skills:form.new')
+            }
             onSubmit={save}
         >
             <label className="grid gap-1">
-                <span className="font-medium">Name</span>
+                <span className="font-medium">{t('settings.chat-skills:form.name')}</span>
                 <span className="flex items-center gap-1">
+                    {/* oxlint-disable-next-line socio/no-literal-text -- the slash that starts a command, not words */}
                     <span className="text-muted-foreground">/</span>
                     <Input
-                        aria-label="Skill name"
-                        placeholder="standup"
+                        aria-label={t('settings.chat-skills:form.nameLabel')}
+                        placeholder={t('settings.chat-skills:form.namePlaceholder')}
                         required
                         maxLength={32}
                         className="max-w-56"
@@ -189,10 +224,10 @@ export function ChatSkillsSection() {
                 {nameError && <span className="text-destructive">{nameError}</span>}
             </label>
             <label className="grid gap-1">
-                <span className="font-medium">Description</span>
+                <span className="font-medium">{t('settings.chat-skills:form.description')}</span>
                 <Input
-                    aria-label="Skill description"
-                    placeholder="What it does, as the / menu shows it"
+                    aria-label={t('settings.chat-skills:form.descriptionLabel')}
+                    placeholder={t('settings.chat-skills:form.descriptionPlaceholder')}
                     required
                     maxLength={imported ? IMPORTED_SKILL_DESCRIPTION_MAX : SKILL_DESCRIPTION_MAX}
                     value={form.description}
@@ -200,10 +235,10 @@ export function ChatSkillsSection() {
                 />
             </label>
             <label className="grid gap-1">
-                <span className="font-medium">Instructions</span>
+                <span className="font-medium">{t('settings.chat-skills:form.instructions')}</span>
                 <Textarea
-                    aria-label="Skill instructions"
-                    placeholder="What the socio does once a message starts with this skill."
+                    aria-label={t('settings.chat-skills:form.instructionsLabel')}
+                    placeholder={t('settings.chat-skills:form.instructionsPlaceholder')}
                     required
                     rows={5}
                     maxLength={imported ? IMPORTED_SKILL_INSTRUCTIONS_MAX : SKILL_INSTRUCTIONS_MAX}
@@ -212,30 +247,27 @@ export function ChatSkillsSection() {
                 />
             </label>
             <label className="grid gap-1">
-                <span className="font-medium">Applies to</span>
+                <span className="font-medium">{t('settings.chat-skills:form.mode')}</span>
                 <select
-                    aria-label="Skill applies to"
+                    aria-label={t('settings.chat-skills:form.modeLabel')}
                     className={`${nativeSelect} w-fit`}
                     value={form.mode}
                     onChange={(e) => setForm({ ...form, mode: e.target.value as ChatSkillMode })}
                 >
                     {CHAT_SKILL_MODES.map((mode) => (
                         <option key={mode} value={mode}>
-                            {CHAT_SKILL_MODE_LABELS[mode]}
+                            {t(`settings.chat-skills:mode.${mode}`)}
                         </option>
                     ))}
                 </select>
-                <span className="text-muted-foreground">
-                    Until the person is done, the instructions go with every message until they send /done, end it above
-                    the composer, or the socio ends it.
-                </span>
+                <span className="text-muted-foreground">{t('settings.chat-skills:form.modeHelp')}</span>
             </label>
             <span className="flex gap-1">
                 <Button
                     size="sm"
                     disabled={!name || !!nameError || !form.description.trim() || !form.instructions.trim()}
                 >
-                    Save skill
+                    {t('settings.chat-skills:form.save')}
                 </Button>
                 <Button
                     type="button"
@@ -246,7 +278,7 @@ export function ChatSkillsSection() {
                         setForm(empty);
                     }}
                 >
-                    Cancel
+                    {t('settings.chat-skills:form.cancel')}
                 </Button>
             </span>
         </form>
@@ -254,16 +286,17 @@ export function ChatSkillsSection() {
     return (
         <section className="grid gap-3" data-slot="chat-skills">
             <div className="grid gap-1">
-                <h3 className="font-medium">Chat skills</h3>
+                <h3 className="font-medium">{t('settings:sections.chat-skills')}</h3>
                 <p className="text-muted-foreground">
-                    People start a message with a skill’s name, such as <code className="text-xs">/grill-me</code>, to
-                    have the socio do that: typing <code className="text-xs">/</code> lists them, and on Telegram they
-                    are commands. A skill’s instructions go with that message, or with every message until the person is
-                    done.
+                    <Trans
+                        t={t}
+                        i18nKey="settings.chat-skills:intro"
+                        components={{ code: <code className="text-xs" /> }}
+                    />
                 </p>
             </div>
             <SkillImportSection onSaved={refresh} />
-            <ul className="grid gap-2" aria-label="Chat skills">
+            <ul className="grid gap-2" aria-label={t('settings:sections.chat-skills')}>
                 {skills?.map((skill) =>
                     editing === skill.name ? (
                         <li key={skill.name}>{editor}</li>
@@ -275,10 +308,15 @@ export function ChatSkillsSection() {
                         >
                             <span className="grid min-w-0 flex-1 gap-0.5">
                                 <span>
-                                    <span className="font-medium">/{skill.name}</span>{' '}
+                                    <span className="font-medium">{`/${skill.name}`}</span>{' '}
                                     <span className="text-muted-foreground">
-                                        {skill.builtIn ? '· built in' : '· this workspace'}
-                                        {skill.mode === 'until-done' ? ' · until done' : ''}
+                                        {skill.builtIn
+                                            ? t('settings.chat-skills:list.builtIn', {
+                                                  context: skill.mode === 'until-done' ? 'untilDone' : undefined,
+                                              })
+                                            : t('settings.chat-skills:list.workspace', {
+                                                  context: skill.mode === 'until-done' ? 'untilDone' : undefined,
+                                              })}
                                     </span>
                                 </span>
                                 <span className="text-muted-foreground">{skill.description}</span>
@@ -296,7 +334,7 @@ export function ChatSkillsSection() {
                                         aria-expanded={history === skill.name}
                                         onClick={() => setHistory(history === skill.name ? undefined : skill.name)}
                                     >
-                                        History
+                                        {t('settings.chat-skills:list.history')}
                                     </Button>
                                     <Button
                                         variant="ghost"
@@ -311,10 +349,10 @@ export function ChatSkillsSection() {
                                             });
                                         }}
                                     >
-                                        Edit
+                                        {t('settings.chat-skills:list.edit')}
                                     </Button>
                                     <Button variant="ghost" size="sm" onClick={() => remove(skill)}>
-                                        Remove
+                                        {t('settings.chat-skills:list.remove')}
                                     </Button>
                                 </span>
                             )}
@@ -337,7 +375,7 @@ export function ChatSkillsSection() {
                             setForm(empty);
                         }}
                     >
-                        Add a skill
+                        {t('settings.chat-skills:list.add')}
                     </Button>
                 </span>
             )}

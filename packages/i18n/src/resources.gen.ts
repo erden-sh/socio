@@ -6,6 +6,693 @@ export interface EnglishResources {
     common: {
         product: 'Socio';
     };
+    settings: {
+        title: 'Settings';
+        groups: {
+            workspace: {
+                title: 'Workspace';
+                description: 'Your workspace, your rules: what socios may do, who signs in, and how this server is set up.';
+            };
+            account: {
+                title: 'Account';
+                description: 'The model your chats use, how socios reach you, your archived chats, and how you sign in to $t(common:product).';
+            };
+        };
+        sections: {
+            workspace: 'General';
+            people: 'People';
+            access: 'Access';
+            secrets: 'Secrets';
+            'data-api': 'Data API';
+            'chat-skills': 'Chat skills';
+            'deleted-spaces': 'Deleted Spaces';
+            features: 'Optional features';
+            'early-access': 'Early access';
+            'features-dev': 'In development';
+            coding: 'Coding';
+            operator: 'Platform';
+            account: 'Profile';
+            notifications: 'Notifications';
+            inference: 'Inference';
+            'archived-chats': 'Archived chats';
+            'connected-agents': 'Connected agents';
+            telegram: 'Telegram';
+            'socio-access': 'Socio access';
+            performance: 'Performance';
+        };
+        version: '$t(common:product) v{{version}}';
+        versionCommit: '({{commit}})';
+        releaseNotes: 'Release notes';
+        needsSignIn: 'This needs real accounts (Better Auth); this server signs in with the local picker.';
+        save: {
+            saving: 'Saving…';
+            saved: 'Saved';
+            failed: 'Could not save. Review the workspace error and retry.';
+            undo: 'Undo';
+            undone: 'Change undone';
+        };
+        paused: {
+            title: 'Socios';
+            paused: 'All socios are paused';
+            active: 'All socios are active';
+            resume: 'Resume';
+            pause: 'Pause';
+            waiting: 'Scheduled tasks wait until they resume.';
+            scheduled_one: '{{count}} scheduled task';
+            scheduled_other: '{{count}} scheduled tasks';
+        };
+        crumbs: {
+            person: 'Person';
+        };
+        providers: {
+            'google-native': 'Google (app)';
+            'apple-native': 'Apple (app)';
+        };
+    };
+    'settings.access': {
+        title: 'Sign-in';
+        intro: "The server's environment is the ceiling: here you can only turn a sign-in method off and take people or domains off its lists. Adding anything needs a stack update. Every change needs you to confirm it with your password or a passkey, ends the sessions that no longer qualify, and is shown to every admin.";
+        unreadable: 'The saved policy could not be read, so the environment applies. Save it again to fix it.';
+        version: 'Version {{version}}, saved <when></when>.';
+        when: '{{at, datetime(dateStyle: medium; timeStyle: short)}}';
+        nothingNarrowed: 'Nothing narrowed yet: the environment applies.';
+        methods: {
+            title: 'Ways to sign in';
+            password: 'Email and password';
+            passkey: 'Passkeys';
+            signInLink: 'Sign-in links by Telegram';
+            emailLinks: 'Sign-in links by email';
+            emailLinksHelp: 'Codes and links go by email to every account. Off by default.';
+            offIn: 'off in {{env}}';
+            offIn_telegram: 'off in the Telegram bot';
+            offIn_email: 'off in this server: no email channel';
+            offIn_cloud: 'off in the cloud connection';
+            google: 'Google in the Socio app';
+            googleHelp: 'For people who linked a Google account. Works while this server is connected to Socio’s cloud services.';
+            apple: 'Sign in with Apple in the Socio app';
+            appleHelp: 'For people who linked an Apple account. Works while this server is connected to Socio’s cloud services.';
+            openSignUp: 'Open sign-up';
+        };
+        lists: {
+            ceiling: 'The environment ({{env}}) sets who can be here; untick to take someone off.';
+            empty: '{{env}} lists nobody, so there is nothing to narrow.';
+            providers: 'Sign-in providers';
+            providersHelp: 'OAuth and OpenID Connect providers on the sign-in screen.';
+            adminEmails: 'Admin emails';
+            adminEmailsHelp: 'Verified emails that are always admins. Taking one off makes that person a member at their next request, unless their own role is admin.';
+            allowedEmails: 'Allowed emails';
+            allowedEmailsHelp: 'Who may create their own account through a provider.';
+            allowedDomains: 'Allowed domains';
+            allowedDomainsHelp: 'Email domains whose people may create their own account through a provider.';
+        };
+        mockAuth: 'This server signs in with the local picker (mock auth), so there are no sign-in methods to narrow.';
+        codeAccess: 'Who may run code is now a permission: admins have it, and others get it from a group under <groupsLink>People → Groups</groupsLink>.';
+        review: 'Review and confirm';
+        undo: 'Undo changes';
+        impact: {
+            sessionsEnded_one: '{{count, number}} session will end.';
+            sessionsEnded_other: '{{count, number}} sessions will end.';
+            signsYouOut: 'This signs you out: sign in again another way.';
+            withoutWayIn: 'Left without a way to sign in: {{people, list}}.';
+            person: '{{name}} ({{email}})';
+            codeRunsStopped_one: '{{count, number}} queued or running code run will stop.';
+            codeRunsStopped_other: '{{count, number}} queued or running code runs will stop.';
+        };
+        confirm: {
+            title: 'Confirm the change';
+            description: 'Every change to sign-in needs you to confirm it is you. Every admin is told about it.';
+            password: 'Your password';
+            withPassword: 'Confirm with password';
+            withPasskey: 'Confirm with a passkey';
+            withConfirm: 'Confirm (development sign-in)';
+            cancel: 'Cancel';
+            saved: 'Access policy saved; every admin was told.';
+        };
+        history: {
+            title: 'History';
+            label: 'Access policy history';
+            entry: '<when></when> · {{actor}}';
+            confirmed: 'confirmed with {{method}}';
+            confirmed_password: 'confirmed with password';
+            confirmed_passkey: 'confirmed with passkey';
+            confirmed_confirm: 'confirmed with confirm';
+            confirmed_cli: 'confirmed with cli';
+            sessionsEnded_one: '{{count, number}} session ended.';
+            sessionsEnded_other: '{{count, number}} sessions ended.';
+            codeRunsStopped_one: '{{count, number}} code run stopped.';
+            codeRunsStopped_other: '{{count, number}} code runs stopped.';
+            empty: 'No changes yet.';
+        };
+        errors: {
+            load: 'Could not load the access policy.';
+            start: 'Could not start.';
+            save: 'Could not save.';
+            check: 'Could not check.';
+        };
+    };
+    'settings.account': {
+        mock: {
+            title: 'Account';
+            signedIn: 'Signed in as {{name}} ({{role}}) with this machine’s sign-in picker: there is no password or passkey to manage. Switch user from the account menu.';
+            signedIn_nobody: 'Signed in with this machine’s sign-in picker: there is no password or passkey to manage. Switch user from the account menu.';
+        };
+        name: {
+            title: 'Name';
+            label: 'Your name';
+            save: 'Save';
+            saved: 'Name saved';
+            failed: 'Could not save the name.';
+        };
+        passkeys: {
+            title: 'Passkeys';
+            description: "Sign in with your device's fingerprint, face or PIN instead of a password.";
+            list: 'Your passkeys';
+            unnamed: 'Passkey';
+            created: '{{at, datetime}}';
+            remove: 'Remove';
+            empty: 'No passkeys yet.';
+            nameLabel: 'Passkey name';
+            namePlaceholder: 'Name, e.g. Laptop';
+            add: 'Add a passkey';
+            added: 'Passkey added';
+            loadFailed: 'Could not load passkeys.';
+            removeFailed: 'Could not remove the passkey.';
+            addFailed: 'Could not add the passkey.';
+        };
+        password: {
+            title: 'Password';
+            current: 'Current password';
+            new: 'New password';
+            newPlaceholder: 'New password (10+)';
+            change: 'Change';
+            changed: 'Password changed; other sessions signed out';
+            failed: 'Could not change the password.';
+        };
+        sessions: {
+            title: 'Sessions';
+            description: 'Signs this account out on every device, this one included.';
+            signOutEverywhere: 'Sign out everywhere';
+            failed: 'Could not sign out everywhere.';
+        };
+        leave: {
+            title: 'Leave workspace';
+            description: "Ends your membership: you are signed out on every device and can't sign in again unless an admin brings you back. What you made stays with the workspace, where admins can hand it to someone else.";
+            button: 'Leave workspace';
+            confirmTitle: 'Leave this workspace?';
+            confirmAction: 'Leave';
+            confirmBody: 'You will be signed out everywhere, including the $t(common:product) app on your phone, which erases its copy. Your chats, pages and other work stay with the workspace. Only an admin can let you back in.';
+            left: 'You left the workspace';
+            failed: 'Could not leave the workspace.';
+        };
+    };
+    'settings.archived-chats': {
+        title: 'Archived chats';
+        empty: 'Chats you archive leave your sidebar and wait here.';
+        summary_one: '{{count, number}} archived chat, out of your sidebar.';
+        summary_other: '{{count, number}} archived chats, out of your sidebar.';
+        manage: 'Manage';
+        description: 'Out of your sidebar and the ⌘K palette; their links still open them, and their scheduled tasks keep running.';
+        none: 'You have no archived chats.';
+        list: 'Archived chats';
+        row: '{{socio}} · Archived <date></date>';
+        row_noSocio: 'Archived <date></date>';
+        date: '{{at, datetime(dateStyle: medium)}}';
+        unarchive: 'Unarchive';
+        unarchiveLabel: 'Unarchive {{title}}';
+        delete: 'Delete';
+        deleteLabel: 'Delete {{title}}';
+    };
+    'settings.backups': {
+        continuous: {
+            behind: 'behind: the database changed at {{changed}}, the newest copy is from {{copied}}; check the litestream service';
+            noCopy: 'no copy yet; check the litestream service';
+            upToDate: 'up to date; newest copy at {{at}}';
+            waiting: 'waiting for the first copy';
+            wal: 'write-ahead log {{size}}';
+            level: 'warning';
+            level_critical: 'critical';
+        };
+    };
+    'settings.chat-skills': {
+        intro: 'People start a message with a skill’s name, such as <code>/grill-me</code>, to have the socio do that: typing <code>/</code> lists them, and on Telegram they are commands. A skill’s instructions go with that message, or with every message until the person is done.';
+        mode: {
+            turn: 'That message only';
+            'until-done': 'Until the person is done';
+        };
+        when: '{{when, datetime(year: numeric; month: numeric; day: numeric; hour: numeric; minute: 2-digit; second: 2-digit)}}';
+        lock: {
+            digest: 'sha256 {{hash}}';
+            adapted: 'Adapted from {{source}}';
+            adapted_license: 'Adapted from {{source}} ({{license}})';
+            edited: 'locally edited';
+            builtIn: 'Built in';
+            revision: 'Revision {{revision}}';
+        };
+        history: {
+            label: 'History of /{{name}}';
+            revision: 'Revision {{revision}}';
+            line: '{{when}} · {{who}} · {{mode}} · <hash>{{hash}}</hash>';
+            line_restored: '{{when}} · {{who}} · {{mode}} · <hash>{{hash}}</hash> · restored revision {{restored}}';
+            current: 'Current';
+            rollBack: 'Roll back';
+            rolledBack: '/{{name}} is back to revision {{revision}}';
+            loadFailed: 'Could not load the history.';
+            rollBackFailed: 'Could not roll back.';
+        };
+        list: {
+            workspace: '· this workspace';
+            workspace_untilDone: '· this workspace · until done';
+            builtIn: '· built in';
+            builtIn_untilDone: '· built in · until done';
+            history: 'History';
+            edit: 'Edit';
+            remove: 'Remove';
+            add: 'Add a skill';
+        };
+        form: {
+            edit: 'Edit /{{name}}';
+            new: 'New skill';
+            name: 'Name';
+            nameLabel: 'Skill name';
+            namePlaceholder: 'standup';
+            description: 'Description';
+            descriptionLabel: 'Skill description';
+            descriptionPlaceholder: 'What it does, as the / menu shows it';
+            instructions: 'Instructions';
+            instructionsLabel: 'Skill instructions';
+            instructionsPlaceholder: 'What the socio does once a message starts with this skill.';
+            mode: 'Applies to';
+            modeLabel: 'Skill applies to';
+            modeHelp: 'Until the person is done, the instructions go with every message until they send /done, end it above the composer, or the socio ends it.';
+            save: 'Save skill';
+            cancel: 'Cancel';
+            invalidName: 'Lowercase letters, digits and hyphens, up to 32.';
+            takenName: '/{{name}} is taken.';
+        };
+        saved: '/{{name}} saved';
+        confirmRemove: 'Remove /{{name}}? People can no longer use it; chats that used it stay as they are.';
+        loadFailed: 'Could not load the chat skills.';
+        saveFailed: 'Could not save the skill.';
+        removeFailed: 'Could not remove the skill.';
+        import: {
+            title: 'Import from GitHub';
+            intro: 'Import a public repository’s SKILL.md as a workspace chat command. Review the pinned source before installing. Updates are manual; repository programs and tools are never installed.';
+            url: 'Repository URL';
+            urlLabel: 'Skill repository URL';
+            ref: 'Branch, tag or commit';
+            refLabel: 'Skill source ref';
+            path: 'SKILL.md path';
+            pathLabel: 'Skill source path';
+            working: 'Working…';
+            preview: 'Preview import';
+            previewFailed: 'Could not preview this source.';
+            applyFailed: 'Could not apply this import.';
+            installed: '/{{name}} installed from commit {{commit}}.';
+            installed_update: '/{{name}} updated from commit {{commit}}.';
+            previewLabel: 'Skill import preview';
+            source: 'Ref {{ref}} · Commit <commit>{{commit}}</commit>';
+            license: 'License: {{license}}';
+            attribution: 'License and attribution';
+            changes: 'Changes from revision {{revision}}';
+            changesLabel: 'Skill instruction changes';
+            noChanges: 'No instruction changes.';
+            current: 'Current revision {{revision}}: compare before updating';
+            currentLabel: 'Current skill instructions';
+            complete_one: 'Complete imported instructions ({{count, number}} character)';
+            complete_other: 'Complete imported instructions ({{count, number}} characters)';
+            completeLabel: 'Imported skill instructions';
+            applies: 'This applies the shown commit. Preview again if the workspace skill changes or this review expires.';
+            applyUpdate: 'Apply reviewed update';
+            install: 'Install reviewed skill';
+        };
+    };
+    'settings.connected-agents': {
+        intro: 'Agents you run elsewhere, such as Claude Code, that act here for you. They can do only what you approved, and never more than you can. To connect Claude Code, run <command>{{command}}</command> and approve it in the browser.';
+        listLabel: 'Your connected agents';
+        disconnect: 'Disconnect';
+        used: 'Connected {{connected}} · last used {{used}}';
+        when: '{{when, datetime(dateStyle: medium; timeStyle: short)}}';
+        never: 'never';
+        none: 'No connected agents.';
+        confirmTitle: 'Disconnect {{agent}}?';
+        confirmBody: "It can't act for you any more, from now on. Connect it again to use it.";
+        disconnected: '{{agent}} disconnected';
+        loadFailed: 'Could not load connected agents.';
+        disconnectFailed: 'Could not disconnect the agent.';
+    };
+    'settings.data-api': {
+        intro: 'Tokens for your own scripts, such as an import from another tool, to create and fill the company’s datasets through the data API. Each one is shown once.';
+        list: {
+            label: 'Data API tokens';
+            token: 'Token';
+            madeBy: 'Made by';
+            lastUsed: 'Last used';
+            expiry: 'Expiry';
+            actions: 'Actions';
+            empty: 'No data API tokens yet.';
+        };
+        token: {
+            usage: '{{scopes}}; {{perMinute, number}} a minute';
+            unknownMaker: 'Unknown';
+            madeAt: '{{at, datetime}}';
+            used_one: '{{at, datetime(year: numeric; month: numeric; day: numeric; hour: numeric; minute: numeric; second: numeric)}} ({{count, number}} request)';
+            used_other: '{{at, datetime(year: numeric; month: numeric; day: numeric; hour: numeric; minute: numeric; second: numeric)}} ({{count, number}} requests)';
+            neverUsed: 'never used';
+            revoked: 'revoked {{at, datetime}}';
+            revoked_system: 'revoked {{at, datetime}} (its maker is no longer an admin)';
+            expires: 'expires {{at, datetime}}';
+            expired: 'expired {{at, datetime}}';
+        };
+        revoke: {
+            action: 'Revoke';
+            label: 'Revoke {{name}}';
+            done: 'Revoked “{{name}}”';
+        };
+        new: {
+            open: 'New token';
+            title: 'New data API token';
+            description: 'For a script of yours, such as an import. It reaches the company’s datasets only, never a person’s, a socio’s or a plugin’s.';
+            copyNow: 'Copy it now: it isn’t shown again.';
+            created: 'Token “{{name}}”. $t(settings.data-api:new.copyNow)';
+            copy: 'Copy';
+            copied: 'Token copied';
+            done: 'Done';
+            name: 'Token name';
+            namePlaceholder: 'Token name, e.g. what runs it';
+            lifetime: 'Token lifetime';
+            days_one: '{{count, number}} day';
+            days_other: '{{count, number}} days';
+            budget: 'Operations a minute (at most {{max, number}})';
+            budgetLabel: 'Operations a minute';
+            cancel: 'Cancel';
+            submit: 'Make token';
+        };
+        scopes: {
+            read: 'List and read the company’s datasets: tables, queries, field settings';
+            write: 'Add, change and remove rows, in single writes or batches';
+            admin: 'Create company datasets, declare tables and columns, set field settings and place datasets in a Space';
+        };
+        errors: {
+            load: 'Could not load the data API tokens.';
+            make: 'Could not make the token.';
+            revoke: 'Could not revoke the token.';
+        };
+    };
+    'settings.deleted-spaces': {
+        title: 'Deleted Spaces';
+        description: 'A deleted Space is gone for everyone, with its pages, chats, memory, shares and socios’ access, and kept here until you restore it. Restoring brings it all back, for the people who could see it.';
+        loading: 'Loading…';
+        empty: 'No deleted Spaces.';
+        item: {
+            deleted_one: 'Deleted by {{name}}, <when></when> · {{count, number}} page';
+            deleted_other: 'Deleted by {{name}}, <when></when> · {{count, number}} pages';
+            formerMember: 'a former member';
+            when: '{{at, datetime(dateStyle: medium; timeStyle: short)}}';
+        };
+        restore: {
+            action: 'Restore';
+            busy: 'Restoring…';
+            label: 'Restore {{name}}';
+            done: 'Restored “{{name}}”';
+        };
+        errors: {
+            load: 'Could not load the deleted Spaces.';
+            restore: 'Could not restore it.';
+        };
+    };
+    'settings.devices': {
+        title: 'The $t(common:product) app';
+        intro: 'Your phones with the $t(common:product) app. Signing a device out ends its sessions; erasing also removes this workspace’s copy from it the next time it connects.';
+        intro_admin: 'Their phones with the $t(common:product) app. Signing a device out ends its sessions; erasing also removes this workspace’s copy from it the next time it connects.';
+        empty: 'You haven’t signed in on the app.';
+        empty_admin: 'They haven’t signed in on the app.';
+        list: 'Devices with the $t(common:product) app';
+        current: '(this device)';
+        loadFailed: 'Could not load the devices.';
+        platforms: {
+            ios: 'iPhone or iPad';
+            android: 'Android';
+        };
+        details: {
+            by: 'by {{method}}';
+            signedOut: 'Signed out';
+            eraseRequested: 'Signed out; erase requested';
+            since: 'since {{at, datetime(month: short; day: numeric)}}';
+            since_otherYear: 'since {{at, datetime(month: short; day: numeric; year: numeric)}}';
+        };
+        methods: {
+            link: 'Sign-in link';
+            linkEmail: 'Emailed sign-in link';
+            passkey: 'Passkey';
+            password: 'Password';
+        };
+        lastSeen: {
+            now: 'last seen now';
+            minutes_one: 'last seen {{count}} min ago';
+            minutes_other: 'last seen {{count}} min ago';
+            hours_one: 'last seen {{count}} h ago';
+            hours_other: 'last seen {{count}} h ago';
+            yesterday: 'last seen yesterday';
+            days_one: 'last seen {{count}} day ago';
+            days_other: 'last seen {{count}} days ago';
+            weeks_one: 'last seen {{count}} week ago';
+            weeks_other: 'last seen {{count}} weeks ago';
+            date: 'last seen {{at, datetime(month: short; day: numeric)}}';
+            date_otherYear: 'last seen {{at, datetime(month: short; day: numeric; year: numeric)}}';
+        };
+        signOut: {
+            button: 'Sign out this device';
+            label: 'Sign out {{device}}';
+            title: 'Sign out {{device}}?';
+            action: 'Sign out';
+            body: '{{device}} is signed out; what it keeps from this workspace stays on it until you sign in again or remove the app.';
+            body_admin: '{{device}} is signed out; what it keeps from this workspace stays on it until they sign in again or remove the app.';
+            done: '{{device}} signed out';
+        };
+        erase: {
+            button: 'Sign out and erase';
+            label: 'Sign out and erase {{device}}';
+            title: 'Sign out and erase {{device}}?';
+            action: 'Sign out and erase';
+            body: '{{device}} is signed out, and the next time it connects it deletes everything it keeps from this workspace, including anything not sent yet. You can sign in on it again.';
+            body_admin: '{{device}} is signed out, and the next time it connects it deletes everything it keeps from this workspace, including anything not sent yet. They can sign in on it again.';
+            done: '{{device}} signed out; it erases its copy';
+        };
+        signOutFailed: 'Could not sign the device out.';
+    };
+    'settings.dialogs': {
+        title: {
+            space: 'A space for something.';
+            dotEdit: 'Make this socio yours.';
+            dotNew: 'Meet your next specialist.';
+            memory: 'Something to remember.';
+            schedule: 'Let your socio keep time.';
+        };
+        close: 'Close dialog';
+        name: 'Name';
+        text: {
+            dot: 'Role instructions';
+            space: 'What belongs here?';
+            memory: 'Preference or context';
+            schedule: 'Task to revisit';
+        };
+        dotPlaceholder: 'You are a thoughtful research partner. Compare evidence and be clear about uncertainty.';
+        spaces: {
+            legend: 'Space access';
+            note: 'Choose where this socio can read and edit pages.';
+            default: 'Default destination for saved pages';
+            choose: 'Choose a Space';
+        };
+        research: {
+            title: 'Public-page research';
+            body: 'Allow the server-side read-only browser tool. Global settings always take precedence.';
+        };
+        memories: {
+            title: 'Use saved memories';
+            body: 'Include your preferences in new turns. Changing permission stops active work.';
+        };
+        share: {
+            title: 'Share with the workspace';
+            body: 'Let everyone see and use this socio, including its shared computer files. Leave off to create a socio of your own.';
+        };
+        visibility: 'Personal socio: only its owner sees it in their sidebar and chats with it. Admins can manage its settings.';
+        visibility_workspace: 'Workspace socio: everyone can see and use it. Conversations belong to each person; its shared computer files are available to everyone who uses it.';
+        issues: {
+            title: 'File to the Improvements board';
+            body: 'When someone asks, this socio can search the board and file an item in triage, recorded with the socio and that person.';
+        };
+        model: {
+            label: 'Default model';
+            inherit: 'Automatic: each person’s own subscription, else the workspace’s';
+            note: 'New chats with this socio start on this model; people can pick another when they start a chat. Subscription models run on each person’s own connection; anyone not connected gets the automatic model.';
+        };
+        learning: {
+            legend: 'Automatic Learning';
+            container: 'Learning container ID';
+            placeholder: 'research-workflow';
+            help: 'New conversations with this socio are assigned to this container and become Learning evidence once they finish. Admins review proposed skills under Learning before anything is published. Leave blank to keep new conversations out of Learning.';
+            skillsTitle: 'Use published skills';
+            skillsBody: 'Let this socio load the container’s published skills. Turning this off stops skill loading; it does not stop evidence collection.';
+        };
+        dataLinks: 'Approvals and data access are each person’s own: your <approvals>approval policies</approvals> and <grants>data grants</grants> for this socio.';
+        schedule: {
+            label: 'Repeat after each successful run';
+            minute: 'Every minute (testing)';
+            hour: 'Every hour';
+            day: 'Every day';
+            week: 'Every week';
+            note: 'Runs on the server in this same conversation, even with the tab closed. Failed or interrupted runs wait for manual retry. Review completed work before retrying an interrupted run.';
+        };
+        memoryNote: 'Memories are explicit preferences, not automatic learning. Avoid secrets; enabled memories go to your model provider.';
+        save: 'Save';
+        webSaveFailed: 'Could not save the web identity.';
+        character: {
+            legend: 'Character';
+            label: '{{name}}, the {{kind}}';
+            note: 'How this socio looks everywhere it appears, including notifications. Other socios can have the same character.';
+        };
+        archive: {
+            title: 'Archive this socio';
+            title_archived: 'Archived';
+            body: 'It leaves every list and stops working; its chats, filings and history are kept. Nothing is deleted.';
+            body_archived: 'Bring it back to the lists; its paused schedules stay paused until resumed.';
+            archive: 'Archive…';
+            confirm: 'Archive now';
+            unarchive: 'Unarchive';
+        };
+        web: {
+            legend: 'Web identity';
+            label: 'How this socio reads websites';
+            default_agent: 'Workspace default (declared agent)';
+            default: 'Workspace default (browser)';
+            agent: 'Declared agent (http_get, http_json)';
+            browser: 'Browser (the socio’s computer)';
+            help_one: 'As a declared agent it says so in its User-Agent (<ua>{{userAgent}}</ua>), which links the public /agents page. As a browser it uses its computer’s browser tools. Neither identifies the user. At most {{count}} read a minute per site; a site that refuses is left alone for a while.';
+            help_other: 'As a declared agent it says so in its User-Agent (<ua>{{userAgent}}</ua>), which links the public /agents page. As a browser it uses its computer’s browser tools. Neither identifies the user. At most {{count}} reads a minute per site; a site that refuses is left alone for a while.';
+        };
+    };
+    'settings.features': {
+        sources: {
+            deployment: 'this deployment';
+            default: 'its default';
+            env: 'this server’s configuration';
+            instance: 'this server’s configuration';
+            tier: 'this server’s configuration (the workspace’s plan)';
+            workspace: 'this workspace’s rule';
+        };
+        value: {
+            everyone_on: 'On for everyone, by {{source}}.';
+            everyone: 'Off for everyone, by {{source}}.';
+            you_on: 'On for you, by {{source}}.';
+            you: 'Off for you, by {{source}}.';
+        };
+        roles: {
+            admin: 'Admins';
+            member: 'Members';
+        };
+        targets: {
+            everyone: 'on for everyone';
+            nobody: 'off for everyone';
+            only: 'on for {{who, list(type: unit; style: short)}} only';
+            gone: 'someone no longer here';
+            others: 'some others';
+            somePeople: 'some people';
+        };
+        server: {
+            envOn: 'on by default';
+            envOff: 'off by default';
+            locked: '{{targets}}, and admins can’t change it';
+            plan: 'its plan';
+            tierIn: 'included in the {{plan}} plan';
+            tierOut: 'not part of the {{plan}} plan';
+            join: '{{first}}; {{next}}';
+            line: 'Set by this server’s configuration: {{parts}}.';
+        };
+        rule: {
+            label: 'This workspace';
+            who: '$t(settings.features:rule.label): who has it';
+            inherit: 'No workspace rule';
+            on: 'On for everyone';
+            off: 'Off for everyone';
+            some: 'On for some roles and people';
+            others: 'This rule also includes some others, and keeps them when you save. Choose On for everyone, Off for everyone or No workspace rule to replace it.';
+            people: 'People';
+            save: 'Save';
+        };
+        flag: {
+            saved: '{{flag}} saved';
+            cleared: '{{flag}}: the workspace rule is cleared';
+            saveFailed: 'Could not save.';
+            experimental: 'Experimental';
+            details: 'Details';
+            key: 'Key';
+            issue: 'Board item';
+            owner: 'Owner';
+            removeBy: 'Remove by';
+            tools: 'Socio tools';
+            toolList: '{{tools, list(type: unit; style: short)}}';
+        };
+        pages: {
+            features: {
+                intro: 'Released features this workspace may switch off, or keep for some roles and people only.';
+                empty: 'No optional features right now.';
+                search: 'Search optional features';
+            };
+            'features-dev': {
+                intro: 'Unfinished features, listed only because this is an internal deployment. Customer deployments never have them on.';
+                empty: 'Nothing in development right now.';
+                search: 'Search in development';
+            };
+            'early-access': {
+                intro: 'Experimental features, ready to try before they are released. They may change or go away. Turn one on for the workspace, or for some roles and people only: people can’t turn them on for themselves.';
+                empty: 'Nothing in early access right now.';
+                search: 'Search early access';
+            };
+        };
+        applies: 'Changes apply on their next request and their socios’ next turn.';
+        search: 'Search';
+        noMatch: 'Nothing matches “{{query}}”.';
+        loading: 'Loading…';
+        loadFailed: 'Could not load features.';
+        audit: {
+            title: 'Recent changes';
+            none: 'No changes yet.';
+            when: '{{when, datetime(year: numeric; month: numeric; day: numeric; hour: numeric; minute: 2-digit; second: 2-digit)}}';
+            workspace: '{{actor}} changed the workspace rule for {{flag}}';
+            workspace_remove: '{{actor}} cleared the workspace rule for {{flag}}';
+            person: '{{actor}} changed their own choice for {{flag}} (no longer used)';
+            person_remove: '{{actor}} cleared their own choice for {{flag}} (no longer used)';
+            server: 'This server’s configuration changed {{flag}}';
+            server_remove: 'This server’s configuration cleared {{flag}}';
+        };
+    };
+    'settings.inference': {
+        title: 'Inference';
+        loading: 'Loading…';
+        active: 'Your chats run on {{model}}, the workspace’s model.';
+        active_byo: 'Your chats run on {{model}}, your own subscription.';
+        noModel: 'No model is available for your chats yet.';
+        noKinds: 'There are no subscriptions to connect.';
+        noKinds_noModel: 'There are no subscriptions to connect; ask an operator to set up a model.';
+        list: 'Subscriptions';
+        state: {
+            connected: 'Connected';
+            pending: 'Connecting';
+            expired: 'Expired';
+            error: 'Problem';
+            disconnected: 'Not connected';
+        };
+        connect: 'Connect';
+        disconnect: 'Disconnect';
+        cancel: 'Cancel';
+        code: 'Code:';
+        openSignIn: 'Open the sign-in page';
+        connected: 'Connected';
+        disconnected: 'Disconnected';
+        loadFailed: 'Could not load your connections.';
+        connectFailed: 'Could not connect.';
+        disconnectFailed: 'Could not disconnect.';
+    };
     'settings.language': {
         title: 'Language';
         description: 'The language $t(common:product) shows you on this workspace, on every device. Each language is named in its own words.';
@@ -13,5 +700,1781 @@ export interface EnglishResources {
         matchDeviceCurrently: 'Match my device (currently {{language}})';
         saved: 'Language: {{language}}';
         savedDevice: 'Language: matches your device';
+    };
+    'settings.mcp': {
+        title: 'External MCP connections';
+        intro: 'Connect a public HTTPS MCP server for your account, review its tools, and choose which socios may request them. Other people do not inherit your connection. Disconnecting here clears $t(common:product)’s credentials and access; revoke the provider’s own grant there if needed.';
+        approval: 'Tools are available in your web chats. External calls need your approval every time and cannot be undone here. Interrupted calls are not automatically repeated.';
+        failed: 'The connection operation failed.';
+        loading: 'Loading your connections…';
+        form: {
+            name: 'Connection name';
+            url: 'MCP server URL';
+            authentication: 'Authentication';
+            oauth: 'OAuth';
+            none: 'No authentication (public server)';
+            add: 'Add connection';
+        };
+        status: 'Status: {{state}}';
+        status_draft: 'Status: draft';
+        status_authorizing: 'Status: authorizing';
+        status_review: 'Status: review';
+        status_connected: 'Status: connected';
+        status_disconnected: 'Status: disconnected';
+        status_error: 'Status: error';
+        actions: {
+            review: 'Review authorization';
+            refresh: 'Refresh tool catalog';
+            disconnect: 'Disconnect';
+            remove: 'Remove connection';
+        };
+        authorize: {
+            label: 'Authorization review';
+            intro: 'You will authorize this external provider. Review its identity and select the scopes you want to request.';
+            issuer: 'Authorization issuer: {{issuer}}';
+            resource: 'Protected resource: {{resource}}';
+            scopes: 'Requested OAuth scopes';
+            noScopes: 'The provider publishes no optional scopes.';
+            required: 'The server requested: {{scopes}}. A scope selection does not guarantee provider access.';
+            client: 'Use a pre-registered OAuth client';
+            clientNote: 'Optional when this provider requires a client registered for $t(common:product)’s callback. The client must belong to the issuer above.';
+            clientId: 'Client ID';
+            clientSecret: 'Client secret (if required)';
+            clientRequired: 'This provider requires a pre-registered client.';
+            continue: 'Continue to provider';
+            invalidUrl: 'The provider returned an invalid authorization URL.';
+        };
+        tools: {
+            intro: 'Review the external tool definitions, then grant specific tools to a socio. The descriptions and permission hints come from the provider. Every call still needs your approval with its complete arguments. Refreshing the catalog clears existing grants so you can review them again.';
+            socio: 'Socio';
+            allowed: 'Allowed external tools';
+            unavailable: 'Unavailable: {{reason}}';
+            schema: 'Full schema and provider hints';
+            empty: 'This catalog contains no tools.';
+            save: 'Save tool access for this socio';
+        };
+    };
+    'settings.notifications': {
+        title: 'Notifications';
+        loading: 'Loading…';
+        loadFailed: 'Could not load notifications.';
+        intro: 'A socio can notify you when something needs you: unattended work that finished, a problem, a decision only you can make. It goes to the channels you turn on here, and only while you aren’t using $t(common:product). While you are, it shows in the app instead.';
+        saved: 'Notifications saved';
+        channel: {
+            on: 'On';
+            off: 'Off';
+            switch: '{{channel}} on';
+            shows: 'What it shows';
+            goesTo: 'Goes to {{targets, list}}.';
+            nowhere: 'It reaches nowhere yet.';
+            telegramSettings: 'Telegram settings';
+        };
+        content: {
+            message: 'Show the message';
+            messageNote: 'The socio’s name, its message and, where the device shows one, its image.';
+            private: 'Private (“<socio> needs you”)';
+            privateNote: 'Only which socio needs you: the message stays in $t(common:product) until you open it.';
+        };
+        push: {
+            devices: 'Devices';
+            remove: 'Remove';
+            removeLabel: 'Remove {{device}}';
+            removed: 'Device removed';
+            removeFailed: 'Could not remove it.';
+            here: 'On in this browser.';
+            turnOn: 'Turn on for this browser';
+            turningOn: 'Turning on…';
+            turnedOn: 'Notifications on in this browser';
+            turnOnFailed: 'Could not turn notifications on in this browser.';
+            notAllowed: 'Notifications weren’t allowed. Try again and choose Allow.';
+            ios: 'Add $t(common:product) to your Home Screen first, then turn notifications on in the app. On iPhone and iPad, only the installed app gets notifications.';
+            unsupported: 'This browser can’t get push notifications. Try another browser, or Telegram.';
+            denied: 'Notifications are blocked for this site in your browser’s settings. Allow them there, then reload this page.';
+        };
+        test: {
+            title: 'Test';
+            description: 'Sends a test now to every channel that’s on, even while you’re here.';
+            send: 'Send a test notification';
+            sending: 'Sending…';
+            sent: 'Sent to {{channels, list}}.';
+            channel: '{{channel}} ({{counts, list(type: unit)}})';
+            sentCount_one: '{{count}} sent';
+            sentCount_other: '{{count}} sent';
+            failedCount_one: '{{count}} failed';
+            failedCount_other: '{{count}} failed';
+            none: 'No channel is on, so nothing was sent. Turn one on above.';
+            failed: 'Could not send the test notification.';
+        };
+        issues: {
+            title: 'Issue subscriptions';
+            intro: 'Get one notice when all chosen issues reach a status after a future change. Existing matches are not announced. Device delivery uses your notification channels above; a notice also appears in $t(common:product).';
+            keys: 'Issue keys';
+            keysLabel: 'Subscribed issue keys';
+            status: 'When all reach';
+            statusLabel: 'Subscription target status';
+            subscribe: 'Subscribe once';
+            alreadyMatched: 'These issues already match. No historical notice was sent; this waits for a later transition.';
+            alreadyWatching: 'You already have this subscription.';
+            subscribed: 'Subscribed. You will be notified once when all these issues match.';
+            empty: 'No issue subscriptions.';
+            more: 'Load more subscriptions';
+            loadFailed: 'Could not load subscriptions.';
+            subscribeFailed: 'Could not subscribe.';
+            unsubscribeFailed: 'Could not unsubscribe.';
+            moreFailed: 'Could not load more.';
+            target: '→ {{status}}';
+            unsubscribe: 'Unsubscribe';
+            unsubscribeLabel: 'Unsubscribe {{issues}}';
+            states: {
+                watching: 'Watching future changes';
+                ready: 'Matched; notice pending';
+                triggered: 'Matched; notification recorded';
+                cancelled: 'Canceled';
+            };
+        };
+    };
+    'settings.people': {
+        section: {
+            title: 'People';
+            description: 'Who signs in, their role, and what they can reach. Open a person for everything about them.';
+            invite: 'Invite people';
+            tabs: {
+                people: 'People';
+                groups: 'Groups';
+                serviceAccounts: 'Service accounts';
+                withCount: '{{tab}} · {{count, number}}';
+            };
+            groupsNeedSignIn: 'Groups need real accounts (Better Auth). With the local picker, admins may run code and nobody else.';
+            loadFailed: 'Could not load people.';
+        };
+        roles: {
+            admin: 'Admin';
+            member: 'Member';
+        };
+        state: {
+            active: 'Active';
+            invited: 'Invited';
+            'invite-expired': 'Invite expired';
+            deactivated: 'Deactivated';
+        };
+        lastActive: {
+            never: 'Never';
+            now: 'Now';
+            now_inline: 'now';
+            minutes_one: '{{count}} min ago';
+            minutes_other: '{{count}} min ago';
+            hours_one: '{{count}} h ago';
+            hours_other: '{{count}} h ago';
+            yesterday: 'Yesterday';
+            yesterday_inline: 'yesterday';
+            days_one: '{{count}} day ago';
+            days_other: '{{count}} days ago';
+            weeks_one: '{{count}} week ago';
+            weeks_other: '{{count}} weeks ago';
+            date: '{{at, datetime(month: short; day: numeric)}}';
+            dateYear: '{{at, datetime(month: short; day: numeric; year: numeric)}}';
+            exact: '{{at, datetime(year: numeric; month: numeric; day: numeric; hour: numeric; minute: 2-digit; second: 2-digit)}}';
+        };
+        devices_one: '{{count}} device';
+        devices_other: '{{count}} devices';
+        unknownDevice: 'Unknown device';
+        signIn: {
+            cantSignIn: 'Can’t sign in';
+            passkey_one: 'Passkey';
+            passkey_other: 'Passkey ×{{count}}';
+            password: 'Password';
+            passwordOnly: 'Password only';
+            nothing: 'Nothing set up yet';
+            telegram: 'Telegram';
+            method: {
+                link: 'Sign-in link';
+                linkEmail: 'Emailed sign-in link';
+                password: 'Password';
+                passkey: 'Passkey';
+            };
+        };
+        signInLink: {
+            action_email: 'Send sign-in link by email';
+            action_telegram: 'Send sign-in link via Telegram';
+            sent_email: 'Sign-in link sent to {{name}} by email';
+            sent_telegram: 'Sign-in link sent to {{name}} on Telegram';
+            failed: 'Could not send the link.';
+        };
+        reach: {
+            ownsApps_one: 'Owns {{count}} app';
+            ownsApps_other: 'Owns {{count}} apps';
+            nothing: 'Nothing';
+            nothingYet: 'Nothing yet';
+            spaces_one: '{{count}} Space';
+            spaces_other: '{{count}} Spaces';
+            socios_one: '{{count}} socio';
+            socios_other: '{{count}} socios';
+            agents_one: '{{count}} agent';
+            agents_other: '{{count}} agents';
+            apps_one: '{{count}} app';
+            apps_other: '{{count}} apps';
+            keysMade_one: '{{count}} key made';
+            keysMade_other: '{{count}} keys made';
+            code: 'code';
+        };
+        ownerLock: {
+            others: 'The workspace owner’s account: only the owner can change it';
+            self: 'You own this workspace: make another admin the owner first';
+        };
+        owner: {
+            badge: 'Owner';
+            title: "The workspace owner: other admins can't remove them";
+        };
+        role: {
+            label: 'Role of {{name}}';
+            reactivateFirst: 'Reactivate them to change their role';
+            byRule: 'Admin by AUTH_ADMIN_EMAILS';
+            changeFailed: 'Could not change the role.';
+        };
+        demote: {
+            title_admin: 'Make {{name}} an admin?';
+            title_member: 'Make {{name}} a member?';
+            loses: '{{first}} loses the admin pages (People, Features, Secrets and the rest of the workspace’s settings) and what only admins may do; and their plugin sessions, which end now.';
+            confirm_admin: 'Make admin';
+            confirm_member: 'Make member';
+            cancel: 'Cancel';
+        };
+        releases: {
+            action: 'Releases seen';
+            title: 'Releases {{name}} has seen';
+        };
+        actions: {
+            open: 'Open';
+            reactivate: 'Reactivate…';
+            passwordLink: 'Password link';
+            signOutEverywhere: 'Sign out everywhere';
+            deactivate: 'Deactivate…';
+            passwordLinkFailed: 'Could not make a link.';
+            signedOut: '{{name}} is signed out everywhere';
+            signOutFailed: 'Could not sign the account out.';
+            deactivated: '{{name}} deactivated';
+            deactivateFailed: 'Could not deactivate the account.';
+            reactivated: '{{name}} can sign in again';
+            reactivateFailed: 'Could not reactivate the account.';
+        };
+        list: {
+            toolbar: 'Find people';
+            search: 'Search name or email';
+            roleFilter: 'Role filter';
+            roleAny: 'Role: any';
+            statusFilter: 'Status filter';
+            statusAny: 'Status: any';
+            expired_one: '{{count}} invite expired without being used. Make a new password link to send:';
+            expired_other: '{{count}} invites expired without being used. Make a new password link to send:';
+            loading: 'Loading…';
+            noMatch: 'Nobody matches.';
+            empty: 'Nobody yet.';
+            label: 'People';
+            columns: {
+                person: 'Person';
+                role: 'Role';
+                status: 'Status';
+                lastActive: 'Last active';
+                signIn: 'Signs in with';
+                reach: 'Can reach';
+            };
+        };
+        passwordLink: {
+            title: 'Password link';
+            description: 'It sets or resets their password. A newer link replaces it.';
+            for: 'Password link for {{email}} (one use, until {{until, datetime(year: numeric; month: numeric; day: numeric; hour: numeric; minute: 2-digit; second: 2-digit)}}). Send it to them privately:';
+            for_emailed: 'Password link for {{email}} (one use, until {{until, datetime(year: numeric; month: numeric; day: numeric; hour: numeric; minute: 2-digit; second: 2-digit)}}), also emailed. Send it to them privately:';
+            field: 'Password link';
+            copy: 'Copy';
+            copied: 'Link copied';
+            done: 'Done';
+        };
+        invite: {
+            title: 'Invite people';
+            description: 'Add a person with a role. You get a password link to send them; they set a password and sign in.';
+            form: 'Add a person';
+            name: "New person's name";
+            namePlaceholder: 'Name';
+            email: "New person's email";
+            emailPlaceholder: 'Email';
+            role: "New person's role";
+            link: 'Existing user to link';
+            newUser: 'New user';
+            existing: 'Existing: {{name}} ({{id}})';
+            cancel: 'Cancel';
+            done: 'Done';
+            submit: 'Add and make a password link';
+            added: '{{name}} added';
+            failed: 'Could not add the account.';
+        };
+        groups: {
+            intro: 'Groups give people permissions beyond their role. Admins have every permission already.';
+            new: 'New group';
+            empty: "No groups yet. Make one to let people who aren't admins run code.";
+            loadFailed: 'Could not load groups.';
+            noPermissions: 'No permissions';
+            permissions: {
+                'code-run': {
+                    label: 'Run code';
+                    detail: 'Start coding sessions, and use the coding gateways for models and Git.';
+                };
+            };
+            dialog: {
+                editTitle: 'Edit {{name}}';
+                newTitle: 'New group';
+                description: 'Everyone in the group gets its permissions. Admins have them all without a group.';
+                editForm: 'Edit group';
+                newForm: 'New group';
+                name: 'Group name';
+                namePlaceholder: 'Name';
+                permissions: 'Permissions';
+                cancel: 'Cancel';
+                save: 'Save';
+                create: 'Create group';
+                saved: 'Group saved';
+                created: '{{name}} created';
+                saveFailed: 'Could not save the group.';
+            };
+            card: {
+                label: 'Group {{name}}';
+                edit: 'Edit';
+                delete: 'Delete';
+                members: 'People in {{name}}';
+                deactivated: ' · deactivated';
+                remove: 'Remove';
+                nobody: 'Nobody in this group yet.';
+                addForm: 'Add someone to {{name}}';
+                addSelect: 'Person to add to {{name}}';
+                choose: 'Choose a person';
+                option: '{{name}} ({{email}})';
+                option_admin: '{{name}} ({{email}}) · admin';
+                add: 'Add';
+                addFailed: 'Could not add them.';
+                removeFailed: 'Could not remove them.';
+            };
+            delete: {
+                title: 'Delete {{name}}?';
+                loses_one: '{{count}} person loses what it gives at once.';
+                loses_other: '{{count}} people lose what it gives at once.';
+                nobody: 'Nobody is in it.';
+                deleted: '{{name}} deleted';
+                failed: 'Could not delete the group.';
+            };
+        };
+    };
+    'settings.performance': {
+        title: 'Performance recording';
+        intro: 'Start recording, repeat the slow action, then return here to stop and download the report. Recording follows you between pages and can resume after a reload. A reload starts a new sample.';
+        privacy: 'The report stays in this tab until you download it. It contains timings and sizes, with no page or message text, credentials, or URL parameters. Recording stops automatically after ten minutes and keeps at most 500 entries. Signing out clears it.';
+        status_one: 'Stopped · {{count}} entry';
+        status_other: 'Stopped · {{count}} entries';
+        status_recording_one: 'Recording · {{count}} entry';
+        status_recording_other: 'Recording · {{count}} entries';
+        start: 'Start recording';
+        stop: 'Stop recording';
+        download: 'Download report';
+        clear: 'Clear';
+    };
+    'settings.person': {
+        cancel: 'Cancel';
+        done: 'Done';
+        page: {
+            tryAgain: 'Try again';
+            needsSignIn: 'This needs real accounts.';
+            loading: 'Loading…';
+            notFound: 'Nobody here has this account.';
+            loadFailed: 'Could not load this person.';
+            joined: '· joined {{date}}';
+            more: 'More for {{name}}';
+            makeOwner: 'Make owner…';
+            removePermanently: 'Remove permanently…';
+            nowOwner: '{{name}} is now the workspace owner';
+        };
+        tiles: {
+            lastActive: 'Last active';
+            signedInOn: 'Signed in on';
+            deactivated: 'deactivated';
+            nowhere: 'nowhere now';
+            canReach: 'Can reach';
+            asEditor: '{{count}} as editor';
+            actsForThem: 'Acts for them';
+            actsForThemValue: '{{socios}} · {{agents}}';
+            delegated: 'delegated access';
+        };
+        tabs: {
+            access: 'Access';
+            'sign-in': 'Sign-in & devices';
+            owns: 'Owns';
+            activity: 'Activity';
+        };
+        footer: {
+            title: 'Deactivate {{first}}';
+            title_deactivated: 'Reactivate {{first}}';
+            description: 'They can’t sign in; their chats, pages and files stay. You see everything it ends before you confirm.';
+            description_deactivated: 'They can sign in again. Keys, grants and sessions that ended stay ended.';
+        };
+        access: {
+            unknown: 'What {{first}} can reach isn’t known here: the account has no workspace user yet.';
+            levelFailed: 'Could not change their role there.';
+            spaces: 'Spaces';
+            addForm: 'Add to a Space';
+            addSelect: 'Space to add them to';
+            addPlaceholder: 'Add to a Space…';
+            addRole: 'Role in the Space';
+            add: 'Add';
+            roleIn: 'Role in {{space}}';
+            removeFrom: 'Remove from {{space}}';
+            levels: {
+                editor: 'Editor';
+                member: 'Member';
+                everyone: 'Everyone';
+            };
+            private: 'private';
+            everyone: 'everyone';
+            noSpaces: 'No Spaces.';
+            adminEverywhere: 'As an admin, {{first}} edits every Space.';
+            actors: 'Socios, agents and code';
+            removedSocio: 'A removed socio';
+            grantName: '{{socio}}’s access';
+            revoke: 'Revoke';
+            grant: '{{socio}} may use {{audiences}} for {{first}}';
+            grantAnything: 'what it was granted';
+            grantMeta: 'socio access · until {{date}}';
+            audiences: {
+                models: 'models';
+                git: 'git';
+                app: 'an app';
+                plugin: 'a plugin';
+            };
+            disconnect: 'Disconnect';
+            agentKind: 'connected agent';
+            agentKind_domain: 'connected agent ({{domain}})';
+            codeAccess: 'Code access';
+            codeAccessVia: 'from a group that gives “Run code”';
+            codeAccessVia_admin: 'as an admin';
+            yes: 'Yes';
+            no: 'No';
+            groupsLink: 'Groups';
+            telegram: 'Telegram';
+            telegramLinked: 'Linked';
+            telegramNotLinked: 'Not linked';
+            telegramSince: '(linked {{date}})';
+            groups: 'Groups';
+            manageGroups: 'Manage groups';
+            remove: 'Remove';
+            leaveFailed: 'Could not take them out of the group.';
+            left: '{{first}} is no longer in {{group}}';
+            noGroups: 'In no group.';
+            removeTitle: 'Remove {{first}} from {{space}}?';
+            removeBody: 'If it is private, {{first}} stops seeing it at once. What they added there stays.';
+            removeFailed: 'Could not remove them.';
+            revokeTitle: 'Revoke {{name}}?';
+            disconnectTitle: 'Disconnect {{name}}?';
+            revokeBody: 'It stops working for {{first}} at once. {{first}} can grant it again.';
+            revokeFailed: 'Could not revoke the access.';
+            disconnectFailed: 'Could not disconnect the agent.';
+        };
+        signIn: {
+            sessions: 'Devices signed in';
+            signOutDevice: 'Sign out {{device}}';
+            signOut: 'Sign out';
+            signOutFailed: 'Could not sign the device out.';
+            signedOut: 'Signed out on that device';
+            by: 'by {{method}}';
+            lastUsed: 'last used {{ago}}';
+            since: 'since {{date}}';
+            nowhere: 'Not signed in anywhere now.';
+            nowhere_deactivated: 'Deactivated: signed in nowhere.';
+            app: 'The $t(common:product) app';
+            methods: 'How they sign in';
+            none: 'None';
+            passkeys: 'Passkeys';
+            passkey: 'Passkey';
+            passkeyAdded: ', added {{date}}';
+            password: 'Password';
+            set: 'Set';
+            notSet: 'Not set';
+            providers: 'Sign-in providers';
+            newLink: 'New password link';
+            newestLink: 'Newest password link';
+            noLink: 'none made';
+        };
+        dates: {
+            revoked: 'revoked {{date}}';
+            expires: 'expires {{date}}';
+            expired: 'expired {{date}}';
+        };
+        owns: {
+            unknown: 'What {{first}} owns isn’t known here: the account has no workspace user yet.';
+            loadFailed: 'Could not load what they own.';
+            loading: 'Loading what {{first}} owns…';
+            owns: '{{first}} owns {{list}}.';
+            companyOwns: 'The company owns it: hand it to another active person at any time.';
+            nothing: '{{first}} owns nothing that can be transferred.';
+            transferAll: 'Transfer everything…';
+            transferKind: 'Transfer {{kind}}';
+            transfer: 'Transfer…';
+            deletedKept: '{{type}} · deleted, kept';
+            more: 'and {{count}} more';
+            keys: 'Service keys {{first}} made';
+            keysNote: 'revoked if {{first}} is deactivated';
+            keysList: 'Service keys';
+            neverUsed: 'never used';
+            used: 'used {{ago}}';
+            noKeys: '{{first}} made no service keys.';
+        };
+        activity: {
+            title: 'Activity';
+            at: '{{at, datetime(month: short; day: numeric; year: numeric; hour: numeric; minute: 2-digit)}}';
+            loading: 'Loading…';
+            loadFailed: 'Could not load the activity.';
+            empty: 'Nothing recorded yet.';
+            more: 'Load more';
+            sources: {
+                workspace: 'Workspace';
+                access_policy: 'Access';
+                socio_access: 'Socio access';
+                room: 'Room';
+            };
+        };
+        assets: {
+            apps: {
+                title: 'Apps';
+                count_one: '{{count}} app';
+                count_other: '{{count}} apps';
+                what: 'Mini apps they own. Their data space moves with them: an app’s bundles and datasets are its owner’s.';
+            };
+            schedules: {
+                title: 'Schedules';
+                count_one: '{{count}} schedule';
+                count_other: '{{count}} schedules';
+                what: 'Scheduled tasks, saved jobs and goals, with the conversations they run in.';
+            };
+            socios: {
+                title: 'Personal socios';
+                count_one: '{{count}} socio';
+                count_other: '{{count}} socios';
+                what: 'Socios they made for themselves.';
+            };
+            spaces: {
+                title: 'Spaces';
+                count_one: '{{count}} Space membership';
+                count_other: '{{count}} Space memberships';
+                what: 'Their place in each Space, as member or editor.';
+            };
+            data: {
+                title: 'Data space';
+                count_one: '{{count}} item';
+                count_other: '{{count}} items';
+                what: 'Datasets (private scratch areas too), files and media, folders, embeds and the grants they gave.';
+            };
+            conversations: {
+                title: 'Conversations';
+                count_one: '{{count}} conversation';
+                count_other: '{{count}} conversations';
+                what: 'Their own chats (not rooms).';
+            };
+            memories: {
+                title: 'Memories';
+                count_one: '{{count}} memory';
+                count_other: '{{count}} memories';
+                what: 'What socios remember about their work: the new owner gets them as proposals to keep or discard.';
+            };
+        };
+    };
+    'settings.person-dialogs': {
+        deactivate: {
+            title: 'Deactivate {{name}}?';
+            description: '{{first}} can’t sign in any more. Their chats, pages and files stay, named after them. You can reactivate them later; what ends below stays ended.';
+            impactFailed: 'Could not load what it would end.';
+            unknownError: 'unknown error';
+            transferRefused: 'The transfer failed, so {{first}} was not deactivated and nothing moved: {{why}}';
+            transferLost: 'Couldn’t confirm the transfer finished ({{why}}), so {{first}} was not deactivated. What they own is loaded again below: check it before you try again.';
+            transferred: 'What {{from}} owned is {{to}}’s now';
+            keysSection: 'Service keys that stop working';
+            keysStop_one: '{{count}} service key stops working.';
+            keysStop_other: '{{count}} service keys stop working.';
+            keysMade_one: '{{first}} made it and saw its secret.';
+            keysMade_other: '{{first}} made them and saw their secrets.';
+            keyNever: 'never used';
+            keyJustNow: 'used just now';
+            keyUsed: 'used {{ago}}';
+            lastKey: '{{account}}’s only key: {{account}} stops';
+            otherKey: '{{account}} keeps another key';
+            newKey: 'Make {{account}} a new key before you go on:';
+            openAccount: 'Open {{account}}';
+            alsoEnds: 'Also ends';
+            ends: {
+                sessions_one: 'Sessions on {{count}} device';
+                sessions_other: 'Sessions on {{count}} devices';
+                connectedAgents_one: '{{count}} connected agent';
+                connectedAgents_other: '{{count}} connected agents';
+                socioGrants_one: '{{count}} socio access grant';
+                socioGrants_other: '{{count}} socio access grants';
+                appSessions_one: '{{count}} mini app session';
+                appSessions_other: '{{count}} mini app sessions';
+                pluginAccess_one: '{{count}} plugin session and launch codes';
+                pluginAccess_other: '{{count}} plugin sessions and launch codes';
+                scheduledTasks_one: '{{count}} scheduled task';
+                scheduledTasks_other: '{{count}} scheduled tasks';
+                jobRuns_one: '{{count}} job run';
+                jobRuns_other: '{{count}} job runs';
+                subscriptionConnections_one: '{{count}} model subscription connection';
+                subscriptionConnections_other: '{{count}} model subscription connections';
+                mcpConnections_one: '{{count}} MCP connection';
+                mcpConnections_other: '{{count}} MCP connections';
+                roomsHandedOver_one: '{{count}} room where {{first}} is the last admin';
+                roomsHandedOver_other: '{{count}} rooms where {{first}} is the last admin';
+                roomsArchived_one: '{{count}} room with nobody left to run it';
+                roomsArchived_other: '{{count}} rooms with nobody left to run it';
+            };
+            outcomes: {
+                signedOut: 'signed out now';
+                disconnected: 'disconnected';
+                revoked: 'revoked';
+                ended: 'ended';
+                paused: 'paused, kept';
+                stopped: 'stopped now';
+                handedOver: 'handed to its earliest member';
+                archived: 'stays archived';
+            };
+            stays: 'Stays {{first}}’s';
+            transfer: 'Transfer…';
+            theyOwn: '{{what}} they own';
+            movesTo: 'moves to {{name}}';
+            kept: 'kept, still theirs';
+            handTo: 'Hand everything to';
+            handToNobody: 'Nobody: it stays theirs';
+            step1: 'Everything {{first}} owns moves to {{name}}.';
+            step2: 'Then {{first}} is deactivated.';
+            step3: 'If the transfer fails, nothing moves and {{first}} is not deactivated.';
+            nothingElse: 'Nothing else they have ends.';
+            confirm: 'Deactivate {{first}}';
+            confirm_only: 'Deactivate {{first}} only';
+            transferAndDeactivate: 'Transfer everything to {{name}} and deactivate';
+            transferAndDeactivatePick: 'Transfer everything to… and deactivate';
+        };
+        reactivate: {
+            title: 'Reactivate {{name}}?';
+            description: '{{first}} can sign in again, with the role they had. What their deactivation ended doesn’t come back: service keys they made, connected agents and socio access stay revoked, and their sessions stay signed out. Their scheduled tasks stay paused until they resume them.';
+            confirm: 'Reactivate {{first}}';
+        };
+        transfer: {
+            peopleFailed: 'Could not load the people.';
+            choose: 'Choose a person…';
+            loadingPeople: 'Loading people…';
+            option: '{{name}} ({{email}})';
+            whatMoved: 'What moved';
+            nothingMoved: 'nothing';
+            loadFailed: 'Could not load what they own.';
+            failed: 'Could not transfer.';
+            lost: 'Couldn’t confirm the transfer finished ({{why}}). What {{first}} owns now is loaded again: check it before you try again.';
+            title: 'Transfer what {{name}} owns';
+            title_done: 'Moved to {{name}}';
+            description: 'The company owns its people’s work: hand it to another active person. Secrets {{first}} holds personally (subscription logins, OAuth tokens) never move.';
+            description_done: 'What {{first}} owned of these kinds is {{to}}’s now. Both people’s activity records it.';
+            nothing: '{{first}} owns nothing to transfer.';
+            newOwner: 'New owner';
+            nobodyActive: 'Nobody else is active to receive it.';
+            whatMoves: 'What moves';
+            withApps: 'Moves with the apps.';
+            partialTitle: 'Only some kinds move.';
+            partial: 'What stays with {{first}} can still be linked to what moves: a schedule can move while the socio it runs as stays theirs, or an app while a Space it posts to doesn’t. Transfer everything unless you mean to split it.';
+            transferring: 'Transferring…';
+            confirm: 'Transfer everything to {{name}}';
+            confirm_partial: 'Transfer these to {{name}}';
+            pick: 'Transfer';
+        };
+        confirm: {
+            typeName: 'Type <strong>{{name}}</strong> to confirm';
+            nameField: 'Their name';
+            mismatch: 'Type it exactly as shown.';
+            waiting: 'Getting a fresh confirmation…';
+            passwordForm: 'Confirm with password';
+            password: 'Your password';
+            startFailed: 'Could not start the confirmation.';
+        };
+        makeOwner: {
+            title: 'Make {{name}} the workspace owner?';
+            description: 'The owner is the one admin other admins can’t demote, deactivate or remove. You stay an admin; {{first}} can hand ownership on the same way. Every admin is told.';
+            stepUp: 'Then confirm it’s you.';
+            withPassword: 'Make {{first}} the owner';
+            withPasskey: 'Make {{first}} the owner with a passkey';
+            withConfirm: 'Make {{first}} the owner (development sign-in)';
+            failed: 'Could not make them the owner.';
+        };
+        remove: {
+            planFailed: 'Could not plan the removal.';
+            failed: 'Could not remove them.';
+            title: 'Remove {{name}} permanently?';
+            title_done: '{{name}} is removed';
+            description: 'This deletes them and what is only theirs for good, after a backup. It can’t be undone in the app. Deactivating is the reversible choice.';
+            description_done: 'Their records are gone. A backup was made first.';
+            blocks: 'What blocks it';
+            records_one: '{{count}} record the planner lists for this';
+            records_other: '{{count}} records the planner lists for this';
+            transferFirst: 'Transfer first…';
+            deactivateFirst: 'Deactivate first…';
+            help: {
+                owned: 'Removal deletes what they own. The company keeps it: hand it to someone first.';
+                deactivate: 'Only a deactivated person can be removed, so their sessions and keys have ended first.';
+                self: 'Another admin has to remove your account.';
+                lastAdmin: 'Someone must keep managing the workspace: make another person an admin first.';
+                owner: 'The workspace owner stays an active admin. The owner can make another admin the owner first.';
+                listed: 'They own it, and removal never takes what they own with them: transfer it first.';
+                unpurged: 'Records that removal doesn’t delete still point at them: transfer what they own, or end these in the app first.';
+                protected: 'Part of what would go is protected (built in), so nothing is removed.';
+            };
+            goes: 'What goes';
+            rows_one: '{{count}} row';
+            rows_other: '{{count}} rows';
+            rowsAcross_one: 'Rows, across {{count}} table';
+            rowsAcross_other: 'Rows, across {{count}} tables';
+            files_one: '{{count}} file';
+            files_other: '{{count}} files';
+            objects_one: '{{count}} stored object';
+            objects_other: '{{count}} stored objects';
+            tables_one: '{{count}} table';
+            tables_other: '{{count}} tables';
+            kept: 'Stays as history';
+            keptNote: 'These records stay and still name them by an id that no longer resolves to a person.';
+            deleted: '{{rows}} deleted across {{tables}}.';
+            backup: 'Backed up first to <code/>';
+            cleanupFailed: 'Removing their files didn’t finish: {{error}} Run <code/> on the server to finish it.';
+            cleaned: '{{files}} and {{objects}} removed ({{size}}).';
+            stepUp: 'Then confirm it’s you. Every admin can see the removal in the audit log.';
+            withPassword: 'Remove {{first}} permanently';
+            withPasskey: 'Remove {{first}} with a passkey';
+            withConfirm: 'Remove {{first}} permanently (development sign-in)';
+            back: 'Back to People';
+            continue: 'Continue';
+        };
+    };
+    'settings.secrets': {
+        title: 'Secrets';
+        intro: 'API keys and other secrets your workspace apps and plugins read at runtime, sealed with the data key. Values are write-only: once saved, nobody can see them again, here or anywhere; replace a value to change it. An app or plugin reads only the secrets its manifest declares and you grant it. Every change and every read is recorded in the audit log, without the value.';
+        loading: 'Loading…';
+        when: '{{at, datetime(dateStyle: medium; timeStyle: short)}}';
+        workload: '{{name}}';
+        workload_plugin: '{{name}} (plugin)';
+        plugin: '(plugin)';
+        cancel: 'Cancel';
+        ago: {
+            justNow: 'just now';
+            minutes_one: '{{count}} min ago';
+            minutes_other: '{{count}} min ago';
+            hours_one: '{{count}} h ago';
+            hours_other: '{{count}} h ago';
+            days: '{{days, relativetime(range: day)}}';
+            on: 'on {{at, datetime(month: short; day: numeric)}}';
+            on_otherYear: 'on {{at, datetime(dateStyle: medium)}}';
+        };
+        value: {
+            label: 'Value of {{name}}';
+            label_unnamed: 'Value of the secret';
+            placeholder: 'Value (write-only)';
+        };
+        new: {
+            title: 'New secret';
+            set: 'Set {{name}}';
+            name: 'Secret name';
+            namePlaceholder: 'NAME, e.g. STRIPE_API_KEY';
+            nameHint: 'Name: UPPER_CASE letters, digits and _, starting with a letter (at most 64).';
+            owner: 'Who it belongs to';
+            ownerWorkspace: 'The workspace (grant it to apps and plugins)';
+            only: 'Only {{name}}';
+            description: 'Description';
+            descriptionPlaceholder: 'What it is for (optional)';
+            save: 'Save';
+            saved: 'Saved {{name}}';
+        };
+        replace: {
+            label: 'Replace {{name}}';
+            open: 'Replace…';
+            value: 'New value of {{name}}';
+            old: 'Old value';
+            action: 'Replace';
+            done: 'Replaced {{name}}';
+        };
+        overlap: {
+            now: 'Retire the old value now';
+            minutes_one: 'Keep the old value {{count}} minute';
+            minutes_other: 'Keep the old value {{count}} minutes';
+            hours_one: 'Keep the old value {{count}} hour';
+            hours_other: 'Keep the old value {{count}} hours';
+            days_one: 'Keep the old value {{count}} day';
+            days_other: 'Keep the old value {{count}} days';
+        };
+        flags: {
+            label: 'Read flags';
+            labelOn: 'Read flags on {{name}}';
+            title: 'Unusual reads';
+            explanation: 'Patterns in the audit log worth a look. Each says why it was flagged; dismissing one keeps it on record, and only new evidence flags it again.';
+            rule: {
+                'read-spike': 'Unusual read rate';
+                'read-after-revoke': 'Reads after a revoke';
+                'stale-identity': 'Stale plugin identity';
+            };
+            dismissed: 'Dismissed by {{name}} <when></when>';
+            anAdmin: 'an admin';
+            dismiss: 'Dismiss';
+            dismissLabel: 'Dismiss the flag on {{name}}';
+            seen: 'First seen <first></first> · last seen <last></last>';
+        };
+        history: {
+            open: 'History';
+            label: 'History of {{name}}';
+            loading: 'Loading the history…';
+            versions: 'Versions';
+            version: 'Version {{version}} ({{state}}), set by {{name}} <when></when>';
+            version_current: 'Version {{version}} (current), set by {{name}} <when></when>';
+            version_previous: 'Version {{version}} (previous), set by {{name}} <when></when>';
+            version_previousUntil: 'Version {{version}} (previous), set by {{name}} <when></when>, readable until <until></until>';
+            version_retired: 'Version {{version}} (retired), set by {{name}} <when></when>';
+            reads: 'Reads';
+            noReads: 'No app or plugin has read it or tried to.';
+            readsLabel: 'Reads of {{name}}';
+            workload: 'Workload';
+            firstRead: 'First read';
+            lastRead: 'Last read';
+            refused: 'Refused';
+            refusedLast: '{{count}} (last <when></when>)';
+            events: 'Events';
+            eventsLabel: 'Events of {{name}}';
+            event: '{{actor}}: {{detail}}';
+            older: 'Show older';
+        };
+        events: {
+            created: 'Created';
+            replaced: 'Replaced';
+            described: 'Description changed';
+            deleted: 'Deleted';
+            granted: 'Granted';
+            revoked: 'Revoked';
+            'first-read': 'First read by a new workload';
+        };
+        row: {
+            workspace: 'Workspace';
+            current: 'Version {{version}}, set by {{name}} <when></when>';
+            noCurrent: 'No current value';
+            previous: 'version {{version}} readable until <when></when>';
+            lastRead: 'last read by {{name}} <when></when>';
+            anApp: 'an app';
+            neverRead: 'never read';
+            delete: 'Delete';
+            deleteLabel: 'Delete {{name}}';
+            deleteConfirm: 'Delete {{name}}? Apps and plugins can no longer read it, and its grants end now. Its versions are kept sealed for the record.';
+            readersLabel: 'Apps and plugins that may read {{name}}';
+            readBy: 'Read by:';
+            noReaders: 'none yet';
+            revokeLabel: 'Revoke {{secret}} from {{app}}';
+            grantLabel: 'Grant {{name}} to an app or plugin';
+            grantTo: 'Grant to…';
+        };
+        identity: {
+            about: 'Service identity: the token {{name}} signs in to $t(common:product) with. Rotate it if it may have leaked.';
+            rotate: 'Rotate identity';
+            rotateLabel: 'Rotate {{name}}’s identity';
+            confirm: 'Give {{name}} a new identity token? Its service is updated now; the old token keeps working for 15 minutes while old tasks finish.';
+            rotated: 'Rotated {{name}}’s identity';
+            rotated_version: 'Rotated {{name}}’s identity (version {{version}})';
+        };
+        declared: {
+            required: 'Required';
+            optional: 'Optional';
+            set: 'Set';
+            workspaceSecret: 'Workspace secret';
+            notSet: 'Not set';
+            grantShared: 'Grant the workspace’s';
+            setValue: 'Set a value…';
+            setValueLabel: 'Set a value for {{name}}';
+        };
+        app: {
+            plugin: 'Plugin';
+            needsSetup: 'Needs setup';
+            ready: 'Ready';
+            progress_one: '{{set}} of {{count}} required set';
+            progress_other: '{{set}} of {{count}} required set';
+            none: 'Declares no secrets.';
+            declaresLabel: 'Secrets {{name}} declares';
+        };
+        apps: {
+            title: 'Apps';
+            label: 'Apps and the secrets they declare';
+        };
+        plugins: {
+            title: 'Plugins';
+            label: 'Plugins and the secrets they declare';
+        };
+        all: {
+            title: 'All secrets';
+            empty: 'No secrets yet.';
+        };
+        errors: {
+            load: 'Could not load the secrets.';
+            save: 'Could not save the secret.';
+            replace: 'Could not replace the value.';
+            dismiss: 'Could not dismiss the flag.';
+            history: 'Could not load the history.';
+            older: 'Could not load older events.';
+            delete: 'Could not delete the secret.';
+            revoke: 'Could not revoke it.';
+            grant: 'Could not grant it.';
+            rotate: 'Could not rotate the identity.';
+        };
+    };
+    'settings.service-accounts': {
+        intro: 'For external agents and scripts: they use an API key (<code>{{header}}</code>), reach only what its scopes allow, and never sign in or chat with socios.';
+        list: {
+            label: 'Service accounts';
+            kind: 'service account';
+            disabled: 'disabled {{at, datetime}}';
+            role: 'Role of {{name}}';
+            newKey: 'New key';
+            actions: 'Actions for {{name}}';
+            disable: 'Disable…';
+            noKeys: 'No keys yet.';
+        };
+        keys: {
+            label: 'Keys of {{name}}';
+            key: 'Key';
+            madeBy: 'Made by';
+            created: 'Created';
+            lastUsed: 'Last used';
+            expiry: 'Expiry';
+            actions: 'Actions';
+            unknownMaker: 'Unknown';
+            creatorGone: 'creator gone';
+            creatorGoneHint: 'Whoever made it is deactivated or gone; it still works';
+            date: '{{at, datetime}}';
+            usedAt: '{{at, datetime(year: numeric; month: numeric; day: numeric; hour: numeric; minute: numeric; second: numeric)}}';
+            usedFrom: 'from {{ip}}';
+            neverUsed: 'never used';
+            revoked: 'revoked {{at, datetime}}';
+            expires: 'expires {{at, datetime}}';
+            expired: 'expired {{at, datetime}}';
+            revoke: 'Revoke';
+            delete: 'Delete';
+            deleteLabel: 'Delete {{name}}';
+        };
+        add: {
+            label: 'Add a service account';
+            name: 'Service account name';
+            namePlaceholder: 'Name, e.g. Claude (lead)';
+            role: 'Service account role';
+            purpose: 'What it is for';
+            purposePlaceholder: 'What it is for (optional)';
+            submit: 'Add service account';
+        };
+        newKey: {
+            title: 'New key for {{name}}';
+            description: 'Name it after where it runs. It reaches only what its scopes allow.';
+            copyNow: 'Copy it now: it isn’t shown again.';
+            created: 'Key “{{key}}” for {{account}}. $t(settings.service-accounts:newKey.copyNow)';
+            token: 'New API key';
+            copy: 'Copy';
+            copied: 'Key copied';
+            done: 'Done';
+            name: 'Key name';
+            namePlaceholder: 'Key name, e.g. where it runs';
+            lifetime: 'Key lifetime';
+            days_one: '{{count, number}} day';
+            days_other: '{{count, number}} days';
+            cancel: 'Cancel';
+            submit: 'Make key';
+        };
+        scopes: {
+            issuesRead: 'Read issues, comments and attachments';
+            issuesWrite: 'File issues, comment, attach files and change issues (as its role allows)';
+            pagesRead: 'Read Spaces and their pages';
+        };
+        disable: {
+            title: 'Disable {{name}}?';
+            action: 'Disable';
+            body: 'Its keys stop working at once; what it filed stays.';
+        };
+        deleteKey: {
+            title: 'Delete this revoked key for good?';
+            body: '{{key}} (<code>{{prefix}}</code>) of {{account}}. Its record and last-use history go; the audit keeps who deleted it.';
+        };
+        errors: {
+            load: 'Could not load service accounts.';
+            add: 'Could not add the service account.';
+            role: 'Could not change the role.';
+            make: 'Could not make the key.';
+            revoke: 'Could not revoke the key.';
+            disable: 'Could not disable the account.';
+            delete: 'Could not delete the key.';
+        };
+    };
+    'settings.shared': {
+        access: {
+            allow: 'Allow';
+            allowForTask: 'Allow for this task';
+            facts: {
+                app: 'App';
+                address: 'Address';
+                owner: 'Owner';
+            };
+            says: '{{who}} says:';
+            verb: {
+                read: 'read';
+                write: 'read and change';
+                act: 'read, change and ask to act in';
+            };
+            minutes_one: '{{count}} minute';
+            minutes_other: '{{count}} minutes';
+            hours_one: '{{count}} hour';
+            hours_other: '{{count}} hours';
+            wants: '<socio>{{socio}}</socio> wants to <verb>{{verb}}</verb> <app>{{app}}</app> for you for <time>{{duration}}</time>.';
+            letsIt: 'This lets it';
+            visibleTo: '{{socio}}’s answers here are visible to everyone in {{place}}.';
+            development: 'This is a development app on your own socio’s computer: that socio can change its code, so these limits rely on your trust in it.';
+            widens: 'Allowing replaces the narrower access it has in this conversation.';
+            alwaysAsk: 'This app asks for your decision every time.';
+        };
+        action: {
+            operation: '<socio>{{socio}}</socio> asks to {{words}} through <app>{{app}}</app> for you ($t(common:product) data operation <op>{{op}}</op>). <badge>Consequential</badge>';
+            run: '<socio>{{socio}}</socio> asks to run <action>{{action}}</action> in <app>{{app}}</app> for you. <badge>Consequential</badge>';
+            paramsHeading: 'What will run: its parameters, as $t(common:product) received them ({{size}})';
+            items_one: '<n>{{count}}</n> item in <path>{{path}}</path>';
+            items_other: '<n>{{count}}</n> items in <path>{{path}}</path>';
+            params: 'Parameters';
+            showing: 'Showing the first {{shown}} of {{total}}.';
+            showing_pending: 'Showing the first {{shown}} of {{total}}. Open them all before you allow this.';
+            showAll: 'Show all parameters';
+            openFailed: 'Could not open the parameters.';
+            described: 'As described by the app';
+            describedLead: 'As described by the app (its own words):';
+        };
+        size: {
+            bytes_one: '{{count}} byte';
+            bytes_other: '{{count}} bytes';
+            kb: '{{kb, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}} KB';
+        };
+        grant: {
+            access: {
+                read: 'Read';
+                write: 'Read and change';
+                act: 'Change and ask to act';
+                other: 'Other';
+            };
+            removedApp: 'A removed app';
+            thisApp: 'this app';
+            place: {
+                room: 'the room {{title}}';
+                roomUntitled: 'a room';
+                schedule: 'a scheduled task';
+                chat: 'the chat {{title}}';
+                chatUntitled: 'a private chat';
+            };
+            end: 'End access';
+            endLabel: 'End {{socio}}’s access to {{app}}';
+            endLabel_person: 'End {{socio}}’s access to {{app}} for {{person}}';
+            from: '{{socio}}, from {{place}}';
+            from_person: '{{person}} · {{socio}}, from {{place}}';
+            task: '“{{task}}”';
+            when: '{{when, datetime(dateStyle: medium; timeStyle: short)}}';
+            since: 'Since <since></since>';
+            live_one: 'Since <since></since> · until <until></until> · last used <used></used> (ends after {{count}} idle minute)';
+            live_other: 'Since <since></since> · until <until></until> · last used <used></used> (ends after {{count}} idle minutes)';
+            ended: 'Since <since></since> · ended <ended></ended>: {{reason}}';
+            endTitle: 'End {{socio}}’s access to {{app}}?';
+            endBody: 'It stops at once, everywhere: its open pages close and it can’t use the app for this task again. It can ask again, on a new card.';
+        };
+        agents: {
+            unverified: 'Unverified local app';
+        };
+    };
+    'settings.socio-access': {
+        intro: 'Socios can ask to use your mini apps for you, one task at a time, and only apps you can open yourself. You decide on a card in the chat. Changing data and taking actions always wait for you.';
+        reading: {
+            title: 'Reading without asking';
+            help: 'For each socio, whether it may read apps for you without a card. Only you can choose this. Apps that ask every time still ask.';
+            label: 'Whether {{socio}} may read apps for you without asking';
+            manual: 'Ask me every time';
+            bypass: 'Let it read without asking';
+            auto: 'Let auto review decide';
+        };
+        granted: {
+            title: 'Access you granted';
+            none: 'No socio can use an app for you now.';
+            ended: 'Ended ({{n, number}})';
+            endedLabel: 'Ended access';
+        };
+        loadFailed: 'Could not load socio access.';
+        saveFailed: 'Could not save the choice.';
+        endedToast: 'Access ended';
+        endFailed: 'Could not end the access.';
+    };
+    'settings.workspace': {
+        readOnly: {
+            setting: 'Only an admin can change this setting.';
+            settings: 'Only an admin can change these settings.';
+            limits: 'Only an admin can change these limits.';
+            backupSchedule: 'Only an admin can change the backup schedule.';
+        };
+        permissions: {
+            title: 'Permissions';
+            autosave: 'Changes save as you make them.';
+            research: {
+                title: 'Public-page research';
+                description: 'Allow web search and reading public pages, cited by URL. Global settings always take precedence.';
+                saved: 'Public-page research turned on';
+                saved_off: 'Public-page research turned off. Turns running now were stopped.';
+            };
+            memory: {
+                title: 'Use saved memories';
+                description: 'Include your preferences in new turns. Changing permission stops active work.';
+                saved: 'Saved memories turned on. Turns running now were stopped.';
+                saved_off: 'Saved memories turned off. Turns running now were stopped.';
+            };
+        };
+        dailyLimits: {
+            perDot: 'Per socio';
+            perUser: 'Per person';
+            invalid: 'Use whole numbers from 0 to {{max}}.';
+            dot: {
+                title: 'Socio filing limits';
+                intro: 'How much socios may file a day: capability requests, board items, comments and votes each count on their own. 0 turns filing off.';
+                perDotHint: 'For all its people, in 24 hours.';
+                perUserHint: 'By all their socios, in 24 hours.';
+                saved: 'Socio filing limits saved';
+            };
+            notification: {
+                title: 'Notification limits';
+                intro: 'How often socios may notify people a day (notify_user): one shown in the app instead, or held back while they look at the chat, counts too. Tests don’t. 0 turns socios’ notifications off.';
+                perDotHint: 'From one socio to one person, in 24 hours.';
+                perUserHint: 'To one person from all their socios, in 24 hours.';
+                saved: 'Notification limits saved';
+            };
+        };
+        backupSchedule: {
+            title: 'Backup schedule';
+            intro: 'How often the server backs up, and how long permanent removals’ backups stay. 0 turns an interval off. Changes apply within minutes, without a restart.';
+            saved: 'Backup schedule saved';
+            invalid: 'Use 0 to {{hours}} hours, 0 or {{secondsMin}} to {{secondsMax}} whole seconds, 0 to {{drillDays}} whole days for the drill, and 1 to {{purgeDays}} for removal backups.';
+            hours: {
+                label: 'Backups, every (hours)';
+                hint: 'The database and data spaces, counted from the last backup, with the off-site copy when it is set up.';
+            };
+            seconds: {
+                label: 'Continuous copy off-site, every (seconds)';
+                hint: 'Litestream’s newest changes, sealed, to the off-site copy; at least {{min}}. Needs the off-site copy and the continuous copy set up.';
+            };
+            days: {
+                label: 'Restore drill, every (days)';
+                hint: 'Restores the continuous copy into scratch files and checks them, off-site too when it is set up. 0: only with Run drill now.';
+            };
+            purgeDays: {
+                label: 'Permanent removal backups, kept (days)';
+                hint: 'What each permanent removal backed up goes with the first scheduled backup after this many days. Never sent off-site.';
+            };
+        };
+        branding: {
+            title: 'Workspace branding';
+            intro: 'The name and logo shown in navigation and on sign-in.';
+            name: 'Display name';
+            namePlaceholder: 'Client Company Brain';
+            nameSaved: 'Workspace name saved';
+            nameRequired: 'Name the workspace: it shows in navigation and on sign-in.';
+            logoPreview: 'Logo preview';
+            logo: 'Client logo';
+            logoInvalid: 'Choose a PNG, JPEG or WebP image up to 256 KB.';
+            logoUnreadable: 'Could not read logo. Please retry.';
+            logoSaved: 'Logo saved';
+            logoHint: 'PNG, JPEG or WebP, up to 256 KB. Stored in this workspace. A logo saves as soon as you pick it.';
+            useProductLogo: 'Use $t(common:product) logo';
+            productLogoSaved: '$t(common:product) logo in use';
+            useDefaults: 'Use deployment defaults';
+            defaultsSaved: 'Back to the deployment’s branding';
+        };
+        spaces: {
+            title: 'Spaces';
+            intro: 'Who can create Spaces. Workspace admins always can.';
+            toggle: 'Members can create Spaces';
+            description: 'On by default. A member’s Space is private to them and the people they add; only admins make one for the whole workspace.';
+            saved: 'Members can create Spaces';
+            saved_off: 'Only admins can create Spaces';
+        };
+        modelFallback: {
+            title: 'Busy models';
+            intro: 'When a model turns a reply away for a moment, the socio waits and tries again within the turn time limit. If it still can’t go on, it ends with what it did and what is left, so the person can ask it to carry on.';
+            toggle: 'Fall back to the shared model when a person’s own model is busy';
+            description: 'On by default. A reply on someone’s own ChatGPT plan finishes on the workspace’s shared model, and says so. Never when they chose their own model for that conversation.';
+            saved: 'Fallback to the shared model turned on';
+            saved_off: 'Fallback to the shared model turned off';
+        };
+        tracing: {
+            title: 'Tracing';
+            intro: 'Every turn keeps a trace in Runs: its model rounds, tool calls, tokens and why it ended, without content.';
+            exporting: 'Traces also go to the OpenTelemetry collector the server is set up with.';
+            notExporting: 'To send traces to an OpenTelemetry collector, the operator sets OTEL_EXPORTER_OTLP_ENDPOINT.';
+            toggle: 'Include content in traces';
+            description: 'Off by default. When on, exported traces carry what people sent, the socio’s answer and each tool’s input and output, cut to 4,000 characters each. Whoever can read the collector can read them.';
+            saved: 'Content in traces turned on, for turns from now';
+            saved_off: 'Content in traces turned off';
+        };
+        autoTriage: {
+            title: 'Automatic triage';
+            intro: 'When a new issue lands in triage, the workspace’s model suggests its kind, area, priority and labels, and posts them as a comment. Nothing changes until an admin applies the suggestion from the issue.';
+            toggle: 'Propose triage for new issues';
+            description: 'Off by default. Issues are sent to the model as data, once each; a failed or invalid answer is not retried.';
+            toggled: 'Automatic triage turned on';
+            toggled_off: 'Automatic triage turned off';
+            saved: 'Automatic triage saved';
+            invalid: 'Use a whole number from 0 to {{max}}.';
+            perDay: 'Most a day';
+            perDayHint: 'Issues asked about in 24 hours, failures included. 0 asks about none.';
+        };
+        context: {
+            title: 'Long chats';
+            intro: 'When a chat outgrows its model, its oldest turns are kept as notes: a summary and pinned facts, such as decisions and ids. Nothing is deleted; socios can read any of it again.';
+            saved: 'Long chats saved';
+            summaryModel: 'Notes are written by';
+            summaryModelHint: 'The shared model is the workspace’s default backend, without reasoning: notes come in seconds and cost the chat’s model nothing. The chat’s own model can write fuller notes, but with reasoning it may take minutes.';
+            models: {
+                shared: 'The shared model';
+                chat: 'The chat’s own model';
+            };
+            selection: 'Each reply sees';
+            selectionHint: 'Which pinned facts go with each message once there are too many to send them all; the others stay stored either way. Matching each request answered the most questions in testing. A short core makes the socio search its notes, which takes more rounds.';
+            selections: {
+                age: 'The newest facts';
+                relevance: 'The facts that match each request';
+                pointer: 'A short core, the rest on search';
+            };
+        };
+    };
+    'settings.workspace-apps': {
+        inviteLinks: {
+            title: 'The $t(common:product) app';
+            intro: 'Invites can open the $t(common:product) app on people’s phones, where they set their password and start, or the web when they don’t have the app.';
+            toggle: 'Invites open the $t(common:product) app';
+            description: 'Off by default. Invite links and “Send me a link for the app” go through $t(common:product)’s link page, which shows this workspace’s address before it opens anything. Only where the app can reach this workspace (https, on its usual port); elsewhere invites stay as they are.';
+            saved: 'Invites that open the app turned on';
+            saved_off: 'Invites that open the app turned off';
+        };
+        policy: {
+            title: 'The $t(common:product) app on phones';
+            intro: 'A phone keeps a copy of this workspace for the $t(common:product) app. These rules reach each phone the next time it signs in.';
+            leaseDays: {
+                label: 'Lock the app after';
+                unit: 'days without reaching the workspace';
+            };
+            wipeDays: {
+                label: 'Then erase its copy after';
+                unit: 'more days';
+            };
+            periods: 'A phone that hasn’t reached the workspace for the first period locks its copy until the person signs in again, and erases it after the second, unsent work included.';
+            invalidDays: 'Use a whole number of days from {{min}} to {{max}}.';
+            saved: '$t(common:product) app policy saved';
+            appLock: {
+                title: 'Require the app lock';
+                description: 'Off by default. When on, the app asks for Face ID or a fingerprint to open this workspace.';
+                saved: 'App lock required';
+                saved_off: 'App lock not required';
+            };
+            notificationText: {
+                title: 'Show message text in notifications';
+                description: 'On by default. When off, notifications on phones say only that something new came, not what.';
+                saved: 'Message text in notifications turned on';
+                saved_off: 'Message text in notifications turned off';
+            };
+            versions: 'The app follows the lock and erase periods now; it follows the app lock and the notification text from the version that supports them.';
+        };
+        logs: {
+            title: 'Mini app logs';
+            intro: 'Each build and start of a mini app keeps its log. An attempt is kept for the days below or while it is one of the app’s last attempts, whichever keeps more; older ones are removed in the background, and the one running now never is. Only the app’s owner and admins can read them.';
+            days: {
+                label: 'Keep for';
+                unit: 'days';
+            };
+            attempts: {
+                label: 'Or keep the last';
+                unit: 'attempts per app';
+            };
+            invalid: 'Use a whole number from {{min}} to {{max}}.';
+            saved: 'Mini app logs saved';
+        };
+    };
+    'settings.workspace-github': {
+        title: 'GitHub App';
+        intro: 'Coding sessions push their branches and open draft pull requests through this GitHub App, for a person to review. Never to a base branch, and never forced. The repositories they may work on are listed under Coding → Repositories.';
+        repository: 'Repository';
+        repositoryPlaceholder: 'owner/name';
+        repositoryHint: 'Connect GitHub makes the App for this repository’s owner.';
+        repositoryInvalid: 'Name the repository as owner/name, such as acme/app.';
+        ownerFrom: 'GitHub App owner from {{repository}}';
+        repositoryCleared: 'Repository cleared';
+        useDefault: 'Use the server’s default';
+        usingDefault: 'Using the server’s default';
+        saveFailed: 'Could not save. Retry.';
+        status: {
+            unreadable: 'The GitHub App saved here can’t be read: its data key is gone. Select Disconnect, then Connect GitHub.';
+            notConnected: 'GitHub is not connected.';
+            connected: 'Connected: GitHub App {{name}}. Its installation is looked up from each repository.';
+            connected_env: 'Connected: GitHub App {{name}} (from the server’s GITHUB_APP_ID). Its installation is looked up from each repository.';
+            installed: 'Connected: GitHub App {{name}}, installed.';
+            installed_env: 'Connected: GitHub App {{name}} (from the server’s GITHUB_APP_ID), installed.';
+            installedOn: 'Connected: GitHub App {{name}}, installed on {{account}}.';
+            installedOn_env: 'Connected: GitHub App {{name}} (from the server’s GITHUB_APP_ID), installed on {{account}}.';
+        };
+        explain: 'Connect GitHub makes a GitHub App for the repository’s owner that may only write code and pull requests. On GitHub, select Create, then Install on the repositories. Each push gets a token for one repository that lasts only for it. Nothing is pasted, and coding agents never see a GitHub credential.';
+        needsOrigin: 'Set APP_ORIGIN on the server first: GitHub sends you back to that address.';
+        connect: 'Connect GitHub';
+        connectAgain: 'Connect again';
+        disconnect: 'Disconnect';
+        disconnectNote: 'Disconnect forgets the App here; delete it on GitHub too, in your account or organization’s Developer settings → GitHub Apps.';
+        connected: 'GitHub connected';
+        disconnected: 'GitHub disconnected here';
+        finishFailed: 'Could not finish connecting GitHub.';
+        startFailed: 'Could not start connecting GitHub.';
+        disconnectFailed: 'Could not disconnect. Retry.';
+    };
+    'settings.workspace-limits': {
+        groups: {
+            'schedules-jobs': {
+                title: 'Schedules and jobs';
+                intro: 'How often and how much socios may run on their own. Changes apply to the next run or request.';
+            };
+            'data-space': {
+                title: 'Data space';
+                intro: 'How much each person may keep in datasets and files. Lowering a limit never deletes anything: it stops new data going over it.';
+            };
+            'shared-areas': {
+                title: 'Socios’ shared areas';
+                intro: 'What a company socio’s computer keeps for everyone who uses the socio. People who use it, and admins, see and delete it under Data → Shared with socios.';
+            };
+            'plugin-datasets': {
+                title: 'Plugin datasets';
+                intro: 'Datasets a plugin owns and fills, such as synced bookings or sales. Admins see and delete them on the Data page; disabling or uninstalling a plugin keeps them.';
+            };
+            'analytical-tables': {
+                title: 'Analytical tables';
+                intro: 'Append-only history a plugin keeps in its datasets, such as daily occupancy or bookings, stored compressed beside the dataset and queried with DuckDB. Lowering a limit never deletes anything, except the retention, which drops older partitions at the next nightly run.';
+            };
+            'dot-turns': {
+                title: 'Socio replies';
+                intro: 'How much work a socio may do for one message before it reports back. Changes apply to the next reply.';
+            };
+            memory: {
+                title: 'Memory';
+                intro: 'What socios keep of each person’s own chats to recall in their other chats (never used in chats with other people in them), and how long each Space’s shared memory keeps what is out of use.';
+            };
+            rooms: {
+                title: 'Work per message';
+                intro: 'The most one message, and everything it starts, may use: in every chat and Telegram topic. The turn time limit above bounds its time, and the queued-message limit its queue. A socio that reaches one stops and says which. Changes apply to the next message.';
+            };
+            'continuous-copy': {
+                title: 'Continuous copy alerts';
+                intro: 'When the server keeps a continuous copy of its database (Litestream), admins are notified once the copy falls behind or the write-ahead log grows past these, again when it gets worse, and once it recovers. Changes apply to the next check, within a minute.';
+            };
+            'plugin-backups': {
+                title: 'Plugin backups';
+                intro: 'Plugins that keep data on their own storage are backed up with every scheduled backup. Changes apply to the next snapshot.';
+            };
+        };
+        limits: {
+            scheduleMinIntervalMinutes: {
+                label: 'Shortest gap between runs';
+                unit: 'minutes';
+                help: 'A schedule never runs sooner than this after its last run, and socios can’t set a faster one.';
+            };
+            schedulesPerUser: {
+                label: 'Active schedules per person';
+                unit: 'schedules';
+                help: 'How many schedules the socios of one person may have running.';
+            };
+            jobMaxTimeoutSeconds: {
+                label: 'Longest job timeout';
+                unit: 'seconds';
+                help: 'The most time a job may ask for, starting its computer included. A job that runs until done asks for this much per batch.';
+            };
+            jobConcurrency: {
+                label: 'Jobs running at once';
+                unit: 'jobs';
+                help: 'Across the whole workspace; more wait their turn.';
+            };
+            jobsPerUser: {
+                label: 'Saved jobs per person';
+                unit: 'jobs';
+                help: 'How many jobs the socios of one person may keep.';
+            };
+            jobItemAttempts: {
+                label: 'Tries per item';
+                unit: 'tries';
+                help: 'How many times a job that runs until done tries one item before it sets it aside as failed and goes on with the rest.';
+            };
+            jobBatchRetries: {
+                label: 'Retries in a row';
+                unit: 'batches';
+                help: 'How many batches in a row may fail, make no progress or be refused by a source before a job that runs until done stops as failed. Each retry waits longer.';
+            };
+            jobMaxBatches: {
+                label: 'Batches per run';
+                unit: 'batches';
+                help: 'The most batches one run of a job that runs until done may take.';
+            };
+            dataFileMaxMb: {
+                label: 'Largest file';
+                unit: 'MB';
+                help: 'For files in the data space and for chat attachments.';
+            };
+            dataDatasetMaxMb: {
+                label: 'Largest dataset';
+                unit: 'MB';
+                help: 'What one dataset may grow to.';
+            };
+            dataUserMaxMb: {
+                label: 'Data per person';
+                unit: 'MB';
+                help: 'Datasets and files together, for each person.';
+            };
+            dataMaxDatasets: {
+                label: 'Datasets per person';
+                unit: 'datasets';
+                help: 'How many datasets one person may have.';
+            };
+            dataSharedRetentionDays: {
+                label: 'Keep shared items for';
+                unit: 'days';
+                help: 'A file in a company socio’s shared area, or its shared dataset, that nobody changed for this long is deleted (and kept, like anything deleted). 0 keeps them until someone deletes them.';
+            };
+            dataStampTombstoneDays: {
+                label: 'Remember deleted rows for';
+                unit: 'days';
+                help: 'How long the server remembers which dataset rows were deleted, for apps that keep a copy offline. A copy last synced longer ago than this checks every row it holds instead of only the changes.';
+            };
+            dataPluginDatasetMaxMb: {
+                label: 'Largest plugin dataset';
+                unit: 'MB';
+                help: 'What one dataset a plugin owns may grow to. It counts against no person’s data.';
+            };
+            dataPluginQueryMaxRows: {
+                label: 'Rows per query of a plugin dataset';
+                unit: 'rows';
+                help: 'The most rows one query of a plugin’s dataset returns, for the plugin, socios and people alike.';
+            };
+            dataPluginStatementsPerMinute: {
+                label: 'Data operations a minute per plugin';
+                unit: 'operations';
+                help: 'How many data operations one plugin’s token makes a minute: a query or a read batch is one, a write batch one per statement. A plugin’s page raises it for that plugin. Socios and people keep their own limit.';
+            };
+            dataAnalyticalMaxMb: {
+                label: 'Analytical data per owner';
+                unit: 'MB';
+                help: 'What the analytical tables of one owner (a person, a socio’s shared area or a plugin) may hold on disk, apart from that person’s data.';
+            };
+            dataAnalyticsQueryTimeoutSeconds: {
+                label: 'Longest analytical query';
+                unit: 'seconds';
+                help: 'An analytical query that runs longer is stopped.';
+            };
+            dataAnalyticsQueryMaxRows: {
+                label: 'Rows per analytical query';
+                unit: 'rows';
+                help: 'The most rows one analytical query returns; the answer says when more were left out.';
+            };
+            dataAppendMaxRows: {
+                label: 'Rows per append';
+                unit: 'rows';
+                help: 'The most rows one append to an analytical table takes.';
+            };
+            dataAnalyticsQueryMemoryMb: {
+                label: 'Memory per analytical query';
+                unit: 'MB';
+                help: 'What one analytical query may use before it spills to disk. The analytics process needs this times the queries at once, plus about 256 MB.';
+            };
+            dataAnalyticsQueryConcurrency: {
+                label: 'Analytical queries at once';
+                unit: 'queries';
+                help: 'More wait their turn, up to 16; past that a query is refused until one finishes.';
+            };
+            dataAnalyticsRetainDays: {
+                label: 'Keep analytical partitions for';
+                unit: 'days';
+                help: 'Partitions older than this are dropped each night from analytical tables whose plugin sets no retention and that no admin changed on the Data page. Backups still hold them for a while. 0 keeps everything.';
+            };
+            dotModelRounds: {
+                label: 'Model rounds per turn';
+                unit: 'rounds';
+                help: 'How many times a socio may call its model in one reply, tool rounds included. The last round has no tools: the socio says what it did and what is left. The turn time limit still applies.';
+            };
+            turnTimeLimitSeconds: {
+                label: 'Turn time limit';
+                unit: 'seconds';
+                help: 'How long one reply may run before it is stopped. Deploys wait up to this long for running replies to finish, so the most is 300 seconds. A reply already running keeps the limit it started with.';
+            };
+            turnRecallTokens: {
+                label: 'Recalled context per reply';
+                unit: 'tokens';
+                help: 'About how much of the person’s memories (and, in their own chats, episodes of their earlier chats) goes with each message they send. The pinned facts of a long chat that match the message grow and shrink in step. More helps socios recall; less keeps replies quicker and cheaper.';
+            };
+            episodeRetentionDays: {
+                label: 'Keep episodes for';
+                unit: 'days';
+                help: 'What socios remember of each person’s earlier chats (decisions, results, what a chat was about) is deleted once it hasn’t come up for this long. People can delete theirs sooner on the Memories page.';
+            };
+            spaceMemoryRetentionDays: {
+                label: 'Keep retired Space memory for';
+                unit: 'days';
+                help: 'Earlier versions of each Space’s shared memory, proposals turned down or taken back, and entries its editors retired are deleted after this long. Entries in use are kept until an editor retires them; editors can delete a retired one sooner.';
+            };
+            steeringMaxQueued: {
+                label: 'Queued messages per chat';
+                unit: 'messages';
+                help: 'How many messages one person may queue in a chat while the socio works. More stay in the message box until it has read some.';
+            };
+            roomCycleTokens: {
+                label: 'Tokens per message';
+                unit: 'tokens';
+                help: 'The most model tokens (in and out, retries and notes included) one message and the work it starts may use before the socio stops and says so. Each model request reserves its share first, so a request that would pass it is not sent.';
+            };
+            roomMessagesPerMinute: {
+                label: 'Messages a minute per chat';
+                unit: 'messages';
+                help: 'How many messages a chat or Telegram topic takes in any minute, from everyone in it, queued ones included. More are turned away with a note to wait a moment.';
+            };
+            roomHandoffsPerCycle: {
+                label: 'Handoffs per message';
+                unit: 'handoffs';
+                help: 'In a room with several socios: how many times one message’s work may pass from one socio to another, by a socio handing it on or by the message naming more than one socio. A socio never hands the same work to the same socio twice. 0 turns handoffs off. Room admins may lower it for their room.';
+            };
+            roomCycleSpendUsd: {
+                label: 'Spend per message';
+                unit: 'USD';
+                help: 'The most one message’s model use may cost, where the model reports its cost; where it does not, tokens and time still bound it. 0 sets no spend cap.';
+            };
+            copyLagWarnMinutes: {
+                label: 'Copy behind: warning';
+                unit: 'minutes';
+                help: 'Admins are warned when the newest write is this much newer than the newest continuous copy.';
+            };
+            copyLagCriticalMinutes: {
+                label: 'Copy behind: critical';
+                unit: 'minutes';
+                help: 'Critical from this much behind: admins are reminded every hour until the copy catches up.';
+            };
+            walWarnMb: {
+                label: 'Write-ahead log: warning';
+                unit: 'MB';
+                help: 'Admins are warned when the database’s write-ahead log grows to this size.';
+            };
+            walCriticalMb: {
+                label: 'Write-ahead log: critical';
+                unit: 'MB';
+                help: 'Critical from this size: admins are reminded every hour. If the copy has also been critically behind, the app checkpoints the log itself so the disk doesn’t fill.';
+            };
+            pluginBackupMaxGb: {
+                label: 'Largest snapshot per plugin';
+                unit: 'GiB';
+                help: 'The most one plugin’s backup may hold: the data on its own storage. A plugin over it isn’t backed up, and admins are told. Raise it for a plugin that keeps more.';
+            };
+        };
+        saved: '{{title}} saved';
+        reset: '{{title}} back to the server’s defaults';
+        invalid: '{{label}}: use a number from {{min, number}} to {{max, number}} {{units}}.';
+        startsAt: 'The server starts at {{value, number}}.';
+        useDefaults: 'Use the server’s defaults';
+    };
+    'settings.workspace-rooms': {
+        title: 'Rooms';
+        intro: 'Rooms let several people share one conversation with a company socio. Each message runs as the person who sent it, and nobody’s private memories or data are shared. With this on, everyone sees Rooms in the sidebar: they create rooms, share a chat as one and invite people. Rooms are a preview.';
+        enable: {
+            title: 'Let members create shared rooms';
+            description: 'Off by default. Turned off later, rooms and invitations leave the app; a room’s link still opens it read-only, and nothing new runs in it.';
+            saved: 'Rooms turned on. Everyone sees them in the sidebar.';
+            saved_off: 'Rooms turned off. Existing rooms are read-only.';
+        };
+        budget: {
+            title: 'Members see their room’s use and limits';
+            description: 'Off by default: only room admins see them. On, everyone in a room sees its limits, its current message’s time and tokens, and the day’s total once at least three people have sent messages. Spend on someone’s own model subscription stays theirs.';
+            saved: 'Members now see their room’s use and limits';
+            saved_off: 'Only room admins see a room’s use and limits now';
+        };
+        readiness: {
+            allPrivate_one: '{{count, number}} chat, all private. Turning Rooms on changes none of them.';
+            allPrivate_other: '{{count, number}} chats, all private. Turning Rooms on changes none of them.';
+            mixed: '{{chats}} private, {{rooms}}. Private chats keep their readers either way.';
+            chats_one: '{{count, number}} chat';
+            chats_other: '{{count, number}} chats';
+            rooms_one: '{{count, number}} room';
+            rooms_other: '{{count, number}} rooms';
+        };
+        requests: {
+            title: 'Socios rooms asked for';
+            request: '<socio>{{socio}}</socio> in “{{room}}”';
+            askedBy: 'Asked by {{name}}';
+            askedByAdmin: 'Asked by a room admin';
+            letIn: 'Let in';
+            letInLabel: 'Let {{socio}} into {{room}}';
+            letInDone: '{{socio}} can answer in “{{room}}”.';
+            letInFailed: 'Could not let it in.';
+        };
+    };
+    'settings.workspace-setup': {
+        title: 'Service setup';
+        missing: 'Add {{names}} to the server environment, then restart.';
+        ready: 'Text configuration is present. A successful conversation confirms connectivity.';
+        lines: {
+            model: 'Model: {{line}}.';
+            telegram: 'Telegram: {{line}}.';
+            voice: 'Voice: {{line}}.';
+            dataKey: 'Data key: {{line}}.';
+            keyIds: 'Key ids: {{line}}.';
+            legacy: 'Legacy-sealed: {{line}}.';
+            reseal: 'Re-seal: {{line}}.';
+            keyCheck: 'Recovery key check: {{line}}.';
+            backups: 'Backups: {{line}}.';
+            plugins: 'Plugin data: {{line}}.';
+            continuous: 'Continuous copy: {{line}}.';
+            offsite: 'Continuous copy off-site: {{line}}.';
+            drill: 'Restore drill: {{line}}.';
+        };
+        model: {
+            byo: '{{label}} (your own subscription)';
+            noneByo: 'none yet; connect your own in Account → Inference';
+            none: 'none yet; an admin sets one up';
+        };
+        telegram: {
+            notConfigured: 'not configured (set TELEGRAM_BOT_TOKEN)';
+            online: 'online';
+            onlineAs: 'online as @{{bot}}';
+            connecting: 'connecting';
+            offline: 'not connected; check the token and server logs';
+        };
+        voice: {
+            selfHosted: 'self-hosted, configuration present';
+            selfHostedDevices: 'self-hosted, configuration present (devices speak the replies)';
+            selfHostedNeeds: 'self-hosted, needs a transcription server with a realtime socket';
+            present: 'configuration present';
+            needs: 'needs VOICE_API_KEY and VOICE_MODEL';
+        };
+        runningOne: 'one is running now';
+        runningNow: 'running now';
+        noneYet: 'none yet';
+        failed: 'the last one failed: {{reason}}';
+        failedAt: 'the last one failed at {{at}}: {{reason}}';
+        wait: {
+            seconds: '{{n}} s';
+            minutes: '{{n}} min';
+            hours: '{{n}} h';
+        };
+        purposes: {
+            'inference-credentials': 'inference credentials';
+            'data-files': 'files';
+            backups: 'backups';
+            'push-keys': 'push keys';
+            'dispatch-credentials': 'GitHub App key';
+            'settings-secrets': 'settings secrets';
+            'mcp-credentials': 'MCP credentials';
+            'workspace-secrets': 'workspace secrets';
+            'gateway-log': 'gateway exchange log';
+        };
+        dataKey: {
+            unsetSealed_one: 'not set, but {{count}} item is sealed under a data key; set it again as DATA_ENCRYPTION_KEY';
+            unsetSealed_other: 'not set, but {{count}} items are sealed under a data key; set it again as DATA_ENCRYPTION_KEY';
+            unset: 'not set; files and stored credentials use a key from SESSION_SECRET. Set DATA_ENCRYPTION_KEY';
+            unknown_one: '{{count}} item is sealed under a key this server doesn’t have; set it as DATA_ENCRYPTION_KEY_PREVIOUS';
+            unknown_other: '{{count}} items are sealed under a key this server doesn’t have; set it as DATA_ENCRYPTION_KEY_PREVIOUS';
+            resealing_one: 'set; re-sealing {{count}} item sealed under an older key';
+            resealing_other: 'set; re-sealing {{count}} items sealed under an older key';
+            set: 'set';
+        };
+        backup: {
+            every_one: 'every {{count}} hour';
+            every_other: 'every {{count}} hours';
+            off: 'scheduled backups off';
+            last: 'last at {{at}}';
+            lastSize: 'last at {{at}} ({{size}})';
+            offsiteFailed: 'the off-site copy failed: {{reason}}';
+            offsiteAt: 'copied off-site at {{at}}';
+            offsiteNone: 'not copied off-site yet';
+        };
+        plugins: {
+            notYet: '{{name}} is not backed up yet: its first backup comes with the next scheduled backup';
+            undeclared: '{{name}} is not backed up: the installed version declares no backup';
+            undeclaredSince: '{{name}} is not backed up: the installed version declares no backup (flagged {{since}})';
+            failing: '{{name}}’s backup is failing: {{reason}} ({{last}})';
+            failingSince: '{{name}}’s backup is failing since {{since}}: {{reason}} ({{last}})';
+            noReason: 'no reason given';
+            stale: '{{name}}’s backup is out of date ({{last}})';
+            disabled: '{{name}} is disabled, so it isn’t backed up ({{last}})';
+            disabledSince: '{{name}} is disabled since {{since}}, so it isn’t backed up ({{last}})';
+            lastAt: 'last backed up {{at}}';
+            lastNone: 'no good backup yet';
+            allBackedUp: 'every plugin with its own storage is backed up';
+        };
+        offsite: {
+            off: 'off; set how often in Backup schedule';
+            every_one: 'every {{count}} second';
+            every_other: 'every {{count}} seconds';
+            failed: 'the last send failed{{row}}; it tries again later';
+            failedAt: 'the last send failed at {{at}}{{row}}; it tries again later';
+            failedReason: 'the last send failed{{row}}: {{reason}}; it tries again later';
+            failedAtReason: 'the last send failed at {{at}}{{row}}: {{reason}}; it tries again later';
+            inRow_one: ' ({{count}} in a row)';
+            inRow_other: ' ({{count}} in a row)';
+            behind: 'behind: the newest copy has waited {{waited}}';
+            sentUpTo: 'everything up to {{at}} is off-site';
+            nothingSent: 'nothing sent yet';
+            waiting_one: '{{count}} file waiting; nothing off-site is removed until it goes';
+            waiting_other: '{{count}} files waiting; nothing off-site is removed until they go';
+        };
+        drill: {
+            every_one: 'every {{count}} day';
+            every_other: 'every {{count}} days';
+            manual: 'only when an admin runs it';
+            restoreOffsite: 'off-site {{took}}';
+            restorePoint: 'as of {{at}} {{took}}';
+            restoreLatest: 'latest {{took}}';
+            passed: 'the last one passed at {{at}} in {{took}} ({{restores}}); rows match live';
+            passedDiffer_one: 'the last one passed at {{at}} in {{took}} ({{restores}}); {{count}} table differs from live by writes since the copy';
+            passedDiffer_other: 'the last one passed at {{at}} in {{took}} ({{restores}}); {{count}} tables differ from live by writes since the copy';
+            unknownError: 'unknown error';
+            run: 'Run drill now';
+            running: 'Drill running…';
+        };
+        keyIds: {
+            none: 'none; no data key is set';
+            current: 'current {{current}}';
+            currentPrevious: 'current {{current}}, previous {{previous}}';
+        };
+        legacy: {
+            none: 'none; SESSION_SECRET is no longer needed to read stored data';
+            byPurpose: '{{purpose}} {{n}}';
+            items_one: '{{count}} item still needs SESSION_SECRET; keep it in the recovery kit until this is zero';
+            items_other: '{{count}} items still need SESSION_SECRET; keep it in the recovery kit until this is zero';
+            itemsBy_one: '{{count}} item ({{by}}) still needs SESSION_SECRET; keep it in the recovery kit until this is zero';
+            itemsBy_other: '{{count}} items ({{by}}) still need SESSION_SECRET; keep it in the recovery kit until this is zero';
+        };
+        reseal: {
+            finished_one: 'the last one finished at {{at}}: {{count}} re-sealed';
+            finished_other: 'the last one finished at {{at}}: {{count}} re-sealed';
+            unreadable_one: '{{count}} under a key this server doesn’t have';
+            unreadable_other: '{{count}} under a key this server doesn’t have';
+            left_one: '{{count}} left for the next run';
+            left_other: '{{count}} left for the next run';
+            button: 'Re-seal under the data key';
+            busy: 'Re-sealing…';
+            needsKey: 'Set DATA_ENCRYPTION_KEY first.';
+        };
+        keyCheck: {
+            which: 'the server’s current key';
+            which_previous: 'the server’s previous key';
+            which_neither: 'not a key this server uses';
+            error: 'key {{keyId}} ({{which}}) couldn’t be checked at {{at}}: {{reason}}';
+            result: 'key {{keyId}} ({{which}}) passed at {{at}}: {{purposes}}';
+            result_failed: 'key {{keyId}} ({{which}}) failed at {{at}}: {{purposes}}';
+            nothingToTry: '{{purpose}} nothing to try';
+            opened: '{{purpose}} {{opened}} of {{sampled}} opened';
+        };
+        recovery: {
+            label: 'Verify a recovery key';
+            hint: 'Paste the data key from escrow. It opens a sample of the latest restore and is never stored.';
+            verify: 'Verify';
+            checking: 'Checking…';
+        };
     };
 }

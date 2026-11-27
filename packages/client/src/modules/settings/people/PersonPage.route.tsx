@@ -11,33 +11,25 @@ import {
 } from 'react-router';
 import { toast } from 'sonner';
 
+import { useTranslation } from '@socio/i18n/react';
 import type { Account, AssetKind, PasswordLink, SentSignInLink } from '@socio/shared/auth';
 import type { PersonDetail } from '@socio/shared/people';
 import type { Role } from '@socio/shared/types';
 
+import { routeI18n } from '../../../i18n/page-i18n';
 import { ApiError, api } from '../../../lib/api';
 import { revalidateOn } from '../../../lib/page-loader';
 import { web } from '../../../lib/web-context';
 import { useShell, type RouteHandle } from '../../../shell/shell-context';
 import { SettingsCard } from '../AccountSettings';
+import { PERSON_CRUMB, sectionCrumb, SETTINGS_CRUMB } from '../crumbs';
 import { allowed, findSection, SETTINGS_HOME, settingsAccess, settingsPath } from '../sections';
 import { SettingsLayout, useSettingsAccess } from '../SettingsLayout';
 
 import { DeactivateDialog, ReactivateDialog } from './DeactivateDialog';
 import { PasswordLinkDialog, type ShownLink } from './InviteDialog';
 import { MakeOwnerDialog } from './MakeOwnerDialog';
-import {
-    deviceLabel,
-    firstName,
-    initials,
-    isDemotion,
-    lastActive,
-    OWNER_LOCK_TITLES,
-    ownerLock,
-    plural,
-    shortDate,
-    signInLinkWords,
-} from './people-format';
+import { firstName, initials, isDemotion, ownerLock, usePeopleFormat } from './people-format';
 import { DemoteDialog, OwnerBadge, ReleasesDialog, RolePicker, StateBadge } from './PeopleList';
 import { AccessTab, ActivityTab, OwnsTab, SignInTab, type Run } from './PersonTabs';
 import { RemoveDialog } from './RemoveDialog';
@@ -57,35 +49,36 @@ const people = findSection('people')!;
 
 export const handle: RouteHandle = {
     crumb: () => [
-        { label: 'Settings', to: '/settings' },
-        { label: 'People', to: settingsPath('people') },
-        { label: 'Person' },
+        { label: SETTINGS_CRUMB, to: '/settings' },
+        { label: sectionCrumb('people'), to: settingsPath('people') },
+        { label: PERSON_CRUMB },
     ],
 };
 
 /** `/settings/people/:id`: admins only, as People. */
 export async function loader({ context }: LoaderFunctionArgs) {
     const { services } = web(context);
+    const i18n = await routeI18n(context, 'settings:person');
     if (!(await services.user())) {
-        return null;
+        return { i18n };
     }
     const workspace = await services.workspace();
     if (workspace && !allowed(people.item, settingsAccess(workspace, false))) {
         throw redirect(SETTINGS_HOME);
     }
-    return null;
+    return { i18n };
 }
 export const shouldRevalidate = revalidateOn({ params: ['id'] });
 
 /** The person page's tabs, by their `?tab=`. */
 export const PERSON_TABS = ['access', 'sign-in', 'owns', 'activity'] as const;
 export type PersonTab = (typeof PERSON_TABS)[number];
-const TAB_LABELS: Record<PersonTab, string> = {
-    access: 'Access',
-    'sign-in': 'Sign-in & devices',
-    owns: 'Owns',
-    activity: 'Activity',
-};
+const TAB_KEYS = {
+    access: 'settings.person:tabs.access',
+    'sign-in': 'settings.person:tabs.sign-in',
+    owns: 'settings.person:tabs.owns',
+    activity: 'settings.person:tabs.activity',
+} as const satisfies Record<PersonTab, string>;
 
 /** What loading the person gave: them, or why not (403, 404). */
 type Loaded = { detail: PersonDetail } | { status: number; message: string };
@@ -115,6 +108,16 @@ function Tile({ label, value, note }: { label: string; value: ReactNode; note?: 
  * page.
  */
 export default function PersonPageRoute() {
+    const { t } = useTranslation(['settings.person', 'settings.people', 'settings']);
+    const {
+        devices: deviceCount,
+        deviceLabel,
+        exactTime,
+        lastActive,
+        ownerLockTitle,
+        shortDate,
+        signInLinkWords,
+    } = usePeopleFormat();
     const { id = '' } = useParams();
     const access = useSettingsAccess();
     const { workspace } = useShell();
@@ -149,12 +152,12 @@ export default function PersonPageRoute() {
                 if (!signal?.aborted && shown.current === id) {
                     setLoaded({
                         status: e instanceof ApiError ? e.status : 0,
-                        message: e instanceof Error ? e.message : 'Could not load this person.',
+                        message: e instanceof Error ? e.message : t('settings.person:page.loadFailed'),
                     });
                 }
             }
         },
-        [id],
+        [id, t],
     );
     useEffect(() => {
         if (!access.signIn) {
@@ -197,7 +200,7 @@ export default function PersonPageRoute() {
             to={settingsPath('people')}
             className="inline-flex w-fit items-center gap-1 text-muted-foreground hover:text-foreground"
         >
-            <ArrowLeft className="size-4" /> People
+            <ArrowLeft className="size-4" /> {t('settings:sections.people')}
         </Link>
     );
     const message = (text: string, slot: string, retry = false) => (
@@ -205,22 +208,22 @@ export default function PersonPageRoute() {
             <p className="text-muted-foreground">{text}</p>
             {retry && (
                 <Button variant="outline" size="sm" onClick={() => void load()}>
-                    Try again
+                    {t('settings.person:page.tryAgain')}
                 </Button>
             )}
         </div>
     );
     let body: ReactNode;
     if (!access.signIn) {
-        body = message('This needs real accounts.', 'person-needs-sign-in');
+        body = message(t('settings.person:page.needsSignIn'), 'person-needs-sign-in');
     } else if (!loaded) {
-        body = message('Loading…', 'person-loading');
+        body = message(t('settings.person:page.loading'), 'person-loading');
     } else if ('status' in loaded) {
         body =
             loaded.status === 403
                 ? message(loaded.message, 'person-forbidden')
                 : loaded.status === 404
-                  ? message('Nobody here has this account.', 'person-not-found')
+                  ? message(t('settings.person:page.notFound'), 'person-not-found')
                   : message(loaded.message, 'person-error', true);
     } else {
         const { detail } = loaded;
@@ -237,16 +240,17 @@ export default function PersonPageRoute() {
         const ownable =
             iOwn && !off && person.role === 'admin' && !person.owner && !!person.userId && person.userId !== me;
         const setRole = (role: Role) =>
-            run(() => api(path(person.id), 'PATCH', { role }), 'Could not change the role.');
+            run(() => api(path(person.id), 'PATCH', { role }), t('settings.people:role.changeFailed'));
         const passwordLink = () =>
             void run(async () => {
                 const made = await api<PasswordLink>(path(person.id, '/password-link'), 'POST', {});
                 setLink({ ...made, email: person.email });
-            }, 'Could not make a link.');
+            }, t('settings.people:actions.passwordLinkFailed'));
         const spaces = detail.access?.spaces ?? [];
         const editorOf = spaces.filter((space) => space.level === 'editor').length;
         const socios = detail.access?.socioGrants.length ?? 0;
         const agents = detail.access?.connectedAgents.length ?? 0;
+        const signInLink = off ? null : signInLinkWords(person.signInLinkVia);
         const devices = [...new Set(signIn.sessions.map((session) => deviceLabel(session.userAgent)))];
         body = (
             <div className="grid gap-4" data-person={person.email} key={person.id}>
@@ -264,7 +268,10 @@ export default function PersonPageRoute() {
                         </h3>
                         <p className="text-muted-foreground">
                             <span className="break-all">{person.email}</span>
-                            <span className="whitespace-nowrap"> · joined {shortDate(person.createdAt)}</span>
+                            <span className="whitespace-nowrap">
+                                {' '}
+                                {t('settings.person:page.joined', { date: shortDate(person.createdAt) })}
+                            </span>
                         </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2" data-slot="person-actions">
@@ -285,7 +292,7 @@ export default function PersonPageRoute() {
                         {!off && (
                             <>
                                 <Button variant="outline" size="sm" disabled={locked} onClick={passwordLink}>
-                                    Password link
+                                    {t('settings.people:actions.passwordLink')}
                                 </Button>
                                 <Button
                                     variant="outline"
@@ -294,41 +301,45 @@ export default function PersonPageRoute() {
                                     onClick={() =>
                                         void run(
                                             () => api(path(person.id, '/sessions'), 'DELETE'),
-                                            'Could not sign the account out.',
-                                            `${person.name} is signed out everywhere`,
+                                            t('settings.people:actions.signOutFailed'),
+                                            t('settings.people:actions.signedOut', { name: person.name }),
                                         )
                                     }
                                 >
-                                    Sign out everywhere
+                                    {t('settings.people:actions.signOutEverywhere')}
                                 </Button>
                             </>
                         )}
                         <DropdownMenu modal={false}>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="outline" size="icon-sm" aria-label={`More for ${person.name}`}>
+                                <Button
+                                    variant="outline"
+                                    size="icon-sm"
+                                    aria-label={t('settings.person:page.more', { name: person.name })}
+                                >
                                     <MoreHorizontal />
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" data-slot="person-more">
-                                {!off && signInLinkWords(person.signInLinkVia) && (
+                                {signInLink && (
                                     <DropdownMenuItem
                                         onSelect={() =>
                                             void run(
                                                 () => api<SentSignInLink>(path(person.id, '/sign-in-link'), 'POST', {}),
-                                                'Could not send the link.',
-                                                `Sign-in link sent to ${person.name} ${signInLinkWords(person.signInLinkVia)?.sent}`,
+                                                t('settings.people:signInLink.failed'),
+                                                signInLink.sent(person.name),
                                             )
                                         }
                                     >
-                                        {signInLinkWords(person.signInLinkVia)?.action}
+                                        {signInLink.action}
                                     </DropdownMenuItem>
                                 )}
                                 <DropdownMenuItem disabled={!person.userId} onSelect={() => setReleases(true)}>
-                                    Releases seen
+                                    {t('settings.people:releases.action')}
                                 </DropdownMenuItem>
                                 {ownable && (
                                     <DropdownMenuItem onSelect={() => setLifecycle('owner')}>
-                                        Make owner…
+                                        {t('settings.person:page.makeOwner')}
                                     </DropdownMenuItem>
                                 )}
                                 {removable && (
@@ -336,7 +347,7 @@ export default function PersonPageRoute() {
                                         className="text-destructive"
                                         onSelect={() => setLifecycle('remove')}
                                     >
-                                        Remove permanently…
+                                        {t('settings.person:page.removePermanently')}
                                     </DropdownMenuItem>
                                 )}
                             </DropdownMenuContent>
@@ -345,24 +356,38 @@ export default function PersonPageRoute() {
                 </header>
                 <div className="grid grid-cols-2 gap-2 lg:grid-cols-4" data-slot="person-tiles">
                     <Tile
-                        label="Last active"
-                        value={person.lastActiveAt ? lastActive(Date.parse(person.lastActiveAt)) : 'Never'}
-                        note={person.lastActiveAt && new Date(person.lastActiveAt).toLocaleString('en-US')}
+                        label={t('settings.person:tiles.lastActive')}
+                        value={
+                            person.lastActiveAt
+                                ? lastActive(Date.parse(person.lastActiveAt))
+                                : t('settings.people:lastActive.never')
+                        }
+                        note={person.lastActiveAt && exactTime(person.lastActiveAt)}
                     />
                     <Tile
-                        label="Signed in on"
-                        value={plural(signIn.sessions.length, 'device')}
-                        note={devices.join(', ') || (off ? 'deactivated' : 'nowhere now')}
+                        label={t('settings.person:tiles.signedInOn')}
+                        value={deviceCount(signIn.sessions.length)}
+                        note={
+                            devices.join(', ') ||
+                            (off ? t('settings.person:tiles.deactivated') : t('settings.person:tiles.nowhere'))
+                        }
                     />
                     <Tile
-                        label="Can reach"
-                        value={detail.access ? plural(spaces.length, 'Space') : '—'}
-                        note={editorOf ? `${editorOf} as editor` : undefined}
+                        label={t('settings.person:tiles.canReach')}
+                        value={detail.access ? t('settings.people:reach.spaces', { count: spaces.length }) : '—'}
+                        note={editorOf ? t('settings.person:tiles.asEditor', { count: editorOf }) : undefined}
                     />
                     <Tile
-                        label="Acts for them"
-                        value={detail.access ? `${plural(socios, 'socio')} · ${plural(agents, 'agent')}` : '—'}
-                        note="delegated access"
+                        label={t('settings.person:tiles.actsForThem')}
+                        value={
+                            detail.access
+                                ? t('settings.person:tiles.actsForThemValue', {
+                                      socios: t('settings.people:reach.socios', { count: socios }),
+                                      agents: t('settings.people:reach.agents', { count: agents }),
+                                  })
+                                : '—'
+                        }
+                        note={t('settings.person:tiles.delegated')}
                     />
                 </div>
                 <Tabs
@@ -374,7 +399,7 @@ export default function PersonPageRoute() {
                     <TabsList className="max-w-full overflow-x-auto">
                         {PERSON_TABS.map((value) => (
                             <TabsTrigger key={value} value={value}>
-                                {TAB_LABELS[value]}
+                                {t(TAB_KEYS[value])}
                             </TabsTrigger>
                         ))}
                     </TabsList>
@@ -406,27 +431,27 @@ export default function PersonPageRoute() {
                     data-slot="person-footer"
                 >
                     <div className="grid min-w-0 flex-1 gap-0.5">
-                        <span className="font-medium">{off ? `Reactivate ${first}` : `Deactivate ${first}`}</span>
+                        <span className="font-medium">
+                            {t('settings.person:footer.title', { context: off ? 'deactivated' : undefined, first })}
+                        </span>
                         <span className="text-xs text-muted-foreground">
-                            {off
-                                ? 'They can sign in again. Keys, grants and sessions that ended stay ended.'
-                                : 'They can’t sign in; their chats, pages and files stay. You see everything it ends before you confirm.'}
+                            {t('settings.person:footer.description', { context: off ? 'deactivated' : undefined })}
                         </span>
                     </div>
                     <div className="flex flex-wrap items-center gap-2" data-slot="person-lifecycle-actions">
                         {removable && (
                             <Button variant="ghost" className="text-destructive" onClick={() => setLifecycle('remove')}>
-                                Remove permanently…
+                                {t('settings.person:page.removePermanently')}
                             </Button>
                         )}
                         <Button
                             variant="outline"
                             className={off ? undefined : 'text-destructive'}
                             disabled={!!lock}
-                            title={lock ? OWNER_LOCK_TITLES[lock] : undefined}
+                            title={lock ? ownerLockTitle(lock) : undefined}
                             onClick={() => setLifecycle(off ? 'reactivate' : 'deactivate')}
                         >
-                            {off ? 'Reactivate…' : 'Deactivate…'}
+                            {off ? t('settings.people:actions.reactivate') : t('settings.people:actions.deactivate')}
                         </Button>
                     </div>
                 </footer>
@@ -455,8 +480,8 @@ export default function PersonPageRoute() {
                         onConfirm={async () => {
                             await run(
                                 () => api(path(person.id, '/deactivate'), 'POST', {}),
-                                'Could not deactivate the account.',
-                                `${person.name} deactivated`,
+                                t('settings.people:actions.deactivateFailed'),
+                                t('settings.people:actions.deactivated', { name: person.name }),
                             );
                             setLifecycle(undefined);
                         }}
@@ -469,7 +494,7 @@ export default function PersonPageRoute() {
                         onDone={() => {
                             setLifecycle(undefined);
                             setIOwn(false);
-                            toast.success(`${person.name} is now the workspace owner`);
+                            toast.success(t('settings.person:page.nowOwner', { name: person.name }));
                             void load();
                         }}
                     />
@@ -504,8 +529,8 @@ export default function PersonPageRoute() {
                         onConfirm={async () => {
                             await run(
                                 () => api(path(person.id, '/reactivate'), 'POST', {}),
-                                'Could not reactivate the account.',
-                                `${person.name} can sign in again`,
+                                t('settings.people:actions.reactivateFailed'),
+                                t('settings.people:actions.reactivated', { name: person.name }),
                             );
                             setLifecycle(undefined);
                         }}

@@ -1,0 +1,164 @@
+{
+    "title": "Service setup",
+    "missing": "Add {{names}} to the server environment, then restart.",
+    "ready": "Text configuration is present. A successful conversation confirms connectivity.",
+    "lines": {
+        "model": "Model: {{line}}.",
+        "telegram": "Telegram: {{line}}.",
+        "voice": "Voice: {{line}}.",
+        "dataKey": "Data key: {{line}}.",
+        "keyIds": "Key ids: {{line}}.",
+        "legacy": "Legacy-sealed: {{line}}.",
+        "reseal": "Re-seal: {{line}}.",
+        "keyCheck": "Recovery key check: {{line}}.",
+        "backups": "Backups: {{line}}.",
+        "plugins": "Plugin data: {{line}}.",
+        "continuous": "Continuous copy: {{line}}.",
+        "offsite": "Continuous copy off-site: {{line}}.",
+        "drill": "Restore drill: {{line}}."
+    },
+    "model": {
+        "byo": "{{label}} (your own subscription)",
+        "noneByo": "none yet; connect your own in Account → Inference",
+        "none": "none yet; an admin sets one up"
+    },
+    "telegram": {
+        "notConfigured": "not configured (set TELEGRAM_BOT_TOKEN)",
+        "online": "online",
+        "onlineAs": "online as @{{bot}}",
+        "connecting": "connecting",
+        "offline": "not connected; check the token and server logs"
+    },
+    "voice": {
+        "selfHosted": "self-hosted, configuration present",
+        "selfHostedDevices": "self-hosted, configuration present (devices speak the replies)",
+        "selfHostedNeeds": "self-hosted, needs a transcription server with a realtime socket",
+        "present": "configuration present",
+        "needs": "needs VOICE_API_KEY and VOICE_MODEL"
+    },
+    "runningOne": "one is running now",
+    "runningNow": "running now",
+    "noneYet": "none yet",
+    "failed": "the last one failed: {{reason}}",
+    "failedAt": "the last one failed at {{at}}: {{reason}}",
+    "wait": {
+        "seconds": "{{n}} s",
+        "minutes": "{{n}} min",
+        "hours": "{{n}} h"
+    },
+    "purposes": {
+        "inference-credentials": "inference credentials",
+        "data-files": "files",
+        "backups": "backups",
+        "push-keys": "push keys",
+        "dispatch-credentials": "GitHub App key",
+        "settings-secrets": "settings secrets",
+        "mcp-credentials": "MCP credentials",
+        "workspace-secrets": "workspace secrets",
+        "gateway-log": "gateway exchange log"
+    },
+    "dataKey": {
+        "unsetSealed_one": "not set, but {{count}} item is sealed under a data key; set it again as DATA_ENCRYPTION_KEY",
+        "unsetSealed_other": "not set, but {{count}} items are sealed under a data key; set it again as DATA_ENCRYPTION_KEY",
+        "unset": "not set; files and stored credentials use a key from SESSION_SECRET. Set DATA_ENCRYPTION_KEY",
+        "unknown_one": "{{count}} item is sealed under a key this server doesn’t have; set it as DATA_ENCRYPTION_KEY_PREVIOUS",
+        "unknown_other": "{{count}} items are sealed under a key this server doesn’t have; set it as DATA_ENCRYPTION_KEY_PREVIOUS",
+        "resealing_one": "set; re-sealing {{count}} item sealed under an older key",
+        "resealing_other": "set; re-sealing {{count}} items sealed under an older key",
+        "set": "set"
+    },
+    "backup": {
+        "every_one": "every {{count}} hour",
+        "every_other": "every {{count}} hours",
+        "off": "scheduled backups off",
+        "last": "last at {{at}}",
+        "lastSize": "last at {{at}} ({{size}})",
+        "offsiteFailed": "the off-site copy failed: {{reason}}",
+        "offsiteAt": "copied off-site at {{at}}",
+        "offsiteNone": "not copied off-site yet"
+    },
+    "plugins": {
+        "notYet": "{{name}} is not backed up yet: its first backup comes with the next scheduled backup",
+        "undeclared": "{{name}} is not backed up: the installed version declares no backup",
+        "undeclaredSince": "{{name}} is not backed up: the installed version declares no backup (flagged {{since}})",
+        "failing": "{{name}}’s backup is failing: {{reason}} ({{last}})",
+        "failingSince": "{{name}}’s backup is failing since {{since}}: {{reason}} ({{last}})",
+        "noReason": "no reason given",
+        "stale": "{{name}}’s backup is out of date ({{last}})",
+        "disabled": "{{name}} is disabled, so it isn’t backed up ({{last}})",
+        "disabledSince": "{{name}} is disabled since {{since}}, so it isn’t backed up ({{last}})",
+        "lastAt": "last backed up {{at}}",
+        "lastNone": "no good backup yet",
+        "allBackedUp": "every plugin with its own storage is backed up"
+    },
+    "offsite": {
+        "off": "off; set how often in Backup schedule",
+        "every_one": "every {{count}} second",
+        "every_other": "every {{count}} seconds",
+        "failed": "the last send failed{{row}}; it tries again later",
+        "failedAt": "the last send failed at {{at}}{{row}}; it tries again later",
+        "failedReason": "the last send failed{{row}}: {{reason}}; it tries again later",
+        "failedAtReason": "the last send failed at {{at}}{{row}}: {{reason}}; it tries again later",
+        "inRow_one": " ({{count}} in a row)",
+        "inRow_other": " ({{count}} in a row)",
+        "behind": "behind: the newest copy has waited {{waited}}",
+        "sentUpTo": "everything up to {{at}} is off-site",
+        "nothingSent": "nothing sent yet",
+        "waiting_one": "{{count}} file waiting; nothing off-site is removed until it goes",
+        "waiting_other": "{{count}} files waiting; nothing off-site is removed until they go"
+    },
+    "drill": {
+        "every_one": "every {{count}} day",
+        "every_other": "every {{count}} days",
+        "manual": "only when an admin runs it",
+        "restoreOffsite": "off-site {{took}}",
+        "restorePoint": "as of {{at}} {{took}}",
+        "restoreLatest": "latest {{took}}",
+        "passed": "the last one passed at {{at}} in {{took}} ({{restores}}); rows match live",
+        "passedDiffer_one": "the last one passed at {{at}} in {{took}} ({{restores}}); {{count}} table differs from live by writes since the copy",
+        "passedDiffer_other": "the last one passed at {{at}} in {{took}} ({{restores}}); {{count}} tables differ from live by writes since the copy",
+        "unknownError": "unknown error",
+        "run": "Run drill now",
+        "running": "Drill running…"
+    },
+    "keyIds": {
+        "none": "none; no data key is set",
+        "current": "current {{current}}",
+        "currentPrevious": "current {{current}}, previous {{previous}}"
+    },
+    "legacy": {
+        "none": "none; SESSION_SECRET is no longer needed to read stored data",
+        "byPurpose": "{{purpose}} {{n}}",
+        "items_one": "{{count}} item still needs SESSION_SECRET; keep it in the recovery kit until this is zero",
+        "items_other": "{{count}} items still need SESSION_SECRET; keep it in the recovery kit until this is zero",
+        "itemsBy_one": "{{count}} item ({{by}}) still needs SESSION_SECRET; keep it in the recovery kit until this is zero",
+        "itemsBy_other": "{{count}} items ({{by}}) still need SESSION_SECRET; keep it in the recovery kit until this is zero"
+    },
+    "reseal": {
+        "finished_one": "the last one finished at {{at}}: {{count}} re-sealed",
+        "finished_other": "the last one finished at {{at}}: {{count}} re-sealed",
+        "unreadable_one": "{{count}} under a key this server doesn’t have",
+        "unreadable_other": "{{count}} under a key this server doesn’t have",
+        "left_one": "{{count}} left for the next run",
+        "left_other": "{{count}} left for the next run",
+        "button": "Re-seal under the data key",
+        "busy": "Re-sealing…",
+        "needsKey": "Set DATA_ENCRYPTION_KEY first."
+    },
+    "keyCheck": {
+        "which": "the server’s current key",
+        "which_previous": "the server’s previous key",
+        "which_neither": "not a key this server uses",
+        "error": "key {{keyId}} ({{which}}) couldn’t be checked at {{at}}: {{reason}}",
+        "result": "key {{keyId}} ({{which}}) passed at {{at}}: {{purposes}}",
+        "result_failed": "key {{keyId}} ({{which}}) failed at {{at}}: {{purposes}}",
+        "nothingToTry": "{{purpose}} nothing to try",
+        "opened": "{{purpose}} {{opened}} of {{sampled}} opened"
+    },
+    "recovery": {
+        "label": "Verify a recovery key",
+        "hint": "Paste the data key from escrow. It opens a sample of the latest restore and is never stored.",
+        "verify": "Verify",
+        "checking": "Checking…"
+    }
+}

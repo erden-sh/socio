@@ -1,0 +1,95 @@
+{
+    "sources": {
+        "deployment": "this deployment",
+        "default": "its default",
+        "env": "this server’s configuration",
+        "instance": "this server’s configuration",
+        "tier": "this server’s configuration (the workspace’s plan)",
+        "workspace": "this workspace’s rule"
+    },
+    "value": {
+        "everyone_on": "On for everyone, by {{source}}.",
+        "everyone": "Off for everyone, by {{source}}.",
+        "you_on": "On for you, by {{source}}.",
+        "you": "Off for you, by {{source}}."
+    },
+    "roles": {
+        "admin": "Admins",
+        "member": "Members"
+    },
+    "targets": {
+        "everyone": "on for everyone",
+        "nobody": "off for everyone",
+        "only": "on for {{who, list(type: unit; style: short)}} only",
+        "gone": "someone no longer here",
+        "others": "some others",
+        "somePeople": "some people"
+    },
+    "server": {
+        "envOn": "on by default",
+        "envOff": "off by default",
+        "locked": "{{targets}}, and admins can’t change it",
+        "plan": "its plan",
+        "tierIn": "included in the {{plan}} plan",
+        "tierOut": "not part of the {{plan}} plan",
+        "join": "{{first}}; {{next}}",
+        "line": "Set by this server’s configuration: {{parts}}."
+    },
+    "rule": {
+        "label": "This workspace",
+        "who": "$t(settings.features:rule.label): who has it",
+        "inherit": "No workspace rule",
+        "on": "On for everyone",
+        "off": "Off for everyone",
+        "some": "On for some roles and people",
+        "others": "This rule also includes some others, and keeps them when you save. Choose On for everyone, Off for everyone or No workspace rule to replace it.",
+        "people": "People",
+        "save": "Save"
+    },
+    "flag": {
+        "saved": "{{flag}} saved",
+        "cleared": "{{flag}}: the workspace rule is cleared",
+        "saveFailed": "Could not save.",
+        "experimental": "Experimental",
+        "details": "Details",
+        "key": "Key",
+        "issue": "Board item",
+        "owner": "Owner",
+        "removeBy": "Remove by",
+        "tools": "Socio tools",
+        "toolList": "{{tools, list(type: unit; style: short)}}"
+    },
+    "pages": {
+        "features": {
+            "intro": "Released features this workspace may switch off, or keep for some roles and people only.",
+            "empty": "No optional features right now.",
+            "search": "Search optional features"
+        },
+        "features-dev": {
+            "intro": "Unfinished features, listed only because this is an internal deployment. Customer deployments never have them on.",
+            "empty": "Nothing in development right now.",
+            "search": "Search in development"
+        },
+        "early-access": {
+            "intro": "Experimental features, ready to try before they are released. They may change or go away. Turn one on for the workspace, or for some roles and people only: people can’t turn them on for themselves.",
+            "empty": "Nothing in early access right now.",
+            "search": "Search early access"
+        }
+    },
+    "applies": "Changes apply on their next request and their socios’ next turn.",
+    "search": "Search",
+    "noMatch": "Nothing matches “{{query}}”.",
+    "loading": "Loading…",
+    "loadFailed": "Could not load features.",
+    "audit": {
+        "title": "Recent changes",
+        "none": "No changes yet.",
+        "when": "{{when, datetime(year: numeric; month: numeric; day: numeric; hour: numeric; minute: 2-digit; second: 2-digit)}}",
+        "workspace": "{{actor}} changed the workspace rule for {{flag}}",
+        "workspace_remove": "{{actor}} cleared the workspace rule for {{flag}}",
+        "person": "{{actor}} changed their own choice for {{flag}} (no longer used)",
+        "person_remove": "{{actor}} cleared their own choice for {{flag}} (no longer used)",
+        "server": "This server’s configuration changed {{flag}}",
+        "server_remove": "This server’s configuration cleared {{flag}}"
+    }
+}

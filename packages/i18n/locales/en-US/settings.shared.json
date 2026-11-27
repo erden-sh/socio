@@ -1,0 +1,79 @@
+{
+    "access": {
+        "allow": "Allow",
+        "allowForTask": "Allow for this task",
+        "facts": {
+            "app": "App",
+            "address": "Address",
+            "owner": "Owner"
+        },
+        "says": "{{who}} says:",
+        "verb": {
+            "read": "read",
+            "write": "read and change",
+            "act": "read, change and ask to act in"
+        },
+        "minutes_one": "{{count}} minute",
+        "minutes_other": "{{count}} minutes",
+        "hours_one": "{{count}} hour",
+        "hours_other": "{{count}} hours",
+        "wants": "<socio>{{socio}}</socio> wants to <verb>{{verb}}</verb> <app>{{app}}</app> for you for <time>{{duration}}</time>.",
+        "letsIt": "This lets it",
+        "visibleTo": "{{socio}}’s answers here are visible to everyone in {{place}}.",
+        "development": "This is a development app on your own socio’s computer: that socio can change its code, so these limits rely on your trust in it.",
+        "widens": "Allowing replaces the narrower access it has in this conversation.",
+        "alwaysAsk": "This app asks for your decision every time."
+    },
+    "action": {
+        "operation": "<socio>{{socio}}</socio> asks to {{words}} through <app>{{app}}</app> for you ($t(common:product) data operation <op>{{op}}</op>). <badge>Consequential</badge>",
+        "run": "<socio>{{socio}}</socio> asks to run <action>{{action}}</action> in <app>{{app}}</app> for you. <badge>Consequential</badge>",
+        "paramsHeading": "What will run: its parameters, as $t(common:product) received them ({{size}})",
+        "items_one": "<n>{{count}}</n> item in <path>{{path}}</path>",
+        "items_other": "<n>{{count}}</n> items in <path>{{path}}</path>",
+        "params": "Parameters",
+        "showing": "Showing the first {{shown}} of {{total}}.",
+        "showing_pending": "Showing the first {{shown}} of {{total}}. Open them all before you allow this.",
+        "showAll": "Show all parameters",
+        "openFailed": "Could not open the parameters.",
+        "described": "As described by the app",
+        "describedLead": "As described by the app (its own words):"
+    },
+    "size": {
+        "bytes_one": "{{count}} byte",
+        "bytes_other": "{{count}} bytes",
+        "kb": "{{kb, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}} KB"
+    },
+    "grant": {
+        "access": {
+            "read": "Read",
+            "write": "Read and change",
+            "act": "Change and ask to act",
+            "other": "Other"
+        },
+        "removedApp": "A removed app",
+        "thisApp": "this app",
+        "place": {
+            "room": "the room {{title}}",
+            "roomUntitled": "a room",
+            "schedule": "a scheduled task",
+            "chat": "the chat {{title}}",
+            "chatUntitled": "a private chat"
+        },
+        "end": "End access",
+        "endLabel": "End {{socio}}’s access to {{app}}",
+        "endLabel_person": "End {{socio}}’s access to {{app}} for {{person}}",
+        "from": "{{socio}}, from {{place}}",
+        "from_person": "{{person}} · {{socio}}, from {{place}}",
+        "task": "“{{task}}”",
+        "when": "{{when, datetime(dateStyle: medium; timeStyle: short)}}",
+        "since": "Since <since></since>",
+        "live_one": "Since <since></since> · until <until></until> · last used <used></used> (ends after {{count}} idle minute)",
+        "live_other": "Since <since></since> · until <until></until> · last used <used></used> (ends after {{count}} idle minutes)",
+        "ended": "Since <since></since> · ended <ended></ended>: {{reason}}",
+        "endTitle": "End {{socio}}’s access to {{app}}?",
+        "endBody": "It stops at once, everywhere: its open pages close and it can’t use the app for this task again. It can ask again, on a new card."
+    },
+    "agents": {
+        "unverified": "Unverified local app"
+    }
+}

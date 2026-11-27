@@ -127,7 +127,7 @@
             }
         },
         {
-            "files": ["packages/client/src/modules/settings/language/**"],
+            "files": ["packages/client/src/modules/settings/**"],
             "rules": {
                 "socio/no-literal-text": "error"
             }

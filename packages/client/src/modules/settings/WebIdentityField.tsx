@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 
+import { Trans, useTranslation } from '@socio/i18n/react';
 import type { WebIdentity, WebStatus } from '@socio/shared/web/web-types';
 
 import { api } from '../../lib/api';
@@ -53,16 +54,17 @@ export function WebIdentityField({
     choice?: WebIdentityChoice;
     onChange: (choice: WebIdentityChoice) => void;
 }) {
+    const { t } = useTranslation(['settings.dialogs']);
     if (!status || choice === undefined) {
         return null;
     }
     return (
-        <DialogFieldset legend="Web identity">
+        <DialogFieldset legend={t('settings.dialogs:web.legend')}>
             <label
                 className="mt-[23px] mb-2 block text-[11px] font-medium text-muted-foreground"
                 htmlFor="web-identity"
             >
-                How this socio reads websites
+                {t('settings.dialogs:web.label')}
             </label>
             <select
                 id="web-identity"
@@ -73,16 +75,21 @@ export function WebIdentityField({
                 onChange={(event) => onChange(event.target.value as WebIdentityChoice)}
             >
                 <option value="">
-                    Workspace default ({status.defaultIdentity === 'agent' ? 'declared agent' : 'browser'})
+                    {t('settings.dialogs:web.default', {
+                        context: status.defaultIdentity === 'agent' ? 'agent' : undefined,
+                    })}
                 </option>
-                <option value="agent">Declared agent (http_get, http_json)</option>
-                <option value="browser">Browser (the socio’s computer)</option>
+                <option value="agent">{t('settings.dialogs:web.agent')}</option>
+                <option value="browser">{t('settings.dialogs:web.browser')}</option>
             </select>
             <p className="text-[11px] leading-[1.7] text-muted-foreground" id="web-identity-help">
-                As a declared agent it says so in its User-Agent (<code>{status.userAgent}</code>), which links the
-                public /agents page. As a browser it uses its computer’s browser tools. Neither identifies the user. At
-                most {status.limits.perHostPerMinute} reads a minute per site; a site that refuses is left alone for a
-                while.
+                <Trans
+                    t={t}
+                    i18nKey="settings.dialogs:web.help"
+                    count={status.limits.perHostPerMinute}
+                    values={{ count: status.limits.perHostPerMinute, userAgent: status.userAgent }}
+                    components={{ ua: <code /> }}
+                />
             </p>
         </DialogFieldset>
     );

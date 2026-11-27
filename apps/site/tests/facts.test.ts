@@ -60,8 +60,8 @@ describe('the menu paths the pages give', () => {
         More: [['apps/mobile/src/navigation/tabs.ts', "label: 'More'"]],
         Account: [
             ['apps/mobile/src/screens/more.tsx', 'title="Account"'],
-            // The web: the settings nav's second group.
-            ['packages/client/src/modules/settings/sections.ts', "label: 'Account',"],
+            // The web: the settings nav's second group (its en-US words).
+            ['packages/i18n/locales/en-US/settings.json', '"title": "Account",'],
         ],
         'Sign out': [
             ['apps/mobile/src/screens/account.tsx', 'label="Sign out"'],
@@ -73,16 +73,13 @@ describe('the menu paths the pages give', () => {
         'Add a device': [['packages/client/src/components/nav-user.tsx', 'Add a device']],
         // The web, for admins: Settings, its People entry, and the person page's footer button.
         Settings: [['packages/client/src/components/app-sidebar.tsx', "settings: 'Settings'"]],
-        People: [['packages/client/src/modules/settings/sections.ts', "entry('people', 'People'"]],
-        'Deactivate…': [['packages/client/src/modules/settings/people/PersonPage.route.tsx', "'Deactivate…'"]],
+        People: [['packages/i18n/locales/en-US/settings.json', '"people": "People",']],
+        'Deactivate…': [['packages/i18n/locales/en-US/settings.people.json', '"deactivate": "Deactivate…",']],
         // Leave workspace (CB-383): the web's Account group's Profile entry and its button, the
         // app's account sheet row under Sign out.
-        Profile: [['packages/client/src/modules/settings/sections.ts', "entry('account', 'Profile')"]],
+        Profile: [['packages/i18n/locales/en-US/settings.json', '"account": "Profile",']],
         'Leave workspace': [
-            [
-                'packages/client/src/modules/settings/AccountSettings.tsx',
-                '<h3 className="font-medium">Leave workspace</h3>',
-            ],
+            ['packages/i18n/locales/en-US/settings.account.json', '"title": "Leave workspace",'],
             ['apps/mobile/src/shell/account.ts', "export const LEAVE_WORKSPACE = 'Leave workspace';"],
             ['apps/mobile/src/screens/account.tsx', '<LeaveWorkspace workspaceName={view.workspaceName} />'],
         ],

@@ -1,0 +1,81 @@
+{
+    "title": "Sign-in",
+    "intro": "The server's environment is the ceiling: here you can only turn a sign-in method off and take people or domains off its lists. Adding anything needs a stack update. Every change needs you to confirm it with your password or a passkey, ends the sessions that no longer qualify, and is shown to every admin.",
+    "unreadable": "The saved policy could not be read, so the environment applies. Save it again to fix it.",
+    "version": "Version {{version}}, saved <when></when>.",
+    "when": "{{at, datetime(dateStyle: medium; timeStyle: short)}}",
+    "nothingNarrowed": "Nothing narrowed yet: the environment applies.",
+    "methods": {
+        "title": "Ways to sign in",
+        "password": "Email and password",
+        "passkey": "Passkeys",
+        "signInLink": "Sign-in links by Telegram",
+        "emailLinks": "Sign-in links by email",
+        "emailLinksHelp": "Codes and links go by email to every account. Off by default.",
+        "offIn": "off in {{env}}",
+        "offIn_telegram": "off in the Telegram bot",
+        "offIn_email": "off in this server: no email channel",
+        "offIn_cloud": "off in the cloud connection",
+        "google": "Google in the Socio app",
+        "googleHelp": "For people who linked a Google account. Works while this server is connected to Socio’s cloud services.",
+        "apple": "Sign in with Apple in the Socio app",
+        "appleHelp": "For people who linked an Apple account. Works while this server is connected to Socio’s cloud services.",
+        "openSignUp": "Open sign-up"
+    },
+    "lists": {
+        "ceiling": "The environment ({{env}}) sets who can be here; untick to take someone off.",
+        "empty": "{{env}} lists nobody, so there is nothing to narrow.",
+        "providers": "Sign-in providers",
+        "providersHelp": "OAuth and OpenID Connect providers on the sign-in screen.",
+        "adminEmails": "Admin emails",
+        "adminEmailsHelp": "Verified emails that are always admins. Taking one off makes that person a member at their next request, unless their own role is admin.",
+        "allowedEmails": "Allowed emails",
+        "allowedEmailsHelp": "Who may create their own account through a provider.",
+        "allowedDomains": "Allowed domains",
+        "allowedDomainsHelp": "Email domains whose people may create their own account through a provider."
+    },
+    "mockAuth": "This server signs in with the local picker (mock auth), so there are no sign-in methods to narrow.",
+    "codeAccess": "Who may run code is now a permission: admins have it, and others get it from a group under <groupsLink>People → Groups</groupsLink>.",
+    "review": "Review and confirm",
+    "undo": "Undo changes",
+    "impact": {
+        "sessionsEnded_one": "{{count, number}} session will end.",
+        "sessionsEnded_other": "{{count, number}} sessions will end.",
+        "signsYouOut": "This signs you out: sign in again another way.",
+        "withoutWayIn": "Left without a way to sign in: {{people, list}}.",
+        "person": "{{name}} ({{email}})",
+        "codeRunsStopped_one": "{{count, number}} queued or running code run will stop.",
+        "codeRunsStopped_other": "{{count, number}} queued or running code runs will stop."
+    },
+    "confirm": {
+        "title": "Confirm the change",
+        "description": "Every change to sign-in needs you to confirm it is you. Every admin is told about it.",
+        "password": "Your password",
+        "withPassword": "Confirm with password",
+        "withPasskey": "Confirm with a passkey",
+        "withConfirm": "Confirm (development sign-in)",
+        "cancel": "Cancel",
+        "saved": "Access policy saved; every admin was told."
+    },
+    "history": {
+        "title": "History",
+        "label": "Access policy history",
+        "entry": "<when></when> · {{actor}}",
+        "confirmed": "confirmed with {{method}}",
+        "confirmed_password": "confirmed with password",
+        "confirmed_passkey": "confirmed with passkey",
+        "confirmed_confirm": "confirmed with confirm",
+        "confirmed_cli": "confirmed with cli",
+        "sessionsEnded_one": "{{count, number}} session ended.",
+        "sessionsEnded_other": "{{count, number}} sessions ended.",
+        "codeRunsStopped_one": "{{count, number}} code run stopped.",
+        "codeRunsStopped_other": "{{count, number}} code runs stopped.",
+        "empty": "No changes yet."
+    },
+    "errors": {
+        "load": "Could not load the access policy.",
+        "start": "Could not start.",
+        "save": "Could not save.",
+        "check": "Could not check."
+    }
+}

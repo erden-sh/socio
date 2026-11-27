@@ -209,7 +209,7 @@ it('says why a Space can’t be deleted, and keeps it', async () => {
 it('lists deleted Spaces for admins with who deleted them and when, and restores one', async () => {
     expect(
         SETTINGS_GROUPS.flatMap((group) => group.entries).find((entry) => entry.id === 'deleted-spaces'),
-    ).toMatchObject({ label: 'Deleted Spaces', role: 'admin' });
+    ).toMatchObject({ role: 'admin' });
     deleted = [
         {
             id: 's1',

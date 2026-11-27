@@ -1,0 +1,246 @@
+{
+    "groups": {
+        "schedules-jobs": {
+            "title": "Schedules and jobs",
+            "intro": "How often and how much socios may run on their own. Changes apply to the next run or request."
+        },
+        "data-space": {
+            "title": "Data space",
+            "intro": "How much each person may keep in datasets and files. Lowering a limit never deletes anything: it stops new data going over it."
+        },
+        "shared-areas": {
+            "title": "Socios’ shared areas",
+            "intro": "What a company socio’s computer keeps for everyone who uses the socio. People who use it, and admins, see and delete it under Data → Shared with socios."
+        },
+        "plugin-datasets": {
+            "title": "Plugin datasets",
+            "intro": "Datasets a plugin owns and fills, such as synced bookings or sales. Admins see and delete them on the Data page; disabling or uninstalling a plugin keeps them."
+        },
+        "analytical-tables": {
+            "title": "Analytical tables",
+            "intro": "Append-only history a plugin keeps in its datasets, such as daily occupancy or bookings, stored compressed beside the dataset and queried with DuckDB. Lowering a limit never deletes anything, except the retention, which drops older partitions at the next nightly run."
+        },
+        "dot-turns": {
+            "title": "Socio replies",
+            "intro": "How much work a socio may do for one message before it reports back. Changes apply to the next reply."
+        },
+        "memory": {
+            "title": "Memory",
+            "intro": "What socios keep of each person’s own chats to recall in their other chats (never used in chats with other people in them), and how long each Space’s shared memory keeps what is out of use."
+        },
+        "rooms": {
+            "title": "Work per message",
+            "intro": "The most one message, and everything it starts, may use: in every chat and Telegram topic. The turn time limit above bounds its time, and the queued-message limit its queue. A socio that reaches one stops and says which. Changes apply to the next message."
+        },
+        "continuous-copy": {
+            "title": "Continuous copy alerts",
+            "intro": "When the server keeps a continuous copy of its database (Litestream), admins are notified once the copy falls behind or the write-ahead log grows past these, again when it gets worse, and once it recovers. Changes apply to the next check, within a minute."
+        },
+        "plugin-backups": {
+            "title": "Plugin backups",
+            "intro": "Plugins that keep data on their own storage are backed up with every scheduled backup. Changes apply to the next snapshot."
+        }
+    },
+    "limits": {
+        "scheduleMinIntervalMinutes": {
+            "label": "Shortest gap between runs",
+            "unit": "minutes",
+            "help": "A schedule never runs sooner than this after its last run, and socios can’t set a faster one."
+        },
+        "schedulesPerUser": {
+            "label": "Active schedules per person",
+            "unit": "schedules",
+            "help": "How many schedules the socios of one person may have running."
+        },
+        "jobMaxTimeoutSeconds": {
+            "label": "Longest job timeout",
+            "unit": "seconds",
+            "help": "The most time a job may ask for, starting its computer included. A job that runs until done asks for this much per batch."
+        },
+        "jobConcurrency": {
+            "label": "Jobs running at once",
+            "unit": "jobs",
+            "help": "Across the whole workspace; more wait their turn."
+        },
+        "jobsPerUser": {
+            "label": "Saved jobs per person",
+            "unit": "jobs",
+            "help": "How many jobs the socios of one person may keep."
+        },
+        "jobItemAttempts": {
+            "label": "Tries per item",
+            "unit": "tries",
+            "help": "How many times a job that runs until done tries one item before it sets it aside as failed and goes on with the rest."
+        },
+        "jobBatchRetries": {
+            "label": "Retries in a row",
+            "unit": "batches",
+            "help": "How many batches in a row may fail, make no progress or be refused by a source before a job that runs until done stops as failed. Each retry waits longer."
+        },
+        "jobMaxBatches": {
+            "label": "Batches per run",
+            "unit": "batches",
+            "help": "The most batches one run of a job that runs until done may take."
+        },
+        "dataFileMaxMb": {
+            "label": "Largest file",
+            "unit": "MB",
+            "help": "For files in the data space and for chat attachments."
+        },
+        "dataDatasetMaxMb": {
+            "label": "Largest dataset",
+            "unit": "MB",
+            "help": "What one dataset may grow to."
+        },
+        "dataUserMaxMb": {
+            "label": "Data per person",
+            "unit": "MB",
+            "help": "Datasets and files together, for each person."
+        },
+        "dataMaxDatasets": {
+            "label": "Datasets per person",
+            "unit": "datasets",
+            "help": "How many datasets one person may have."
+        },
+        "dataSharedRetentionDays": {
+            "label": "Keep shared items for",
+            "unit": "days",
+            "help": "A file in a company socio’s shared area, or its shared dataset, that nobody changed for this long is deleted (and kept, like anything deleted). 0 keeps them until someone deletes them."
+        },
+        "dataStampTombstoneDays": {
+            "label": "Remember deleted rows for",
+            "unit": "days",
+            "help": "How long the server remembers which dataset rows were deleted, for apps that keep a copy offline. A copy last synced longer ago than this checks every row it holds instead of only the changes."
+        },
+        "dataPluginDatasetMaxMb": {
+            "label": "Largest plugin dataset",
+            "unit": "MB",
+            "help": "What one dataset a plugin owns may grow to. It counts against no person’s data."
+        },
+        "dataPluginQueryMaxRows": {
+            "label": "Rows per query of a plugin dataset",
+            "unit": "rows",
+            "help": "The most rows one query of a plugin’s dataset returns, for the plugin, socios and people alike."
+        },
+        "dataPluginStatementsPerMinute": {
+            "label": "Data operations a minute per plugin",
+            "unit": "operations",
+            "help": "How many data operations one plugin’s token makes a minute: a query or a read batch is one, a write batch one per statement. A plugin’s page raises it for that plugin. Socios and people keep their own limit."
+        },
+        "dataAnalyticalMaxMb": {
+            "label": "Analytical data per owner",
+            "unit": "MB",
+            "help": "What the analytical tables of one owner (a person, a socio’s shared area or a plugin) may hold on disk, apart from that person’s data."
+        },
+        "dataAnalyticsQueryTimeoutSeconds": {
+            "label": "Longest analytical query",
+            "unit": "seconds",
+            "help": "An analytical query that runs longer is stopped."
+        },
+        "dataAnalyticsQueryMaxRows": {
+            "label": "Rows per analytical query",
+            "unit": "rows",
+            "help": "The most rows one analytical query returns; the answer says when more were left out."
+        },
+        "dataAppendMaxRows": {
+            "label": "Rows per append",
+            "unit": "rows",
+            "help": "The most rows one append to an analytical table takes."
+        },
+        "dataAnalyticsQueryMemoryMb": {
+            "label": "Memory per analytical query",
+            "unit": "MB",
+            "help": "What one analytical query may use before it spills to disk. The analytics process needs this times the queries at once, plus about 256 MB."
+        },
+        "dataAnalyticsQueryConcurrency": {
+            "label": "Analytical queries at once",
+            "unit": "queries",
+            "help": "More wait their turn, up to 16; past that a query is refused until one finishes."
+        },
+        "dataAnalyticsRetainDays": {
+            "label": "Keep analytical partitions for",
+            "unit": "days",
+            "help": "Partitions older than this are dropped each night from analytical tables whose plugin sets no retention and that no admin changed on the Data page. Backups still hold them for a while. 0 keeps everything."
+        },
+        "dotModelRounds": {
+            "label": "Model rounds per turn",
+            "unit": "rounds",
+            "help": "How many times a socio may call its model in one reply, tool rounds included. The last round has no tools: the socio says what it did and what is left. The turn time limit still applies."
+        },
+        "turnTimeLimitSeconds": {
+            "label": "Turn time limit",
+            "unit": "seconds",
+            "help": "How long one reply may run before it is stopped. Deploys wait up to this long for running replies to finish, so the most is 300 seconds. A reply already running keeps the limit it started with."
+        },
+        "turnRecallTokens": {
+            "label": "Recalled context per reply",
+            "unit": "tokens",
+            "help": "About how much of the person’s memories (and, in their own chats, episodes of their earlier chats) goes with each message they send. The pinned facts of a long chat that match the message grow and shrink in step. More helps socios recall; less keeps replies quicker and cheaper."
+        },
+        "episodeRetentionDays": {
+            "label": "Keep episodes for",
+            "unit": "days",
+            "help": "What socios remember of each person’s earlier chats (decisions, results, what a chat was about) is deleted once it hasn’t come up for this long. People can delete theirs sooner on the Memories page."
+        },
+        "spaceMemoryRetentionDays": {
+            "label": "Keep retired Space memory for",
+            "unit": "days",
+            "help": "Earlier versions of each Space’s shared memory, proposals turned down or taken back, and entries its editors retired are deleted after this long. Entries in use are kept until an editor retires them; editors can delete a retired one sooner."
+        },
+        "steeringMaxQueued": {
+            "label": "Queued messages per chat",
+            "unit": "messages",
+            "help": "How many messages one person may queue in a chat while the socio works. More stay in the message box until it has read some."
+        },
+        "roomCycleTokens": {
+            "label": "Tokens per message",
+            "unit": "tokens",
+            "help": "The most model tokens (in and out, retries and notes included) one message and the work it starts may use before the socio stops and says so. Each model request reserves its share first, so a request that would pass it is not sent."
+        },
+        "roomMessagesPerMinute": {
+            "label": "Messages a minute per chat",
+            "unit": "messages",
+            "help": "How many messages a chat or Telegram topic takes in any minute, from everyone in it, queued ones included. More are turned away with a note to wait a moment."
+        },
+        "roomHandoffsPerCycle": {
+            "label": "Handoffs per message",
+            "unit": "handoffs",
+            "help": "In a room with several socios: how many times one message’s work may pass from one socio to another, by a socio handing it on or by the message naming more than one socio. A socio never hands the same work to the same socio twice. 0 turns handoffs off. Room admins may lower it for their room."
+        },
+        "roomCycleSpendUsd": {
+            "label": "Spend per message",
+            "unit": "USD",
+            "help": "The most one message’s model use may cost, where the model reports its cost; where it does not, tokens and time still bound it. 0 sets no spend cap."
+        },
+        "copyLagWarnMinutes": {
+            "label": "Copy behind: warning",
+            "unit": "minutes",
+            "help": "Admins are warned when the newest write is this much newer than the newest continuous copy."
+        },
+        "copyLagCriticalMinutes": {
+            "label": "Copy behind: critical",
+            "unit": "minutes",
+            "help": "Critical from this much behind: admins are reminded every hour until the copy catches up."
+        },
+        "walWarnMb": {
+            "label": "Write-ahead log: warning",
+            "unit": "MB",
+            "help": "Admins are warned when the database’s write-ahead log grows to this size."
+        },
+        "walCriticalMb": {
+            "label": "Write-ahead log: critical",
+            "unit": "MB",
+            "help": "Critical from this size: admins are reminded every hour. If the copy has also been critically behind, the app checkpoints the log itself so the disk doesn’t fill."
+        },
+        "pluginBackupMaxGb": {
+            "label": "Largest snapshot per plugin",
+            "unit": "GiB",
+            "help": "The most one plugin’s backup may hold: the data on its own storage. A plugin over it isn’t backed up, and admins are told. Raise it for a plugin that keeps more."
+        }
+    },
+    "saved": "{{title}} saved",
+    "reset": "{{title}} back to the server’s defaults",
+    "invalid": "{{label}}: use a number from {{min, number}} to {{max, number}} {{units}}.",
+    "startsAt": "The server starts at {{value, number}}.",
+    "useDefaults": "Use the server’s defaults"
+}

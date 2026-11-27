@@ -2,8 +2,9 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router';
 import { toast } from 'sonner';
 
+import { useTranslation } from '@socio/i18n/react';
 import type { RosterPerson } from '@socio/shared/auth';
-import { GROUP_PERMISSION_LABELS, GROUP_PERMISSIONS, type Group, type GroupPermission } from '@socio/shared/groups';
+import { GROUP_PERMISSIONS, type Group, type GroupPermission } from '@socio/shared/groups';
 import { isAdmin } from '@socio/shared/roles';
 
 import { ConfirmDelete } from '../../../components/confirm-delete';
@@ -27,16 +28,25 @@ import { Input } from '@/components/ui/input';
 const failed = (e: unknown, fallback: string) => toast.error(e instanceof Error ? e.message : fallback);
 const groupPath = (id: string) => `/groups/${encodeURIComponent(id)}`;
 
+/** How People names each permission, and what it lets them do. */
+const PERMISSION_KEYS = {
+    'code:run': {
+        label: 'settings.people:groups.permissions.code-run.label',
+        detail: 'settings.people:groups.permissions.code-run.detail',
+    },
+} as const satisfies Record<GroupPermission, { label: string; detail: string }>;
+
 /** The permissions a group gives, as badges; "No permissions" when none. */
 export function PermissionBadges({ permissions }: { permissions: readonly GroupPermission[] }) {
+    const { t } = useTranslation(['settings.people']);
     if (!permissions.length) {
-        return <span className="text-xs text-muted-foreground">No permissions</span>;
+        return <span className="text-xs text-muted-foreground">{t('settings.people:groups.noPermissions')}</span>;
     }
     return (
         <>
             {permissions.map((permission) => (
                 <Badge key={permission} variant="secondary">
-                    {GROUP_PERMISSION_LABELS[permission].label}
+                    {t(PERMISSION_KEYS[permission].label)}
                 </Badge>
             ))}
         </>
@@ -48,6 +58,7 @@ export function PermissionBadges({ permissions }: { permissions: readonly GroupP
  * checkbox per permission ("Run code" is the only one for now).
  */
 function GroupDialog({ group, onClose, onSaved }: { group?: Group; onClose: () => void; onSaved: () => void }) {
+    const { t } = useTranslation(['settings.people']);
     const [name, setName] = useState(group?.name ?? '');
     const [permissions, setPermissions] = useState<GroupPermission[]>(group?.permissions ?? ['code:run']);
     const [busy, setBusy] = useState(false);
@@ -57,15 +68,15 @@ function GroupDialog({ group, onClose, onSaved }: { group?: Group; onClose: () =
         try {
             if (group) {
                 await api<Group>(groupPath(group.id), 'PATCH', { name, permissions });
-                toast.success('Group saved');
+                toast.success(t('settings.people:groups.dialog.saved'));
             } else {
                 await api<Group>('/groups', 'POST', { name, permissions });
-                toast.success(`${name.trim()} created`);
+                toast.success(t('settings.people:groups.dialog.created', { name: name.trim() }));
             }
             onSaved();
             onClose();
         } catch (error) {
-            failed(error, 'Could not save the group.');
+            failed(error, t('settings.people:groups.dialog.saveFailed'));
         } finally {
             setBusy(false);
         }
@@ -74,22 +85,30 @@ function GroupDialog({ group, onClose, onSaved }: { group?: Group; onClose: () =
         <Dialog open onOpenChange={(open) => !open && !busy && onClose()}>
             <DialogContent data-slot="group-dialog">
                 <DialogHeader>
-                    <DialogTitle>{group ? `Edit ${group.name}` : 'New group'}</DialogTitle>
-                    <DialogDescription>
-                        Everyone in the group gets its permissions. Admins have them all without a group.
-                    </DialogDescription>
+                    <DialogTitle>
+                        {group
+                            ? t('settings.people:groups.dialog.editTitle', { name: group.name })
+                            : t('settings.people:groups.dialog.newTitle')}
+                    </DialogTitle>
+                    <DialogDescription>{t('settings.people:groups.dialog.description')}</DialogDescription>
                 </DialogHeader>
-                <form className="grid gap-3" onSubmit={submit} aria-label={group ? 'Edit group' : 'New group'}>
+                <form
+                    className="grid gap-3"
+                    onSubmit={submit}
+                    aria-label={
+                        group ? t('settings.people:groups.dialog.editForm') : t('settings.people:groups.dialog.newForm')
+                    }
+                >
                     <Input
-                        aria-label="Group name"
-                        placeholder="Name"
+                        aria-label={t('settings.people:groups.dialog.name')}
+                        placeholder={t('settings.people:groups.dialog.namePlaceholder')}
                         required
                         maxLength={60}
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                     />
                     <fieldset className="grid gap-2">
-                        <legend className="font-medium">Permissions</legend>
+                        <legend className="font-medium">{t('settings.people:groups.dialog.permissions')}</legend>
                         {GROUP_PERMISSIONS.map((permission) => (
                             <label key={permission} className="flex items-start gap-2">
                                 <input
@@ -105,9 +124,9 @@ function GroupDialog({ group, onClose, onSaved }: { group?: Group; onClose: () =
                                     }
                                 />
                                 <span className="grid">
-                                    {GROUP_PERMISSION_LABELS[permission].label}
+                                    {t(PERMISSION_KEYS[permission].label)}
                                     <span className="text-xs text-muted-foreground">
-                                        {GROUP_PERMISSION_LABELS[permission].detail}
+                                        {t(PERMISSION_KEYS[permission].detail)}
                                     </span>
                                 </span>
                             </label>
@@ -115,10 +134,12 @@ function GroupDialog({ group, onClose, onSaved }: { group?: Group; onClose: () =
                     </fieldset>
                     <DialogFooter>
                         <Button type="button" variant="outline" onClick={onClose} disabled={busy}>
-                            Cancel
+                            {t('settings.people:groups.dialog.cancel')}
                         </Button>
                         <Button type="submit" disabled={busy || !name.trim()}>
-                            {group ? 'Save' : 'Create group'}
+                            {group
+                                ? t('settings.people:groups.dialog.save')
+                                : t('settings.people:groups.dialog.create')}
                         </Button>
                     </DialogFooter>
                 </form>
@@ -141,6 +162,7 @@ function GroupCard({
     onDelete: () => void;
     onChanged: () => void;
 }) {
+    const { t } = useTranslation(['settings.people']);
     const [adding, setAdding] = useState('');
     const [busy, setBusy] = useState(false);
     const inGroup = new Set(group.members.map((member) => member.accountId));
@@ -154,7 +176,10 @@ function GroupCard({
             }
             onChanged();
         } catch (error) {
-            failed(error, add ? 'Could not add them.' : 'Could not remove them.');
+            failed(
+                error,
+                add ? t('settings.people:groups.card.addFailed') : t('settings.people:groups.card.removeFailed'),
+            );
         } finally {
             setBusy(false);
         }
@@ -163,7 +188,7 @@ function GroupCard({
         <section
             className="grid content-start gap-2 rounded-lg border p-4"
             data-slot="group"
-            aria-label={`Group ${group.name}`}
+            aria-label={t('settings.people:groups.card.label', { name: group.name })}
         >
             <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="flex flex-wrap items-center gap-2">
@@ -172,15 +197,15 @@ function GroupCard({
                 </span>
                 <span className="flex gap-1">
                     <Button variant="ghost" size="sm" onClick={onEdit}>
-                        Edit
+                        {t('settings.people:groups.card.edit')}
                     </Button>
                     <Button variant="ghost" size="sm" onClick={onDelete}>
-                        Delete
+                        {t('settings.people:groups.card.delete')}
                     </Button>
                 </span>
             </div>
             {group.members.length ? (
-                <ul aria-label={`People in ${group.name}`}>
+                <ul aria-label={t('settings.people:groups.card.members', { name: group.name })}>
                     {group.members.map((member) => (
                         <li
                             key={member.accountId}
@@ -193,7 +218,7 @@ function GroupCard({
                                 </Link>{' '}
                                 <span className="text-xs text-muted-foreground">
                                     {member.email}
-                                    {member.deactivated ? ' · deactivated' : ''}
+                                    {member.deactivated ? t('settings.people:groups.card.deactivated') : ''}
                                 </span>
                             </span>
                             <Button
@@ -202,17 +227,17 @@ function GroupCard({
                                 disabled={busy}
                                 onClick={() => void change(member.accountId, false)}
                             >
-                                Remove
+                                {t('settings.people:groups.card.remove')}
                             </Button>
                         </li>
                     ))}
                 </ul>
             ) : (
-                <p className="text-muted-foreground">Nobody in this group yet.</p>
+                <p className="text-muted-foreground">{t('settings.people:groups.card.nobody')}</p>
             )}
             <form
                 className="flex flex-wrap gap-2"
-                aria-label={`Add someone to ${group.name}`}
+                aria-label={t('settings.people:groups.card.addForm', { name: group.name })}
                 onSubmit={(e) => {
                     e.preventDefault();
                     if (adding) {
@@ -222,20 +247,24 @@ function GroupCard({
             >
                 <select
                     data-slot="native-select"
-                    aria-label={`Person to add to ${group.name}`}
+                    aria-label={t('settings.people:groups.card.addSelect', { name: group.name })}
                     className={nativeSelect}
                     value={adding}
                     onChange={(e) => setAdding(e.target.value)}
                 >
-                    <option value="">Choose a person</option>
+                    <option value="">{t('settings.people:groups.card.choose')}</option>
                     {addable.map((person) => (
                         <option key={person.id} value={person.id}>
-                            {person.name} ({person.email}){isAdmin(person) ? ' · admin' : ''}
+                            {t('settings.people:groups.card.option', {
+                                context: isAdmin(person) ? 'admin' : undefined,
+                                name: person.name,
+                                email: person.email,
+                            })}
                         </option>
                     ))}
                 </select>
                 <Button type="submit" variant="outline" disabled={busy || !adding}>
-                    Add
+                    {t('settings.people:groups.card.add')}
                 </Button>
             </form>
         </section>
@@ -254,6 +283,7 @@ export function GroupsPanel({
     people: RosterPerson[] | undefined;
     onCount?: (n: number) => void;
 }) {
+    const { t } = useTranslation(['settings.people']);
     const [groups, setGroups] = useState<Group[]>();
     const [editing, setEditing] = useState<Group | 'new'>();
     const [deleting, setDeleting] = useState<Group>();
@@ -263,19 +293,17 @@ export function GroupsPanel({
             setGroups(list);
             onCount?.(list.length);
         } catch (e) {
-            failed(e, 'Could not load groups.');
+            failed(e, t('settings.people:groups.loadFailed'));
         }
-    }, [onCount]);
+    }, [onCount, t]);
     useEffect(() => {
         void load();
     }, [load]);
     return (
         <div className="grid gap-3" data-slot="groups-panel">
             <div className="flex flex-wrap items-start justify-between gap-3">
-                <p className="text-muted-foreground">
-                    Groups give people permissions beyond their role. Admins have every permission already.
-                </p>
-                <Button onClick={() => setEditing('new')}>New group</Button>
+                <p className="text-muted-foreground">{t('settings.people:groups.intro')}</p>
+                <Button onClick={() => setEditing('new')}>{t('settings.people:groups.new')}</Button>
             </div>
             {groups === undefined ? null : groups.length ? (
                 groups.map((group) => (
@@ -290,7 +318,7 @@ export function GroupsPanel({
                 ))
             ) : (
                 <p className="text-muted-foreground" data-slot="no-groups">
-                    No groups yet. Make one to let people who aren&apos;t admins run code.
+                    {t('settings.people:groups.empty')}
                 </p>
             )}
             {editing && (
@@ -302,23 +330,23 @@ export function GroupsPanel({
             )}
             {deleting && (
                 <ConfirmDelete
-                    title={`Delete ${deleting.name}?`}
+                    title={t('settings.people:groups.delete.title', { name: deleting.name })}
                     slot="delete-group"
                     onClose={() => setDeleting(undefined)}
                     onConfirm={async () => {
                         try {
                             await api(groupPath(deleting.id), 'DELETE');
-                            toast.success(`${deleting.name} deleted`);
+                            toast.success(t('settings.people:groups.delete.deleted', { name: deleting.name }));
                             setDeleting(undefined);
                             await load();
                         } catch (error) {
-                            failed(error, 'Could not delete the group.');
+                            failed(error, t('settings.people:groups.delete.failed'));
                         }
                     }}
                 >
                     {deleting.members.length
-                        ? `${deleting.members.length} ${deleting.members.length === 1 ? 'person loses' : 'people lose'} what it gives at once.`
-                        : 'Nobody is in it.'}
+                        ? t('settings.people:groups.delete.loses', { count: deleting.members.length })
+                        : t('settings.people:groups.delete.nobody')}
                 </ConfirmDelete>
             )}
         </div>

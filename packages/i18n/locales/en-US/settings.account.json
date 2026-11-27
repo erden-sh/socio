@@ -1,0 +1,55 @@
+{
+    "mock": {
+        "title": "Account",
+        "signedIn": "Signed in as {{name}} ({{role}}) with this machine’s sign-in picker: there is no password or passkey to manage. Switch user from the account menu.",
+        "signedIn_nobody": "Signed in with this machine’s sign-in picker: there is no password or passkey to manage. Switch user from the account menu."
+    },
+    "name": {
+        "title": "Name",
+        "label": "Your name",
+        "save": "Save",
+        "saved": "Name saved",
+        "failed": "Could not save the name."
+    },
+    "passkeys": {
+        "title": "Passkeys",
+        "description": "Sign in with your device's fingerprint, face or PIN instead of a password.",
+        "list": "Your passkeys",
+        "unnamed": "Passkey",
+        "created": "{{at, datetime}}",
+        "remove": "Remove",
+        "empty": "No passkeys yet.",
+        "nameLabel": "Passkey name",
+        "namePlaceholder": "Name, e.g. Laptop",
+        "add": "Add a passkey",
+        "added": "Passkey added",
+        "loadFailed": "Could not load passkeys.",
+        "removeFailed": "Could not remove the passkey.",
+        "addFailed": "Could not add the passkey."
+    },
+    "password": {
+        "title": "Password",
+        "current": "Current password",
+        "new": "New password",
+        "newPlaceholder": "New password (10+)",
+        "change": "Change",
+        "changed": "Password changed; other sessions signed out",
+        "failed": "Could not change the password."
+    },
+    "sessions": {
+        "title": "Sessions",
+        "description": "Signs this account out on every device, this one included.",
+        "signOutEverywhere": "Sign out everywhere",
+        "failed": "Could not sign out everywhere."
+    },
+    "leave": {
+        "title": "Leave workspace",
+        "description": "Ends your membership: you are signed out on every device and can't sign in again unless an admin brings you back. What you made stays with the workspace, where admins can hand it to someone else.",
+        "button": "Leave workspace",
+        "confirmTitle": "Leave this workspace?",
+        "confirmAction": "Leave",
+        "confirmBody": "You will be signed out everywhere, including the $t(common:product) app on your phone, which erases its copy. Your chats, pages and other work stay with the workspace. Only an admin can let you back in.",
+        "left": "You left the workspace",
+        "failed": "Could not leave the workspace."
+    }
+}

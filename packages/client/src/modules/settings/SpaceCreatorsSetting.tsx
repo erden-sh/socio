@@ -1,3 +1,4 @@
+import { useTranslation } from '@socio/i18n/react';
 import { spaceCreatorsInForce } from '@socio/shared/spaces/create-permission';
 import type { Settings } from '@socio/shared/types';
 
@@ -21,31 +22,34 @@ export function SpaceCreatorsSetting({
     readOnly: boolean;
     mutate: (path: string, method: string, body?: unknown) => Promise<boolean>;
 }) {
+    const { t } = useTranslation(['settings.workspace']);
     const auto = useAutosave({ spaceCreators: spaceCreatorsInForce(settings) }, (value) =>
         mutate('/settings', 'PATCH', value),
     );
     return (
         <SettingsCard>
             <section className="grid gap-4" data-slot="space-creators">
-                <AutosaveHeader title="Spaces" status={!readOnly ? auto.status : undefined}>
-                    Who can create Spaces. Workspace admins always can.
+                <AutosaveHeader
+                    title={t('settings.workspace:spaces.title')}
+                    status={!readOnly ? auto.status : undefined}
+                >
+                    {t('settings.workspace:spaces.intro')}
                 </AutosaveHeader>
                 <PermissionRow
-                    title="Members can create Spaces"
+                    title={t('settings.workspace:spaces.toggle')}
                     checked={auto.value.spaceCreators === 'everyone'}
                     disabled={readOnly}
                     onCheckedChange={(on) =>
                         void auto.change(
                             { spaceCreators: on ? 'everyone' : 'admins' },
-                            on ? 'Members can create Spaces' : 'Only admins can create Spaces',
+                            t('settings.workspace:spaces.saved', { context: on ? undefined : 'off' }),
                         )
                     }
                 >
-                    On by default. A member’s Space is private to them and the people they add; only admins make one for
-                    the whole workspace.
+                    {t('settings.workspace:spaces.description')}
                 </PermissionRow>
                 <SaveError error={auto.error} />
-                {readOnly && <p className="text-muted-foreground">Only an admin can change this setting.</p>}
+                {readOnly && <p className="text-muted-foreground">{t('settings.workspace:readOnly.setting')}</p>}
             </section>
         </SettingsCard>
     );

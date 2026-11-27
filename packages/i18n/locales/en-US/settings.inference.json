@@ -1,0 +1,27 @@
+{
+    "title": "Inference",
+    "loading": "Loading…",
+    "active": "Your chats run on {{model}}, the workspace’s model.",
+    "active_byo": "Your chats run on {{model}}, your own subscription.",
+    "noModel": "No model is available for your chats yet.",
+    "noKinds": "There are no subscriptions to connect.",
+    "noKinds_noModel": "There are no subscriptions to connect; ask an operator to set up a model.",
+    "list": "Subscriptions",
+    "state": {
+        "connected": "Connected",
+        "pending": "Connecting",
+        "expired": "Expired",
+        "error": "Problem",
+        "disconnected": "Not connected"
+    },
+    "connect": "Connect",
+    "disconnect": "Disconnect",
+    "cancel": "Cancel",
+    "code": "Code:",
+    "openSignIn": "Open the sign-in page",
+    "connected": "Connected",
+    "disconnected": "Disconnected",
+    "loadFailed": "Could not load your connections.",
+    "connectFailed": "Could not connect.",
+    "disconnectFailed": "Could not disconnect."
+}

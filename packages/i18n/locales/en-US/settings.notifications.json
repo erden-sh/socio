@@ -1,0 +1,79 @@
+{
+    "title": "Notifications",
+    "loading": "Loading…",
+    "loadFailed": "Could not load notifications.",
+    "intro": "A socio can notify you when something needs you: unattended work that finished, a problem, a decision only you can make. It goes to the channels you turn on here, and only while you aren’t using $t(common:product). While you are, it shows in the app instead.",
+    "saved": "Notifications saved",
+    "channel": {
+        "on": "On",
+        "off": "Off",
+        "switch": "{{channel}} on",
+        "shows": "What it shows",
+        "goesTo": "Goes to {{targets, list}}.",
+        "nowhere": "It reaches nowhere yet.",
+        "telegramSettings": "Telegram settings"
+    },
+    "content": {
+        "message": "Show the message",
+        "messageNote": "The socio’s name, its message and, where the device shows one, its image.",
+        "private": "Private (“<socio> needs you”)",
+        "privateNote": "Only which socio needs you: the message stays in $t(common:product) until you open it."
+    },
+    "push": {
+        "devices": "Devices",
+        "remove": "Remove",
+        "removeLabel": "Remove {{device}}",
+        "removed": "Device removed",
+        "removeFailed": "Could not remove it.",
+        "here": "On in this browser.",
+        "turnOn": "Turn on for this browser",
+        "turningOn": "Turning on…",
+        "turnedOn": "Notifications on in this browser",
+        "turnOnFailed": "Could not turn notifications on in this browser.",
+        "notAllowed": "Notifications weren’t allowed. Try again and choose Allow.",
+        "ios": "Add $t(common:product) to your Home Screen first, then turn notifications on in the app. On iPhone and iPad, only the installed app gets notifications.",
+        "unsupported": "This browser can’t get push notifications. Try another browser, or Telegram.",
+        "denied": "Notifications are blocked for this site in your browser’s settings. Allow them there, then reload this page."
+    },
+    "test": {
+        "title": "Test",
+        "description": "Sends a test now to every channel that’s on, even while you’re here.",
+        "send": "Send a test notification",
+        "sending": "Sending…",
+        "sent": "Sent to {{channels, list}}.",
+        "channel": "{{channel}} ({{counts, list(type: unit)}})",
+        "sentCount_one": "{{count}} sent",
+        "sentCount_other": "{{count}} sent",
+        "failedCount_one": "{{count}} failed",
+        "failedCount_other": "{{count}} failed",
+        "none": "No channel is on, so nothing was sent. Turn one on above.",
+        "failed": "Could not send the test notification."
+    },
+    "issues": {
+        "title": "Issue subscriptions",
+        "intro": "Get one notice when all chosen issues reach a status after a future change. Existing matches are not announced. Device delivery uses your notification channels above; a notice also appears in $t(common:product).",
+        "keys": "Issue keys",
+        "keysLabel": "Subscribed issue keys",
+        "status": "When all reach",
+        "statusLabel": "Subscription target status",
+        "subscribe": "Subscribe once",
+        "alreadyMatched": "These issues already match. No historical notice was sent; this waits for a later transition.",
+        "alreadyWatching": "You already have this subscription.",
+        "subscribed": "Subscribed. You will be notified once when all these issues match.",
+        "empty": "No issue subscriptions.",
+        "more": "Load more subscriptions",
+        "loadFailed": "Could not load subscriptions.",
+        "subscribeFailed": "Could not subscribe.",
+        "unsubscribeFailed": "Could not unsubscribe.",
+        "moreFailed": "Could not load more.",
+        "target": "→ {{status}}",
+        "unsubscribe": "Unsubscribe",
+        "unsubscribeLabel": "Unsubscribe {{issues}}",
+        "states": {
+            "watching": "Watching future changes",
+            "ready": "Matched; notice pending",
+            "triggered": "Matched; notification recorded",
+            "cancelled": "Canceled"
+        }
+    }
+}

@@ -2,6 +2,8 @@ import { Check } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { toast } from 'sonner';
 
+import { useTranslation } from '@socio/i18n/react';
+
 /**
  * Settings that save as they change (CB-308), instead of a Save button on
  * each card: toggles and selects save at once (`change`), text and number
@@ -20,8 +22,6 @@ type Undoable<T> = boolean | ((next: T, previous: T) => boolean);
 
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 
-export const SAVE_FAILED = 'Could not save. Review the workspace error and retry.';
-
 export function useAutosave<T extends Record<string, unknown>>(
     /** The saved values, from the server; followed while nothing is unsaved. */
     initial: T,
@@ -31,6 +31,8 @@ export function useAutosave<T extends Record<string, unknown>>(
      */
     persist: (value: T) => Promise<boolean | void>,
 ) {
+    const { t } = useTranslation(['settings']);
+    const failed = t('settings:save.failed');
     const [draft, setDraft] = useState(initial);
     const [status, setStatus] = useState<SaveStatus>('idle');
     const [error, setError] = useState('');
@@ -82,10 +84,10 @@ export function useAutosave<T extends Record<string, unknown>>(
                 let problem = '';
                 try {
                     if ((await persistRef.current(next)) === false) {
-                        problem = SAVE_FAILED;
+                        problem = failed;
                     }
                 } catch (failure) {
-                    problem = failure instanceof Error && failure.message ? failure.message : SAVE_FAILED;
+                    problem = failure instanceof Error && failure.message ? failure.message : failed;
                 }
                 pending.current -= 1;
                 if (problem) {
@@ -112,11 +114,11 @@ export function useAutosave<T extends Record<string, unknown>>(
                     offer && Object.keys(back).length
                         ? {
                               action: {
-                                  label: 'Undo',
+                                  label: t('settings:save.undo'),
                                   onClick: () => {
                                       const restored = { ...saved.current, ...back };
                                       show({ ...current.current, ...back });
-                                      write(restored, 'Change undone', false);
+                                      write(restored, t('settings:save.undone'), false);
                                   },
                               },
                           }
@@ -127,7 +129,7 @@ export function useAutosave<T extends Record<string, unknown>>(
             queue.current = done;
             return done;
         },
-        [show, adopt],
+        [show, adopt, failed, t],
     );
 
     const perform = useCallback(
@@ -139,10 +141,10 @@ export function useAutosave<T extends Record<string, unknown>>(
                 let problem = '';
                 try {
                     if ((await task()) === false) {
-                        problem = SAVE_FAILED;
+                        problem = failed;
                     }
                 } catch (failure) {
-                    problem = failure instanceof Error && failure.message ? failure.message : SAVE_FAILED;
+                    problem = failure instanceof Error && failure.message ? failure.message : failed;
                 }
                 pending.current -= 1;
                 if (problem) {
@@ -160,7 +162,7 @@ export function useAutosave<T extends Record<string, unknown>>(
             queue.current = done;
             return done;
         },
-        [adopt],
+        [adopt, failed],
     );
 
     return {
@@ -223,6 +225,7 @@ function changed<T extends Record<string, unknown>>(before: T, after: T) {
 
 /** "Saving…", then "Saved", at the top right of a card. */
 export function SaveStatusNote({ status }: { status: SaveStatus }) {
+    const { t } = useTranslation(['settings']);
     return (
         <span
             role="status"
@@ -231,11 +234,11 @@ export function SaveStatusNote({ status }: { status: SaveStatus }) {
             data-status={status}
             className="inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground"
         >
-            {status === 'saving' && 'Saving…'}
+            {status === 'saving' && t('settings:save.saving')}
             {status === 'saved' && (
                 <>
                     <Check className="size-3.5" aria-hidden="true" />
-                    Saved
+                    {t('settings:save.saved')}
                 </>
             )}
         </span>

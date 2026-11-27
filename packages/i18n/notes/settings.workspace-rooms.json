@@ -1,0 +1,12 @@
+{
+    "title": "\"Rooms\" is a product feature: conversations several people share with an AI agent. Keep the noun consistent.",
+    "intro": "A company socio is an AI agent the whole company shares.",
+    "budget.title": "Switch: members see how much of the room's limits (time, tokens, spend) is used.",
+    "readiness.allPrivate": "Shown to admins before they turn Rooms on: how many of the workspace's chats are private and how many are rooms.",
+    "readiness.mixed": "{{chats}} is readiness.chats and {{rooms}} is readiness.rooms, with their numbers.",
+    "requests.title": "Heading: AI agents (socios) that rooms asked to have let in.",
+    "requests.request": "{{socio}} is the AI agent's name, shown in bold (keep the <socio> tags around it); {{room}} is the room's title.",
+    "requests.askedBy": "{{name}} is the person who asked.",
+    "requests.letIn": "Button: lets the socio (AI agent) answer in that room.",
+    "requests.letInLabel": "Screen reader label of the Let in button. {{socio}} is the agent's name, {{room}} the room's title."
+}

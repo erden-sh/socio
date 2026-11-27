@@ -1,11 +1,12 @@
 import { useState } from 'react';
 
+import { useTranslation } from '@socio/i18n/react';
 import type { DataKeyStatus, RestoreDrillStatus } from '@socio/shared/types';
 
 import { useHydrated } from '../../lib/client-only';
 import { utcTime } from '../../lib/local-time';
 
-import { dataKeyLine, keyCheckLine, keyIdsLine, legacySealedLine, resealLine } from './setup-lines';
+import { useSetupLines } from './setup-lines';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,6 +28,8 @@ export function DataKeySetup({
     readOnly: boolean;
     mutate: Mutate;
 }) {
+    const { t } = useTranslation(['settings.workspace-setup']);
+    const { dataKeyLine, keyIdsLine, legacySealedLine, resealLine } = useSetupLines();
     const [busy, setBusy] = useState(false);
     const when = useHydrated() ? undefined : utcTime;
     const running = !!dataKey.reseal?.running;
@@ -34,10 +37,14 @@ export function DataKeySetup({
     const due = dataKey.legacy + dataKey.previous > 0;
     return (
         <div className="grid justify-items-start gap-1" data-slot="setup-data-key-group">
-            <p data-slot="setup-data-key">Data key: {dataKeyLine(dataKey)}.</p>
-            <p data-slot="setup-key-ids">Key ids: {keyIdsLine(dataKey)}.</p>
-            <p data-slot="setup-legacy-sealed">Legacy-sealed: {legacySealedLine(dataKey)}.</p>
-            {reseal && <p data-slot="setup-reseal">Re-seal: {reseal}.</p>}
+            <p data-slot="setup-data-key">
+                {t('settings.workspace-setup:lines.dataKey', { line: dataKeyLine(dataKey) })}
+            </p>
+            <p data-slot="setup-key-ids">{t('settings.workspace-setup:lines.keyIds', { line: keyIdsLine(dataKey) })}</p>
+            <p data-slot="setup-legacy-sealed">
+                {t('settings.workspace-setup:lines.legacy', { line: legacySealedLine(dataKey) })}
+            </p>
+            {reseal && <p data-slot="setup-reseal">{t('settings.workspace-setup:lines.reseal', { line: reseal })}</p>}
             {!readOnly && (dataKey.configured ? due || running : dataKey.legacy > 0) && (
                 <div className="grid justify-items-start gap-1">
                     <Button
@@ -51,9 +58,11 @@ export function DataKeySetup({
                             setBusy(false);
                         }}
                     >
-                        {running ? 'Re-sealing…' : 'Re-seal under the data key'}
+                        {running
+                            ? t('settings.workspace-setup:reseal.busy')
+                            : t('settings.workspace-setup:reseal.button')}
                     </Button>
-                    {!dataKey.configured && <p className="text-xs">Set DATA_ENCRYPTION_KEY first.</p>}
+                    {!dataKey.configured && <p className="text-xs">{t('settings.workspace-setup:reseal.needsKey')}</p>}
                 </div>
             )}
         </div>
@@ -67,6 +76,8 @@ export function DataKeySetup({
  * the key is never kept: only its id and the result come back.
  */
 export function RecoveryKeyCheckSetup({ drill, mutate }: { drill: RestoreDrillStatus; mutate: Mutate }) {
+    const { t } = useTranslation(['settings.workspace-setup']);
+    const { keyCheckLine } = useSetupLines();
     const [key, setKey] = useState('');
     const [busy, setBusy] = useState(false);
     const when = useHydrated() ? undefined : utcTime;
@@ -91,14 +102,12 @@ export function RecoveryKeyCheckSetup({ drill, mutate }: { drill: RestoreDrillSt
                     data-slot="setup-recovery-key-result"
                     className={check.last && !check.last.ok && !running ? 'text-destructive' : undefined}
                 >
-                    Recovery key check: {keyCheckLine(check, when)}.
+                    {t('settings.workspace-setup:lines.keyCheck', { line: keyCheckLine(check, when) })}
                 </p>
             )}
             <label className="grid gap-1" htmlFor="recovery-key">
-                <span>Verify a recovery key</span>
-                <span className="text-xs">
-                    Paste the data key from escrow. It opens a sample of the latest restore and is never stored.
-                </span>
+                <span>{t('settings.workspace-setup:recovery.label')}</span>
+                <span className="text-xs">{t('settings.workspace-setup:recovery.hint')}</span>
             </label>
             <div className="flex flex-wrap gap-2">
                 <Input
@@ -113,7 +122,9 @@ export function RecoveryKeyCheckSetup({ drill, mutate }: { drill: RestoreDrillSt
                     onChange={(event) => setKey(event.target.value)}
                 />
                 <Button type="submit" variant="outline" size="sm" disabled={busy || running || !key.trim()}>
-                    {running ? 'Checking…' : 'Verify'}
+                    {running
+                        ? t('settings.workspace-setup:recovery.checking')
+                        : t('settings.workspace-setup:recovery.verify')}
                 </Button>
             </div>
         </form>

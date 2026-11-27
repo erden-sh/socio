@@ -2,19 +2,21 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { toast } from 'sonner';
 
+import { useTranslation } from '@socio/i18n/react';
 import type { AssetTransfer, DeactivationImpact } from '@socio/shared/auth';
 
 import { ApiError, api } from '../../../lib/api';
+import { onDemand } from '../on-demand';
 
 import {
-    alsoEnds,
-    assetCount,
+    ACTIVE_NOW_MS,
     firstName,
     initials,
-    keyUse,
     ownedKinds,
-    plural,
     serviceAccountPath,
+    useAssetWords,
+    useImpactWords,
+    usePeopleFormat,
 } from './people-format';
 import { RecipientPicker, TransferDialog, useRecipients } from './TransferDialog';
 
@@ -38,11 +40,32 @@ export interface DialogPerson {
 }
 
 /** Says what a transfer moved, with what happened to running apps (they restart for the new owner). */
-export function transferToast(result: AssetTransfer) {
-    const notes = result.kinds.find((k) => k.kind === 'apps')?.notes ?? [];
-    toast.success(`What ${result.from.name} owned is ${result.to.name}’s now`, {
-        description: notes.length ? notes.join(' ') : undefined,
-    });
+export function useTransferToast() {
+    const { t } = useTranslation(['settings.person-dialogs', 'settings.person']);
+    return (result: AssetTransfer) => {
+        const notes = result.kinds.find((k) => k.kind === 'apps')?.notes ?? [];
+        toast.success(
+            t('settings.person-dialogs:deactivate.transferred', { from: result.from.name, to: result.to.name }),
+            {
+                description: notes.length ? notes.join(' ') : undefined,
+            },
+        );
+    };
+}
+
+/** How long ago a key was used, for the preview: "used 2 h ago", "never used". */
+function useKeyUse() {
+    const { t } = useTranslation(['settings.person-dialogs', 'settings.person']);
+    const { lastActive } = usePeopleFormat();
+    return (at: number | null, now = Date.now()) => {
+        if (at === null) {
+            return t('settings.person-dialogs:deactivate.keyNever');
+        }
+        if (now - at < ACTIVE_NOW_MS) {
+            return t('settings.person-dialogs:deactivate.keyJustNow');
+        }
+        return t('settings.person-dialogs:deactivate.keyUsed', { ago: lastActive(at, now, true) });
+    };
 }
 
 /**
@@ -54,7 +77,7 @@ export function transferToast(result: AssetTransfer) {
  * if it fails nothing is deactivated. A refusal (the last admin, or the
  * workspace owner) says why and disables the buttons, which name the person.
  */
-export function DeactivateDialog({
+function DeactivateDialogBody({
     person,
     onClose,
     onConfirm,
@@ -66,6 +89,11 @@ export function DeactivateDialog({
     /** Ownership changed here (or may have): the page loads what they own again. */
     onTransferred?: () => void;
 }) {
+    const { t } = useTranslation(['settings.person-dialogs', 'settings.person']);
+    const { assetCount } = useAssetWords();
+    const { alsoEnds } = useImpactWords();
+    const keyUse = useKeyUse();
+    const transferToast = useTransferToast();
     const [impact, setImpact] = useState<DeactivationImpact>();
     const [error, setError] = useState<string>();
     // A failed transfer: shown under the preview, so another new owner can be picked.
@@ -85,10 +113,10 @@ export function DeactivateDialog({
                 .then(setImpact)
                 .catch((e: unknown) => {
                     if (!signal?.aborted) {
-                        setError(e instanceof Error ? e.message : 'Could not load what it would end.');
+                        setError(e instanceof Error ? e.message : t('settings.person-dialogs:deactivate.impactFailed'));
                     }
                 }),
-        [person.id],
+        [person.id, t],
     );
     useEffect(() => {
         const controller = new AbortController();
@@ -115,15 +143,11 @@ export function DeactivateDialog({
                     // The server answered: it refused, and its transaction moved
                     // nothing. Otherwise the answer was lost and it may have moved.
                     const refused = e instanceof ApiError && (e.status < 500 || e.status === 503);
-                    const why = e instanceof Error ? e.message : 'unknown error';
+                    const why = e instanceof Error ? e.message : t('settings.person-dialogs:deactivate.unknownError');
                     if (refused) {
-                        setActionError(
-                            `The transfer failed, so ${first} was not deactivated and nothing moved: ${why}`,
-                        );
+                        setActionError(t('settings.person-dialogs:deactivate.transferRefused', { first, why }));
                     } else {
-                        setActionError(
-                            `Couldn’t confirm the transfer finished (${why}), so ${first} was not deactivated. What they own is loaded again below: check it before you try again.`,
-                        );
+                        setActionError(t('settings.person-dialogs:deactivate.transferLost', { first, why }));
                         void loadImpact();
                         onTransferred?.();
                     }
@@ -158,10 +182,11 @@ export function DeactivateDialog({
         <AlertDialog open onOpenChange={(open) => !open && !busy && onClose()}>
             <AlertDialogContent data-slot="confirm-deactivate" className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl">
                 <AlertDialogHeader>
-                    <AlertDialogTitle>Deactivate {person.name}?</AlertDialogTitle>
+                    <AlertDialogTitle>
+                        {t('settings.person-dialogs:deactivate.title', { name: person.name })}
+                    </AlertDialogTitle>
                     <AlertDialogDescription>
-                        {first} can’t sign in any more. Their chats, pages and files stay, named after them. You can
-                        reactivate them later; what ends below stays ended.
+                        {t('settings.person-dialogs:deactivate.description', { first })}
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 {error ? (
@@ -183,14 +208,20 @@ export function DeactivateDialog({
                         )}
                         {impact.keys.length > 0 && (
                             <section
-                                aria-label="Service keys that stop working"
+                                aria-label={t('settings.person-dialogs:deactivate.keysSection')}
                                 data-slot="impact-keys"
                                 className="grid gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-destructive"
                             >
                                 <p>
-                                    <strong>{plural(impact.keys.length, 'service key')} stop working.</strong> {first}{' '}
-                                    made{' '}
-                                    {impact.keys.length === 1 ? 'it and saw its secret' : 'them and saw their secrets'}.
+                                    <strong>
+                                        {t('settings.person-dialogs:deactivate.keysStop', {
+                                            count: impact.keys.length,
+                                        })}
+                                    </strong>{' '}
+                                    {t('settings.person-dialogs:deactivate.keysMade', {
+                                        count: impact.keys.length,
+                                        first,
+                                    })}
                                 </p>
                                 <ul className="grid divide-y divide-destructive/15">
                                     {impact.keys.map((key) => (
@@ -214,31 +245,40 @@ export function DeactivateDialog({
                                                     data-slot="last-live-key"
                                                     className="border-destructive/40 bg-background text-destructive"
                                                 >
-                                                    {key.account}’s only key: {key.account} stops
+                                                    {t('settings.person-dialogs:deactivate.lastKey', {
+                                                        account: key.account,
+                                                    })}
                                                 </Badge>
                                             ) : (
-                                                <span className="text-xs">{key.account} keeps another key</span>
+                                                <span className="text-xs">
+                                                    {t('settings.person-dialogs:deactivate.otherKey', {
+                                                        account: key.account,
+                                                    })}
+                                                </span>
                                             )}
                                         </li>
                                     ))}
                                 </ul>
                                 {orphanedAccounts.map(([accountId, account]) => (
                                     <p key={accountId} className="text-xs">
-                                        Make {account} a new key before you go on:{' '}
+                                        {t('settings.person-dialogs:deactivate.newKey', { account })}{' '}
                                         <Link
                                             to={serviceAccountPath(accountId)}
                                             className="underline underline-offset-2"
                                             onClick={onClose}
                                         >
-                                            Open {account}
+                                            {t('settings.person-dialogs:deactivate.openAccount', { account })}
                                         </Link>
                                     </p>
                                 ))}
                             </section>
                         )}
                         {ends.length > 0 && (
-                            <section aria-label="Also ends" className="grid gap-1">
-                                <h3 className="font-medium">Also ends</h3>
+                            <section
+                                aria-label={t('settings.person-dialogs:deactivate.alsoEnds')}
+                                className="grid gap-1"
+                            >
+                                <h3 className="font-medium">{t('settings.person-dialogs:deactivate.alsoEnds')}</h3>
                                 <ul className="grid divide-y">
                                     {ends.map((line) => (
                                         <li key={line.what} className="flex flex-wrap justify-between gap-2 py-2">
@@ -250,26 +290,38 @@ export function DeactivateDialog({
                             </section>
                         )}
                         {owned.length > 0 && (
-                            <section aria-label={`Stays ${first}’s`} className="grid gap-1" data-slot="impact-owned">
+                            <section
+                                aria-label={t('settings.person-dialogs:deactivate.stays', { first })}
+                                className="grid gap-1"
+                                data-slot="impact-owned"
+                            >
                                 <div className="flex flex-wrap items-center justify-between gap-2">
-                                    <h3 className="font-medium">Stays {first}’s</h3>
+                                    <h3 className="font-medium">
+                                        {t('settings.person-dialogs:deactivate.stays', { first })}
+                                    </h3>
                                     <Button
                                         variant="outline"
                                         size="sm"
                                         disabled={busy}
                                         onClick={() => setTransferring(true)}
                                     >
-                                        Transfer…
+                                        {t('settings.person-dialogs:deactivate.transfer')}
                                     </Button>
                                 </div>
                                 <ul className="grid divide-y">
                                     {owned.map(({ kind, count }) => (
                                         <li key={kind} className="flex flex-wrap justify-between gap-2 py-2">
-                                            <span>{assetCount(kind, count)} they own</span>
+                                            <span>
+                                                {t('settings.person-dialogs:deactivate.theyOwn', {
+                                                    what: assetCount(kind, count),
+                                                })}
+                                            </span>
                                             <span className="text-muted-foreground">
                                                 {recipient
-                                                    ? `moves to ${firstName(recipient.name)}`
-                                                    : 'kept, still theirs'}
+                                                    ? t('settings.person-dialogs:deactivate.movesTo', {
+                                                          name: firstName(recipient.name),
+                                                      })
+                                                    : t('settings.person-dialogs:deactivate.kept')}
                                             </span>
                                         </li>
                                     ))}
@@ -279,32 +331,37 @@ export function DeactivateDialog({
                                     data-slot="deactivate-transfer"
                                 >
                                     <label className="grid gap-1">
-                                        <span className="font-medium">Hand everything to</span>
+                                        <span className="font-medium">
+                                            {t('settings.person-dialogs:deactivate.handTo')}
+                                        </span>
                                         <RecipientPicker
                                             people={people}
                                             value={to}
                                             onChange={setTo}
-                                            label="Hand everything to"
-                                            none="Nobody: it stays theirs"
+                                            label={t('settings.person-dialogs:deactivate.handTo')}
+                                            none={t('settings.person-dialogs:deactivate.handToNobody')}
                                             disabled={busy || !!impact.refusal}
                                         />
                                     </label>
                                     {recipient && (
                                         <ol className="list-decimal pl-5 text-xs" data-slot="deactivate-transfer-order">
                                             <li>
-                                                Everything {first} owns moves to {recipient.name}.
+                                                {t('settings.person-dialogs:deactivate.step1', {
+                                                    first,
+                                                    name: recipient.name,
+                                                })}
                                             </li>
-                                            <li>Then {first} is deactivated.</li>
-                                            <li>
-                                                If the transfer fails, nothing moves and {first} is not deactivated.
-                                            </li>
+                                            <li>{t('settings.person-dialogs:deactivate.step2', { first })}</li>
+                                            <li>{t('settings.person-dialogs:deactivate.step3', { first })}</li>
                                         </ol>
                                     )}
                                 </div>
                             </section>
                         )}
                         {!impact.keys.length && !ends.length && !owned.length && !impact.refusal && (
-                            <p className="text-muted-foreground">Nothing else they have ends.</p>
+                            <p className="text-muted-foreground">
+                                {t('settings.person-dialogs:deactivate.nothingElse')}
+                            </p>
                         )}
                     </div>
                 )}
@@ -314,14 +371,16 @@ export function DeactivateDialog({
                     </p>
                 )}
                 <AlertDialogFooter className="flex-wrap">
-                    <AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel>
+                    <AlertDialogCancel disabled={busy}>{t('settings.person:cancel')}</AlertDialogCancel>
                     <Button
                         variant={recipient ? 'outline' : 'destructive'}
                         disabled={busy || !impact || !!impact.refusal}
                         onClick={() => void deactivate()}
                     >
-                        Deactivate {first}
-                        {owned.length > 0 && recipient ? ' only' : ''}
+                        {t('settings.person-dialogs:deactivate.confirm', {
+                            context: owned.length > 0 && recipient ? 'only' : undefined,
+                            first,
+                        })}
                     </Button>
                     {owned.length > 0 && (
                         <Button
@@ -331,8 +390,10 @@ export function DeactivateDialog({
                             onClick={() => void deactivate(to)}
                         >
                             {recipient
-                                ? `Transfer everything to ${firstName(recipient.name)} and deactivate`
-                                : 'Transfer everything to… and deactivate'}
+                                ? t('settings.person-dialogs:deactivate.transferAndDeactivate', {
+                                      name: firstName(recipient.name),
+                                  })
+                                : t('settings.person-dialogs:deactivate.transferAndDeactivatePick')}
                         </Button>
                     )}
                 </AlertDialogFooter>
@@ -345,7 +406,7 @@ export function DeactivateDialog({
  * Reactivate: they can sign in again, and what the deactivation ended
  * stays ended.
  */
-export function ReactivateDialog({
+function ReactivateDialogBody({
     person,
     onClose,
     onConfirm,
@@ -354,21 +415,22 @@ export function ReactivateDialog({
     onClose: () => void;
     onConfirm: () => Promise<void>;
 }) {
+    const { t } = useTranslation(['settings.person-dialogs', 'settings.person']);
     const [busy, setBusy] = useState(false);
     const first = firstName(person.name);
     return (
         <AlertDialog open onOpenChange={(open) => !open && !busy && onClose()}>
             <AlertDialogContent data-slot="confirm-reactivate">
                 <AlertDialogHeader>
-                    <AlertDialogTitle>Reactivate {person.name}?</AlertDialogTitle>
+                    <AlertDialogTitle>
+                        {t('settings.person-dialogs:reactivate.title', { name: person.name })}
+                    </AlertDialogTitle>
                     <AlertDialogDescription>
-                        {first} can sign in again, with the role they had. What their deactivation ended doesn’t come
-                        back: service keys they made, connected agents and socio access stay revoked, and their sessions
-                        stay signed out. Their scheduled tasks stay paused until they resume them.
+                        {t('settings.person-dialogs:reactivate.description', { first })}
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                    <AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel>
+                    <AlertDialogCancel disabled={busy}>{t('settings.person:cancel')}</AlertDialogCancel>
                     <Button
                         disabled={busy}
                         onClick={async () => {
@@ -380,10 +442,16 @@ export function ReactivateDialog({
                             }
                         }}
                     >
-                        Reactivate {first}
+                        {t('settings.person-dialogs:reactivate.confirm', { first })}
                     </Button>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
     );
 }
+
+/** Its words load when it opens (`settings.person-dialogs`, in no route's entry). */
+export const DeactivateDialog = onDemand(['settings.person-dialogs', 'settings.person'], DeactivateDialogBody);
+
+/** Its words load when it opens (`settings.person-dialogs`, in no route's entry). */
+export const ReactivateDialog = onDemand(['settings.person-dialogs', 'settings.person'], ReactivateDialogBody);

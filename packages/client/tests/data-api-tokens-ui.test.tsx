@@ -106,9 +106,9 @@ const type = (input: HTMLInputElement, value: string) => {
 };
 
 it('is a workspace settings page for admins only', () => {
-    const workspace = SETTINGS_GROUPS.find((group) => group.label === 'Workspace')!;
+    const workspace = SETTINGS_GROUPS.find((group) => group.id === 'workspace')!;
     const item = workspace.entries.find((entry) => entry.id === 'data-api')!;
-    expect(item).toMatchObject({ label: 'Data API', role: 'admin', path: '/settings/data-api' });
+    expect(item).toMatchObject({ role: 'admin', path: '/settings/data-api' });
     expect(allowed(item, { admin: true, operator: false, signIn: true, telegram: false })).toBe(true);
     expect(allowed(item, { admin: false, operator: false, signIn: true, telegram: false })).toBe(false);
 });

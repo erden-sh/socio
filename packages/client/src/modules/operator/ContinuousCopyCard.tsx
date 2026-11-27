@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import type { ContinuousCopyStatus } from '@socio/shared/types';
 
 import { api } from '../../lib/api';
-import { continuousLine } from '../settings/setup-lines';
+import { useContinuousLine } from '../settings/setup-lines';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -15,6 +15,7 @@ const sentence = (line: string) => `${line[0].toUpperCase()}${line.slice(1)}.`;
  * shown when LITESTREAM_REPLICA_DIR isn't set.
  */
 export function ContinuousCopyCard() {
+    const continuousLine = useContinuousLine();
     const [copy, setCopy] = useState<ContinuousCopyStatus | null>();
     const [error, setError] = useState('');
     useEffect(() => {

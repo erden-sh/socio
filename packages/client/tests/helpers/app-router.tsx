@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import type { RouteConfigEntry } from '@react-router/dev/routes';
 import type { ComponentType } from 'react';
 import {
@@ -20,11 +23,16 @@ import type { MemoriesState } from '@socio/shared/memory';
 import { LIBRARY_FIRST_SCREEN, type PageLibrary, type PageSummary } from '@socio/shared/pages/page-library';
 import type { ScheduleDetail, SchedulesState } from '@socio/shared/schedule-types';
 import type { State, WorkspaceState } from '@socio/shared/types';
-import type { RunList, WebServices } from '@socio/shared/web/web';
+import type { PageI18n, RunList, WebServices } from '@socio/shared/web/web';
 
+import { I18nRoot } from '../../src/i18n/I18nRoot';
 import { api, ApiError } from '../../src/lib/api';
 import { webContext } from '../../src/lib/web-context';
-import Root, { ErrorBoundary as RootError } from '../../src/root';
+import Root, {
+    ErrorBoundary as RootError,
+    loader as rootLoader,
+    shouldRevalidate as rootRevalidate,
+} from '../../src/root';
 import config from '../../src/routes';
 
 /** What a `*.route.tsx` file exports (the subset this app uses). */
@@ -101,7 +109,8 @@ export function toRouteObjects(entries: readonly RouteConfigEntry[], load: LoadR
 }
 
 /**
- * The app's routes under the root route (its outlet, not the document),
+ * The app's routes under the root route (its outlet, inside the page's
+ * translations as the document's Layout puts it),
  * as the browser gets them. `extraRoutes` go into the shell next to the
  * modules' gates (a test module's gate and pages).
  */
@@ -116,7 +125,15 @@ export function testRoutes(extraRoutes: RouteObject[] = [], load: LoadRouteModul
         {
             id: 'root',
             path: '/',
-            Component: Root,
+            // The document's Layout wraps the root in the page's
+            // translations (I18nRoot), from the root loader.
+            loader: rootLoader as LoaderFunction,
+            shouldRevalidate: rootRevalidate,
+            Component: () => (
+                <I18nRoot>
+                    <Root />
+                </I18nRoot>
+            ),
             ErrorBoundary: RootError,
             children: routes,
         },
@@ -136,6 +153,22 @@ function libraryOf(spaceId: string, pages: PageSummary[], include?: string) {
         pages: recent,
         hasCovers: pages.some((page) => page.cover),
     } satisfies PageLibrary;
+}
+
+/** A page's en-US dictionaries, from the source, as the server inlines them in development. */
+function englishPage(namespaces: readonly string[]): PageI18n {
+    const dir = join(import.meta.dirname, '../../../i18n/locales/en-US');
+    return {
+        locale: 'en-US',
+        dir: 'ltr',
+        manifest: { release: '', locales: {} },
+        resources: {
+            'en-US': Object.fromEntries(
+                namespaces.map((ns) => [ns, JSON.parse(readFileSync(join(dir, `${ns}.json`), 'utf8'))]),
+            ),
+        },
+        offered: ['en-US'],
+    };
 }
 
 /**
@@ -176,6 +209,7 @@ export function fetchServices(log: string[] = []): WebServices {
     };
     return {
         user: async () => (await workspace())?.user ?? null,
+        i18n: async (namespaces) => englishPage(namespaces),
         signIn: once(async () => {
             const { provider, methods } = await get<AuthSession>('/auth/session');
             return { provider, ...(methods ? { methods } : {}) };

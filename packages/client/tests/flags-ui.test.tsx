@@ -199,7 +199,7 @@ it('lists In development only in an internal deployment, and every flag page for
     expect(ids(true, 'admin')).toEqual(['features', 'early-access', 'features-dev']);
     expect(ids(true, 'member')).toEqual([]);
     // Early access is the workspace's, not the person's account.
-    const account = SETTINGS_GROUPS.find((group) => group.label === 'Account')!;
+    const account = SETTINGS_GROUPS.find((group) => group.id === 'account')!;
     expect(account.entries.map((item) => item.id)).not.toContain('early-access');
 });
 

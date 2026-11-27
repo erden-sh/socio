@@ -1,0 +1,53 @@
+{
+    "title": "External MCP connections",
+    "intro": "Connect a public HTTPS MCP server for your account, review its tools, and choose which socios may request them. Other people do not inherit your connection. Disconnecting here clears $t(common:product)’s credentials and access; revoke the provider’s own grant there if needed.",
+    "approval": "Tools are available in your web chats. External calls need your approval every time and cannot be undone here. Interrupted calls are not automatically repeated.",
+    "failed": "The connection operation failed.",
+    "loading": "Loading your connections…",
+    "form": {
+        "name": "Connection name",
+        "url": "MCP server URL",
+        "authentication": "Authentication",
+        "oauth": "OAuth",
+        "none": "No authentication (public server)",
+        "add": "Add connection"
+    },
+    "status": "Status: {{state}}",
+    "status_draft": "Status: draft",
+    "status_authorizing": "Status: authorizing",
+    "status_review": "Status: review",
+    "status_connected": "Status: connected",
+    "status_disconnected": "Status: disconnected",
+    "status_error": "Status: error",
+    "actions": {
+        "review": "Review authorization",
+        "refresh": "Refresh tool catalog",
+        "disconnect": "Disconnect",
+        "remove": "Remove connection"
+    },
+    "authorize": {
+        "label": "Authorization review",
+        "intro": "You will authorize this external provider. Review its identity and select the scopes you want to request.",
+        "issuer": "Authorization issuer: {{issuer}}",
+        "resource": "Protected resource: {{resource}}",
+        "scopes": "Requested OAuth scopes",
+        "noScopes": "The provider publishes no optional scopes.",
+        "required": "The server requested: {{scopes}}. A scope selection does not guarantee provider access.",
+        "client": "Use a pre-registered OAuth client",
+        "clientNote": "Optional when this provider requires a client registered for $t(common:product)’s callback. The client must belong to the issuer above.",
+        "clientId": "Client ID",
+        "clientSecret": "Client secret (if required)",
+        "clientRequired": "This provider requires a pre-registered client.",
+        "continue": "Continue to provider",
+        "invalidUrl": "The provider returned an invalid authorization URL."
+    },
+    "tools": {
+        "intro": "Review the external tool definitions, then grant specific tools to a socio. The descriptions and permission hints come from the provider. Every call still needs your approval with its complete arguments. Refreshing the catalog clears existing grants so you can review them again.",
+        "socio": "Socio",
+        "allowed": "Allowed external tools",
+        "unavailable": "Unavailable: {{reason}}",
+        "schema": "Full schema and provider hints",
+        "empty": "This catalog contains no tools.",
+        "save": "Save tool access for this socio"
+    }
+}

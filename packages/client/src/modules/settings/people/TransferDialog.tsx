@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 
+import { useTranslation } from '@socio/i18n/react';
 import type { AssetKind, AssetTransfer, OwnedKind, PersonAssets, Roster, RosterPerson } from '@socio/shared/auth';
 import { compareText } from '@socio/shared/locale';
 
 import { dialogSelect } from '../../../components/form-fields';
 import { ApiError, api } from '../../../lib/api';
+import { onDemand } from '../on-demand';
 
-import { ASSET_INFO, assetCount, firstName, movedWords } from './people-format';
+import { firstName, movedParts, useAssetWords } from './people-format';
 
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -34,6 +36,7 @@ const accountPath = (id: string, rest = '') => `/accounts/${encodeURIComponent(i
  * service account is offered (the server refuses one anyway).
  */
 export function useRecipients(personId: string) {
+    const { t } = useTranslation(['settings.person-dialogs', 'settings.person']);
     const [people, setPeople] = useState<RosterPerson[]>();
     const [error, setError] = useState<string>();
     useEffect(() => {
@@ -48,11 +51,11 @@ export function useRecipients(personId: string) {
             )
             .catch((e: unknown) => {
                 if (!controller.signal.aborted) {
-                    setError(e instanceof Error ? e.message : 'Could not load the people.');
+                    setError(e instanceof Error ? e.message : t('settings.person-dialogs:transfer.peopleFailed'));
                 }
             });
         return () => controller.abort();
-    }, [personId]);
+    }, [personId, t]);
     return { people, error };
 }
 
@@ -62,7 +65,7 @@ export function RecipientPicker({
     value,
     onChange,
     label,
-    none = 'Choose a person…',
+    none,
     disabled,
 }: {
     people: RosterPerson[] | undefined;
@@ -72,6 +75,7 @@ export function RecipientPicker({
     none?: string;
     disabled?: boolean;
 }) {
+    const { t } = useTranslation(['settings.person-dialogs', 'settings.person']);
     return (
         <select
             aria-label={label}
@@ -80,10 +84,14 @@ export function RecipientPicker({
             disabled={disabled || !people}
             onChange={(e) => onChange(e.target.value)}
         >
-            <option value="">{people ? none : 'Loading people…'}</option>
+            <option value="">
+                {people
+                    ? (none ?? t('settings.person-dialogs:transfer.choose'))
+                    : t('settings.person-dialogs:transfer.loadingPeople')}
+            </option>
             {people?.map((p) => (
                 <option key={p.id} value={p.id}>
-                    {p.name} ({p.email})
+                    {t('settings.person-dialogs:transfer.option', { name: p.name, email: p.email })}
                 </option>
             ))}
         </select>
@@ -95,14 +103,18 @@ export function RecipientPicker({
  * restart with the new owner's data token, and say so under Apps.
  */
 export function TransferResult({ result }: { result: AssetTransfer }) {
+    const { t } = useTranslation(['settings.person-dialogs', 'settings.person']);
+    const { assetTitle } = useAssetWords();
     return (
         <div className="grid gap-3 text-sm" data-slot="transfer-result">
-            <ul className="grid divide-y" aria-label="What moved">
+            <ul className="grid divide-y" aria-label={t('settings.person-dialogs:transfer.whatMoved')}>
                 {result.kinds.map((k) => (
                     <li key={k.kind} data-kind={k.kind} data-slot="transfer-result-kind" className="grid gap-0.5 py-2">
                         <span className="flex flex-wrap justify-between gap-2">
-                            <span className="font-medium">{ASSET_INFO[k.kind].title}</span>
-                            <span className="text-muted-foreground">{movedWords(k.moved)}</span>
+                            <span className="font-medium">{assetTitle(k.kind)}</span>
+                            <span className="text-muted-foreground">
+                                {movedParts(k.moved) || t('settings.person-dialogs:transfer.nothingMoved')}
+                            </span>
                         </span>
                         {k.notes.map((note) => (
                             <span key={note} className="text-xs text-muted-foreground">
@@ -128,7 +140,7 @@ const nonEmpty = (kinds: OwnedKind[]) => kinds.filter((k) => k.count > 0);
  *
  * `only` opens it with just those kinds ticked (a kind's own Transfer).
  */
-export function TransferDialog({
+function TransferDialogBody({
     person,
     only,
     onClose,
@@ -140,6 +152,8 @@ export function TransferDialog({
     /** Ownership changed, or may have (a lost answer): no result then. */
     onTransferred?: (result?: AssetTransfer) => void;
 }) {
+    const { t } = useTranslation(['settings.person-dialogs', 'settings.person']);
+    const { assetTitle, assetWhat, assetCount } = useAssetWords();
     const [assets, setAssets] = useState<PersonAssets>();
     const [error, setError] = useState<string>();
     const [to, setTo] = useState('');
@@ -158,7 +172,7 @@ export function TransferDialog({
             })
             .catch((e: unknown) => {
                 if (!controller.signal.aborted) {
-                    setError(e instanceof Error ? e.message : 'Could not load what they own.');
+                    setError(e instanceof Error ? e.message : t('settings.person-dialogs:transfer.loadFailed'));
                 }
             });
         return () => controller.abort();
@@ -196,7 +210,7 @@ export function TransferDialog({
             setResult(done);
             onTransferred?.(done);
         } catch (e) {
-            const why = e instanceof Error ? e.message : 'Could not transfer.';
+            const why = e instanceof Error ? e.message : t('settings.person-dialogs:transfer.failed');
             // The server answered: it refused, and its transaction moved nothing.
             if (e instanceof ApiError && (e.status < 500 || e.status === 503)) {
                 setError(why);
@@ -204,9 +218,7 @@ export function TransferDialog({
             }
             // The answer was lost: it may have moved. Read what they own
             // again, and have the new owner chosen again, before a retry.
-            setError(
-                `Couldn’t confirm the transfer finished (${why}). What ${firstName(person.name)} owns now is loaded again: check it before you try again.`,
-            );
+            setError(t('settings.person-dialogs:transfer.lost', { why, first: firstName(person.name) }));
             setAssets(undefined);
             setTo('');
             onTransferred?.();
@@ -224,12 +236,18 @@ export function TransferDialog({
             <DialogContent data-slot="transfer-dialog" className="max-h-[90dvh] overflow-y-auto sm:max-w-xl">
                 <DialogHeader>
                     <DialogTitle>
-                        {result ? `Moved to ${result.to.name}` : `Transfer what ${person.name} owns`}
+                        {result
+                            ? t('settings.person-dialogs:transfer.title', { context: 'done', name: result.to.name })
+                            : t('settings.person-dialogs:transfer.title', { name: person.name })}
                     </DialogTitle>
                     <DialogDescription>
                         {result
-                            ? `What ${first} owned of these kinds is ${firstName(result.to.name)}’s now. Both people’s activity records it.`
-                            : `The company owns its people’s work: hand it to another active person. Secrets ${first} holds personally (subscription logins, OAuth tokens) never move.`}
+                            ? t('settings.person-dialogs:transfer.description', {
+                                  context: 'done',
+                                  first,
+                                  to: firstName(result.to.name),
+                              })
+                            : t('settings.person-dialogs:transfer.description', { first })}
                     </DialogDescription>
                 </DialogHeader>
                 {result ? (
@@ -238,22 +256,29 @@ export function TransferDialog({
                     <Skeleton className="h-32" data-slot="transfer-loading" />
                 ) : assets && !kinds.length ? (
                     <p className="text-sm text-muted-foreground" data-slot="transfer-nothing">
-                        {first} owns nothing to transfer.
+                        {t('settings.person-dialogs:transfer.nothing', { first })}
                     </p>
                 ) : assets ? (
                     <div className="grid gap-4 text-sm">
                         <label className="grid gap-1">
-                            <span className="font-medium">New owner</span>
-                            <RecipientPicker people={people} value={to} onChange={setTo} label="New owner" />
+                            <span className="font-medium">{t('settings.person-dialogs:transfer.newOwner')}</span>
+                            <RecipientPicker
+                                people={people}
+                                value={to}
+                                onChange={setTo}
+                                label={t('settings.person-dialogs:transfer.newOwner')}
+                            />
                             {peopleError && <span className="text-xs text-destructive">{peopleError}</span>}
                             {people && !people.length && (
                                 <span className="text-xs text-muted-foreground">
-                                    Nobody else is active to receive it.
+                                    {t('settings.person-dialogs:transfer.nobodyActive')}
                                 </span>
                             )}
                         </label>
                         <fieldset className="grid gap-1" data-slot="transfer-kinds">
-                            <legend className="mb-1 font-medium">What moves</legend>
+                            <legend className="mb-1 font-medium">
+                                {t('settings.person-dialogs:transfer.whatMoves')}
+                            </legend>
                             {kinds.map((k) => {
                                 const fixed =
                                     k.kind === 'data' && kinds.some((o) => o.kind === 'apps') && ticked('apps');
@@ -271,18 +296,18 @@ export function TransferDialog({
                                             checked={ticked(k.kind)}
                                             disabled={fixed || busy}
                                             onCheckedChange={(on) => toggle(k.kind, on === true)}
-                                            aria-label={ASSET_INFO[k.kind].title}
+                                            aria-label={assetTitle(k.kind)}
                                         />
                                         <label htmlFor={id} className="grid min-w-0 flex-1 gap-0.5">
                                             <span className="flex flex-wrap justify-between gap-2">
-                                                <span>{ASSET_INFO[k.kind].title}</span>
+                                                <span>{assetTitle(k.kind)}</span>
                                                 <span className="text-muted-foreground">
                                                     {assetCount(k.kind, k.count)}
                                                 </span>
                                             </span>
                                             <span className="text-xs text-muted-foreground">
-                                                {fixed ? 'Moves with the apps. ' : ''}
-                                                {ASSET_INFO[k.kind].what}
+                                                {fixed ? `${t('settings.person-dialogs:transfer.withApps')} ` : ''}
+                                                {assetWhat(k.kind)}
                                             </span>
                                         </label>
                                     </div>
@@ -295,9 +320,8 @@ export function TransferDialog({
                                 data-slot="transfer-partial-warning"
                                 className="rounded-md border border-paused-banner-border bg-paused-banner px-3 py-2 text-paused-banner-foreground"
                             >
-                                <strong>Only some kinds move.</strong> What stays with {first} can still be linked to
-                                what moves: a schedule can move while the socio it runs as stays theirs, or an app while
-                                a Space it posts to doesn’t. Transfer everything unless you mean to split it.
+                                <strong>{t('settings.person-dialogs:transfer.partialTitle')}</strong>{' '}
+                                {t('settings.person-dialogs:transfer.partial', { first })}
                             </p>
                         )}
                     </div>
@@ -309,18 +333,21 @@ export function TransferDialog({
                 )}
                 <DialogFooter>
                     {result ? (
-                        <Button onClick={onClose}>Done</Button>
+                        <Button onClick={onClose}>{t('settings.person:done')}</Button>
                     ) : (
                         <>
                             <Button variant="ghost" disabled={busy} onClick={onClose}>
-                                Cancel
+                                {t('settings.person:cancel')}
                             </Button>
                             <Button disabled={busy || !recipient || !chosen.length} onClick={() => void confirm()}>
                                 {busy
-                                    ? 'Transferring…'
+                                    ? t('settings.person-dialogs:transfer.transferring')
                                     : recipient
-                                      ? `${partial ? 'Transfer these' : 'Transfer everything'} to ${firstName(recipient.name)}`
-                                      : 'Transfer'}
+                                      ? t('settings.person-dialogs:transfer.confirm', {
+                                            context: partial ? 'partial' : undefined,
+                                            name: firstName(recipient.name),
+                                        })
+                                      : t('settings.person-dialogs:transfer.pick')}
                             </Button>
                         </>
                     )}
@@ -329,3 +356,6 @@ export function TransferDialog({
         </Dialog>
     );
 }
+
+/** Its words load when it opens (`settings.person-dialogs`, in no route's entry). */
+export const TransferDialog = onDemand(['settings.person-dialogs', 'settings.person'], TransferDialogBody);

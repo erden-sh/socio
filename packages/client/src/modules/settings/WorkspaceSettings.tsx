@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react';
 
+import { useTranslation } from '@socio/i18n/react';
 import { isAdmin } from '@socio/shared/roles';
 import type { BackupSchedule, RestoreDrillStatus, State, WorkspaceState } from '@socio/shared/types';
 
@@ -21,14 +22,7 @@ import { GitHubAppSetting } from './GitHubAppSetting';
 import { LimitSettings } from './LimitSettings';
 import { ModelFallbackSetting } from './ModelFallbackSetting';
 import { RoomsSetting } from './RoomsSetting';
-import {
-    backupLine,
-    continuousLine,
-    continuousOffsiteLine,
-    pluginBackupsAlarm,
-    pluginBackupsLine,
-    restoreDrillLine,
-} from './setup-lines';
+import { pluginBackupsAlarm, useSetupLines } from './setup-lines';
 import { SpaceCreatorsSetting } from './SpaceCreatorsSetting';
 import { TracingSetting } from './TracingSetting';
 
@@ -50,6 +44,8 @@ export function WorkspaceSettings({
     workspace: WorkspaceState;
     mutate: (path: string, method: string, body?: unknown) => Promise<boolean>;
 }) {
+    const { t } = useTranslation(['settings.workspace-setup']);
+    const { backupLine, continuousLine, continuousOffsiteLine, pluginBackupsLine } = useSetupLines();
     const readOnly = !isAdmin(workspace.user);
     const { setup } = workspace;
     // Match the server before switching setup timestamps to the reader’s zone.
@@ -95,54 +91,72 @@ export function WorkspaceSettings({
             )}
             <SettingsCard>
                 <section className="grid gap-2" data-slot="service-setup">
-                    <h3 className="font-medium">Service setup</h3>
+                    <h3 className="font-medium">{t('settings.workspace-setup:title')}</h3>
                     <div className="grid gap-1 text-muted-foreground">
                         <p>
                             {setup.missing.length
-                                ? `Add ${setup.missing.join(', ')} to the server environment, then restart.`
-                                : 'Text configuration is present. A successful conversation confirms connectivity.'}
+                                ? t('settings.workspace-setup:missing', { names: setup.missing.join(', ') })
+                                : t('settings.workspace-setup:ready')}
                         </p>
                         {setup.inference && (
                             <p>
-                                Model:{' '}
-                                {setup.inference.available
-                                    ? `${setup.inference.label}${setup.inference.source === 'byo' ? ' (your own subscription)' : ''}`
-                                    : setup.inference.byoAllowed
-                                      ? 'none yet; connect your own in Account → Inference'
-                                      : 'none yet; an admin sets one up'}
-                                .
+                                {t('settings.workspace-setup:lines.model', {
+                                    line: setup.inference.available
+                                        ? setup.inference.source === 'byo'
+                                            ? t('settings.workspace-setup:model.byo', {
+                                                  label: setup.inference.label ?? '',
+                                              })
+                                            : (setup.inference.label ?? '')
+                                        : setup.inference.byoAllowed
+                                          ? t('settings.workspace-setup:model.noneByo')
+                                          : t('settings.workspace-setup:model.none'),
+                                })}
                             </p>
                         )}
                         <p>
-                            Telegram:{' '}
-                            {setup.telegram === 'not_configured'
-                                ? 'not configured (set TELEGRAM_BOT_TOKEN)'
-                                : setup.telegram === 'online'
-                                  ? `online${setup.telegramBot ? ` as @${setup.telegramBot}` : ''}`
-                                  : setup.telegram === 'connecting'
-                                    ? 'connecting'
-                                    : 'not connected; check the token and server logs'}
-                            .
+                            {t('settings.workspace-setup:lines.telegram', {
+                                line:
+                                    setup.telegram === 'not_configured'
+                                        ? t('settings.workspace-setup:telegram.notConfigured')
+                                        : setup.telegram === 'online'
+                                          ? setup.telegramBot
+                                              ? t('settings.workspace-setup:telegram.onlineAs', {
+                                                    bot: setup.telegramBot,
+                                                })
+                                              : t('settings.workspace-setup:telegram.online')
+                                          : setup.telegram === 'connecting'
+                                            ? t('settings.workspace-setup:telegram.connecting')
+                                            : t('settings.workspace-setup:telegram.offline'),
+                            })}
                         </p>
                         <p>
-                            Voice:{' '}
-                            {setup.voiceBackend === 'self-hosted'
-                                ? setup.voice
-                                    ? `self-hosted, configuration present${setup.voiceSpeech ? '' : ' (devices speak the replies)'}`
-                                    : 'self-hosted, needs a transcription server with a realtime socket'
-                                : setup.voice
-                                  ? 'configuration present'
-                                  : 'needs VOICE_API_KEY and VOICE_MODEL'}
-                            .
+                            {t('settings.workspace-setup:lines.voice', {
+                                line:
+                                    setup.voiceBackend === 'self-hosted'
+                                        ? setup.voice
+                                            ? setup.voiceSpeech
+                                                ? t('settings.workspace-setup:voice.selfHosted')
+                                                : t('settings.workspace-setup:voice.selfHostedDevices')
+                                            : t('settings.workspace-setup:voice.selfHostedNeeds')
+                                        : setup.voice
+                                          ? t('settings.workspace-setup:voice.present')
+                                          : t('settings.workspace-setup:voice.needs'),
+                            })}
                         </p>
                         {setup.dataKey && <DataKeySetup dataKey={setup.dataKey} readOnly={readOnly} mutate={mutate} />}
-                        {setup.backup && <p data-slot="setup-backup">Backups: {backupLine(setup.backup, when)}.</p>}
+                        {setup.backup && (
+                            <p data-slot="setup-backup">
+                                {t('settings.workspace-setup:lines.backups', { line: backupLine(setup.backup, when) })}
+                            </p>
+                        )}
                         {setup.backup?.plugins?.length ? (
                             <p
                                 data-slot="setup-plugin-backups"
                                 className={pluginBackupsAlarm(setup.backup.plugins) ? 'text-destructive' : undefined}
                             >
-                                Plugin data: {pluginBackupsLine(setup.backup.plugins, when)}.
+                                {t('settings.workspace-setup:lines.plugins', {
+                                    line: pluginBackupsLine(setup.backup.plugins, when),
+                                })}
                             </p>
                         ) : null}
                         {setup.backup?.continuous && (
@@ -150,7 +164,9 @@ export function WorkspaceSettings({
                                 data-slot="setup-continuous-copy"
                                 className={setup.backup.continuous.behind ? 'text-destructive' : undefined}
                             >
-                                Continuous copy: {continuousLine(setup.backup.continuous, when)}.
+                                {t('settings.workspace-setup:lines.continuous', {
+                                    line: continuousLine(setup.backup.continuous, when),
+                                })}
                             </p>
                         )}
                         {setup.backup?.continuous?.offsite && (
@@ -158,8 +174,9 @@ export function WorkspaceSettings({
                                 data-slot="setup-continuous-offsite"
                                 className={setup.backup.continuous.offsite.behind ? 'text-destructive' : undefined}
                             >
-                                Continuous copy off-site: {continuousOffsiteLine(setup.backup.continuous.offsite, when)}
-                                .
+                                {t('settings.workspace-setup:lines.offsite', {
+                                    line: continuousOffsiteLine(setup.backup.continuous.offsite, when),
+                                })}
                             </p>
                         )}
                         {setup.backup?.restoreDrill && (
@@ -191,43 +208,45 @@ function PermissionsCard({
     readOnly: boolean;
     mutate: Mutate;
 }) {
+    const { t } = useTranslation(['settings.workspace']);
     const auto = useAutosave({ researchAllowed, memoryAllowed }, (value) => mutate('/settings', 'PATCH', value));
     return (
         <SettingsCard>
             <section className="grid gap-4" data-slot="workspace-permissions">
-                <AutosaveHeader title="Permissions" status={!readOnly ? auto.status : undefined}>
-                    {!readOnly && 'Changes save as you make them.'}
+                <AutosaveHeader
+                    title={t('settings.workspace:permissions.title')}
+                    status={!readOnly ? auto.status : undefined}
+                >
+                    {!readOnly && t('settings.workspace:permissions.autosave')}
                 </AutosaveHeader>
                 <PermissionRow
-                    title="Public-page research"
+                    title={t('settings.workspace:permissions.research.title')}
                     checked={auto.value.researchAllowed}
                     disabled={readOnly}
                     onCheckedChange={(on) =>
                         void auto.change(
                             { researchAllowed: on },
-                            on
-                                ? 'Public-page research turned on'
-                                : 'Public-page research turned off. Turns running now were stopped.',
+                            t('settings.workspace:permissions.research.saved', { context: on ? undefined : 'off' }),
                         )
                     }
                 >
-                    Allow web search and reading public pages, cited by URL. Global settings always take precedence.
+                    {t('settings.workspace:permissions.research.description')}
                 </PermissionRow>
                 <PermissionRow
-                    title="Use saved memories"
+                    title={t('settings.workspace:permissions.memory.title')}
                     checked={auto.value.memoryAllowed}
                     disabled={readOnly}
                     onCheckedChange={(on) =>
                         void auto.change(
                             { memoryAllowed: on },
-                            `Saved memories turned ${on ? 'on' : 'off'}. Turns running now were stopped.`,
+                            t('settings.workspace:permissions.memory.saved', { context: on ? undefined : 'off' }),
                         )
                     }
                 >
-                    Include your preferences in new turns. Changing permission stops active work.
+                    {t('settings.workspace:permissions.memory.description')}
                 </PermissionRow>
                 <SaveError error={auto.error} />
-                {readOnly && <p className="text-muted-foreground">Only an admin can change these settings.</p>}
+                {readOnly && <p className="text-muted-foreground">{t('settings.workspace:readOnly.settings')}</p>}
             </section>
         </SettingsCard>
     );
@@ -249,6 +268,8 @@ function RestoreDrill({
     readOnly: boolean;
     mutate: (path: string, method: string, body?: unknown) => Promise<boolean>;
 }) {
+    const { t } = useTranslation(['settings.workspace-setup']);
+    const { restoreDrillLine } = useSetupLines();
     const [busy, setBusy] = useState(false);
     const when = useHydrated() ? undefined : utcTime;
     return (
@@ -257,7 +278,7 @@ function RestoreDrill({
                 data-slot="setup-restore-drill"
                 className={drill.last && !drill.last.ok && !drill.running ? 'text-destructive' : undefined}
             >
-                Restore drill: {restoreDrillLine(drill, when)}.
+                {t('settings.workspace-setup:lines.drill', { line: restoreDrillLine(drill, when) })}
             </p>
             {!readOnly && (
                 <Button
@@ -271,7 +292,9 @@ function RestoreDrill({
                         setBusy(false);
                     }}
                 >
-                    {drill.running ? 'Drill running…' : 'Run drill now'}
+                    {drill.running
+                        ? t('settings.workspace-setup:drill.running')
+                        : t('settings.workspace-setup:drill.run')}
                 </Button>
             )}
         </div>
@@ -286,10 +309,8 @@ interface LimitsKind {
     setting: 'dotDailyLimits' | 'notificationDailyLimits';
     /** The form's `data-slot` and its inputs' id prefix. */
     slot: string;
-    title: string;
-    intro: string;
-    perDotHint: string;
-    perUserHint: string;
+    /** Its words: `settings.workspace:dailyLimits.<kind>`. */
+    kind: 'dot' | 'notification';
 }
 
 /**
@@ -297,14 +318,7 @@ interface LimitsKind {
  * and votes, each counted on its own. Saved over the server's limits
  * (`DOT_REQUESTS_PER_DOT_DAILY`, `DOT_REQUESTS_PER_USER_DAILY`).
  */
-const DOT_LIMITS: LimitsKind = {
-    setting: 'dotDailyLimits',
-    slot: 'dot-limit',
-    title: 'Socio filing limits',
-    intro: 'How much socios may file a day: capability requests, board items, comments and votes each count on their own. 0 turns filing off.',
-    perDotHint: 'For all its people, in 24 hours.',
-    perUserHint: 'By all their socios, in 24 hours.',
-};
+const DOT_LIMITS: LimitsKind = { setting: 'dotDailyLimits', slot: 'dot-limit', kind: 'dot' };
 
 /**
  * How many notifications Dots may send a day with `notify_user` (CB-114),
@@ -314,20 +328,14 @@ const DOT_LIMITS: LimitsKind = {
 const NOTIFICATION_LIMITS: LimitsKind = {
     setting: 'notificationDailyLimits',
     slot: 'notification-limit',
-    title: 'Notification limits',
-    intro: 'How often socios may notify people a day (notify_user): one shown in the app instead, or held back while they look at the chat, counts too. Tests don’t. 0 turns socios’ notifications off.',
-    perDotHint: 'From one socio to one person, in 24 hours.',
-    perUserHint: 'To one person from all their socios, in 24 hours.',
+    kind: 'notification',
 };
 
 /** A pair of daily limits, per Dot and per person; admins edit them. */
 function DailyLimits({
     setting,
     slot,
-    title,
-    intro,
-    perDotHint,
-    perUserHint,
+    kind,
     limits,
     readOnly,
     mutate,
@@ -336,6 +344,8 @@ function DailyLimits({
     readOnly: boolean;
     mutate: (path: string, method: string, body?: unknown) => Promise<boolean>;
 }) {
+    const { t } = useTranslation(['settings.workspace']);
+    const title = t(`settings.workspace:dailyLimits.${kind}.title`);
     const whole = (value: string) =>
         /^\d+$/.test(value.trim()) && Number(value) <= LIMIT_MAX ? Number(value) : undefined;
     const auto = useAutosave(
@@ -352,9 +362,9 @@ function DailyLimits({
             }),
     );
     const commit = () =>
-        void auto.commit(`${title} saved`, (value) =>
+        void auto.commit(t(`settings.workspace:dailyLimits.${kind}.saved`), (value) =>
             whole(value.perDot) === undefined || whole(value.perUser) === undefined
-                ? `Use whole numbers from 0 to ${LIMIT_MAX}.`
+                ? t('settings.workspace:dailyLimits.invalid', { max: LIMIT_MAX })
                 : undefined,
         );
     const field = (id: string, label: string, hint: string, key: 'perDot' | 'perUser') => (
@@ -390,14 +400,24 @@ function DailyLimits({
                 }}
             >
                 <AutosaveHeader title={title} status={!readOnly ? auto.status : undefined}>
-                    {intro}
+                    {t(`settings.workspace:dailyLimits.${kind}.intro`)}
                 </AutosaveHeader>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    {field(`${slot}-per-dot`, 'Per socio', perDotHint, 'perDot')}
-                    {field(`${slot}-per-user`, 'Per person', perUserHint, 'perUser')}
+                    {field(
+                        `${slot}-per-dot`,
+                        t('settings.workspace:dailyLimits.perDot'),
+                        t(`settings.workspace:dailyLimits.${kind}.perDotHint`),
+                        'perDot',
+                    )}
+                    {field(
+                        `${slot}-per-user`,
+                        t('settings.workspace:dailyLimits.perUser'),
+                        t(`settings.workspace:dailyLimits.${kind}.perUserHint`),
+                        'perUser',
+                    )}
                 </div>
                 <SaveError error={auto.error} />
-                {readOnly && <p className="text-muted-foreground">Only an admin can change these limits.</p>}
+                {readOnly && <p className="text-muted-foreground">{t('settings.workspace:readOnly.limits')}</p>}
             </form>
         </SettingsCard>
     );
@@ -426,6 +446,7 @@ function BackupScheduleSetting({
     readOnly: boolean;
     mutate: (path: string, method: string, body?: unknown) => Promise<boolean>;
 }) {
+    const { t } = useTranslation(['settings.workspace']);
     const auto = useAutosave(
         {
             hours: String(schedule.intervalHours),
@@ -436,7 +457,7 @@ function BackupScheduleSetting({
         (value) => mutate('/settings', 'PATCH', { backupSchedule: parse(value) }),
     );
     const commit = () =>
-        void auto.commit('Backup schedule saved', (value) => {
+        void auto.commit(t('settings.workspace:backupSchedule.saved'), (value) => {
             const { intervalHours, ltxIntervalSeconds, drillIntervalDays, purgeBackupDays } = parse(value);
             return !(intervalHours <= HOURS_MAX) ||
                 !(
@@ -445,7 +466,13 @@ function BackupScheduleSetting({
                 ) ||
                 !(drillIntervalDays <= DRILL_DAYS_MAX) ||
                 !(purgeBackupDays >= 1 && purgeBackupDays <= PURGE_DAYS_MAX)
-                ? `Use 0 to ${HOURS_MAX} hours, 0 or ${SECONDS_MIN} to ${SECONDS_MAX} whole seconds, 0 to ${DRILL_DAYS_MAX} whole days for the drill, and 1 to ${PURGE_DAYS_MAX} for removal backups.`
+                ? t('settings.workspace:backupSchedule.invalid', {
+                      hours: HOURS_MAX,
+                      secondsMin: SECONDS_MIN,
+                      secondsMax: SECONDS_MAX,
+                      drillDays: DRILL_DAYS_MAX,
+                      purgeDays: PURGE_DAYS_MAX,
+                  })
                 : undefined;
         });
     const field = (
@@ -488,45 +515,44 @@ function BackupScheduleSetting({
                     commit();
                 }}
             >
-                <AutosaveHeader title="Backup schedule" status={!readOnly ? auto.status : undefined}>
-                    How often the server backs up, and how long permanent removals’ backups stay. 0 turns an interval
-                    off. Changes apply within minutes, without a restart.
+                <AutosaveHeader
+                    title={t('settings.workspace:backupSchedule.title')}
+                    status={!readOnly ? auto.status : undefined}
+                >
+                    {t('settings.workspace:backupSchedule.intro')}
                 </AutosaveHeader>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     {field(
                         'backup-interval-hours',
-                        'Backups, every (hours)',
+                        t('settings.workspace:backupSchedule.hours.label'),
                         'hours',
                         { inputMode: 'decimal', max: HOURS_MAX, step: 'any' },
-                        'The database and data spaces, counted from the last backup, with the off-site copy when it is set up.',
+                        t('settings.workspace:backupSchedule.hours.hint'),
                     )}
                     {field(
                         'backup-ltx-interval',
-                        'Continuous copy off-site, every (seconds)',
+                        t('settings.workspace:backupSchedule.seconds.label'),
                         'seconds',
                         { inputMode: 'numeric', max: SECONDS_MAX, step: 1 },
-                        <>
-                            Litestream’s newest changes, sealed, to the off-site copy; at least {SECONDS_MIN}. Needs the
-                            off-site copy and the continuous copy set up.
-                        </>,
+                        t('settings.workspace:backupSchedule.seconds.hint', { min: SECONDS_MIN }),
                     )}
                     {field(
                         'backup-drill-interval',
-                        'Restore drill, every (days)',
+                        t('settings.workspace:backupSchedule.days.label'),
                         'days',
                         { inputMode: 'numeric', max: DRILL_DAYS_MAX, step: 1 },
-                        'Restores the continuous copy into scratch files and checks them, off-site too when it is set up. 0: only with Run drill now.',
+                        t('settings.workspace:backupSchedule.days.hint'),
                     )}
                     {field(
                         'purge-backup-days',
-                        'Permanent removal backups, kept (days)',
+                        t('settings.workspace:backupSchedule.purgeDays.label'),
                         'purgeDays',
                         { inputMode: 'numeric', min: 1, max: PURGE_DAYS_MAX, step: 1 },
-                        'What each permanent removal backed up goes with the first scheduled backup after this many days. Never sent off-site.',
+                        t('settings.workspace:backupSchedule.purgeDays.hint'),
                     )}
                 </div>
                 <SaveError error={auto.error} />
-                {readOnly && <p className="text-muted-foreground">Only an admin can change the backup schedule.</p>}
+                {readOnly && <p className="text-muted-foreground">{t('settings.workspace:readOnly.backupSchedule')}</p>}
             </form>
         </SettingsCard>
     );

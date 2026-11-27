@@ -1,6 +1,7 @@
 import { useContext, type ReactNode } from 'react';
 import { Link } from 'react-router';
 
+import { useTranslation } from '@socio/i18n/react';
 import { MODULE_IDS } from '@socio/shared/modules';
 
 import { SignInSetup } from '../../shell/current-user';
@@ -21,17 +22,18 @@ export function useSettingsAccess(): SettingsAccess {
  * URL (Platform's on its backend pages too).
  */
 export function SettingsNav({ access }: { access: SettingsAccess }) {
+    const { t } = useTranslation(['settings']);
     return (
         <SectionNav
-            label="Settings"
+            label={t('settings:title')}
             slot="settings-nav"
             groups={SETTINGS_GROUPS.map((group) => ({
-                label: group.label,
+                label: t(`settings:groups.${group.id}.title`),
                 items: group.entries
                     .filter((item) => listed(item, access))
                     .map((item) => ({
                         id: item.id,
-                        label: item.label,
+                        label: t(`settings:sections.${item.id}`),
                         to: item.path,
                         end: item.id !== 'operator' && !item.nested,
                     })),
@@ -42,15 +44,16 @@ export function SettingsNav({ access }: { access: SettingsAccess }) {
 
 /** Which Socio this is (CB-165), with a link to the release notes. */
 function SettingsVersion() {
+    const { t } = useTranslation(['settings']);
     const app = useAppVersion();
     return (
         <p data-slot="settings-version" className="mt-8 min-h-4 text-xs text-muted-foreground">
             {app && (
                 <>
-                    Socio v{app.version}
-                    {app.commit && <> ({app.commit})</>} ·{' '}
+                    {t('settings:version', { version: app.version })}
+                    {app.commit && <> {t('settings:versionCommit', { commit: app.commit })}</>} ·{' '}
                     <Link to="/releases" className="underline underline-offset-2 hover:text-primary">
-                        Release notes
+                        {t('settings:releaseNotes')}
                     </Link>
                 </>
             )}
@@ -66,13 +69,14 @@ function SettingsVersion() {
  * operator module) use it too.
  */
 export function SettingsLayout({ group, children }: { group: SettingsGroup; children: ReactNode }) {
+    const { t } = useTranslation(['settings']);
     const access = useSettingsAccess();
     return (
         <SectionLayout
             slot="settings-page"
             module={MODULE_IDS.settings}
-            title={group.label}
-            description={group.description}
+            title={t(`settings:groups.${group.id}.title`)}
+            description={t(`settings:groups.${group.id}.description`)}
             measure="form"
             nav={<SettingsNav access={access} />}
             after={<SettingsVersion />}

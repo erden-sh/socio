@@ -1,11 +1,17 @@
+import { useTranslation } from '@socio/i18n/react';
+import type { EnglishResources } from '@socio/i18n/resources.gen';
 import { LIMIT_GROUPS, LIMIT_SPECS, validLimit, type LimitKey, type LimitValues } from '@socio/shared/limits';
 import type { State } from '@socio/shared/types';
 
 import { SettingsCard } from './AccountSettings';
 import { AutosaveHeader, SaveError, useAutosave } from './autosave';
+import { onDemand } from './on-demand';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+
+/** A card's id in LIMIT_GROUPS, which names its words in `settings.workspace-limits`. */
+type LimitGroupId = keyof EnglishResources['settings.workspace-limits']['groups'];
 
 /**
  * Settings → Workspace → General: the limits an admin tunes without a
@@ -13,7 +19,7 @@ import { Input } from '@/components/ui/input';
  * save takes the place of the matching variables, which stay the starting
  * values; "Use the server's defaults" goes back to them. Members read them.
  */
-export function LimitSettings({
+function LimitSettingsBody({
     state,
     readOnly,
     mutate,
@@ -46,8 +52,6 @@ export function LimitSettings({
 
 function LimitCard({
     id,
-    title,
-    intro,
     keys,
     limits,
     defaults,
@@ -59,6 +63,8 @@ function LimitCard({
     readOnly: boolean;
     mutate: (path: string, method: string, body?: unknown) => Promise<boolean>;
 }) {
+    const { t } = useTranslation(['settings.workspace-limits', 'settings.workspace']);
+    const title = t(`settings.workspace-limits:groups.${id as LimitGroupId}.title`);
     const auto = useAutosave(
         Object.fromEntries(keys.map((key) => [key, String(limits[key] ?? defaults[key])])) as Record<string, string>,
         (values) => mutate('/settings', 'PATCH', { limits: change(values) }),
@@ -76,13 +82,19 @@ function LimitCard({
         return result;
     }
     const commit = () =>
-        void auto.commit(`${title} saved`, (values) => {
+        void auto.commit(t('settings.workspace-limits:saved', { title }), (values) => {
             for (const [key, value] of Object.entries(change(values)) as [LimitKey, number | null][]) {
                 if (value === null || validLimit(key, value)) {
                     continue;
                 }
-                const { label, min, max, unit } = LIMIT_SPECS[key];
-                return `${label}: use a number from ${min.toLocaleString('en-US')} to ${max.toLocaleString('en-US')} ${unit}.`;
+                const { min, max } = LIMIT_SPECS[key];
+                // `units`, not `unit`: the number formatter would take `unit` as its Intl option.
+                return t('settings.workspace-limits:invalid', {
+                    label: t(`settings.workspace-limits:limits.${key}.label`),
+                    min,
+                    max,
+                    units: t(`settings.workspace-limits:limits.${key}.unit`),
+                });
             }
         });
     const usingDefaults = keys.every((key) => (limits[key] ?? defaults[key]) === defaults[key]);
@@ -101,7 +113,7 @@ function LimitCard({
                 }}
             >
                 <AutosaveHeader title={title} status={!readOnly ? auto.status : undefined}>
-                    {intro}
+                    {t(`settings.workspace-limits:groups.${id as LimitGroupId}.intro`)}
                 </AutosaveHeader>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     {keys.map((key) => {
@@ -109,7 +121,7 @@ function LimitCard({
                         return (
                             <div key={key} className="grid content-start gap-1.5">
                                 <label htmlFor={`limit-${key}`} className="font-medium">
-                                    {spec.label}
+                                    {t(`settings.workspace-limits:limits.${key}.label`)}
                                 </label>
                                 <div className="flex items-center gap-2">
                                     <Input
@@ -125,10 +137,13 @@ function LimitCard({
                                         onChange={(event) => auto.edit({ [key]: event.target.value })}
                                         onBlur={commit}
                                     />
-                                    <span className="text-muted-foreground">{spec.unit}</span>
+                                    <span className="text-muted-foreground">
+                                        {t(`settings.workspace-limits:limits.${key}.unit`)}
+                                    </span>
                                 </div>
                                 <p className="text-muted-foreground">
-                                    {spec.help} The server starts at {defaults[key].toLocaleString('en-US')}.
+                                    {t(`settings.workspace-limits:limits.${key}.help`)}{' '}
+                                    {t('settings.workspace-limits:startsAt', { value: defaults[key] })}
                                 </p>
                             </div>
                         );
@@ -136,7 +151,7 @@ function LimitCard({
                 </div>
                 <SaveError error={auto.error} />
                 {readOnly ? (
-                    <p className="text-muted-foreground">Only an admin can change these limits.</p>
+                    <p className="text-muted-foreground">{t('settings.workspace:readOnly.limits')}</p>
                 ) : (
                     <div>
                         <Button
@@ -146,11 +161,11 @@ function LimitCard({
                             onClick={() =>
                                 void auto.change(
                                     Object.fromEntries(keys.map((key) => [key, String(defaults[key])])),
-                                    `${title} back to the server’s defaults`,
+                                    t('settings.workspace-limits:reset', { title }),
                                 )
                             }
                         >
-                            Use the server’s defaults
+                            {t('settings.workspace-limits:useDefaults')}
                         </Button>
                     </div>
                 )}
@@ -158,3 +173,6 @@ function LimitCard({
         </SettingsCard>
     );
 }
+
+/** Below the fold: its words load when it mounts (settings.workspace-limits, in no route's entry). */
+export const LimitSettings = onDemand(['settings.workspace-limits'], LimitSettingsBody);
