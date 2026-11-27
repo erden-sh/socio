@@ -2,7 +2,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { act, type ReactNode } from 'react';
+import { act, type ComponentType, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { renderToString } from 'react-dom/server';
 import { RouterProvider } from 'react-router';
@@ -524,8 +524,9 @@ it('renders nothing on the server for what loads on demand, never its keys', asy
     const { PlaceDatasetDialog } = await import('../src/modules/spaces/PlaceDatasetDialog');
     const { PromoteFindingDialog } = await import('../src/modules/spaces/PromoteFindingDialog');
     const { CreateRoomDialog } = await import('../src/modules/rooms/RoomDialogs');
-    const anyProps = {} as never;
+    // Open, so a dialog that waits for its first opening asks for its words.
     for (const Component of [DeleteSpaceDialog, PlaceDatasetDialog, PromoteFindingDialog, CreateRoomDialog]) {
-        expect(serverRender(<Component {...anyProps} />), Component.displayName).toBe('');
+        const Shown = Component as unknown as ComponentType<{ open: boolean }>;
+        expect(serverRender(<Shown open />), Component.displayName).toBe('');
     }
 });
