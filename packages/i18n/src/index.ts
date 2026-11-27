@@ -5,7 +5,7 @@
  */
 export { buildCatalog, CatalogError, NAMESPACE_NAME, type BuiltFile, type Catalog, type Sources } from './catalog.js';
 export { createI18n, DEFAULT_NAMESPACE, type CreateI18nOptions } from './create.js';
-export { addFormatters, formatBytes, formatDuration, FORMATTERS } from './format.js';
+export { createFormatter, formatBytes, formatDuration, FORMATTERS, parseFormat } from './format.js';
 export {
     flatten,
     pluralForm,

@@ -1,4 +1,4 @@
-import type { i18n } from 'i18next';
+import type { FormatterModule } from 'i18next';
 
 import { dateTimeFormat, listFormat, numberFormat, relativeTimeFormat } from '@socio/shared/locale';
 
@@ -109,13 +109,114 @@ export const FORMATTERS: Record<string, (value: unknown, locale: string, options
     duration: (value, locale) => formatDuration(value as number, locale),
 };
 
-/** Puts the formatters on an initialized instance, over i18next's own. */
-export function addFormatters(instance: i18n) {
-    const formatter = instance.services.formatter;
-    if (!formatter) {
-        return;
+/**
+ * Splits `number(minimumFractionDigits: 2)` into its name and options the
+ * way i18next 27 does: `currency(EUR)` and `relativetime(hour)` take a bare
+ * value, `true`, `false` and numbers are read as such.
+ */
+export function parseFormat(text: string): { name: string; options: Options } {
+    const open = text.indexOf('(');
+    if (open === -1) {
+        return { name: text.toLowerCase().trim(), options: {} };
     }
-    for (const [name, format] of Object.entries(FORMATTERS)) {
-        formatter.add(name, (value, locale, options) => format(value, locale ?? 'en-US', options as Options));
+    const name = text.slice(0, open).toLowerCase().trim();
+    const body = text
+        .slice(open + 1)
+        .split('(')[0]!
+        .slice(0, -1);
+    const options: Options = {};
+    if (!body.includes(':') && (name === 'currency' || name === 'relativetime')) {
+        options[name === 'currency' ? 'currency' : 'range'] = body.trim();
+        return { name, options };
     }
+    for (const pair of body.split(';')) {
+        if (!pair) {
+            continue;
+        }
+        const [rawKey = '', ...rest] = pair.split(':');
+        const key = rawKey.trim();
+        const value = rest
+            .join(':')
+            .trim()
+            .replace(/^'+|'+$/g, '');
+        if (value === 'true' || value === 'false') {
+            options[key] = value === 'true';
+        } else if (!Number.isNaN(Number(value))) {
+            options[key] = Number.parseInt(value, 10);
+        } else if (!options[key]) {
+            options[key] = value;
+        }
+    }
+    return { name, options };
+}
+
+type Format = (value: unknown, locale: string, options: Options) => string;
+
+/**
+ * i18next's formatter module with Socio's formatters. i18next's own one
+ * hands a formatter the format string's options merged with every
+ * variable of the `t()` call, so `t('x', { n: 5, unit: 'files' })` gave
+ * `{{n, number}}` a `unit` it never asked for. This one gives a formatter
+ * only the format string's options and the call's `formatParams` for that
+ * variable (i18next's way to set them per call). The locale is picked as
+ * i18next picks it.
+ */
+export function createFormatter(): FormatterModule {
+    const formats = new Map<string, Format>(Object.entries(FORMATTERS));
+    let separator = ',';
+    let warn: (message: unknown) => void = () => {};
+    return {
+        type: 'formatter',
+        init(services, options) {
+            separator = options.interpolation?.formatSeparator || ',';
+            const logger = services.logger?.create?.('formatter');
+            if (logger) {
+                warn = (message) => logger.warn(message);
+            }
+        },
+        add(name, format) {
+            formats.set(name.toLowerCase().trim(), (value, locale, options) => format(value, locale, options));
+        },
+        addCached(name, make) {
+            formats.set(name.toLowerCase().trim(), (value, locale, options) => make(locale, options)(value));
+        },
+        format(value, format, lng, call = {}) {
+            if (!format || value == null) {
+                return value;
+            }
+            // A separator inside a format's parentheses belongs to that format.
+            const raw = format.split(separator);
+            const names: string[] = [];
+            for (let index = 0; index < raw.length; index++) {
+                let part = raw[index]!;
+                while (part.includes('(') && !part.includes(')') && index + 1 < raw.length) {
+                    part = `${part}${separator}${raw[++index]}`;
+                }
+                names.push(part);
+            }
+            const params = (call as Options).formatParams as Record<string, Options> | undefined;
+            const perCall = params?.[(call as Options).interpolationkey as string] ?? {};
+            // `||`, as i18next has it: an empty locale falls through to the next one.
+            const locale = (perCall.locale ||
+                perCall.lng ||
+                (call as Options).locale ||
+                (call as Options).lng ||
+                lng ||
+                'en-US') as string;
+            return names.reduce((text, part) => {
+                const { name, options } = parseFormat(part);
+                const run = formats.get(name);
+                if (!run) {
+                    warn(`there was no format function for ${name}`);
+                    return text;
+                }
+                try {
+                    return run(text, locale, { ...options, ...perCall });
+                } catch (error) {
+                    warn(error);
+                    return text;
+                }
+            }, value);
+        },
+    };
 }
