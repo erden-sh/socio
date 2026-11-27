@@ -34,7 +34,7 @@ import type { WorkspaceSecretsState } from '@socio/shared/workspace-secrets';
 import { I18nRoot } from '../src/i18n/I18nRoot';
 import type { ChannelsAnswer } from '../src/modules/settings/NotificationsSection';
 import { initials } from '../src/modules/settings/people/people-format';
-import PersonPage from '../src/modules/settings/people/PersonPage.route';
+import PersonPage, { PERSON_TABS } from '../src/modules/settings/people/PersonPage.route';
 import { findSection, SETTINGS_SECTIONS, type SettingsAccess } from '../src/modules/settings/sections';
 import { SettingsLayout } from '../src/modules/settings/SettingsLayout';
 import { SettingsSection } from '../src/modules/settings/SettingsSection';
@@ -243,6 +243,8 @@ const ANSWERS: Record<string, unknown> = {
                 passkey: true,
                 signInLink: false,
                 emailLinks: false,
+                google: false,
+                apple: false,
                 openSignUp: false,
                 providers: [{ id: 'oidc', name: 'Alpha' }],
                 allowedEmails: [],
@@ -254,6 +256,8 @@ const ANSWERS: Record<string, unknown> = {
                 passkey: true,
                 signInLink: false,
                 emailLinks: false,
+                google: false,
+                apple: false,
                 openSignUp: false,
                 providers: ['oidc'],
                 allowedEmails: [],
@@ -584,7 +588,7 @@ function untranslated(texts: readonly string[]) {
     });
 }
 
-async function open(section: (typeof SETTINGS_SECTIONS)[number] | 'person') {
+async function open(section: (typeof SETTINGS_SECTIONS)[number] | 'person', tab = 'access') {
     const route = section === 'person' ? 'settings:person' : `settings:section:${section}`;
     const page = pageOf(route);
     const content =
@@ -615,7 +619,7 @@ async function open(section: (typeof SETTINGS_SECTIONS)[number] | 'person') {
             },
         ],
         {
-            initialEntries: [section === 'person' ? '/settings/people/p-ben' : '/'],
+            initialEntries: [section === 'person' ? `/settings/people/p-ben?tab=${tab}` : '/'],
             hydrationData: { loaderData: { root: { i18n: page } } },
         },
     );
@@ -658,8 +662,9 @@ it.each(SETTINGS_SECTIONS.filter((section) => !OTHER_MODULES[section]))(
     },
 );
 
-it('renders a person’s page in en-XA with only its route’s namespaces', async () => {
-    await open('person');
-    expect(host.querySelector('[data-slot="settings-page"]')).not.toBeNull();
-    expect(untranslated(readable(host))).toEqual([]);
+it.each(PERSON_TABS)('renders a person’s %s tab in en-XA with only its route’s namespaces', async (tab) => {
+    await open('person', tab);
+    expect(host.querySelector('[data-slot="settings-page"]'), tab).not.toBeNull();
+    expect(host.querySelector('[role="tab"][aria-selected="true"]')?.textContent, tab).toMatch(/^\[/);
+    expect(untranslated(readable(host)), tab).toEqual([]);
 });

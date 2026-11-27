@@ -39,5 +39,7 @@
     "groups.permissions.code-run.detail": "\"Gateways\" are the coding proxies Socio runs for AI models and Git; keep \"Git\" as is.",
     "groups.card.deactivated": "Appended after a group member's email when their account is deactivated. Starts with a separator.",
     "groups.card.option": "An option in the \"add a person\" list: name and email; the _admin form marks admins.",
-    "groups.delete.loses": "Confirmation body: how many group members lose the group's permissions when it is deleted."
+    "groups.delete.loses": "Confirmation body: how many group members lose the group's permissions when it is deleted.",
+    "signIn.method.password": "How a session signed in, on a person's Sign-in & devices tab: with their password.",
+    "signIn.method.passkey": "How a session signed in, on a person's Sign-in & devices tab: with a passkey (a WebAuthn credential on their device)."
 }

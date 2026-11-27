@@ -106,7 +106,7 @@ export interface EnglishResources {
             allowedDomainsHelp: 'Email domains whose people may create their own account through a provider.';
         };
         mockAuth: 'This server signs in with the local picker (mock auth), so there are no sign-in methods to narrow.';
-        codeAccess: 'Who may run code is now a permission: admins have it, and others get it from a group under <link>People → Groups</link>.';
+        codeAccess: 'Who may run code is now a permission: admins have it, and others get it from a group under <groupsLink>People → Groups</groupsLink>.';
         review: 'Review and confirm';
         undo: 'Undo changes';
         impact: {
@@ -889,6 +889,8 @@ export interface EnglishResources {
             method: {
                 link: 'Sign-in link';
                 linkEmail: 'Emailed sign-in link';
+                password: 'Password';
+                passkey: 'Passkey';
             };
         };
         signInLink: {

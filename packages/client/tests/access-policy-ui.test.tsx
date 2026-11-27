@@ -133,6 +133,10 @@ it('narrows only what the environment allows, previews it, and confirms with the
         ),
     );
     await until(() => !!host!.querySelector('[data-slot=access-policy]'), 'the page');
+    // Code access moved to People → Groups: the link holds its words.
+    const groups = host!.querySelector<HTMLAnchorElement>('[data-slot="code-access-moved"] a')!;
+    expect(groups.textContent).toBe('People → Groups');
+    expect(groups.getAttribute('href')).toBe('/settings/people?tab=groups');
     // What the environment leaves off can't be turned on here.
     expect(checkbox('Sign-in links by Telegram').disabled).toBe(true);
     expect(checkbox('Open sign-up').disabled).toBe(true);

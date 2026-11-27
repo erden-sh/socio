@@ -351,7 +351,11 @@ export function usePeopleFormat() {
             ? t('settings.people:signIn.method.link')
             : method === 'link:email'
               ? t('settings.people:signIn.method.linkEmail')
-              : providerName(method);
+              : method === 'password'
+                ? t('settings.people:signIn.method.password')
+                : method === 'passkey'
+                  ? t('settings.people:signIn.method.passkey')
+                  : providerName(method);
     };
     return {
         shortDate,

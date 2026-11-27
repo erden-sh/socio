@@ -527,7 +527,7 @@ export function AccessPolicySection({ onSignedOut }: { onSignedOut?: () => void 
                             t={t}
                             i18nKey="settings.access:codeAccess"
                             components={{
-                                link: (
+                                groupsLink: (
                                     <Link
                                         to={`${settingsPath('people')}?tab=groups`}
                                         className="underline underline-offset-2"
