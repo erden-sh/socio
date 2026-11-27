@@ -134,6 +134,7 @@ describe('socio/no-literal-text', () => {
         expect(folders).toContain('packages/client/src/modules/chat/**');
         expect(folders).toContain('packages/client/src/modules/rooms/**');
         expect(folders).toContain('packages/client/src/modules/spaces/**');
+        expect(folders).toContain('packages/client/src/modules/operations/**');
         expect(folders.some((glob) => `${LANGUAGE}/`.startsWith(glob.replace(/\*\*$/, '')))).toBe(true);
     });
 });
