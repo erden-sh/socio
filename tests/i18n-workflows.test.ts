@@ -91,6 +91,10 @@ describe('i18n-guard.yml', () => {
         expect(job.if).toBeUndefined();
     });
 
+    it('has no concurrency group, so a second event for the same push never leaves a cancelled required check', () => {
+        expect(read('i18n-guard.yml')).not.toMatch(/^concurrency:|cancel-in-progress/m);
+    });
+
     it('triggers on every pull request: no paths or branches filter, which would leave the required check missing', () => {
         expect(guard.on).toEqual({
             pull_request: { types: ['opened', 'synchronize', 'reopened', 'ready_for_review', 'edited'] },
