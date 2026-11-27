@@ -33,20 +33,29 @@ export const qrImage = (link: string) =>
 
 /**
  * The claiming device as the page names it: "iPhone" from the app's own
- * "Socio app on iPhone" (so "your iPhone"), another label as it came, or
- * the platform. Only what the claim carries; the label is the device's word.
+ * "Socio app on iPhone", another label as it came (`quoted`), or the
+ * platform. Only what the claim carries. The device set its label itself
+ * and isn't signed in, so the page never vouches for it.
  */
-export const claimingDevice = (status: PairStatus | undefined): { name: string; yours: boolean } | undefined => {
+export const claimingDevice = (status: PairStatus | undefined): { name: string; quoted: boolean } | undefined => {
     const label = status?.label?.trim();
     const app = label?.match(/^Socio app on (.+)$/)?.[1];
     if (app) {
-        return { name: app === 'Android' ? 'Android phone' : app, yours: true };
+        return { name: app === 'Android' ? 'Android phone' : app, quoted: false };
     }
     if (label) {
-        return { name: label, yours: false };
+        return { name: label, quoted: true };
     }
-    return status?.platform ? { name: PLATFORMS[status.platform] ?? 'new device', yours: true } : undefined;
+    return status?.platform ? { name: PLATFORMS[status.platform] ?? 'new device', quoted: false } : undefined;
 };
+
+/** "An iPhone", "A device called “Pixel 9”", "A new device": who is asking, never "your". */
+export const askingDevice = (claiming: ReturnType<typeof claimingDevice>) =>
+    !claiming
+        ? 'A new device'
+        : claiming.quoted
+          ? `A device called “${claiming.name}”`
+          : `${/^[aeiou]/i.test(claiming.name) ? 'An' : 'A'} ${claiming.name}`;
 
 const message = (e: unknown, fallback: string) => (e instanceof Error && e.message ? e.message : fallback);
 const DENIED = 'That code didn’t match. Make a new QR code.';
@@ -301,27 +310,28 @@ export function AddDeviceDialog({ onClose }: { onClose: () => void }) {
     const left = pairing ? Date.parse(pairing.expiresAt) - now : 0;
     // The claim lives PAIR_CLAIM_MS from its claimedAt (both the server's).
     const claimLeft = status?.claimedAt ? Date.parse(status.claimedAt) + PAIR_CLAIM_MS - now : undefined;
-    const claiming = claimingDevice(status);
-    const named = claiming ? (claiming.yours ? `your ${claiming.name}` : claiming.name) : 'your new device';
-    const Named = claiming && !claiming.yours ? claiming.name : `Your ${claiming?.name ?? 'new device'}`;
     /** A device has claimed the code: it has the app, so the footer about getting one goes. */
     const claimed = !!status?.claimedAt || state === 'waiting' || state === 'allowed' || state === 'signed_in';
-    const asking = state === 'waiting' && !ended;
+    /** Which view shows: only the QR code's (or the wait for one) keeps the scan instruction. */
+    const view = ended ? 'ended' : state === 'signed_in' || state === 'allowed' || state === 'waiting' ? state : 'scan';
     return (
         <Dialog open onOpenChange={(open) => !open && onClose()}>
             <DialogContent data-slot="add-device" className="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle>
-                        {state === 'signed_in'
-                            ? `Signed in on ${device}`
-                            : state === 'waiting' || state === 'allowed'
-                              ? `Sign in ${named}`
-                              : 'Add a device'}
+                        {view === 'scan' || view === 'ended' ? 'Add a device' : 'Sign in a new device?'}
                     </DialogTitle>
-                    {asking ? (
+                    {view === 'waiting' ? (
                         <DialogDescription>
-                            {Named} is asking to sign in as you. Check it shows the same code, then type it here.
+                            {askingDevice(claimingDevice(status))} is asking to sign in as you. If it’s yours, type the
+                            code it shows.
                         </DialogDescription>
+                    ) : view === 'allowed' ? (
+                        <DialogDescription>Finishing sign-in on the new device…</DialogDescription>
+                    ) : view === 'signed_in' ? (
+                        <DialogDescription>The new device is signed in.</DialogDescription>
+                    ) : view === 'ended' ? (
+                        <DialogDescription>This request ended. Make a new code to add a device.</DialogDescription>
                     ) : (
                         <DialogDescription>
                             {pairing?.variant === 'preview'
@@ -391,7 +401,7 @@ export function AddDeviceDialog({ onClose }: { onClose: () => void }) {
                             }}
                         />
                         <p id="add-device-code-hint" className="text-sm text-muted-foreground">
-                            The 6 digits shown on {named}.
+                            The 6 digits shown on that device.
                             {claimLeft !== undefined && (
                                 <span data-slot="add-device-claim-countdown"> Time left: {countdown(claimLeft)}.</span>
                             )}

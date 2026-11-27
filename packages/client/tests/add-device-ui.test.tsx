@@ -5,7 +5,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
 import type { PairStatus } from '@socio/shared/device-sign-in';
 
-import { AddDeviceDialog, claimingDevice, countdown } from '../src/shell/AddDeviceDialog';
+import { AddDeviceDialog, askingDevice, claimingDevice, countdown } from '../src/shell/AddDeviceDialog';
 import { appReach, forgetAppReach } from '../src/shell/app-reach';
 
 declare global {
@@ -176,9 +176,10 @@ it('asks before signing a claiming device in, naming it', async () => {
     status = claimed;
     await until(() => !!input(), 'confirm');
     expect(code()).toBeNull();
-    expect(title()).toBe('Sign in Ada’s iPhone');
+    expect(title()).toBe('Sign in a new device?');
+    // A label the device set itself: quoted as given, never vouched for.
     expect(description()).toBe(
-        'Ada’s iPhone is asking to sign in as you. Check it shows the same code, then type it here.',
+        'A device called “Ada’s iPhone” is asking to sign in as you. If it’s yours, type the code it shows.',
     );
     expect(dialog()!.textContent).not.toContain('scan this code');
     // No Sign in button: the 6th digit sends the code.
@@ -189,7 +190,7 @@ it('asks before signing a claiming device in, naming it', async () => {
     await until(() => paths('/confirm').length === 1, 'auto-submit');
     expect(paths('/confirm').map((entry) => entry.body)).toEqual([{ digits: '123456' }]);
     status = { ...claimed, state: 'signed_in' };
-    await until(() => dialog()!.textContent!.includes('Signed in on Ada’s iPhone'));
+    await until(() => dialog()!.textContent!.includes('Ada’s iPhone is signed in'));
 });
 
 it('counts wrong tries, then ends the claim', async () => {
@@ -271,7 +272,7 @@ it('keeps waiting when a confirm’s answer is lost, and follows the claim', asy
     await until(() => dialog()!.textContent!.includes('Could not reach the server.'));
     expect(dialog()!.textContent).not.toContain('didn’t match');
     status = { ...claimed, state: 'signed_in' };
-    await until(() => dialog()!.textContent!.includes('Signed in on Ada’s iPhone'));
+    await until(() => dialog()!.textContent!.includes('Ada’s iPhone is signed in'));
 });
 
 it('ignores the old code’s polls while a new one is made', async () => {
@@ -305,7 +306,7 @@ it('retrying after a lost answer finds the device already allowed', async () => 
     expect(paths('/confirm')).toHaveLength(2);
     await until(() => !dialog()!.textContent!.includes('didn’t match') && !input(), 'allowed');
     status = { ...claimed, state: 'signed_in' };
-    await until(() => dialog()!.textContent!.includes('Signed in on Ada’s iPhone'));
+    await until(() => dialog()!.textContent!.includes('Ada’s iPhone is signed in'));
 });
 
 it('still ends the last code on leaving when a new one can’t be made', async () => {
@@ -364,7 +365,7 @@ it('says so when “Not my device” comes after the device already signed in', 
     await act(async () => button('Not my device')!.click());
     await until(() => dialog()!.textContent!.includes('had already signed in'));
     expect(dialog()!.textContent).not.toContain('Nothing was signed in');
-    expect(dialog()!.textContent).toContain('Signed in on Ada’s iPhone');
+    expect(dialog()!.textContent).toContain('Ada’s iPhone is signed in');
 });
 
 it('never goes back to the QR code on a late poll', async () => {
@@ -392,10 +393,9 @@ it('names the claiming app, and counts down the claim’s time left', async () =
     expect(description()).toContain('scan this code');
     status = appClaim();
     await until(() => !!input(), 'claim');
-    expect(title()).toBe('Sign in your iPhone');
-    expect(description()).toBe(
-        'Your iPhone is asking to sign in as you. Check it shows the same code, then type it here.',
-    );
+    expect(title()).toBe('Sign in a new device?');
+    expect(description()).toBe('An iPhone is asking to sign in as you. If it’s yours, type the code it shows.');
+    expect(dialog()!.textContent).not.toMatch(/your iPhone/i);
     // One line: the old "wants to sign in as you" is gone.
     expect(dialog()!.textContent).not.toContain('wants to sign in');
     const left = () => dialog()!.querySelector('[data-slot="add-device-claim-countdown"]')?.textContent;
@@ -412,23 +412,27 @@ it('falls back to “your new device” when the claim carries no name', async (
     await until(() => !!code());
     status = { ...claimed, platform: null, label: null, claimedAt: null };
     await until(() => !!input(), 'claim');
-    expect(title()).toBe('Sign in your new device');
-    expect(description()).toMatch(/^Your new device is asking to sign in as you\./);
+    expect(title()).toBe('Sign in a new device?');
+    expect(description()).toMatch(/^A new device is asking to sign in as you\./);
     // No claim time: no countdown, nothing made up.
     expect(dialog()!.querySelector('[data-slot="add-device-claim-countdown"]')).toBeNull();
 });
 
 it('names devices from what the claim carries', () => {
     expect(claimingDevice(undefined)).toBeUndefined();
-    expect(claimingDevice({ ...claimed, label: 'Socio app on iPad' })).toEqual({ name: 'iPad', yours: true });
+    expect(claimingDevice({ ...claimed, label: 'Socio app on iPad' })).toEqual({ name: 'iPad', quoted: false });
     expect(claimingDevice({ ...claimed, label: 'Socio app on Android' })).toEqual({
         name: 'Android phone',
-        yours: true,
+        quoted: false,
     });
-    expect(claimingDevice({ ...claimed, label: 'Pixel 9' })).toEqual({ name: 'Pixel 9', yours: false });
+    expect(claimingDevice({ ...claimed, label: 'Pixel 9' })).toEqual({ name: 'Pixel 9', quoted: true });
+    expect(askingDevice(claimingDevice({ ...claimed, label: 'Socio app on Android' }))).toBe('An Android phone');
+    expect(askingDevice(claimingDevice({ ...claimed, label: null, platform: 'ios' }))).toBe('An iPhone or iPad');
+    expect(askingDevice(claimingDevice({ ...claimed, label: 'Pixel 9' }))).toBe('A device called “Pixel 9”');
+    expect(askingDevice(undefined)).toBe('A new device');
     expect(claimingDevice({ ...claimed, label: null, platform: 'android' })).toEqual({
         name: 'Android phone',
-        yours: true,
+        quoted: false,
     });
 });
 
@@ -443,7 +447,7 @@ it('hides “No app yet?” once a device claimed the code, and shows it again w
     expect(footer()).toBeNull();
     expect(dialog()!.textContent).not.toContain('No app yet?');
     status = { ...status, state: 'signed_in' };
-    await until(() => dialog()!.textContent!.includes('Signed in on'), 'signed in');
+    await until(() => dialog()!.textContent!.includes('is signed in to your account'), 'signed in');
     expect(footer()).toBeNull();
 });
 
@@ -460,7 +464,7 @@ it('makes the field a 6-digit code field', async () => {
     expect(field.getAttribute('pattern')).toBe('[0-9]{6}');
     expect(field.placeholder).toBe('6-digit code');
     expect(document.getElementById(field.getAttribute('aria-describedby')!)!.textContent).toContain(
-        'The 6 digits shown on your iPhone.',
+        'The 6 digits shown on that device.',
     );
     type('12a-3');
     expect(input()!.value).toBe('123');
@@ -532,4 +536,56 @@ it('says a wrong code didn’t match without a count when the server gives none'
     type('123456');
     await until(() => !input(), 'allowed');
     expect(paths('/confirm')).toHaveLength(2);
+});
+
+// Review of #44: the scan instruction belongs to the QR code's view only.
+
+const SCAN = 'scan this code';
+
+it('says it is finishing once the code matched, without the scan instruction', async () => {
+    await open();
+    await until(() => !!code());
+    status = appClaim();
+    await until(() => !!input(), 'claim');
+    // The poll keeps answering "allowed" from here.
+    type('123456');
+    await until(() => dialog()!.textContent!.includes('Finishing on'), 'allowed');
+    expect(title()).toBe('Sign in a new device?');
+    expect(description()).toBe('Finishing sign-in on the new device…');
+    expect(dialog()!.textContent).not.toContain(SCAN);
+});
+
+it('says the device is signed in, without the scan instruction', async () => {
+    await open();
+    await until(() => !!code());
+    status = { ...appClaim(), state: 'signed_in' };
+    await until(() => !!dialog()!.querySelector('[data-slot="add-device-done"]'), 'signed in');
+    expect(title()).toBe('Sign in a new device?');
+    expect(description()).toBe('The new device is signed in.');
+    expect(dialog()!.textContent).not.toContain(SCAN);
+});
+
+it('says the request ended, without the scan instruction, until a new code', async () => {
+    await open();
+    await until(() => !!code());
+    status = appClaim();
+    await until(() => !!input(), 'claim');
+    await act(async () => button('Not my device')!.click());
+    await until(() => !!dialog()!.querySelector('[data-slot="add-device-ended"]'), 'ended');
+    expect(title()).toBe('Add a device');
+    expect(description()).toBe('This request ended. Make a new code to add a device.');
+    expect(dialog()!.textContent).not.toContain(SCAN);
+    status = unclaimed;
+    await act(async () => button('New code')!.click());
+    await until(() => !!code(), 'new code');
+    expect(description()).toContain(SCAN);
+});
+
+it('says an expired code ended, without the scan instruction', async () => {
+    await open();
+    await until(() => !!code());
+    status = { ...unclaimed, state: 'expired' };
+    await until(() => dialog()!.textContent!.includes('This QR code expired.'));
+    expect(description()).toBe('This request ended. Make a new code to add a device.');
+    expect(dialog()!.textContent).not.toContain(SCAN);
 });
