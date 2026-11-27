@@ -24,6 +24,9 @@
 # The job's name, `i18n guard`, is what main's ruleset requires: keep it.
 name: i18n guard
 
+# No `paths:` or `branches:` filter, ever: a required check whose workflow
+# is skipped counts as missing and blocks the pull request for good. The job
+# runs on every pull request and passes at once unless the branch is i18n/.
 on:
   pull_request:
     # `edited` too: a retargeted pull request has a new base to compare with.

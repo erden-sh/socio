@@ -91,6 +91,13 @@ describe('i18n-guard.yml', () => {
         expect(job.if).toBeUndefined();
     });
 
+    it('triggers on every pull request: no paths or branches filter, which would leave the required check missing', () => {
+        expect(guard.on).toEqual({
+            pull_request: { types: ['opened', 'synchronize', 'reopened', 'ready_for_review', 'edited'] },
+        });
+        expect(read('i18n-guard.yml')).not.toMatch(/paths(-ignore)?:|branches(-ignore)?:/);
+    });
+
     it('keeps the stable name the ruleset requires', () => {
         expect(jobId).toBe('i18n-guard');
         expect(job.name).toBe('i18n guard');
