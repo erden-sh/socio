@@ -12,6 +12,7 @@ import {
     splitQuote,
     withQuote,
 } from '@socio/shared/chat/quote-reply';
+import { formatNumber } from '@socio/shared/locale';
 import type { RoomView } from '@socio/shared/rooms/rooms';
 import { messageAuthor } from '@socio/shared/runs/socio-fields';
 import type { Conversation, MessageAuthor } from '@socio/shared/types';
@@ -91,6 +92,31 @@ export function useQuotedDraft(text: string, setDraft: SetText) {
     );
     const removeQuote = useCallback(() => setDraft((current) => splitQuote(current).rest), [setDraft]);
     return { quote, text: rest, setText, removeQuote, command: quotedCommand(quote, rest) };
+}
+
+/** How many characters `message`, the whole of it as sent (a quote, a source line), is over `max`. */
+export const overLimitBy = (message: string, max: number) => Math.max(0, message.length - max);
+
+/** What the note under the box says while the message is over its limit. */
+export const overLimitNote = (over: number, max: number) =>
+    `This message is over the ${formatNumber(max)}-character limit. Remove ${formatNumber(over)} ${over === 1 ? 'character' : 'characters'} to send it.`;
+
+/**
+ * Under the box while the whole message, its quote included, is longer
+ * than the composer may send (CB-571: a quote added to a long draft):
+ * how much to cut. Send waits; the draft stays as it is. Always there, so
+ * a screen reader hears it as it appears.
+ */
+export function OverLimitNote({ over, max }: { over: number; max: number }) {
+    return (
+        <p
+            role="status"
+            data-slot="composer-over-limit"
+            className="m-0 px-1 text-[11px]/[1.6] text-destructive empty:hidden"
+        >
+            {over > 0 ? overLimitNote(over, max) : ''}
+        </p>
+    );
 }
 
 /**

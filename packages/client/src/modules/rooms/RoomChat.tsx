@@ -50,7 +50,14 @@ import { chatDraft, useDraft, type Draft } from '../chat/chat-drafts';
 import { Markdown } from '../chat/ChatMarkdown';
 import { ChatTranscript, pendingUserBubble } from '../chat/ChatTranscript';
 import { OthersQueuedMessages, QueuedMessages } from '../chat/QueuedMessages';
-import { messageReplyAuthor, QuoteChip, useQuotedDraft, type ReplyTo } from '../chat/quote-reply';
+import {
+    messageReplyAuthor,
+    OverLimitNote,
+    overLimitBy,
+    QuoteChip,
+    useQuotedDraft,
+    type ReplyTo,
+} from '../chat/quote-reply';
 import { ScrollToEnd } from '../chat/ScrollToEnd';
 import { useReactions } from '../chat/use-reactions';
 
@@ -603,15 +610,20 @@ function RoomComposer({
             textarea?.setSelectionRange(next.caret, next.caret);
         });
     };
+    // The message as sent: the quote first, so it starts with it (CB-571).
+    const typed = quoted.text.trim();
+    const outgoing = quoted.quote ? withQuote(quoted.quote, typed) : typed;
+    // The whole of it within the server's limit: a quote added to a long
+    // draft can pass it, which the box's maxLength never shortens. Send
+    // waits; the draft stays.
+    const overLimit = overLimitBy(outgoing, STEERING_MAX_CHARS);
     const send = async () => {
-        const typed = quoted.text.trim();
+        const text = outgoing;
         // `/invite` is a command, not a message (CB-285): the picker handles
         // it. A quote alone is no message (CB-571).
-        if (!typed || busy || invite.active) {
+        if (!typed || busy || invite.active || overLimit) {
             return;
         }
-        // The quote first, so the message starts with it (CB-571).
-        const text = quoted.quote ? withQuote(quoted.quote, typed) : typed;
         setBusy(true);
         setProblem('');
         try {
@@ -683,6 +695,7 @@ function RoomComposer({
                     box.current?.focus();
                 }}
             />
+            <OverLimitNote over={overLimit} max={STEERING_MAX_CHARS} />
             <Textarea
                 ref={box}
                 {...mentions.inputProps}
@@ -704,7 +717,7 @@ function RoomComposer({
                 rows={1}
                 value={quoted.text}
                 // The limit counts the whole message, its quote too.
-                maxLength={STEERING_MAX_CHARS - (draft.text.length - quoted.text.length)}
+                maxLength={Math.max(0, STEERING_MAX_CHARS - (draft.text.length - quoted.text.length))}
                 onChange={(event) => {
                     quoted.setText(event.target.value);
                     if (problem) {
@@ -756,7 +769,7 @@ function RoomComposer({
                 <SendButton
                     type="submit"
                     aria-label={running ? 'Queue message' : 'Send message'}
-                    disabled={busy || !quoted.text.trim() || invite.active}
+                    disabled={busy || !typed || invite.active || !!overLimit}
                 >
                     <ArrowUp size={19} />
                 </SendButton>

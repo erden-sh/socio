@@ -384,6 +384,49 @@ describe('in a private chat', () => {
     });
 });
 
+describe('the whole message’s limit in a private chat', () => {
+    const LIMIT = 4000;
+    const over = () => $('[data-slot="composer-over-limit"]')!;
+
+    it('counts the quote: the note says how much to cut, Send waits, the draft stays', async () => {
+        await open();
+        const long = 'x'.repeat(LIMIT - 10);
+        await type(long);
+        expect(over().textContent).toBe('');
+        await click(replyOn('a0'));
+        const extra = withQuote(quoteOf('Archiver', REPLY_TEXT), long).length - LIMIT;
+        expect(over().getAttribute('role')).toBe('status');
+        expect(over().textContent).toBe(
+            `This message is over the 4,000-character limit. Remove ${extra} characters to send it.`,
+        );
+        expect(sendButton().disabled).toBe(true);
+        await submit();
+        expect(kit.runs).toHaveLength(0);
+        expect(box().value).toBe(long);
+        expect(chip()).not.toBeNull();
+        // The quote out: it fits again.
+        await click(chip()!.querySelector('button[aria-label="Remove quote"]'));
+        expect(over().textContent).toBe('');
+        expect(sendButton().disabled).toBe(false);
+    });
+
+    it('counts the source line too', async () => {
+        await open();
+        await type('x'.repeat(LIMIT - 5));
+        await click($('button[aria-label="Add source page link"]'));
+        const source = $<HTMLInputElement>('input[aria-label="Source page URL"]')!;
+        await act(async () => {
+            Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(
+                source,
+                'https://example.com/page',
+            );
+            source.dispatchEvent(new Event('input', { bubbles: true }));
+        });
+        expect(over().textContent).toContain('Remove ');
+        expect(sendButton().disabled).toBe(true);
+    });
+});
+
 describe('a quoted message', () => {
     it('shows its quote as a quote block: the author in bold, the excerpt as text, then the words', () => {
         const text = withQuote(quoteOf('Bob', 'Lunch at *noon*? Ask @Alice'), 'Sure');
