@@ -1912,6 +1912,9 @@ describe('folders (CB-426)', () => {
             ['pg-root', 1],
         ]);
         expect(String(rows.find((row) => row.id === 'pg-root')!.content)).toContain('Tracks CB-1');
+        // Its search row holds no body: a folder matches by its title only.
+        const searchBody = () => db.prepare("SELECT body FROM page_search WHERE pageId='pg-root'").get()!.body;
+        expect(searchBody()).toBe('');
 
         // Turned back into a page at the source, the next import follows; an
         // unchanged page is not seen as changed.
@@ -1920,6 +1923,7 @@ describe('folders (CB-426)', () => {
         const report = await importer(db, await BundleReader.open(again.out), dir).run({ apply: true });
         expect(report.counts.page).toMatchObject({ update: 1 });
         expect(db.prepare("SELECT folder FROM pages WHERE id='pg-root'").get()).toEqual({ folder: 0 });
+        expect(String(searchBody())).toContain('Tracks CB-1');
     });
 
     it('reads a page record without the field, from before folders, as a page', async () => {

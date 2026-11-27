@@ -78,6 +78,7 @@ it('adds a nullable coverId to pages, keeping every row (pages 10)', () => {
         { module: 'pages', version: 12, name: 'page links', action: 'apply' },
         { module: 'pages', version: 13, name: 'page source attribution', action: 'apply' },
         { module: 'pages', version: 14, name: 'page folders', action: 'apply' },
+        { module: 'pages', version: 15, name: 'folder search rows without body', action: 'apply' },
     ]);
     expect(upgraded.prepare('SELECT * FROM pages').all()).toEqual(
         before.map((row) => ({ ...row, coverId: null, sourceUrl: null, sourceTitle: null, folder: 0 })),

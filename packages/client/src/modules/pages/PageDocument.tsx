@@ -107,6 +107,9 @@ export function PageDocument({
     // A folder (CB-426) shows what it holds instead of its body, which it keeps: no editor is
     // mounted, so nothing can save over the kept text.
     const folder = page.folder;
+    // A folder offers no "Ask about this page" (CB-426): its body is hidden, so the page chat
+    // isn't mounted on one, nor laid out as open.
+    const chatShown = chatOpen && !folder;
     const toggleFolder = async () => {
         // A title typed a moment ago is saved first, as the page it was typed on.
         if (!(await controller.flush(true))) {
@@ -200,7 +203,7 @@ export function PageDocument({
         <section
             className={cn(
                 'relative flex min-h-0 min-w-0 flex-1 bg-card',
-                chatOpen && 'max-[900px]:flex-col max-[900px]:overflow-auto',
+                chatShown && 'max-[900px]:flex-col max-[900px]:overflow-auto',
             )}
             aria-label="Document workspace"
             data-tour="page-document"
@@ -208,7 +211,7 @@ export function PageDocument({
             <div
                 className={cn(
                     'flex min-w-0 flex-1 flex-col',
-                    chatOpen && 'max-[900px]:min-h-130 max-[900px]:flex-none',
+                    chatShown && 'max-[900px]:min-h-130 max-[900px]:flex-none',
                 )}
             >
                 <header
@@ -314,7 +317,7 @@ export function PageDocument({
                     <article
                         className={cn(
                             'mx-auto w-full max-w-195 px-[45px] pt-12.5 pb-[195px]',
-                            chatOpen
+                            chatShown
                                 ? 'max-[1150px]:px-[25px] max-[1150px]:pt-[35px] max-[1150px]:pb-20'
                                 : 'max-[1150px]:px-[35px] max-[1150px]:pt-10 max-[1150px]:pb-[185px] max-[700px]:px-6 max-[700px]:pt-7.5 max-[700px]:pb-45',
                         )}
@@ -446,27 +449,29 @@ export function PageDocument({
                     </article>
                 </div>
             </div>
-            <div
-                className={
-                    chatOpen
-                        ? 'min-h-0 w-90 shrink-0 border-l border-border max-[1150px]:w-82.5 max-[900px]:h-155 max-[900px]:min-h-155 max-[900px]:w-full max-[900px]:border-t max-[900px]:border-l-0'
-                        : 'absolute bottom-6 left-1/2 z-5 w-[min(610px,calc(100%-80px))] -translate-x-1/2 max-[700px]:bottom-3.5 max-[700px]:w-[calc(100%-30px)]'
-                }
-            >
-                <PageConversation
-                    page={page}
-                    workspace={workspace}
-                    paused={paused}
-                    beforeChat={beforeChat}
-                    onRefresh={onRefresh}
-                    onSchedule={onSchedule}
-                    onSettings={onSettings}
-                    onCreateDot={onCreateDot}
-                    onOpenChange={setChatOpen}
-                    seed={goalSeed}
-                    onSeedConsumed={() => setGoalSeed(null)}
-                />
-            </div>
+            {!folder && (
+                <div
+                    className={
+                        chatShown
+                            ? 'min-h-0 w-90 shrink-0 border-l border-border max-[1150px]:w-82.5 max-[900px]:h-155 max-[900px]:min-h-155 max-[900px]:w-full max-[900px]:border-t max-[900px]:border-l-0'
+                            : 'absolute bottom-6 left-1/2 z-5 w-[min(610px,calc(100%-80px))] -translate-x-1/2 max-[700px]:bottom-3.5 max-[700px]:w-[calc(100%-30px)]'
+                    }
+                >
+                    <PageConversation
+                        page={page}
+                        workspace={workspace}
+                        paused={paused}
+                        beforeChat={beforeChat}
+                        onRefresh={onRefresh}
+                        onSchedule={onSchedule}
+                        onSettings={onSettings}
+                        onCreateDot={onCreateDot}
+                        onOpenChange={setChatOpen}
+                        seed={goalSeed}
+                        onSeedConsumed={() => setGoalSeed(null)}
+                    />
+                </div>
+            )}
             {promote && (
                 <PromoteFindingDialog
                     page={page}

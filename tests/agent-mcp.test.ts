@@ -580,6 +580,29 @@ it('changes fields only within the person’s role: a member’s agent can’t c
     expect(await platform.board.agentActions.activity('g-bob')).toEqual([]);
 });
 
+it('finds a folder by its title only, never by its hidden body (CB-426)', async () => {
+    const { connect, workspace } = await fixture();
+    const [everyday] = workspace.spaces();
+    const folder = await workspace.pages.create(
+        everyday!.id,
+        { title: 'Clients', content: 'Sprocket invoices.', folder: true },
+        null,
+        'alice',
+    );
+    await workspace.pages.create(everyday!.id, { title: 'Sprocket box', folder: true }, null, 'alice');
+    const { call } = await connect(actorFor('bob', ['pages:read']));
+    const hits = async (query: string) =>
+        ((await call('search_pages', { query })).data.results as Array<Record<string, unknown>>).map((hit) => [
+            hit.title,
+            hit.snippet,
+        ]);
+    expect(await hits('sprocket')).toEqual([['Sprocket box', '']]);
+    expect(await hits('clients')).toEqual([['Clients', '']]);
+    // Back into a page, its body finds it again.
+    await workspace.pages.setFolder(everyday!.id, folder.id, false);
+    expect(await hits('invoices')).toEqual([['Clients', 'Sprocket **invoices**.']]);
+});
+
 it('reads pages only in Spaces the person can read', async () => {
     const { connect, workspace } = await fixture();
     const [everyday] = workspace.spaces();

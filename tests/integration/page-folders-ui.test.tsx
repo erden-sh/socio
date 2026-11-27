@@ -37,6 +37,8 @@ const users = {
     bob: { id: 'bob', name: 'Bob', role: 'member' as Role },
 };
 let me: keyof typeof users = 'alice';
+// What the assistant still needs set up: with nothing, a page offers "Ask about this page".
+let missing: string[] = ['model'];
 const workspace = (): WorkspaceState => ({
     user: users[me],
     spaces: [{ id: 's1', name: 'Everyday', description: '', createdAt: 1 }],
@@ -57,7 +59,7 @@ const workspace = (): WorkspaceState => ({
         model: false,
         voice: false,
         telegram: 'not_configured',
-        missing: ['model'],
+        missing,
     },
     calls: [],
 });
@@ -159,6 +161,7 @@ beforeEach(() => {
             removeEventListener: () => {},
         }) as unknown as MediaQueryList;
     me = 'alice';
+    missing = ['model'];
     pages = [];
     switches = [];
     created = [];
@@ -302,4 +305,32 @@ it('makes a new folder inside a folder, named in its dialog', async () => {
     await until(() => !dialog(), 'the dialog to close');
     expect(created).toEqual([{ title: 'Designs', content: '', parentId: 'f1', folder: true }]);
     await until(() => text().includes('Designs'), 'the new folder inside');
+});
+
+it('offers "Ask about this page" on a page and never on a folder', async () => {
+    missing = [];
+    const ask = () => host.querySelector<HTMLInputElement>('input[placeholder="Ask about this page…"]');
+    pages = [
+        page('p1', 'Garden plan', { content: 'Beds and paths.' }),
+        page('f1', 'Projects', { folder: true, content: 'Text from when it was a page.' }),
+    ];
+    await open('/spaces/s1/pages/p1');
+    await until(() => !!ask(), 'the page chat');
+    expect(host.querySelector('label[for="page-prompt"]')!.textContent).toBe('Ask about this page');
+    // Turned into a folder from its menu, the page chat goes.
+    await openPageMenu();
+    click(menuItem('Turn into folder'));
+    await until(() => !!host.querySelector('[data-slot="folder-contents"]'), 'the folder view');
+    expect(ask()).toBeNull();
+    expect(host.querySelector('[data-slot="page-chat-dock"]')).toBeNull();
+    expect(text()).not.toContain('Ask about this page');
+    // Back into a page, it is offered again.
+    await openPageMenu();
+    click(menuItem('Turn into page'));
+    await until(() => !!ask(), 'the page chat again');
+    // A folder opened directly has none either.
+    await open('/spaces/s1/pages/f1');
+    await until(() => !!host.querySelector('[data-slot="folder-contents"]'), 'the folder');
+    expect(ask()).toBeNull();
+    expect(text()).not.toContain('Ask about this page');
 });

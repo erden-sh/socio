@@ -65,6 +65,7 @@ it('adds a folder mark to pages, off for every page there was (pages 14)', () =>
     const before = upgraded.prepare('SELECT * FROM pages').all();
     expect(migrate(upgraded, [workspaceSchema, pagesSchema])).toEqual([
         { module: 'pages', version: 14, name: 'page folders', action: 'apply' },
+        { module: 'pages', version: 15, name: 'folder search rows without body', action: 'apply' },
     ]);
     expect(upgraded.prepare('SELECT * FROM pages').all()).toEqual(before.map((row) => ({ ...row, folder: 0 })));
     const column = (db: DatabaseSync) =>
@@ -183,21 +184,95 @@ it('keeps a folder a folder when it moves to another Space', async () => {
     expect(f.workspace.pages.get(open, inside.id)).toMatchObject({ folder: false, parentId: folder.id });
 });
 
-it('finds a folder by its title, with no snippet of its hidden body', async () => {
+/** What a search finds, by title, with each hit's snippet as text. */
+const hitsOf = (found: PageSearchResult) =>
+    found.results.map((hit) => [hit.title, hit.snippet.map((part) => part.text).join('')]);
+
+it('finds a folder by its title only, with no snippet; never by its hidden body', async () => {
     const f = await fixture();
     await f.as('ada')(`/spaces/${f.space}/pages`, 'POST', { title: 'Garden folder', folder: true });
+    const search = async (q: string) =>
+        f.json<PageSearchResult>(f.as('ada')(`/spaces/search?${new URLSearchParams({ q, space: f.space })}`));
+    // A page: found by its body, with a snippet of it.
+    expect(hitsOf(await search('garden'))).toEqual([
+        ['Garden folder', ''],
+        ['Roadmap', 'Ship the garden.'],
+    ]);
+    // Into a folder: its body alone no longer finds it, by word, inside a word or as a typo.
     await f.folder('ada', f.page.id, { folder: true });
-    const found = await f.json<PageSearchResult>(
-        f.as('ada')(`/spaces/search?${new URLSearchParams({ q: 'garden', space: f.space })}`),
-    );
-    expect(found.results.map((hit) => hit.title).sort()).toEqual(['Garden folder', 'Roadmap']);
-    expect(found.results.every((hit) => hit.snippet.length === 0)).toBe(true);
-    // Back into a page, its text shows in the snippet again.
+    expect(hitsOf(await search('garden'))).toEqual([['Garden folder', '']]);
+    expect(hitsOf(await search('ship'))).toEqual([]);
+    expect(hitsOf(await search('arde'))).toEqual([['Garden folder', '']]);
+    expect((await search('shiip')).corrected).toBeNull();
+    // Its title still finds it, with no snippet.
+    expect(hitsOf(await search('roadmap'))).toEqual([['Roadmap', '']]);
+    // Back into a page, its body finds it again, with a snippet.
     await f.folder('ada', f.page.id, { folder: false });
-    const again = await f.json<PageSearchResult>(
-        f.as('ada')(`/spaces/search?${new URLSearchParams({ q: 'garden', space: f.space })}`),
+    expect(hitsOf(await search('ship'))).toEqual([['Roadmap', 'Ship the garden.']]);
+});
+
+it('keeps a folder’s body out of search through a combined edit and a move to another Space', async () => {
+    const f = await fixture();
+    const search = (spaceId: string, query: string) => hitsOf(f.workspace.pages.search({ query, spaces: [spaceId] }));
+    // A patch that makes it a folder, then one that turns it back.
+    const asFolder = await f.json<Page>(
+        f.as('ada')(`/spaces/${f.space}/pages/${f.page.id}`, 'PATCH', {
+            folder: true,
+            expectedRevision: f.page.revision,
+        }),
     );
-    expect(again.results.find((hit) => hit.id === f.page.id)!.snippet.length).toBeGreaterThan(0);
+    expect(search(f.space, 'ship')).toEqual([]);
+    // A move to another Space keeps it out.
+    const open = f.company.spaceId;
+    expect((await f.as('ada')(`/spaces/${f.space}/pages/${f.page.id}/move`, 'POST', { spaceId: open })).status).toBe(
+        200,
+    );
+    expect(search(open, 'ship')).toEqual([]);
+    expect(search(open, 'roadmap')).toEqual([['Roadmap', '']]);
+    await f.workspace.pages.update(open, f.page.id, { folder: false, expectedRevision: asFolder.revision + 1 });
+    expect(search(open, 'ship')).toEqual([['Roadmap', 'Ship the garden.']]);
+});
+
+it('keeps a folder’s body out of a socio’s page search', async () => {
+    const workspace = new WorkspaceStore(testDatabase());
+    cleanup.push(() => workspace.close());
+    workspace.recordUser({ id: 'bob', name: 'Bob', role: 'member' });
+    const space = workspace.spaces()[0].id;
+    const thread = workspace.bindThread('t1', workspace.dots()[0].id, 'Chat', 'bob');
+    const access = pageAccess(workspace, space, thread.id, () => {});
+    const folder = await access.create({ title: 'Clients', content: 'Sprocket invoices.', folder: true });
+    await access.create({ title: 'Sprocket box', folder: true });
+    const titles = async (query: string) =>
+        (await access.search({ query, spaceId: space })).results.map((hit) => [hit.title, hit.snippet]);
+    expect(await titles('sprocket')).toEqual([['Sprocket box', '']]);
+    expect(await titles('clients')).toEqual([['Clients', '']]);
+    await workspace.pages.setFolder(space, folder.id, false);
+    expect(await titles('invoices')).toEqual([['Clients', 'Sprocket **invoices**.']]);
+});
+
+it('drops the body of the folders there are from their search rows, and only theirs (pages 15)', () => {
+    const db = new DatabaseSync(':memory:');
+    cleanup.push(() => db.close());
+    migrate(db, [workspaceSchema, { ...pagesSchema, migrations: pagesSchema.migrations!.slice(0, 14) }]);
+    db.exec(`INSERT INTO pages (id, spaceId, parentId, title, content, revision, createdAt, updatedAt, sourceThreadId, createdBy, folder) VALUES
+    ('p1', 's1', NULL, 'Clients', 'Sprocket invoices', 1, 1, 1, NULL, 'ada', 1),
+    ('p2', 's1', NULL, 'Notes', 'Sprocket notes', 1, 1, 1, NULL, 'ada', 0);
+    INSERT INTO page_search (pageId, spaceId, title, body) VALUES ('p1', 's1', 'Clients', 'Sprocket invoices'), ('p2', 's1', 'Notes', 'Sprocket notes');`);
+    const matches = (q: string) =>
+        db
+            .prepare(
+                'SELECT s.pageId FROM page_search_fts f JOIN page_search s ON s.id = f.rowid WHERE page_search_fts MATCH ? ORDER BY s.pageId',
+            )
+            .all(q)
+            .map((row) => row.pageId);
+    expect(matches('sprocket')).toEqual(['p1', 'p2']);
+    migrate(db, [workspaceSchema, pagesSchema]);
+    expect(matches('sprocket')).toEqual(['p2']);
+    expect(matches('clients')).toEqual(['p1']);
+    expect(db.prepare('SELECT pageId, body FROM page_search ORDER BY pageId').all()).toEqual([
+        { pageId: 'p1', body: '' },
+        { pageId: 'p2', body: 'Sprocket notes' },
+    ]);
 });
 
 it('keeps a folder’s hidden body out of the Space’s radar: no excerpt and no open decision from it', async () => {

@@ -71,6 +71,15 @@ function prose(text: string) {
     );
 }
 
+/**
+ * The body a page's search row holds: its plain text, or none for a
+ * folder (CB-426), whose body is hidden, so a folder matches by its title
+ * only. Turning it back into a page indexes the text again.
+ */
+export function searchBody(markdown: string, folder: boolean): string {
+    return folder ? '' : pageText(markdown);
+}
+
 /** Plain text of a page's Markdown, one line, for the search index. */
 export function pageText(markdown: string): string {
     const source = markdown.replace(/^\uFEFF?---\r?\n[\s\S]*?\r?\n---[ \t]*(?:\r?\n|$)/, '');

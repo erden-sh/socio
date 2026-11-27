@@ -1706,7 +1706,7 @@ it('compresses every kept revision body, keeping every row and column (pages 7)'
             .prepare("SELECT version, name FROM schema_migrations WHERE module='pages' ORDER BY version DESC LIMIT 1")
             .get(),
         // Later additive steps preserve migration 7's compression guarantees.
-    ).toEqual({ version: 14, name: 'page folders' });
+    ).toEqual({ version: 15, name: 'folder search rows without body' });
     expect(revisionSchema(db)).toEqual([
         {
             name: 'page_revisions',
@@ -1842,6 +1842,12 @@ it('compresses the revisions of a release-1 database migrated to pages 6, matchi
             module: 'pages',
             version: 14,
             name: 'page folders',
+            action: 'apply',
+        },
+        {
+            module: 'pages',
+            version: 15,
+            name: 'folder search rows without body',
             action: 'apply',
         },
     ]);
