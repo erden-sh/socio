@@ -71,14 +71,16 @@ beforeEach(() => {
             const kind = query.get('kind');
             return Response.json({
                 context:
-                    kind === 'page'
-                        ? {
-                              kind,
-                              id: query.get('id') ?? '',
-                              title: 'Launch plan',
-                              path: '/spaces/s1/pages/p1',
-                          }
-                        : { kind: 'general', id: '', title: null, path: null },
+                    kind === 'page' && query.get('id') === 'f1'
+                        ? { kind, id: 'f1', title: 'Clients', path: '/spaces/s1/pages/f1', folder: true }
+                        : kind === 'page'
+                          ? {
+                                kind,
+                                id: query.get('id') ?? '',
+                                title: 'Launch plan',
+                                path: '/spaces/s1/pages/p1',
+                            }
+                          : { kind: 'general', id: '', title: null, path: null },
                 dotId: query.get('dotId') ?? 'd1',
                 conversation: (query.get('dotId') ?? 'd1') === 'd1' ? existing : null,
             } satisfies AskLookup);
@@ -283,4 +285,22 @@ it('is a modal bottom sheet on a phone', async () => {
     });
     await settle();
     expect(dialog()).toBeNull();
+});
+
+it('offers no "Ask about this page" on a folder: it asks as on a screen with no item (CB-426)', async () => {
+    await render('/spaces/s1/pages/f1');
+    await act(async () => button().click());
+    await settle();
+    await settle();
+    // The page's lookup says it is a folder; the panel then asks with no item.
+    expect(requests.map((request) => request.url)).toEqual([
+        '/api/ask/conversation?kind=page&id=f1',
+        '/api/ask/conversation?kind=general&id=',
+    ]);
+    const box = document.querySelector<HTMLTextAreaElement>('#ask-prompt')!;
+    expect(box.placeholder).toBe('Ask anything…');
+    expect(document.querySelector('[data-slot="ask-context"]')!.textContent).toBe(
+        'Nothing on this screen is shared. Ask anything.',
+    );
+    expect(dialog()!.textContent).not.toContain('this page');
 });

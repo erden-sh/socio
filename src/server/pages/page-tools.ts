@@ -17,6 +17,7 @@ import {
     normalizeViewSpec,
     viewSpecMarkdown,
 } from '@socio/shared/dataset-view';
+import { folderContext } from '@socio/shared/pages/page-library';
 import { freshnessLabel, PAGE_SEARCH_MAX_LIMIT, PAGE_SEARCH_MAX_OFFSET } from '@socio/shared/pages/page-search';
 import type { RunRefRecorder } from '@socio/shared/runs/run-refs';
 import { SPACE_DESCRIPTION_MAX, SPACE_NAME_MAX, SPACE_VISIBILITIES } from '@socio/shared/spaces/create-input';
@@ -105,7 +106,8 @@ export function pageAccess(
                 return undefined;
             }
             ref?.({ kind: 'context', spaceId: page.spaceId, refId: page.id });
-            return page;
+            // A folder's body is hidden (CB-426): its name and what it holds, never the body.
+            return page.folder ? folderContext(page, workspace.pages.tree(page.spaceId)) : page;
         },
         /** The Space a page call with `requested` would use, checked. */
         space: (requested?: string) => resolve(requested),

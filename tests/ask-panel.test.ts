@@ -372,3 +372,67 @@ it('refuses unknown kinds and requests without a socio', async () => {
     expect((await f.alice('/ask/conversation', 'POST', { kind: 'general' })).status).toBe(400);
     expect((await f.alice('/ask/socio', 'PUT', {})).status).toBe(400);
 });
+
+it('never hands a folder’s hidden body to a socio: its name and what it holds instead (CB-426)', async () => {
+    const f = await fixture();
+    const folder = await f.workspace.pages.create(f.space, {
+        title: 'Clients',
+        content: 'Sprocket invoices are overdue.',
+        folder: true,
+    });
+    await f.workspace.pages.create(f.space, { title: 'Acme notes', content: 'Hello.', parentId: folder.id });
+    await f.workspace.pages.create(f.space, { title: 'Archive', folder: true, parentId: folder.id });
+    const inside = [
+        { title: 'Acme notes', folder: false },
+        { title: 'Archive', folder: true },
+    ];
+
+    // The Ask panel: the lookup says it is a folder, and a conversation opened on it anyway
+    // tells the socio its name and what it holds, never the body.
+    const lookup = await f.alice<AskLookup>(query('page', folder.id));
+    expect(lookup.body.context).toEqual({
+        kind: 'page',
+        id: folder.id,
+        title: 'Clients',
+        path: `/spaces/${f.space}/pages/${folder.id}`,
+        folder: true,
+    });
+    const opened = await f.alice<AskOpened>('/ask/conversation', 'POST', {
+        kind: 'page',
+        id: folder.id,
+        dotId: f.dot.id,
+    });
+    expect(opened.status).toBe(200);
+    const asked = await f.note(opened.body.conversation.id, 'alice');
+    expect(asked).toContain('"title":"Clients"');
+    expect(asked).toContain('"folder":true');
+    for (const item of inside) {
+        expect(asked).toContain(`"title":"${item.title}","folder":${item.folder}`);
+    }
+    expect(asked).not.toContain('Sprocket');
+
+    // The page chat: a direct call opens one, and each turn's page is the folder without its body.
+    const chat = await f.alice<Conversation>(`/spaces/${f.space}/pages/${folder.id}/conversation`, 'POST', {
+        dotId: f.dot.id,
+    });
+    expect(chat.status).toBe(200);
+    const pageTurn = {
+        dot: f.workspace.dot(f.dot.id)!,
+        userId: 'alice',
+        threadId: chat.body.id,
+        channel: false,
+        purpose: 'chat',
+        check: () => {},
+        signal: new AbortController().signal,
+        toolNames: () => [],
+    } satisfies DotTurn;
+    const current = JSON.stringify(await f.platform.dotExtensions.pageContext!(pageTurn));
+    expect(JSON.parse(current)).toMatchObject({ id: folder.id, title: 'Clients', folder: true, pages: inside });
+    expect(current).not.toContain('Sprocket');
+    expect(current).not.toContain('"content"');
+
+    // Turned back into a page, both see its text again.
+    await f.workspace.pages.setFolder(f.space, folder.id, false);
+    expect(await f.note(opened.body.conversation.id, 'alice')).toContain('Sprocket invoices');
+    expect(JSON.stringify(await f.platform.dotExtensions.pageContext!(pageTurn))).toContain('Sprocket invoices');
+});

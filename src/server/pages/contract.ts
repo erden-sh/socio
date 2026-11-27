@@ -20,6 +20,7 @@ import { Context } from 'effect';
 import type { DotTurn } from '@socio/foundation/turns/turn';
 import type { ThreadFollower } from '@socio/shared/auth';
 import type {
+    FolderContext,
     Page,
     PageCover,
     PageLibrary,
@@ -362,8 +363,8 @@ export type LinkedPage = Page & { url: string };
  * unfurling), each checked against the Spaces the socio may read.
  */
 export interface PageAccessShape {
-    /** The chat's page, while this socio may read its Space. */
-    readonly context: () => Page | undefined;
+    /** The chat's page, while this socio may read its Space; a folder without its body (CB-426). */
+    readonly context: () => Page | FolderContext | undefined;
     /** The Space a page call with `requested` would use, checked. */
     readonly space: (requested?: string) => string;
     readonly read: (id: string, requested?: string) => Promise<LinkedPage>;

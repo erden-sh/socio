@@ -2,6 +2,7 @@ import type { DatabaseSync } from 'node:sqlite';
 
 import type { AskContext, AskContextRef } from '@socio/shared/ask';
 import { issueKey, type Issue } from '@socio/shared/issues/issue-types';
+import { folderContext } from '@socio/shared/pages/page-library';
 
 import type { DataSpaceShape } from '../dataspace/contract.js';
 import type { PageMovesShape, PageStoreShape } from '../pages/contract.js';
@@ -32,7 +33,7 @@ export interface AskNeeds {
     /** The Board (issues). */
     readonly board: AskBoardShape;
     readonly pageMoves: PageMovesShape;
-    readonly pages: Pick<PageStoreShape, 'get'>;
+    readonly pages: Pick<PageStoreShape, 'get' | 'tree'>;
     readonly spaces: Pick<SpacesShape, 'readsSpace'>;
     readonly spaceAccess: Pick<SpaceAccessShape, 'reads'>;
     readonly socios: Pick<SociosShape, 'canUseDot' | 'dotsFor'>;
@@ -110,6 +111,21 @@ export async function resolveContext(needs: AskNeeds, userId: string, ref: AskCo
                 page = needs.pages.get(spaceId, id);
             } catch {
                 throw new AskError('Page not found.', 404);
+            }
+            if (page.folder) {
+                // A folder's body is hidden (CB-426): the socio is told its name and
+                // what it holds, never the body, and the panel offers no page to ask about.
+                return {
+                    context: {
+                        kind: 'page',
+                        id,
+                        title: page.title,
+                        path: `/spaces/${spaceId}/pages/${id}`,
+                        folder: true,
+                    },
+                    spaceId,
+                    snapshot: { kind: 'folder', ...folderContext(page, needs.pages.tree(spaceId)) },
+                };
             }
             return {
                 context: {

@@ -160,7 +160,12 @@ export function AskPanel({
     const shell = useShell();
     const { workspace, state } = shell;
     const params = useRouteParams();
-    const ref = askContextOf(params);
+    const screen = askContextOf(params);
+    // A folder (CB-426) hides its body: no "Ask about this page" on it. Once the lookup says
+    // the screen's page is one, the panel asks as on a screen with no item of its own.
+    const [folderId, setFolderId] = useState<string>();
+    const ref: ReturnType<typeof askContextOf> =
+        screen.kind === 'page' && screen.id === folderId ? { kind: 'general', id: '' } : screen;
     const dots = askableSocios(workspace.dots, ref.spaceId);
     const [picked, setPicked] = useState<string>();
     // A pick that can't answer here gives way to the person's default.
@@ -181,6 +186,9 @@ export function AskPanel({
         void api<AskLookup>(path)
             .then((data) => {
                 if (active) {
+                    if (data.context.folder) {
+                        setFolderId(data.context.id);
+                    }
                     setLookup({ path, data });
                 }
             })
