@@ -8,10 +8,14 @@ import { EventType, type BaseEvent } from '@ag-ui/client';
 import { Context } from 'effect';
 import { afterEach, expect, it } from 'vitest';
 
+import type { ReplyReportsState } from '@socio/shared/chat/reply-reports';
 import type { User } from '@socio/shared/types';
 
+import { viewSourcesOf } from '../src/server/composition/workspace.js';
 import { issuesModule } from '../src/server/issues/module.js';
+import { roomReads } from '../src/server/rooms/read-state.js';
 import { ChatHistory, WorkspaceViews } from '../src/server/workspace/contract.js';
+import { workspaceViews } from '../src/server/workspace/views.js';
 
 import { testWorkspaceViews } from './helpers/page-views.js';
 import { LocalAgentRunner } from './helpers/runners.js';
@@ -72,6 +76,31 @@ it('WorkspaceViews answers as the views over the platform’s members', async ()
         expect(await views.workspaceVersion(user)).toBe(await plain.workspaceVersion(user));
         expect(views.dotForViewer(user.id, dot)).toEqual(plain.dotForViewer(user.id, dot));
     }
+});
+
+it('says whether a thumbs-down may carry a reply report, and its version follows sharing and consent', async () => {
+    const { ws, platform } = await root();
+    ws.recordUser(MEMBER);
+    let state: ReplyReportsState = null;
+    const views = workspaceViews(platform.workspace, {
+        ...viewSourcesOf(
+            platform.workspace,
+            platform,
+            () => roomReads(platform),
+            () => platform.plugins,
+        ),
+        replyReports: () => state,
+    });
+    const off = await views.workspaceVersion(MEMBER);
+    expect((await views.workspaceView(MEMBER)).replyReports).toBeNull();
+    state = { sharing: true, consent: 'consent-1' };
+    const on = await views.workspaceVersion(MEMBER);
+    expect(on).not.toBe(off);
+    expect((await views.workspaceView(MEMBER)).replyReports).toEqual(state);
+    state = { sharing: true, consent: 'consent-2' };
+    expect(await views.workspaceVersion(MEMBER)).not.toBe(on);
+    // The root's own views: no cloud connection in a test platform, so never.
+    expect((await testWorkspaceViews(platform).workspaceView(MEMBER)).replyReports).toBeNull();
 });
 
 it('ChatHistory pages the turns stored in the runner the root was given', async () => {

@@ -201,6 +201,9 @@ export const REFERENCES: Reference[] = [
     owns('chat_steering', 'threadId', 'threads'),
     owns('message_reactions', 'userId', 'users'),
     owns('message_reactions', 'threadId', 'threads'),
+    // CB-382: a person's reply reports; what went is at Ingenio for its year, not here.
+    owns('cloud_outbox', 'userId', 'users'),
+    owns('cloud_outbox', 'threadId', 'threads'),
     owns('page_use_days', 'userId', 'users'),
     owns('page_use_days', 'pageId', 'pages'),
     owns('page_threads', 'userId', 'users'),

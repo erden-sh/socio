@@ -17,6 +17,7 @@ import type { TranscriptionProvider, TranscriptionSources } from '@socio/foundat
 import type { WorkspaceAppEntry } from '@socio/shared/apps/app-types';
 import type { OwnedList, TransferParties, TransferTally } from '@socio/shared/auth';
 import type { HistoryPage } from '@socio/shared/chat/chat-history';
+import type { ReplyReportsState } from '@socio/shared/chat/reply-reports';
 import type { ClientFlags } from '@socio/shared/flags';
 import type { ModelChoice } from '@socio/shared/inference';
 import type { LocalId } from '@socio/shared/mascot';
@@ -139,7 +140,9 @@ export interface WorkspaceAuditEntry {
         /** An admin's data API token: made, used (a summary), revoked; by id and name, never its value or hash. */
         | 'data_api_token'
         /** The workspace owner recorded or handed over (CB-390), by the new owner's user id. */
-        | 'workspace_owner';
+        | 'workspace_owner'
+        /** AI reply reports' sharing turned on or off (CB-382): the consent id and text version, never a report. */
+        | 'reply_reports';
     targetId: string;
     detail?: string;
 }
@@ -677,6 +680,8 @@ export interface WorkspaceViewSourcesShape {
     transcriptionSources(): TranscriptionSources;
     /** Live dictation (CB-222): whether it records only. */
     readonly dictationStreams: { recordingsOnly(provider: TranscriptionProvider): boolean };
+    /** Whether a thumbs-down may carry an AI reply report (CB-382): `cloud/`'s `ReplyReports`. None: never. */
+    replyReports?(): ReplyReportsState;
 }
 
 export class WorkspaceViewSources extends Context.Service<WorkspaceViewSources, WorkspaceViewSourcesShape>()(

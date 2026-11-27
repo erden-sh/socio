@@ -497,6 +497,9 @@ it('gives a fresh database and a release-1 database the same schema, keeping its
         ['classify_cursors', 0],
         ['classify_evals', 0],
         ['classify_labels', 0],
+        // CB-382: AI reply reports' outbox and the sharing setting (cloud 1).
+        ['cloud_outbox', 0],
+        ['cloud_settings', 0],
         ['coding_denials', 0],
         ['coding_runs', 0],
         ['coding_sessions', 0],

@@ -148,6 +148,10 @@ const TABLES: Record<string, string> = {
     // and a deleted page's tags go with it. No content of their own.
     page_tags: 'a tag membership; removing a tag deletes the row, and a deleted page’s tags go with it',
     message_reactions: 'a reaction its person takes back; no content',
+    // CB-382: a reply report withdrawn before it went, every unsent one when
+    // sharing is turned off, and sent or failed ones after 30 days (their
+    // bodies are cleared when they go or fail).
+    cloud_outbox: 'a reply report withdrawn before it went, or kept 30 days after it went or failed',
     // CB-151: a message waiting for a turn, like a draft: gone once a turn
     // takes it (it is in the stored conversation then) or its person
     // cancels it before it was sent.

@@ -88,6 +88,7 @@ export const OWNERSHIP: Record<string, Ownership> = {
     'ask_preferences.userId': personal('their preferences'),
     'chat_steering.userId': personal('their messages waiting for a turn'),
     'message_reactions.userId': personal('their reactions'),
+    'cloud_outbox.userId': personal('their reply reports'),
     'page_use_days.userId': personal('their reading'),
     'socio_grants.personId': personal('access they delegated to socios; a deactivation ends it'),
     'actor_contexts.personId': personal('a socio acting for them'),
