@@ -196,11 +196,12 @@ export function createFormatter(): FormatterModule {
             }
             const params = (call as Options).formatParams as Record<string, Options> | undefined;
             const perCall = params?.[(call as Options).interpolationkey as string] ?? {};
-            const locale = (perCall.locale ??
-                perCall.lng ??
-                (call as Options).locale ??
-                (call as Options).lng ??
-                lng ??
+            // `||`, as i18next has it: an empty locale falls through to the next one.
+            const locale = (perCall.locale ||
+                perCall.lng ||
+                (call as Options).locale ||
+                (call as Options).lng ||
+                lng ||
                 'en-US') as string;
             return names.reduce((text, part) => {
                 const { name, options } = parseFormat(part);

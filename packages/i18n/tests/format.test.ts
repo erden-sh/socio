@@ -99,6 +99,9 @@ describe('the formatters', () => {
         expect(en.t('hours', { n: 2, range: 'day' })).toBe('in 2 hours');
         expect(nbsp(en.t('time', { d: new Date(Date.UTC(2026, 9, 15, 14, 5)) }))).toBe('2:05 PM');
         expect(en.t('fixed', { n: 5, formatParams: { n: { minimumFractionDigits: 3 } } })).toBe('5.000');
+        // An empty locale falls through to the string's, as in i18next.
+        expect(en.t('fixed', { n: 12345.5, locale: '' })).toBe('12,345.50');
+        expect(en.t('fixed', { n: 12345.5, formatParams: { n: { locale: '' } } })).toBe('12,345.50');
     });
 
     it('render every en-US string as the formatters did before they ignored the call’s variables', () => {
@@ -111,6 +114,20 @@ describe('the formatters', () => {
                     JSON.parse(readFileSync(new URL(file, folder), 'utf8')),
                 ]),
         ) as Record<string, Record<string, string>>;
+        // The catalog has no formatted strings yet, so every formatter is checked through these too.
+        resources['formatted.fixture'] = {
+            n: '{{n, number}}',
+            fixed: 'Total: {{n, number(minimumFractionDigits: 2)}}',
+            price: '{{p, currency(currency: EUR)}}',
+            yen: '{{p, currency(JPY)}}',
+            when: '{{d, datetime(dateStyle: medium; timeZone: UTC)}}',
+            ago: '{{days, relativetime(range: day)}}',
+            hours: '{{days, relativetime(hour)}}',
+            who: '{{names, list}}',
+            or: '{{names, list(type: disjunction)}}',
+            size: '{{bytes, bytes}}',
+            took: '{{ms, duration}}',
+        };
         // The old setup: Socio's formatters added over i18next's own formatter, which merges in the call's variables.
         const before = createInstance();
         void before.init({ lng: 'en-US', resources: { 'en-US': resources }, initAsync: false, defaultNS: 'common' });
@@ -127,18 +144,25 @@ describe('the formatters', () => {
             bytes: 1_234_567,
             duration: 3_905_000,
         };
-        let checked = 0;
+        const formats = new Set<string>();
         for (const [namespace, strings] of Object.entries(resources)) {
             for (const [key, text] of Object.entries(strings)) {
                 const values: Record<string, unknown> = {};
                 for (const [, name, format] of text.matchAll(/\{\{\s*([\w.]+)\s*(?:,\s*(\w+))?[^}]*\}\}/g)) {
                     values[name!] = format ? sample[format.toLowerCase()] : 'Ada';
+                    if (format) {
+                        formats.add(format.toLowerCase());
+                    }
                 }
-                expect(after.t(`${namespace}:${key}`, values), key).toBe(before.t(`${namespace}:${key}`, values));
-                checked++;
+                const expected = before.t(`${namespace}:${key}`, values);
+                expect(after.t(`${namespace}:${key}`, values), key).toBe(expected);
+                if (namespace === 'formatted.fixture') {
+                    // A formatter that failed would leave the raw value; each fixture must come out formatted.
+                    expect(expected, key).not.toBe(String(Object.values(values)[0]));
+                }
             }
         }
-        expect(checked).toBeGreaterThan(0);
+        expect([...formats].sort()).toEqual(Object.keys(FORMATTERS).sort());
     });
 
     it('formats bytes and durations', () => {
