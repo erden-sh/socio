@@ -105,7 +105,11 @@ function normalizeItem(kind, text) {
         return `${trimmed.slice(0, at).toLowerCase()}@${asciiHost(trimmed.slice(at + 1)) ?? trimmed.slice(at + 1).toLowerCase()}`;
     }
     if (kind === 'url') {
-        return trimmed.toLowerCase();
+        // Scheme and host are case-insensitive; a path or query may not be (`/Team?token=AbC`).
+        const parts = /^([a-z][a-z0-9+.-]*:(?:\/\/)?)?([^@/?#]*@)?([^/?#]*)(.*)$/isu.exec(trimmed);
+        return parts
+            ? `${(parts[1] ?? '').toLowerCase()}${parts[2] ?? ''}${parts[3].toLowerCase()}${parts[4]}`
+            : trimmed;
     }
     return trimmed;
 }

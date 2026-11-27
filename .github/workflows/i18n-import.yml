@@ -125,7 +125,7 @@ jobs:
           response="$RUNNER_TEMP/i18n-import-response.json"
           # 409 is another import, or an export, in progress: retry, as the app asks.
           for attempt in 1 2 3 4 5 6; do
-            status="$(curl -sS --proto '=https' --max-time 120 -o "$response" -w '%{http_code}' -X POST -H "@$headers" --data-binary "@$RUNNER_TEMP/i18n-import.json" "${BASE_URL%/}/sync/import" || echo 000)"
+            status="$(curl -sS --proto '=https' --max-time 120 -o "$response" -w '%{http_code}' -X POST -H "@$headers" --data-binary "@$RUNNER_TEMP/i18n-import.json" "${BASE_URL%/}/sync/import")" || status=000
             case "$status" in
               2??)
                 echo "Imported: $(head -c 2000 "$response")"

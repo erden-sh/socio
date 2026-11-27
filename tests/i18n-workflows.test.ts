@@ -243,6 +243,12 @@ describe.each(Object.entries(syncing))('%s', (name, workflow) => {
                 }
             }
         }
+        // A transport failure is status 000 and retried: curl's own 000 isn't doubled.
+        for (const line of steps(workflow)
+            .flatMap((item) => (item.run ?? '').split('\n'))
+            .filter((item) => item.includes('curl '))) {
+            expect(line).toMatch(/^\s*status="\$\(curl [^\n]*-w '%\{http_code\}'[^\n]*\)" \|\| status=000$/);
+        }
         // Service tokens reach curl through a header file, never its command line.
         for (const step of steps(workflow).filter((item) => item.run?.includes('curl '))) {
             expect(step.run).toContain('umask 077');
@@ -296,6 +302,15 @@ describe('i18n-export.yml', () => {
         for (const step of publish!.steps.filter((item) => item.run)) {
             expect(step.run).not.toMatch(/\bnode |\bpnpm |\bnpx |scripts\//);
         }
+    });
+
+    it('publishes only onto the branch commit prepare built on', () => {
+        const write = prepare!.steps.find((step) => step.id === 'write')!.run!;
+        expect(write).toContain('echo "$base" > "$out/$locale/base"');
+        const run = publish!.steps.find((step) => step.name === 'Open or update the pull requests')!.run!;
+        const guard = run.indexOf('if [ "${current:-none}" != "$expected" ]; then');
+        expect(guard).toBeGreaterThan(-1);
+        expect(guard).toBeLessThan(run.indexOf('git checkout'));
     });
 
     it('pushes only to i18n/ branches, without force, and opens pull requests against main', () => {

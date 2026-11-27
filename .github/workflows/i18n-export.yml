@@ -109,7 +109,7 @@ jobs:
           exported="$RUNNER_TEMP/i18n-export.json"
           # 409 is an import in progress: retry, as the app asks.
           for attempt in 1 2 3 4 5 6; do
-            status="$(curl -sS --proto '=https' --max-time 120 -o "$exported" -w '%{http_code}' -H "@$headers" "${BASE_URL%/}/export/approved" || echo 000)"
+            status="$(curl -sS --proto '=https' --max-time 120 -o "$exported" -w '%{http_code}' -H "@$headers" "${BASE_URL%/}/export/approved")" || status=000
             case "$status" in
               200)
                 exit 0
@@ -141,8 +141,11 @@ jobs:
             [[ "$locale" =~ ^[a-z]{2,3}(-[A-Z]{2}|-[0-9]{3})?$ ]] || { echo "::error::Not a locale: $locale"; exit 1; }
             branch="i18n/$locale-$date"
             dir="packages/i18n/locales/$locale"
-            # Today's branch for the locale, if an earlier run opened it: build on its files.
+            # Today's branch for the locale, if an earlier run opened it: build on its files, and
+            # tell publish which commit that was, so it never writes over a later one.
+            base=none
             if git fetch --quiet --no-tags --depth=1 origin "+refs/heads/$branch:refs/remotes/origin/$branch" 2>/dev/null; then
+              base="$(git rev-parse "origin/$branch")"
               rm -rf "$dir"
               if git cat-file -e "origin/$branch:$dir" 2>/dev/null; then
                 git archive "origin/$branch" "$dir" | tar -x
@@ -150,6 +153,7 @@ jobs:
               echo "$locale: on top of $branch"
             fi
             mkdir -p "$out/$locale"
+            echo "$base" > "$out/$locale/base"
             node scripts/i18n-sync.mjs apply --export "$exported" --locale "$locale" --body "$out/$locale/body.md" --ids "$out/$locale/ids.json"
             if [ "$(jq length "$out/$locale/ids.json")" -eq 0 ]; then
               echo "::warning::$locale: none of its candidates could be written (see above); they stay approved in the app."
@@ -242,7 +246,17 @@ jobs:
             fi
             branch="i18n/$locale-$DATE"
             dir="packages/i18n/locales/$locale"
-            if git ls-remote --exit-code --heads origin "$branch" >/dev/null; then
+            # The branch must still be where prepare built on: a commit pushed since (a reviewer's
+            # fix) would be overwritten. Its candidates stay approved for the next export.
+            expected="$(cat "$out/$locale/base")"
+            [[ "$expected" =~ ^([0-9a-f]{40}|none)$ ]] || { echo "::error::$locale: bad base"; exit 1; }
+            current="$(git ls-remote --heads origin "refs/heads/$branch" | cut -f1)"
+            if [ "${current:-none}" != "$expected" ]; then
+              echo "::error::$locale: $branch moved since this export was prepared; the next export builds on it."
+              failed=1
+              continue
+            fi
+            if [ "$expected" != none ]; then
               git fetch --quiet --no-tags origin "+refs/heads/$branch:refs/remotes/origin/$branch"
               git checkout --quiet -B "$branch" "origin/$branch"
             else
@@ -291,7 +305,7 @@ jobs:
               '{pr: $pr, url: $url, locale: $locale, candidateIds: $ids[0]}' > "$RUNNER_TEMP/i18n-ack.json"
             acked=false
             for attempt in 1 2 3 4 5; do
-              status="$(curl -sS --proto '=https' --max-time 60 -o "$RUNNER_TEMP/i18n-ack-response.json" -w '%{http_code}' -X POST -H "@$headers" --data-binary "@$RUNNER_TEMP/i18n-ack.json" "${BASE_URL%/}/export/ack" || echo 000)"
+              status="$(curl -sS --proto '=https' --max-time 60 -o "$RUNNER_TEMP/i18n-ack-response.json" -w '%{http_code}' -X POST -H "@$headers" --data-binary "@$RUNNER_TEMP/i18n-ack.json" "${BASE_URL%/}/export/ack")" || status=000
               case "$status" in
                 2??) acked=true; break ;;
                 409 | 429 | 5?? | 000) sleep $((attempt * 15)) ;;

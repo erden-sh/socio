@@ -40,6 +40,14 @@ describe('content', () => {
         expect(added('Up to 1,000,000 rows', 'Hasta 1 000 000 filas')).toEqual([]);
     });
 
+    it("compares a URL's scheme and host without case, and the rest with it", () => {
+        expect(added('See https://example.com/Team?token=AbC', 'Mira HTTPS://Example.COM/Team?token=AbC')).toEqual([]);
+        expect(added('See https://example.com/Team?token=AbC', 'Mira https://example.com/team?token=abc')).toEqual([
+            'url:https://example.com/team?token=abc',
+        ]);
+        expect(added('See www.example.com/Docs', 'Mira WWW.Example.com/docs')).toEqual(['url:www.example.com/docs']);
+    });
+
     it('reads full-width characters as their ASCII forms', () => {
         expect(added('Visit', 'Visita ｅｘａｍｐｌｅ．ｏｒｇ')).toEqual(['domain:example.org']);
         expect(added('Write', 'Escribe a ａｄａ＠ｅｘａｍｐｌｅ．ｏｒｇ')).toEqual(['email:ada@example.org']);
