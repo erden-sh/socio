@@ -3,8 +3,14 @@
     "extends": ["//"],
     "tasks": {
         "typecheck": {
-            "description": "tsc, and the dictionaries' checks (scripts/i18n-build.mjs --check: the files, and that the typed keys in src/resources.gen.ts are current).",
-            "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/packages/shared/src/**", "$TURBO_ROOT$/scripts/i18n-build.mjs"],
+            "description": "tsc, and the dictionaries' checks (scripts/i18n-build.mjs --check: the files, and that the typed keys in src/resources.gen.ts are current; then scripts/i18n-content-guard.mjs).",
+            "inputs": [
+                "$TURBO_DEFAULT$",
+                "$TURBO_ROOT$/packages/shared/src/**",
+                "$TURBO_ROOT$/scripts/i18n-build.mjs",
+                "$TURBO_ROOT$/scripts/i18n-content-guard.mjs",
+                "$TURBO_ROOT$/scripts/lib/iana-tlds.txt"
+            ],
             "outputs": []
         },
         "lint": {

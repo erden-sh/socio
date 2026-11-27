@@ -1,0 +1,103 @@
+# The i18n guard: a required check on every pull request (docs/I18N.md,
+# "Translations from contributors").
+#
+# - A branch that doesn't start with `i18n/` passes at once.
+# - An `i18n/` branch, which is where the translation export opens its pull
+#   requests, fails unless every file it changes is a translation:
+#   `packages/i18n/locales/<locale>/<namespace>.json`, a regular file, and not
+#   en-US (the source). Then the content guard
+#   (scripts/i18n-content-guard.mjs) checks every translation: no URL,
+#   domain, email address, phone number or markup that isn't in its en-US
+#   source string. CI's check job runs the rest of `pnpm i18n:check`.
+#
+# Security (SECURITY.md, "CI runs untrusted code"):
+# - `pull_request` only, never `pull_request_target`: it runs for forks with a
+#   read-only token, no secrets and no environment;
+# - nothing here makes a network call but the checkout, and nothing is
+#   installed: the content guard runs on the runner's own Node;
+# - the path check is in this file, which the translation app's GitHub App
+#   can't change (it has no `workflows` permission), and runs before any
+#   script from the checkout. The content guard runs only once the path check
+#   has passed, and only against the default branch, so it is main's own
+#   script (an i18n/ branch aimed at another base fails);
+# - the branch name reaches only expressions, never a shell.
+# The job's name, `i18n guard`, is what main's ruleset requires: keep it.
+name: i18n guard
+
+# No `paths:` or `branches:` filter, ever: a required check whose workflow
+# is skipped counts as missing and blocks the pull request for good. The job
+# runs on every pull request and passes at once unless the branch is i18n/.
+on:
+  pull_request:
+    # `edited` too: a retargeted pull request has a new base to compare with.
+    types: [opened, synchronize, reopened, ready_for_review, edited]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: i18n-guard-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  i18n-guard:
+    name: i18n guard
+    runs-on: blacksmith-4vcpu-ubuntu-2604
+    timeout-minutes: 10
+    steps:
+      - name: Pass a branch that isn't an i18n/ branch
+        if: ${{ !startsWith(github.head_ref, 'i18n/') }}
+        run: echo "Not an i18n/ branch, so there is nothing to guard."
+
+      # The merge commit and its two parents: the first is the base branch.
+      - name: Check out the merge commit
+        if: ${{ startsWith(github.head_ref, 'i18n/') }}
+        uses: useblacksmith/checkout@75c49b6ed30ce59336e9252425796cfcfac155f8 # v1
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+
+      - name: Check that only translations changed
+        if: ${{ startsWith(github.head_ref, 'i18n/') }}
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          # Against the default branch only: the content guard is the base's script, and only the
+          # default branch's is trusted (anyone who can push a branch could change another's).
+          if [ "$BASE_REF" != "$DEFAULT_BRANCH" ]; then
+            echo "::error::An i18n/ pull request must target $DEFAULT_BRANCH, not $BASE_REF."
+            exit 1
+          fi
+          if ! git rev-parse --verify --quiet HEAD^2 >/dev/null; then
+            echo "::error::Expected the pull request's merge commit, with two parents."
+            exit 1
+          fi
+          changed="$RUNNER_TEMP/i18n-changed"
+          git diff --name-only --no-renames -z HEAD^1 HEAD > "$changed"
+          bad=0
+          count=0
+          while IFS= read -r -d '' path; do
+            count=$((count + 1))
+            if [[ ! "$path" =~ ^packages/i18n/locales/[A-Za-z0-9-]+/[a-z0-9.-]+\.json$ ]] || [[ "$path" == packages/i18n/locales/en-US/* ]]; then
+              printf '::error::An i18n/ branch may change only translations (packages/i18n/locales/<locale>/<namespace>.json, not en-US), not %q\n' "$path"
+              bad=1
+            fi
+          done < "$changed"
+          # Regular files only: no symlink or submodule among the translations.
+          while IFS= read -r entry; do
+            printf '::error::Not a regular file: %q\n' "${entry#*$'\t'}"
+            bad=1
+          done < <(git ls-tree -r HEAD -- packages/i18n/locales | awk -F '\t' '$1 !~ /^100644 blob /')
+          if [ "$bad" -ne 0 ]; then
+            exit 1
+          fi
+          echo "$count translation files changed, all under packages/i18n/locales/."
+
+      - name: Run the content guard
+        if: ${{ startsWith(github.head_ref, 'i18n/') }}
+        run: |
+          set -euo pipefail
+          node --version
+          node scripts/i18n-content-guard.mjs

@@ -655,11 +655,11 @@ describe('the shared task cache', () => {
     });
 
     it('pins every action in every workflow by a full commit SHA', () => {
-        for (const path of [
-            '.github/workflows/ci.yml',
-            '.github/workflows/release-images.yml',
-            '.github/workflows/cla.yml',
-        ]) {
+        const paths = readdirSync(join(root, '.github/workflows'))
+            .filter((name) => name.endsWith('.yml'))
+            .map((name) => `.github/workflows/${name}`);
+        expect(paths).toContain('.github/workflows/ci.yml');
+        for (const path of paths) {
             const uses = [...uncommented(read(path)).matchAll(/uses:\s*(\S+)/g)].map((match) => match[1]);
             expect(uses.length, path).toBeGreaterThan(0);
             for (const action of uses) {
