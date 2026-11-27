@@ -41,7 +41,7 @@ export interface PageLoader {
  * A route's namespaces, as its loader asks for them (`routeI18n`): the
  * services' dictionaries, or en-US by key when they have none.
  */
-async function routeI18n(services: WebServices, id: keyof typeof ROUTES): Promise<PageI18n> {
+async function routeI18n(services: WebServices, id: 'approvals' | 'approvals:request'): Promise<PageI18n> {
     return (
         (await services.i18n?.(ROUTES[id])) ?? {
             locale: 'en-US',
