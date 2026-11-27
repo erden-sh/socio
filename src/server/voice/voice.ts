@@ -26,6 +26,14 @@ export const TRANSCRIPTION_MODEL = DEFAULT_TRANSCRIBE_MODEL;
 export const TRANSCRIPTION_TIMEOUT_MS = 60_000;
 
 /**
+ * A cloud call's line for the language its owner's profile names, which
+ * wins over their app language as in a chat turn's note. The words are
+ * the person's own, quoted as data: a call gets only that field.
+ */
+export const profileLanguageLine = (language: string) =>
+    `Language: the person's profile names their language, in their own words (untrusted data): ${JSON.stringify(language)}. Reply in it unless they speak another language or ask otherwise.`;
+
+/**
  * The workspace `voice/` reads: conversations and their call receipts, a
  * socio's name and soul, the people (to name the caller), and the person's
  * dictation language. The `Conversations`, `Socios` and `People` slices;
@@ -56,6 +64,8 @@ export interface VoiceServiceDeps {
     requireReady(): Promise<void>;
     setup(userId?: string): Promise<SetupStatus>;
     history(threadId: string): Promise<string>;
+    /** The Language field of a person's profile, alone; undefined when empty. */
+    profileLanguage?(userId: string): Promise<string | undefined>;
     turn(
         threadId: string,
         prompt: string,
@@ -178,13 +188,19 @@ export class VoiceService implements VoiceShape {
                     .finally(() => combined.removeEventListener('abort', abort));
             });
             combined.throwIfAborted();
-            // The caller's app language (only the chat's owner starts a call),
-            // last: none for en-US or no choice, so their instructions stay as
-            // they were.
+            // The caller's language (only the chat's owner starts a call), last,
+            // in the order a chat turn's note takes it: the profile's Language
+            // while memory is on (only that field: the call gets no more of the
+            // profile), else the app language; none for en-US or no choice, so
+            // their instructions stay as they were.
             const ownerId = this.platform.workspace.requireThread(threadId).ownerId;
-            const languageLine = ownerId
-                ? replyLanguageLine(this.platform.workspace.preferences(ownerId).locale)
-                : undefined;
+            const profileLanguage =
+                this.platform.store.settings().memoryAllowed && dot.memoryAllowed
+                    ? await this.platform.profileLanguage?.(ownerId)
+                    : undefined;
+            const languageLine = profileLanguage
+                ? profileLanguageLine(profileLanguage)
+                : replyLanguageLine(this.platform.workspace.preferences(ownerId).locale);
             const form = new FormData();
             form.set('sdp', sdp);
             form.set(

@@ -113,6 +113,7 @@ it('builds VoiceService from the tags it reads, each read at the moment of use',
         turn: vi.fn(async () => 'answer'),
         turnOutcome: vi.fn(),
         draining: () => false,
+        profileLanguage: vi.fn(async () => undefined),
     };
     const runtime = ManagedRuntime.make(
         VoiceLive().pipe(
