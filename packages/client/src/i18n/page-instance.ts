@@ -54,14 +54,27 @@ export function pageInstance(page: PageI18n): I18n {
  * Starts loading `namespaces` in the page's language, outside React: from a
  * route's `clientLoader`, so what its page loads on demand is on its way
  * together with the route's data, not after it. Resolves once they're in
- * (at once for those already in, or with no page instance yet).
+ * (at once for those already in, or with no page instance yet), and never
+ * rejects: a failed load, or i18next throwing as it starts one, resolves
+ * too, so a loader that doesn't wait for it can't leave a rejection
+ * unhandled. A namespace that didn't load shows its component's loading
+ * state, or nothing (on-demand.tsx).
  */
 export function preloadNamespaces(namespaces: readonly string[]): Promise<void> {
     const instance = browserInstance;
     if (!instance) {
         return Promise.resolve();
     }
-    return new Promise((resolve) => void instance.loadNamespaces([...namespaces], () => resolve()));
+    return new Promise((resolve) => {
+        try {
+            void Promise.resolve(instance.loadNamespaces([...namespaces], () => resolve())).then(
+                () => resolve(),
+                () => resolve(),
+            );
+        } catch {
+            resolve();
+        }
+    });
 }
 
 /** Adds what a route's loader inlined (only what isn't there yet); safe to call while rendering. */

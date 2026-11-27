@@ -22,8 +22,10 @@ const context = (extra: Partial<CrumbContext> = {}): CrumbContext => ({
     // The en-US instance tests/setup/en-us-i18n.ts sets up.
     t: getI18n().t,
     data: {
-        spaceId: 's1',
-        pages: [p('root'), p('child', 'root'), p('leaf', 'child')],
+        library: {
+            spaceId: 's1',
+            pages: [p('root'), p('child', 'root'), p('leaf', 'child')],
+        },
     },
     ...extra,
 });
@@ -71,7 +73,7 @@ it('ignores stale page/Space ancestry and never reads a foreign loader title', (
     ]) {
         expect(spaceHandle.crumb!(context({ title })).some((c) => c.label === 'Secret')).toBe(false);
     }
-    expect(spaceHandle.crumb!(context({ data: { pages: [p('leaf', null, 'private')] } })).at(-1)?.label).toBe('Pages');
+    expect(spaceHandle.crumb!(context({ data: { library: { pages: [p('leaf', null, 'private')] } } })).at(-1)?.label).toBe('Pages');
 });
 
 it('keeps the Space library breadcrumb safe before any title is published', () => {
