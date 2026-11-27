@@ -136,6 +136,21 @@ describe('GET /i18n/manifest.json', () => {
     });
 });
 
+describe('the manifest’s cache', () => {
+    it('keeps no entry for tags that aren’t registered', () => {
+        const loaded = catalog();
+        const bodies = new Set<string>();
+        for (let i = 0; i < 50; i++) {
+            bodies.add(loaded.manifestBody([`xx-${i}`, 'es-US']).body);
+        }
+        expect(bodies.size).toBe(1);
+        // Unknown tags alone: en-US, the end of every chain.
+        expect(Object.keys(JSON.parse(loaded.manifestBody(['zz-ZZ']).body).locales)).toEqual(['en-US']);
+        // The same set, however it is asked for, is one body.
+        expect(loaded.manifestBody(['es-US']).etag).toBe(loaded.manifestBody(['es-419', 'es-US', 'es-US']).etag);
+    });
+});
+
 describe('the catalog', () => {
     it('reads a build’s files, as the script writes them', () => {
         const dir = mkdtempSync(join(tmpdir(), 'socio-i18n-build-'));

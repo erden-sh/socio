@@ -6,7 +6,7 @@ import { brotliCompressSync, constants, gzipSync } from 'node:zlib';
 import { buildCatalog, type Sources } from '@socio/i18n/catalog';
 import { availableLocales, narrowManifest, offeredLocales, type I18nManifest } from '@socio/i18n/manifest';
 import { resolveRequestLocale } from '@socio/i18n/negotiate';
-import { localeDir, resolutionChain } from '@socio/i18n/registry';
+import { isSupportedLocale, localeDir, resolutionChain } from '@socio/i18n/registry';
 
 import type { I18nCatalogShape, I18nFile } from './contract.js';
 
@@ -128,10 +128,14 @@ export function loadI18nCatalog(location: CatalogLocation): I18nCatalogShape {
     return {
         manifest: () => manifest,
         manifestBody(locales) {
-            const key = locales ? [...locales].sort().join(',') : '*';
+            // Only registered locales, with their fallbacks, name a body: the
+            // query is anyone's, so unknown tags never make a cache entry of
+            // their own (at most one per set of registered locales).
+            const known = locales?.filter(isSupportedLocale).flatMap(resolutionChain);
+            const key = known ? [...new Set(known)].sort().join(',') : '*';
             let found = bodies.get(key);
             if (!found) {
-                const body = JSON.stringify(narrowManifest(manifest, locales));
+                const body = JSON.stringify(narrowManifest(manifest, known));
                 found = { body, etag: etagOf(body) };
                 bodies.set(key, found);
             }
