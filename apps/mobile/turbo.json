@@ -38,6 +38,8 @@
                 "$TURBO_ROOT$/packages/client/src/shell/tones.ts",
                 "$TURBO_ROOT$/packages/client/src/modules/*/module.ts*",
                 "$TURBO_ROOT$/packages/client/src/modules/types.ts",
+                "$TURBO_ROOT$/packages/client/src/modules/settings/WorkspaceDialog.tsx",
+                "$TURBO_ROOT$/packages/i18n/locales/en-US/settings.dialogs.json",
                 "$TURBO_ROOT$/packages/client/src/modules/pages/editor/**",
                 "$TURBO_ROOT$/packages/client/src/shell/Home.tsx",
                 "$TURBO_ROOT$/packages/client/src/shell/dot-state.tsx",

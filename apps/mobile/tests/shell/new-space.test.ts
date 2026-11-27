@@ -57,8 +57,13 @@ describe('who sees New Space', () => {
 describe('the form', () => {
     it('has the web dialog’s title, fields and audience words', () => {
         const dialog = web('modules/settings/WorkspaceDialog.tsx');
-        expect(dialog).toContain(`'${NEW_SPACE_TITLE}'`);
-        expect(dialog).toContain(`'${DESCRIPTION_LABEL}'`);
+        // The dialog's words are its en-US dictionary's (settings.dialogs).
+        const words = readFileSync(
+            new URL('../../../../packages/i18n/locales/en-US/settings.dialogs.json', import.meta.url),
+            'utf8',
+        );
+        expect(words).toContain(`"${NEW_SPACE_TITLE}"`);
+        expect(words).toContain(`"${DESCRIPTION_LABEL}"`);
         expect(dialog).toContain('body = { name, description: text, private: privateSpace };');
         const settings = web('modules/spaces/SpaceAudienceField.tsx');
         expect(settings).toContain(`legend = '${AUDIENCE_LEGEND}'`);

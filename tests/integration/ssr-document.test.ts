@@ -522,7 +522,10 @@ it('renders sign-in signed out, at the same address, with no workspace data', as
             'data-slot="sidebar"',
             'importer',
             'Launch memo',
-            'asks to',
+            // The approvals' asks (UI words like "asks to" are in the
+            // inlined dictionaries, which every page carries).
+            'email the board',
+            'post the notes',
             'receipts',
             'reading list',
             'morning brief',
