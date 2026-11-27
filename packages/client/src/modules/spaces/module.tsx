@@ -25,7 +25,7 @@ function SpacesGroup() {
     const { workspace } = nav.context;
     const datasets = useFlag('datasets-in-spaces');
     return (
-        <SidebarGroup>
+        <SidebarGroup data-slot="spaces-group">
             <SidebarGroupLabel>{t('spaces.nav:group')}</SidebarGroupLabel>
             {/* Whoever the server's "create Spaces" permission lets in; a member's is private (CB-181). */}
             {workspace.permissions?.createSpaces && (
