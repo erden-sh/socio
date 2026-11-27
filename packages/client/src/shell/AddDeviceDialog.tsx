@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { renderSVG } from 'uqr';
 
 import {
+    PAIR_CLAIM_MS,
     pairAnswerSchema,
     pairConfirmAnswerSchema,
     pairStatusSchema,
@@ -20,7 +21,7 @@ import { Input } from '@/components/ui/input';
 export const PAIR_POLL_MS = 1500;
 const PLATFORMS: Record<string, string> = { ios: 'iPhone or iPad', android: 'Android phone' };
 
-/** "4:59": what is left of the QR code. */
+/** "4:59": what is left of the QR code, or of a claim. */
 export const countdown = (ms: number) => {
     const seconds = Math.max(0, Math.ceil(ms / 1000));
     return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
@@ -29,6 +30,23 @@ export const countdown = (ms: number) => {
 /** The QR code's SVG, inlined as an image: nothing of it runs. */
 export const qrImage = (link: string) =>
     `data:image/svg+xml;utf8,${encodeURIComponent(renderSVG(link, { border: 2 }))}`;
+
+/**
+ * The claiming device as the page names it: "iPhone" from the app's own
+ * "Socio app on iPhone" (so "your iPhone"), another label as it came, or
+ * the platform. Only what the claim carries; the label is the device's word.
+ */
+export const claimingDevice = (status: PairStatus | undefined): { name: string; yours: boolean } | undefined => {
+    const label = status?.label?.trim();
+    const app = label?.match(/^Socio app on (.+)$/)?.[1];
+    if (app) {
+        return { name: app === 'Android' ? 'Android phone' : app, yours: true };
+    }
+    if (label) {
+        return { name: label, yours: false };
+    }
+    return status?.platform ? { name: PLATFORMS[status.platform] ?? 'new device', yours: true } : undefined;
+};
 
 const message = (e: unknown, fallback: string) => (e instanceof Error && e.message ? e.message : fallback);
 const DENIED = 'That code didn’t match. Make a new QR code.';
@@ -61,12 +79,13 @@ type Ended = { kind: 'denied' | 'expired' | 'mismatch' | 'refused'; text: string
 /**
  * Add a device (CB-352, WA), from the account menu: a QR code for the
  * Socio app, blurred until Show, with its countdown and New code. When a
- * device claims it, the code goes and the page asks "Sign in on a new
- * device?" with the device's type and time; the person types the 6 digits
- * the device shows (the server made them; this page never learns them),
- * or says "Not my device". Three wrong tries end the claim. Leaving the
- * page ends the code. "Send me a link for the app" sends the workspace's
- * app link to the person's own channel.
+ * device claims it, the code goes and the page asks to "Sign in your
+ * iPhone", naming the device and the claim's time left (CB-567); the person
+ * types the 6 digits the device shows (the server made them; this page never
+ * learns them; the 6th digit, typed or pasted, sends them), or says "Not my
+ * device". Three wrong tries end the claim. Leaving the page ends the code.
+ * "Send me a link for the app", until a device claims the code, sends the
+ * workspace's app link to the person's own channel.
  */
 export function AddDeviceDialog({ onClose }: { onClose: () => void }) {
     const [pairing, setPairing] = useState<PairAnswer>();
@@ -75,7 +94,8 @@ export function AddDeviceDialog({ onClose }: { onClose: () => void }) {
     const [ended, setEnded] = useState<Ended>();
     const [digits, setDigits] = useState('');
     const [busy, setBusy] = useState(false);
-    const [triesLeft, setTriesLeft] = useState<number>();
+    /** The last code didn't match: with the tries left when the server said. */
+    const [wrong, setWrong] = useState<{ triesLeft?: number }>();
     const [notice, setNotice] = useState('');
     const [now, setNow] = useState(() => Date.now());
     /** The code to deny on leaving: the last one made, until a new one is. */
@@ -86,6 +106,9 @@ export function AddDeviceDialog({ onClose }: { onClose: () => void }) {
     const minting = useRef(0);
     /** The dialog went: a code made after that is ended at once. */
     const closed = useRef(false);
+    /** A confirm is on its way: a second (another 6th digit, or Enter) is dropped. */
+    const confirming = useRef(false);
+    const field = useRef<HTMLInputElement>(null);
 
     const mint = useCallback(async () => {
         const mine = ++minting.current;
@@ -98,7 +121,7 @@ export function AddDeviceDialog({ onClose }: { onClose: () => void }) {
         setStatus(undefined);
         setEnded(undefined);
         setDigits('');
-        setTriesLeft(undefined);
+        setWrong(undefined);
         try {
             const answer = pairAnswerSchema.parse(await api('/auth/device/pair', 'POST', {}));
             if (closed.current || mine !== minting.current) {
@@ -178,10 +201,11 @@ export function AddDeviceDialog({ onClose }: { onClose: () => void }) {
         };
     }, [pairing, done]);
 
-    const confirm = async () => {
-        if (!pairing) {
+    const confirm = async (digits: string) => {
+        if (!pairing || confirming.current) {
             return;
         }
+        confirming.current = true;
         setBusy(true);
         try {
             // Its own request: a wrong try answers 400 with the tries left.
@@ -193,11 +217,17 @@ export function AddDeviceDialog({ onClose }: { onClose: () => void }) {
             const body: unknown = await response.json().catch(() => null);
             const answer = pairConfirmAnswerSchema.safeParse(body);
             setNotice('');
+            setWrong(undefined);
+            // Anything but a sign-in empties the field for the next try.
+            setDigits('');
+            const said = body as { state?: unknown; triesLeft?: unknown } | null;
             if (answer.success && answer.data.state === 'allowed') {
                 setStatus((before) => (before ? { ...before, state: 'allowed' } : before));
-            } else if (answer.success && answer.data.state === 'waiting' && answer.data.triesLeft > 0) {
-                setTriesLeft(answer.data.triesLeft);
-                setDigits('');
+            } else if (response.status === 400 && said?.state === 'waiting') {
+                // A wrong code: the count only as the server gave it.
+                const count = typeof said.triesLeft === 'number' && said.triesLeft > 0 ? said.triesLeft : undefined;
+                setWrong(count === undefined ? {} : { triesLeft: count });
+                field.current?.focus();
             } else if (answer.success && answer.data.state === 'denied') {
                 current.current = undefined;
                 setEnded({ kind: 'mismatch', text: DENIED });
@@ -224,7 +254,9 @@ export function AddDeviceDialog({ onClose }: { onClose: () => void }) {
         } catch {
             // The answer was lost: the poll says whether it went through.
             setNotice('Could not reach the server. Try again.');
+            setDigits('');
         } finally {
+            confirming.current = false;
             setBusy(false);
         }
     };
@@ -267,6 +299,14 @@ export function AddDeviceDialog({ onClose }: { onClose: () => void }) {
 
     const device = status?.label || (status?.platform ? PLATFORMS[status.platform] : null) || 'a new device';
     const left = pairing ? Date.parse(pairing.expiresAt) - now : 0;
+    // The claim lives PAIR_CLAIM_MS from its claimedAt (both the server's).
+    const claimLeft = status?.claimedAt ? Date.parse(status.claimedAt) + PAIR_CLAIM_MS - now : undefined;
+    const claiming = claimingDevice(status);
+    const named = claiming ? (claiming.yours ? `your ${claiming.name}` : claiming.name) : 'your new device';
+    const Named = claiming && !claiming.yours ? claiming.name : `Your ${claiming?.name ?? 'new device'}`;
+    /** A device has claimed the code: it has the app, so the footer about getting one goes. */
+    const claimed = !!status?.claimedAt || state === 'waiting' || state === 'allowed' || state === 'signed_in';
+    const asking = state === 'waiting' && !ended;
     return (
         <Dialog open onOpenChange={(open) => !open && onClose()}>
             <DialogContent data-slot="add-device" className="sm:max-w-md">
@@ -275,17 +315,24 @@ export function AddDeviceDialog({ onClose }: { onClose: () => void }) {
                         {state === 'signed_in'
                             ? `Signed in on ${device}`
                             : state === 'waiting' || state === 'allowed'
-                              ? 'Sign in on a new device?'
+                              ? `Sign in ${named}`
                               : 'Add a device'}
                     </DialogTitle>
-                    <DialogDescription>
-                        {pairing?.variant === 'preview'
-                            ? 'For the Socio Preview test app. '
-                            : pairing?.variant === 'development'
-                              ? 'For a development build of the Socio app. '
-                              : ''}
-                        Open the Socio app on your phone and scan this code with its camera, or with the phone’s camera.
-                    </DialogDescription>
+                    {asking ? (
+                        <DialogDescription>
+                            {Named} is asking to sign in as you. Check it shows the same code, then type it here.
+                        </DialogDescription>
+                    ) : (
+                        <DialogDescription>
+                            {pairing?.variant === 'preview'
+                                ? 'For the Socio Preview test app. '
+                                : pairing?.variant === 'development'
+                                  ? 'For a development build of the Socio app. '
+                                  : ''}
+                            Open the Socio app on your phone and scan this code with its camera, or with the phone’s
+                            camera.
+                        </DialogDescription>
+                    )}
                 </DialogHeader>
                 {ended ? (
                     <div className="grid gap-3" data-slot="add-device-ended">
@@ -313,45 +360,57 @@ export function AddDeviceDialog({ onClose }: { onClose: () => void }) {
                         data-slot="add-device-confirm"
                         onSubmit={(e) => {
                             e.preventDefault();
-                            void confirm();
+                            if (digits.length === 6) {
+                                void confirm(digits);
+                            }
                         }}
                     >
-                        <p>
-                            {device} wants to sign in as you
-                            {status?.claimedAt
-                                ? ` (${new Date(status.claimedAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })})`
-                                : ''}
-                            . Type the code shown on your new device.
-                        </p>
                         <Input
+                            ref={field}
                             aria-label="Code shown on your new device"
+                            aria-describedby="add-device-code-hint"
                             name="new-device-code"
                             inputMode="numeric"
-                            autoComplete="off"
+                            autoComplete="one-time-code"
                             data-1p-ignore
                             data-lpignore="true"
                             pattern="[0-9]{6}"
-                            maxLength={6}
+                            placeholder="6-digit code"
+                            className="text-center font-mono tracking-widest"
                             required
                             value={digits}
-                            onChange={(e) => setDigits(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                            onChange={(e) => {
+                                // No maxLength on the field: a pasted "123 456" or
+                                // "123-456" arrives whole, then keeps its 6 digits.
+                                const next = e.target.value.replace(/\D/g, '').slice(0, 6);
+                                setDigits(next);
+                                // The 6th digit sends it; confirm() takes one at a time.
+                                if (next.length === 6 && next !== digits) {
+                                    void confirm(next);
+                                }
+                            }}
                         />
+                        <p id="add-device-code-hint" className="text-sm text-muted-foreground">
+                            The 6 digits shown on {named}.
+                            {claimLeft !== undefined && (
+                                <span data-slot="add-device-claim-countdown"> Time left: {countdown(claimLeft)}.</span>
+                            )}
+                        </p>
                         {notice && (
                             <p role="status" className="text-muted-foreground">
                                 {notice}
                             </p>
                         )}
-                        {triesLeft !== undefined && (
+                        {wrong && (
                             <p role="alert" className="text-destructive">
-                                That code didn’t match. {triesLeft} {triesLeft === 1 ? 'try' : 'tries'} left.
+                                {wrong.triesLeft === undefined
+                                    ? 'That code didn’t match. Try again.'
+                                    : `That code didn’t match. ${wrong.triesLeft} ${wrong.triesLeft === 1 ? 'try' : 'tries'} left.`}
                             </p>
                         )}
                         <div className="flex justify-end gap-2">
                             <Button type="button" variant="outline" disabled={busy} onClick={() => void notMine()}>
                                 Not my device
-                            </Button>
-                            <Button type="submit" disabled={busy || digits.length !== 6}>
-                                Sign in
                             </Button>
                         </div>
                     </form>
@@ -387,17 +446,19 @@ export function AddDeviceDialog({ onClose }: { onClose: () => void }) {
                 ) : (
                     <p className="text-muted-foreground">Making a QR code…</p>
                 )}
-                <div className="grid gap-2 border-t pt-3 text-sm">
-                    <p className="text-muted-foreground">
-                        No app yet? The Socio app is in a team beta until it reaches the app stores: ask your admin to
-                        add you.
-                    </p>
-                    <div>
-                        <Button variant="link" className="px-0" onClick={() => void sendLink()}>
-                            Send me a link for the app
-                        </Button>
+                {!claimed && (
+                    <div className="grid gap-2 border-t pt-3 text-sm" data-slot="add-device-no-app">
+                        <p className="text-muted-foreground">
+                            No app yet? The Socio app is in a team beta until it reaches the app stores: ask your admin
+                            to add you.
+                        </p>
+                        <div>
+                            <Button variant="link" className="px-0" onClick={() => void sendLink()}>
+                                Send me a link for the app
+                            </Button>
+                        </div>
                     </div>
-                </div>
+                )}
             </DialogContent>
         </Dialog>
     );

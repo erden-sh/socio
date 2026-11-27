@@ -37,6 +37,7 @@ How this file is kept (scripts/release.mjs and the app's build read it):
 ### Fixed
 
 - The Add a device page on link.socio.sh now says to open the link from your camera or a message, or to update Socio (or reinstall it) and scan the code again, instead of pointing to an in-app scanner that doesn't exist yet (CB-565).
+- Once a phone claims the code, the web's **Add a device** dialog says which device is asking to sign in and shows the time left to confirm. Typing or pasting the 6-digit code (spaces and dashes are fine) sends it at once, with no **Sign in** button, and the dialog no longer shows the scan instructions or "No app yet?" (CB-567).
 
 ## v0.55.0 (2026-11-26)
 
