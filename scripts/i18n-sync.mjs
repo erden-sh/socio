@@ -318,11 +318,12 @@ export function applyLocale({ exported, locale, localesDir }) {
         for (const key of formsOf(candidate.key)) {
             deleteAt(file.tree, keyPath(file.english, key));
         }
-        if (candidate.inherit !== true) {
-            for (const [key, text] of Object.entries(candidate.values)) {
-                if (file.parent?.get(key) !== text) {
-                    setAt(file.tree, keyPath(file.english, key), text);
-                }
+        // Sparse over the parent as a whole: a plural's forms are all kept when any differs (the build
+        // wants every form of a plural a file has), and left out only when all match.
+        const values = candidate.inherit === true ? [] : Object.entries(candidate.values);
+        if (values.some(([key, text]) => file.parent?.get(key) !== text)) {
+            for (const [key, text] of values) {
+                setAt(file.tree, keyPath(file.english, key), text);
             }
         }
         written.push(candidate);

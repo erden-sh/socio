@@ -18,7 +18,8 @@
 # - the path check is in this file, which the translation app's GitHub App
 #   can't change (it has no `workflows` permission), and runs before any
 #   script from the checkout. The content guard runs only once the path check
-#   has passed, so it is the base branch's own script;
+#   has passed, and only against the default branch, so it is main's own
+#   script (an i18n/ branch aimed at another base fails);
 # - the branch name reaches only expressions, never a shell.
 # The job's name, `i18n guard`, is what main's ruleset requires: keep it.
 name: i18n guard
@@ -55,8 +56,17 @@ jobs:
 
       - name: Check that only translations changed
         if: ${{ startsWith(github.head_ref, 'i18n/') }}
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           set -euo pipefail
+          # Against the default branch only: the content guard is the base's script, and only the
+          # default branch's is trusted (anyone who can push a branch could change another's).
+          if [ "$BASE_REF" != "$DEFAULT_BRANCH" ]; then
+            echo "::error::An i18n/ pull request must target $DEFAULT_BRANCH, not $BASE_REF."
+            exit 1
+          fi
           if ! git rev-parse --verify --quiet HEAD^2 >/dev/null; then
             echo "::error::Expected the pull request's merge commit, with two parents."
             exit 1

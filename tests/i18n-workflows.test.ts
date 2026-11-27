@@ -157,13 +157,13 @@ describe('i18n-guard.yml', () => {
             git(dir, 'merge', '--quiet', '--no-ff', '-m', 'merge', 'i18n/es-419-2026-11-26');
             return dir;
         }
-        const check = (dir: string) => {
+        const check = (dir: string, base = 'main') => {
             const runnerTemp = mkdtempSync(join(tmpdir(), 'socio-i18n-guard-tmp-'));
             scratch.push(runnerTemp);
             return spawnSync('bash', ['-c', job.steps[2]!.run!], {
                 cwd: dir,
                 encoding: 'utf8',
-                env: { ...process.env, RUNNER_TEMP: runnerTemp },
+                env: { ...process.env, RUNNER_TEMP: runnerTemp, BASE_REF: base, DEFAULT_BRANCH: 'main' },
             });
         };
 
@@ -196,6 +196,13 @@ describe('i18n-guard.yml', () => {
             const result = check(mergeOf({}, { 'packages/i18n/locales/es-419/common.json': '../../../../README.md' }));
             expect(result.status).toBe(1);
             expect(result.stdout).toContain('Not a regular file');
+        });
+
+        it('fails an i18n/ branch aimed at any base but the default branch', () => {
+            // Another branch's content guard could be anyone's: only main's runs.
+            const result = check(mergeOf({ 'packages/i18n/locales/es-419/common.json': '{}\n' }), 'feat/other');
+            expect(result.status).toBe(1);
+            expect(result.stdout).toContain('must target main');
         });
 
         it('fails anything but a merge commit', () => {

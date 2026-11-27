@@ -241,6 +241,69 @@ describe('the export', () => {
         expect(result.body).toContain('`common:bus` (back to the fallback)');
     });
 
+    it("keeps a plural's forms whole over the fallback when any differs, so the build accepts it", () => {
+        const dir = setup({
+            'en-US/common.json': {
+                car: 'Car',
+                files_one: 'One file',
+                files_other: '{{count}} files',
+                rows_one: 'One row',
+                rows_other: '{{count}} rows',
+            },
+            'es-419/common.json': {
+                car: 'Auto',
+                files_one: 'Un archivo',
+                files_many: '{{count}} de archivos',
+                files_other: '{{count}} archivos',
+                rows_one: 'Una fila',
+                rows_many: '{{count}} de filas',
+                rows_other: '{{count}} filas',
+            },
+        });
+        applyLocale({
+            exported: exportOf('es-US', [
+                candidate({
+                    ns: 'common',
+                    key: 'files',
+                    values: {
+                        files_one: 'Un archivo',
+                        files_many: '{{count}} de archivos',
+                        files_other: '{{count}} ficheros',
+                    },
+                }),
+                candidate({
+                    ns: 'common',
+                    key: 'rows',
+                    values: { rows_one: 'Una fila', rows_many: '{{count}} de filas', rows_other: '{{count}} filas' },
+                }),
+            ]),
+            locale: 'es-US',
+            localesDir: dir,
+        });
+        expect(readJson(join(dir, 'es-US/common.json'))).toEqual({
+            files_one: 'Un archivo',
+            files_many: '{{count}} de archivos',
+            files_other: '{{count}} ficheros',
+        });
+        // The build's other inputs, outside the locales folder.
+        const other = setup({ 'routes.json': { root: ['common'] } });
+        const args = [
+            '--check',
+            '--locales',
+            dir,
+            '--routes',
+            join(other, 'routes.json'),
+            '--types',
+            join(other, 'resources.gen.ts'),
+            '--write-types',
+        ];
+        const build = spawnSync(process.execPath, ['--import', 'tsx', 'scripts/i18n-build.mjs', ...args], {
+            cwd: root,
+            encoding: 'utf8',
+        });
+        expect(build.status, build.stderr).toBe(0);
+    });
+
     it('removes a file left empty, and writes nothing when nothing changes', () => {
         const dir = setup({ 'en-US/common.json': { a: 'A' }, 'es-US/common.json': { a: 'x' } });
         applyLocale({
