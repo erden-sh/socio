@@ -798,6 +798,60 @@ describe('sharing turned off while a batch is sending', () => {
     });
 });
 
+describe('what changes while a send waits', () => {
+    it('sharing turned off during a token renewal: the retry never goes', async () => {
+        const server = await runtime();
+        const consent = await server.share();
+        await server.report(consent);
+        server.collector.answers.push(401);
+        const token = server.cloud.token.bind(server.cloud);
+        server.cloud.token = async (audience, options) => {
+            if (options?.renew) {
+                await server.reports.setSharing(false, ADA.id);
+            }
+            return token(audience, options);
+        };
+        await server.reports.send();
+        expect(server.collector.posts).toHaveLength(1);
+        expect(server.collector.stored.size).toBe(0);
+        expect(server.outbox()).toEqual([]);
+    });
+
+    it('another runtime’s Retry-After holds a batch already claimed', async () => {
+        const first = await runtime();
+        const second = await runtime({
+            issuer: first.issuer,
+            collector: first.collector,
+            path: first.path,
+            clock: first.clock,
+            enroll: false,
+        });
+        const consent = await first.share();
+        await first.report(consent);
+        // The first claims its row, then waits for a token while the second hears a 429.
+        const token = first.cloud.token.bind(first.cloud);
+        let release!: () => void;
+        const gate = new Promise<void>((resolve) => (release = resolve));
+        let reached!: () => void;
+        const waiting = new Promise<void>((resolve) => (reached = resolve));
+        first.cloud.token = async (audience, options) => {
+            reached();
+            await gate;
+            return token(audience, options);
+        };
+        const sending = first.reports.send();
+        await waiting;
+        await first.report(consent, {}, BOB, ROOM, ROOM_REPLY);
+        second.collector.answers.push({ status: 429, headers: { 'retry-after': '600' } });
+        await second.reports.send();
+        expect(first.collector.posts).toHaveLength(1);
+        release();
+        await sending;
+        expect(first.collector.posts).toHaveLength(1);
+        expect(first.reports.admin().queued).toBe(2);
+    });
+});
+
 describe('when the report can’t be made', () => {
     it('keeps the thumbs-down and says so', async () => {
         const server = await runtime();

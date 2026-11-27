@@ -637,6 +637,18 @@ export class ReplyReportsService implements ReplyReportsShape {
         return current?.leaseId === row.leaseId && current.withdrawnAt === null;
     }
 
+    /**
+     * `stop`: the collector asked every report to wait (any runtime may
+     * have heard it), so this batch stops. `skip`: this row may not go
+     * (`mayStill`). `go`: post it now.
+     */
+    private gate(row: { id: string; leaseId: string }): 'go' | 'skip' | 'stop' {
+        if (this.now() < this.cooldownUntil()) {
+            return 'stop';
+        }
+        return this.mayStill(row) ? 'go' : 'skip';
+    }
+
     /** Rows that may not go: withdrawn ones are deleted, the rest released as they were. */
     private async putBack(rows: readonly { id: string; leaseId: string }[]) {
         if (!rows.length) {
@@ -672,8 +684,13 @@ export class ReplyReportsService implements ReplyReportsShape {
                 await this.putBack(rows.slice(index));
                 return;
             }
-            if (!this.mayStill(row)) {
-                // Sharing went off (every row is then withdrawn), or this one was withdrawn or taken over.
+            // Checked right before each POST, a retry's too: anything awaited meanwhile may have changed it.
+            const gate = this.gate(row);
+            if (gate === 'stop') {
+                await this.putBack(rows.slice(index));
+                return;
+            }
+            if (gate === 'skip') {
                 await this.putBack([row]);
                 continue;
             }
@@ -685,6 +702,15 @@ export class ReplyReportsService implements ReplyReportsShape {
                 if (!token) {
                     await this.putBack(rows.slice(index));
                     return;
+                }
+                const again = this.gate(row);
+                if (again === 'stop') {
+                    await this.putBack(rows.slice(index));
+                    return;
+                }
+                if (again === 'skip') {
+                    await this.putBack([row]);
+                    continue;
                 }
                 sent = await this.post(origin, row.payload, token);
             }
