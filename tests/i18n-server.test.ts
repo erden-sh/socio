@@ -144,6 +144,46 @@ describe('GET /i18n/manifest.json', () => {
     });
 });
 
+/** A catalog over a build's files, as production reads dist/i18n. */
+function builtCatalog() {
+    const dir = mkdtempSync(join(tmpdir(), 'socio-i18n-build-'));
+    cleanup.push(() => rmSync(dir, { recursive: true, force: true }));
+    const built = buildCatalog({ 'en-US': { common: { product: 'Socio' } } }, '9.9.9');
+    for (const file of built.files) {
+        mkdirSync(join(dir, file.locale), { recursive: true });
+        writeFileSync(join(dir, file.locale, `${file.ns}.${file.hash}.json`), file.text);
+    }
+    writeFileSync(join(dir, 'manifest.json'), JSON.stringify(built.manifest));
+    return { built, loaded: loadI18nCatalog({ buildDir: dir, release: 'ignored' }) };
+}
+
+describe('names that are an object’s own members', () => {
+    const NAMES = ['constructor', 'toString', '__proto__', 'hasOwnProperty'];
+
+    it('answers 404 for them as a locale or a namespace, from a build', async () => {
+        const { built, loaded } = builtCatalog();
+        const server = new Hono().route('/i18n', i18nRoutes(loaded));
+        const { hash } = built.manifest.locales['en-US']!.ns.common!;
+        for (const name of NAMES) {
+            for (const path of [
+                `/i18n/${name}/common.${hash}.json`,
+                `/i18n/${name}/common.000000000000.json`,
+                `/i18n/en-US/${name}.${hash}.json`,
+                `/i18n/en-US/${name}.000000000000.json`,
+            ]) {
+                const response = await server.request(path);
+                expect(response.status, path).toBe(404);
+            }
+            expect(loaded.file(name, 'common', hash), name).toBeUndefined();
+            expect(loaded.file('en-US', name, hash), name).toBeUndefined();
+            expect(loaded.page({ cookie: name, preference: name, acceptLanguage: name }, [name]).locale).toBe('en-US');
+        }
+        const manifest = await server.request(`/i18n/manifest.json?locales=${NAMES.join(',')}`);
+        expect(manifest.status).toBe(200);
+        expect(Object.keys((await manifest.json()).locales)).toEqual(['en-US']);
+    });
+});
+
 describe('the manifest’s cache', () => {
     it('keeps no entry for tags that aren’t registered', () => {
         const loaded = catalog();

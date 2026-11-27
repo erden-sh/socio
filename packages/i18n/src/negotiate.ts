@@ -62,7 +62,11 @@ function candidates(tag: string): string[] {
     if (language === 'es' && region && LATIN_AMERICA.has(region)) {
         found.push('es-419');
     }
-    found.push(language, ...(LANGUAGE_DEFAULTS[language] ?? []));
+    // An own key only: the language comes from a request.
+    const defaults = Object.prototype.hasOwnProperty.call(LANGUAGE_DEFAULTS, language)
+        ? LANGUAGE_DEFAULTS[language]!
+        : [];
+    found.push(language, ...defaults);
     return found;
 }
 

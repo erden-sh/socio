@@ -11,6 +11,7 @@ import type { WorkspaceState } from '@socio/shared/types';
 import type { PageI18n } from '@socio/shared/web/web';
 
 import { I18nRoot } from '../src/i18n/I18nRoot';
+import { applyLocale, pageInstance } from '../src/i18n/page-instance';
 import { LanguageSection } from '../src/modules/settings/language/LanguageSection';
 import { ShellContext, type Shell } from '../src/shell/shell-context';
 
@@ -146,4 +147,48 @@ it('offers each locale in its own language, and applies a choice without a reloa
     expect(section().textContent).toContain('The language Socio shows you');
     expect(document.documentElement.lang).toBe('es-419');
     expect(document.cookie).toContain('socio_locale=es-419');
+});
+
+/** A fetch that answers when the test says so. */
+function deferredFetch() {
+    const waiting: { url: string; answer: (body: unknown) => void }[] = [];
+    vi.stubGlobal(
+        'fetch',
+        vi.fn(
+            (input: string | URL | Request) =>
+                new Promise<Response>((resolve) =>
+                    waiting.push({
+                        url: String(input instanceof Request ? input.url : input),
+                        answer: (body) => resolve(new Response(JSON.stringify(body))),
+                    }),
+                ),
+        ),
+    );
+    return waiting;
+}
+
+it('applies only the latest language change, however the earlier one ends', async () => {
+    const waiting = deferredFetch();
+    const instance = pageInstance(page(['en-US', 'es-419']));
+    // Spanish waits for its manifest; English, already in it, goes at once.
+    const spanish = applyLocale(instance, 'es-419', 'es-419');
+    expect(await applyLocale(instance, 'en-US', 'en-US')).toBe(true);
+    expect(waiting.map(({ url }) => url)).toEqual(['/i18n/manifest.json?locales=es-419']);
+    waiting[0]!.answer({ release: '1.0.0', locales: { 'es-419': { coverage: 1, ns: {} } } });
+    expect(await spanish).toBe(false);
+    expect(instance.language).toBe('en-US');
+    expect(document.documentElement.lang).toBe('en-US');
+    expect(document.cookie).toContain('socio_locale=en-US');
+});
+
+it('holds the list while a choice saves and applies', async () => {
+    const waiting = deferredFetch();
+    await open(page(['en-US', 'es-419']));
+    const radios = () => [...host.querySelectorAll<HTMLInputElement>('[data-slot="language-preference"] input')];
+    await act(async () => radios()[2]!.click());
+    expect(radios().every((radio) => radio.disabled)).toBe(true);
+    expect(host.querySelector('[data-slot="language-preference"]')!.getAttribute('aria-busy')).toBe('true');
+    await act(async () => waiting[0]!.answer({ release: '1.0.0', locales: { 'es-419': { coverage: 1, ns: {} } } }));
+    expect(radios().some((radio) => radio.disabled)).toBe(false);
+    expect(document.documentElement.lang).toBe('es-419');
 });

@@ -34,6 +34,8 @@ export {
     explicitLocales,
     hasLanguageChoice,
     languageSettingVisible,
+    hasLocale,
+    namespaceEntry,
     namespacePath,
     namespaceUrl,
     narrowManifest,

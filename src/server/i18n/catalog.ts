@@ -4,7 +4,13 @@ import { join } from 'node:path';
 import { brotliCompressSync, constants, gzipSync } from 'node:zlib';
 
 import { buildCatalog, type Sources } from '@socio/i18n/catalog';
-import { eligibleLocales, explicitLocales, narrowManifest, type I18nManifest } from '@socio/i18n/manifest';
+import {
+    eligibleLocales,
+    explicitLocales,
+    namespaceEntry,
+    narrowManifest,
+    type I18nManifest,
+} from '@socio/i18n/manifest';
 import { resolveRequestLocale } from '@socio/i18n/negotiate';
 import { isSupportedLocale, localeDir, resolutionChain } from '@socio/i18n/registry';
 
@@ -27,7 +33,7 @@ function fromBuild(dir: string): {
     return {
         manifest,
         read(locale, ns, hash) {
-            if (manifest.locales[locale]?.ns[ns]?.hash !== hash) {
+            if (!isSupportedLocale(locale) || namespaceEntry(manifest, locale, ns)?.hash !== hash) {
                 return undefined;
             }
             const path = join(dir, locale, `${ns}.${hash}.json`);
@@ -114,7 +120,7 @@ export function loadI18nCatalog(location: CatalogLocation): I18nCatalogShape {
     const explicit = explicitLocales(manifest);
     const parsed = new Map<string, unknown>();
     const dictionary = (locale: string, ns: string) => {
-        const hash = manifest.locales[locale]?.ns[ns]?.hash;
+        const hash = namespaceEntry(manifest, locale, ns)?.hash;
         if (!hash) {
             return undefined;
         }

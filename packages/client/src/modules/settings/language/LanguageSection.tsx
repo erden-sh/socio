@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { hasLanguageChoice } from '@socio/i18n/manifest';
@@ -44,15 +44,34 @@ function LanguagePicker({ offered }: { offered: readonly string[] }) {
     // The device's match is the browser's: known only after hydration.
     const [device, setDevice] = useState<string>();
     useEffect(() => setDevice(negotiateLocale(browserLanguages(), offered)), [offered]);
+    // While a choice saves and applies, the list waits; and only the latest
+    // choice applies, should one start before the last one finished.
+    const [busy, setBusy] = useState(false);
+    const saves = useRef(0);
     const save = async (next: string | null) => {
+        const mine = ++saves.current;
         const previous = value;
         setValue(next);
-        if (!(await mutate('/preferences', 'PATCH', { locale: next }))) {
-            setValue(previous);
-            return;
+        setBusy(true);
+        try {
+            if (!(await mutate('/preferences', 'PATCH', { locale: next }))) {
+                if (mine === saves.current) {
+                    setValue(previous);
+                }
+                return;
+            }
+            if (mine !== saves.current) {
+                return;
+            }
+            const locale = next ?? negotiateLocale(browserLanguages(), offered);
+            if (!(await applyLocale(page, locale, next)) || mine !== saves.current) {
+                return;
+            }
+        } finally {
+            if (mine === saves.current) {
+                setBusy(false);
+            }
         }
-        const locale = next ?? negotiateLocale(browserLanguages(), offered);
-        await applyLocale(page, locale, next);
         toast.success(
             next
                 ? t('settings.language:saved', { language: languageName(next, next) })
@@ -61,7 +80,7 @@ function LanguagePicker({ offered }: { offered: readonly string[] }) {
     };
     return (
         <SettingsCard>
-            <fieldset className="grid gap-3" data-slot="language-preference">
+            <fieldset className="grid gap-3" data-slot="language-preference" aria-busy={busy}>
                 <legend className="mb-1 font-medium">{t('settings.language:title')}</legend>
                 <p className="text-muted-foreground">{t('settings.language:description')}</p>
                 <label className="flex items-start gap-2">
@@ -71,6 +90,7 @@ function LanguagePicker({ offered }: { offered: readonly string[] }) {
                         data-slot="radio"
                         className="mt-1"
                         checked={value === null}
+                        disabled={busy}
                         onChange={() => void save(null)}
                     />
                     <span className="font-medium">
@@ -89,6 +109,7 @@ function LanguagePicker({ offered }: { offered: readonly string[] }) {
                             data-slot="radio"
                             className="mt-1"
                             checked={value === locale}
+                            disabled={busy}
                             onChange={() => void save(locale)}
                         />
                         <span className="font-medium" lang={locale}>

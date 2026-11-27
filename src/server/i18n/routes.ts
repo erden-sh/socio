@@ -1,6 +1,7 @@
 import { Hono, type Context } from 'hono';
 
 import type { AppEnv } from '@socio/foundation/http/app-env';
+import { isSupportedLocale } from '@socio/i18n/registry';
 
 import { FILE_NAME } from './catalog.js';
 import type { I18nCatalogShape, I18nFile } from './contract.js';
@@ -68,8 +69,10 @@ export function i18nRoutes(catalog: I18nCatalogShape) {
         return c.body(body);
     });
     app.get('/:locale/:file', (c) => {
+        const locale = c.req.param('locale');
         const name = FILE_NAME.exec(c.req.param('file'));
-        const file = name && catalog.file(c.req.param('locale'), name[1]!, name[2]!);
+        // Only a registered locale is looked up: a request names it.
+        const file = name && isSupportedLocale(locale) ? catalog.file(locale, name[1]!, name[2]!) : undefined;
         if (!name || !file) {
             return missing(c);
         }

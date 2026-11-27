@@ -33,9 +33,32 @@ export const namespacePath = (locale: string, ns: string, hash: string) => `/i18
 /** The manifest's path; `?locales=a,b` narrows it. */
 export const MANIFEST_PATH = '/i18n/manifest.json';
 
+const own = (object: object, key: string) => Object.prototype.hasOwnProperty.call(object, key);
+
+/**
+ * A namespace's entry in a locale, or undefined. Looks up own keys only:
+ * the locale and namespace often come from a request, and `constructor`
+ * or `__proto__` must find nothing, not an object's inherited members.
+ */
+export function namespaceEntry(
+    manifest: I18nManifest | undefined,
+    locale: string,
+    ns: string,
+): NamespaceEntry | undefined {
+    if (!manifest || !own(manifest.locales, locale)) {
+        return undefined;
+    }
+    const entry = manifest.locales[locale]!;
+    return own(entry.ns, ns) ? entry.ns[ns] : undefined;
+}
+
+/** Whether the manifest has `locale`, as an own key. */
+export const hasLocale = (manifest: I18nManifest | undefined, locale: string) =>
+    !!manifest && own(manifest.locales, locale);
+
 /** The file for a namespace in a locale, or undefined when the build has none (a sparse locale). */
 export function namespaceUrl(manifest: I18nManifest, locale: string, ns: string): string | undefined {
-    const entry = manifest.locales[locale]?.ns[ns];
+    const entry = namespaceEntry(manifest, locale, ns);
     return entry && namespacePath(locale, ns, entry.hash);
 }
 
@@ -94,7 +117,7 @@ export const eligibleLocales = (manifest: I18nManifest | undefined): string[] =>
  */
 export function explicitLocales(manifest: I18nManifest | undefined): string[] {
     const eligible = eligibleLocales(manifest);
-    return manifest?.locales[PSEUDO_LOCALE] ? [...eligible, PSEUDO_LOCALE] : eligible;
+    return hasLocale(manifest, PSEUDO_LOCALE) ? [...eligible, PSEUDO_LOCALE] : eligible;
 }
 
 /** The manifest with only `locales` and the locales their keys fall back to kept (es-US brings es-419 and en-US). */

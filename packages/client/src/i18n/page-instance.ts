@@ -1,7 +1,7 @@
 import type { i18n as I18n, Resource } from 'i18next';
 import HttpBackend, { type HttpBackendOptions } from 'i18next-http-backend';
 
-import { MANIFEST_PATH, namespaceUrl, type I18nManifest } from '@socio/i18n/manifest';
+import { hasLocale, MANIFEST_PATH, namespaceUrl, type I18nManifest } from '@socio/i18n/manifest';
 import { LOCALE_COOKIE } from '@socio/i18n/negotiate';
 import { createReactI18n } from '@socio/i18n/react';
 import { localeDir } from '@socio/i18n/registry';
@@ -15,10 +15,11 @@ import type { PageI18n } from '@socio/shared/web/web';
  * immutable), named by the manifest, through i18next-http-backend.
  */
 
-const manifests = new WeakMap<I18n, { manifest: I18nManifest }>();
+/** Each instance's manifest, and how many language changes it has started (the latest one wins). */
+const manifests = new WeakMap<I18n, { manifest: I18nManifest; changes: number }>();
 
 function create(page: PageI18n, inBrowser: boolean): I18n {
-    const state = { manifest: page.manifest as I18nManifest };
+    const state = { manifest: page.manifest as I18nManifest, changes: 0 };
     const backendOptions: HttpBackendOptions = {
         // One language and one namespace a request (no multiloading): its
         // hashed file, or nothing when the build has none (a sparse locale).
@@ -72,13 +73,19 @@ function setLocaleCookie(locale: string | null) {
  * this page has none, then its namespaces, then `<html lang dir>`. `chosen`
  * (the saved preference, or null to follow the browser) goes into the
  * cookie; undefined leaves the cookie alone.
+ *
+ * Only the latest change applies: one started while another still waits
+ * for its manifest makes the older one stop where it is, so a slow
+ * Spanish can't land after a quick English. True when this one applied.
  */
-export async function applyLocale(instance: I18n, locale: string, chosen?: string | null) {
+export async function applyLocale(instance: I18n, locale: string, chosen?: string | null): Promise<boolean> {
     const state = manifests.get(instance);
     if (!state) {
         throw new Error('applyLocale takes the page’s own instance (usePageInstance), not a proxy of it.');
     }
-    if (!state.manifest.locales[locale]) {
+    const change = ++state.changes;
+    const current = () => change === state.changes;
+    if (!hasLocale(state.manifest, locale)) {
         const response = await fetch(`${MANIFEST_PATH}?locales=${encodeURIComponent(locale)}`, {
             credentials: 'omit',
         });
@@ -87,10 +94,18 @@ export async function applyLocale(instance: I18n, locale: string, chosen?: strin
             state.manifest = { release: fetched.release, locales: { ...state.manifest.locales, ...fetched.locales } };
         }
     }
+    if (!current()) {
+        return false;
+    }
+    // i18next itself switches to the last language asked for.
     await instance.changeLanguage(locale);
+    if (!current()) {
+        return false;
+    }
     document.documentElement.lang = locale;
     document.documentElement.dir = localeDir(locale);
     if (chosen !== undefined) {
         setLocaleCookie(chosen);
     }
+    return true;
 }
