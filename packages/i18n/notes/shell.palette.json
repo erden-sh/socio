@@ -1,0 +1,12 @@
+{
+    "title": "Title and label of the search palette (opened with Ctrl K). \"Socio\" is the product name.",
+    "description": "Screen-reader description of the palette. A socio is an AI agent.",
+    "placeholder": "Placeholder of the palette's search box.",
+    "corrected": "Row offered when the search corrected a typo: <words> wraps the corrected words, shown bold. Keep the tags.",
+    "search-instead": "Under that row: search for exactly what was typed; {{query}} is the typed text.",
+    "new-chat": "Palette action: start a conversation with the person's home socio.",
+    "theme": "Palette action to switch the color theme; {{theme}} is Light, Dark or System.",
+    "groups.go-to": "Group heading of the palette rows that open a module (Go to Chat, Go to Issues…).",
+    "groups.socios": "Group heading: the socios (AI agents), to start a chat with one.",
+    "groups.spaces": "Group heading: Spaces (a product noun: a team's shared area)."
+}

@@ -3,6 +3,7 @@ import { useCallback, useContext, useEffect, useLayoutEffect, useRef, useState, 
 import { useParams } from 'react-router';
 import { toast } from 'sonner';
 
+import { useTranslation } from '@socio/i18n/react';
 import type { ModelChoice } from '@socio/shared/inference';
 import type { Conversation, Dot, Result } from '@socio/shared/types';
 import { availableDictation, chooseDictation, type DictationMethod } from '@socio/shared/voice/dictation';
@@ -19,7 +20,7 @@ import { shouldSubmitComposerOnKeyDown, useFitComposer, useFocusOnOpen } from '.
 import { newChatDraft, useDraft } from '../modules/chat/chat-drafts';
 import { ownsChat, useArchiveChat } from '../modules/chat/chat-menu';
 import { ClientChat } from '../modules/chat/ClientChat';
-import { ModelPicker, inheritedModelLabel, useModelOptions, modelAvailability } from '../modules/chat/ModelSelect';
+import { ModelPicker, useInheritedModelLabel, useModelOptions, modelAvailability } from '../modules/chat/ModelSelect';
 import { ResultPane } from '../modules/chat/ResultPane';
 import { useSkillMenu } from '../modules/chat/SkillMenu';
 import { RoomChat } from '../modules/rooms/RoomChat';
@@ -77,13 +78,15 @@ export function ChatLayout({ dot, capture, children }: { dot: Dot; capture?: Res
     );
 }
 
-const starters = ['Help me think this through', 'Research a public page', 'Make a plan I can follow'];
+/** The new chat's suggested first messages (`chat.composer:new.starters`). */
+const STARTERS = ['think', 'research', 'plan'] as const;
 
 /**
  * Unarchive for an archived Dot: its owner or an admin may (`allowed`);
  * the server says why not when an admin archived it.
  */
 export function useUnarchiveDot(dot: Dot) {
+    const { t } = useTranslation(['chat.menu']);
     const shell = useShell();
     const { workspace, admin } = shell;
     const [busy, setBusy] = useState(false);
@@ -94,7 +97,7 @@ export function useUnarchiveDot(dot: Dot) {
             await api(`/dots/${encodeURIComponent(dot.id)}/unarchive`, 'POST');
             void shell.refresh();
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Could not unarchive the socio.');
+            toast.error(error instanceof Error ? error.message : t('chat.menu:archived-notice.unarchive-failed'));
         } finally {
             setBusy(false);
         }
@@ -107,14 +110,15 @@ export function useUnarchiveDot(dot: Dot) {
  * owner (or an admin) can bring it back from here, as nothing lists it.
  */
 function DotArchivedNotice({ dot }: { dot: Dot }) {
+    const { t } = useTranslation(['chat.menu']);
     const { allowed, busy, unarchive } = useUnarchiveDot(dot);
     return (
         <div role="status" data-slot="dot-archived" className={notice}>
             <Archive className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-            <p className="flex-1">This socio is archived. You can read its chats; it no longer answers.</p>
+            <p className="flex-1">{t('chat.menu:archived-notice.socio')}</p>
             {allowed && (
                 <Button size="sm" variant="outline" disabled={busy} onClick={() => void unarchive()}>
-                    Unarchive
+                    {t('chat.menu:unarchive')}
                 </Button>
             )}
         </div>
@@ -127,6 +131,8 @@ const notice =
 
 /** A new chat with a Dot: its persona, a composer and setup status. */
 function NewConversation({ dot }: { dot: Dot }) {
+    const { t } = useTranslation(['chat.composer']);
+    const inheritedModelLabel = useInheritedModelLabel();
     const shell = useShell();
     const { state, workspace, admin, configured, busy } = shell;
     // Kept per person and Dot until the chat starts (CB-153).
@@ -240,7 +246,7 @@ function NewConversation({ dot }: { dot: Dot }) {
                             className="h-auto gap-[5px] p-0 text-[12px]/[normal] font-normal text-muted-foreground/80 hover:bg-transparent hover:text-foreground dark:text-muted-foreground dark:hover:bg-transparent"
                             onClick={() => shell.openDialog({ type: 'dot', dot, spaceId: dot.spaceId })}
                         >
-                            Edit specialist <MoreHorizontal className="size-3.5" />
+                            {t('chat.composer:new.edit')} <MoreHorizontal className="size-3.5" />
                         </Button>
                     )}
                 </div>
@@ -255,10 +261,11 @@ function NewConversation({ dot }: { dot: Dot }) {
                                 <Settings2 size={20} />
                             </span>
                             <div>
-                                <strong className="text-[13px] font-[550] text-foreground">Connect your socio</strong>
+                                <strong className="text-[13px] font-[550] text-foreground">
+                                    {t('chat.composer:new.connect.title')}
+                                </strong>
                                 <p className="my-[7px] text-[13px]/[1.9] text-muted-foreground max-[700px]:wrap-anywhere">
-                                    Connect your model and conversation service in Settings to start chatting. Your
-                                    Spaces and socio preferences are ready to use.
+                                    {t('chat.composer:new.connect.text')}
                                 </p>
                             </div>
                         </div>
@@ -267,7 +274,7 @@ function NewConversation({ dot }: { dot: Dot }) {
                         data-slot="new-chat-starters"
                         className="mb-3 flex flex-wrap justify-center gap-2 max-[700px]:flex-col keyboard:hidden"
                     >
-                        {starters.map((text) => (
+                        {STARTERS.map((starter) => t(`chat.composer:new.starters.${starter}`)).map((text) => (
                             <Button
                                 key={text}
                                 variant="outline"
@@ -332,15 +339,16 @@ function NewConversation({ dot }: { dot: Dot }) {
                     >
                         <Link2 size={15} className="shrink-0" />
                         <Input
-                            aria-label="Source page URL"
+                            aria-label={t('chat.composer:source.url')}
                             type="url"
                             value={source}
                             onChange={(e) => setSource(e.target.value)}
+                            // oxlint-disable-next-line socio/no-literal-text -- an example address, the same in every language
                             placeholder="https://example.com/page"
                             className="h-auto rounded-none border-0 bg-transparent p-2 leading-[normal] text-foreground shadow-none focus-visible:ring-0 md:text-[10px] dark:bg-transparent"
                         />
                         <ChatIconButton
-                            aria-label="Remove source"
+                            aria-label={t('chat.composer:source.remove')}
                             onClick={() => {
                                 setSourceOpen(false);
                                 setSource('');
@@ -352,13 +360,13 @@ function NewConversation({ dot }: { dot: Dot }) {
                 )}
                 <Textarea
                     ref={promptBox}
-                    aria-label="Start a conversation"
+                    aria-label={t('chat.composer:new.box')}
                     placeholder={
                         usable
-                            ? `Message ${dot.name}…`
+                            ? t('chat.composer:box.placeholder', { name: dot.name })
                             : configured
-                              ? 'No model is available yet.'
-                              : 'Your first conversation starts after setup.'
+                              ? t('chat.composer:new.no-model')
+                              : t('chat.composer:new.after-setup')
                     }
                     rows={1}
                     value={prompt}
@@ -390,13 +398,13 @@ function NewConversation({ dot }: { dot: Dot }) {
                     <div
                         data-slot="composer-tools"
                         role="group"
-                        aria-label="Message actions"
+                        aria-label={t('chat.composer:tools')}
                         className="flex shrink-0 items-center gap-0 [&_button]:size-11 [&_button]:p-0"
                     >
                         <ChatIconButton
-                            aria-label="Add source page link"
+                            aria-label={t('chat.composer:source.add')}
                             aria-pressed={sourceOpen}
-                            title="Add a source page link — prepend “From <url>” to your message"
+                            title={t('chat.composer:source.add-hint')}
                             onClick={() => setSourceOpen(!sourceOpen)}
                         >
                             <Link2 size={19} />
@@ -418,8 +426,8 @@ function NewConversation({ dot }: { dot: Dot }) {
                         {workspace.setup.voice && (
                             <ChatIconButton
                                 data-slot="new-chat-voice"
-                                aria-label="Start a voice call"
-                                title="Start a voice call with your socio"
+                                aria-label={t('chat.composer:new.voice')}
+                                title={t('chat.composer:new.voice-hint')}
                                 disabled={!usable || busy}
                                 onClick={() =>
                                     void shell.newConversation(dot, undefined, model, attachments.refs, { voice: true })
@@ -430,7 +438,7 @@ function NewConversation({ dot }: { dot: Dot }) {
                         )}
                     </div>
                     <ModelPicker
-                        aria-label="Model for this chat"
+                        aria-label={t('chat.composer:new.model')}
                         className="mr-2 ml-auto max-w-65 min-w-0"
                         value={model}
                         onChange={setModel}
@@ -442,8 +450,8 @@ function NewConversation({ dot }: { dot: Dot }) {
                     <SendButton
                         type="submit"
                         className="size-8 min-w-8"
-                        aria-label="Start conversation"
-                        title={attachments.uploading ? 'Waiting for uploads to finish' : undefined}
+                        aria-label={t('chat.composer:new.start')}
+                        title={attachments.uploading ? t('chat.composer:send.waiting-uploads') : undefined}
                         disabled={
                             !usable || busy || attachments.uploading || (!prompt.trim() && !attachments.refs.length)
                         }
@@ -478,6 +486,8 @@ export function DotChat() {
  * chat deleted in another tab is never asked for: no 404).
  */
 function useCapture(threadId: string | undefined) {
+    const { t } = useTranslation(['shell']);
+    const failed = t('shell:notices.connect-failed');
     const { setNotices } = useShell();
     const [capture, setCapture] = useState<Result>();
     const [shown, setShown] = useState(threadId);
@@ -502,12 +512,10 @@ function useCapture(threadId: string | undefined) {
                     if (!isActive()) {
                         return;
                     }
-                    setNotices((current) =>
-                        applyCaptureResult(current, describeFailure(e, 'Could not connect to the server.')),
-                    );
+                    setNotices((current) => applyCaptureResult(current, describeFailure(e, failed)));
                 });
         },
-        [threadId, setNotices],
+        [threadId, setNotices, failed],
     );
     const canPoll = useLiveTopic(threadId && `conversation:${threadId}`, () => load(canPoll));
     useEffect(() => {
@@ -536,12 +544,13 @@ function useCapture(threadId: string | undefined) {
  * unarchives.
  */
 function ArchivedNotice({ thread }: { thread: Conversation }) {
+    const { t } = useTranslation(['chat.menu']);
     const { unarchive } = useArchiveChat();
     const [busy, setBusy] = useState(false);
     return (
         <div role="status" data-slot="archived-chat" className={notice}>
             <Archive className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-            <p className="flex-1">This chat is archived.</p>
+            <p className="flex-1">{t('chat.menu:archived-notice.chat')}</p>
             <Button
                 size="sm"
                 variant="outline"
@@ -555,7 +564,7 @@ function ArchivedNotice({ thread }: { thread: Conversation }) {
                     }
                 }}
             >
-                Unarchive
+                {t('chat.menu:unarchive')}
             </Button>
         </div>
     );

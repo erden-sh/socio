@@ -1,5 +1,6 @@
 import { useId, useRef, useState } from 'react';
 
+import { useTranslation } from '@socio/i18n/react';
 import {
     REPORT_CONFIRMATION,
     REPORT_NOTE_MAX,
@@ -8,7 +9,8 @@ import {
     reportNoteLength,
     type ReportReason,
 } from '@socio/shared/chat/reply-reports';
-import { formatNumber } from '@socio/shared/locale';
+
+import { onDemand } from '../../i18n/on-demand';
 
 import {
     AlertDialog,
@@ -30,7 +32,7 @@ import { cn } from '@/lib/utils';
  * a reason (required) and an optional note of at most `REPORT_NOTE_MAX`
  * code points after trimming. Cancel sends nothing.
  */
-export function ReportDialog({
+function ReportDialogBody({
     socio,
     byOther,
     onConfirm,
@@ -43,6 +45,7 @@ export function ReportDialog({
     onConfirm: (choice: { reason: ReportReason; note?: string }) => void;
     onCancel: () => void;
 }) {
+    const { t } = useTranslation(['chat.report']);
     const [reason, setReason] = useState<ReportReason>();
     const [note, setNote] = useState('');
     const first = useRef<HTMLInputElement>(null);
@@ -74,7 +77,7 @@ export function ReportDialog({
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <fieldset className="grid gap-2 text-sm" data-slot="report-reasons">
-                    <legend className="mb-2 font-medium">Reason</legend>
+                    <legend className="mb-2 font-medium">{t('chat.report:reason')}</legend>
                     {REPORT_REASONS.map((option, index) => (
                         <label
                             key={option.id}
@@ -98,7 +101,7 @@ export function ReportDialog({
                 </fieldset>
                 <div className="grid gap-1 text-sm">
                     <label htmlFor={`${id}-note`} className="font-medium">
-                        Note (optional)
+                        {t('chat.report:note.label')}
                     </label>
                     <Textarea
                         id={`${id}-note`}
@@ -113,12 +116,11 @@ export function ReportDialog({
                         data-slot="report-note-count"
                         className={cn('text-xs tabular-nums', over ? 'text-destructive' : 'text-muted-foreground')}
                     >
-                        {formatNumber(length)} / {formatNumber(REPORT_NOTE_MAX)}
+                        {t('chat.report:note.count', { length, max: REPORT_NOTE_MAX })}
                     </p>
                     {over && (
                         <p role="alert" data-slot="report-note-over" className="text-xs text-destructive">
-                            The note is {formatNumber(length - REPORT_NOTE_MAX)}{' '}
-                            {length - REPORT_NOTE_MAX === 1 ? 'character' : 'characters'} too long.
+                            {t('chat.report:note.over', { count: length - REPORT_NOTE_MAX })}
                         </p>
                     )}
                 </div>
@@ -142,32 +144,39 @@ export function ReportDialog({
  * The warning before removing a thumbs-down whose report went (§5):
  * removing it doesn't recall the report. Confirm goes on with the change.
  */
-export function RemoveSharedDialog({
+function RemoveSharedDialogBody({
     action,
     onConfirm,
     onCancel,
 }: {
-    /** What the confirm button does ("Remove thumbs-down", "Switch to thumbs-up"). */
-    action: string;
+    /** What the confirm button does: remove the thumbs-down, or switch to a thumbs-up. */
+    action: 'remove' | 'switch-up';
     onConfirm: () => void;
     onCancel: () => void;
 }) {
+    const { t } = useTranslation(['chat.report']);
     return (
         <AlertDialog open onOpenChange={(open) => !open && onCancel()}>
             <AlertDialogContent data-slot="remove-shared-dialog">
                 <AlertDialogHeader>
-                    <AlertDialogTitle>Remove your thumbs-down?</AlertDialogTitle>
+                    <AlertDialogTitle>{t('chat.report:remove.title')}</AlertDialogTitle>
                     <AlertDialogDescription>
-                        Your report on this reply went to Ingenio. {REPORT_CONFIRMATION.removeShared}
+                        {t('chat.report:remove.went')} {REPORT_CONFIRMATION.removeShared}
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogCancel>{t('chat.report:remove.cancel')}</AlertDialogCancel>
                     <Button data-slot="remove-shared-confirm" onClick={onConfirm}>
-                        {action}
+                        {action === 'switch-up' ? t('chat.report:remove.switch-up') : t('chat.report:remove.confirm')}
                     </Button>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
     );
 }
+
+/** The report's confirmation; its words load when it opens (chat.report). */
+export const ReportDialog = onDemand(['chat.report'], ReportDialogBody);
+
+/** The warning before removing a reported thumbs-down; on demand like the report's. */
+export const RemoveSharedDialog = onDemand(['chat.report'], RemoveSharedDialogBody);

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useBlocker } from 'react-router';
 
-export const LEAVE_DRAFT = 'Leave your unsaved page draft?';
+import { useTranslation } from '@socio/i18n/react';
 
 /**
  * The unsaved-draft guard, on the router: while a page draft has unsaved
@@ -11,6 +11,9 @@ export const LEAVE_DRAFT = 'Leave your unsaved page draft?';
  * page editor reports its state to, and a reader of it.
  */
 export function useDraftGuard() {
+    // Its words load as the shell mounts (chat.drafts is in no route's
+    // entry); the question is asked only once someone leaves a draft.
+    const { t } = useTranslation(['chat.drafts']);
     const dirty = useRef(false);
     const blocker = useBlocker(
         ({ currentLocation, nextLocation }) => dirty.current && currentLocation.pathname !== nextLocation.pathname,
@@ -19,13 +22,13 @@ export function useDraftGuard() {
         if (blocker.state !== 'blocked') {
             return;
         }
-        if (window.confirm(LEAVE_DRAFT)) {
+        if (window.confirm(t('chat.drafts:leave-page-draft'))) {
             dirty.current = false;
             blocker.proceed();
         } else {
             blocker.reset();
         }
-    }, [blocker]);
+    }, [blocker, t]);
     useEffect(() => {
         const leave = (event: BeforeUnloadEvent) => {
             if (dirty.current) {

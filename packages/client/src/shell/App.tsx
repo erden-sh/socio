@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { useLoaderData, useLocation, useNavigate, useNavigation, useRevalidator } from 'react-router';
 
+import { useTranslation } from '@socio/i18n/react';
 import type { SignInMethods } from '@socio/shared/auth';
 import { reconnectDelay } from '@socio/shared/reconnect';
 import type { Conversation, State, WorkspaceState } from '@socio/shared/types';
@@ -21,6 +22,8 @@ import { authSession } from './auth-client';
 import { afterPoll, navigateOrLoad } from './build-skew';
 import { pollHeartbeat } from './connection-status';
 import { CurrentUser, SignInSetup } from './current-user';
+import { useNoticeText } from './notice-text';
+import { oneTimeLink } from './one-time-link';
 import { applyRefreshResult, OFFLINE_NOTICE, visibleNotice, type Notices } from './poll-notice';
 import { presenceHeaders } from './presence';
 import { serverAway } from './reconnect';
@@ -51,6 +54,8 @@ const fromLoader = (data: ShellData | undefined) =>
  * a `/#/spaces/…` address becomes its path.
  */
 export function App() {
+    const { t } = useTranslation(['shell']);
+    const noticeText = useNoticeText();
     const navigate = useNavigate();
     const location = useLocation();
     useEffect(() => recordRoute(location.pathname), [location.pathname]);
@@ -205,11 +210,9 @@ export function App() {
                     retryAt: Date.now() + reconnectDelay(failures),
                 };
             }
-            setNotices((current) =>
-                applyRefreshResult(current, describeFailure(e, 'Could not connect to the server.')),
-            );
+            setNotices((current) => applyRefreshResult(current, describeFailure(e, t('shell:notices.connect-failed'))));
         }
-    }, [dropSession, revalidate, tags]);
+    }, [dropSession, revalidate, tags, t]);
     // An optimistic patch of one conversation in the workspace shown now
     // (its `conversations` or `archived` list), so a view can show a change
     // at once without waiting for the next `refresh` (a room's mute state,
@@ -395,10 +398,7 @@ export function App() {
     };
     // A password link (invite or reset) or a sign-in link works signed in or
     // out.
-    const oneTimeLink =
-        ['/reset-password', '/sign-in-link'].includes(location.pathname) &&
-        new URLSearchParams(location.search).has('token');
-    if (gate === 'sign-in' || oneTimeLink) {
+    if (gate === 'sign-in' || oneTimeLink(location)) {
         return (
             <SignIn
                 session={data?.session === 'signed-out' ? data.signIn : undefined}
@@ -412,11 +412,11 @@ export function App() {
         return (
             <main className={unlock}>
                 <Mascot state="working" />
-                <h1>Finding your socios…</h1>
+                <h1>{t('shell:loading.title')}</h1>
                 {error && (
                     <>
-                        <p className={unlockError}>{error}</p>
-                        <button onClick={() => void refresh()}>Retry</button>
+                        <p className={unlockError}>{noticeText(error)}</p>
+                        <button onClick={() => void refresh()}>{t('shell:loading.retry')}</button>
                     </>
                 )}
             </main>

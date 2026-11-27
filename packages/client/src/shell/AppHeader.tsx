@@ -1,10 +1,13 @@
+import type { FlatNamespace } from 'i18next';
 import { Monitor, MoreHorizontal, Pause, Play, Search } from 'lucide-react';
 import { Fragment } from 'react';
 import { Link, useMatches } from 'react-router';
 
+import { useTranslation } from '@socio/i18n/react';
 import type { ModuleId } from '@socio/shared/modules';
 import type { Dot } from '@socio/shared/types';
 
+import { ROUTE_NAMESPACES } from '../i18n/page-i18n';
 import { useBrandingDocument } from '../lib/branding-meta';
 import { Slot, useModuleContext, useModules } from '../modules/context';
 import { moduleTitle } from '../modules/derive';
@@ -33,6 +36,12 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Separator } from '@/components/ui/separator';
 
+/** The namespaces in for this page: the root's and its routes' (route-namespaces.json), crumbs' words among them. */
+function useCrumbNamespaces(): FlatNamespace[] {
+    const ids = useMatches().map((match) => match.id);
+    return [...new Set(['root', ...ids].flatMap((id) => ROUTE_NAMESPACES[id] ?? []))] as FlatNamespace[];
+}
+
 /**
  * The breadcrumbs of the current route after Home: the deepest route's
  * `handle.crumb`, else its module's title. Empty on the home page.
@@ -41,6 +50,8 @@ export function useCrumbs(dot: Dot): {
     crumbs: Crumb[];
     moduleId?: ModuleId;
 } {
+    // Any namespace a crumb's words are in: the root's, and the route's.
+    const { t } = useTranslation(useCrumbNamespaces());
     const { workspace, admin } = useShell();
     const modules = useModules();
     const context = useModuleContext();
@@ -52,7 +63,7 @@ export function useCrumbs(dot: Dot): {
     const match = matches.findLast((item) => (item.handle as RouteHandle | undefined)?.crumb);
     const crumb = (match?.handle as RouteHandle | undefined)?.crumb;
     const crumbs = crumb
-        ? crumb({ workspace, admin, dot, params, title, data: match?.loaderData })
+        ? crumb({ workspace, admin, dot, params, title, data: match?.loaderData, t })
         : module
           ? [{ label: moduleTitle(module, context) }]
           : [];
@@ -78,16 +89,17 @@ export function useCrumbs(dot: Dot): {
  * to the composer (CB-155).
  */
 export function AppHeader({ dot }: { dot: Dot }) {
+    const { t } = useTranslation(['shell']);
     const shell = useShell();
     const { admin, state, pane, setPane } = shell;
     const { crumbs, moduleId } = useCrumbs(dot);
     const paused = state.settings.paused;
-    const pauseLabel = paused ? 'Resume all socios' : 'Pause all socios';
+    const pauseLabel = paused ? t('shell:header.resume') : t('shell:header.pause');
     const togglePause = () => void shell.mutate('/settings', 'PATCH', { paused: !paused });
     // The tab identifies the current page and the app (CB-305): the last
     // crumb is the current page (matching the breadcrumb), Home when there
     // is none. The shell renders this header on every signed-in page.
-    const pageTitle = crumbs.at(-1)?.label ?? 'Home';
+    const pageTitle = crumbs.at(-1)?.label ?? t('shell:header.home');
     useBrandingDocument(state.settings.branding, pageTitle);
     // Keep separator/gap widths bounded as well as text. Deep page paths
     // retain every destination in a keyboard-accessible menu.
@@ -107,7 +119,7 @@ export function AppHeader({ dot }: { dot: Dot }) {
                         <BreadcrumbItem className="hidden shrink-0 md:inline-flex">
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" aria-label="Show full breadcrumb path">
+                                    <Button variant="ghost" size="icon" aria-label={t('shell:header.full-path')}>
                                         <MoreHorizontal aria-hidden />
                                     </Button>
                                 </DropdownMenuTrigger>
@@ -117,7 +129,7 @@ export function AppHeader({ dot }: { dot: Dot }) {
                                     className="max-w-[min(24rem,calc(100vw-1rem))]"
                                 >
                                     <DropdownMenuItem asChild>
-                                        <Link to="/">Home</Link>
+                                        <Link to="/">{t('shell:header.home')}</Link>
                                     </DropdownMenuItem>
                                     {crumbs.map((item, index) =>
                                         index === crumbs.length - 1 ? (
@@ -136,12 +148,12 @@ export function AppHeader({ dot }: { dot: Dot }) {
                     ) : crumbs.length ? (
                         <BreadcrumbItem className="hidden md:inline-flex">
                             <BreadcrumbLink asChild>
-                                <Link to="/">Home</Link>
+                                <Link to="/">{t('shell:header.home')}</Link>
                             </BreadcrumbLink>
                         </BreadcrumbItem>
                     ) : (
                         <BreadcrumbItem>
-                            <BreadcrumbPage>Home</BreadcrumbPage>
+                            <BreadcrumbPage>{t('shell:header.home')}</BreadcrumbPage>
                         </BreadcrumbItem>
                     )}
                     {visibleCrumbs.map((item, index) => {
@@ -209,7 +221,7 @@ export function AppHeader({ dot }: { dot: Dot }) {
                         <>
                             <HeaderMenuItem open={() => shell.setPalette(true)}>
                                 <Search />
-                                Search
+                                {t('shell:header.search')}
                             </HeaderMenuItem>
                             <Slot name="header.menu" props={{ moduleId }} />
                             {admin && (
@@ -220,7 +232,7 @@ export function AppHeader({ dot }: { dot: Dot }) {
                             )}
                             <DropdownMenuItem className="h-8.5" onSelect={() => setPane(!pane)}>
                                 <Monitor />
-                                {pane ? 'Hide computer' : 'Show computer'}
+                                {pane ? t('shell:header.hide-computer') : t('shell:header.show-computer')}
                             </DropdownMenuItem>
                             <HeaderMenuPageSection />
                         </>
@@ -230,7 +242,7 @@ export function AppHeader({ dot }: { dot: Dot }) {
                     variant="ghost"
                     size="icon"
                     className="max-md:hidden"
-                    aria-label={pane ? 'Hide computer' : 'Show computer'}
+                    aria-label={pane ? t('shell:header.hide-computer') : t('shell:header.show-computer')}
                     aria-expanded={pane}
                     onClick={() => setPane(!pane)}
                 >

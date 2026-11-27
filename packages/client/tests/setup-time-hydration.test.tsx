@@ -8,7 +8,10 @@ import type { State, WorkspaceState } from '@socio/shared/types';
 
 import { WorkspaceSettings } from '../src/modules/settings/WorkspaceSettings';
 
-it('hydrates setup timestamps from a UTC server before showing New York local time', async () => {
+// The setup card's words load on demand (settings.workspace-setup), so the
+// server renders none of it and the browser hydrates the same nothing: its
+// timestamps only ever show in the browser's own time zone.
+it('renders setup timestamps only in the browser, in New York local time after a UTC server', async () => {
     vi.stubGlobal(
         'ResizeObserver',
         class {
@@ -83,11 +86,8 @@ it('hydrates setup timestamps from a UTC server before showing New York local ti
     const mismatches: unknown[] = [];
     try {
         host.innerHTML = renderToString(<Page />);
-        const serverLines = lines();
-        expect(serverLines).toHaveLength(4);
-        for (const line of serverLines) {
-            expect(line).toContain('2026-10-26 01:00 UTC');
-        }
+        expect(lines()).toEqual([]);
+        expect(host.innerHTML).not.toContain('UTC');
         zone = 'America/New_York';
         await act(async () => {
             root = hydrateRoot(host, <Page />, {
@@ -95,8 +95,10 @@ it('hydrates setup timestamps from a UTC server before showing New York local ti
             });
         });
         expect(mismatches).toEqual([]);
-        expect(commits[0]).toEqual(serverLines);
-        for (const line of lines()) {
+        expect(commits[0]).toEqual([]);
+        const browserLines = lines();
+        expect(browserLines).toHaveLength(4);
+        for (const line of browserLines) {
             expect(line).toContain('10/25/2026, 9:00:00 PM');
         }
     } finally {

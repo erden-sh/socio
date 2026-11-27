@@ -3,8 +3,10 @@ import { useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 
+import { useTranslation } from '@socio/i18n/react';
 import type { Dot } from '@socio/shared/types';
 
+import { useOnDemand } from '../../i18n/on-demand';
 import { api } from '../../lib/api';
 import { useShell } from '../../shell/shell-context';
 
@@ -31,6 +33,7 @@ type DotPatch = Partial<Pick<Dot, 'name' | 'researchAllowed' | 'memoryAllowed' |
  * toasts).
  */
 function useSaveDot() {
+    const { t } = useTranslation(['chat.menu']);
     const shell = useShell();
     return async (dot: Dot, patch: DotPatch) => {
         const next = { ...dot, ...patch };
@@ -50,7 +53,7 @@ function useSaveDot() {
             await shell.refresh();
             return true;
         } catch (cause) {
-            toast.error(cause instanceof Error ? cause.message : 'Could not save the socio.');
+            toast.error(cause instanceof Error ? cause.message : t('chat.menu:dot.errors.save'));
             return false;
         }
     };
@@ -61,6 +64,7 @@ function useSaveDot() {
  * leaving it saves, Escape keeps the old name, and so does an empty box.
  */
 export function DotNameInput({ dot, onDone }: { dot: Dot; onDone: () => void }) {
+    const { t } = useTranslation(['chat.menu']);
     const save = useSaveDot();
     const done = useRef(false);
     const finish = (value?: string) => {
@@ -76,7 +80,7 @@ export function DotNameInput({ dot, onDone }: { dot: Dot; onDone: () => void }) 
     };
     return (
         <Input
-            aria-label="Socio name"
+            aria-label={t('chat.menu:dot.name-input')}
             data-slot="dot-name-input"
             defaultValue={dot.name}
             maxLength={MAX_DOT_NAME}
@@ -105,6 +109,8 @@ export function DotNameInput({ dot, onDone }: { dot: Dot; onDone: () => void }) 
  * The ⋯ menu of one Dot in the sidebar, for its owner and admins: new
  * chat, rename, its everyday permissions, its audit (admins), archive,
  * then every setting. `open` is controlled so a right-click opens it too.
+ * Its items wait for chat.menu, which the sidebar asks for as it mounts
+ * (only chat routes inline it).
  */
 export function DotMenu({
     dot,
@@ -126,6 +132,8 @@ export function DotMenu({
     /** Before navigating (closes the mobile sheet). */
     onLeave: () => void;
 }) {
+    const { t } = useTranslation(['chat.menu']);
+    const ready = useOnDemand(['chat.menu']);
     const shell = useShell();
     const navigate = useNavigate();
     const save = useSaveDot();
@@ -139,19 +147,19 @@ export function DotMenu({
     const archive = async () => {
         try {
             await api(`/dots/${encodeURIComponent(dot.id)}/archive`, 'POST');
-            toast(`${dot.name} archived`, {
+            toast(t('chat.menu:dot.archived', { name: dot.name }), {
                 action: {
-                    label: 'Undo',
+                    label: t('chat.menu:undo'),
                     onClick: () =>
                         void api(`/dots/${encodeURIComponent(dot.id)}/unarchive`, 'POST')
                             .then(() => shell.refresh())
-                            .catch(() => toast.error('Could not unarchive the socio.')),
+                            .catch(() => toast.error(t('chat.menu:dot.errors.unarchive'))),
                 },
             });
             setConfirming(false);
             await shell.refresh();
         } catch (cause) {
-            toast.error(cause instanceof Error ? cause.message : 'Could not archive the socio.');
+            toast.error(cause instanceof Error ? cause.message : t('chat.menu:dot.errors.archive'));
         }
     };
     return (
@@ -170,70 +178,75 @@ export function DotMenu({
                         renaming.current = false;
                     }}
                 >
-                    <DropdownMenuItem onSelect={() => go(`/dots/${encodeURIComponent(dot.id)}/new`)}>
-                        <MessageSquarePlus /> New chat
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                        onSelect={() => {
-                            renaming.current = true;
-                            onRename();
-                        }}
-                    >
-                        <Pencil /> Rename
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">Allowed</DropdownMenuLabel>
-                    <DropdownMenuCheckboxItem
-                        checked={dot.researchAllowed}
-                        onSelect={(event) => event.preventDefault()}
-                        onCheckedChange={(checked) => toggle({ researchAllowed: checked })}
-                    >
-                        Public-page research
-                    </DropdownMenuCheckboxItem>
-                    <DropdownMenuCheckboxItem
-                        checked={dot.memoryAllowed}
-                        onSelect={(event) => event.preventDefault()}
-                        onCheckedChange={(checked) => toggle({ memoryAllowed: checked })}
-                    >
-                        Use saved memories
-                    </DropdownMenuCheckboxItem>
-                    {admin && (
-                        <DropdownMenuCheckboxItem
-                            checked={!!dot.issuesAllowed}
-                            onSelect={(event) => event.preventDefault()}
-                            onCheckedChange={(checked) => toggle({ issuesAllowed: checked })}
-                        >
-                            File to the Improvements board
-                        </DropdownMenuCheckboxItem>
+                    {ready && (
+                        <>
+                            <DropdownMenuItem onSelect={() => go(`/dots/${encodeURIComponent(dot.id)}/new`)}>
+                                <MessageSquarePlus /> {t('chat.menu:new-chat')}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                                onSelect={() => {
+                                    renaming.current = true;
+                                    onRename();
+                                }}
+                            >
+                                <Pencil /> {t('chat.menu:rename')}
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+                                {t('chat.menu:dot.allowed')}
+                            </DropdownMenuLabel>
+                            <DropdownMenuCheckboxItem
+                                checked={dot.researchAllowed}
+                                onSelect={(event) => event.preventDefault()}
+                                onCheckedChange={(checked) => toggle({ researchAllowed: checked })}
+                            >
+                                {t('chat.menu:dot.research')}
+                            </DropdownMenuCheckboxItem>
+                            <DropdownMenuCheckboxItem
+                                checked={dot.memoryAllowed}
+                                onSelect={(event) => event.preventDefault()}
+                                onCheckedChange={(checked) => toggle({ memoryAllowed: checked })}
+                            >
+                                {t('chat.menu:dot.memory')}
+                            </DropdownMenuCheckboxItem>
+                            {admin && (
+                                <DropdownMenuCheckboxItem
+                                    checked={!!dot.issuesAllowed}
+                                    onSelect={(event) => event.preventDefault()}
+                                    onCheckedChange={(checked) => toggle({ issuesAllowed: checked })}
+                                >
+                                    {t('chat.menu:dot.issues')}
+                                </DropdownMenuCheckboxItem>
+                            )}
+                            <DropdownMenuSeparator />
+                            {admin && (
+                                <DropdownMenuItem onSelect={() => go(`/admin/dots/${encodeURIComponent(dot.id)}`)}>
+                                    <History /> {t('chat.menu:dot.activity')}
+                                </DropdownMenuItem>
+                            )}
+                            <DropdownMenuItem onSelect={() => go(`/dots/${encodeURIComponent(dot.id)}/soul`)}>
+                                <Sparkles /> {t('chat.menu:dot.soul')}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => setConfirming(true)}>
+                                <Archive /> {t('chat.menu:dot.archive')}
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onSelect={onSettings}>
+                                <Settings /> {t('chat.menu:dot.settings')}
+                            </DropdownMenuItem>
+                        </>
                     )}
-                    <DropdownMenuSeparator />
-                    {admin && (
-                        <DropdownMenuItem onSelect={() => go(`/admin/dots/${encodeURIComponent(dot.id)}`)}>
-                            <History /> Activity
-                        </DropdownMenuItem>
-                    )}
-                    <DropdownMenuItem onSelect={() => go(`/dots/${encodeURIComponent(dot.id)}/soul`)}>
-                        <Sparkles /> Soul
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => setConfirming(true)}>
-                        <Archive /> Archive…
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onSelect={onSettings}>
-                        <Settings /> All settings…
-                    </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
             {confirming && (
                 <ConfirmDelete
-                    title={`Archive ${dot.name}?`}
+                    title={t('chat.menu:dot.archive-dialog.title', { name: dot.name })}
                     slot="confirm-archive-dot"
-                    action="Archive"
+                    action={t('chat.menu:archive')}
                     onClose={() => setConfirming(false)}
                     onConfirm={archive}
                 >
-                    It leaves every list and stops working: its schedules and goals pause. Its chats, filings and
-                    history are kept, and nothing is deleted. You can unarchive it from any of its chats.
+                    {t('chat.menu:dot.archive-dialog.body')}
                 </ConfirmDelete>
             )}
         </>

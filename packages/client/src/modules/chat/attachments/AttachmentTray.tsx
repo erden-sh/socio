@@ -1,6 +1,7 @@
 import { FileText, LoaderCircle, Paperclip, RotateCw, X } from 'lucide-react';
 import { useRef, useState } from 'react';
 
+import { useTranslation } from '@socio/i18n/react';
 import { attachmentContentUrl } from '@socio/shared/media-types';
 import { formatSize } from '@socio/shared/text/format-size';
 
@@ -24,6 +25,7 @@ export function AttachButton({
     disabled?: boolean;
     className?: string;
 }) {
+    const { t } = useTranslation(['chat.composer']);
     const input = useRef<HTMLInputElement>(null);
     return (
         <>
@@ -45,8 +47,8 @@ export function AttachButton({
             />
             <ChatIconButton
                 className={className}
-                aria-label="Attach files"
-                title="Attach files (or paste or drop them)"
+                aria-label={t('chat.composer:attachments.attach')}
+                title={t('chat.composer:attachments.attach-hint')}
                 disabled={disabled}
                 onClick={() => input.current?.click()}
             >
@@ -73,6 +75,7 @@ const thumb = 'block size-18 rounded-lg border bg-muted object-cover';
  * uploaded one opens the viewer (CB-85), as a sent message's do.
  */
 export function AttachmentTray({ attachments }: { attachments: Attachments }) {
+    const { t } = useTranslation(['chat.composer']);
     const { items, notice } = attachments;
     const [shown, setShown] = useState<string>();
     if (!items.length && !notice) {
@@ -85,7 +88,7 @@ export function AttachmentTray({ attachments }: { attachments: Attachments }) {
             {!!items.length && (
                 <ul
                     className="m-0 flex list-none flex-wrap items-center gap-2.5 p-0 pt-1.5 pr-1.5"
-                    aria-label="Attachments to send"
+                    aria-label={t('chat.composer:attachments.tray')}
                 >
                     {items.map((item) => (
                         <li
@@ -100,7 +103,7 @@ export function AttachmentTray({ attachments }: { attachments: Attachments }) {
                                     type="button"
                                     data-slot="tray-open"
                                     className="block cursor-zoom-in rounded-lg p-0"
-                                    aria-label={`View ${item.name}`}
+                                    aria-label={t('chat.composer:attachments.view', { name: item.name })}
                                     onClick={() => setShown(item.ref!.id)}
                                 >
                                     <img
@@ -115,7 +118,7 @@ export function AttachmentTray({ attachments }: { attachments: Attachments }) {
                                     type="button"
                                     data-slot="tray-chip"
                                     className={chip}
-                                    aria-label={`View ${item.name}`}
+                                    aria-label={t('chat.composer:attachments.view', { name: item.name })}
                                     onClick={() => setShown(item.ref!.id)}
                                 >
                                     <FileText size={14} aria-hidden />
@@ -130,11 +133,15 @@ export function AttachmentTray({ attachments }: { attachments: Attachments }) {
                                         'flex flex-col items-center justify-center gap-1 text-[10px] text-muted-foreground',
                                     )}
                                     role="progressbar"
-                                    aria-label={`Uploading ${item.name}`}
+                                    aria-label={t('chat.composer:attachments.uploading', { name: item.name })}
                                     aria-valuenow={Math.round(item.progress * 100)}
                                 >
                                     <LoaderCircle size={18} className={spin} />
-                                    <span>{Math.round(item.progress * 100)}%</span>
+                                    <span>
+                                        {t('chat.composer:attachments.progress', {
+                                            percent: Math.round(item.progress * 100),
+                                        })}
+                                    </span>
                                 </span>
                             ) : (
                                 <span data-slot="tray-chip" className={chip}>
@@ -148,7 +155,9 @@ export function AttachmentTray({ attachments }: { attachments: Attachments }) {
                                         {item.status === 'failed'
                                             ? item.error
                                             : item.status === 'uploading'
-                                              ? `${Math.round(item.progress * 100)}%`
+                                              ? t('chat.composer:attachments.progress', {
+                                                    percent: Math.round(item.progress * 100),
+                                                })
                                               : formatSize(item.size)}
                                     </small>
                                 </span>
@@ -158,7 +167,7 @@ export function AttachmentTray({ attachments }: { attachments: Attachments }) {
                                     type="button"
                                     data-slot="tray-action"
                                     className={action}
-                                    aria-label={`Retry ${item.name}`}
+                                    aria-label={t('chat.composer:attachments.retry', { name: item.name })}
                                     onClick={() => attachments.retry(item.key)}
                                 >
                                     <RotateCw size={12} />
@@ -168,7 +177,7 @@ export function AttachmentTray({ attachments }: { attachments: Attachments }) {
                                 type="button"
                                 data-slot="tray-action"
                                 className={cn(action, 'absolute -top-[7px] -right-[7px]')}
-                                aria-label={`Remove ${item.name}`}
+                                aria-label={t('chat.composer:attachments.remove', { name: item.name })}
                                 onClick={() => attachments.remove(item.key)}
                             >
                                 <X size={12} />
@@ -188,7 +197,7 @@ export function AttachmentTray({ attachments }: { attachments: Attachments }) {
                         type="button"
                         data-slot="tray-action"
                         className={action}
-                        aria-label="Dismiss"
+                        aria-label={t('chat.composer:attachments.dismiss')}
                         onClick={attachments.dismissNotice}
                     >
                         <X size={12} />

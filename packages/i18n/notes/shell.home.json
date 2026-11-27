@@ -1,0 +1,15 @@
+{
+    "title": "Heading of the home page.",
+    "counts.socios": "Part of the line under the home page's heading; socios are the AI agents. The parts are joined by counts.separator.",
+    "counts.spaces": "\"Space\" is a product noun (a team's shared area), capitalized.",
+    "counts.separator": "What joins the counts under the heading: a middle dot with spaces.",
+    "new-chat": "Button that starts a conversation with the person's home socio; also the tooltip of each socio card's new-chat button.",
+    "new-chat-with": "Screen-reader label of a socio card's new-chat button; {{name}} is the socio's name.",
+    "socios": "Section heading over the person's socios (AI agents).",
+    "open-socio": "Screen-reader label of a socio's card: {{name}} is its name, {{state}} Idle, Working or Paused.",
+    "ready": "A socio card's line when the socio has no instructions yet.",
+    "apps": "Section heading over the modules the person can open.",
+    "glance": "Section heading over small status widgets.",
+    "recent-kind": "After a recent conversation's socio name: a team conversation or a Room (a product noun: a shared chat with people and a socio).",
+    "empty-setup": "When text chat isn't set up yet; Settings is the settings page."
+}

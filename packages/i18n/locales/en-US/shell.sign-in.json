@@ -1,0 +1,55 @@
+{
+    "welcome": "Welcome back.",
+    "sign-in-to": "Sign in to {{name}}.",
+    "passkey": "Sign in with a passkey",
+    "provider": "Sign in with {{name}}",
+    "send-link": "Send me a sign-in link",
+    "form": "Sign in with email",
+    "name": "Name",
+    "name-placeholder": "Your name",
+    "email": "Email",
+    "password": "Password",
+    "send-reset": "Send reset link",
+    "create-account": "Create account",
+    "sign-in": "Sign in",
+    "forgot": "Forgot password?",
+    "sign-up": "Create an account",
+    "back": "Back to sign-in",
+    "invite-only": "Accounts are by invitation. Ask an admin for one.",
+    "invite-only-reset": "Accounts are by invitation. Ask an admin for one, or for a new password link.",
+    "link-sent": "If that account can receive links, one is on its way. Check your Telegram.",
+    "reset-sent": "If that address has an account, a link to set a new password is on its way.",
+    "password-set": "Password set. Sign in with it.",
+    "mock": {
+        "title": "Who’s thinking today?",
+        "choose": "Choose your account to continue.",
+        "continue": "Continue as {{name}}",
+        "warning": "Development sign-in. Anyone who can reach this server can choose any account."
+    },
+    "link": {
+        "title": "Sign in to Socio.",
+        "once": "This link works once, for 15 minutes.",
+        "continue": "Continue",
+        "unasked": "Didn't ask for it? Close this page; the link expires on its own."
+    },
+    "set-password": {
+        "title": "Choose a password.",
+        "rules": "At least 10 characters. The link works once.",
+        "differ": "The passwords differ.",
+        "failed": "Could not set the password. Ask for a new link.",
+        "new": "New password",
+        "repeat": "Repeat the password",
+        "submit": "Set password"
+    },
+    "errors": {
+        "unreachable": "Could not reach the server.",
+        "users": "Could not load users.",
+        "sign-in": "Could not sign in.",
+        "not-invited": "This account is not invited to this workspace. Ask an admin to add you.",
+        "state": "The sign-in expired or was started in another browser. Try again.",
+        "link-used": "That sign-in link is used up or expired. Ask for a new one.",
+        "method-off": "That way of signing in is turned off here. Sign in another way, or ask an operator.",
+        "not-linked": "An account with this email exists, but the provider did not confirm the address. Sign in another way, or ask an admin.",
+        "failed": "Sign-in failed. Try again, or ask an admin."
+    }
+}

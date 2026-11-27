@@ -2,6 +2,7 @@ import { MessageCircle, MoreHorizontal, Plus, Send, Users } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useMatch } from 'react-router';
 
+import { useTranslation } from '@socio/i18n/react';
 import { isRoom } from '@socio/shared/rooms/room-view';
 import type { Conversation, Dot } from '@socio/shared/types';
 
@@ -42,12 +43,17 @@ export const newChatPath = (dot: Pick<Dot, 'id'>) => `${dotPath(dot)}/new`;
  * their own; admins edit every Dot, people their own.
  */
 export function DotsGroup() {
+    const { t } = useTranslation(['chat.nav']);
     const nav = useSidebarNav();
     const { workspace } = nav.context;
     return (
-        <SidebarGroup>
-            <SidebarGroupLabel>Socios</SidebarGroupLabel>
-            <SidebarGroupAction aria-label="Create socio" title="Create socio" onClick={nav.go(nav.onCreateDot)}>
+        <SidebarGroup data-nav="chat-socios">
+            <SidebarGroupLabel>{t('chat.nav:socios')}</SidebarGroupLabel>
+            <SidebarGroupAction
+                aria-label={t('chat.nav:create-socio')}
+                title={t('chat.nav:create-socio')}
+                onClick={nav.go(nav.onCreateDot)}
+            >
                 <Plus />
             </SidebarGroupAction>
             <SidebarMenu>
@@ -67,6 +73,7 @@ export function DotsGroup() {
  * right-click; Rename turns the row into a text box.
  */
 function DotRow({ dot }: { dot: Dot }) {
+    const { t } = useTranslation(['chat.nav']);
     const nav = useSidebarNav();
     const { workspace, admin } = nav.context;
     const [menu, setMenu] = useState(false);
@@ -74,6 +81,7 @@ function DotRow({ dot }: { dot: Dot }) {
     const active = nav.activeDotId === dot.id;
     const mine = !!dot.ownerId && dot.ownerId === workspace.user.id;
     const editable = admin || mine;
+    const personal = dot.ownerId ? 'personal' : undefined;
     const mascot = (
         <Mascot
             identity={dot.id}
@@ -105,15 +113,13 @@ function DotRow({ dot }: { dot: Dot }) {
                 <SidebarMenuButton
                     asChild
                     isActive={active}
-                    tooltip={`${dot.name} (${dot.ownerId ? 'personal' : 'workspace'})`}
+                    tooltip={t('chat.nav:dot.tooltip', { name: dot.name, context: personal })}
                 >
                     <Link
                         to={dotPath(dot)}
-                        title={
-                            dot.ownerId
-                                ? 'Personal socio: only you see and chat with it.'
-                                : 'Workspace socio: everyone can see and use it.'
-                        }
+                        // Its home page's code and data (its words too) before the click.
+                        prefetch="intent"
+                        title={t('chat.nav:dot.title', { context: personal })}
                         aria-current={active ? 'page' : undefined}
                         onClick={nav.close}
                     >
@@ -135,7 +141,7 @@ function DotRow({ dot }: { dot: Dot }) {
                     trigger={
                         <SidebarMenuAction
                             showOnHover
-                            aria-label={`${dot.name} options`}
+                            aria-label={t('chat.nav:dot.options', { name: dot.name })}
                             className="pointer-coarse:opacity-100"
                         >
                             <MoreHorizontal />
@@ -149,12 +155,13 @@ function DotRow({ dot }: { dot: Dot }) {
 
 /** The conversation's icon: room, team, Telegram or a plain chat. */
 export function ChatIcon({ thread, className }: { thread: Conversation; className?: string }) {
+    const { t } = useTranslation(['chat.nav']);
     return isRoom(thread) ? (
         <RoomIcon className={className} />
     ) : thread.team ? (
-        <Users aria-label="Team conversation" className={className} />
+        <Users aria-label={t('chat.nav:icon.team')} className={className} />
     ) : thread.source === 'telegram' ? (
-        <Send aria-label="Telegram conversation" className={className} />
+        <Send aria-label={t('chat.nav:icon.telegram')} className={className} />
     ) : (
         <MessageCircle className={className} />
     );
@@ -165,6 +172,7 @@ export function ChatIcon({ thread, className }: { thread: Conversation; classNam
  * Rooms have their own group (CB-212).
  */
 export function RecentChatsGroup() {
+    const { t } = useTranslation(['chat.nav']);
     const nav = useSidebarNav();
     const { workspace, configured } = nav.context;
     const [allChats, setAllChats] = useState(false);
@@ -175,12 +183,12 @@ export function RecentChatsGroup() {
         : chats.filter((thread, index) => index < RECENT_CHATS || thread.id === selectedThread);
     return (
         // Titles need the width: hidden while collapsed to icons.
-        <SidebarGroup className="group-data-[collapsible=icon]:hidden">
-            <SidebarGroupLabel>Recent chats</SidebarGroupLabel>
+        <SidebarGroup data-nav="chat-recent" className="group-data-[collapsible=icon]:hidden">
+            <SidebarGroupLabel>{t('chat.nav:recent')}</SidebarGroupLabel>
             {configured && (
                 <SidebarGroupAction
-                    aria-label="New conversation"
-                    title="New conversation"
+                    aria-label={t('chat.nav:new-chat')}
+                    title={t('chat.nav:new-chat')}
                     onClick={nav.go(nav.onNewChat)}
                 >
                     <Plus />
@@ -188,9 +196,9 @@ export function RecentChatsGroup() {
             )}
             <SidebarMenu>
                 {!configured ? (
-                    <SidebarNote>Set up text chat to begin a persistent conversation.</SidebarNote>
+                    <SidebarNote>{t('chat.nav:setup')}</SidebarNote>
                 ) : !chats.length ? (
-                    <SidebarNote>Your first conversation will live here.</SidebarNote>
+                    <SidebarNote>{t('chat.nav:empty')}</SidebarNote>
                 ) : (
                     shownChats.map((thread) => (
                         <ChatRow
@@ -209,7 +217,9 @@ export function RecentChatsGroup() {
                             onClick={() => setAllChats(!allChats)}
                         >
                             <MoreHorizontal />
-                            <span>{allChats ? 'Show fewer' : `Show all ${chats.length}`}</span>
+                            <span>
+                                {allChats ? t('chat.nav:show-fewer') : t('chat.nav:show-all', { count: chats.length })}
+                            </span>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 )}
@@ -224,6 +234,7 @@ export function RecentChatsGroup() {
  * turns the row into a text box.
  */
 function ChatRow({ thread, dotName }: { thread: Conversation; dotName?: string }) {
+    const { t } = useTranslation(['chat.nav']);
     const nav = useSidebarNav();
     const owned = ownsChat(thread, nav.context.workspace.user.id);
     const title = useChatTitle(thread);
@@ -249,6 +260,8 @@ function ChatRow({ thread, dotName }: { thread: Conversation; dotName?: string }
             ) : (
                 <NavButton
                     to={`/chats/${encodeURIComponent(thread.id)}`}
+                    // The chat's code is on its way before the click.
+                    prefetch="intent"
                     title={title}
                     onNavigate={nav.close}
                     // With a mouse the ⋯ takes the Dot's name's place while shown;
@@ -267,7 +280,7 @@ function ChatRow({ thread, dotName }: { thread: Conversation; dotName?: string }
                         )}
                     >
                         {dotName}
-                        {thread.team ? ' · Team' : ''}
+                        {thread.team && ` · ${t('chat.nav:team')}`}
                     </span>
                 </NavButton>
             )}
@@ -281,7 +294,7 @@ function ChatRow({ thread, dotName }: { thread: Conversation; dotName?: string }
                     trigger={
                         <SidebarMenuAction
                             showOnHover
-                            aria-label={`Options for ${title}`}
+                            aria-label={t('chat.nav:chat-options', { title })}
                             className="pointer-coarse:opacity-100"
                         >
                             <MoreHorizontal />

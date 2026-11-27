@@ -1,0 +1,12 @@
+{
+    "gone": "No longer available",
+    "not-connected": "{{model}} (not connected)",
+    "inherit": {
+        "none": "no model available",
+        "automatic": "Automatic: {{automatic}}",
+        "default": "Socio default: {{model}}",
+        "default-gone": "Socio default unavailable; automatic: {{automatic}}",
+        "default-needs-connection": "Socio default {{model}} needs a connection; automatic: {{automatic}}",
+        "model": "{{group}} · {{model}}"
+    }
+}

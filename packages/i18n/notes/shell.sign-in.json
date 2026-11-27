@@ -1,0 +1,17 @@
+{
+    "sign-in-to": "{{name}} is the workspace's name (its brand), or Socio.",
+    "provider": "{{name}} is a sign-in provider such as Google or GitHub; don't translate it.",
+    "send-link": "Button: the server sends a one-time sign-in link to the person's Telegram.",
+    "form": "Screen-reader label of the email and password form.",
+    "invite-only": "Shown when people can't sign up themselves.",
+    "invite-only-reset": "The same, when the server can't email a password reset: an admin can send a link to set a new password.",
+    "link-sent": "After asking for a sign-in link. Telegram is the messaging app; don't translate it.",
+    "mock.title": "Heading of the development sign-in that lists test accounts. Playful.",
+    "mock.continue": "Button per test account; {{name}} is the account's name.",
+    "link.title": "Heading of the page a one-time sign-in link opens. \"Socio\" is the product name.",
+    "link.unasked": "For someone who opened a link they didn't ask for.",
+    "set-password.title": "Heading of the page an invite or reset link opens.",
+    "errors.state": "After a sign-in with a provider (Google…) that expired or started in another browser.",
+    "errors.method-off": "That sign-in method is turned off on this server; an operator runs the server.",
+    "errors.not-linked": "The provider (Google…) didn't confirm the email address of an existing account."
+}

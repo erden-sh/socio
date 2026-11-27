@@ -127,7 +127,15 @@
             }
         },
         {
-            "files": ["packages/client/src/modules/settings/**"],
+            "files": [
+                "packages/client/src/modules/settings/**",
+                "packages/client/src/modules/chat/**",
+                "packages/client/src/shell/**",
+                "packages/client/src/root.tsx",
+                "packages/client/src/views/ChatViews.tsx",
+                "packages/client/src/views/NotFound.tsx",
+                "packages/client/src/views/RouteError.tsx"
+            ],
             "rules": {
                 "socio/no-literal-text": "error"
             }

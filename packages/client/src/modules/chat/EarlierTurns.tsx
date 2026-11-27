@@ -1,6 +1,8 @@
 import { ArrowUp, LoaderCircle } from 'lucide-react';
 import { useEffect, useLayoutEffect, useRef, type RefObject } from 'react';
 
+import { useTranslation } from '@socio/i18n/react';
+
 import { Button } from '@/components/ui/button';
 
 /** Earlier turns load this far before the reader reaches the top. */
@@ -26,6 +28,7 @@ export function EarlierTurns({
     oldest: number | undefined;
     onLoad: () => void;
 }) {
+    const { t } = useTranslation(['chat']);
     const sentinel = useRef<HTMLDivElement>(null);
     // The first message shown and its place in view, before the load.
     const anchor = useRef<{ id: string; top: number }>(undefined);
@@ -93,7 +96,7 @@ export function EarlierTurns({
             {loading ? (
                 <span role="status" className="flex items-center gap-2">
                     <LoaderCircle size={13} className="shrink-0 animate-spin motion-reduce:animate-none" />
-                    Loading earlier messages…
+                    {t('chat:earlier.loading')}
                 </span>
             ) : (
                 <Button
@@ -104,7 +107,7 @@ export function EarlierTurns({
                     onClick={() => load.current()}
                 >
                     <ArrowUp aria-hidden="true" />
-                    Show earlier messages
+                    {t('chat:earlier.show')}
                 </Button>
             )}
         </div>

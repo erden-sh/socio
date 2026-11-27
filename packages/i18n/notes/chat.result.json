@@ -1,0 +1,17 @@
+{
+    "brief": "Tab of the panel beside a chat: the research brief the socio (AI agent) wrote.",
+    "computer": "Tab of the panel: the socio's computer (its sandboxed machine); {{name}} is the socio's name.",
+    "socio": "Stands in for the socio's name when there is none.",
+    "close": "Accessible name of the X button that closes the panel.",
+    "computer-for": "Label of the list that picks whose computer the panel shows.",
+    "select-computer": "Accessible name of that list.",
+    "heading": "Small capitals over the brief. _sample: an invented example brief.",
+    "download": "Accessible name of the button that downloads the brief as a text file.",
+    "download-sources": "Heading of the sources list in the downloaded text file.",
+    "image": "In place of an image in the brief (images aren't shown); {{alt}} is its description.",
+    "image-omitted": "In place of an image without a description.",
+    "sources": "Heading of the brief's sources, followed by how many.",
+    "fictional-source": "Under a source of the example brief: it's invented, not a real page.",
+    "empty.title": "Heading while there's no brief yet.",
+    "empty.text": "Under it. _failed: the last run failed."
+}

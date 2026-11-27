@@ -1,3 +1,4 @@
+import { getI18n } from 'react-i18next';
 import { expect, it } from 'vitest';
 
 import type { HierarchyPage } from '@socio/shared/pages/page-hierarchy';
@@ -18,6 +19,8 @@ const context = (extra: Partial<CrumbContext> = {}): CrumbContext => ({
     admin: false,
     dot: {} as CrumbContext['dot'],
     params: { spaceId: 's1', pageId: 'leaf' },
+    // The en-US instance tests/setup/en-us-i18n.ts sets up.
+    t: getI18n().t,
     data: {
         spaceId: 's1',
         pages: [p('root'), p('child', 'root'), p('leaf', 'child')],

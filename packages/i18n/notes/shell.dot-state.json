@@ -1,0 +1,5 @@
+{
+    "idle": "What a socio (AI agent) is doing: nothing right now.",
+    "working": "What a socio is doing: one of its tasks or turns is running.",
+    "paused": "What a socio is doing: an admin paused every socio."
+}

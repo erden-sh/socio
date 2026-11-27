@@ -1,6 +1,7 @@
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
+import { useTranslation } from '@socio/i18n/react';
 import type { InAppNotice } from '@socio/shared/notifications';
 
 import { api } from '../lib/api';
@@ -43,6 +44,8 @@ const visible = () => typeof document === 'undefined' || document.visibilityStat
  * background leaves them for the tab the person is looking at.
  */
 export function useInAppNotices(notices: readonly InAppNotice[] | undefined, open: (link: string) => void) {
+    const { t } = useTranslation(['shell']);
+    const openLabel = t('shell:notices.open');
     const shown = useRef(new Set<string>());
     // Shown again: notices that came while hidden show now.
     const [inView, setInView] = useState(visible);
@@ -73,9 +76,9 @@ export function useInAppNotices(notices: readonly InAppNotice[] | undefined, ope
                 description: notice.body,
                 duration: 15_000,
                 closeButton: true,
-                action: { label: 'Open', onClick: () => go(inApp(notice.link)) },
+                action: { label: openLabel, onClick: () => go(inApp(notice.link)) },
             });
         }
         void api('/notifications/in-app/seen', 'POST', { ids }).catch(() => undefined);
-    }, [notices, inView]);
+    }, [notices, inView, openLabel]);
 }

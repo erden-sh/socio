@@ -1,0 +1,55 @@
+{
+    "ready": "Ready when you are.",
+    "soul": "Soul",
+    "settings": "Settings",
+    "new-chat": "New chat",
+    "team": "Team",
+    "room": "Room",
+    "run": {
+        "running": "Running",
+        "finished": "Finished",
+        "stopped": "Stopped",
+        "failed": "Failed",
+        "interrupted": "Interrupted"
+    },
+    "archived": {
+        "banner": "This socio is archived. You can read its chats and history; it no longer answers.",
+        "unarchive": "Unarchive"
+    },
+    "quiet": {
+        "text": "Nothing running, waiting for you or scheduled",
+        "links": "Where work shows up",
+        "approvals": "Approvals",
+        "schedules": "Schedules",
+        "board": "Board"
+    },
+    "columns": {
+        "now": "Now",
+        "earlier": "Earlier",
+        "next": "Next"
+    },
+    "all_one": "All {{count, number}}",
+    "all_other": "All {{count, number}}",
+    "panels": {
+        "active": "Active chats",
+        "active-empty": "Start a chat with {{name}}.",
+        "active-empty_archived": "No active chats.",
+        "running": "In progress",
+        "running-empty": "Nothing running.",
+        "load-failed": "Could not load its turns.",
+        "archived": "Archived chats",
+        "archived-empty": "Chats you archive wait here.",
+        "recent": "Recent turns",
+        "recent-empty": "No turns yet.",
+        "nothing-planned": "Nothing planned."
+    },
+    "chats": {
+        "title": "Chats",
+        "tabs": "Chats with {{name}}",
+        "active": "Active",
+        "archived": "Archived",
+        "active-empty": "Your chats with {{name}} will live here.",
+        "active-empty_archived": "No active chats with this socio.",
+        "archived-empty": "No archived chats with {{name}}."
+    }
+}

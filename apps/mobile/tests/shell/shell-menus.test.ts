@@ -36,11 +36,16 @@ describe('Home’s ⋯ menu', () => {
 
     it('words Pause and Resume as the web’s header, and asks with the web’s paused line', () => {
         const header = client('shell/AppHeader.tsx');
-        expect(header).toContain(`'${RESUME_ALL}'`);
-        expect(header).toContain(`'${PAUSE_ALL}'`);
+        // The web's words are its en-US dictionary's (shell).
+        const shell = JSON.parse(
+            readFileSync(new URL('../../../../packages/i18n/locales/en-US/shell.json', import.meta.url), 'utf8'),
+        ) as { header: Record<string, string>; 'paused-banner': string };
+        expect(shell.header.resume).toBe(RESUME_ALL);
+        expect(shell.header.pause).toBe(PAUSE_ALL);
+        expect(header).toContain("t('shell:header.resume') : t('shell:header.pause')");
         expect(header).toContain("shell.mutate('/settings', 'PATCH', { paused: !paused })");
         expect(PAUSE_QUESTION.cancel).toBe('Cancel');
-        expect(client('shell/AppShell.tsx')).toContain('Active compute stops and scheduled tasks wait.');
+        expect(shell['paused-banner']).toContain('Active compute stops and scheduled tasks wait.');
     });
 
     it('sends the web’s PATCH /api/settings with { paused }, and says whether the server took it', async () => {

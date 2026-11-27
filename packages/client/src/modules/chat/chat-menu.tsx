@@ -3,9 +3,11 @@ import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } fro
 import { useMatch, useNavigate } from 'react-router';
 import { toast } from 'sonner';
 
+import { useTranslation } from '@socio/i18n/react';
 import { roomsOn } from '@socio/shared/rooms/room-view';
 import { MAX_CHAT_TITLE, type Conversation, type ConversationDeletion, type DeleteBlocker } from '@socio/shared/types';
 
+import { onDemand, useOnDemand } from '../../i18n/on-demand';
 import { api } from '../../lib/api';
 import { showInHeaderMenu, useHeaderMenu } from '../../shell/header-menu';
 import { useShell } from '../../shell/shell-context';
@@ -64,27 +66,9 @@ export function useChatTitle(thread: Conversation) {
     return saving ?? thread.title;
 }
 
-/** Why Delete is unavailable, in the menu's tooltip. */
-export const blockedReason: Record<DeleteBlocker, string> = {
-    running: 'Stop the socio first',
-    call: 'End the call first',
-    telegram: 'Telegram chats can’t be deleted here',
-    page: 'This chat belongs to a page',
-};
-
-/** "This will delete “Plan” and its 2 scheduled tasks." */
-export function deleteSentence(title: string, scheduledTasks: number) {
-    const tasks =
-        scheduledTasks === 1
-            ? ' and its scheduled task'
-            : scheduledTasks > 1
-              ? ` and its ${scheduledTasks} scheduled tasks`
-              : '';
-    return `This will delete “${title}”${tasks}.`;
-}
-
 /** Saves a new title: trimmed; empty or unchanged keeps the old one. */
 function useRename(thread: Conversation) {
+    const { t } = useTranslation(['chat.menu']);
     const shell = useShell();
     return async (value: string) => {
         const title = value.trim().slice(0, MAX_CHAT_TITLE);
@@ -98,7 +82,7 @@ function useRename(thread: Conversation) {
             });
             await shell.refresh();
         } catch (cause) {
-            toast.error(cause instanceof Error ? cause.message : 'Could not rename the chat.');
+            toast.error(cause instanceof Error ? cause.message : t('chat.menu:errors.rename'));
         } finally {
             setPending(thread.id, undefined);
         }
@@ -119,6 +103,7 @@ export function ChatTitleInput({
     onDone: () => void;
     className?: string;
 }) {
+    const { t } = useTranslation(['chat.menu']);
     const rename = useRename(thread);
     const done = useRef(false);
     const finish = (value?: string) => {
@@ -133,7 +118,7 @@ export function ChatTitleInput({
     };
     return (
         <Input
-            aria-label="Chat title"
+            aria-label={t('chat.menu:title-input')}
             data-slot="chat-title-input"
             defaultValue={thread.title}
             maxLength={MAX_CHAT_TITLE}
@@ -191,6 +176,7 @@ function useDeletion(id: string, active: boolean) {
  * open one. False when the server refused (its reason toasts).
  */
 function useDeleteChat() {
+    const { t } = useTranslation(['chat.menu']);
     const shell = useShell();
     const navigate = useNavigate();
     const openChat = useMatch('/chats/:threadId')?.params.threadId;
@@ -199,7 +185,7 @@ function useDeleteChat() {
             await api(`/conversations/${encodeURIComponent(thread.id)}`, 'DELETE');
         } catch (cause) {
             onSettled();
-            toast.error(cause instanceof Error ? cause.message : 'Could not delete the chat.');
+            toast.error(cause instanceof Error ? cause.message : t('chat.menu:errors.delete'));
             return false;
         }
         onSettled();
@@ -208,7 +194,7 @@ function useDeleteChat() {
             onLeave?.();
             void navigate(`/dots/${encodeURIComponent(thread.dotId)}/new`);
         }
-        toast.success(`Deleted “${title}”`);
+        toast.success(t('chat.menu:toasts.deleted', { title }));
         await shell.refresh();
         return true;
     };
@@ -216,9 +202,12 @@ function useDeleteChat() {
 
 /**
  * "Delete chat?" for one chat, naming its scheduled tasks; when something
- * stops the delete now, it says what and Delete is off.
+ * stops the delete now, it says what and Delete is off. Once chat.menu is
+ * in: Settings › Archived chats opens it too, where no route inlines it.
  */
-export function DeleteChatDialog({
+export const DeleteChatDialog = onDemand(['chat.menu'], DeleteChatConfirm);
+
+function DeleteChatConfirm({
     thread,
     onClose,
     onLeave,
@@ -228,13 +217,16 @@ export function DeleteChatDialog({
     /** Before leaving the open chat it deleted. */
     onLeave?: () => void;
 }) {
+    const { t } = useTranslation(['chat.menu']);
     const title = useChatTitle(thread);
     const info = useDeletion(thread.id, true);
     const remove = useDeleteChat();
     const blocked = info?.blocked;
+    const tasks = info?.scheduledTasks ?? 0;
     return (
         <ConfirmDelete
-            title="Delete chat?"
+            title={t('chat.menu:delete-dialog.title')}
+            action={t('chat.menu:delete')}
             slot="delete-chat"
             onClose={onClose}
             disabled={!!blocked}
@@ -242,7 +234,11 @@ export function DeleteChatDialog({
                 await remove(thread, title, onClose, onLeave);
             }}
         >
-            {blocked ? `${blockedReason[blocked]}.` : deleteSentence(title, info?.scheduledTasks ?? 0)}
+            {blocked
+                ? `${t(`chat.menu:blocked.${blocked}`)}.`
+                : tasks > 0
+                  ? t('chat.menu:delete-dialog.body-tasks', { title, count: tasks })
+                  : t('chat.menu:delete-dialog.body', { title })}
         </ConfirmDelete>
     );
 }
@@ -254,6 +250,7 @@ export function DeleteChatDialog({
  * Undo brings it back and returns to it.
  */
 export function useArchiveChat() {
+    const { t } = useTranslation(['chat.menu']);
     const shell = useShell();
     const navigate = useNavigate();
     const openChat = useMatch('/chats/:threadId')?.params.threadId;
@@ -268,8 +265,8 @@ export function useArchiveChat() {
                 cause instanceof Error
                     ? cause.message
                     : archived
-                      ? 'Could not archive the chat.'
-                      : 'Could not unarchive the chat.',
+                      ? t('chat.menu:errors.archive')
+                      : t('chat.menu:errors.unarchive'),
             );
             return false;
         }
@@ -288,7 +285,7 @@ export function useArchiveChat() {
         if (!(await patch(thread, false))) {
             return false;
         }
-        toast.success('Chat unarchived');
+        toast.success(t('chat.menu:toasts.unarchived'));
         await shell.refresh();
         return true;
     };
@@ -301,9 +298,9 @@ export function useArchiveChat() {
             onLeave?.();
             void navigate(`/dots/${encodeURIComponent(thread.dotId)}/new`);
         }
-        toast('Chat archived', {
+        toast(t('chat.menu:toasts.archived'), {
             action: {
-                label: 'Undo',
+                label: t('chat.menu:undo'),
                 onClick: () => void undo(thread, left),
             },
         });
@@ -333,26 +330,27 @@ function ChatMenuItems({
     onDelete: () => void;
     onLeave?: () => void;
 }) {
+    const { t } = useTranslation(['chat.menu']);
     const shareable = useShareable(thread);
     const [why, setWhy] = useState(false);
     const { archive, unarchive } = useArchiveChat();
     return (
         <>
             <DropdownMenuItem onSelect={onRename}>
-                <Pencil /> Rename
+                <Pencil /> {t('chat.menu:rename')}
             </DropdownMenuItem>
             {shareable && (
                 <DropdownMenuItem onSelect={onShare}>
-                    <MessagesSquare /> Share as a room…
+                    <MessagesSquare /> {t('chat.menu:share')}
                 </DropdownMenuItem>
             )}
             {thread.archivedAt ? (
                 <DropdownMenuItem onSelect={() => void unarchive(thread)}>
-                    <ArchiveRestore /> Unarchive
+                    <ArchiveRestore /> {t('chat.menu:unarchive')}
                 </DropdownMenuItem>
             ) : (
                 <DropdownMenuItem onSelect={() => void archive(thread, onLeave)}>
-                    <Archive /> Archive
+                    <Archive /> {t('chat.menu:archive')}
                 </DropdownMenuItem>
             )}
             <Tooltip open={!!blocked && why} onOpenChange={setWhy}>
@@ -372,10 +370,10 @@ function ChatMenuItems({
                             onDelete();
                         }}
                     >
-                        <Trash2 /> Delete
+                        <Trash2 /> {t('chat.menu:delete')}
                     </DropdownMenuItem>
                 </TooltipTrigger>
-                {blocked && <TooltipContent side="right">{blockedReason[blocked]}</TooltipContent>}
+                {blocked && <TooltipContent side="right">{t(`chat.menu:blocked.${blocked}`)}</TooltipContent>}
             </Tooltip>
         </>
     );
@@ -385,7 +383,9 @@ function ChatMenuItems({
  * The ⋯ menu of one chat. `trigger` is its button; `open` is controlled
  * so a right-click on the row opens it too. Opening it asks the server
  * what Delete would take and whether something stops it now. An archived
- * chat (opened by its link) offers Unarchive instead of Archive.
+ * chat (opened by its link) offers Unarchive instead of Archive. The
+ * sidebar has it on every page: its items wait for chat.menu, which only
+ * chat routes inline (asked for as the row mounts, so it's in by a click).
  */
 export function ChatMenu({
     thread,
@@ -405,6 +405,7 @@ export function ChatMenu({
     onLeave?: () => void;
     align?: 'start' | 'end';
 }) {
+    const ready = useOnDemand(['chat.menu']);
     const info = useDeletion(thread.id, open);
     const [confirming, setConfirming] = useState(false);
     const [sharing, setSharing] = useState(false);
@@ -424,17 +425,19 @@ export function ChatMenu({
                         renaming.current = false;
                     }}
                 >
-                    <ChatMenuItems
-                        thread={thread}
-                        blocked={info?.blocked}
-                        onRename={() => {
-                            renaming.current = true;
-                            onRename();
-                        }}
-                        onShare={() => setSharing(true)}
-                        onDelete={() => setConfirming(true)}
-                        onLeave={onLeave}
-                    />
+                    {ready && (
+                        <ChatMenuItems
+                            thread={thread}
+                            blocked={info?.blocked}
+                            onRename={() => {
+                                renaming.current = true;
+                                onRename();
+                            }}
+                            onShare={() => setSharing(true)}
+                            onDelete={() => setConfirming(true)}
+                            onLeave={onLeave}
+                        />
+                    )}
                 </DropdownMenuContent>
             </DropdownMenu>
             {confirming && <DeleteChatDialog thread={thread} onClose={() => setConfirming(false)} onLeave={onLeave} />}
@@ -460,11 +463,12 @@ function ChatMenuSection({
     onShare: (from: HTMLElement | null) => void;
     onDelete: (from: HTMLElement | null) => void;
 }) {
+    const { t } = useTranslation(['chat.menu']);
     const info = useDeletion(thread.id, true);
     const { defer } = useHeaderMenu();
     return (
         <DropdownMenuGroup data-slot="header-chat-items">
-            <DropdownMenuLabel className="text-xs text-muted-foreground">Chat</DropdownMenuLabel>
+            <DropdownMenuLabel className="text-xs text-muted-foreground">{t('chat.menu:section')}</DropdownMenuLabel>
             <ChatMenuItems
                 thread={thread}
                 blocked={info?.blocked}
@@ -503,6 +507,7 @@ function useShareable(thread: Conversation) {
  * the same menu, or the room's.
  */
 export function ChatTitleCrumb({ thread }: { thread: Conversation }) {
+    const { t } = useTranslation(['chat.menu']);
     const { workspace } = useShell();
     const owned = ownsChat(thread, workspace.user.id);
     const title = useChatTitle(thread);
@@ -548,7 +553,7 @@ export function ChatTitleCrumb({ thread }: { thread: Conversation }) {
                             size="icon"
                             // An invisible 44 px hit area on a touch screen (CB-219).
                             className="relative size-7 shrink-0 text-muted-foreground max-md:hidden pointer-coarse:after:absolute pointer-coarse:after:-inset-2"
-                            aria-label="Room options"
+                            aria-label={t('chat.menu:room-options')}
                         >
                             <MoreHorizontal />
                         </Button>
@@ -580,7 +585,7 @@ export function ChatTitleCrumb({ thread }: { thread: Conversation }) {
                             variant="ghost"
                             size="icon"
                             className="size-7 shrink-0 text-muted-foreground max-md:hidden"
-                            aria-label="Chat options"
+                            aria-label={t('chat.menu:chat-options')}
                         >
                             <MoreHorizontal />
                         </Button>

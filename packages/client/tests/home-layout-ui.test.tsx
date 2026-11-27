@@ -6,7 +6,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
 import type { State, WorkspaceState } from '@socio/shared/types';
 
-import { firstClause, homeCounts } from '../src/shell/Home';
+import { firstClause, useHomeCounts } from '../src/shell/Home';
 
 import { createTestRouter } from './helpers/app-router';
 
@@ -344,5 +344,16 @@ it('cuts an app’s description to its first clause and counts only what there i
         'Recurring work your socios do for you',
     );
     expect(firstClause('The team’s issue tracker: bugs, ideas.')).toBe('The team’s issue tracker');
+    let homeCounts!: ReturnType<typeof useHomeCounts>;
+    function Probe() {
+        homeCounts = useHomeCounts();
+        return null;
+    }
+    const probe = createRoot(document.createElement('div'));
+    act(() => probe.render(<Probe />));
     expect(homeCounts({ socios: 1, spaces: 0, chats: 0, tasks: 0 })).toBe('1 socio');
+    expect(homeCounts({ socios: 2, spaces: 1, chats: 3, tasks: 1 })).toBe(
+        '2 socios · 1 Space · 3 chats · 1 scheduled task',
+    );
+    act(() => probe.unmount());
 });

@@ -5,7 +5,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
 import type { PairStatus } from '@socio/shared/device-sign-in';
 
-import { AddDeviceDialog, askingDevice, claimingDevice, countdown } from '../src/shell/AddDeviceDialog';
+import { AddDeviceDialog, claimingDevice, countdown, useAskingDevice } from '../src/shell/AddDeviceDialog';
 import { appReach, forgetAppReach } from '../src/shell/app-reach';
 
 declare global {
@@ -419,21 +419,25 @@ it('falls back to “your new device” when the claim carries no name', async (
 });
 
 it('names devices from what the claim carries', () => {
+    let askingDevice!: ReturnType<typeof useAskingDevice>;
+    function Probe() {
+        askingDevice = useAskingDevice();
+        return null;
+    }
+    const probe = createRoot(document.createElement('div'));
+    act(() => probe.render(<Probe />));
     expect(claimingDevice(undefined)).toBeUndefined();
     expect(claimingDevice({ ...claimed, label: 'Socio app on iPad' })).toEqual({ name: 'iPad', quoted: false });
-    expect(claimingDevice({ ...claimed, label: 'Socio app on Android' })).toEqual({
-        name: 'Android phone',
-        quoted: false,
-    });
+    expect(claimingDevice({ ...claimed, label: 'Socio app on Android' })).toEqual({ platform: 'android' });
     expect(claimingDevice({ ...claimed, label: 'Pixel 9' })).toEqual({ name: 'Pixel 9', quoted: true });
     expect(askingDevice(claimingDevice({ ...claimed, label: 'Socio app on Android' }))).toBe('An Android phone');
+    expect(askingDevice(claimingDevice({ ...claimed, label: 'Socio app on iPad' }))).toBe('An iPad');
+    expect(askingDevice(claimingDevice({ ...claimed, label: 'Socio app on Pixel' }))).toBe('A Pixel');
     expect(askingDevice(claimingDevice({ ...claimed, label: null, platform: 'ios' }))).toBe('An iPhone or iPad');
     expect(askingDevice(claimingDevice({ ...claimed, label: 'Pixel 9' }))).toBe('A device called “Pixel 9”');
     expect(askingDevice(undefined)).toBe('A new device');
-    expect(claimingDevice({ ...claimed, label: null, platform: 'android' })).toEqual({
-        name: 'Android phone',
-        quoted: false,
-    });
+    expect(claimingDevice({ ...claimed, label: null, platform: 'android' })).toEqual({ platform: 'android' });
+    act(() => probe.unmount());
 });
 
 it('hides “No app yet?” once a device claimed the code, and shows it again with a new code', async () => {

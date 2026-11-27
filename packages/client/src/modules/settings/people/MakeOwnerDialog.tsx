@@ -4,9 +4,9 @@ import { Trans, useTranslation } from '@socio/i18n/react';
 import type { StepUpChallenge, StepUpMethod, StepUpProof } from '@socio/shared/access-policy';
 import type { Account } from '@socio/shared/auth';
 
+import { onDemand } from '../../../i18n/on-demand';
 import { api } from '../../../lib/api';
 import { importOrReload } from '../../../shell/chunk-reload';
-import { onDemand } from '../on-demand';
 
 import { firstName } from './people-format';
 

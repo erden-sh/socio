@@ -1,0 +1,21 @@
+{
+    "reason": "Reason",
+    "note": {
+        "label": "Note (optional)",
+        "count": "{{length, number}} / {{max, number}}",
+        "over_one": "The note is {{count, number}} character too long.",
+        "over_other": "The note is {{count, number}} characters too long."
+    },
+    "remove": {
+        "title": "Remove your thumbs-down?",
+        "went": "Your report on this reply went to Ingenio.",
+        "cancel": "Cancel",
+        "confirm": "Remove thumbs-down",
+        "switch-up": "Switch to thumbs-up"
+    },
+    "notice": {
+        "not-sharing": "Reports aren’t shared with Ingenio any more, so this is a plain thumbs-down.",
+        "consent-changed": "Reporting changed since you confirmed, so nothing was reported. It’s a plain thumbs-down.",
+        "unavailable": "The report couldn’t be made this time, so this is a plain thumbs-down."
+    }
+}

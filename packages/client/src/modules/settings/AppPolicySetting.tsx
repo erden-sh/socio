@@ -10,9 +10,10 @@ import {
 } from '@socio/shared/device-sign-in';
 import type { Settings } from '@socio/shared/types';
 
+import { onDemand } from '../../i18n/on-demand';
+
 import { SettingsCard } from './AccountSettings';
 import { AutosaveHeader, SaveError, type SaveStatus } from './autosave';
-import { onDemand } from './on-demand';
 
 import { PermissionRow } from '@/components/form-fields';
 import { Input } from '@/components/ui/input';

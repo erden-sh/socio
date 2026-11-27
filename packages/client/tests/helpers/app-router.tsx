@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import type { RouteConfigEntry } from '@react-router/dev/routes';
@@ -41,6 +41,7 @@ export interface RouteModule {
     handle?: unknown;
     ErrorBoundary?: ComponentType;
     loader?: LoaderFunction;
+    clientLoader?: (args: Parameters<LoaderFunction>[0] & { serverLoader: () => Promise<unknown> }) => unknown;
     shouldRevalidate?: ShouldRevalidateFunction;
     middleware?: MiddlewareFunction[];
 }
@@ -76,7 +77,12 @@ function routeFields(module: RouteModule) {
         fields.ErrorBoundary = module.ErrorBoundary;
     }
     if (module.loader) {
-        fields.loader = module.loader;
+        const { loader, clientLoader } = module;
+        // As in the browser: a client loader runs for navigations, the
+        // server's loader through its `serverLoader`.
+        fields.loader = clientLoader
+            ? (args) => clientLoader({ ...args, serverLoader: async () => loader(args) })
+            : loader;
     }
     if (module.shouldRevalidate) {
         fields.shouldRevalidate = module.shouldRevalidate;
@@ -155,16 +161,28 @@ function libraryOf(spaceId: string, pages: PageSummary[], include?: string) {
     } satisfies PageLibrary;
 }
 
-/** A page's en-US dictionaries, from the source, as the server inlines them in development. */
+const EN_US = join(import.meta.dirname, '../../../i18n/locales/en-US');
+const ALL_NAMESPACES = readdirSync(EN_US).map((name) => name.slice(0, -'.json'.length));
+
+/**
+ * A page's en-US dictionaries, from the source: the ones its loaders ask
+ * for, as the server inlines them in development, and every other one too.
+ * The browser loads those later from the server's files (a dialog's, the
+ * sign-in screen's after a session ends), which these tests don't serve.
+ * Whether a route inlines what its page needs is the pseudo-locale tests'
+ * job (shell-chat-pseudo-locale, settings-pseudo-locale).
+ */
 function englishPage(namespaces: readonly string[]): PageI18n {
-    const dir = join(import.meta.dirname, '../../../i18n/locales/en-US');
     return {
         locale: 'en-US',
         dir: 'ltr',
         manifest: { release: '', locales: {} },
         resources: {
             'en-US': Object.fromEntries(
-                namespaces.map((ns) => [ns, JSON.parse(readFileSync(join(dir, `${ns}.json`), 'utf8'))]),
+                [...new Set([...namespaces, ...ALL_NAMESPACES])].map((ns) => [
+                    ns,
+                    JSON.parse(readFileSync(join(EN_US, `${ns}.json`), 'utf8')),
+                ]),
             ),
         },
         offered: ['en-US'],

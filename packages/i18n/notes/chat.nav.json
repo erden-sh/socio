@@ -1,0 +1,19 @@
+{
+    "socios": "Heading of the sidebar group listing the person's socios (AI agents). \"socio\" is the product's word for an AI agent; keep it lowercase as a common noun.",
+    "create-socio": "Tooltip and accessible name of the + button beside the Socios heading; it creates a new socio (AI agent).",
+    "dot.tooltip": "Tooltip of a socio in the collapsed sidebar: {{name}} is the socio's name. The plain form is for a workspace socio (shared with the team); _personal for one only its owner uses.",
+    "dot.title": "Hover text of a socio's sidebar row: who can see and use it. The plain form is for a workspace (team-wide) socio; _personal for one only the signed-in person uses.",
+    "dot.options": "Accessible name of the ⋯ button that opens a socio's menu; {{name}} is the socio's name.",
+    "recent": "Heading of the sidebar group listing the person's latest chats.",
+    "new-chat": "Tooltip and accessible name of the + button beside Recent chats; it starts a new conversation.",
+    "setup": "Shown in the sidebar while text chat isn't set up on this server (no model configured).",
+    "empty": "Shown in the sidebar before the person has any conversation.",
+    "show-fewer": "Button under the recent chats that folds the list back to the first few.",
+    "show-all": "Button under the recent chats that lists all of them; count is how many there are (always more than 5).",
+    "team": "After a chat's socio name in the sidebar (\"Ada · Team\"): the chat is a team conversation, shared with other people.",
+    "chat-options": "Accessible name of the ⋯ button that opens a chat's menu; {{title}} is the chat's title.",
+    "icon.team": "Accessible name of the icon marking a team conversation (shared with other people).",
+    "icon.telegram": "Accessible name of the icon marking a conversation that takes place in Telegram (the messaging app; don't translate the name).",
+    "loading.paused": "Under the socio's (AI agent's) name while the chat loads: an admin paused Socio (the product).",
+    "loading.connecting": "Under the socio's (AI agent's) name while the chat loads."
+}

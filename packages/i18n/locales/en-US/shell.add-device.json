@@ -1,0 +1,64 @@
+{
+    "title": "Add a device",
+    "title-claimed": "Sign in on a new device?",
+    "scan": "Open the Socio app on your phone and scan this code with its camera, or with the phone’s camera.",
+    "scan_preview": "For the Socio Preview test app. Open the Socio app on your phone and scan this code with its camera, or with the phone’s camera.",
+    "scan_development": "For a development build of the Socio app. Open the Socio app on your phone and scan this code with its camera, or with the phone’s camera.",
+    "waiting": "{{device}} is asking to sign in as you. If it’s yours, type the code it shows.",
+    "allowed": "Finishing sign-in on the new device…",
+    "signed-in": "The new device is signed in.",
+    "done": "{{device}} is signed in to your account. You can sign it out in Settings → Account.",
+    "finishing": "Finishing on {{device}}…",
+    "new-code": "New code",
+    "not-mine": "Not my device",
+    "no-app": "No app yet? The Socio app is in a team beta until it reaches the app stores: ask your admin to add you.",
+    "send-link": "Send me a link for the app",
+    "link-sent_email": "A link for the app is on its way by email",
+    "link-sent_telegram": "A link for the app is on its way by Telegram",
+    "asking": {
+        "new": "A new device",
+        "ios": "An iPhone or iPad",
+        "android": "An Android phone",
+        "other": "A new device",
+        "quoted": "A device called “{{name}}”",
+        "named": "A {{name}}",
+        "named_vowel": "An {{name}}"
+    },
+    "platforms": {
+        "ios": "iPhone or iPad",
+        "android": "Android phone",
+        "new": "a new device"
+    },
+    "code": {
+        "label": "Code shown on your new device",
+        "placeholder": "6-digit code",
+        "hint": "The 6 digits shown on that device.",
+        "time-left": "Time left: {{left}}.",
+        "wrong": "That code didn’t match. Try again.",
+        "wrong-tries_one": "That code didn’t match. {{count}} try left.",
+        "wrong-tries_other": "That code didn’t match. {{count}} tries left."
+    },
+    "qr": {
+        "code": "QR code for the Socio app",
+        "show": "Show the QR code",
+        "show-short": "Show",
+        "works-once": "Works once, for {{left}}. Anyone who scans it can ask to sign in as you; you still confirm on this page.",
+        "making": "Making a QR code…"
+    },
+    "ended": {
+        "description": "This request ended. Make a new code to add a device.",
+        "refused": "Could not make a QR code.",
+        "expired": "This QR code expired. Make a new one.",
+        "denied": "That code didn’t match. Make a new QR code.",
+        "not-mine": "Nothing was signed in. That device can’t use this QR code."
+    },
+    "notices": {
+        "signed-in-anyway": "That device had already signed in before Not my device. If it isn’t yours, sign it out in Settings → Account now.",
+        "check-failed": "Could not check the code. Try again.",
+        "unreachable": "Could not reach the server. Try again.",
+        "end-failed": "Could not end it yet. Choose Not my device again."
+    },
+    "errors": {
+        "link": "Could not send the link."
+    }
+}

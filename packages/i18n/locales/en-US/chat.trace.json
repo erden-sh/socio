@@ -1,0 +1,51 @@
+{
+    "working_one": "Working · {{count, number}} step",
+    "working_other": "Working · {{count, number}} steps",
+    "worked-through_one": "Worked through {{count, number}} step",
+    "worked-through_other": "Worked through {{count, number}} steps",
+    "worked-for_one": "Worked for {{duration}} · {{count, number}} step",
+    "worked-for_other": "Worked for {{duration}} · {{count, number}} steps",
+    "failed-count_one": "{{count, number}} failed",
+    "failed-count_other": "{{count, number}} failed",
+    "thinking": "Thinking",
+    "thought": "Thought",
+    "thought-for": "Thought for {{duration}}",
+    "step": {
+        "failed": "Failed",
+        "stopped": "Stopped",
+        "running": "Running"
+    },
+    "open-dataset": "Open the dataset",
+    "details": {
+        "failed": "This step failed.",
+        "stopped": "It stopped before it finished.",
+        "input": "Input",
+        "result": "Result",
+        "waiting": "Waiting for the result…",
+        "loading-whole": "Loading the whole result ({{size}})…",
+        "partial": "Only part of this result is shown: the rest didn’t load.",
+        "retry": "Try again",
+        "show-lines_one": "Show all {{count, number}} line",
+        "show-lines_other": "Show all {{count, number}} lines",
+        "show-characters_one": "Show all {{count, number}} character",
+        "show-characters_other": "Show all {{count, number}} characters",
+        "more_one": "and {{count, number}} more (copy for all)",
+        "more_other": "and {{count, number}} more (copy for all)",
+        "item": "Item {{position, number}}",
+        "kilobytes": "{{kb, number}} KB",
+        "binary": "Binary data, {{size}}"
+    },
+    "fields": {
+        "stdout": "Output",
+        "stderr": "Errors",
+        "sql": "SQL",
+        "url": "URL",
+        "id": "ID",
+        "timeout-ms": "Time limit (ms)"
+    },
+    "image": {
+        "screenshot": "Screenshot",
+        "view": "View {{name}}",
+        "missing": "The image isn’t available: it was deleted, or you can’t read this chat."
+    }
+}

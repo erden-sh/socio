@@ -101,8 +101,16 @@ describe('the "…" menu', () => {
             disabled: true,
         });
         expect(read('../../../packages/client/src/modules/chat/Chat.tsx')).toContain(
-            "label={running ? 'Save as a page once the reply is done' : 'Save conversation as page'}",
+            "label={running ? t('chat:header.save-page-later') : t('chat:header.save-page')}",
         );
+        // The web's words are its en-US dictionary's (chat).
+        expect(
+            (
+                JSON.parse(
+                    readFileSync(new URL('../../../../packages/i18n/locales/en-US/chat.json', import.meta.url), 'utf8'),
+                ) as { header: Record<string, string> }
+            ).header['save-page-later'],
+        ).toBe('Save as a page once the reply is done');
         expect(SAVE_AS_PAGE.disabled).toBeUndefined();
     });
 

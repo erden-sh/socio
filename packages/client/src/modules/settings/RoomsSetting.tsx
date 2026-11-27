@@ -4,12 +4,12 @@ import { toast } from 'sonner';
 import { Trans, useTranslation } from '@socio/i18n/react';
 import type { RoomSocioRequest, RoomsReadiness, RoomsSettings } from '@socio/shared/rooms/rooms';
 
+import { onDemand } from '../../i18n/on-demand';
 import { api } from '../../lib/api';
 import { failure, roomsApi } from '../rooms/api';
 
 import { SettingsCard } from './AccountSettings';
 import { AutosaveHeader, SaveError, useAutosave } from './autosave';
-import { onDemand } from './on-demand';
 
 import { PermissionRow } from '@/components/form-fields';
 import { Button } from '@/components/ui/button';

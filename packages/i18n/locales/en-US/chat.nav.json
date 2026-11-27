@@ -1,0 +1,28 @@
+{
+    "socios": "Socios",
+    "create-socio": "Create socio",
+    "dot": {
+        "tooltip": "{{name}} (workspace)",
+        "tooltip_personal": "{{name}} (personal)",
+        "title": "Workspace socio: everyone can see and use it.",
+        "title_personal": "Personal socio: only you see and chat with it.",
+        "options": "{{name}} options"
+    },
+    "recent": "Recent chats",
+    "new-chat": "New conversation",
+    "setup": "Set up text chat to begin a persistent conversation.",
+    "empty": "Your first conversation will live here.",
+    "show-fewer": "Show fewer",
+    "show-all_one": "Show all {{count, number}}",
+    "show-all_other": "Show all {{count, number}}",
+    "team": "Team",
+    "chat-options": "Options for {{title}}",
+    "icon": {
+        "team": "Team conversation",
+        "telegram": "Telegram conversation"
+    },
+    "loading": {
+        "paused": "Paused",
+        "connecting": "Connecting to your conversation…"
+    }
+}

@@ -1,5 +1,7 @@
 import { useState } from 'react';
 
+import { Trans, useTranslation } from '@socio/i18n/react';
+
 import {
     acceptNameSuggestion,
     customizeNameSuggestion,
@@ -28,6 +30,7 @@ export function NameSuggestionCard({
     /** Called after any settle (accept/reject/customize) to refetch state. */
     onSettled?: () => void;
 }) {
+    const { t } = useTranslation(['chat.composer']);
     const [editing, setEditing] = useState(false);
     const [draft, setDraft] = useState(suggestion.suggestedName);
     const [busy, setBusy] = useState(false);
@@ -41,7 +44,7 @@ export function NameSuggestionCard({
             then?.();
             onSettled?.();
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Something went wrong.');
+            setError(err instanceof Error ? err.message : t('chat.composer:name-suggestion.failed'));
             setBusy(false);
         }
     };
@@ -58,7 +61,7 @@ export function NameSuggestionCard({
         settle(async () => {
             const name = draft.trim();
             if (!name) {
-                setError('Enter a name.');
+                setError(t('chat.composer:name-suggestion.empty'));
                 return;
             }
             const { title } = await customizeNameSuggestion(threadId, name);
@@ -75,15 +78,15 @@ export function NameSuggestionCard({
                     maxLength={80}
                     onChange={(e) => setDraft(e.target.value)}
                     disabled={busy}
-                    aria-label="Suggested chat name"
+                    aria-label={t('chat.composer:name-suggestion.field')}
                 />
                 {error && <p className="text-destructive text-xs">{error}</p>}
                 <div className="flex gap-2">
                     <Button size="sm" onClick={customize} disabled={busy}>
-                        Save
+                        {t('chat.composer:name-suggestion.save')}
                     </Button>
                     <Button size="sm" variant="ghost" onClick={() => setEditing(false)} disabled={busy}>
-                        Cancel
+                        {t('chat.composer:name-suggestion.cancel')}
                     </Button>
                 </div>
             </div>
@@ -93,18 +96,23 @@ export function NameSuggestionCard({
     return (
         <div className={cn('flex flex-col gap-2 rounded-lg border bg-muted/40 p-3 text-sm')}>
             <p className="text-muted-foreground">
-                Suggested name for this chat: <strong className="text-foreground">{suggestion.suggestedName}</strong>
+                <Trans
+                    t={t}
+                    i18nKey="chat.composer:name-suggestion.text"
+                    values={{ name: suggestion.suggestedName }}
+                    components={{ name: <strong className="text-foreground" /> }}
+                />
             </p>
             {error && <p className="text-destructive text-xs">{error}</p>}
             <div className="flex flex-wrap gap-2">
                 <Button size="sm" onClick={accept} disabled={busy}>
-                    Accept
+                    {t('chat.composer:name-suggestion.accept')}
                 </Button>
                 <Button size="sm" variant="ghost" onClick={reject} disabled={busy}>
-                    Not now
+                    {t('chat.composer:name-suggestion.reject')}
                 </Button>
                 <Button size="sm" variant="ghost" onClick={() => setEditing(true)} disabled={busy}>
-                    Customize
+                    {t('chat.composer:name-suggestion.customize')}
                 </Button>
             </div>
         </div>

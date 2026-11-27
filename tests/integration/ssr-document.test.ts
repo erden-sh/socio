@@ -27,6 +27,9 @@ import { makeTestRuntime } from '../helpers/test-runtime.js';
 // render compiles the app, so it takes a while.
 
 // Canaries: none of them may ever reach a page.
+/** A page's markup without its scripts (the loader data, the inlined dictionaries). */
+const markup = (html: string) => html.replace(/<script\b[\s\S]*?<\/script>/g, '');
+
 const SESSION_SECRET = 'canary-session-secret-5f1e2d';
 const SECRETS = {
     apiKey: 'canary-model-key-9a8b7c',
@@ -590,7 +593,8 @@ it('answers a missing or hidden help article with the same Not found page and a 
             expect(page.html).toContain('Article not found');
             expect(page.html).toContain('<a href="/docs">Back to the help center</a>');
             expect(page.html).toContain('Search the help center');
-            expect(page.html).not.toMatch(/Something went wrong|Reloading usually fixes it/);
+            // The markup, not the dictionaries inlined for the browser.
+            expect(markup(page.html)).not.toMatch(/Something went wrong|Reloading usually fixes it/);
             expect(page.html).not.toMatch(/ADMIN-DOC-CANARY|Admin guide canary/);
         }
         // What could tell them apart (the article, the navigation and the
@@ -701,7 +705,7 @@ it('renders a cold plugin deep link on its frame route, and discovers it lazily 
     expect(response.status).toBe(200);
     // The frame route (not Not found), in the page's own route manifest.
     expect(html).toContain('"plugins:frame"');
-    expect(html).not.toContain('Page not found');
+    expect(markup(html)).not.toContain('Page not found');
     // A tab that navigates to a new deep path asks /__manifest; the answer is the frame route.
     const version = /__reactRouterManifest = [\s\S]*?"version":\s*"([^"]+)"/.exec(html)?.[1];
     expect(version).toBeTruthy();

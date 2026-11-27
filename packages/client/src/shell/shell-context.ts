@@ -1,3 +1,4 @@
+import type { FlatNamespace, TFunction } from 'i18next';
 import { createContext, useContext, type ReactNode } from 'react';
 import { useMatches, type Params } from 'react-router';
 
@@ -106,6 +107,12 @@ export interface CrumbContext {
      * render can name what the page shows before any view publishes it.
      */
     data?: unknown;
+    /**
+     * The header's `t`, for a crumb's own words: the header asks for the
+     * crumbs at each render, so they follow a language change. A route's
+     * namespaces are in by then (route-namespaces.json).
+     */
+    t: TFunction<FlatNamespace[]>;
 }
 
 /** One breadcrumb; the last is the current page, the others link. */

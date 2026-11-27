@@ -1,0 +1,64 @@
+{
+    "notices": {
+        "updating": "Socio is updating. Reconnecting…",
+        "offline": "You’re offline. Reconnecting when you’re back online.",
+        "connect-failed": "Could not connect to the server.",
+        "open": "Open"
+    },
+    "loading": {
+        "title": "Finding your socios…",
+        "retry": "Retry"
+    },
+    "errors": {
+        "save": "Could not save.",
+        "new-chat": "Could not create the conversation."
+    },
+    "new-chat-title": "A new thought",
+    "paused-banner": "All socios are paused. Active compute stops and scheduled tasks wait.",
+    "header": {
+        "home": "Home",
+        "full-path": "Show full breadcrumb path",
+        "pause": "Pause all socios",
+        "resume": "Resume all socios",
+        "search": "Search",
+        "show-computer": "Show computer",
+        "hide-computer": "Hide computer",
+        "help": "Help",
+        "help-new": "Help (new release)",
+        "more": "More options",
+        "more-new": "More options (new release)"
+    },
+    "connection": {
+        "state": {
+            "online": "Online",
+            "reconnecting": "Reconnecting",
+            "offline": "Offline"
+        },
+        "ms": "{{ms, number}} ms",
+        "label": "Connection: {{state}}",
+        "restored": "Connection to Socio restored."
+    },
+    "early-access": "Early access",
+    "no-inference": {
+        "open": "Open Account → Inference"
+    },
+    "error": {
+        "app": {
+            "title": "Something went wrong."
+        },
+        "page": {
+            "title": "This page failed to load."
+        },
+        "reload-hint": "Reloading usually fixes it.",
+        "reload": "Reload",
+        "not-found": {
+            "title_page": "Page not found.",
+            "title_space": "Space not found.",
+            "title_socio": "Socio not found.",
+            "title_conversation": "Conversation not found.",
+            "why": "It may have been removed, or it isn't shared with you.",
+            "back": "Back to your socios",
+            "crumb": "Not found"
+        }
+    }
+}

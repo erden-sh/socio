@@ -19,9 +19,9 @@ const dots = [{ id: 'd1', name: 'Mingo' }] as Dot[];
 
 it('names the chats the drafts are in', () => {
     expect(draftPlaces([chatDraft('c1'), newChatDraft('d1'), chatDraft('gone')], chats, dots)).toEqual([
-        'Trip plan',
-        'a new chat with Mingo',
-        'a chat',
+        { kind: 'chat', title: 'Trip plan' },
+        { kind: 'new-chat', socio: 'Mingo' },
+        { kind: 'unknown' },
     ]);
 });
 
@@ -34,7 +34,10 @@ it('says how many and where, and offers Sign out anyway or Cancel', async () => 
     await act(async () =>
         root.render(
             <UnsentDraftsWarning
-                places={['Trip plan', 'a new chat with Mingo']}
+                places={[
+                    { kind: 'chat', title: 'Trip plan' },
+                    { kind: 'new-chat', socio: 'Mingo' },
+                ]}
                 onCancel={onCancel}
                 onSignOut={onSignOut}
             />,
@@ -42,7 +45,8 @@ it('says how many and where, and offers Sign out anyway or Cancel', async () => 
     );
     const dialog = document.querySelector('[data-slot="unsent-drafts-warning"]')!;
     expect(dialog.textContent).toContain('2 unsent drafts');
-    expect(dialog.textContent).toContain('Trip plan, a new chat with Mingo');
+    // A list in the page's language (en-US: "A and B").
+    expect(dialog.textContent).toContain('in Trip plan and a new chat with Mingo.');
     const button = (label: string) =>
         [...dialog.querySelectorAll('button')].find((item) => item.textContent === label)!;
     await act(async () => button('Cancel').click());
@@ -60,7 +64,11 @@ it('names the first few places and counts the rest', async () => {
     const root = createRoot(host);
     await act(async () =>
         root.render(
-            <UnsentDraftsWarning places={['A', 'B', 'C', 'D', 'E']} onCancel={() => {}} onSignOut={async () => {}} />,
+            <UnsentDraftsWarning
+                places={['A', 'B', 'C', 'D', 'E'].map((title) => ({ kind: 'chat', title }) as const)}
+                onCancel={() => {}}
+                onSignOut={async () => {}}
+            />,
         ),
     );
     const text = document.querySelector('[data-slot="unsent-drafts-warning"]')!.textContent;

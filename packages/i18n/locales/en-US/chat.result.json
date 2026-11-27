@@ -1,0 +1,23 @@
+{
+    "brief": "Brief",
+    "computer": "{{name}}’s computer",
+    "socio": "Socio",
+    "close": "Close result panel",
+    "computer-for": "Computer for",
+    "select-computer": "Select socio computer",
+    "no-socio": "Create a socio to give it a computer.",
+    "heading": "RESEARCH BRIEF",
+    "heading_sample": "FICTIONAL SAMPLE BRIEF",
+    "download": "Download brief",
+    "download-sources": "Sources",
+    "sample-note": "An example of what a socio can do. The findings and sources below are invented.",
+    "image": "[Image: {{alt}}]",
+    "image-omitted": "[Image omitted]",
+    "sources": "Source notes",
+    "fictional-source": "Fictional source · not a live link",
+    "empty": {
+        "title": "A little space for your findings.",
+        "text": "Your brief and sources will appear here after a successful run.",
+        "text_failed": "Resolve the error and retry to create a research brief."
+    }
+}

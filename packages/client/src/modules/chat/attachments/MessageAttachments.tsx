@@ -1,6 +1,7 @@
 import { Download, FileText, ImageOff } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
+import { useTranslation } from '@socio/i18n/react';
 import { attachmentContentUrl } from '@socio/shared/media-types';
 import type { AttachmentRef } from '@socio/shared/media/refs';
 import { formatSize } from '@socio/shared/text/format-size';
@@ -34,6 +35,7 @@ const IMAGES = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp']);
  * shows as "Removed".
  */
 export function MessageAttachments({ parts }: { parts: readonly AttachmentPart[] }) {
+    const { t } = useTranslation(['chat']);
     const [shown, setShown] = useState<string>();
     if (!parts.length) {
         return null;
@@ -43,7 +45,7 @@ export function MessageAttachments({ parts }: { parts: readonly AttachmentPart[]
             ? [
                   {
                       id: part.id,
-                      name: part.filename ?? 'Image',
+                      name: part.filename ?? t('chat:attachment.image'),
                       mediaType: part.mimeType,
                       kind: 'image' as const,
                   },
@@ -52,7 +54,10 @@ export function MessageAttachments({ parts }: { parts: readonly AttachmentPart[]
     );
     return (
         <>
-            <ul className="mx-0 mt-2 mb-0 flex list-none flex-wrap gap-2 p-0 first:mt-0" aria-label="Attachments">
+            <ul
+                className="mx-0 mt-2 mb-0 flex list-none flex-wrap gap-2 p-0 first:mt-0"
+                aria-label={t('chat:attachment.list')}
+            >
                 {parts.map((part) =>
                     IMAGES.has(part.mimeType) ? (
                         <ImageThumb key={part.id} part={part} onOpen={() => setShown(part.id)} />
@@ -67,16 +72,18 @@ export function MessageAttachments({ parts }: { parts: readonly AttachmentPart[]
 }
 
 function Removed({ name }: { name?: string }) {
+    const { t } = useTranslation(['chat']);
     return (
         <li className={cn(fileChip, 'italic opacity-75')} data-slot="attachment-removed">
             <ImageOff size={14} aria-hidden />
-            <span className={fileName}>{name ?? 'Attachment'}</span>
-            <small className={fileNote}>Removed</small>
+            <span className={fileName}>{name ?? t('chat:attachment.unnamed')}</span>
+            <small className={fileNote}>{t('chat:attachment.removed')}</small>
         </li>
     );
 }
 
 function ImageThumb({ part, onOpen }: { part: AttachmentPart; onOpen: () => void }) {
+    const { t } = useTranslation(['chat']);
     const [failed, setFailed] = useState(false);
     if (failed) {
         return <Removed name={part.filename} />;
@@ -90,7 +97,9 @@ function ImageThumb({ part, onOpen }: { part: AttachmentPart; onOpen: () => void
                     plainHover,
                 )}
                 data-attachment="image"
-                aria-label={`View ${part.filename ?? 'image'}`}
+                aria-label={
+                    part.filename ? t('chat:attachment.view', { name: part.filename }) : t('chat:attachment.view-image')
+                }
                 onClick={onOpen}
             >
                 <img
@@ -106,6 +115,7 @@ function ImageThumb({ part, onOpen }: { part: AttachmentPart; onOpen: () => void
 }
 
 function FileChip({ part }: { part: AttachmentPart }) {
+    const { t } = useTranslation(['chat']);
     // The size, and whether the file still exists.
     const [view, setView] = useState<{ size: number } | null>();
     useEffect(() => {
@@ -127,10 +137,14 @@ function FileChip({ part }: { part: AttachmentPart }) {
                 data-attachment="file"
                 href={attachmentContentUrl(part.id, true)}
                 download={part.filename ?? true}
-                aria-label={`Download ${part.filename ?? 'attachment'}`}
+                aria-label={
+                    part.filename
+                        ? t('chat:attachment.download', { name: part.filename })
+                        : t('chat:attachment.download-unnamed')
+                }
             >
                 <FileText size={14} aria-hidden />
-                <span className={fileName}>{part.filename ?? 'Attachment'}</span>
+                <span className={fileName}>{part.filename ?? t('chat:attachment.unnamed')}</span>
                 {view && <small className={fileNote}>{formatSize(view.size)}</small>}
                 <Download size={13} aria-hidden />
             </a>

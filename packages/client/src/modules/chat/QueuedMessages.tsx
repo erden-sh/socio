@@ -1,6 +1,7 @@
 import { Clock3, Paperclip, Pencil, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
+import { useTranslation } from '@socio/i18n/react';
 import type { OthersQueuedMessage, QueuedMessage } from '@socio/shared/chat/steering';
 import { STEERING_MAX_CHARS } from '@socio/shared/chat/steering';
 import type { AttachmentRef } from '@socio/shared/media-types';
@@ -43,12 +44,13 @@ export function QueuedMessages({
      */
     returnFocus?: () => HTMLElement | null | undefined;
 }) {
+    const { t } = useTranslation(['chat']);
     if (!messages.length) {
         return null;
     }
     const later = messages.findIndex((message) => message.attachments?.length);
     return (
-        <section aria-label="Queued messages" data-slot="queued-messages" className="flex flex-col gap-3">
+        <section aria-label={t('chat:queued.list')} data-slot="queued-messages" className="flex flex-col gap-3">
             {messages.map((message, index) => (
                 <Queued
                     key={message.id}
@@ -76,6 +78,7 @@ function Queued({
     onCancel: (id: string) => Promise<void>;
     returnFocus?: () => HTMLElement | null | undefined;
 }) {
+    const { t } = useTranslation(['chat']);
     // The text being edited; undefined when not editing.
     const [editing, setEditing] = useState<string>();
     // The files it keeps while editing (CB-223): one can be taken off.
@@ -102,7 +105,7 @@ function Queued({
             await action();
             setEditing(undefined);
         } catch (error) {
-            setProblem(error instanceof Error ? error.message : 'That didn’t save. Try again.');
+            setProblem(error instanceof Error ? error.message : t('chat:queued.save-failed'));
         } finally {
             setBusy(false);
         }
@@ -124,7 +127,7 @@ function Queued({
             ) : (
                 <div className="flex w-full max-w-[80%] flex-col gap-1.5 rounded-[17px] border border-input bg-card p-2 has-[textarea:focus-visible]:border-ring/60">
                     <Textarea
-                        aria-label="Edit queued message"
+                        aria-label={t('chat:queued.edit-box')}
                         autoFocus
                         rows={2}
                         value={editing}
@@ -141,7 +144,10 @@ function Queued({
                         className="max-h-60 min-h-[43px] resize-none rounded-none border-0 bg-transparent px-1.5 py-1 text-base/[1.65] shadow-none focus-visible:ring-0 md:text-sm/[1.65] dark:bg-transparent"
                     />
                     {files.length > 0 && (
-                        <ul aria-label="Files it sends" className="m-0 flex list-none flex-wrap gap-1.5 p-0 px-1">
+                        <ul
+                            aria-label={t('chat:queued.files')}
+                            className="m-0 flex list-none flex-wrap gap-1.5 p-0 px-1"
+                        >
                             {files.map((file) => (
                                 <li
                                     key={file.id}
@@ -153,7 +159,7 @@ function Queued({
                                         type="button"
                                         variant="ghost"
                                         size="icon-xs"
-                                        aria-label={`Remove ${file.name}`}
+                                        aria-label={t('chat:queued.remove-file', { name: file.name })}
                                         disabled={busy}
                                         onClick={() =>
                                             setFiles((current) => current.filter((kept) => kept.id !== file.id))
@@ -174,7 +180,7 @@ function Queued({
                             disabled={busy}
                             onClick={() => setEditing(undefined)}
                         >
-                            Keep as it was
+                            {t('chat:queued.keep')}
                         </Button>
                         <Button
                             type="button"
@@ -183,14 +189,14 @@ function Queued({
                             disabled={busy || !savable}
                             onClick={save}
                         >
-                            Save
+                            {t('chat:queued.save')}
                         </Button>
                     </div>
                 </div>
             )}
             <div className="flex min-h-6 flex-wrap items-center justify-end gap-x-1 px-1 text-[11px] text-muted-foreground">
                 <Clock3 size={12} aria-hidden className="shrink-0" />
-                <span>Queued · {note}</span>
+                <span>{t('chat:queued.note', { note })}</span>
                 {editing === undefined && (
                     <>
                         <Button
@@ -206,14 +212,14 @@ function Queued({
                             }}
                         >
                             <Pencil aria-hidden />
-                            Edit
+                            {t('chat:queued.edit')}
                         </Button>
                         <Button
                             type="button"
                             variant="ghost"
                             size="xs"
                             className={touchable}
-                            aria-label="Cancel queued message"
+                            aria-label={t('chat:queued.cancel-own')}
                             disabled={busy}
                             onClick={() =>
                                 void act(async () => {
@@ -224,7 +230,7 @@ function Queued({
                             }
                         >
                             <X aria-hidden />
-                            Cancel
+                            {t('chat:queued.cancel')}
                         </Button>
                     </>
                 )}
@@ -258,12 +264,13 @@ export function OthersQueuedMessages({
     /** Where focus goes once a canceled message is gone (the composer). */
     returnFocus?: () => HTMLElement | null | undefined;
 }) {
+    const { t } = useTranslation(['chat']);
     if (!messages.length) {
         return null;
     }
     return (
         <section
-            aria-label="Others’ queued messages"
+            aria-label={t('chat:queued.others')}
             data-slot="others-queued-messages"
             className="flex flex-col gap-3"
         >
@@ -291,6 +298,7 @@ function OthersQueued({
     onCancel: (id: string) => Promise<void>;
     returnFocus?: () => HTMLElement | null | undefined;
 }) {
+    const { t } = useTranslation(['chat']);
     const [confirming, setConfirming] = useState(false);
     const [busy, setBusy] = useState(false);
     const [problem, setProblem] = useState('');
@@ -316,7 +324,7 @@ function OthersQueued({
             setConfirming(false);
             returnFocus?.()?.focus();
         } catch (error) {
-            setProblem(error instanceof Error ? error.message : 'That didn’t work. Try again.');
+            setProblem(error instanceof Error ? error.message : t('chat:queued.cancel-failed'));
         } finally {
             setBusy(false);
         }
@@ -341,18 +349,16 @@ function OthersQueued({
                 {message.files > 0 && (
                     <p className="m-0 flex items-center gap-1 text-[12px] text-muted-foreground">
                         <Paperclip size={12} aria-hidden />
-                        {message.files === 1 ? '1 file' : `${message.files} files`}
+                        {t('chat:queued.file-count', { count: message.files })}
                     </p>
                 )}
             </div>
             <div className="flex min-h-6 flex-wrap items-center gap-x-1 px-1 text-[11px] text-muted-foreground">
                 <Clock3 size={12} aria-hidden className="shrink-0" />
-                <span>
-                    {message.held ? `Queued · won’t be sent while ${name} can’t write here` : `Queued · ${note}`}
-                </span>
+                <span>{message.held ? t('chat:queued.held', { name }) : t('chat:queued.note', { note })}</span>
                 {confirming ? (
                     <>
-                        <span className="text-foreground">{`Cancel ${name}’s message?`}</span>
+                        <span className="text-foreground">{t('chat:queued.cancel-ask', { name })}</span>
                         <Button
                             type="button"
                             variant="ghost"
@@ -361,7 +367,7 @@ function OthersQueued({
                             disabled={busy}
                             onClick={() => setConfirming(false)}
                         >
-                            Keep it
+                            {t('chat:queued.keep-it')}
                         </Button>
                         <Button
                             type="button"
@@ -372,7 +378,7 @@ function OthersQueued({
                             disabled={busy}
                             onClick={() => void cancel()}
                         >
-                            Cancel message
+                            {t('chat:queued.cancel-message')}
                         </Button>
                     </>
                 ) : (
@@ -382,12 +388,12 @@ function OthersQueued({
                         variant="ghost"
                         size="xs"
                         className={touchable}
-                        aria-label={`Cancel ${name}’s queued message`}
+                        aria-label={t('chat:queued.cancel-named', { name })}
                         disabled={busy}
                         onClick={() => setConfirming(true)}
                     >
                         <X aria-hidden />
-                        Cancel
+                        {t('chat:queued.cancel')}
                     </Button>
                 )}
             </div>

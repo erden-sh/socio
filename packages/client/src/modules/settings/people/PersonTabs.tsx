@@ -9,6 +9,7 @@ import type { Space } from '@socio/shared/types';
 
 import { ConfirmDelete } from '../../../components/confirm-delete';
 import { nativeSelect } from '../../../components/form-fields';
+import { onDemand } from '../../../i18n/on-demand';
 import { api } from '../../../lib/api';
 import { DevicesCard } from '../DevicesCard';
 import { settingsPath } from '../sections';
@@ -19,6 +20,14 @@ import { firstName, serviceAccountPath, useAssetWords, usePeopleFormat, useProvi
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+
+/**
+ * A person's devices on the Sign-in tab. Its words (`settings.devices`)
+ * come with Account's page; here they load on demand, as the tab isn't the
+ * first one, so the person page's inlined dictionaries stay within the
+ * budget.
+ */
+const PersonDevices = onDemand(['settings.devices'], DevicesCard);
 
 /** Runs a change, then loads the person again; a failure is a toast. */
 export type Run = (work: () => Promise<unknown>, fallback: string, done?: string) => Promise<void>;
@@ -517,7 +526,7 @@ export function SignInTab({
                 )}
             </PanelCard>
             <PanelCard title={t('settings.person:signIn.app')} slot="person-devices">
-                <DevicesCard accountId={person.id} locked={locked} onChanged={onChanged} version={detail} />
+                <PersonDevices accountId={person.id} locked={locked} onChanged={onChanged} version={detail} />
             </PanelCard>
             <PanelCard title={t('settings.person:signIn.methods')} slot="person-methods">
                 <ul aria-label={t('settings.person:signIn.methods')}>

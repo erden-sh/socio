@@ -1,0 +1,14 @@
+{
+    "title": "Sign out with unsent drafts?",
+    "sign-out": "Sign out anyway",
+    "body_one": "You have {{count, number}} unsent draft, from the last day, in {{places, list}}. Signing out clears it.",
+    "body_other": "You have {{count, number}} unsent drafts, from the last day, in {{places, list}}. Signing out clears them.",
+    "more_one": "{{count, number}} more",
+    "more_other": "{{count, number}} more",
+    "place": {
+        "untitled": "Untitled chat",
+        "new-chat": "a new chat with {{socio}}",
+        "unknown": "a chat"
+    },
+    "leave-page-draft": "Leave your unsaved page draft?"
+}

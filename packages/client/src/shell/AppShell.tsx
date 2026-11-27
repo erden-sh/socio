@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Outlet, useLocation, useMatches, useNavigate } from 'react-router';
 
+import { useTranslation } from '@socio/i18n/react';
 import type { ModelChoice } from '@socio/shared/inference';
 import type { AttachmentRef } from '@socio/shared/media-types';
 import { isAdmin } from '@socio/shared/roles';
@@ -54,6 +55,7 @@ export interface AppShellProps {
 export function AppShell(props: AppShellProps) {
     useEffect(() => recordRender('shell'));
     const { state, workspace, configured, refresh, setNotices } = props;
+    const { t } = useTranslation(['shell']);
     const hints = useUiHints();
     const hydrated = useHydrated();
     const navigate = useNavigate();
@@ -109,7 +111,7 @@ export function AppShell(props: AppShellProps) {
             if (e instanceof ApiError && e.status === 401) {
                 await refresh();
             }
-            setError(e instanceof Error ? e.message : 'Could not save.');
+            setError(e instanceof Error ? e.message : t('shell:errors.save'));
             return false;
         }
     };
@@ -128,7 +130,7 @@ export function AppShell(props: AppShellProps) {
         try {
             const next = await api<Conversation>('/conversations', 'POST', {
                 dotId: withDot.id,
-                title: text?.trim().slice(0, 80) || attachments[0]?.name.slice(0, 80) || 'A new thought',
+                title: text?.trim().slice(0, 80) || attachments[0]?.name.slice(0, 80) || t('shell:new-chat-title'),
                 ...(model ? { inference: model } : {}),
             });
             await refresh();
@@ -142,7 +144,7 @@ export function AppShell(props: AppShellProps) {
             go(`/chats/${encodeURIComponent(next.id)}`);
             return true;
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Could not create the conversation.');
+            setError(e instanceof Error ? e.message : t('shell:errors.new-chat'));
             return false;
         } finally {
             setBusy(false);
@@ -238,7 +240,7 @@ export function AppShell(props: AppShellProps) {
                             <GetTheAppBanner />
                             {state.settings.paused && (
                                 <div className="border-b border-b-paused-banner-border bg-paused-banner px-10 py-3 text-[11px] text-paused-banner-foreground max-[700px]:px-5.5 max-[700px]:text-[10px]">
-                                    All socios are paused. Active compute stops and scheduled tasks wait.
+                                    {t('shell:paused-banner')}
                                 </div>
                             )}
                             <Outlet />

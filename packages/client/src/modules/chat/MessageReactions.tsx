@@ -2,6 +2,7 @@ import type { Message } from '@ag-ui/core';
 import { RefreshCw, ThumbsDown, ThumbsUp, Wrench, type LucideIcon } from 'lucide-react';
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 
+import { useTranslation } from '@socio/i18n/react';
 import { REACTIONS, REACTION_LABELS, type ReactionKind } from '@socio/shared/chat/reactions';
 import { REPORT_CONFIRMATION, type ReportPreview } from '@socio/shared/chat/reply-reports';
 import { socioField } from '@socio/shared/runs/socio-fields';
@@ -31,15 +32,6 @@ const ICONS: Record<ReactionKind, LucideIcon> = {
  */
 export const ReportTranscript = createContext<{ messages: readonly Message[] } | undefined>(undefined);
 
-/** Said when the server couldn't say what a report would include. */
-export const PREVIEW_FAILED = 'Couldn’t check what this report would include. Try again.';
-
-/** `{socio}` when the reply's socio can't be named here. */
-export const GENERIC_SOCIO = 'The socio';
-
-/** `{author}` when the server's answer names nobody (an older server): it opens the sentence. */
-export const OTHER_AUTHOR = 'Another person';
-
 type Step =
     | { kind: 'checking' }
     | { kind: 'report'; consent: string; byOther?: string }
@@ -52,6 +44,7 @@ type Step =
  * chat (a team topic) or more than one person gave it.
  */
 export function MessageReactions({ messageId, reactions }: { messageId: string; reactions: ReactionsApi }) {
+    const { t } = useTranslation(['chat']);
     const current = reactions.of(messageId);
     // What a screen reader hears after a press ("Needs work added").
     const [said, setSaid] = useState('');
@@ -74,9 +67,14 @@ export function MessageReactions({ messageId, reactions }: { messageId: string; 
     const stamped = socioField(reply, SOCIO_METADATA);
     const listed = (reply as { socioId?: unknown } | undefined)?.socioId;
     const socioId = typeof stamped === 'string' && stamped ? stamped : typeof listed === 'string' ? listed : '';
-    const socio = (socioId && dots?.find((dot) => dot.id === socioId)?.name) || GENERIC_SOCIO;
+    // `{socio}` when the reply's socio can't be named here.
+    const socio = (socioId && dots?.find((dot) => dot.id === socioId)?.name) || t('chat:reactions.generic-socio');
     const send = (kind: ReactionKind, add = !current.mine.includes(kind)) => {
-        setSaid(`${REACTION_LABELS[kind]} ${add ? 'added' : 'removed'}`);
+        setSaid(
+            add
+                ? t('chat:reactions.added', { reaction: REACTION_LABELS[kind] })
+                : t('chat:reactions.removed', { reaction: REACTION_LABELS[kind] }),
+        );
         reactions.toggle(messageId, kind, { add });
     };
     // A thumbs-down that may be a report (§2, §3): ask the server what it
@@ -91,7 +89,7 @@ export function MessageReactions({ messageId, reactions }: { messageId: string; 
         } catch {
             if (mounted.current) {
                 setStep(undefined);
-                reactions.notify(messageId, PREVIEW_FAILED);
+                reactions.notify(messageId, t('chat:reactions.preview-failed'));
             }
             return;
         }
@@ -107,7 +105,8 @@ export function MessageReactions({ messageId, reactions }: { messageId: string; 
         setStep({
             kind: 'report',
             consent: preview.consent ?? consent,
-            ...(preview.promptByOther ? { byOther: preview.author || OTHER_AUTHOR } : {}),
+            // `{author}` when the server's answer names nobody (an older server).
+            ...(preview.promptByOther ? { byOther: preview.author || t('chat:reactions.other-author') } : {}),
         });
     };
     const press = (kind: ReactionKind) => {
@@ -126,7 +125,7 @@ export function MessageReactions({ messageId, reactions }: { messageId: string; 
     return (
         <div
             role="group"
-            aria-label="React to this reply"
+            aria-label={t('chat:reactions.group')}
             className="flex items-center gap-0.5"
             data-slot="message-reactions"
         >
@@ -147,7 +146,9 @@ export function MessageReactions({ messageId, reactions }: { messageId: string; 
                                     'tabular-nums',
                                     on ? 'bg-accent text-foreground' : 'text-muted-foreground hover:text-foreground',
                                 )}
-                                aria-label={shown ? `${label}, ${count}` : label}
+                                aria-label={
+                                    shown ? t('chat:reactions.counted', { reaction: label, total: count }) : label
+                                }
                                 aria-pressed={on}
                                 data-reaction={kind}
                                 aria-busy={kind === 'down' && step?.kind === 'checking'}
@@ -182,7 +183,7 @@ export function MessageReactions({ messageId, reactions }: { messageId: string; 
                     onCancel={() => setStep(undefined)}
                     onConfirm={(choice) => {
                         setStep(undefined);
-                        setSaid(`${REACTION_LABELS.down} added`);
+                        setSaid(t('chat:reactions.added', { reaction: REACTION_LABELS.down }));
                         reactions.toggle(messageId, 'down', {
                             add: true,
                             report: {
@@ -196,7 +197,7 @@ export function MessageReactions({ messageId, reactions }: { messageId: string; 
             )}
             {step?.kind === 'remove' && (
                 <RemoveSharedDialog
-                    action={step.reaction === 'up' ? 'Switch to thumbs-up' : 'Remove thumbs-down'}
+                    action={step.reaction === 'up' ? 'switch-up' : 'remove'}
                     onCancel={() => setStep(undefined)}
                     onConfirm={() => {
                         setStep(undefined);
@@ -208,7 +209,7 @@ export function MessageReactions({ messageId, reactions }: { messageId: string; 
             )}
             {reactions.failed === messageId && (
                 <span className="px-1 text-[11px] text-destructive" role="alert">
-                    Could not save that
+                    {t('chat:reactions.failed')}
                 </span>
             )}
             <span className="sr-only" role="status">

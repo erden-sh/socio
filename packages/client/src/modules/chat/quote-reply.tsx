@@ -2,17 +2,8 @@ import type { Message } from '@ag-ui/core';
 import { Reply, X } from 'lucide-react';
 import { useCallback } from 'react';
 
-import {
-    type Quote,
-    QUOTED_COMMAND_NOTE,
-    quotedCommand,
-    REMOVE_QUOTE,
-    replyAuthor,
-    replyingTo,
-    splitQuote,
-    withQuote,
-} from '@socio/shared/chat/quote-reply';
-import { formatNumber } from '@socio/shared/locale';
+import { useTranslation } from '@socio/i18n/react';
+import { type Quote, quotedCommand, replyAuthor, splitQuote, withQuote } from '@socio/shared/chat/quote-reply';
 import type { RoomView } from '@socio/shared/rooms/rooms';
 import { messageAuthor } from '@socio/shared/runs/socio-fields';
 import type { Conversation, MessageAuthor } from '@socio/shared/types';
@@ -97,10 +88,6 @@ export function useQuotedDraft(text: string, setDraft: SetText) {
 /** How many characters `message`, the whole of it as sent (a quote, a source line), is over `max`. */
 export const overLimitBy = (message: string, max: number) => Math.max(0, message.length - max);
 
-/** What the note under the box says while the message is over its limit. */
-export const overLimitNote = (over: number, max: number) =>
-    `This message is over the ${formatNumber(max)}-character limit. Remove ${formatNumber(over)} ${over === 1 ? 'character' : 'characters'} to send it.`;
-
 /**
  * Under the box while the whole message, its quote included, is longer
  * than the composer may send (CB-571: a quote added to a long draft):
@@ -108,13 +95,14 @@ export const overLimitNote = (over: number, max: number) =>
  * a screen reader hears it as it appears.
  */
 export function OverLimitNote({ over, max }: { over: number; max: number }) {
+    const { t } = useTranslation(['chat']);
     return (
         <p
             role="status"
             data-slot="composer-over-limit"
             className="m-0 px-1 text-[11px]/[1.6] text-destructive empty:hidden"
         >
-            {over > 0 ? overLimitNote(over, max) : ''}
+            {over > 0 ? t('chat:over-limit', { max, count: over }) : ''}
         </p>
     );
 }
@@ -134,6 +122,7 @@ export function QuoteChip({
     command: boolean;
     onRemove: () => void;
 }) {
+    const { t } = useTranslation(['chat']);
     return (
         <>
             {quote && (
@@ -144,7 +133,7 @@ export function QuoteChip({
                     <Reply size={14} className="shrink-0 text-muted-foreground" aria-hidden />
                     <div className="min-w-0 flex-1">
                         <p className="m-0 truncate font-medium text-foreground" data-slot="quote-chip-author">
-                            {replyingTo(quote.author)}
+                            {t('chat:quote.replying-to', { author: quote.author })}
                         </p>
                         <p className="m-0 truncate text-muted-foreground" data-slot="quote-chip-excerpt">
                             {quote.excerpt}
@@ -155,7 +144,7 @@ export function QuoteChip({
                         variant="ghost"
                         size="icon-xs"
                         className="shrink-0 text-muted-foreground hover:text-foreground pointer-coarse:size-11"
-                        aria-label={REMOVE_QUOTE}
+                        aria-label={t('chat:quote.remove')}
                         onClick={onRemove}
                     >
                         <X />
@@ -168,7 +157,7 @@ export function QuoteChip({
                 data-slot="quote-command-note"
                 className="m-0 px-1 text-[11px]/[1.6] text-muted-foreground empty:hidden"
             >
-                {quote && command ? QUOTED_COMMAND_NOTE : ''}
+                {quote && command ? t('chat:quote.command-note') : ''}
             </p>
         </>
     );
@@ -176,6 +165,7 @@ export function QuoteChip({
 
 /** Reply, first in a message's action row: its quote goes over the composer. */
 export function ReplyButton({ onReply }: { onReply: () => void }) {
+    const { t } = useTranslation(['chat']);
     return (
         <Tooltip>
             <TooltipTrigger asChild>
@@ -184,14 +174,14 @@ export function ReplyButton({ onReply }: { onReply: () => void }) {
                     variant="ghost"
                     size="icon-xs"
                     className="text-muted-foreground hover:text-foreground"
-                    aria-label="Reply"
+                    aria-label={t('chat:quote.reply')}
                     data-message-reply=""
                     onClick={onReply}
                 >
                     <Reply />
                 </Button>
             </TooltipTrigger>
-            <TooltipContent side="bottom">Reply</TooltipContent>
+            <TooltipContent side="bottom">{t('chat:quote.reply')}</TooltipContent>
         </Tooltip>
     );
 }

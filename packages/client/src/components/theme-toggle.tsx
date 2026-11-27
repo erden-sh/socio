@@ -2,6 +2,10 @@ import { Monitor, Moon, Sun, SunMoon, type LucideIcon } from 'lucide-react';
 import { DropdownMenu as DropdownMenuPrimitive } from 'radix-ui';
 import { useId } from 'react';
 
+import { useTranslation } from '@socio/i18n/react';
+
+import { onDemand } from '../i18n/on-demand';
+
 import {
     DropdownMenuGroup,
     DropdownMenuLabel,
@@ -11,18 +15,18 @@ import {
     DropdownMenuSubContent,
     DropdownMenuSubTrigger,
 } from '@/components/ui/dropdown-menu';
-import { themeChoices, useThemeChoice, type ThemeChoice } from '@/shell/theme';
+import { useThemeChoice, useThemeChoices, type ThemeChoice } from '@/shell/theme';
 
 const icons: Record<ThemeChoice, LucideIcon> = {
     light: Sun,
     dark: Moon,
     system: Monitor,
 };
-const label = (choice: ThemeChoice) => themeChoices.find((item) => item.value === choice)!.label;
 
 /** Light, Dark and System as radio items, the current one checked. */
 function ThemeChoices() {
     const { choice, setChoice } = useThemeChoice();
+    const themeChoices = useThemeChoices();
     return (
         <DropdownMenuRadioGroup value={choice} onValueChange={(value) => setChoice(value as ThemeChoice)}>
             {themeChoices.map(({ value, label }) => {
@@ -44,12 +48,14 @@ function ThemeChoices() {
  * Arrow keys move through them like the menu's other items.
  */
 export function ThemeSegments() {
+    const { t } = useTranslation(['shell.help']);
     const { choice, setChoice } = useThemeChoice();
+    const themeChoices = useThemeChoices();
     const labelId = useId();
     return (
         <DropdownMenuGroup>
             <DropdownMenuLabel id={labelId} className="px-2 pt-1 pb-1 text-xs font-normal text-muted-foreground">
-                Theme
+                {t('shell.help:theme.title')}
             </DropdownMenuLabel>
             <DropdownMenuRadioGroup
                 aria-labelledby={labelId}
@@ -78,20 +84,22 @@ export function ThemeSegments() {
     );
 }
 
-/** The account menu's Theme submenu, showing the current choice. */
-export function ThemeSubmenu() {
+/** The account menu's Theme submenu, showing the current choice (once `shell.help` is in). */
+export const ThemeSubmenu = onDemand(['shell.help'], function ThemeSubmenu() {
+    const { t } = useTranslation(['shell.help']);
     const { choice } = useThemeChoice();
+    const label = useThemeChoices().find((item) => item.value === choice)!.label;
     const Icon = choice === 'system' ? SunMoon : icons[choice];
     return (
         <DropdownMenuSub>
             <DropdownMenuSubTrigger>
                 <Icon />
-                <span className="flex-1">Theme</span>
-                <span className="text-xs text-muted-foreground">{label(choice)}</span>
+                <span className="flex-1">{t('shell.help:theme.title')}</span>
+                <span className="text-xs text-muted-foreground">{label}</span>
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent className="min-w-36">
                 <ThemeChoices />
             </DropdownMenuSubContent>
         </DropdownMenuSub>
     );
-}
+});

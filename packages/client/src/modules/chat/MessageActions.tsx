@@ -1,6 +1,7 @@
 import { Check, Copy } from 'lucide-react';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 
+import { useTranslation } from '@socio/i18n/react';
 import { dateTimeFormat } from '@socio/shared/locale';
 
 import { LocalTime } from '../../lib/local-time';
@@ -101,6 +102,7 @@ function MessageTime({ at }: { at: number }) {
  * for screen readers (a polite status next to the button).
  */
 export function CopyButton({ text }: { text: string }) {
+    const { t } = useTranslation(['chat']);
     const [state, setState] = useState<'idle' | 'copied' | 'failed'>('idle');
     const timer = useRef<number>(undefined);
     useEffect(() => () => window.clearTimeout(timer.current), []);
@@ -114,7 +116,8 @@ export function CopyButton({ text }: { text: string }) {
         }
         timer.current = window.setTimeout(() => setState('idle'), COPIED_MS);
     };
-    const label = state === 'copied' ? 'Copied' : state === 'failed' ? 'Could not copy' : 'Copy';
+    const label =
+        state === 'copied' ? t('chat:copy.copied') : state === 'failed' ? t('chat:copy.failed') : t('chat:copy.action');
     return (
         <>
             <Tooltip>
@@ -124,7 +127,7 @@ export function CopyButton({ text }: { text: string }) {
                         variant="ghost"
                         size="icon-xs"
                         className="text-muted-foreground hover:text-foreground"
-                        aria-label="Copy"
+                        aria-label={t('chat:copy.action')}
                         data-state-copy={state}
                         onClick={() => void copy()}
                     >

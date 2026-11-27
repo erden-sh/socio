@@ -1,0 +1,29 @@
+{
+    "items": {
+        "guides": "Help and guides",
+        "whats-new": "What’s new",
+        "new_one": "{{count, number}} new",
+        "new_other": "{{count, number}} new"
+    },
+    "shortcuts": {
+        "title": "Keyboard shortcuts",
+        "description": "They work on every page.",
+        "search": "Search",
+        "ask": "Ask a socio",
+        "sidebar": "Collapse or expand the sidebar"
+    },
+    "get-the-app": {
+        "title": "Get the Socio app",
+        "description": "Scan this with a phone’s camera: it opens the Socio app (or how to get it) with this workspace filled in. Anyone can scan it; they still sign in as themselves. The app is in a team beta until it reaches the app stores.",
+        "code": "QR code for this workspace in the Socio app",
+        "banner": "This workspace is in the Socio app too.",
+        "get": "Get the app",
+        "not-now": "Not now"
+    },
+    "theme": {
+        "title": "Theme",
+        "light": "Light",
+        "dark": "Dark",
+        "system": "System"
+    }
+}

@@ -18,8 +18,13 @@ describe('the sign-in header', () => {
 
     it('says the web’s headline and line', () => {
         const signIn = web('shell/SignIn.tsx');
-        expect(signIn).toContain('<h1>Welcome back.</h1>');
-        expect(signIn).toContain('<p>Sign in to {brand.name}.</p>');
+        expect(signIn).toContain("<h1>{t('shell.sign-in:welcome')}</h1>");
+        // The web's words are its en-US dictionary's (shell.sign-in).
+        const words = JSON.parse(
+            readFileSync(new URL('../../../packages/i18n/locales/en-US/shell.sign-in.json', import.meta.url), 'utf8'),
+        ) as Record<string, string>;
+        expect(words.welcome).toBe('Welcome back.');
+        expect(words['sign-in-to']).toBe('Sign in to {{name}}.');
         expect(WELCOME_HEADLINE).toBe('Welcome back.');
         expect(welcomeLine('Workspace A')).toBe('Sign in to Workspace A.');
         expect(screen).toContain('{WELCOME_HEADLINE}');

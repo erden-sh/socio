@@ -1,13 +1,12 @@
 import { Brain, ChevronRight, CircleAlert, ListChecks, LoaderCircle, Users } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 
-import { formatNumber } from '@socio/shared/locale';
+import { useTranslation } from '@socio/i18n/react';
 import {
     fieldsOf,
     formatDuration,
     parseJson,
     spanMs,
-    thoughtLabel,
     toolOutcome,
     workedMs,
     type ReasoningStep,
@@ -29,7 +28,17 @@ const seconds = (step: ReasoningStep) => {
     const ms = spanMs(step.span);
     return ms === undefined ? undefined : Math.round(ms / 1000);
 };
-const count = (steps: number) => `${formatNumber(steps)} ${steps === 1 ? 'step' : 'steps'}`;
+
+/** "Thought for 12s" (shared's thoughtLabel, in the reader's words). */
+function useThoughtLabel() {
+    const { t } = useTranslation(['chat.trace']);
+    return (step: ReasoningStep) => {
+        const secs = seconds(step);
+        return secs === undefined
+            ? t('chat.trace:thought')
+            : t('chat.trace:thought-for', { duration: formatDuration(Math.max(1, secs) * 1000) });
+    };
+}
 
 /*
  * As quiet as the reasoning block it grew from: small muted text, no
@@ -67,6 +76,8 @@ export function TurnTrace({
     /** Shown under the steps while open (the computer's screen). */
     extra?: ReactNode;
 }) {
+    const { t } = useTranslation(['chat.trace']);
+    const thoughtLabel = useThoughtLabel();
     const [choice, setChoice] = useState<boolean>();
     const only = steps.length === 1 && steps[0].kind === 'reasoning' ? steps[0] : undefined;
     // Reasoning alone stays folded while it streams (CB-66).
@@ -75,15 +86,16 @@ export function TurnTrace({
         (step) => step.kind === 'tool' && toolOutcome(step.result, live).state === 'failed',
     ).length;
     const worked = workedMs(steps, start);
+    const count = steps.length;
     const label = only
         ? only.streaming
-            ? 'Thinking'
-            : thoughtLabel(seconds(only))
+            ? t('chat.trace:thinking')
+            : thoughtLabel(only)
         : live
-          ? `Working · ${count(steps.length)}`
+          ? t('chat.trace:working', { count })
           : worked === undefined
-            ? `Worked through ${count(steps.length)}`
-            : `Worked for ${formatDuration(worked)} · ${count(steps.length)}`;
+            ? t('chat.trace:worked-through', { count })
+            : t('chat.trace:worked-for', { duration: formatDuration(worked), count });
     const Icon = only ? Brain : live ? LoaderCircle : ListChecks;
     return (
         <TooltipProvider delayDuration={300}>
@@ -108,7 +120,9 @@ export function TurnTrace({
                 >
                     <Icon size={13} aria-hidden="true" className={!only && live ? spin : undefined} />
                     <span className={(only ? only.streaming : live) ? shimmer : undefined}>{label}</span>
-                    {failed > 0 && <span className="text-destructive">· {formatNumber(failed)} failed</span>}
+                    {failed > 0 && (
+                        <span className="text-destructive">· {t('chat.trace:failed-count', { count: failed })}</span>
+                    )}
                     <ChevronRight size={13} aria-hidden="true" className={chevron} />
                 </summary>
                 {open &&
@@ -163,6 +177,7 @@ function StepLine({
     ms?: number;
     children: () => ReactNode;
 }) {
+    const { t } = useTranslation(['chat.trace']);
     const [open, setOpen] = useState(false);
     return (
         <details
@@ -205,12 +220,12 @@ function StepLine({
                             data-slot="trace-step-failed"
                         >
                             <CircleAlert size={13} aria-hidden="true" />
-                            Failed
+                            {t('chat.trace:step.failed')}
                         </span>
                     )}
-                    {state === 'stopped' && <span>Stopped</span>}
+                    {state === 'stopped' && <span>{t('chat.trace:step.stopped')}</span>}
                     {state === 'running' && kind === 'tool' && (
-                        <LoaderCircle size={13} className={spin} role="img" aria-label="Running" />
+                        <LoaderCircle size={13} className={spin} role="img" aria-label={t('chat.trace:step.running')} />
                     )}
                     {ms !== undefined && <span>{formatDuration(ms)}</span>}
                 </span>
@@ -222,12 +237,14 @@ function StepLine({
 }
 
 function ReasoningLine({ step }: { step: ReasoningStep }) {
+    const { t } = useTranslation(['chat.trace']);
+    const thoughtLabel = useThoughtLabel();
     return (
         <StepLine
             kind="reasoning"
             state={step.streaming ? 'running' : 'done'}
             icon={Brain}
-            verb={step.streaming ? 'Thinking' : thoughtLabel(seconds(step))}
+            verb={step.streaming ? t('chat.trace:thinking') : thoughtLabel(step)}
         >
             {() => (
                 <div className={cn(reasoning, 'mt-0.5 mb-2 ml-7 max-h-80 overflow-y-auto')}>
@@ -268,6 +285,7 @@ function ToolLine({ step, live }: { step: ToolStep; live: boolean }) {
  * server sends one per conversation, on the first such write.
  */
 function SharedNotices({ steps }: { steps: readonly TraceStep[] }) {
+    const { t } = useTranslation(['chat.trace']);
     const notices = steps.flatMap((step) => {
         if (step.kind !== 'tool') {
             return [];
@@ -300,7 +318,7 @@ function SharedNotices({ steps }: { steps: readonly TraceStep[] }) {
                                 openAppPath(notice.href!);
                             }}
                         >
-                            Open the dataset
+                            {t('chat.trace:open-dataset')}
                         </a>
                     </>
                 )}

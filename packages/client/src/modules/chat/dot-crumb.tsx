@@ -1,6 +1,7 @@
 import { Check, ChevronDown, LayoutGrid, MessageSquarePlus } from 'lucide-react';
 import { Link } from 'react-router';
 
+import { useTranslation } from '@socio/i18n/react';
 import { shownChats } from '@socio/shared/rooms/room-view';
 import type { Dot } from '@socio/shared/types';
 
@@ -28,6 +29,7 @@ export const DOT_CRUMB_CHATS = 8;
  * away.
  */
 export function DotCrumb({ dot, threadId }: { dot: Dot; threadId?: string }) {
+    const { t } = useTranslation(['chat.menu']);
     const { workspace, state } = useShell();
     const chats = shownChats(workspace.conversations, state).filter((item) => item.dotId === dot.id);
     const shown = chats.slice(0, DOT_CRUMB_CHATS);
@@ -35,7 +37,7 @@ export function DotCrumb({ dot, threadId }: { dot: Dot; threadId?: string }) {
         <DropdownMenu>
             <DropdownMenuTrigger
                 data-slot="dot-crumb"
-                aria-label={`${dot.name}: switch chat`}
+                aria-label={t('chat.menu:dot-crumb.switch', { name: dot.name })}
                 className="flex min-w-0 items-center gap-1 rounded-sm outline-none transition-colors hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 data-[state=open]:text-foreground"
             >
                 <span className="truncate">{dot.name}</span>
@@ -44,7 +46,7 @@ export function DotCrumb({ dot, threadId }: { dot: Dot; threadId?: string }) {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-72" data-slot="dot-crumb-menu">
                 <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-                    Chats with {dot.name}
+                    {t('chat.menu:dot-crumb.chats-with', { name: dot.name })}
                 </DropdownMenuLabel>
                 {shown.length ? (
                     shown.map((thread) => {
@@ -64,13 +66,13 @@ export function DotCrumb({ dot, threadId }: { dot: Dot; threadId?: string }) {
                         );
                     })
                 ) : (
-                    <p className="px-2 py-1.5 text-sm text-muted-foreground">No chats yet.</p>
+                    <p className="px-2 py-1.5 text-sm text-muted-foreground">{t('chat.menu:dot-crumb.none')}</p>
                 )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                     <Link to={dotPath(dot)} data-slot="dot-crumb-home">
                         <LayoutGrid />
-                        <span className="flex-1">All chats</span>
+                        <span className="flex-1">{t('chat.menu:dot-crumb.all')}</span>
                         {chats.length > shown.length && (
                             <span className="text-xs text-muted-foreground">{chats.length}</span>
                         )}
@@ -79,7 +81,7 @@ export function DotCrumb({ dot, threadId }: { dot: Dot; threadId?: string }) {
                 {!dot.archivedAt && (
                     <DropdownMenuItem asChild>
                         <Link to={newChatPath(dot)} data-slot="dot-crumb-new">
-                            <MessageSquarePlus /> New chat
+                            <MessageSquarePlus /> {t('chat.menu:new-chat')}
                         </Link>
                     </DropdownMenuItem>
                 )}

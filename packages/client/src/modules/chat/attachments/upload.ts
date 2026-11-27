@@ -4,6 +4,24 @@ import { ApiError, api } from '../../../lib/api';
 import { postWrite } from '../../../lib/change-channel';
 import { forgetOnSignOut } from '../../../shell/auth-channel';
 
+/**
+ * An upload the server refused without saying why (its status only). The
+ * message is the Media page's English; the chat's tray says it in the
+ * person's language (useAttachments).
+ */
+export class UploadRefused extends ApiError {
+    constructor(status: number) {
+        super(`Upload failed (${status}).`, status);
+    }
+}
+
+/** An upload the connection dropped; the chat's tray translates it, as above. */
+export class UploadOffline extends Error {
+    constructor() {
+        super('The upload failed. Check your connection.');
+    }
+}
+
 export interface UploadOptions {
     onProgress?: (fraction: number) => void;
     signal?: AbortSignal;
@@ -59,10 +77,10 @@ function uploadRaw(file: File, query: URLSearchParams, options: UploadOptions): 
                 postWrite('/media/uploads');
                 resolve(body as UploadResult);
             } else {
-                reject(new ApiError(body.error ?? `Upload failed (${xhr.status}).`, xhr.status));
+                reject(body.error ? new ApiError(body.error, xhr.status) : new UploadRefused(xhr.status));
             }
         };
-        xhr.onerror = () => reject(new Error('The upload failed. Check your connection.'));
+        xhr.onerror = () => reject(new UploadOffline());
         xhr.onabort = () => reject(new DOMException('Aborted', 'AbortError'));
         options.signal?.addEventListener('abort', () => xhr.abort(), {
             once: true,

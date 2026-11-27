@@ -4,7 +4,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { createMemoryRouter, Outlet, RouterProvider } from 'react-router';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
-import { LEAVE_DRAFT, useDraftGuard } from '../src/modules/chat/use-draft-guard';
+import { useDraftGuard } from '../src/modules/chat/use-draft-guard';
 
 declare global {
     var IS_REACT_ACT_ENVIRONMENT: boolean;
@@ -62,7 +62,7 @@ const at = (router: ReturnType<typeof createMemoryRouter>) => router.state.locat
 it('asks before leaving an unsaved draft, and stays when told to', async () => {
     const router = start(true);
     await act(() => router.navigate('/memories'));
-    expect(confirm).toHaveBeenCalledWith(LEAVE_DRAFT);
+    expect(confirm).toHaveBeenCalledWith('Leave your unsaved page draft?');
     expect(at(router)).toBe('/spaces/s1/pages/p1');
     // Back and forward are navigations too.
     await act(() => router.navigate(-1));

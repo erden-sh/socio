@@ -1,0 +1,18 @@
+{
+    "ready": "Under a socio's name on its home page, when it has no instructions to show.",
+    "soul": "Button that opens the socio's Soul: its character and instructions. \"Soul\" is a product noun.",
+    "team": "Beside a chat in a list: it's a team conversation (shared with other people).",
+    "room": "Beside a chat in a list: it's a room (a chat several people share). Product noun.",
+    "run.running": "Each run.* key: A turn's status (a turn is one answer the socio worked on), before when it started.",
+    "quiet.text": "One line in place of the panels when the socio has nothing in progress, nothing waiting for the person and nothing scheduled.",
+    "quiet.links": "Accessible name of the links after it (Approvals, Schedules, Board).",
+    "quiet.board": "Link to the Improvements board, the workspace's list of feature requests and issues.",
+    "columns.now": "The columns.* keys: Headings of the home page's three columns: what's happening now, what happened, what's planned.",
+    "all": "Button on a panel that shows the whole list below; count is how many there are.",
+    "panels.active-empty": "Empty Active chats panel; {{name}} is the socio's name. _archived: the socio is archived, so no new chat.",
+    "panels.running": "Panel of the socio's turns still running.",
+    "panels.recent": "Panel of the socio's latest turns (answers it worked on).",
+    "panels.load-failed": "Shown in a panel when the socio's turns couldn't be loaded.",
+    "chats.tabs": "Accessible name of the Active and Archived tabs; {{name}} is the socio's name.",
+    "chats.active-empty": "Empty Active tab; {{name}} is the socio's name. _archived: the socio is archived."
+}

@@ -17,7 +17,7 @@ import {
     SAMPLE_EVERY_MS,
     sampleLatency,
 } from '../src/shell/connection-status';
-import { ConnectionBadge, ConnectionDot, RESTORED_ANNOUNCEMENT } from '../src/shell/ConnectionBadge';
+import { ConnectionBadge, ConnectionDot } from '../src/shell/ConnectionBadge';
 
 // CB-263: the header's connection badge. Online, reconnecting or offline
 // from the shell poll's heartbeats and the browser; the round trip from a
@@ -219,7 +219,7 @@ it('stays quiet while healthy, says reconnecting or offline, and announces only 
     await settle();
     expect(badge()).toBeNull();
     expect(dot().dataset.stateConnection).toBe('online');
-    expect(announcement().textContent).toBe(RESTORED_ANNOUNCEMENT);
+    expect(announcement().textContent).toBe('Connection to Socio restored.');
 });
 
 it('shows the details on tap: state, round trips, last check and last disconnect', async () => {

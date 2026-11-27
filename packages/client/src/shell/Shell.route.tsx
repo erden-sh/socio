@@ -3,8 +3,10 @@ import type { LoaderFunctionArgs, MetaFunction, ShouldRevalidateFunction } from 
 import { DEFAULT_BRANDING, type Branding } from '@socio/shared/branding';
 
 import { polledLoadersSkipped } from '../hooks/use-tab-refresh';
+import { routeI18n } from '../i18n/page-i18n';
 import { web } from '../lib/web-context';
 
+import { oneTimeLink } from './one-time-link';
 import { uiHints } from './ui-hints';
 
 export { App as default } from './App';
@@ -14,7 +16,9 @@ export { AppError as ErrorBoundary } from '../views/RouteError';
  * What the shell's first render needs: the hints from the page request,
  * and either this user's state and workspace (what `/api/state` and
  * `/api/workspace` return them) or, signed out, what the sign-in screen
- * offers. The server renders the real shell, or sign-in, from it.
+ * offers. The server renders the real shell, or sign-in, from it, and
+ * inlines the sign-in screen's words (route-namespaces.json,
+ * `shell:signed-out`) when it shows.
  */
 export async function loader({ context, request }: LoaderFunctionArgs) {
     const { services } = web(context);
@@ -24,10 +28,13 @@ export async function loader({ context, request }: LoaderFunctionArgs) {
             session: 'signed-out',
             ui,
             signIn: await services.signIn(),
+            i18n: await routeI18n(context, 'shell:signed-out'),
         } as const;
     }
     const [state, workspace] = await Promise.all([services.state(), services.workspace()]);
-    return { session: 'signed-in', ui, state, workspace } as const;
+    // A password or sign-in link shows the sign-in screen signed in too (App).
+    const i18n = oneTimeLink(new URL(request.url)) ? await routeI18n(context, 'shell:signed-out') : undefined;
+    return { session: 'signed-in', ui, state, workspace, ...(i18n && { i18n }) } as const;
 }
 
 /** The shell's loader data (`App` reads it). */

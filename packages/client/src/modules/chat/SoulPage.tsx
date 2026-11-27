@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { toast } from 'sonner';
 
+import { useTranslation } from '@socio/i18n/react';
 import {
     PERSONA_FIELDS,
     SOUL_FIELDS,
@@ -38,17 +39,23 @@ const failure = (error: unknown, fallback: string) => (error instanceof Error ? 
 const soulPath = (id: string) => `/dots/${encodeURIComponent(id)}/soul`;
 
 /** How a version came to be, in a line. */
-function origin(version: SoulVersion, name: (id: string) => string) {
-    switch (version.source) {
-        case 'migrated':
-            return 'From its role instructions, at the upgrade to Soul';
-        case 'created':
-            return `Made by ${name(version.createdBy)}`;
-        case 'restored':
-            return `${name(version.createdBy)} restored version ${version.restoredFrom ?? '?'}`;
-        default:
-            return `Edited by ${name(version.createdBy)}`;
-    }
+function useOrigin(name: (id: string) => string) {
+    const { t } = useTranslation(['chat.soul']);
+    return (version: SoulVersion) => {
+        switch (version.source) {
+            case 'migrated':
+                return t('chat.soul:origin.migrated');
+            case 'created':
+                return t('chat.soul:origin.created', { name: name(version.createdBy) });
+            case 'restored':
+                return t('chat.soul:origin.restored', {
+                    name: name(version.createdBy),
+                    version: version.restoredFrom ?? '?',
+                });
+            default:
+                return t('chat.soul:origin.edited', { name: name(version.createdBy) });
+        }
+    };
 }
 
 /** A Soul's parts, the empty ones left out (instructions always shown). */
@@ -67,9 +74,10 @@ function SoulParts({ soul }: { soul: SoulFields }) {
 
 /** What changed in each part from `before` to `after`. */
 function SoulDiff({ before, after }: { before: SoulFields; after: SoulFields }) {
+    const { t } = useTranslation(['chat.soul']);
     const changed = SOUL_FIELDS.filter((field) => before[field] !== after[field]);
     if (!changed.length) {
-        return <p className="text-xs text-muted-foreground">The same as the version before.</p>;
+        return <p className="text-xs text-muted-foreground">{t('chat.soul:same')}</p>;
     }
     return (
         <dl data-slot="soul-diff" className="grid gap-3 text-[13px] leading-[1.6]">
@@ -112,6 +120,7 @@ function SoulEditor({
     onSave: (fields: SoulFields) => Promise<string | undefined>;
     onCancel: () => void;
 }) {
+    const { t } = useTranslation(['chat.soul']);
     const [fields, setFields] = useState<SoulFields>(() => soulFields(soul));
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
@@ -137,7 +146,7 @@ function SoulEditor({
                     <label htmlFor={`soul-${field}`} className="text-sm font-medium">
                         {SOUL_LABELS[field]}
                         {field !== 'instructions' && (
-                            <span className="font-normal text-muted-foreground"> (optional)</span>
+                            <span className="font-normal text-muted-foreground"> {t('chat.soul:editor.optional')}</span>
                         )}
                     </label>
                     <p id={`soul-${field}-hint`} className="text-xs text-muted-foreground">
@@ -172,7 +181,7 @@ function SoulEditor({
                     aria-controls="soul-preview"
                     onClick={() => setPreview((open) => !open)}
                 >
-                    {preview ? 'Hide preview' : `Preview what ${dotName} reads`}
+                    {preview ? t('chat.soul:editor.hide-preview') : t('chat.soul:editor.preview', { name: dotName })}
                 </Button>
                 {preview && (
                     <pre
@@ -191,10 +200,10 @@ function SoulEditor({
             )}
             <div className="flex flex-wrap gap-2">
                 <Button type="submit" disabled={busy || !!problem}>
-                    Save as a new version
+                    {t('chat.soul:editor.save')}
                 </Button>
                 <Button type="button" variant="outline" disabled={busy} onClick={onCancel}>
-                    Cancel
+                    {t('chat.soul:editor.cancel')}
                 </Button>
             </div>
         </form>
@@ -208,6 +217,7 @@ function SoulEditor({
  * and when, what changed, and Restore (a new version, history kept).
  */
 export function SoulPage() {
+    const { t } = useTranslation(['chat.soul']);
     const { dotId = '' } = useParams();
     const shell = useShell();
     const [view, setView] = useState<SoulView | null>();
@@ -222,10 +232,10 @@ export function SoulPage() {
                     if (error instanceof ApiError && error.status === 404) {
                         setView(null);
                     } else {
-                        toast.error(failure(error, 'Could not load the Soul.'));
+                        toast.error(failure(error, t('chat.soul:errors.load')));
                     }
                 }),
-        [dotId],
+        [dotId, t],
     );
     // The shell's poll sees a new version made elsewhere: show it.
     const shellVersion = shell.workspace.dots.find((dot) => dot.id === dotId)?.soul?.version;
@@ -233,12 +243,13 @@ export function SoulPage() {
         void load();
     }, [load, shellVersion]);
 
+    const origin = useOrigin((id) => view?.users[id] ?? t('chat.soul:someone'));
+
     if (view === null) {
         return <NotFound what="Socio" />;
     }
     const current = view?.versions[0];
-    const name = (id: string) => view?.users[id] ?? 'Someone';
-    const dotName = view?.dot.name ?? 'This socio';
+    const dotName = view?.dot.name ?? t('chat.soul:this-socio');
     const write = async (path: string, body: unknown) => {
         try {
             await api(path, path.endsWith('/restore') ? 'POST' : 'PUT', body);
@@ -249,10 +260,9 @@ export function SoulPage() {
             if (error instanceof ApiError && error.status === 409) {
                 void load();
             }
-            return failure(error, 'Could not save the Soul.');
+            return failure(error, t('chat.soul:errors.save'));
         }
     };
-    const editors = view?.dot.ownerId ? 'its owner edits it' : 'admins edit it';
 
     return (
         <WorkspacePage
@@ -260,32 +270,39 @@ export function SoulPage() {
             icon={Sparkles}
             tone="violet"
             measure="reading"
-            title={`${dotName}’s Soul`}
-            description={`Who ${dotName} is: its role, voice, values and working style. It is part of every chat with ${dotName}, and changes only when ${editors}. It shapes tone and role, never Socio’s rules, tool permissions or approvals.`}
+            title={t('chat.soul:title', { name: dotName })}
+            description={t('chat.soul:description', {
+                name: dotName,
+                context: view?.dot.ownerId ? 'owner' : undefined,
+            })}
             actions={
                 view &&
                 (shell.workspace.dots.some((dot) => dot.id === view.dot.id) ? (
                     <Button variant="outline" size="sm" asChild>
-                        <Link to={dotPath(view.dot)}>Back to {dotName}</Link>
+                        <Link to={dotPath(view.dot)}>{t('chat.soul:back', { name: dotName })}</Link>
                     </Button>
                 ) : shell.admin ? (
                     <Button variant="outline" size="sm" asChild>
-                        <Link to={`/admin/dots/${encodeURIComponent(view.dot.id)}`}>Back to {dotName}</Link>
+                        <Link to={`/admin/dots/${encodeURIComponent(view.dot.id)}`}>
+                            {t('chat.soul:back', { name: dotName })}
+                        </Link>
                     </Button>
                 ) : undefined)
             }
         >
             {!view || !current ? (
-                <p className="text-sm text-muted-foreground">Loading…</p>
+                <p className="text-sm text-muted-foreground">{t('chat.soul:loading')}</p>
             ) : (
                 <>
                     <section aria-labelledby="soul-current" className="mb-8">
-                        <SectionTitle id="soul-current">In use</SectionTitle>
+                        <SectionTitle id="soul-current">{t('chat.soul:in-use')}</SectionTitle>
                         <Card data-slot="soul-current" className="gap-4 rounded-xl p-5.5 shadow-none">
                             <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                                <Badge variant="secondary">Version {current.version}</Badge>
+                                <Badge variant="secondary">
+                                    {t('chat.soul:version', { version: current.version })}
+                                </Badge>
                                 <span>
-                                    {origin(current, name)} · <LocalTime value={current.createdAt} format={relative} />
+                                    {origin(current)} · <LocalTime value={current.createdAt} format={relative} />
                                 </span>
                                 {view.canEdit && !editing && (
                                     <Button
@@ -295,7 +312,7 @@ export function SoulPage() {
                                         onClick={() => setEditing(true)}
                                     >
                                         <Pencil />
-                                        Edit
+                                        {t('chat.soul:edit')}
                                     </Button>
                                 )}
                             </div>
@@ -311,7 +328,7 @@ export function SoulPage() {
                                         });
                                         if (!failed) {
                                             setEditing(false);
-                                            toast(`${dotName}’s Soul saved`);
+                                            toast(t('chat.soul:saved', { name: dotName }));
                                         }
                                         return failed;
                                     }}
@@ -321,8 +338,9 @@ export function SoulPage() {
                                     <SoulParts soul={current} />
                                     {!PERSONA_FIELDS.some((field) => current[field]) && (
                                         <p className="text-xs text-muted-foreground">
-                                            No voice, values or working style yet
-                                            {view.canEdit ? ': Edit adds them.' : '.'}
+                                            {t('chat.soul:no-persona', {
+                                                context: view.canEdit ? 'editable' : undefined,
+                                            })}
                                         </p>
                                     )}
                                 </>
@@ -330,17 +348,17 @@ export function SoulPage() {
                             {!view.canEdit && (
                                 <p data-slot="soul-read-only" className="text-xs text-muted-foreground">
                                     {view.dot.archived
-                                        ? 'This socio is archived: its Soul can’t change until it’s unarchived.'
+                                        ? t('chat.soul:read-only.archived')
                                         : view.dot.ownerId
-                                          ? 'Only its owner can change this Soul.'
-                                          : 'Only an admin can change this Soul.'}
+                                          ? t('chat.soul:read-only.owner')
+                                          : t('chat.soul:read-only.admin')}
                                 </p>
                             )}
                         </Card>
                     </section>
 
                     <section aria-labelledby="soul-history">
-                        <SectionTitle id="soul-history">History</SectionTitle>
+                        <SectionTitle id="soul-history">{t('chat.soul:history')}</SectionTitle>
                         <ol data-slot="soul-history" className="grid gap-0.5 rounded-xl border bg-card p-1.5 shadow-xs">
                             {view.versions.map((version, index) => {
                                 const before = view.versions[index + 1];
@@ -349,14 +367,16 @@ export function SoulPage() {
                                     <li key={version.version} data-slot="soul-version" className="rounded-lg px-3 py-2">
                                         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
                                             <History className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-                                            <span className="font-medium">Version {version.version}</span>
+                                            <span className="font-medium">
+                                                {t('chat.soul:version', { version: version.version })}
+                                            </span>
                                             {index === 0 && (
                                                 <Badge variant="secondary" className="py-0">
-                                                    In use
+                                                    {t('chat.soul:in-use')}
                                                 </Badge>
                                             )}
                                             <span className="min-w-0 flex-1 basis-48 text-xs text-muted-foreground">
-                                                {origin(version, name)} ·{' '}
+                                                {origin(version)} ·{' '}
                                                 <LocalTime value={version.createdAt} format={relative} />
                                             </span>
                                             <Button
@@ -366,7 +386,11 @@ export function SoulPage() {
                                                 aria-controls={`soul-version-${version.version}`}
                                                 onClick={() => setOpen(expanded ? undefined : version.version)}
                                             >
-                                                {expanded ? 'Hide' : before ? 'Changes' : 'Show'}
+                                                {expanded
+                                                    ? t('chat.soul:toggle.hide')
+                                                    : before
+                                                      ? t('chat.soul:toggle.changes')
+                                                      : t('chat.soul:toggle.show')}
                                             </Button>
                                             {view.canEdit && index > 0 && (
                                                 <Button
@@ -375,7 +399,7 @@ export function SoulPage() {
                                                     onClick={() => setRestoring(version)}
                                                 >
                                                     <RotateCcw />
-                                                    Restore
+                                                    {t('chat.soul:restore.action')}
                                                 </Button>
                                             )}
                                         </div>
@@ -395,9 +419,9 @@ export function SoulPage() {
                     </section>
                     {restoring && (
                         <ConfirmDelete
-                            title={`Restore version ${restoring.version}?`}
+                            title={t('chat.soul:restore.title', { version: restoring.version })}
                             slot="confirm-restore-soul"
-                            action="Restore"
+                            action={t('chat.soul:restore.action')}
                             variant="default"
                             onClose={() => setRestoring(undefined)}
                             onConfirm={async () => {
@@ -408,14 +432,13 @@ export function SoulPage() {
                                 if (failed) {
                                     toast.error(failed);
                                 } else {
-                                    toast(`Version ${restoring.version} is back in use`);
+                                    toast(t('chat.soul:restore.done', { version: restoring.version }));
                                     setEditing(false);
                                 }
                                 setRestoring(undefined);
                             }}
                         >
-                            {dotName} uses it from its next turn, as version {current.version + 1}. Every version stays
-                            in the history.
+                            {t('chat.soul:restore.body', { name: dotName, next: current.version + 1 })}
                         </ConfirmDelete>
                     )}
                 </>

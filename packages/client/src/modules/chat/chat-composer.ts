@@ -1,5 +1,6 @@
-import { useEffect, useLayoutEffect, useRef, type RefObject } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, type RefObject } from 'react';
 
+import { useTranslation } from '@socio/i18n/react';
 import { threadRunning } from '@socio/shared/chat/thread-running';
 
 /**
@@ -101,23 +102,27 @@ function blockedFocus(box: HTMLElement) {
 /**
  * A message the server never took for its size (CB-156): a run's 413. A
  * chat's request carries only what is new in it, so this is the message
- * itself: its text goes back in the box.
+ * itself: its text goes back in the box. Its key (chat.composer).
  */
-export const UNSENT_TOO_LONG =
-    'That message is too long to send. Shorten it or attach it as a file, then send it again.';
+export const UNSENT_TOO_LONG = 'chat.composer:unsent.too-long';
 
 /** Whether the server refused a request for its size (413). */
 export function refusedForSize(error: unknown): boolean {
     return !!error && typeof error === 'object' && (error as { status?: unknown }).status === 413;
 }
 
-/**
- * A run the server refused because the conversation's turn was still running
- * (CB-357: 409 `thread_running`, started in another tab or channel): it took
- * nothing, so the message shows as not sent, to send again.
- */
-export const UNSENT_THREAD_RUNNING =
-    'Your socio is still answering, so your message wasn’t sent. Send it again once it finishes.';
+/** The chat's own words for a failed run (`runErrorMessage`), in the person's language. */
+export interface RunErrorWords {
+    /**
+     * A run the server refused because the conversation's turn was still
+     * running (CB-357: 409 `thread_running`, started in another tab or
+     * channel): it took nothing, so the message shows as not sent, to send
+     * again.
+     */
+    threadRunning: string;
+    /** A refusal for size that isn't a run's (a connect's): it offers Reconnect. */
+    couldNotConnect: string;
+}
 
 /**
  * A failed run's message for the chat. A refused request (e.g. 503 while the
@@ -125,19 +130,32 @@ export const UNSENT_THREAD_RUNNING =
  * runtime client would otherwise show "HTTP 503: {...}". A busy conversation
  * is read from its `code`, never its text.
  */
-export function runErrorMessage(error: Error) {
+export function runErrorMessage(error: Error, words: RunErrorWords) {
     if (threadRunning(error)) {
-        return UNSENT_THREAD_RUNNING;
+        return words.threadRunning;
     }
     // Never "Request is too large." (CB-156): a run's 413 is the chat's to
     // explain (UNSENT_TOO_LONG); any other, such as a connect's, offers
     // Reconnect.
     if (refusedForSize(error)) {
-        return 'Conversation could not connect.';
+        return words.couldNotConnect;
     }
     const payload = (error as Error & { payload?: unknown }).payload;
     const message = payload && typeof payload === 'object' ? (payload as { error?: unknown }).error : undefined;
     return typeof message === 'string' && message ? message : error.message;
+}
+
+/** `runErrorMessage` with the chat's words (chat.composer). */
+export function useRunErrorMessage() {
+    const { t } = useTranslation(['chat.composer']);
+    return useCallback(
+        (error: Error) =>
+            runErrorMessage(error, {
+                threadRunning: t('chat.composer:unsent.thread-running'),
+                couldNotConnect: t('chat.composer:errors.could-not-connect'),
+            }),
+        [t],
+    );
 }
 
 /**

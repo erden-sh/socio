@@ -1,3 +1,4 @@
+import { useTranslation } from '@socio/i18n/react';
 import { DEACTIVATED_MESSAGE, type AuthSession } from '@socio/shared/auth';
 import {
     LEAVE_WORKSPACE_PATH,
@@ -138,28 +139,31 @@ export const leaveWorkspaceCheck = () => api<LeaveWorkspaceCheck>(LEAVE_PATH);
 export const leaveWorkspace = () =>
     api<{ ok: true }>(LEAVE_PATH, 'POST', { confirm: 'leave' } satisfies LeaveWorkspaceRequest);
 
-/** Messages for the `?error=` codes an OAuth sign-in comes back with. */
-export function signInError(code: string | null, description?: string | null) {
-    if (!code) {
-        return '';
-    }
-    if (code === 'not_invited') {
-        return 'This account is not invited to this workspace. Ask an admin to add you.';
-    }
-    if (code === 'state_mismatch' || code === 'state_not_found') {
-        return 'The sign-in expired or was started in another browser. Try again.';
-    }
-    if (code === 'INVALID_TOKEN' || code === 'new_user_signup_disabled') {
-        return 'That sign-in link is used up or expired. Ask for a new one.';
-    }
-    if (code === 'BANNED_USER') {
-        return DEACTIVATED_MESSAGE;
-    }
-    if (code === 'METHOD_OFF') {
-        return 'That way of signing in is turned off here. Sign in another way, or ask an operator.';
-    }
-    if (code === 'account_not_linked') {
-        return 'An account with this email exists, but the provider did not confirm the address. Sign in another way, or ask an admin.';
-    }
-    return description || 'Sign-in failed. Try again, or ask an admin.';
+/** Messages for the `?error=` codes an OAuth sign-in comes back with (`shell.sign-in`). */
+export function useSignInError() {
+    const { t } = useTranslation(['shell.sign-in']);
+    return (code: string | null, description?: string | null) => {
+        if (!code) {
+            return '';
+        }
+        if (code === 'not_invited') {
+            return t('shell.sign-in:errors.not-invited');
+        }
+        if (code === 'state_mismatch' || code === 'state_not_found') {
+            return t('shell.sign-in:errors.state');
+        }
+        if (code === 'INVALID_TOKEN' || code === 'new_user_signup_disabled') {
+            return t('shell.sign-in:errors.link-used');
+        }
+        if (code === 'BANNED_USER') {
+            return DEACTIVATED_MESSAGE;
+        }
+        if (code === 'METHOD_OFF') {
+            return t('shell.sign-in:errors.method-off');
+        }
+        if (code === 'account_not_linked') {
+            return t('shell.sign-in:errors.not-linked');
+        }
+        return description || t('shell.sign-in:errors.failed');
+    };
 }
