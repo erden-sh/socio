@@ -18,7 +18,7 @@ import {
 } from '@socio/shared/chat/reply-reports';
 import type { User } from '@socio/shared/types';
 
-import { closeChangeChannel } from '../src/lib/change-channel';
+import { CHANGES_CHANNEL, closeChangeChannel, refreshShown } from '../src/lib/change-channel';
 import { ChatTranscript } from '../src/modules/chat/ChatTranscript';
 import { OTHER_AUTHOR, PREVIEW_FAILED } from '../src/modules/chat/MessageReactions';
 import { REPORT_NOTICE, useReactions, withReaction } from '../src/modules/chat/use-reactions';
@@ -264,6 +264,31 @@ it('leaves out an empty note', async () => {
     expect(writes()[0]!.body).toEqual({ report: { reason: 'other', consent: 'consent-1', shownByOther: false } });
 });
 
+it('still adds when the same thumbs-down arrived from another device while the dialog was open', async () => {
+    await chat();
+    await pressDown();
+    // Another device gave this reply the reader's thumbs-down; another tab's note re-reads.
+    server = { shared: true, messages: { a1: { counts: { down: 1 }, mine: ['down'], report: 'shared' } } };
+    outcome = 'already';
+    await act(async () => {
+        new FakeBroadcastChannel(CHANGES_CHANNEL).postMessage([{ topic: 'conversation', id: 'c1' }]);
+        await tick(200);
+    });
+    expect(down().getAttribute('aria-pressed')).toBe('true');
+    await click(radio('Offensive'));
+    await click(reportConfirm());
+    await until(() => writes().length === 1, 'the PUT');
+    // A PUT with the report (the server answers `already`), never a DELETE.
+    expect(writes()).toEqual([
+        {
+            method: 'PUT',
+            path: '/api/conversations/c1/messages/a1/reactions/down',
+            body: { report: { reason: 'offensive', consent: 'consent-1', shownByOther: false } },
+        },
+    ]);
+    expect(down().getAttribute('aria-pressed')).toBe('true');
+});
+
 it('sends nothing on Cancel', async () => {
     await chat();
     await pressDown();
@@ -463,6 +488,36 @@ it('asks to confirm what leaves before turning sharing on', async () => {
     // Who and when; the shell reads the workspace's state again.
     expect(setting()!.querySelector('[data-slot="reply-reports-since"]')!.textContent).toContain('By you');
     expect(refreshes).toBe(1);
+});
+
+it('follows another admin’s change: when the workspace’s state changes, and when the tab comes back', async () => {
+    await card();
+    expect(toggle().getAttribute('aria-checked')).toBe('false');
+    // Another admin turned it on: the shell's poll brings the new state.
+    admin = { available: true, sharing: true, consent: 'consent-7', since: 1, by: 'bob', queued: 0, failed: 0 };
+    const shell = (replyReports: ReplyReportsState) =>
+        ({ workspace: { user: ada, dots: [], replyReports }, refresh: async () => {} }) as unknown as Shell;
+    await act(async () => {
+        root!.render(
+            <StrictMode>
+                <ShellContext.Provider value={shell({ sharing: true, consent: 'consent-7' })}>
+                    <CurrentUser.Provider value={ada}>
+                        <ReplyReportsCard />
+                    </CurrentUser.Provider>
+                </ShellContext.Provider>
+            </StrictMode>,
+        );
+        await tick(30);
+    });
+    expect(toggle().getAttribute('aria-checked')).toBe('true');
+    // The counts moved while the tab was away: coming back reads them again.
+    admin = { ...admin, queued: 5, failed: 1 };
+    await act(async () => {
+        await refreshShown();
+        await tick(30);
+    });
+    expect(setting()!.querySelector('[data-slot="reply-reports-queued"]')!.textContent).toBe('5');
+    expect(setting()!.querySelector('[data-slot="reply-reports-failed"]')!.textContent).toBe('1');
 });
 
 it('turns sharing off at once, and shows the counts', async () => {

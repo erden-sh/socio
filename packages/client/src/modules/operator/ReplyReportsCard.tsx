@@ -6,6 +6,7 @@ import { formatNumber } from '@socio/shared/locale';
 import type { User } from '@socio/shared/types';
 
 import { api } from '../../lib/api';
+import { useLiveTopic } from '../../lib/change-channel';
 import { LocalTime } from '../../lib/local-time';
 import { CurrentUser, useIsAdmin } from '../../shell/current-user';
 import { ShellContext } from '../../shell/shell-context';
@@ -63,11 +64,16 @@ function useAdminName(id: string | undefined) {
  * share (the cloud connection grants `reports:write`), or while sharing is
  * on, so it can always be turned off. Turning it on first shows what
  * leaves and asks to confirm; it says who turned it on and when, and the
- * reports waiting to go and those that never will.
+ * reports waiting to go and those that never will. It reads the setting
+ * again when the workspace's state changes (another admin) and when the
+ * tab comes back.
  */
 export function ReplyReportsCard() {
     const admin = useIsAdmin();
-    const refreshShell = useContext(ShellContext)?.refresh;
+    const shell = useContext(ShellContext);
+    const refreshShell = shell?.refresh;
+    // The workspace's state, as the shell polls it: another admin's change shows here too.
+    const shared = shell?.workspace.replyReports?.consent ?? null;
     const [view, setView] = useState<ReplyReportsAdminView>();
     const [confirming, setConfirming] = useState(false);
     const [busy, setBusy] = useState(false);
@@ -84,7 +90,9 @@ export function ReplyReportsCard() {
         if (admin) {
             void load();
         }
-    }, [admin, load]);
+    }, [admin, load, shared]);
+    // Another tab's change, and this tab coming back: the setting, availability and counts again.
+    useLiveTopic(admin ? 'setup' : undefined, load);
     const by = useAdminName(view?.sharing ? view.by : undefined);
     if (!admin || !view || (!view.available && !view.sharing)) {
         return null;

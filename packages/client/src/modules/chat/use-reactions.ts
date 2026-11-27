@@ -47,7 +47,7 @@ export interface ReactionsApi {
     of(messageId: string): MessageReactions;
     /**
      * Adds the reaction, or takes it back when it is the reader's own. A
-     * thumbs-down being added may carry a confirmed report.
+     * thumbs-down with a confirmed report is always an add.
      */
     toggle(messageId: string, kind: ReactionKind, report?: ReportRequest): void;
     /** The message whose last change did not save. */
@@ -168,7 +168,9 @@ export function useReactions(threadId: string, enabled: boolean): ReactionsApi |
             if (!before) {
                 return;
             }
-            const add = !(before.messages[messageId]?.mine ?? []).includes(kind);
+            // A confirmed report always adds: a thumbs-down that arrived from
+            // another device meanwhile makes it a retry (`already`), never a removal.
+            const add = !!report || !(before.messages[messageId]?.mine ?? []).includes(kind);
             clearTimeout(failure.current);
             setFailed(undefined);
             setView(withReaction(before, messageId, kind, add));
