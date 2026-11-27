@@ -1,0 +1,158 @@
+# Google and Apple sign-in (CB-570), on servers.mjs --social with a development build: workspace A's
+# manifest offers both, and the fake cloud verifies test accounts (e2e/fake-cloud.mjs). SignIn shows
+# Google (and Apple on iOS) once a test account is typed where the build lacks them; each refusal is
+# the app's own words; Ada links ada-test in Settings → Account's Sign-in methods, then a fresh install
+# signs in with Google as ada-test and then unlinks Google, which ends this phone's session (Ended, the lock).
+# PROVIDER (run.mjs --env PROVIDER=google) picks the button; Apple's native button takes only a tap at
+# its point (README), so the flow runs with Google on both platforms.
+appId: ${APP_ID}
+name: social-sign-in
+---
+- runFlow: launch.yaml
+- runFlow:
+    file: common/add-workspace.yaml
+    env:
+      ORIGIN: ${ORIGIN_A}
+- extendedWaitUntil:
+    visible:
+      id: sign-in-test-account
+    timeout: 20000
+- takeScreenshot: social-sign-in-buttons
+# An account nobody linked: no email is ever matched.
+- tapOn:
+    id: sign-in-test-account
+- inputText: nobody-test
+# The keyboard's Return puts it away (hideKeyboard taps into the screen on iOS).
+- pressKey: Enter
+- waitForAnimationToEnd
+- tapOn:
+    id: sign-in-${PROVIDER}
+- extendedWaitUntil:
+    visible:
+      text: 'No Socio account uses this .* account\. Sign in another way, then link it in Settings → Account\.'
+    timeout: 20000
+- takeScreenshot: social-not-linked
+# The service's refusals, each in the app's words.
+- tapOn:
+    id: sign-in-test-account
+- eraseText: 40
+- inputText: refuse-unavailable
+- pressKey: Enter
+- waitForAnimationToEnd
+- tapOn:
+    id: sign-in-${PROVIDER}
+- extendedWaitUntil:
+    visible:
+      text: ".* sign-in isn't available right now\\. Sign in another way\\."
+    timeout: 20000
+- takeScreenshot: social-unavailable
+- tapOn:
+    id: sign-in-test-account
+- eraseText: 40
+- inputText: cy-test
+- pressKey: Enter
+- waitForAnimationToEnd
+- tapOn:
+    id: sign-in-${PROVIDER}
+- extendedWaitUntil:
+    visible:
+      text: '.*deactivated.*'
+    timeout: 20000
+- takeScreenshot: social-deactivated
+# Ada signs in with her password and links ada-test. With the test account empty an iOS development
+# build has neither button (no client id, no entitlement), so the form moves up: wait for it to
+# settle before typing. Android keeps Google: Credential Manager needs nothing from the build.
+- tapOn:
+    id: sign-in-test-account
+- eraseText: 40
+- pressKey: Enter
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - extendedWaitUntil:
+          notVisible:
+            id: sign-in-social
+          timeout: 10000
+- waitForAnimationToEnd
+- runFlow:
+    file: common/sign-in.yaml
+    env:
+      EMAIL: ada@example.test
+      SECRET: ${PASSWORD}
+- extendedWaitUntil:
+    visible:
+      text: '.*${CHAT_A}.*'
+    timeout: 30000
+- openLink: ${APP_SCHEME}://settings
+- scrollUntilVisible:
+    element:
+      id: settings-test-account
+    direction: DOWN
+    timeout: 20000
+# A link an earlier run left goes first (this session came by password, so it lives on).
+- runFlow:
+    when:
+      visible:
+        id: settings-unlink-${PROVIDER}
+    commands:
+      - tapOn:
+          id: settings-unlink-${PROVIDER}
+      - runFlow: common/confirm-unlink.yaml
+      # Unlinked, the row goes until a test account is typed (the build can't sign in by itself).
+      - extendedWaitUntil:
+          notVisible:
+            id: settings-unlink-${PROVIDER}
+          timeout: 20000
+- tapOn:
+    id: settings-test-account
+- inputText: ada-test
+- pressKey: Enter
+- tapOn:
+    id: settings-link-${PROVIDER}
+- extendedWaitUntil:
+    visible:
+      id: settings-unlink-${PROVIDER}
+    timeout: 20000
+- assertVisible:
+    text: '.*ada-test@example\.test.*'
+- takeScreenshot: social-linked
+# A fresh install signs in as ada-test with that provider: Home.
+- runFlow: launch.yaml
+- runFlow:
+    file: common/add-workspace.yaml
+    env:
+      ORIGIN: ${ORIGIN_A}
+- tapOn:
+    id: sign-in-test-account
+- inputText: ada-test
+- pressKey: Enter
+- waitForAnimationToEnd
+- tapOn:
+    id: sign-in-${PROVIDER}
+- extendedWaitUntil:
+    visible:
+      text: '.*${CHAT_A}.*'
+    timeout: 30000
+- takeScreenshot: social-signed-in
+# Unlinking the provider this phone signed in with ends its session: Unlink asks first, then the
+# copy locks as Ended.
+- openLink: ${APP_SCHEME}://settings
+- scrollUntilVisible:
+    element:
+      id: settings-unlink-${PROVIDER}
+    direction: DOWN
+    timeout: 20000
+- tapOn:
+    id: settings-unlink-${PROVIDER}
+- extendedWaitUntil:
+    visible:
+      text: 'Unlink .*\?'
+    timeout: 10000
+- takeScreenshot: social-unlink-question
+- runFlow: common/confirm-unlink.yaml
+- extendedWaitUntil:
+    visible:
+      id: lock-screen
+    timeout: 30000
+- takeScreenshot: social-unlinked-ended

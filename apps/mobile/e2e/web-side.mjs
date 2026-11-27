@@ -256,6 +256,37 @@ export async function seedChannels(server, { ada, opal: opalEmail, password, ema
 }
 
 /**
+ * Opal turns the app's Google and Apple sign-in off or on (CB-570) in the access policy, with a
+ * password step-up as the web asks. `undefined` leaves a provider as it is. Answers the saved policy's
+ * two flags (`false` off, absent on).
+ * @param {{ port: number, origin: string }} server
+ * @param {string} opalEmail @param {string} password
+ * @param {{ google?: boolean, apple?: boolean }} wanted
+ */
+export async function setSocialPolicy(server, opalEmail, password, wanted) {
+    const opal = await webSession(server, opalEmail, password);
+    const view = (await opal('GET', '/api/access-policy')).body;
+    const policy = { ...view.saved };
+    for (const provider of /** @type {const} */ (['google', 'apple'])) {
+        if (wanted[provider] === false) {
+            policy[provider] = false;
+        } else if (wanted[provider] === true) {
+            delete policy[provider];
+        }
+    }
+    const change = { policy, version: view.version };
+    const challenge = await opal('POST', '/api/access-policy/step-up', change);
+    if (challenge.status !== 200) {
+        throw new Error(`The step-up on ${server.port} answered ${challenge.status}: ${challenge.text.slice(0, 200)}`);
+    }
+    const saved = await opal('PUT', '/api/access-policy', { ...change, stepUp: { id: challenge.body.id, password } });
+    if (saved.status !== 200) {
+        throw new Error(`Saving the policy on ${server.port} answered ${saved.status}: ${saved.text.slice(0, 200)}`);
+    }
+    return { google: policy.google ?? true, apple: policy.apple ?? true };
+}
+
+/**
  * Everything the workspace sent by email and Telegram, newest last, with the
  * sign-in code each holds.
  * @param {{ mail: Array<{ to: string, subject: string, text: string, at: number }> }} sink

@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -24,6 +24,7 @@ import {
     GRADLE_RELAY_PROPERTY,
     GRADLE_STAMP_PROPERTIES,
     GRADLE_VARIANT_PROPERTY,
+    googleXcodeEnvLines,
     quietPodfile,
     quietXcodeEnv,
     stampCheckGradle,
@@ -48,6 +49,13 @@ import withPush, {
     pushInfoPlist,
     SHARED_KEYCHAIN_SUFFIX,
 } from '../plugins/push';
+import {
+    APPLE_SIGN_IN_ENTITLEMENT,
+    GOOGLE_IOS_CLIENT_ID_VARIABLES,
+    googleIosClientId,
+    googleUrlTypes,
+    reversedClientId,
+} from '../plugins/social-sign-in';
 import { elementPath, lucideNode, TAB_ICONS, tabIconResource, vectorDrawable } from '../plugins/tab-icons';
 import { appTransportSecurity } from '../plugins/transport-security';
 import { tabDrawable, TAB_LUCIDE_ICONS } from '../src/navigation/tabs';
@@ -67,7 +75,7 @@ const run = promisify(execFile);
 // The variant, Personal Team, build stamp and Firebase variables a developer's shell may hold (README): every child
 // process here gets only the ones its run sets.
 const BUILD_VARIABLES =
-    /^(?:APP_VARIANT|SOCIO_IOS_PERSONAL_TEAM\w*|SOCIO_BUILD_\w+|SOCIO_LINK_HOST|SOCIO_APS_ENVIRONMENT|GOOGLE_SERVICES_JSON)$/;
+    /^(?:APP_VARIANT|SOCIO_IOS_PERSONAL_TEAM\w*|SOCIO_BUILD_\w+|SOCIO_LINK_HOST|SOCIO_APS_ENVIRONMENT|GOOGLE_SERVICES_JSON|SOCIO_GOOGLE_IOS_\w+)$/;
 const baseEnv = (): NodeJS.ProcessEnv => {
     const env = { ...process.env };
     for (const name of Object.keys(env).filter((key) => BUILD_VARIABLES.test(key))) {
@@ -777,6 +785,100 @@ const introspect = async (env: Record<string, string>): Promise<Introspected> =>
 };
 
 const TUNNEL = 'quiet-fox-1234.trycloudflare.com';
+/** Made-up iOS Google client ids: real ones are never in the repository. */
+const TEST_GOOGLE = '000000000000-test.apps.googleusercontent.com';
+const TEST_GOOGLE_PREVIEW = '000000000001-preview.apps.googleusercontent.com';
+
+describe('Google sign-in’s iOS client id (CB-570)', () => {
+    it('is read from the variant’s own variable, never in development', () => {
+        const env = {
+            SOCIO_GOOGLE_IOS_CLIENT_ID: TEST_GOOGLE,
+            SOCIO_GOOGLE_IOS_PREVIEW_CLIENT_ID: TEST_GOOGLE_PREVIEW,
+        };
+        expect(googleIosClientId(env, 'production')).toBe(TEST_GOOGLE);
+        expect(googleIosClientId(env, 'preview')).toBe(TEST_GOOGLE_PREVIEW);
+        expect(googleIosClientId(env, 'development')).toBeNull();
+        expect(googleIosClientId({}, 'production')).toBeNull();
+        expect(googleIosClientId({ SOCIO_GOOGLE_IOS_CLIENT_ID: '  ' }, 'production')).toBeNull();
+        expect(GOOGLE_IOS_CLIENT_ID_VARIABLES).toEqual({
+            production: 'SOCIO_GOOGLE_IOS_CLIENT_ID',
+            preview: 'SOCIO_GOOGLE_IOS_PREVIEW_CLIENT_ID',
+            development: null,
+        });
+    });
+
+    it('fails on anything else, without saying the value', () => {
+        for (const value of ['abc', 'https://example.test', '0000-TEST.apps.googleusercontent.com']) {
+            expect(() => googleIosClientId({ SOCIO_GOOGLE_IOS_CLIENT_ID: value }, 'production')).toThrow(
+                /^SOCIO_GOOGLE_IOS_CLIENT_ID is not an iOS OAuth client id/,
+            );
+            try {
+                googleIosClientId({ SOCIO_GOOGLE_IOS_CLIENT_ID: value }, 'production');
+            } catch (error) {
+                expect((error as Error).message).not.toContain(value);
+            }
+        }
+    });
+
+    it('registers its reversed form as the one Google URL scheme, again and again the same', () => {
+        expect(reversedClientId(TEST_GOOGLE)).toBe('com.googleusercontent.apps.000000000000-test');
+        const own = { CFBundleURLSchemes: ['socio', 'com.ingenioventures.socio'] };
+        const once = googleUrlTypes([own], TEST_GOOGLE);
+        expect(once).toEqual([own, { CFBundleURLSchemes: ['com.googleusercontent.apps.000000000000-test'] }]);
+        expect(googleUrlTypes(once, TEST_GOOGLE)).toEqual(once);
+        expect(googleUrlTypes(once, null)).toEqual([own]);
+    });
+
+    it('ios/.xcode.env keeps the variant’s variable for the config Xcode embeds, and unsets the other', () => {
+        expect(googleXcodeEnvLines('production', TEST_GOOGLE)).toEqual([
+            'unset SOCIO_GOOGLE_IOS_CLIENT_ID SOCIO_GOOGLE_IOS_PREVIEW_CLIENT_ID',
+            `export SOCIO_GOOGLE_IOS_CLIENT_ID=${TEST_GOOGLE}`,
+        ]);
+        expect(googleXcodeEnvLines('preview', TEST_GOOGLE_PREVIEW)).toEqual([
+            'unset SOCIO_GOOGLE_IOS_CLIENT_ID SOCIO_GOOGLE_IOS_PREVIEW_CLIENT_ID',
+            `export SOCIO_GOOGLE_IOS_PREVIEW_CLIENT_ID=${TEST_GOOGLE_PREVIEW}`,
+        ]);
+        expect(googleXcodeEnvLines('development', TEST_GOOGLE)).toEqual([
+            'unset SOCIO_GOOGLE_IOS_CLIENT_ID SOCIO_GOOGLE_IOS_PREVIEW_CLIENT_ID',
+        ]);
+        const env = variantXcodeEnv('', { variant: 'preview', googleIosClientId: TEST_GOOGLE_PREVIEW });
+        expect(env.split('\n')).toContain(`export SOCIO_GOOGLE_IOS_PREVIEW_CLIENT_ID=${TEST_GOOGLE_PREVIEW}`);
+        expect(variantXcodeEnv(env, { variant: 'preview' }).split('\n')).not.toContain(
+            `export SOCIO_GOOGLE_IOS_PREVIEW_CLIENT_ID=${TEST_GOOGLE_PREVIEW}`,
+        );
+    });
+
+    it('is never committed: no real-looking iOS client id anywhere in the app', () => {
+        const files = appSourceFiles(app);
+        const real = /\b\d{6,}-[a-z0-9]{20,}\.apps\.googleusercontent\.com\b/;
+        expect(files.filter((file) => real.test(readFileSync(file, 'utf8')))).toEqual([]);
+    });
+});
+
+/** The app's tracked-looking source files: plugins, modules, src, config. */
+function appSourceFiles(root: string): string[] {
+    const out: string[] = [];
+    const walk = (dir: string) => {
+        for (const entry of readdirSync(dir, { withFileTypes: true })) {
+            if (
+                ['node_modules', 'android', 'ios', 'dist', '.expo', 'vendor', 'deps'].includes(entry.name) &&
+                dir === root
+            ) {
+                continue;
+            }
+            const path = join(dir, entry.name);
+            if (entry.isDirectory()) {
+                if (entry.name !== 'node_modules' && entry.name !== 'build') {
+                    walk(path);
+                }
+            } else if (/\.(?:ts|tsx|json|kt|swift|gradle|podspec|md|mjs|yaml)$/.test(entry.name)) {
+                out.push(path);
+            }
+        }
+    };
+    walk(root);
+    return out;
+}
 
 type IntentFilter = Node & { action?: Node[]; category?: Node[]; data?: Node[] };
 /** The main activity's intent filters, as the merged manifest has them. */
@@ -833,6 +935,26 @@ describe('the introspected Expo config', () => {
                 },
             ] as const,
             ['tunnel', { APP_VARIANT: 'development', SOCIO_LINK_HOST: TUNNEL }] as const,
+            [
+                'preview, google',
+                { APP_VARIANT: 'preview', SOCIO_GOOGLE_IOS_PREVIEW_CLIENT_ID: TEST_GOOGLE_PREVIEW },
+            ] as const,
+            [
+                'production, google',
+                {
+                    APP_VARIANT: 'production',
+                    SOCIO_GOOGLE_IOS_CLIENT_ID: TEST_GOOGLE,
+                    SOCIO_GOOGLE_IOS_PREVIEW_CLIENT_ID: TEST_GOOGLE_PREVIEW,
+                },
+            ] as const,
+            [
+                'development, google',
+                {
+                    APP_VARIANT: 'development',
+                    SOCIO_GOOGLE_IOS_CLIENT_ID: TEST_GOOGLE,
+                    SOCIO_GOOGLE_IOS_PREVIEW_CLIENT_ID: TEST_GOOGLE_PREVIEW,
+                },
+            ] as const,
             ['preview, aps development', { APP_VARIANT: 'preview', SOCIO_APS_ENVIRONMENT: 'development' }] as const,
             [
                 'production, aps development',
@@ -1051,6 +1173,46 @@ describe('the introspected Expo config', () => {
             (line) => line.key === GRADLE_APS_ENVIRONMENT_PROPERTY,
         );
         expect(gradle.map((line) => line.value)).toEqual([aps]);
+    });
+
+    it.each(variants)(
+        '%s: Sign in with Apple only in production and preview, never development (CB-570)',
+        (variant) => {
+            const config = of(variant);
+            const entitlement = config._internal.modResults.ios.entitlements[APPLE_SIGN_IN_ENTITLEMENT];
+            expect(entitlement).toEqual(variant === 'development' ? undefined : ['Default']);
+            expect(config.extra?.appleSignIn).toBe(variant !== 'development');
+        },
+    );
+
+    it('a Personal Team build has no Sign in with Apple either', () => {
+        const config = of('personal-team');
+        expect(config._internal.modResults.ios.entitlements[APPLE_SIGN_IN_ENTITLEMENT]).toBeUndefined();
+        expect(config.extra?.appleSignIn).toBe(false);
+    });
+
+    it.each(variants)('%s: without its variable, no iOS Google client id and no Google URL scheme', (variant) => {
+        const config = of(variant);
+        expect(config.extra?.googleIosClientId).toBeUndefined();
+        const schemes = (
+            (config._internal.modResults.ios.infoPlist.CFBundleURLTypes ?? []) as { CFBundleURLSchemes?: string[] }[]
+        ).flatMap((type: { CFBundleURLSchemes?: string[] }) => type.CFBundleURLSchemes ?? []);
+        expect(schemes.filter((scheme: string) => scheme.startsWith('com.googleusercontent.apps.'))).toEqual([]);
+    });
+
+    it.each([
+        ['preview, google', TEST_GOOGLE_PREVIEW],
+        ['production, google', TEST_GOOGLE],
+        ['development, google', null],
+    ] as const)('%s: its own variable’s client id in extra and as a URL scheme; development none', (key, id) => {
+        const config = of(key);
+        expect(config.extra?.googleIosClientId).toBe(id ?? undefined);
+        const schemes = (
+            (config._internal.modResults.ios.infoPlist.CFBundleURLTypes ?? []) as { CFBundleURLSchemes?: string[] }[]
+        ).flatMap((type: { CFBundleURLSchemes?: string[] }) => type.CFBundleURLSchemes ?? []);
+        expect(schemes.filter((scheme: string) => scheme.startsWith('com.googleusercontent.apps.'))).toEqual(
+            id === null ? [] : [reversedClientId(id)],
+        );
     });
 
     it('fails the config on a bad SOCIO_APS_ENVIRONMENT', async () => {

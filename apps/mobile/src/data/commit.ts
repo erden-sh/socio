@@ -1,3 +1,5 @@
+import { AbortedError } from '../net/errors';
+
 import { workspaceKeyName } from './keys';
 import { type Hasher, workspaceId, workspaceLayout } from './layout';
 import { openCacheDb, openUserDb } from './open';
@@ -102,6 +104,12 @@ export interface CommitOptions {
     readonly afterStep?: (step: CommitStep) => void | Promise<void>;
     /** Passed to the rollback's wipe. */
     readonly wipeOptions?: WipeOptions;
+    /**
+     * The person going back: checked after the commit's last read and right before its first
+     * write, with no await between, so an aborted sign-in writes nothing. It rejects with
+     * AbortedError and releases the staging jar (its session signed out), like any refusal.
+     */
+    readonly signal?: AbortSignal;
 }
 
 export interface CommittedSignIn {
@@ -192,6 +200,10 @@ export async function commitSignIn(
                 new Error('this person’s copy of the workspace is still being added or wiped.'),
                 true,
             );
+        }
+        // The last await above was a read: from here to the first write there is none.
+        if (options.signal?.aborted) {
+            throw new AbortedError(signIn.origin, options.signal.reason);
         }
         if (check.kind === 'same-person') {
             await commitSamePerson(store, id, signIn, options, previous);

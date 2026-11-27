@@ -38,6 +38,8 @@ primitives. It will replace the PWA on phones.
 - **Native code of our own** goes in a local Expo module under `modules/` (Swift, Kotlin and a typed
   TypeScript wrapper that imports `requireNativeModule` from `expo`), which autolinking finds with no
   `package.json` change. `modules/socio-device` is the first; its README covers building it on a Mac.
+  `modules/socio-google-signin` (CB-570) brings Credential Manager with its Google Play services
+  provider and Google's iOS sign-in SDK (its README lists what each adds to the build).
 - **Build numbers** come from `SOCIO_BUILD_NUMBER` at prebuild (`build-stamp.ts`): `ios.buildNumber`
   and `android.versionCode`, a positive whole number up to 2100000000, 1 when unset, anything else a
   config error. The preview and release builders pass `git rev-list --count HEAD` of the main they
@@ -582,6 +584,39 @@ Signing in is `src/net/sign-in.ts` and `sign-in-copy.ts`, then
   claim still live, never one ended, run out or redeemed. The digits, claim id and verifier live in `src/data/add-device.ts`'s
   memory only, leave the view when the claim ends, and are in no log, problem or stored byte; a kill
   loses the claim (`tests/add-device.test.ts`).
+- **Google and Apple (CB-570):** the phone's own sign-in, link-only (the owner, 2026-11-26: no sign-up,
+  no email matching; Google signs in only an account that linked Google before, Apple likewise). SignIn
+  shows the buttons `socialWays` (`src/net/social-sign-in.ts`) gives: what the manifest's `methods.social`
+  offers that this build can carry out (`SOCIAL_BUILD`, `src/platform/social-sign-in.ts`; in a development build a typed test account stands in for both, `socialBuildWith`), Apple first,
+  then "or" over the other ways; none without a manifest. Apple is iOS only, in a build with the
+  entitlement (`extra.appleSignIn`: production and preview, never development or a Personal Team build),
+  drawn with Apple's own button (`screens/social-buttons.tsx`); Google is Credential Manager on Android
+  and Google's GoogleSignIn SDK on iOS, only in a build with the iOS client id (`extra.googleIosClientId`,
+  README, Native build config), both through `modules/socio-google-signin` (its README); no browser. A
+  tap runs `signInWithSocial` (`src/data/social-sign-in.ts`): `POST /api/auth/device/social/start`
+  `{provider, purpose: 'signin'}` with no session (a fresh jar in memory: `startSignInSocial`) for a
+  nonce (and Google's `serverClientId`), the phone's sign-in with that nonce (Apple's is its SHA-256 in
+  hex, `providerNonce`), then `redeemSocialToken` (`POST …/social/redeem {provider, idToken, nonce,
+  installId, platform, label, variant}`) through `signInAndCommit`'s stage with `email: null`, as the
+  sheet's redeem (a fresh install id, the person check, the commit). The person's Cancel shows nothing. Going back stops it (the screen's signal reaches the redeem): before the redeem nothing is sent; during it the jar holds no session, so nothing is signed out; once its answer is in, nothing commits and the staged session is signed out (`POST /api/auth/logout`, best effort): `signInAndCommit` checks the signal before the person check, and `commitSignIn` takes it (`signal`) and checks it after its last read, right before its first write, for every method. The another-person question's `confirm()` checks it before each old session's sign-out and each wipe, so going back leaves the other copy as it is. The nonce is single-use: trying again starts over with `start`.
+  Refusals are worded by code and provider (`social-copy.ts`: `not_linked` "No Socio account uses this
+  Google account. Sign in another way, then link it in Settings → Account.", `invalid_token`,
+  `nonce_invalid`, `not_authorized`, `method_off`, `deactivated`, 429, `provider_unavailable` "Google
+  sign-in isn't available right now. Sign in another way."), and so are the phone's own failures (no
+  Google account, unavailable, failed); test builds add the status and code or the native reason.
+  **Linking** is Settings → Account's Sign-in methods (`screens/sign-in-methods.tsx`): each provider the
+  workspace offers here and each one linked anywhere (`signInMethodRows`), with its linked email when
+  the server has one, Link (`linkWithSocial`: a `link` start through the scope's authedFetch, so the
+  nonce is bound to this session, then `POST /api/auth/social/link`) or Unlink (asks first, Cancel the
+  default; `DELETE /api/auth/social/link/:provider`, a 404 is already done, 409 `last_method` "It's your
+  only way to sign in. …"). The list is read as the section shows and after each change (`GET
+  /api/auth/social/links`; an older server's 404 hides the section); an unlink ends the sessions that
+  provider made, so when this phone signed in with it that read's 401 locks the copy as Ended.
+  **Development builds only** take a made-up test account in place of the phone's sign-in (a field under
+  the buttons and in Settings, `TEST_ACCOUNTS`; `testIdToken` throws in any other variant), whose
+  unsigned token only `e2e/fake-cloud.mjs` verifies (servers.mjs `--social`, README). The nonce, the ID
+  token and the server client id are in no log, problem, outcome, stored byte or navigation param
+  (`tests/social-sign-in.test.ts`).
 - **Invites, when the app is installed first:** with the admin's "Invites open the Socio app" on, an
   invite or password link is `…/<variant path>/i/<host>#t=<token>` (`readInviteLink` in
   `src/net/invite.ts`, this build's link host and variant only). It is held in memory

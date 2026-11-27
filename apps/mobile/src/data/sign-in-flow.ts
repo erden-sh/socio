@@ -1,6 +1,7 @@
 import type { WorkspaceManifest } from '@socio/shared/device-sign-in';
 
 import { memoryJarStore, openCookieJar } from '../net/cookie-jar';
+import { AbortedError } from '../net/errors';
 import type { FetchFunction } from '../net/fetch-function';
 import { readManifest } from '../net/probe';
 import { createPublicFetch } from '../net/public-fetch';
@@ -155,6 +156,9 @@ export async function signInAndCommit(request: SignInRequest, deps: SignInFlowDe
         return { kind: 'problem', problem: result.problem, wiped };
     }
     const staged = result.signIn;
+    // The person going back once the sign-in's answer is in: nothing commits, and the staged
+    // session is signed out (its staging jar no longer follows the signal, so the logout goes).
+    await releaseIfAborted(staged, request.signal);
     let check: Awaited<ReturnType<typeof checkPerson>>;
     try {
         check = await checkPerson(store, request.origin, { kind: 'signed-in', appUserId: staged.appUserId });
@@ -162,6 +166,7 @@ export async function signInAndCommit(request: SignInRequest, deps: SignInFlowDe
         await staged.cancel();
         throw error;
     }
+    await releaseIfAborted(staged, request.signal);
     if (check.kind === 'unfinished' || check.kind === 'deactivated') {
         await staged.cancel();
         return { kind: 'unfinished' };
@@ -192,8 +197,13 @@ export async function signInAndCommit(request: SignInRequest, deps: SignInFlowDe
         confirm: async () => {
             once();
             try {
+                // Gone back meanwhile: the other person's copy stays as it is, and the new
+                // session is signed out. Checked before each sign-out and each wipe; the commit
+                // checks again before its first write.
                 for (const person of check.previous) {
+                    throwIfAborted(request.signal, request.origin);
                     await signOutPrevious(person.id, request.origin, deps);
+                    throwIfAborted(request.signal, request.origin);
                     await wipe(store, person.id, 'other-person');
                 }
             } catch (error) {
@@ -203,6 +213,21 @@ export async function signInAndCommit(request: SignInRequest, deps: SignInFlowDe
             return commit(staged, request, manifest, deps);
         },
     };
+}
+
+/** Throws AbortedError once `signal` has aborted. */
+function throwIfAborted(signal: AbortSignal | undefined, origin: string): void {
+    if (signal?.aborted) {
+        throw new AbortedError(origin, signal.reason);
+    }
+}
+
+/** Signs the staged session out and rejects with AbortedError once `signal` has aborted. */
+async function releaseIfAborted(staged: StagedSignIn, signal: AbortSignal | undefined): Promise<void> {
+    if (signal?.aborted) {
+        await staged.cancel();
+        throw new AbortedError(staged.origin, signal.reason);
+    }
 }
 
 /** What the sign-in sends and commits besides the password, or why it may not be sent. */
@@ -261,7 +286,8 @@ async function commit(
         const committed = await commitSignIn(
             deps.store,
             { ...staged, name: staged.workspaceName, logo: request.logo, manifest },
-            { hash: deps.hash },
+            // Checked right before the commit's first write, every method's (a release on abort).
+            { hash: deps.hash, signal: request.signal },
         );
         return { kind: 'committed', id: committed.id, committed: committed.kind };
     } catch (error) {

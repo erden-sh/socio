@@ -1,0 +1,21 @@
+# Taps Unlink in the "Unlink <provider>?" alert (social-sign-in.yaml). iOS's alert is drawn in another
+# window, where Maestro's text match finds the row's Unlink under it first, so the tap goes to the
+# alert's right-hand button, where UIKit puts it; Android's is the dialog's positive button.
+appId: ${APP_ID}
+name: confirm unlink
+---
+- extendedWaitUntil:
+    visible: 'Unlink .*\?'
+    timeout: 10000
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          point: 68%,59%
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn:
+          id: android:id/button1

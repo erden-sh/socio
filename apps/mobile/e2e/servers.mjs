@@ -41,12 +41,14 @@ import { DatabaseSync } from 'node:sqlite';
 import { parseArgs } from 'node:util';
 import { crc32, deflateSync } from 'node:zlib';
 
+import { fakeCloud } from './fake-cloud.mjs';
 import {
     eraseDevices,
     fakeTelegramAt,
     FAKE_BOT_TOKEN,
     outbox,
     seedChannels,
+    setSocialPolicy,
     smtpSink,
     webPairing,
     webSession,
@@ -59,6 +61,10 @@ export const ROOT = resolve(import.meta.dirname, '../../..');
 export const DEFAULT_PORTS = [4351, 4352, 4353];
 export const DEFAULT_MODEL_PORT = 4550;
 export const DEFAULT_CONTROL_PORT = 4549;
+/** --social's fake cloud services (fake-cloud.mjs). */
+export const DEFAULT_CLOUD_PORT = 4548;
+/** Cy (deactivated) is linked to Google and Apple as this test account, for the `deactivated` refusal. */
+export const CY_SOCIAL_ACCOUNT = 'cy-test';
 
 /** Fixed: these servers are local and hold made-up accounts only. */
 export const SESSION_SECRET = 'socio-e2e-local-session-secret-not-for-real-use';
@@ -103,7 +109,9 @@ const USAGE = `Usage: node apps/mobile/e2e/servers.mjs [options]
   --no-rooms           Rooms off and no room seeded (chat-tour.yaml: a room can't be archived from the app)
   --dev-links          Add a device links for the development build (AUTH_APP_DEV_LINKS)
   --feature-flags <l>  FEATURE_FLAGS for every workspace (datasets-in-spaces=on, CB-469)
-  --codes              sign-in codes: an SMTP sink and a fake Telegram per workspace, email on A, Telegram elsewhere`;
+  --codes              sign-in codes: an SMTP sink and a fake Telegram per workspace, email on A, Telegram elsewhere
+  --social             Google and Apple sign-in (CB-570): every workspace enrolls with a fake cloud that verifies test accounts
+  --cloud-port <port>  the fake cloud's port (default ${DEFAULT_CLOUD_PORT})`;
 
 /** @param {string} value @param {string} flag */
 function port(value, flag) {
@@ -136,6 +144,8 @@ export function parseServerArgs(argv, env = {}) {
             'dev-links': { type: 'boolean', default: false },
             'feature-flags': { type: 'string' },
             codes: { type: 'boolean', default: false },
+            social: { type: 'boolean', default: false },
+            'cloud-port': { type: 'string' },
             help: { type: 'boolean', short: 'h', default: false },
         },
     });
@@ -164,8 +174,14 @@ export function parseServerArgs(argv, env = {}) {
     const modelPort =
         values['model-port'] === undefined ? DEFAULT_MODEL_PORT : port(values['model-port'], '--model-port');
     const control = values.control === undefined ? DEFAULT_CONTROL_PORT : port(values.control, '--control');
-    if (new Set([...ports, modelPort, control]).size !== ports.length + 2) {
-        throw new Error("Every port must be different, the fake model's and the control's included.");
+    const cloudPort =
+        values['cloud-port'] === undefined ? DEFAULT_CLOUD_PORT : port(values['cloud-port'], '--cloud-port');
+    if (values['cloud-port'] !== undefined && !values.social) {
+        throw new Error('--cloud-port is for --social.');
+    }
+    const all = [...ports, modelPort, control, ...(values.social ? [cloudPort] : [])];
+    if (new Set(all).size !== all.length) {
+        throw new Error("Every port must be different, the fake model's, the control's and the cloud's included.");
     }
     return {
         ports,
@@ -179,6 +195,7 @@ export function parseServerArgs(argv, env = {}) {
         devLinks: values['dev-links'],
         featureFlags: values['feature-flags'],
         codes: values.codes,
+        social: values.social ? { cloudPort } : null,
     };
 }
 
@@ -187,7 +204,8 @@ export function parseServerArgs(argv, env = {}) {
  * nothing from the shell or a .env. The provider is the fake model. Rooms
  * start on unless `rooms` is false (`--no-rooms`).
  * With `channels` (--codes), SMTP to the sink and Telegram to the fake Bot API.
- * @param {{ port: number, home: string, modelPort: number, path?: string, rooms?: boolean, devLinks?: boolean, channels?: { smtpPort: number, telegramRoot: string } }} options
+ * With `cloud` (--social), the fake cloud's issuer and one enrollment token for this server.
+ * @param {{ port: number, home: string, modelPort: number, path?: string, rooms?: boolean, devLinks?: boolean, featureFlags?: string, channels?: { smtpPort: number, telegramRoot: string }, cloud?: { issuer: string, token: string } }} options
  * @returns {Record<string, string>}
  */
 export function serverEnv({
@@ -199,6 +217,7 @@ export function serverEnv({
     devLinks = false,
     channels,
     featureFlags,
+    cloud,
 }) {
     return {
         PATH: path,
@@ -234,6 +253,9 @@ export function serverEnv({
         // --feature-flags: this instance's flag defaults (datasets-in-spaces=on for CB-469's checks).
         // An internal deployment, so flags in development may be on (CB-503).
         ...(featureFlags ? { FEATURE_FLAGS: featureFlags, SOCIO_DEPLOYMENT_KIND: 'internal' } : {}),
+        // --social: the fake cloud services (fake-cloud.mjs), on loopback; otherwise the cloud
+        // connection has no enrollment token and sends nothing.
+        ...(cloud ? { SOCIO_CLOUD_ISSUER: cloud.issuer, SOCIO_CLOUD_ENROLLMENT_TOKEN: cloud.token } : {}),
         OPS_ANALYTICS_MODE: 'off',
         OPS_PRICE_SYNC: 'off',
         OTEL_SDK_DISABLED: 'true',
@@ -249,9 +271,19 @@ export function serverEnv({
  * letter, so a flow can tell the workspaces apart and see the archived chat
  * left out of the list. With `rooms` false (`--no-rooms`) Rooms stay off and
  * there is no room (`room: null`), so a flow can empty the chat list.
- * @param {{ ports: number[], modelPort: number, dir: string, path?: string, rooms?: boolean, devLinks?: boolean, featureFlags?: string, channels?: Array<{ smtpPort: number, telegramRoot: string }> }} options
+ * @param {{ ports: number[], modelPort: number, dir: string, path?: string, rooms?: boolean, devLinks?: boolean, featureFlags?: string, channels?: Array<{ smtpPort: number, telegramRoot: string }>, clouds?: Array<{ issuer: string, token: string }> }} options
  */
-export function seedPlan({ ports, modelPort, dir, path = '', rooms = true, devLinks = false, featureFlags, channels }) {
+export function seedPlan({
+    ports,
+    modelPort,
+    dir,
+    path = '',
+    rooms = true,
+    devLinks = false,
+    featureFlags,
+    channels,
+    clouds,
+}) {
     if (ports.length < 1 || ports.length > LETTERS.length) {
         throw new Error(`The seed plan has one to ${LETTERS.length} workspaces, not ${ports.length}.`);
     }
@@ -273,6 +305,7 @@ export function seedPlan({ ports, modelPort, dir, path = '', rooms = true, devLi
                 devLinks,
                 featureFlags,
                 channels: channels?.[index],
+                cloud: clouds?.[index],
             }),
             workspaceName: `Workspace ${letter}`,
             chat: `${letter}: kickoff`,
@@ -1008,7 +1041,7 @@ export function proposeMemory(database, { text, like, dotId, threadId, now }) {
 const say = (/** @type {string} */ line) => console.log(`[servers] ${line}`);
 const sleep = (/** @type {number} */ ms) => new Promise((done) => setTimeout(done, ms));
 
-/** @type {{ children: import('node:child_process').ChildProcess[], logs: string[], reversed: number[], dir?: string, done: boolean, restarting: Set<import('node:child_process').ChildProcess> }} */
+/** @type {{ children: import('node:child_process').ChildProcess[], logs: string[], reversed: number[], dir?: string, done: boolean, restarting: Set<import('node:child_process').ChildProcess>, cloud?: { close: () => Promise<unknown> } }} */
 const state = { children: [], logs: [], reversed: [], done: false, restarting: new Set() };
 let adb = (/** @type {string[]} */ _args) => spawnSync('true');
 
@@ -1215,6 +1248,7 @@ async function teardown(code) {
     for (const number of state.reversed) {
         adb(['reverse', '--remove', `tcp:${number}`]);
     }
+    await state.cloud?.close().catch(() => undefined);
     for (const child of state.children) {
         try {
             process.kill(-(child.pid ?? 0), 'SIGTERM');
@@ -1287,7 +1321,14 @@ async function main() {
             `SMTP sinks and fake Telegrams on ${channelSet.map(({ sink, telegram }) => `${sink.port} ${telegram.apiRoot}`).join(', ')}`,
         );
     }
+    // --social: the fake cloud services, and one enrollment token per workspace.
+    const cloud = options.social ? await fakeCloud(options.social.cloudPort) : null;
+    if (cloud) {
+        state.cloud = cloud;
+        say(`fake cloud services on ${cloud.origin} (Google and Apple test accounts)`);
+    }
     const servers = seedPlan({
+        clouds: cloud ? options.ports.map(() => ({ issuer: cloud.origin, token: cloud.provision() })) : undefined,
         ports: options.ports,
         modelPort: options.modelPort,
         dir,
@@ -1336,6 +1377,11 @@ async function main() {
             );
             say(`${server.letter}: sign-in codes by ${index === 0 ? 'email' : 'Telegram'}`);
         }
+        if (cloud) {
+            linkSocial(server.env.DATABASE_PATH, ACCOUNTS[2].email, CY_SOCIAL_ACCOUNT);
+            await socialOffered(server);
+            say(`${server.letter}: Google and Apple offered; Cy linked as ${CY_SOCIAL_ACCOUNT}`);
+        }
         issueNumbers.set(server.letter, seeded.numbers);
         rooms.set(server.letter, seeded.room);
         if (options.capture && seeded.room && server === servers[0]) {
@@ -1356,6 +1402,14 @@ async function main() {
         password,
         accounts: ACCOUNTS,
         rooms: options.rooms,
+        ...(cloud
+            ? {
+                  social: {
+                      cy: CY_SOCIAL_ACCOUNT,
+                      refusals: ['refuse-invalid', 'refuse-nonce', 'refuse-many', 'refuse-unavailable'],
+                  },
+              }
+            : {}),
         ...(options.codes
             ? {
                   codes: Object.fromEntries(
@@ -1438,6 +1492,50 @@ async function main() {
 }
 
 /**
+ * Links `email`'s account to Google and Apple as the test account `sub` (CB-570), straight into the
+ * server's auth tables as a link made in the app would be. For Cy, who is deactivated and can't
+ * sign in to link.
+ * @param {string} database @param {string} email @param {string} sub
+ */
+export function linkSocial(database, email, sub) {
+    const db = new DatabaseSync(database);
+    try {
+        const user = /** @type {{ id: string } | undefined} */ (
+            db.prepare('SELECT id FROM auth_user WHERE email = ?').get(email)
+        );
+        if (!user) {
+            throw new Error(`No account ${email} to link.`);
+        }
+        const now = new Date().toISOString();
+        for (const providerId of ['google-native', 'apple-native']) {
+            db.prepare(
+                'INSERT OR IGNORE INTO auth_account(id, accountId, providerId, userId, linkEmail, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            ).run(randomUUID(), sub, providerId, user.id, `${sub}@example.test`, now, now);
+        }
+    } finally {
+        db.close();
+    }
+}
+
+/** Waits until the workspace's manifest offers Google and Apple (it enrolled with the fake cloud). */
+async function socialOffered(/** @type {{ port: number, letter: string }} */ server, timeoutMs = 60_000) {
+    const until = Date.now() + timeoutMs;
+    while (Date.now() < until) {
+        try {
+            const answer = await fetch(`http://127.0.0.1:${server.port}/.well-known/socio/workspace`);
+            const social = answer.ok ? (await answer.json())?.methods?.social : null;
+            if (Array.isArray(social) && social.includes('google') && social.includes('apple')) {
+                return;
+            }
+        } catch {
+            // Not yet.
+        }
+        await sleep(500);
+    }
+    throw new Error(`${server.letter} never offered Google and Apple: did it enroll with the fake cloud?`);
+}
+
+/**
  * The control port's `/web/` routes, Ada on the web of workspace
  * `?letter=` (A by default), each answering JSON:
  * `GET /web/outbox` the codes sent by email and Telegram (--codes);
@@ -1445,7 +1543,8 @@ async function main() {
  * `POST /web/confirm?digits=` the 6 digits typed on the page;
  * `POST /web/other` another device claims that QR code first (its digits and redeem's answer);
  * `GET /web/pair?digits=` the states the page saw, and whether any poll held those digits;
- * `POST /web/erase` Sign out and erase for every device of Ada's.
+ * `POST /web/erase` Sign out and erase for every device of Ada's;
+ * `POST /web/social?google=off&apple=on` Opal's access policy for the app's Google and Apple (--social).
  * @param {ReturnType<typeof seedPlan>} servers
  * @param {Array<{ sink: { mail: any[] }, telegram: { calls: any[] } }>} channelSet
  * @param {string} password
@@ -1488,6 +1587,15 @@ function webControl(servers, channelSet, password) {
                 return pairing.status(url.searchParams.get('digits') ?? undefined);
             case 'POST /web/erase':
                 return eraseDevices(call);
+            case 'POST /web/social': {
+                const server = servers.find((entry) => entry.letter === letter);
+                /** @param {string | null} value */
+                const flag = (value) => (value === null ? undefined : value === 'on');
+                return setSocialPolicy(server ?? servers[0], OPAL, password, {
+                    google: flag(url.searchParams.get('google')),
+                    apple: flag(url.searchParams.get('apple')),
+                });
+            }
             default:
                 throw new Error(`No route ${route}.`);
         }
