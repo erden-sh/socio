@@ -1,0 +1,20 @@
+{
+    "name": "Label",
+    "load-failed": "Could not load its label.",
+    "save-failed": "Could not save the label.",
+    "saved": "Label saved. Reliability counts it within a minute.",
+    "subject": "Turn: the rules say {{category}} (<code>{{rule}}</code>)",
+    "subject_tool": "{{tool}}: the rules say {{category}} (<code>{{rule}}</code>)",
+    "subject_tool-call": "Tool call: the rules say {{category}} (<code>{{rule}}</code>)",
+    "input": "What the model reads, scrubbed of contact details and secrets",
+    "no-input": "No error text was recorded.",
+    "suggests": "The model suggests <strong>{{category}}</strong>, {{confidence, number(style: percent; maximumFractionDigits: 0)}} sure; it counts.",
+    "suggests_only": "The model suggests <strong>{{category}}</strong>, {{confidence, number(style: percent; maximumFractionDigits: 0)}} sure; a suggestion only: it wasn’t sure enough, or its version hasn’t passed an evaluation.",
+    "in-force": "Labeled <strong>{{category}}</strong> by {{name}}, {{when}}.",
+    "in-force_an-admin": "Labeled <strong>{{category}}</strong> by an admin, {{when}}.",
+    "in-force_model": "Labeled <strong>{{category}}</strong> by the model, {{when}}.",
+    "choose": "Choose a category",
+    "save": "Save label",
+    "counts": "Your label counts within a minute and joins the golden set.",
+    "rules-only": "The rules sort this one; labels apply only to Unclassified failures."
+}

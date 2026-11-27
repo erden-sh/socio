@@ -151,7 +151,7 @@ it('shows what the model reads and suggests, and saves an admin’s label', asyn
         body: { level: 'tool', label: 'external_service' },
     });
     expect(host.querySelector('[data-slot="ops-failure-label-in-force"]')!.textContent).toContain(
-        'Labelled Other external services by Alice',
+        'Labeled Other external services by Alice',
     );
 });
 

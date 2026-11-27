@@ -1,0 +1,121 @@
+{
+    "category": {
+        "stopped": "Stopped",
+        "permissions": "Permissions and approvals",
+        "quotas": "Quotas and limits",
+        "not_available": "Not available or not set up",
+        "model_provider": "Model provider",
+        "external_service": "Other external services",
+        "invalid_input": "Invalid input",
+        "runtime_error": "Runtime error",
+        "unclassified": "Unclassified"
+    },
+    "hint": {
+        "stopped": "A person or an operator stopped it. Not a failure.",
+        "permissions": "A permission, an approval or a site’s rules said no, or an approval expired.",
+        "quotas": "A rate limit, a plan’s usage limit, or the turn’s round, time or output limit.",
+        "not_available": "Something isn’t connected or set up: no model, a sign-in that ended, a computer that isn’t configured.",
+        "model_provider": "The model was unreachable, busy, refused the request or filtered its answer.",
+        "external_service": "A website or another outside service failed or timed out.",
+        "invalid_input": "The model sent arguments a tool couldn’t read, or asked for something that doesn’t exist.",
+        "runtime_error": "Our own code failed, timed out, or the server stopped mid-turn.",
+        "unclassified": "The rules can’t tell from the code alone (a generic error code)."
+    },
+    "span": {
+        "minutes": "{{n, number}} min",
+        "hours": "{{n, number}} h",
+        "days_one": "{{count, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}} day",
+        "days_other": "{{count, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}} days"
+    },
+    "versus-before": "{{change}} vs the period before",
+    "tiles": {
+        "failure-rate": "Failure rate",
+        "of-turns_one": "{{failures}} of {{turns}} turn",
+        "of-turns_other": "{{failures}} of {{turns}} turns",
+        "points": "{{change}} pts",
+        "failures": "Failed turns",
+        "interrupted": "Interrupted",
+        "interrupted-note": "The server stopped mid-turn",
+        "stopped": "Stopped",
+        "stopped-note": "By a person or an operator: not failures",
+        "tool-failures": "Failed tool calls",
+        "of-calls_one": "of {{count, number}} call",
+        "of-calls_other": "of {{count, number}} calls",
+        "retries": "Retries and fallbacks",
+        "retries-note_one": "in {{count, number}} turn · {{fallbacks}} moved to the shared model",
+        "retries-note_other": "in {{count, number}} turns · {{fallbacks}} moved to the shared model"
+    },
+    "chart": {
+        "category-share": "{{category}}: share of turns",
+        "description": "Percent of the turns that started in each bucket.",
+        "description_hour": "Percent of the turns that started in each hour.",
+        "description_day": "Percent of the turns that started in each day.",
+        "description_week": "Percent of the turns that started in each week.",
+        "description_month": "Percent of the turns that started in each month.",
+        "category": "Category",
+        "every": "Every failure",
+        "y": "percent of turns",
+        "empty": "No turns in this range."
+    },
+    "categories": {
+        "title": "Failures by category",
+        "description": "Sorted by rules over the codes each turn and tool call recorded. What they can’t tell apart stays Unclassified, until an admin or, once it passes an evaluation, the model labels it: open a recent failure to label it.",
+        "empty": "No data yet.",
+        "turns_one": "{{count, number}} turn",
+        "turns_other": "{{count, number}} turns",
+        "tool-calls_one": "{{count, number}} tool call",
+        "tool-calls_other": "{{count, number}} tool calls",
+        "interrupted": "{{count, number}} interrupted"
+    },
+    "show": "Show",
+    "no-code": "No code",
+    "breakdown": {
+        "title": "Where failures happen",
+        "description": "Failed turns, with how long finished turns took.",
+        "description_tool": "Tools that fail most, with how long their calls take.",
+        "description_code": "The codes failed turns ended with.",
+        "group-by": "Group by",
+        "by": {
+            "tool": "Tools",
+            "code": "Error codes",
+            "socio": "Socios",
+            "model": "Models",
+            "source": "Sources"
+        },
+        "empty": "Nothing in this range.",
+        "not-recorded": "Not recorded",
+        "turns_one": "{{count, number}} turn",
+        "turns_other": "{{count, number}} turns",
+        "failed": "{{failed, number}} of {{total, number}} failed ({{share, number(style: percent; maximumFractionDigits: 1)}})",
+        "latency": "p50 {{p50}} · p95 {{p95}}"
+    },
+    "friction": {
+        "title": "Recurring friction",
+        "description": "The same failure for 3 or more people, or 5 or more times for one person, in the last 7 days of the range.",
+        "empty": "Nothing keeps failing for people since {{when}}.",
+        "people_one": "{{count, number}} person",
+        "people_other": "{{count, number}} people",
+        "times_one": "{{count, number}} time (most for one: {{most, number}})",
+        "times_other": "{{count, number}} times (most for one: {{most, number}})",
+        "last": "last {{when}}"
+    },
+    "failures": {
+        "title": "Recent failures",
+        "description": "Turns that failed, or whose tool calls did, newest first. Open one to see its trace: names, times and codes, never its content.",
+        "clear": "Show every failure, not only {{name}}",
+        "empty": "No failures in this range.",
+        "failed-tools_one": "{{count, number}} failed tool",
+        "failed-tools_other": "{{count, number}} failed tools",
+        "status": {
+            "running": "Running",
+            "finished": "Finished",
+            "stopped": "Stopped",
+            "failed": "Failed",
+            "interrupted": "Interrupted"
+        }
+    },
+    "label": {
+        "by": "Labeled by the model",
+        "by_admin": "Labeled by an admin"
+    }
+}
