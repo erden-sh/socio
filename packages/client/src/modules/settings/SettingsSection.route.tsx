@@ -5,14 +5,15 @@ import { revalidateOn } from '../../lib/page-loader';
 import { web } from '../../lib/web-context';
 import type { RouteHandle } from '../../shell/shell-context';
 
+import { SETTINGS_CRUMB, sectionCrumb } from './crumbs';
 import { allowed, findSection, movedSection, SETTINGS_HOME, settingsAccess } from './sections';
 import { SettingsLayout, useSettingsAccess } from './SettingsLayout';
 import { SettingsSection } from './SettingsSection';
 
 export const handle: RouteHandle = {
     crumb: ({ params }) => [
-        { label: 'Settings', to: '/settings' },
-        { label: findSection(params.section)?.item.label ?? 'Settings' },
+        { label: SETTINGS_CRUMB, to: '/settings' },
+        { label: sectionCrumb(findSection(params.section)?.item.id) },
     ],
 };
 

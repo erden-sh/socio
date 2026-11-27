@@ -1,5 +1,7 @@
 import { useContext } from 'react';
 
+import { useTranslation } from '@socio/i18n/react';
+
 import { SignInSetup } from '../../shell/current-user';
 import { useShell } from '../../shell/shell-context';
 import { CodingSettingsSection } from '../coding/CodingSettingsSection';
@@ -27,10 +29,11 @@ import { WorkspaceSettings } from './WorkspaceSettings';
 
 /** What needs real accounts says so on a server with mock sign-in. */
 function NeedsSignIn() {
+    const { t } = useTranslation(['settings']);
     return (
         <SettingsCard>
             <p className="text-muted-foreground" data-slot="needs-sign-in">
-                This needs real accounts (Better Auth); this server signs in with the local picker.
+                {t('settings:needsSignIn')}
             </p>
         </SettingsCard>
     );

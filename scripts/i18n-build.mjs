@@ -6,7 +6,10 @@
 //   - every key exists in en-US, with the same interpolation variables;
 //   - every plural has the forms its locale's CLDR rules use;
 //   - coverage is counted through each locale's fallback chain, so a sparse
-//     locale (es-US over es-419) only holds what differs.
+//     locale (es-US over es-419) only holds what differs;
+//   - every context note (packages/i18n/notes/<ns>.json, beside locales/)
+//     names a namespace and a key en-US has. Notes are for translators and
+//     drafting; they are never built or served.
 //
 // It writes dist/i18n/<locale>/<ns>.<sha256-12>.json, each with a gzip and a
 // Brotli copy when that pays (as scripts/precompress.mjs), en-XA generated
@@ -45,6 +48,7 @@ const localesDir = option('--locales', join(root, 'packages/i18n/locales'));
 const outDir = option('--out', join(root, 'dist/i18n'));
 const routesFile = option('--routes', join(root, 'packages/i18n/src/route-namespaces.json'));
 const typesFile = option('--types', join(root, 'packages/i18n/src/resources.gen.ts'));
+const notesDir = option('--notes', join(localesDir, '..', 'notes'));
 
 /** The files, parsed; a file that isn't JSON is a problem, reported with the rest. */
 function readSources(dir) {
@@ -72,12 +76,63 @@ function readSources(dir) {
     return { sources, problems };
 }
 
+/**
+ * The context notes: `notes/<ns>.json`, an object of en-US key → note. A
+ * note may name a plain key, a plural's base (`files` for `files_one`…) or a
+ * context's base (`edited` for `edited_socio`). Problems join the build's.
+ */
+function checkNotes(dir, english) {
+    const problems = [];
+    let names = [];
+    try {
+        names = readdirSync(dir).sort();
+    } catch {
+        return problems;
+    }
+    for (const name of names) {
+        const ns = name.endsWith('.json') ? name.slice(0, -'.json'.length) : null;
+        if (!ns || !english?.[ns]) {
+            problems.push(`notes/${name}: en-US has no namespace ${ns ?? name}`);
+            continue;
+        }
+        let notes;
+        try {
+            notes = JSON.parse(readFileSync(join(dir, name), 'utf8'));
+        } catch (error) {
+            problems.push(`notes/${name}: not valid JSON (${error.message})`);
+            continue;
+        }
+        const keys = [...flattenKeys(english[ns])];
+        for (const [key, note] of Object.entries(notes)) {
+            if (typeof note !== 'string' || !note.trim()) {
+                problems.push(`notes/${name}: ${key} needs a note (a non-empty string)`);
+            } else if (!keys.some((known) => known === key || known.startsWith(`${key}_`))) {
+                problems.push(`notes/${name}: ${key} isn't an en-US key of ${ns}`);
+            }
+        }
+    }
+    return problems;
+}
+
+/** A dictionary's dotted keys. */
+function* flattenKeys(dictionary, prefix = '') {
+    for (const [key, value] of Object.entries(dictionary ?? {})) {
+        const path = prefix ? `${prefix}.${key}` : key;
+        if (typeof value === 'object' && value !== null) {
+            yield* flattenKeys(value, path);
+        } else {
+            yield path;
+        }
+    }
+}
+
 const gzip = (body) => gzipSync(body, { level: constants.Z_BEST_COMPRESSION });
 const brotli = (body) => brotliCompressSync(body, { params: { [constants.BROTLI_PARAM_QUALITY]: 11 } });
 const kb = (bytes) => `${(bytes / 1024).toFixed(1)} kB`;
 
 const release = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).version;
 const { sources, problems } = readSources(localesDir);
+problems.push(...checkNotes(notesDir, sources['en-US']));
 let catalog;
 try {
     catalog = buildCatalog(sources, release);

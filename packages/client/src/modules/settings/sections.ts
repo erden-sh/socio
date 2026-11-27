@@ -55,8 +55,8 @@ export interface SettingsAccess {
 }
 
 export interface SettingsEntry {
+    /** Also its nav label's key: `settings:sections.<id>`. */
     id: SettingsSectionId | 'operator';
-    label: string;
     path: string;
     /**
      * For admins. `operator` is the former operators-only marker, now the
@@ -76,14 +76,13 @@ export interface SettingsEntry {
 }
 
 export interface SettingsGroup {
-    label: string;
-    description: string;
+    /** Also its title's and description's keys: `settings:groups.<id>.title`, `.description`. */
+    id: 'workspace' | 'account';
     entries: SettingsEntry[];
 }
 
-const entry = (id: SettingsSectionId, label: string, rest: Partial<SettingsEntry> = {}): SettingsEntry => ({
+const entry = (id: SettingsSectionId, rest: Partial<SettingsEntry> = {}): SettingsEntry => ({
     id,
-    label,
     path: settingsPath(id),
     ...rest,
 });
@@ -91,57 +90,53 @@ const entry = (id: SettingsSectionId, label: string, rest: Partial<SettingsEntry
 /**
  * The section nav, in two groups: what the workspace may do and how it is
  * set up, then the signed-in person's own account (the "Account → …" the
- * app's messages name). Platform, for admins, lives at
+ * app's messages name). Their words are in the `settings` namespace. Platform, for admins, lives at
  * `/settings/operator` in its own module.
  */
 export const SETTINGS_GROUPS: SettingsGroup[] = [
     {
-        label: 'Workspace',
-        description: 'Your workspace, your rules: what socios may do, who signs in, and how this server is set up.',
+        id: 'workspace',
         entries: [
-            entry('workspace', 'General'),
+            entry('workspace'),
             // Everyone who signs in, and the service accounts as its tab
             // (CB-360); its People tab needs real accounts and says so.
-            entry('people', 'People', { role: 'admin', nested: true }),
+            entry('people', { role: 'admin', nested: true }),
             // Sign-in (CB-124): admins (CB-390).
-            entry('access', 'Access', { role: 'admin' }),
+            entry('access', { role: 'admin' }),
             // Socio Secrets, phase 1: workspace apps' secrets, write-only.
-            entry('secrets', 'Secrets', { role: 'admin' }),
+            entry('secrets', { role: 'admin' }),
             // Admins' data API tokens, for their own scripts on the company's datasets.
-            entry('data-api', 'Data API', { role: 'admin' }),
-            entry('chat-skills', 'Chat skills', { role: 'admin' }),
+            entry('data-api', { role: 'admin' }),
+            entry('chat-skills', { role: 'admin' }),
             // Deleted Spaces and their restore (CB-277).
-            entry('deleted-spaces', 'Deleted Spaces', { role: 'admin' }),
+            entry('deleted-spaces', { role: 'admin' }),
             // Feature flags (CB-503): released ones that stay as switches,
             // experimental early access, and, in an internal deployment only,
             // flags in development. Admins decide each; no one opts in alone.
-            entry('features', 'Optional features', { role: 'admin' }),
-            entry('early-access', 'Early access', { role: 'admin' }),
-            entry('features-dev', 'In development', { role: 'admin', internal: true }),
+            entry('features', { role: 'admin' }),
+            entry('early-access', { role: 'admin' }),
+            entry('features-dev', { role: 'admin', internal: true }),
             // The coding gateway's models and limits (CB-239), while dark.
-            entry('coding', 'Coding', { role: 'admin', flag: 'coding-sessions' }),
+            entry('coding', { role: 'admin', flag: 'coding-sessions' }),
             {
                 id: 'operator',
-                label: 'Platform',
                 path: '/settings/operator',
                 role: 'operator',
             },
         ],
     },
     {
-        label: 'Account',
-        description:
-            'The model your chats use, how socios reach you, your archived chats, and how you sign in to Socio.',
+        id: 'account',
         entries: [
-            entry('account', 'Profile'),
-            entry('notifications', 'Notifications'),
-            entry('inference', 'Inference'),
-            entry('archived-chats', 'Archived chats'),
-            entry('connected-agents', 'Connected agents', { signIn: true }),
-            entry('telegram', 'Telegram', { telegram: true }),
+            entry('account'),
+            entry('notifications'),
+            entry('inference'),
+            entry('archived-chats'),
+            entry('connected-agents', { signIn: true }),
+            entry('telegram', { telegram: true }),
             // CB-232: which socios may use apps for this person.
-            entry('socio-access', 'Socio access', { flag: 'socio-actor-access' }),
-            entry('performance', 'Performance'),
+            entry('socio-access', { flag: 'socio-actor-access' }),
+            entry('performance'),
         ],
     },
 ];

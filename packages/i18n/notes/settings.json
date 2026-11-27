@@ -1,0 +1,21 @@
+{
+    "groups.workspace.title": "Heading of the first group in the Settings nav: settings for the whole workspace (team), as opposed to the person's own account.",
+    "groups.account.title": "Heading of the second group in the Settings nav: the signed-in person's own settings. Other screens refer to it as \"Account → …\".",
+    "sections.workspace": "Settings nav entry for the workspace's general settings page.",
+    "sections.account": "Settings nav entry for the person's own profile page (name, sign-in, devices).",
+    "sections.operator": "Settings nav entry for the server operator's page (backends, storage, health). Admins only.",
+    "sections.socio-access": "\"Socio\" is the product name; socios are the AI agents. This page lists which socios may act on the person's behalf.",
+    "sections.deleted-spaces": "\"Space\" is a product noun (a shared area for a team's pages and chats); keep it capitalized if your language capitalizes nouns that way.",
+    "version": "Footer under every settings page: the product name and its version number, such as \"Socio v0.56.0\".",
+    "versionCommit": "The build's git commit, shown after the version in parentheses. Keep the parentheses unless your language marks asides differently.",
+    "needsSignIn": "\"Better Auth\" is the name of the sign-in library; don't translate it. \"The local picker\" is the development sign-in that lists test users.",
+    "save.saving": "Status at the top right of a settings card while a change saves on its own (there is no Save button).",
+    "save.saved": "Status at the top right of a settings card once a change has saved.",
+    "save.undo": "Button in the toast after a setting saved; it puts the previous value back.",
+    "save.undone": "Toast after Undo put a setting's previous value back.",
+    "paused.title": "Title of the home page widget about the AI agents (socios) as a whole.",
+    "paused.resume": "Button: lets every socio (AI agent) work again.",
+    "paused.pause": "Button: stops every socio (AI agent) until resumed.",
+    "paused.scheduled": "How many scheduled tasks are waiting to run.",
+    "crumbs.person": "Breadcrumb for one person's page under Settings › People."
+}
