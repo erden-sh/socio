@@ -1,8 +1,15 @@
+import type { Message } from '@ag-ui/core';
 import { RefreshCw, ThumbsDown, ThumbsUp, Wrench, type LucideIcon } from 'lucide-react';
-import { useState } from 'react';
+import { createContext, useContext, useEffect, useRef, useState } from 'react';
 
 import { REACTIONS, REACTION_LABELS, type ReactionKind } from '@socio/shared/chat/reactions';
+import { REPORT_CONFIRMATION, type ReportPreview } from '@socio/shared/chat/reply-reports';
+import { messageAuthor } from '@socio/shared/runs/socio-fields';
 
+import { api } from '../../lib/api';
+import { ShellContext } from '../../shell/shell-context';
+
+import { RemoveSharedDialog, ReportDialog } from './ReportDialog';
 import type { ReactionsApi } from './use-reactions';
 
 import { Button } from '@/components/ui/button';
@@ -17,6 +24,43 @@ const ICONS: Record<ReactionKind, LucideIcon> = {
 };
 
 /**
+ * The transcript the reactions are in (CB-382): the confirmation names the
+ * socio and, when the server says the answered message is another
+ * person's, that person.
+ */
+export const ReportTranscript = createContext<{ messages: readonly Message[]; dotName?: string } | undefined>(
+    undefined,
+);
+
+/** Said when the server couldn't say what a report would include. */
+export const PREVIEW_FAILED = 'Couldn’t check what this report would include. Try again.';
+
+/**
+ * Whose message a reply answered, for the confirmation's line: the nearest
+ * earlier message by someone other than the reader. Only the name; whether
+ * the line shows is the server's answer (`promptByOther`).
+ */
+function otherAuthor(messages: readonly Message[], replyId: string) {
+    const at = messages.findIndex((message) => message.id === replyId);
+    for (let index = at - 1; index >= 0; index--) {
+        const message = messages[index]!;
+        if (message.role !== 'user') {
+            continue;
+        }
+        const author = messageAuthor(message);
+        if (author && !author.you && author.name) {
+            return author.name;
+        }
+    }
+    return 'Another person';
+}
+
+type Step =
+    | { kind: 'checking' }
+    | { kind: 'report'; consent: string; byOther?: string }
+    | { kind: 'remove'; reaction: ReactionKind };
+
+/**
  * The quick feedback buttons in a Dot message's action row (CB-133): good,
  * bad, try again and needs work. Each is a toggle; the reader's own are
  * highlighted, and a count shows beside a reaction when others can see the
@@ -26,6 +70,70 @@ export function MessageReactions({ messageId, reactions }: { messageId: string; 
     const current = reactions.of(messageId);
     // What a screen reader hears after a press ("Needs work added").
     const [said, setSaid] = useState('');
+    const transcript = useContext(ReportTranscript);
+    const dots = useContext(ShellContext)?.workspace.dots;
+    const [step, setStep] = useState<Step>();
+    const mounted = useRef(true);
+    useEffect(
+        () => () => {
+            mounted.current = false;
+        },
+        [],
+    );
+    const reply = transcript?.messages.find((message) => message.id === messageId) as
+        | (Message & { socioId?: string })
+        | undefined;
+    const socio =
+        (reply?.socioId && dots?.find((dot) => dot.id === reply.socioId)?.name) || transcript?.dotName || 'The socio';
+    const send = (kind: ReactionKind) => {
+        const on = current.mine.includes(kind);
+        setSaid(`${REACTION_LABELS[kind]} ${on ? 'removed' : 'added'}`);
+        reactions.toggle(messageId, kind);
+    };
+    // A thumbs-down that may be a report (§2, §3): ask the server what it
+    // would include, then confirm. Nothing is sent until then.
+    const startReport = async (consent: string) => {
+        setStep({ kind: 'checking' });
+        let preview: ReportPreview;
+        try {
+            preview = await api<ReportPreview>(
+                `/conversations/${reactions.threadId}/messages/${encodeURIComponent(messageId)}/report`,
+            );
+        } catch {
+            if (mounted.current) {
+                setStep(undefined);
+                reactions.notify(messageId, PREVIEW_FAILED);
+            }
+            return;
+        }
+        if (!mounted.current) {
+            return;
+        }
+        if (!preview.sharing) {
+            // Sharing went off since the workspace was read: a plain one.
+            setStep(undefined);
+            send('down');
+            return;
+        }
+        setStep({
+            kind: 'report',
+            consent: preview.consent ?? consent,
+            ...(preview.promptByOther ? { byOther: otherAuthor(transcript?.messages ?? [], messageId) } : {}),
+        });
+    };
+    const press = (kind: ReactionKind) => {
+        const on = current.mine.includes(kind);
+        const removesDown = current.mine.includes('down') && (kind === 'down' ? on : kind === 'up' && !on);
+        if (removesDown && current.report === 'shared') {
+            setStep({ kind: 'remove', reaction: kind });
+            return;
+        }
+        if (kind === 'down' && !on && reactions.reports) {
+            void startReport(reactions.reports.consent);
+            return;
+        }
+        send(kind);
+    };
     return (
         <div
             role="group"
@@ -53,9 +161,11 @@ export function MessageReactions({ messageId, reactions }: { messageId: string; 
                                 aria-label={shown ? `${label}, ${count}` : label}
                                 aria-pressed={on}
                                 data-reaction={kind}
+                                aria-busy={kind === 'down' && step?.kind === 'checking'}
                                 onClick={() => {
-                                    setSaid(`${label} ${on ? 'removed' : 'added'}`);
-                                    reactions.toggle(messageId, kind);
+                                    if (!step) {
+                                        press(kind);
+                                    }
                                 }}
                             >
                                 <Icon aria-hidden="true" />
@@ -66,6 +176,42 @@ export function MessageReactions({ messageId, reactions }: { messageId: string; 
                     </Tooltip>
                 );
             })}
+            {current.mine.includes('down') && current.report === 'shared' && (
+                <span className="px-1 text-[11px] text-muted-foreground" data-slot="report-shared">
+                    {REPORT_CONFIRMATION.shared}
+                </span>
+            )}
+            {reactions.notice?.messageId === messageId && reactions.failed !== messageId && (
+                <span className="px-1 text-[11px] text-muted-foreground" role="status" data-slot="report-notice">
+                    {reactions.notice.text}
+                </span>
+            )}
+            {step?.kind === 'report' && (
+                <ReportDialog
+                    socio={socio}
+                    byOther={step.byOther}
+                    onCancel={() => setStep(undefined)}
+                    onConfirm={(choice) => {
+                        setStep(undefined);
+                        setSaid(`${REACTION_LABELS.down} added`);
+                        reactions.toggle(messageId, 'down', {
+                            ...choice,
+                            consent: step.consent,
+                            shownByOther: step.byOther !== undefined,
+                        });
+                    }}
+                />
+            )}
+            {step?.kind === 'remove' && (
+                <RemoveSharedDialog
+                    action={step.reaction === 'up' ? 'Switch to thumbs-up' : 'Remove thumbs-down'}
+                    onCancel={() => setStep(undefined)}
+                    onConfirm={() => {
+                        setStep(undefined);
+                        send(step.reaction);
+                    }}
+                />
+            )}
             {reactions.failed === messageId && (
                 <span className="px-1 text-[11px] text-destructive" role="alert">
                     Could not save that

@@ -1,9 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 
+import type { ReplyReportsAdminView } from '@socio/shared/chat/reply-reports';
 import type { CloudConnection, CloudStatus } from '@socio/shared/cloud';
+import { formatNumber } from '@socio/shared/locale';
 
 import { api } from '../../lib/api';
 import { LocalTime } from '../../lib/local-time';
+
+import { loadReplyReports } from './ReplyReportsCard';
 
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -45,7 +49,8 @@ const VARIANT: Record<CloudConnection, 'default' | 'secondary' | 'destructive' |
  * The Platform page's "Cloud connection" card (admins): how this server
  * stands with Ingenio's cloud services, from `GET /api/cloud`: its
  * deployment id and mode, what it may use, when it enrolled and last
- * synced, and what to do when it is revoked or its identity is lost.
+ * synced, what to do when it is revoked or its identity is lost, and how
+ * many AI reply reports could never be sent (CB-382).
  */
 export function CloudConnectionCard() {
     const [status, setStatus] = useState<CloudStatus>();
@@ -63,6 +68,12 @@ export function CloudConnectionCard() {
         [],
     );
     useEffect(() => void load(), [load]);
+    const [reports, setReports] = useState<ReplyReportsAdminView>();
+    useEffect(() => {
+        loadReplyReports()
+            .then(setReports)
+            .catch(() => setReports(undefined));
+    }, []);
     return (
         <Card className="mt-6" data-slot="cloud-connection">
             <CardHeader>
@@ -71,7 +82,8 @@ export function CloudConnectionCard() {
                     {status && <Badge variant={VARIANT[status.connection]}>{LABEL[status.connection]}</Badge>}
                 </CardTitle>
                 <CardDescription>
-                    This server’s identity at Ingenio’s cloud services. Nothing uses it yet beyond its own daily sync.
+                    This server’s identity at Ingenio’s cloud services: its daily sync, and AI reply reports while
+                    admins share them.
                 </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-3 text-sm">
@@ -120,6 +132,14 @@ export function CloudConnectionCard() {
                                         ) : (
                                             'Not yet'
                                         )}
+                                    </dd>
+                                </>
+                            )}
+                            {!!reports?.failed && (
+                                <>
+                                    <dt className="text-muted-foreground">Reply reports not sent</dt>
+                                    <dd data-slot="cloud-reports-failed">
+                                        {formatNumber(reports.failed)} (refused, or unsent for 7 days)
                                     </dd>
                                 </>
                             )}
