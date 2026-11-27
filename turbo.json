@@ -63,9 +63,10 @@
     },
     "tasks": {
         "//#build:packages": {
-            "description": "scripts/build-packages.mjs: @socio/shared, @socio/foundation and @socio/data to their dist, and shipped with the server build.",
+            "description": "scripts/build-packages.mjs: @socio/shared, @socio/i18n, @socio/foundation and @socio/data to their dist, and shipped with the server build.",
             "inputs": [
                 "packages/shared/**",
+                "packages/i18n/**",
                 "packages/foundation/**",
                 "packages/data/**",
                 "scripts/build-packages.mjs",
@@ -78,6 +79,7 @@
             ],
             "outputs": [
                 "packages/shared/dist/**",
+                "packages/i18n/dist/**",
                 "packages/foundation/dist/**",
                 "packages/data/dist/**",
                 "dist/server/node_modules/@socio/**"

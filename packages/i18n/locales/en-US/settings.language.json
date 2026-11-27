@@ -1,0 +1,8 @@
+{
+    "title": "Language",
+    "description": "The language $t(common:product) shows you on this workspace, on every device. Each language is named in its own words.",
+    "matchDevice": "Match my device",
+    "matchDeviceCurrently": "Match my device (currently {{language}})",
+    "saved": "Language: {{language}}",
+    "savedDevice": "Language: matches your device"
+}

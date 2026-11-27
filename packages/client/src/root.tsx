@@ -1,8 +1,19 @@
 import type { ReactNode } from 'react';
-import { Links, Meta, Outlet, Scripts, type MetaFunction } from 'react-router';
+import {
+    Links,
+    Meta,
+    Outlet,
+    Scripts,
+    type LoaderFunctionArgs,
+    type MetaFunction,
+    type ShouldRevalidateFunction,
+} from 'react-router';
 
 import { DEFAULT_BRANDING } from '@socio/shared/branding';
 
+import { polledLoadersSkipped } from './hooks/use-tab-refresh';
+import { I18nRoot, usePageLocale } from './i18n/I18nRoot';
+import { routeI18n } from './i18n/page-i18n';
 import { ThemeProvider } from './shell/theme';
 import { AppError } from './views/RouteError';
 import './globals.css';
@@ -17,6 +28,19 @@ const pageNonce =
     typeof document === 'undefined'
         ? undefined
         : document.querySelector<HTMLScriptElement>('script[nonce]')?.nonce || undefined;
+
+/**
+ * The page's locale, signed in or out (the preference, the `socio_locale`
+ * cookie, Accept-Language), and the namespaces every page uses
+ * (route-namespaces.json's `root`), inlined into the HTML.
+ */
+export async function loader({ context }: LoaderFunctionArgs) {
+    return { i18n: await routeI18n(context, 'root') };
+}
+
+/** Like the shell's: after signing in or out, not on every poll or search change. */
+export const shouldRevalidate: ShouldRevalidateFunction = ({ currentUrl, nextUrl, defaultShouldRevalidate }) =>
+    defaultShouldRevalidate && !polledLoadersSkipped() && currentUrl.search === nextUrl.search;
 
 export const meta: MetaFunction = () => [
     { title: 'Socio' },
@@ -36,11 +60,14 @@ export const meta: MetaFunction = () => [
  * comes first: a file (the CSP allows no inline script without the nonce)
  * that sets the theme class on <html> before the first paint, which
  * `suppressHydrationWarning` lets differ from the server's markup.
+ * `lang` and `dir` are the page's locale (the root loader's), and every
+ * page renders inside its translations (`I18nRoot`).
  * `#root` stays because the legacy stylesheets are scoped to it.
  */
 export function Layout({ children }: { children: ReactNode }) {
+    const { lang, dir } = usePageLocale();
     return (
-        <html lang="en" suppressHydrationWarning>
+        <html lang={lang} dir={dir} suppressHydrationWarning>
             <head>
                 <script src="/theme-init.js" />
                 <meta charSet="UTF-8" />
@@ -63,7 +90,9 @@ export function Layout({ children }: { children: ReactNode }) {
             </head>
             <body>
                 <div id="root">
-                    <ThemeProvider>{children}</ThemeProvider>
+                    <I18nRoot>
+                        <ThemeProvider>{children}</ThemeProvider>
+                    </I18nRoot>
                 </div>
                 <Scripts nonce={pageNonce} />
             </body>

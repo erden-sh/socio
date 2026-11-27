@@ -3,6 +3,8 @@
 // must sort and format the same in every browser, so one locale comes from
 // packages/shared/src/locale.ts (en-US until i18n), and times go through <LocalTime>.
 // `socio/hermes` keeps the native app off APIs its engine lacks (below).
+// `socio/no-literal-text` and `socio/translate-in-components` hold translated
+// client code to i18n's conventions (docs/I18N.md, at the end).
 
 const property = (callee) =>
     callee?.type === 'MemberExpression' && !callee.computed ? callee.property?.name : undefined;
@@ -249,7 +251,149 @@ const hermesRule = {
     },
 };
 
+// `socio/no-literal-text`: in a surface that has moved to i18n, every word a
+// person reads comes from `t()` (docs/I18N.md). It flags JSX text with a letter
+// in it, and the attributes people read or hear (aria-label, title,
+// placeholder, alt, label) given a literal. On only for the folders listed in
+// its .oxlintrc.json override: the list grows as surfaces migrate, and never
+// shrinks (tests/integration/i18n-lint.test.ts).
+const LETTER = /\p{L}/u;
+const READ_ATTRIBUTES = new Set(['aria-label', 'aria-description', 'title', 'placeholder', 'alt', 'label']);
+
+/** A string the code spells out: a literal, or a template with no substitutions. */
+const literalText = (node) => {
+    if (node?.type === 'Literal' && typeof node.value === 'string') {
+        return node.value;
+    }
+    if (node?.type === 'TemplateLiteral' && node.expressions.length === 0) {
+        return node.quasis[0]?.value.cooked ?? '';
+    }
+    return null;
+};
+
+const noLiteralTextRule = {
+    meta: {
+        type: 'problem',
+        docs: { description: 'Text people read comes from t() in a translated surface.' },
+        messages: {
+            text: 'Translate this text: t() from useTranslation() (docs/I18N.md).',
+            attribute: 'Translate {{name}}: t() from useTranslation() (docs/I18N.md).',
+        },
+        schema: [],
+    },
+    create(context) {
+        return {
+            JSXText(node) {
+                if (LETTER.test(node.value)) {
+                    context.report({ node, messageId: 'text' });
+                }
+            },
+            JSXExpressionContainer(node) {
+                // `{'Save'}` as a child is text too.
+                const text = node.parent?.type === 'JSXAttribute' ? null : literalText(node.expression);
+                if (text !== null && LETTER.test(text)) {
+                    context.report({ node, messageId: 'text' });
+                }
+            },
+            JSXAttribute(node) {
+                const name = node.name?.type === 'JSXIdentifier' ? node.name.name : null;
+                if (!name || !READ_ATTRIBUTES.has(name)) {
+                    return;
+                }
+                const value = node.value?.type === 'JSXExpressionContainer' ? node.value.expression : node.value;
+                const text = literalText(value);
+                if (text !== null && LETTER.test(text)) {
+                    context.report({ node, messageId: 'attribute', data: { name } });
+                }
+            },
+        };
+    },
+};
+
+// `socio/translate-in-components`: `t` comes from `useTranslation()` inside a
+// component or a hook, never from an instance at module level or in a plain
+// helper. A `t` taken once doesn't follow a language change, and the React
+// Compiler memoizes values, so one captured outside React would keep the old
+// words. It flags `i18n.t(...)`, `i18next.t(...)`, `getFixedT(...)` and a call
+// of `t` whose nearest named function isn't a component (PascalCase) or a hook
+// (`useX`), or that has none (module level).
+const COMPONENT_OR_HOOK = /^(?:use[A-Z0-9]|[A-Z])/;
+const INSTANCE_NAMES = new Set(['i18n', 'i18next', 'instance']);
+
+/** The name a function goes by: its own, or the variable, property or export it is assigned to. */
+const functionName = (fn) => {
+    if (fn.id?.name) {
+        return fn.id.name;
+    }
+    const parent = fn.parent;
+    if (parent?.type === 'VariableDeclarator' && parent.id.type === 'Identifier') {
+        return parent.id.name;
+    }
+    if ((parent?.type === 'Property' || parent?.type === 'MethodDefinition') && parent.key?.type === 'Identifier') {
+        return parent.key.name;
+    }
+    // memo(function …) / forwardRef((props) => …): the component is the call's variable.
+    if (parent?.type === 'CallExpression') {
+        return functionName(parent);
+    }
+    return null;
+};
+
+const FUNCTIONS = new Set(['FunctionDeclaration', 'FunctionExpression', 'ArrowFunctionExpression']);
+
+/** Whether a component or hook encloses the node. */
+const insideComponentOrHook = (node) => {
+    for (let at = node.parent; at; at = at.parent) {
+        if (FUNCTIONS.has(at.type)) {
+            const name = functionName(at);
+            if (name && COMPONENT_OR_HOOK.test(name)) {
+                return true;
+            }
+        }
+    }
+    return false;
+};
+
+const translateInComponentsRule = {
+    meta: {
+        type: 'problem',
+        docs: { description: 't comes from useTranslation() in a component or hook.' },
+        messages: {
+            instance: 'Take t from useTranslation() in the component or hook instead of {{callee}} (docs/I18N.md).',
+            outside: 'Call t inside a component or hook, from useTranslation() (docs/I18N.md).',
+        },
+        schema: [],
+    },
+    create(context) {
+        return {
+            CallExpression(node) {
+                const { callee } = node;
+                if (callee.type === 'MemberExpression' && !callee.computed) {
+                    const name = callee.property?.name;
+                    const object = callee.object?.type === 'Identifier' ? callee.object.name : null;
+                    if ((name === 't' && object && INSTANCE_NAMES.has(object)) || name === 'getFixedT') {
+                        context.report({ node, messageId: 'instance', data: { callee: `${object ?? '…'}.${name}` } });
+                    }
+                    return;
+                }
+                if (callee.type === 'Identifier' && (callee.name === 't' || callee.name === 'getFixedT')) {
+                    if (callee.name === 'getFixedT') {
+                        context.report({ node, messageId: 'instance', data: { callee: 'getFixedT' } });
+                    } else if (!insideComponentOrHook(node)) {
+                        context.report({ node, messageId: 'outside' });
+                    }
+                }
+            },
+        };
+    },
+};
+
 export default {
     meta: { name: 'socio' },
-    rules: { locale: localeRule, hermes: hermesRule },
+    rules: {
+        locale: localeRule,
+        hermes: hermesRule,
+        'no-literal-text': noLiteralTextRule,
+        'translate-in-components': translateInComponentsRule,
+    },
 };

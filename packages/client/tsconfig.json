@@ -10,11 +10,16 @@
         "noEmit": true,
         "skipLibCheck": true,
         "esModuleInterop": true,
+        "resolveJsonModule": true,
         "types": ["node", "vite/client"],
         "paths": {
             "@/*": ["./src/*"],
             "@socio/plugin-ui": ["../plugin-ui/src/index.ts"],
-            "@socio/shared/*": ["../shared/src/*.ts"]
+            "@socio/shared/*": ["../shared/src/*.ts"],
+            "@socio/i18n": ["../i18n/src/index.ts"],
+            "@socio/i18n/route-namespaces.json": ["../i18n/src/route-namespaces.json"],
+            "@socio/i18n/locales/*": ["../i18n/locales/*"],
+            "@socio/i18n/*": ["../i18n/src/*.ts"]
         }
     },
     "include": ["src", "tests", "vitest.config.ts"]

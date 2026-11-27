@@ -1,0 +1,33 @@
+{
+    "name": "@socio/i18n",
+    "version": "0.0.0",
+    "private": true,
+    "type": "module",
+    "description": "Socio's translations: the i18next setup shared by the server and the clients, locale negotiation, formatters, the dictionaries' manifest and the en-US source strings.",
+    "scripts": {
+        "typecheck": "pnpm -w exec tsc -p packages/i18n/tsconfig.json --noEmit",
+        "lint": "pnpm -w exec oxlint packages/i18n && pnpm -w run --silent check:i18n",
+        "build": "pnpm -w run --silent build:i18n"
+    },
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "default": "./dist/index.js"
+        },
+        "./*": {
+            "types": "./dist/*.d.ts",
+            "default": "./dist/*.js"
+        }
+    },
+    "dependencies": {
+        "@socio/shared": "workspace:*",
+        "i18next": "^27.2.9",
+        "react": "^19.3.0",
+        "react-i18next": "^18.0.3"
+    },
+    "devDependencies": {
+        "@types/node": "^26.6.10",
+        "vitest": "^5.1.2"
+    },
+    "license": "SEE LICENSE IN ../../LICENSE"
+}

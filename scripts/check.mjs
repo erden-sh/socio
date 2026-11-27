@@ -1,10 +1,10 @@
 #!/usr/bin/env node
-// Format, lint and typecheck at once (CB-311): they read the same files and
+// Format, lint, typecheck and the dictionaries' checks at once (CB-311): they read the same files and
 // none needs another's output, so they run in parallel and the slowest one
 // sets the time. Each one's output is printed whole when it ends, so logs
 // never interleave; the exit status is the first failure's.
 //
-//   node scripts/check.mjs            # all three
+//   node scripts/check.mjs            # all of them
 //   node scripts/check.mjs lint       # some of them
 import { spawn } from 'node:child_process';
 
@@ -12,6 +12,8 @@ const CHECKS = {
     format: ['pnpm', ['run', '--silent', 'check-format']],
     lint: ['pnpm', ['run', '--silent', 'lint']],
     typecheck: ['pnpm', ['run', '--silent', 'typecheck']],
+    // The dictionaries' checks, without writing dist/i18n (scripts/i18n-build.mjs).
+    i18n: ['pnpm', ['run', '--silent', 'check:i18n']],
 };
 
 const wanted = process.argv.slice(2);

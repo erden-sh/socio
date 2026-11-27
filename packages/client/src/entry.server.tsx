@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { PassThrough } from 'node:stream';
 
 import { createReadableStreamFromReadable } from '@react-router/node';
@@ -10,10 +11,21 @@ import {
     type RouterContextProvider,
 } from 'react-router';
 
+import { scopeActiveLocale } from '@socio/shared/locale';
+
+import { i18nOf } from './i18n/page-i18n';
 import { web } from './lib/web-context';
 
 // The Hono server reads the context key from the build (web-context.ts).
 export { webContext } from './lib/web-context';
+
+/**
+ * The page's locale while it renders: `@socio/shared/locale`'s helpers
+ * sort and format in it, per request, however many pages render at once,
+ * so the browser that hydrates in the same locale gets the same text.
+ */
+const renderLocale = new AsyncLocalStorage<string>();
+scopeActiveLocale(() => renderLocale.getStore());
 
 /** Streamed data stops after 5 s; the render is cut off a second later. */
 export const streamTimeout = 5_000;
@@ -54,6 +66,11 @@ export default function handleRequest(
     if (request.method === 'HEAD') {
         return new Response(null, { status, headers });
     }
+    const locale = i18nOf(routerContext.staticHandlerContext.loaderData.root)?.locale ?? 'en-US';
+    return renderLocale.run(locale, () => render(request, status, headers, routerContext, nonce));
+}
+
+function render(request: Request, status: number, headers: Headers, routerContext: EntryContext, nonce: string) {
     return new Promise<Response>((resolve, reject) => {
         let statusCode = status;
         let shellRendered = false;

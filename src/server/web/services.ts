@@ -1,10 +1,12 @@
 import type { Context } from 'hono';
+import { getCookie } from 'hono/cookie';
 
 import { DataError } from '@socio/foundation/dataspace/data-error';
 import type { AppEnv } from '@socio/foundation/http/app-env';
 import { localRequest } from '@socio/foundation/http/local-request';
 import { PageError } from '@socio/foundation/pages/page-error';
 import { brandingInForce } from '@socio/foundation/settings/branding';
+import { LOCALE_COOKIE } from '@socio/i18n/negotiate';
 import { learningContainerIdSchema } from '@socio/shared/learning';
 import type { MediaKind } from '@socio/shared/media-types';
 import { LIBRARY_FIRST_SCREEN } from '@socio/shared/pages/page-library';
@@ -16,6 +18,7 @@ import type { ApprovalsViewsShape } from '../approvals/contract.js';
 import type { AuthSetup, AuthViewsShape, RequestUserResolver } from '../auth/contract.js';
 import type { DataspaceViewsShape } from '../dataspace/contract.js';
 import type { DocsCatalogShape } from '../docs/contract.js';
+import type { I18nCatalogShape } from '../i18n/contract.js';
 import type { InferenceViewsShape } from '../inference/contract.js';
 import type { BoardIssues, IssuesViewsShape } from '../issues/contract.js';
 import type { LearningViewsShape } from '../learning/contract.js';
@@ -104,6 +107,20 @@ export interface WebServiceSources {
     /** The features' views (the sign-in screen and the state's version read them without a platform too). */
     views: PageViews;
     auth: AuthSetup;
+    /**
+     * The dictionaries (`I18nCatalog`), and a person's saved locale
+     * (`user_preferences.locale`); without them, pages render en-US.
+     */
+    i18n?: {
+        catalog: Pick<I18nCatalogShape, 'page'>;
+        preference(userId: string): string | null | undefined;
+    };
+}
+
+/** What a page request says about its locale, besides the person's preference. */
+export interface PageRequestLocale {
+    cookie?: string | null;
+    acceptLanguage?: string | null;
 }
 
 const MEDIA_KINDS: readonly MediaKind[] = ['image', 'text', 'pdf', 'file'];
@@ -119,7 +136,11 @@ const once = <T>(load: () => Promise<T>) => {
  * asked at most once; null when signed out). Each answer is kept for the
  * request. The bench calls this directly (scripts/loader-bench.mjs).
  */
-export function userServices(sources: WebServiceSources, resolve: () => Promise<User | null>): WebServices {
+export function userServices(
+    sources: WebServiceSources,
+    resolve: () => Promise<User | null>,
+    request: PageRequestLocale = {},
+): WebServices {
     const { store, config, platform, auth, views } = sources;
     const user = once(resolve);
     const signedIn = async () => {
@@ -168,6 +189,20 @@ export function userServices(sources: WebServiceSources, resolve: () => Promise<
             ),
         ),
         workspace: once(async () => (platform ? views.workspace.workspaceView(await signedIn()) : undefined)),
+        ...(sources.i18n && {
+            i18n: async (namespaces: readonly string[]) => {
+                const { catalog, preference } = sources.i18n!;
+                const found = await user();
+                return catalog.page(
+                    {
+                        preference: found ? preference(found.id) : null,
+                        cookie: request.cookie,
+                        acceptLanguage: request.acceptLanguage,
+                    },
+                    namespaces,
+                );
+            },
+        }),
         issue: async (number) => {
             const viewer = await signedIn();
             const found = await platform?.board.issues.get(number);
@@ -286,10 +321,13 @@ export function webServices(sources: WebServiceSources, resolveUser: RequestUser
     const { auth } = sources;
     return (c: Context<AppEnv>): PageServices => {
         const headers: PageServices['headers'] = [];
-        const services = userServices(sources, async () =>
-            auth.provider.kind === 'mock' && !localRequest(c)
-                ? null
-                : resolveUser(c.req.raw, (name, value) => headers.push([name, value])),
+        const services = userServices(
+            sources,
+            async () =>
+                auth.provider.kind === 'mock' && !localRequest(c)
+                    ? null
+                    : resolveUser(c.req.raw, (name, value) => headers.push([name, value])),
+            { cookie: getCookie(c, LOCALE_COOKIE), acceptLanguage: c.req.header('Accept-Language') },
         );
         return { services, headers };
     };

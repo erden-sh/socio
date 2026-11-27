@@ -2,12 +2,16 @@
 import { act, type ReactNode } from 'react';
 import { hydrateRoot, type Root } from 'react-dom/client';
 import { renderToString } from 'react-dom/server';
+import { createMemoryRouter, RouterProvider } from 'react-router';
 import { afterAll, afterEach, beforeAll, beforeEach, expect, it } from 'vitest';
 
-import { APP_LOCALE, compareText, formatNumber, lowerText } from '@socio/shared/locale';
+import { useTranslation } from '@socio/i18n/react';
+import { APP_LOCALE, compareText, formatNumber, lowerText, setActiveLocale } from '@socio/shared/locale';
 import type { PageSummary } from '@socio/shared/pages/page-library';
 import type { Space } from '@socio/shared/types';
+import type { PageI18n } from '@socio/shared/web/web';
 
+import { I18nRoot } from '../src/i18n/I18nRoot';
 import { FolderTree } from '../src/modules/media/FolderTree';
 import { SpaceLibrary } from '../src/modules/spaces/SpaceLibrary';
 
@@ -176,4 +180,66 @@ it('hydrates the Space library in a Swedish browser', async () => {
         'Örn',
         'Zebra',
     ]);
+});
+
+/**
+ * A page in a locale the server inlined (`I18nRoot` over the root loader's
+ * data): the server renders its words and numbers in that locale, and the
+ * browser, whatever its own language, hydrates with the same, so nothing
+ * flashes in English and nothing mismatches.
+ */
+it('renders and hydrates a page in its inlined locale', async () => {
+    const data: PageI18n = {
+        locale: 'es-419',
+        dir: 'ltr',
+        manifest: { release: '1.0.0', locales: {} },
+        resources: {
+            'es-419': { 'settings.language': { title: 'Idioma', saved: 'Idioma: {{language}}' } },
+            'en-US': { 'settings.language': { title: 'Language', saved: 'Language: {{language}}' } },
+        },
+        offered: ['en-US'],
+    };
+    function Probe() {
+        const { t } = useTranslation(['settings.language']);
+        return (
+            <p data-slot="probe">
+                {t('settings.language:title')} · {formatNumber(1234.5)} ·{' '}
+                {t('settings.language:saved', { language: 'español' })}
+            </p>
+        );
+    }
+    const page = () => (
+        <RouterProvider
+            router={createMemoryRouter(
+                [
+                    {
+                        id: 'root',
+                        path: '/',
+                        loader: () => ({ i18n: data }),
+                        Component: () => (
+                            <I18nRoot>
+                                <Probe />
+                            </I18nRoot>
+                        ),
+                    },
+                ],
+                { hydrationData: { loaderData: { root: { i18n: data } } } },
+            )}
+        />
+    );
+    try {
+        defaultLocale = 'en-US';
+        const html = renderToString(page());
+        expect(html.replaceAll('<!-- -->', '')).toContain('Idioma · 1,234.5 · Idioma: español');
+        expect(html).not.toContain('Language');
+        host.innerHTML = html;
+        defaultLocale = 'sv-SE';
+        await act(async () => {
+            root = hydrateRoot(host, page(), { onRecoverableError: (error) => mismatches.push(error) });
+        });
+        expect(mismatches).toEqual([]);
+        expect(host.querySelector('[data-slot="probe"]')!.textContent).toBe('Idioma · 1,234.5 · Idioma: español');
+    } finally {
+        setActiveLocale(APP_LOCALE);
+    }
 });

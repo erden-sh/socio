@@ -58,6 +58,7 @@
         "cycles",
         "modules",
         "replay",
-        "dispatch"
+        "dispatch",
+        "i18n"
     ]
 }

@@ -1,0 +1,26 @@
+{
+    "$schema": "../../node_modules/turbo/schema.json",
+    "extends": ["//"],
+    "tasks": {
+        "typecheck": {
+            "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/packages/shared/src/**"],
+            "outputs": []
+        },
+        "lint": {
+            "description": "oxlint, and the dictionaries' checks (scripts/i18n-build.mjs --check), which read shared's locale.ts.",
+            "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/scripts/i18n-build.mjs", "$TURBO_ROOT$/packages/shared/src/**"],
+            "outputs": []
+        },
+        "build": {
+            "description": "dist/i18n: the dictionaries and their manifest (scripts/i18n-build.mjs).",
+            "inputs": [
+                "$TURBO_DEFAULT$",
+                "!tests/**",
+                "$TURBO_ROOT$/scripts/i18n-build.mjs",
+                "$TURBO_ROOT$/packages/shared/src/**",
+                "$TURBO_ROOT$/package.json"
+            ],
+            "outputs": ["$TURBO_ROOT$/dist/i18n/**"]
+        }
+    }
+}
