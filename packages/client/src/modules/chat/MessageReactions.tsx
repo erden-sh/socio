@@ -68,10 +68,9 @@ export function MessageReactions({ messageId, reactions }: { messageId: string; 
         | undefined;
     const socio =
         (reply?.socioId && dots?.find((dot) => dot.id === reply.socioId)?.name) || transcript?.dotName || 'The socio';
-    const send = (kind: ReactionKind) => {
-        const on = current.mine.includes(kind);
-        setSaid(`${REACTION_LABELS[kind]} ${on ? 'removed' : 'added'}`);
-        reactions.toggle(messageId, kind);
+    const send = (kind: ReactionKind, add = !current.mine.includes(kind)) => {
+        setSaid(`${REACTION_LABELS[kind]} ${add ? 'added' : 'removed'}`);
+        reactions.toggle(messageId, kind, { add });
     };
     // A thumbs-down that may be a report (§2, §3): ask the server what it
     // would include, then confirm. Nothing is sent until then.
@@ -95,7 +94,7 @@ export function MessageReactions({ messageId, reactions }: { messageId: string; 
         if (!preview.sharing) {
             // Sharing went off since the workspace was read: a plain one.
             setStep(undefined);
-            send('down');
+            send('down', true);
             return;
         }
         setStep({
@@ -178,9 +177,12 @@ export function MessageReactions({ messageId, reactions }: { messageId: string; 
                         setStep(undefined);
                         setSaid(`${REACTION_LABELS.down} added`);
                         reactions.toggle(messageId, 'down', {
-                            ...choice,
-                            consent: step.consent,
-                            shownByOther: step.byOther !== undefined,
+                            add: true,
+                            report: {
+                                ...choice,
+                                consent: step.consent,
+                                shownByOther: step.byOther !== undefined,
+                            },
                         });
                     }}
                 />
@@ -191,7 +193,9 @@ export function MessageReactions({ messageId, reactions }: { messageId: string; 
                     onCancel={() => setStep(undefined)}
                     onConfirm={() => {
                         setStep(undefined);
-                        send(step.reaction);
+                        // What the warning said: remove the thumbs-down, or add the
+                        // thumbs-up, whatever another device did meanwhile.
+                        send(step.reaction, step.reaction === 'up');
                     }}
                 />
             )}

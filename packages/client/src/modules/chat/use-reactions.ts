@@ -46,10 +46,12 @@ export interface ReactionsApi {
     threadId: string;
     of(messageId: string): MessageReactions;
     /**
-     * Adds the reaction, or takes it back when it is the reader's own. A
-     * thumbs-down with a confirmed report is always an add.
+     * Adds the reaction, or takes it back when it is the reader's own.
+     * `intent` fixes which, for a change confirmed in a dialog while the
+     * reactions may have moved on another device: a thumbs-down with a
+     * confirmed report is an add.
      */
-    toggle(messageId: string, kind: ReactionKind, report?: ReportRequest): void;
+    toggle(messageId: string, kind: ReactionKind, intent?: { add: boolean; report?: ReportRequest }): void;
     /** The message whose last change did not save. */
     failed?: string;
     /** Whether a thumbs-down may carry a report (`GET /api/workspace`'s `replyReports`). */
@@ -163,14 +165,16 @@ export function useReactions(threadId: string, enabled: boolean): ReactionsApi |
     const failure = useRef<ReturnType<typeof setTimeout>>(undefined);
     useEffect(() => () => clearTimeout(failure.current), []);
     const toggle = useCallback(
-        (messageId: string, kind: ReactionKind, report?: ReportRequest) => {
+        (messageId: string, kind: ReactionKind, intent?: { add: boolean; report?: ReportRequest }) => {
             const before = current.current;
             if (!before) {
                 return;
             }
-            // A confirmed report always adds: a thumbs-down that arrived from
-            // another device meanwhile makes it a retry (`already`), never a removal.
-            const add = !!report || !(before.messages[messageId]?.mine ?? []).includes(kind);
+            // What the person confirmed, whatever arrived from another device
+            // meanwhile: a report on a thumbs-down already there is a retry
+            // (`already`), never a removal.
+            const report = intent?.report;
+            const add = report ? true : (intent?.add ?? !(before.messages[messageId]?.mine ?? []).includes(kind));
             clearTimeout(failure.current);
             setFailed(undefined);
             setView(withReaction(before, messageId, kind, add));

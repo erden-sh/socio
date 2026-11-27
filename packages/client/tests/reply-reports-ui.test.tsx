@@ -418,6 +418,38 @@ it('warns before a thumbs-up takes a shared report’s place', async () => {
     expect(writes()).toEqual([{ method: 'PUT', path: '/api/conversations/c1/messages/a1/reactions/up' }]);
 });
 
+async function otherDevice(view: ReactionsView) {
+    server = view;
+    await act(async () => {
+        new FakeBroadcastChannel(CHANGES_CHANNEL).postMessage([{ topic: 'conversation', id: 'c1' }]);
+        await tick(200);
+    });
+}
+
+it('removes, never restores, when the thumbs-down went on another device while the warning was open', async () => {
+    server = { shared: true, messages: { a1: { counts: { down: 1 }, mine: ['down'], report: 'shared' } } };
+    await chat();
+    await click(down());
+    await otherDevice({ shared: true, messages: {} });
+    expect(down().getAttribute('aria-pressed')).toBe('false');
+    await click(document.querySelector<HTMLElement>('[data-slot="remove-shared-confirm"]'));
+    await until(() => writes().length === 1, 'the DELETE');
+    expect(writes()).toEqual([{ method: 'DELETE', path: '/api/conversations/c1/messages/a1/reactions/down' }]);
+    expect(down().getAttribute('aria-pressed')).toBe('false');
+});
+
+it('adds, never removes, the thumbs-up another device gave while the warning was open', async () => {
+    server = { shared: true, messages: { a1: { counts: { down: 1 }, mine: ['down'], report: 'shared' } } };
+    await chat();
+    await click(up());
+    await otherDevice({ shared: true, messages: { a1: { counts: { up: 1 }, mine: ['up'] } } });
+    expect(up().getAttribute('aria-pressed')).toBe('true');
+    await click(buttonNamed('Switch to thumbs-up'));
+    await until(() => writes().length === 1, 'the PUT');
+    expect(writes()).toEqual([{ method: 'PUT', path: '/api/conversations/c1/messages/a1/reactions/up' }]);
+    expect(up().getAttribute('aria-pressed')).toBe('true');
+});
+
 it('removes a thumbs-down without a warning unless its report was shared', async () => {
     for (const report of ['queued', 'failed', undefined] as const) {
         server = {
