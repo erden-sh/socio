@@ -216,6 +216,20 @@ describe('Update Socio over the workspace (CB-553)', () => {
         expect({ mounts, unmounts }).toEqual({ mounts: 1, unmounts: 0 });
     });
 
+    it('paints the whole screen itself, safe areas included, on both platforms', async () => {
+        // The gate's Screen keeps its content inside the safe areas; the cover under it fills the
+        // window with the screen color, so nothing of the workspace shows by the home indicator.
+        for (const os of ['ios', 'android'] as const) {
+            native.os = os;
+            renderer = await render(true);
+            const cover = byId(renderer, 'update-gate-cover');
+            expect(cover.props.style).toEqual({ position: 'absolute' });
+            expect(cover.props.className).toBe('bg-screen');
+            await act(async () => renderer?.unmount());
+            renderer = undefined;
+        }
+    });
+
     it('draws over native sheets and modals on iOS, in a full-window overlay', async () => {
         native.os = 'ios';
         renderer = await render(true);
