@@ -3,6 +3,7 @@ import { CopilotChatToolCallsView, useRenderTool, useAgent, useCopilotKit } from
 import { FilePlus, ArrowUp, Clock3, Link2, Phone, PhoneOff, Square, X } from 'lucide-react';
 import { useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
+import { Trans, useTranslation } from '@socio/i18n/react';
 import { approvalCardId } from '@socio/shared/approvals';
 import type { HistoryRun } from '@socio/shared/chat/chat-history';
 import { mergeHistory } from '@socio/shared/chat/history-chain';
@@ -60,18 +61,18 @@ import {
 } from './chat-chrome';
 import {
     refusedForSize,
-    runErrorMessage,
     shouldSubmitComposerOnKeyDown,
     UNSENT_TOO_LONG,
     useFitComposer,
     useFocusOnOpen,
+    useRunErrorMessage,
 } from './chat-composer';
 import { chatDraft, joinDraft, useDraft } from './chat-drafts';
 import { fetchNameSuggestion, type NameSuggestion } from './chat-name-suggestions';
 import { skillFirst } from './chat-skills';
 import { ChatTranscript, isInternalNote, messageParts, type MessageDelivery } from './ChatTranscript';
 import { EarlierTurns } from './EarlierTurns';
-import { ModelPicker, inheritedModelLabel, useModelOptions } from './ModelSelect';
+import { ModelPicker, useInheritedModelLabel, useModelOptions } from './ModelSelect';
 import { NameSuggestionCard } from './NameSuggestionCard';
 import { placeOutgoing, type Outgoing } from './outgoing';
 import { QueuedMessages } from './QueuedMessages';
@@ -145,6 +146,9 @@ export function Chat({
     onSchedule: () => void;
     onComputer?: () => void;
 }) {
+    const { t } = useTranslation(['chat', 'chat.composer', 'shell']);
+    const runErrorMessage = useRunErrorMessage();
+    const inheritedModelLabel = useInheritedModelLabel();
     const { agent, isReady } = useAgent({
         agentId: `chat-${thread.id}`,
         runtimeAgentId: dot.id,
@@ -219,13 +223,13 @@ export function Chat({
             })
             .catch(() => {
                 if (active) {
-                    setContextError('Conversation context could not load. Retry before sending your message.');
+                    setContextError(t('chat.composer:errors.context'));
                 }
             });
         return () => {
             active = false;
         };
-    }, [thread.id, contextAttempt]);
+    }, [thread.id, contextAttempt, t]);
     // The box's text, kept per person and chat until it is sent (CB-153).
     const kept = useDraft(user?.id, chatDraft(thread.id));
     // A quote-reply's quote (CB-571) is the draft's start, shown as a chip
@@ -398,7 +402,7 @@ export function Chat({
             subscription.unsubscribe();
             events.unsubscribe();
         };
-    }, [agent, copilotkit]);
+    }, [agent, copilotkit, runErrorMessage]);
     /** Runs `action`, with the error CopilotKit reported for it, if any. */
     const capture = async <T,>(action: () => Promise<T>): Promise<Outcome<T>> => {
         listening.current += 1;
@@ -442,7 +446,9 @@ export function Chat({
                     if (agent.messages.length < shown.length) {
                         agent.setMessages(shown);
                     }
-                    setError(error instanceof Error ? runErrorMessage(error) : 'Conversation could not connect.');
+                    setError(
+                        error instanceof Error ? runErrorMessage(error) : t('chat.composer:errors.could-not-connect'),
+                    );
                 } else {
                     unsure.current = undefined;
                     await settleSends(replayed);
@@ -600,21 +606,17 @@ export function Chat({
         if (unsent) {
             notSent(id);
             if (why === 'timeout') {
-                setError(
-                    browserOffline()
-                        ? 'You’re still offline, so your message wasn’t sent. Send it again once you’re back online.'
-                        : 'Socio is still updating, so your message wasn’t sent. Send it again in a minute.',
-                );
+                setError(browserOffline() ? t('chat.composer:unsent.offline') : t('chat.composer:unsent.updating'));
             }
             return;
         }
         unsure.current = { id, text };
         setError(
             why === 'stopped'
-                ? 'Stopped waiting for Socio. Reconnect to see whether your message arrived.'
+                ? t('chat.composer:unsure.stopped')
                 : browserOffline()
-                  ? 'You’re still offline. Reconnect once you’re back online to see whether your message arrived.'
-                  : 'Socio is still updating. Reconnect in a minute to see whether your message arrived.',
+                  ? t('chat.composer:unsure.offline')
+                  : t('chat.composer:unsure.updating'),
         );
     };
     const send = async (text: string, refs: readonly AttachmentRef[] = []) => {
@@ -704,7 +706,7 @@ export function Chat({
                 dropOutgoing(message.id);
                 settled = false;
                 kept.settle(message.id, true);
-                setError(UNSENT_TOO_LONG);
+                setError(t(UNSENT_TOO_LONG));
                 return;
             }
             // A reply says the server took it too, its start unseen; so does
@@ -726,20 +728,14 @@ export function Chat({
             // Without a result, the server had the turn already: the replay
             // showed what it stored.
             if (result && !result.newMessages.some((reply) => reply.role === 'assistant')) {
-                throw (
-                    error ??
-                    new Error(
-                        runError.current ||
-                            'The current turn returned no response. Check the runtime connection and retry.',
-                    )
-                );
+                throw error ?? new Error(runError.current || t('chat.composer:errors.no-response'));
             }
             if (error instanceof Error) {
                 setError(runErrorMessage(error));
             }
             onSaved();
         } catch (e) {
-            setError(e instanceof Error ? runErrorMessage(e) : 'The turn failed. Your conversation remains saved.');
+            setError(e instanceof Error ? runErrorMessage(e) : t('chat.composer:errors.turn-failed'));
         } finally {
             inFlight.delete(message.id);
             // Gave back already when it never arrived; otherwise it went.
@@ -768,7 +764,7 @@ export function Chat({
             void store?.pull();
             onSaved();
         },
-        onError: (e) => setError(e instanceof Error ? e.message : 'Conversation could not connect.'),
+        onError: (e) => setError(e instanceof Error ? e.message : t('chat.composer:errors.could-not-connect')),
         // With the store, a pull of what's new; the connection replays the
         // turns since `replayAfter`, so those are what it must show.
         stored: store
@@ -905,19 +901,19 @@ export function Chat({
         !queueable || updating
             ? undefined
             : attachments.uploading
-              ? 'Your files are still uploading. You can send once they’re done.'
+              ? t('chat.composer:held.uploading')
               : !contextReady
                 ? contextError
                     ? undefined
-                    : 'Getting this chat ready. You can send in a moment.'
+                    : t('chat.composer:held.preparing')
                 : running
                   ? undefined
                   : paused
-                    ? 'Socio is paused, so your message stays here until an admin resumes it.'
+                    ? t('chat.composer:held.paused')
                     : !loaded
-                      ? 'Connecting to your conversation. You can send once it’s ready.'
+                      ? t('chat.composer:held.connecting')
                       : follow.syncing
-                        ? 'Catching up with this chat. You can send in a moment.'
+                        ? t('chat.composer:held.catching-up')
                         : undefined;
     // Sent while the Dot works: queued for it, as `send` would have sent it,
     // its attachments too (CB-223).
@@ -943,7 +939,7 @@ export function Chat({
             if (e instanceof ApiError && e.code === 'queue_full') {
                 return;
             }
-            setError(e instanceof Error ? e.message : 'Your message couldn’t be queued.');
+            setError(e instanceof Error ? e.message : t('chat.composer:errors.queue-failed'));
         } finally {
             setQueueing(false);
         }
@@ -1132,20 +1128,20 @@ export function Chat({
                 title={dot.name}
                 status={
                     paused
-                        ? 'Paused'
+                        ? t('chat:status.paused')
                         : updating
                           ? offline
-                              ? 'Offline'
-                              : 'Updating…'
+                              ? t('chat:status.offline')
+                              : t('chat:status.updating')
                           : (loaded || joined.current) && contextReady
-                            ? 'Here with you'
-                            : 'Connecting to your conversation…'
+                            ? t('chat:status.here')
+                            : t('chat:status.connecting')
                 }
                 actions={
                     <TooltipProvider delayDuration={300}>
-                        <HeaderTip label="The model this chat runs on" className="min-w-0">
+                        <HeaderTip label={t('chat:header.model-tip')} className="min-w-0">
                             <ModelPicker
-                                aria-label="Model for this chat"
+                                aria-label={t('chat:header.model')}
                                 className="max-w-55 @max-[47.5rem]/chat:max-w-[9.5rem]"
                                 value={model}
                                 options={models?.options ?? []}
@@ -1162,20 +1158,18 @@ export function Chat({
                                         onSaved();
                                     } catch (e) {
                                         setModel(previous);
-                                        setError(e instanceof Error ? e.message : 'Could not change the model.');
+                                        setError(e instanceof Error ? e.message : t('chat:header.model-failed'));
                                     }
                                 }}
                             />
                         </HeaderTip>
-                        <HeaderTip
-                            label={running ? 'Save as a page once the reply is done' : 'Save conversation as page'}
-                        >
+                        <HeaderTip label={running ? t('chat:header.save-page-later') : t('chat:header.save-page')}>
                             <ChatIconButton
                                 className={headerButton}
-                                aria-label="Save conversation as page"
+                                aria-label={t('chat:header.save-page')}
                                 disabled={running}
                                 onClick={async () => {
-                                    const title = window.prompt('Page title', thread.title);
+                                    const title = window.prompt(t('chat:header.page-title'), thread.title);
                                     if (!title) {
                                         return;
                                     }
@@ -1185,17 +1179,17 @@ export function Chat({
                                         });
                                         openAppPath(spacePath(page.spaceId, page.id));
                                     } catch (e) {
-                                        setError(e instanceof Error ? e.message : 'Could not save conversation.');
+                                        setError(e instanceof Error ? e.message : t('chat:header.save-page-failed'));
                                     }
                                 }}
                             >
                                 <FilePlus size={18} />
                             </ChatIconButton>
                         </HeaderTip>
-                        <HeaderTip label="Schedule a task in this conversation">
+                        <HeaderTip label={t('chat:header.schedule')}>
                             <ChatIconButton
                                 className={headerButton}
-                                aria-label="Schedule a task in this conversation"
+                                aria-label={t('chat:header.schedule')}
                                 onClick={onSchedule}
                             >
                                 <Clock3 size={18} />
@@ -1205,11 +1199,11 @@ export function Chat({
                             label={
                                 !voiceReady
                                     ? shell?.workspace.setup.voiceBackend === 'self-hosted'
-                                        ? 'Self-hosted voice calls need a transcription server with a realtime socket (Settings → General → Transcription)'
-                                        : 'Voice calls need VOICE_API_KEY and VOICE_MODEL'
+                                        ? t('chat:header.voice-needs-self-hosted')
+                                        : t('chat:header.voice-needs-cloud')
                                     : voice.status === 'idle'
-                                      ? 'Start a voice call with your socio'
-                                      : 'End the voice call'
+                                      ? t('chat:header.voice-start-tip')
+                                      : t('chat:header.voice-end-tip')
                             }
                         >
                             <ChatIconButton
@@ -1218,7 +1212,9 @@ export function Chat({
                                     voice.status === 'active' &&
                                         'bg-brand/15 text-brand hover:bg-brand/20 hover:text-brand dark:text-brand dark:hover:text-brand',
                                 )}
-                                aria-label={voice.status === 'idle' ? 'Start voice call' : 'End voice call'}
+                                aria-label={
+                                    voice.status === 'idle' ? t('chat:header.voice-start') : t('chat:header.voice-end')
+                                }
                                 disabled={!voiceReady || paused || !loaded || !contextReady}
                                 onClick={() => (voice.status === 'idle' ? void voice.start() : void voice.end())}
                             >
@@ -1234,13 +1230,19 @@ export function Chat({
                     data-slot="page-chat-context"
                     className={cn(chatColumn, 'bg-brand/10 px-5 py-2.5 text-xs/[normal] text-foreground/80')}
                 >
-                    Working on{' '}
-                    <AppLink
-                        href={spacePath(pageContext.spaceId, pageContext.id)}
-                        className="font-medium text-brand underline underline-offset-3"
-                    >
-                        {pageContext.title}
-                    </AppLink>
+                    <Trans
+                        i18nKey="chat:page-context"
+                        t={t}
+                        values={{ title: pageContext.title }}
+                        components={{
+                            pageLink: (
+                                <AppLink
+                                    href={spacePath(pageContext.spaceId, pageContext.id)}
+                                    className="font-medium text-brand underline underline-offset-3"
+                                />
+                            ),
+                        }}
+                    />
                 </div>
             )}
             <ChatScroller placement={placement} scroller={scroll.scroller} content={scroll.content} end={scroll.end}>
@@ -1259,10 +1261,10 @@ export function Chat({
                                 placement === 'page' ? 'text-[28px]/[normal]' : 'text-2xl/[normal]',
                             )}
                         >
-                            What’s on your mind?
+                            {t('chat:welcome.title')}
                         </h1>
                         <p className={welcomeText}>{dot.instructions}</p>
-                        <p className={welcomeText}>Your conversation stays with this socio, across text and calls.</p>
+                        <p className={welcomeText}>{t('chat:welcome.text')}</p>
                     </div>
                 )}
                 <ChatTranscript
@@ -1304,13 +1306,13 @@ export function Chat({
                     messages={queued}
                     note={
                         running
-                            ? `${dot.name} reads this after its current step`
-                            : `${dot.name} reads this on its next turn`
+                            ? t('chat.composer:queued.after-step', { name: dot.name })
+                            : t('chat.composer:queued.next-turn', { name: dot.name })
                     }
                     laterNote={
                         running
-                            ? `${dot.name} reads this once its reply is done`
-                            : `${dot.name} reads this on its next turn`
+                            ? t('chat.composer:queued.after-reply', { name: dot.name })
+                            : t('chat.composer:queued.next-turn', { name: dot.name })
                     }
                     onEdit={steering.edit}
                     onCancel={steering.cancel}
@@ -1327,7 +1329,10 @@ export function Chat({
             </ChatScroller>
             <ScrollToEnd scroll={scroll} />
             {contextError && (
-                <ChatError action="Retry context" onAction={() => setContextAttempt((value) => value + 1)}>
+                <ChatError
+                    action={t('chat.composer:errors.retry-context')}
+                    onAction={() => setContextAttempt((value) => value + 1)}
+                >
                     {contextError}
                 </ChatError>
             )}
@@ -1335,26 +1340,26 @@ export function Chat({
                 <ChatNotice>
                     {offline
                         ? running
-                            ? 'You’re offline. Your message will send once you’re back online.'
-                            : OFFLINE_NOTICE
+                            ? t('chat:notice.offline-running')
+                            : t(OFFLINE_NOTICE)
                         : running
-                          ? 'Socio is updating. Your message will send as soon as it’s back.'
-                          : UPDATING_NOTICE}
+                          ? t('chat:notice.updating-running')
+                          : t(UPDATING_NOTICE)}
                 </ChatNotice>
             )}
             {running && queueFull && queueable && !updating && (
                 <ChatNotice icon={<Clock3 size={14} className="shrink-0" />}>
-                    {queueFullNote(steering.limit!, dot.name)}
+                    {t('chat.composer:queue-full', { count: steering.limit!, name: dot.name })}
                 </ChatNotice>
             )}
             {held && <ChatNotice icon={<Clock3 size={14} className="shrink-0" />}>{held}</ChatNotice>}
             {(error || voice.error) && !updating && (
                 <ChatError
                     action={
-                        error && error !== UNSENT_TOO_LONG
-                            ? 'Reconnect'
+                        error && error !== t(UNSENT_TOO_LONG)
+                            ? t('chat:error.reconnect')
                             : !error && voice.canFallBack && voice.status === 'idle'
-                              ? 'Use cloud voice'
+                              ? t('chat:error.cloud-voice')
                               : undefined
                     }
                     onAction={() => {
@@ -1458,15 +1463,16 @@ export function Chat({
                     >
                         <Link2 size={15} className="shrink-0" />
                         <Input
-                            aria-label="Source page URL"
+                            aria-label={t('chat.composer:source.url')}
                             type="url"
                             value={source}
                             onChange={(e) => setSource(e.target.value)}
+                            // oxlint-disable-next-line socio/no-literal-text -- an example address, the same in every language
                             placeholder="https://example.com/page"
                             className="h-auto rounded-none border-0 bg-transparent p-2 leading-[normal] text-foreground shadow-none focus-visible:ring-0 md:text-[10px] dark:bg-transparent"
                         />
                         <ChatIconButton
-                            aria-label="Remove source"
+                            aria-label={t('chat.composer:source.remove')}
                             onClick={() => {
                                 setSourceOpen(false);
                                 setSource('');
@@ -1480,9 +1486,9 @@ export function Chat({
                     tools={
                         <>
                             <ChatIconButton
-                                aria-label="Add source page link"
+                                aria-label={t('chat.composer:source.add')}
                                 aria-pressed={sourceOpen}
-                                title="Add a source page link — prepend “From <url>” to your message"
+                                title={t('chat.composer:source.add-hint')}
                                 onClick={() => setSourceOpen(!sourceOpen)}
                             >
                                 <Link2 size={19} />
@@ -1502,8 +1508,8 @@ export function Chat({
                     text={
                         <Textarea
                             ref={draftBox}
-                            aria-label="Message your socio"
-                            placeholder={`Message ${dot.name}…`}
+                            aria-label={t('chat.composer:box.label')}
+                            placeholder={t('chat.composer:box.placeholder', { name: dot.name })}
                             rows={1}
                             value={draft}
                             // The limit counts the whole message, its quote too.
@@ -1527,7 +1533,7 @@ export function Chat({
                         running ? (
                             <div className="flex items-center gap-1.5">
                                 <SendButton
-                                    aria-label="Stop response"
+                                    aria-label={t('chat.composer:send.stop')}
                                     className={cn(
                                         queueable && !updating && 'bg-muted text-foreground hover:bg-muted/80',
                                     )}
@@ -1544,15 +1550,18 @@ export function Chat({
                                 {queueable && !updating && (
                                     <SendButton
                                         type="submit"
-                                        aria-label="Queue message"
+                                        aria-label={t('chat.composer:send.queue')}
                                         title={
                                             attachments.uploading
-                                                ? 'Waiting for uploads to finish'
+                                                ? t('chat.composer:send.waiting-uploads')
                                                 : queueFull
-                                                  ? queueFullNote(steering.limit!, dot.name)
+                                                  ? t('chat.composer:queue-full', {
+                                                        count: steering.limit!,
+                                                        name: dot.name,
+                                                    })
                                                   : attachments.refs.length
-                                                    ? `${dot.name} reads it once its reply is done`
-                                                    : `${dot.name} reads it after its current step`
+                                                    ? t('chat.composer:send.queue-after-reply', { name: dot.name })
+                                                    : t('chat.composer:send.queue-after-step', { name: dot.name })
                                         }
                                         disabled={
                                             attachments.uploading ||
@@ -1569,8 +1578,8 @@ export function Chat({
                         ) : (
                             <SendButton
                                 type="submit"
-                                aria-label="Send message"
-                                title={attachments.uploading ? 'Waiting for uploads to finish' : undefined}
+                                aria-label={t('chat.composer:send.send')}
+                                title={attachments.uploading ? t('chat.composer:send.waiting-uploads') : undefined}
                                 disabled={
                                     (!draft.trim() && !attachments.refs.length) ||
                                     !!overLimit ||
@@ -1592,7 +1601,7 @@ export function Chat({
           tooltip says what it needs. */}
             {voiceReady && (
                 <div className={cn(chatColumn, 'max-[700px]:hidden keyboard-tight:hidden')}>
-                    <ChatNote>Text and voice, one conversation.</ChatNote>
+                    <ChatNote>{t('chat:voice-note')}</ChatNote>
                 </div>
             )}
         </ChatFrame>
@@ -1604,10 +1613,6 @@ const CHAT_MESSAGE_MAX = 4000;
 
 /** The header's icon buttons: 30 px, or 32 px in the page's panel. */
 const headerButton = 'in-data-[placement=page]:size-8 in-data-[placement=page]:p-0';
-
-/** Why a message isn't queued (CB-170): the most that may wait already do. */
-const queueFullNote = (limit: number, name: string) =>
-    `${limit === 1 ? 'A message is' : `${limit} messages are`} waiting for ${name}, as many as a chat can queue. Yours stays here until ${name} reads them, or you cancel one.`;
 
 /** The welcome's two lines, under its heading. */
 const welcomeText = 'mt-0 mb-[13px] text-[13px]/[1.9] text-muted-foreground';

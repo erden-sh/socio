@@ -1,5 +1,6 @@
 import { useEffect, useState, type ComponentProps, type ReactNode } from 'react';
 
+import { useTranslation } from '@socio/i18n/react';
 import type { ModelChoice, ModelOption, ModelOptions } from '@socio/shared/inference';
 import { modelChoiceKey } from '@socio/shared/inference';
 
@@ -96,6 +97,7 @@ function ModelMenu({
     triggerLabel?: ReactNode;
     align: 'start' | 'end';
 }) {
+    const { t } = useTranslation(['chat.model']);
     const current = value ? modelChoiceKey(value) : INHERIT_MODEL;
     const known = !value || options.some((option) => option.key === current);
     return (
@@ -114,7 +116,7 @@ function ModelMenu({
                 <SelectItem value={INHERIT_MODEL}>{inheritLabel}</SelectItem>
                 {!known && (
                     <SelectItem value={current} disabled>
-                        No longer available
+                        {t('chat.model:gone')}
                     </SelectItem>
                 )}
                 {groups(options).map(([group, entries]) => (
@@ -127,8 +129,9 @@ function ModelMenu({
                                 title={option.detail ?? option.description}
                                 disabled={requireAvailable && !option.available}
                             >
-                                {option.label}
-                                {!option.available && requireAvailable ? ' (not connected)' : ''}
+                                {!option.available && requireAvailable
+                                    ? t('chat.model:not-connected', { model: option.label })
+                                    : option.label}
                             </SelectItem>
                         ))}
                     </SelectGroup>
@@ -161,13 +164,18 @@ export function ModelSelect({ className, ...props }: ModelSelectProps) {
     );
 }
 
-/** What a model picker shows: the chosen model, else what it inherits. */
-export function modelChoiceLabel(value: ModelChoice | null, options: ModelOption[], inheritLabel: string) {
+/** What a model picker shows: the chosen model, else what it inherits; `gone` for a model no longer offered. */
+export function modelChoiceLabel(
+    value: ModelChoice | null,
+    options: ModelOption[],
+    inheritLabel: string,
+    gone: string,
+) {
     if (!value) {
         return inheritLabel;
     }
     const key = modelChoiceKey(value);
-    return options.find((option) => option.key === key)?.label ?? 'No longer available';
+    return options.find((option) => option.key === key)?.label ?? gone;
 }
 
 /**
@@ -179,7 +187,8 @@ export function modelChoiceLabel(value: ModelChoice | null, options: ModelOption
  * no 16 px rule is needed: iOS only zooms into text fields (CB-96).
  */
 export function ModelPicker({ className, ...props }: ModelSelectProps) {
-    const label = modelChoiceLabel(props.value, props.options, props.inheritLabel);
+    const { t } = useTranslation(['chat.model']);
+    const label = modelChoiceLabel(props.value, props.options, props.inheritLabel, t('chat.model:gone'));
     return (
         <ModelMenu
             {...props}
@@ -201,19 +210,25 @@ export function ModelPicker({ className, ...props }: ModelSelectProps) {
     );
 }
 
-/** What a chat with no model of its own runs on: its Dot's default, else automatic. */
-export function inheritedModelLabel(dotDefault: ModelChoice | null | undefined, models: ModelOptions | undefined) {
-    const automatic = models?.automatic ?? 'no model available';
-    if (!dotDefault) {
-        return `Automatic: ${automatic}`;
-    }
-    const key = modelChoiceKey(dotDefault);
-    const option = models?.options.find((entry) => entry.key === key);
-    if (!option) {
-        return `Socio default unavailable; automatic: ${automatic}`;
-    }
-    const label = `${option.group} · ${option.label}`;
-    return option.available
-        ? `Socio default: ${label}`
-        : `Socio default ${label} needs a connection; automatic: ${automatic}`;
+/**
+ * What a chat with no model of its own runs on: its Dot's default, else
+ * automatic, in the person's language (chat.model).
+ */
+export function useInheritedModelLabel() {
+    const { t } = useTranslation(['chat.model']);
+    return (dotDefault: ModelChoice | null | undefined, models: ModelOptions | undefined) => {
+        const automatic = models?.automatic ?? t('chat.model:inherit.none');
+        if (!dotDefault) {
+            return t('chat.model:inherit.automatic', { automatic });
+        }
+        const key = modelChoiceKey(dotDefault);
+        const option = models?.options.find((entry) => entry.key === key);
+        if (!option) {
+            return t('chat.model:inherit.default-gone', { automatic });
+        }
+        const model = t('chat.model:inherit.model', { group: option.group, model: option.label });
+        return option.available
+            ? t('chat.model:inherit.default', { model })
+            : t('chat.model:inherit.default-needs-connection', { model, automatic });
+    };
 }

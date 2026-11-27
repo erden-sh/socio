@@ -1,0 +1,23 @@
+{
+    "title": "Title of the dialog that signs the Socio mobile app in with a QR code.",
+    "title-claimed": "Its title once a device scanned the code and asks to sign in.",
+    "scan": "How to use the QR code. The _preview and _development forms start with which test build of the app the code is for.",
+    "waiting": "{{device}} is one of the asking.* phrases (\"An iPhone\", \"A device called “Pixel 9”\"), at the start of the sentence.",
+    "done": "{{device}} is the device's name or one of platforms.* (\"iPhone or iPad\"). \"Settings → Account\" names a page; keep the arrow.",
+    "finishing": "{{device}} as in done.",
+    "not-mine": "Button: the device asking isn't the person's; it refuses the sign-in.",
+    "no-app": "Footer for people without the app: it's in a closed beta; an admin adds people.",
+    "link-sent": "Toast: a link to get the app is on its way by email or Telegram (_email, _telegram).",
+    "asking.new": "The subject of the waiting sentence when the device gave no name.",
+    "asking.ios": "The subject of the waiting sentence for an Apple device.",
+    "asking.quoted": "The subject when the device gave a name of its own; {{name}} is that name, quoted.",
+    "asking.named": "The subject for the app's own device name, like \"iPhone\"; the _vowel form is for names that start with a vowel (English \"An\"). Use the same words for both if your language doesn't differ.",
+    "platforms.new": "Inside done and finishing when nothing names the device; lowercase.",
+    "code.label": "Screen-reader label of the field for the 6-digit code the new device shows.",
+    "code.time-left": "How long the request stays open; {{left}} is minutes and seconds like \"1:59\".",
+    "code.wrong-tries": "{{count}} is how many tries are left.",
+    "qr.show": "Screen-reader label of the blurred QR code: showing it is a click.",
+    "qr.show-short": "The word over the blurred QR code.",
+    "qr.works-once": "Under the QR code; {{left}} is minutes and seconds like \"4:59\".",
+    "notices.signed-in-anyway": "\"Not my device\" is the button's name (not-mine); keep it matching that button."
+}

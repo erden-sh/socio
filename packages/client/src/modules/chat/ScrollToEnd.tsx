@@ -1,5 +1,7 @@
 import { ArrowDown } from 'lucide-react';
 
+import { useTranslation } from '@socio/i18n/react';
+
 import type { useStickToBottom } from '../../hooks/use-stick-to-bottom';
 
 import { Button } from '@/components/ui/button';
@@ -10,6 +12,7 @@ import { Button } from '@/components/ui/button';
  * smoothly and follows again.
  */
 export function ScrollToEnd({ scroll }: { scroll: Pick<ReturnType<typeof useStickToBottom>, 'atEnd' | 'toEnd'> }) {
+    const { t } = useTranslation(['chat']);
     return (
         <div className="relative z-[2] h-0 shrink-0">
             {!scroll.atEnd && (
@@ -17,7 +20,7 @@ export function ScrollToEnd({ scroll }: { scroll: Pick<ReturnType<typeof useStic
                     type="button"
                     variant="outline"
                     data-slot="scroll-to-end"
-                    aria-label="Scroll to end"
+                    aria-label={t('chat:scroll-to-end')}
                     className="absolute bottom-3 left-1/2 grid size-8.5 -translate-x-1/2 pointer-coarse:after:absolute pointer-coarse:after:-inset-[5px] place-items-center rounded-full bg-background p-0 text-foreground shadow-[0_2px_8px_rgb(0_0_0/0.12)] hover:bg-accent dark:border-border dark:bg-background dark:hover:bg-accent"
                     onClick={() => scroll.toEnd(true)}
                 >

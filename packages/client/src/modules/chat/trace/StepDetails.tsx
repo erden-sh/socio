@@ -1,6 +1,7 @@
 import { CircleAlert } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 
+import { useTranslation } from '@socio/i18n/react';
 import { formatNumber } from '@socio/shared/locale';
 import { parseJson, type StepState, type ToolStep } from '@socio/shared/runs/turn-steps';
 import { inlineImageType, toolImageOf } from '@socio/shared/tool-images';
@@ -21,19 +22,27 @@ const LIST_ITEMS = 12;
 
 /** Fields that hold code or output: always a code block. */
 const CODE_FIELDS = new Set(['command', 'sql', 'code', 'script', 'source', 'contents', 'content', 'stdout', 'stderr']);
-/** Field names where the words of the key would read badly. */
-const FIELD_NAMES: Record<string, string> = {
-    stdout: 'Output',
-    stderr: 'Errors',
-    sql: 'SQL',
-    url: 'URL',
-    id: 'ID',
-    timeoutMs: 'Time limit (ms)',
-};
-const fieldName = (key: string) => {
-    if (FIELD_NAMES[key]) {
-        return FIELD_NAMES[key];
-    }
+/** Field names where the words of the key would read badly (chat.trace's fields). */
+const FIELD_NAMES = {
+    stdout: 'stdout',
+    stderr: 'stderr',
+    sql: 'sql',
+    url: 'url',
+    id: 'id',
+    timeoutMs: 'timeout-ms',
+} as const;
+/**
+ * A field's name: its own words where it has them, else the key's words
+ * (the tool's own, as the model sees them).
+ */
+function useFieldName() {
+    const { t } = useTranslation(['chat.trace']);
+    return (key: string) =>
+        Object.hasOwn(FIELD_NAMES, key)
+            ? t(`chat.trace:fields.${FIELD_NAMES[key as keyof typeof FIELD_NAMES]}`)
+            : keyWords(key);
+}
+const keyWords = (key: string) => {
     const words = key
         .replace(/[_-]+/g, ' ')
         .replace(/([a-z])([A-Z])/g, '$1 $2')
@@ -50,10 +59,9 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const isBlock = (text: string) => text.includes('\n') || text.length > 160;
 /** Base64 or similar: a screenshot, a file's bytes. */
 const isBinary = (text: string) => text.length > 1_000 && /^[A-Za-z0-9+/=\s]+$/.test(text.slice(0, 2_000));
+/** A size in whole kilobytes (at least 1): a byte count, or base64 text's. */
 const kilobytes = (text: string | number) =>
-    typeof text === 'number'
-        ? `${formatNumber(Math.max(1, Math.round(text / 1024)))} KB`
-        : `${formatNumber(Math.max(1, Math.round((text.length * 3) / 4 / 1024)))} KB`;
+    Math.max(1, Math.round((typeof text === 'number' ? text : (text.length * 3) / 4) / 1024));
 const clip = (text: string, max: number) => (text.length > max ? `${text.slice(0, max - 1)}…` : text);
 /** Search excerpts mark matches in Markdown bold. */
 const plain = (text: string) => text.replace(/\*\*/g, '');
@@ -70,6 +78,7 @@ const more = 'mx-1.5 mt-0 mb-1.5';
  * button; a long one shows its first lines until "Show all".
  */
 export function CodeBlock({ label, text, tone }: { label: string; text: string; tone?: 'error' }) {
+    const { t } = useTranslation(['chat.trace']);
     const [all, setAll] = useState(false);
     const lines = text.split('\n');
     const cut = !all && (lines.length > BLOCK_LINES || text.length > BLOCK_CHARS);
@@ -97,8 +106,8 @@ export function CodeBlock({ label, text, tone }: { label: string; text: string; 
             {cut && (
                 <Button type="button" variant="ghost" size="xs" className={more} onClick={() => setAll(true)}>
                     {lines.length > 1
-                        ? `Show all ${formatNumber(lines.length)} lines`
-                        : `Show all ${formatNumber(text.length)} characters`}
+                        ? t('chat.trace:details.show-lines', { count: lines.length })
+                        : t('chat.trace:details.show-characters', { count: text.length })}
                 </Button>
             )}
         </div>
@@ -110,6 +119,8 @@ export function CodeBlock({ label, text, tone }: { label: string; text: string; 
  * first, a couple of short fields and an excerpt after it.
  */
 function ItemList({ label, items }: { label: string; items: Record<string, unknown>[] }) {
+    const { t } = useTranslation(['chat.trace']);
+    const fieldName = useFieldName();
     const shown = items.slice(0, LIST_ITEMS);
     return (
         <div data-slot="trace-items">
@@ -143,7 +154,7 @@ function ItemList({ label, items }: { label: string; items: Record<string, unkno
                     return (
                         <li key={index}>
                             <span className="text-foreground" data-slot="trace-item-title">
-                                {clip(title || `Item ${index + 1}`, 120)}
+                                {clip(title || t('chat.trace:details.item', { position: index + 1 }), 120)}
                             </span>
                             {meta.length > 0 && <span> · {meta.join(' · ')}</span>}
                             {excerptKey && <span className="block">{clip(plain(String(item[excerptKey])), 200)}</span>}
@@ -152,7 +163,7 @@ function ItemList({ label, items }: { label: string; items: Record<string, unkno
                 })}
             </ul>
             {items.length > shown.length && (
-                <p className={note}>and {formatNumber(items.length - shown.length)} more (copy for all)</p>
+                <p className={note}>{t('chat.trace:details.more', { count: items.length - shown.length })}</p>
             )}
         </div>
     );
@@ -163,6 +174,8 @@ function ItemList({ label, items }: { label: string; items: Record<string, unkno
  * and nested objects as blocks under their name. Empty fields are left out.
  */
 function Fields({ fields }: { fields: Record<string, unknown> }) {
+    const { t } = useTranslation(['chat.trace']);
+    const fieldName = useFieldName();
     const rows: [string, string][] = [];
     const blocks: ReactNode[] = [];
     for (const [key, value] of Object.entries(fields)) {
@@ -172,7 +185,12 @@ function Fields({ fields }: { fields: Record<string, unknown> }) {
         const name = fieldName(key);
         if (typeof value === 'string') {
             if (isBinary(value)) {
-                rows.push([name, `Binary data, ${kilobytes(value)}`]);
+                rows.push([
+                    name,
+                    t('chat.trace:details.binary', {
+                        size: t('chat.trace:details.kilobytes', { kb: kilobytes(value) }),
+                    }),
+                ]);
             } else if (CODE_FIELDS.has(key) || isBlock(value)) {
                 blocks.push(
                     <CodeBlock key={key} label={name} text={value} tone={key === 'stderr' ? 'error' : undefined} />,
@@ -276,11 +294,13 @@ function resultImage(
     callId: string,
     result: unknown,
     whole: boolean,
+    /** The name of an image whose result has none ("Screenshot"). */
+    fallbackName: string,
 ): { image: ShownToolImage; rest: Record<string, unknown> } | undefined {
     if (!isRecord(result)) {
         return undefined;
     }
-    const name = typeof result.name === 'string' ? result.name : 'Screenshot';
+    const name = typeof result.name === 'string' ? result.name : fallbackName;
     const ref = toolImageOf(result);
     if (ref) {
         const rest = { ...result };
@@ -322,6 +342,7 @@ const pretty = (text: string, value: unknown) => (value === undefined ? text : J
  * is not repeated in the result.
  */
 export function ToolDetails({ step, outcome }: { step: ToolStep; outcome: { state: StepState; message?: string } }) {
+    const { t } = useTranslation(['chat.trace']);
     const raw = step.call.function.arguments;
     const args = parseJson(raw);
     // An older turn's long result is a preview until the whole one comes.
@@ -329,7 +350,7 @@ export function ToolDetails({ step, outcome }: { step: ToolStep; outcome: { stat
     const text = full.result;
     const result = parseJson(text);
     // A screenshot shows as one (CB-157); an older inline one once it is whole.
-    const pictured = resultImage(step.id, result, full.size === undefined);
+    const pictured = resultImage(step.id, result, full.size === undefined, t('chat.trace:image.screenshot'));
     const shownResult = withoutSurfaced(pictured?.rest ?? result ?? text, outcome);
     const hasInput = raw.trim() !== '' && !(isRecord(args) && !Object.keys(args).length);
     const hasFields = !(isRecord(shownResult) && !Object.keys(shownResult).length);
@@ -342,41 +363,47 @@ export function ToolDetails({ step, outcome }: { step: ToolStep; outcome: { stat
                     role="alert"
                 >
                     <CircleAlert size={14} aria-hidden="true" className="mt-0.5 shrink-0" />
-                    <span>{outcome.message ?? 'This step failed.'}</span>
+                    <span>{outcome.message ?? t('chat.trace:details.failed')}</span>
                 </p>
             )}
             {outcome.state === 'stopped' && (
                 <p className={note} role="status">
-                    {outcome.message ?? 'It stopped before it finished.'}
+                    {outcome.message ?? t('chat.trace:details.stopped')}
                 </p>
             )}
             {hasInput && (
-                <Section label="Input" copy={pretty(raw, args)}>
-                    {args === undefined ? <CodeBlock label="Input" text={raw} /> : <Value value={args} label="Input" />}
+                <Section label={t('chat.trace:details.input')} copy={pretty(raw, args)}>
+                    {args === undefined ? (
+                        <CodeBlock label={t('chat.trace:details.input')} text={raw} />
+                    ) : (
+                        <Value value={args} label={t('chat.trace:details.input')} />
+                    )}
                 </Section>
             )}
             {outcome.state === 'running' && (
                 <p className={note} role="status">
-                    Waiting for the result…
+                    {t('chat.trace:details.waiting')}
                 </p>
             )}
             {hasResult && (
-                <Section label="Result" copy={pretty(text!, result)}>
+                <Section label={t('chat.trace:details.result')} copy={pretty(text!, result)}>
                     {full.loading && (
                         <p className={note} role="status">
-                            Loading the whole result ({kilobytes(full.size!)})…
+                            {t('chat.trace:details.loading-whole', {
+                                size: t('chat.trace:details.kilobytes', { kb: kilobytes(full.size!) }),
+                            })}
                         </p>
                     )}
                     {full.failed && (
                         <p className={note} role="status">
-                            Only part of this result is shown: the rest didn’t load.{' '}
+                            {t('chat.trace:details.partial')}{' '}
                             <Button type="button" variant="ghost" size="xs" className={more} onClick={full.retry}>
-                                Try again
+                                {t('chat.trace:details.retry')}
                             </Button>
                         </p>
                     )}
                     {pictured && <ToolImageThumb image={pictured.image} />}
-                    {hasFields && <Value value={shownResult} label="Result" />}
+                    {hasFields && <Value value={shownResult} label={t('chat.trace:details.result')} />}
                 </Section>
             )}
         </div>

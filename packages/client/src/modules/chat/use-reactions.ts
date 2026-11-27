@@ -1,5 +1,6 @@
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 
+import { useTranslation } from '@socio/i18n/react';
 import { OPPOSITE, type MessageReactions, type ReactionKind, type ReactionsView } from '@socio/shared/chat/reactions';
 import type { ReplyReportsState, ReportOutcome, ReportReason, ReportRemoval } from '@socio/shared/chat/reply-reports';
 
@@ -32,12 +33,15 @@ export interface ReportRequest {
 /** What a reaction's response says became of a report, besides the view. */
 type SavedView = ReactionsView & { report?: ReportOutcome | ReportRemoval };
 
-/** The quiet line a report's outcome gets, when there is one to say. */
-export const REPORT_NOTICE: Partial<Record<ReportOutcome, string>> = {
-    'not-sharing': 'Reports aren’t shared with Ingenio any more, so this is a plain thumbs-down.',
-    'consent-changed': 'Reporting changed since you confirmed, so nothing was reported. It’s a plain thumbs-down.',
-    unavailable: 'The report couldn’t be made this time, so this is a plain thumbs-down.',
-};
+/** The quiet line a report's outcome gets (its key), when there is one to say. */
+export const REPORT_NOTICE = {
+    'not-sharing': 'chat.report:notice.not-sharing',
+    'consent-changed': 'chat.report:notice.consent-changed',
+    unavailable: 'chat.report:notice.unavailable',
+} as const satisfies Partial<Record<ReportOutcome, string>>;
+
+const reportNotice = (outcome: ReportOutcome) =>
+    (REPORT_NOTICE as Partial<Record<ReportOutcome, (typeof REPORT_NOTICE)[keyof typeof REPORT_NOTICE]>>)[outcome];
 
 export interface ReactionsApi {
     /** More than one person can see this chat: counts show from one. */
@@ -106,6 +110,8 @@ export function withReaction(view: ReactionsView, messageId: string, kind: React
  * put back if the server refuses it.
  */
 export function useReactions(threadId: string, enabled: boolean): ReactionsApi | undefined {
+    // A report's outcome follows its dialog, which loaded chat.report.
+    const { t } = useTranslation(['chat.report']);
     const shell = useContext(ShellContext);
     const reports = shell?.workspace.replyReports ?? null;
     const refreshShell = shell?.refresh;
@@ -189,9 +195,9 @@ export function useReactions(threadId: string, enabled: boolean): ReactionsApi |
                     setView(saved);
                     // None is an error (§3): a quiet line, and the shell
                     // reads whether sharing is on again.
-                    const text = report && outcome ? REPORT_NOTICE[outcome as ReportOutcome] : undefined;
-                    if (text) {
-                        notify(messageId, text);
+                    const notice = report && outcome ? reportNotice(outcome as ReportOutcome) : undefined;
+                    if (notice) {
+                        notify(messageId, t(notice));
                         void refreshShell?.();
                     }
                 })
@@ -208,7 +214,7 @@ export function useReactions(threadId: string, enabled: boolean): ReactionsApi |
                     writing.current -= 1;
                 });
         },
-        [threadId, path, notify, refreshShell],
+        [threadId, path, notify, refreshShell, t],
     );
     if (!enabled || !view) {
         return undefined;

@@ -1,0 +1,11 @@
+{
+    "reason": "Heading of the reasons to pick for reporting an AI reply to Ingenio (the company that makes Socio).",
+    "note.count": "Characters typed in the note and the most allowed, such as \"12 / 500\".",
+    "note.over": "{{count}} is how many characters to remove from the note.",
+    "remove.title": "Title of the warning before removing a thumbs-down that was reported.",
+    "remove.went": "Ingenio is the company that makes Socio: a name, don't translate it. Another sentence follows (it says removing doesn't recall the report).",
+    "remove.switch-up": "Button: replaces the thumbs-down with a thumbs-up.",
+    "notice.not-sharing": "Quiet note under a reply after a thumbs-down meant as a report to Ingenio (the company that makes Socio; a name) went as a plain thumbs-down.",
+    "notice.consent-changed": "Quiet note under a reply after a thumbs-down meant as a report to Ingenio (the company that makes Socio; a name) went as a plain thumbs-down.",
+    "notice.unavailable": "Quiet note under a reply after a thumbs-down meant as a report to Ingenio (the company that makes Socio; a name) went as a plain thumbs-down."
+}

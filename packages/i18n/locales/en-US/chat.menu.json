@@ -1,1 +1,68 @@
-{}
+{
+    "rename": "Rename",
+    "share": "Share as a room…",
+    "archive": "Archive",
+    "unarchive": "Unarchive",
+    "delete": "Delete",
+    "section": "Chat",
+    "title-input": "Chat title",
+    "chat-options": "Chat options",
+    "room-options": "Room options",
+    "new-chat": "New chat",
+    "undo": "Undo",
+    "blocked": {
+        "running": "Stop the socio first",
+        "call": "End the call first",
+        "telegram": "Telegram chats can’t be deleted here",
+        "page": "This chat belongs to a page"
+    },
+    "delete-dialog": {
+        "title": "Delete chat?",
+        "body": "This will delete “{{title}}”.",
+        "body-tasks_one": "This will delete “{{title}}” and its scheduled task.",
+        "body-tasks_other": "This will delete “{{title}}” and its {{count, number}} scheduled tasks."
+    },
+    "toasts": {
+        "deleted": "Deleted “{{title}}”",
+        "archived": "Chat archived",
+        "unarchived": "Chat unarchived"
+    },
+    "errors": {
+        "rename": "Could not rename the chat.",
+        "delete": "Could not delete the chat.",
+        "archive": "Could not archive the chat.",
+        "unarchive": "Could not unarchive the chat."
+    },
+    "dot-crumb": {
+        "switch": "{{name}}: switch chat",
+        "chats-with": "Chats with {{name}}",
+        "none": "No chats yet.",
+        "all": "All chats"
+    },
+    "dot": {
+        "name-input": "Socio name",
+        "allowed": "Allowed",
+        "research": "Public-page research",
+        "memory": "Use saved memories",
+        "issues": "File to the Improvements board",
+        "activity": "Activity",
+        "soul": "Soul",
+        "archive": "Archive…",
+        "settings": "All settings…",
+        "archived": "{{name}} archived",
+        "archive-dialog": {
+            "title": "Archive {{name}}?",
+            "body": "It leaves every list and stops working: its schedules and goals pause. Its chats, filings and history are kept, and nothing is deleted. You can unarchive it from any of its chats."
+        },
+        "errors": {
+            "save": "Could not save the socio.",
+            "archive": "Could not archive the socio.",
+            "unarchive": "Could not unarchive the socio."
+        }
+    },
+    "archived-notice": {
+        "socio": "This socio is archived. You can read its chats; it no longer answers.",
+        "chat": "This chat is archived.",
+        "unarchive-failed": "Could not unarchive the socio."
+    }
+}

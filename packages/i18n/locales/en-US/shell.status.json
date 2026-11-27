@@ -1,1 +1,20 @@
-{}
+{
+    "title": "Connection to Socio",
+    "status": "Status",
+    "round-trip": "Round trip",
+    "not-measured": "Not measured yet",
+    "latency-quality": "{{latency}} ({{quality}})",
+    "recent": "Recent",
+    "recent-list": "{{latencies, list(type: unit; style: short)}}",
+    "last-check": "Last check",
+    "not-yet": "Not yet",
+    "last-disconnect": "Last disconnect",
+    "no-disconnect": "None since this tab opened",
+    "how": "Measured from this browser to the Socio server about every 30 seconds while this tab is in view.",
+    "quality": {
+        "good": "good",
+        "fair": "fair",
+        "slow": "slow"
+    },
+    "label-measured": "Connection: {{state}}, {{latency}}, {{quality}}"
+}

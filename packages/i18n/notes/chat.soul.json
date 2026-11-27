@@ -1,0 +1,22 @@
+{
+    "crumb": "Last breadcrumb on a socio's Soul page. \"Soul\" is a product noun: a socio's (AI agent's) character and instructions.",
+    "title": "Page title; {{name}} is the socio's name. \"Soul\" is a product noun.",
+    "description": "Under the title; {{name}} is the socio's name, \"Socio\" the product. _owner: a personal socio, which only its owner edits; plain: a workspace socio, which admins edit.",
+    "this-socio": "Stands in for the socio's name while the page loads.",
+    "someone": "Stands in for a person whose name is unknown, in \"Made by …\" and \"Edited by …\".",
+    "in-use": "Heading and badge: the Soul version the socio uses now.",
+    "version": "A Soul version's number.",
+    "origin.migrated": "How the first version came to be: copied from the socio's older role instructions when Soul was introduced.",
+    "origin.created": "{{name}} is the person who made the version.",
+    "origin.restored": "{{name}} is the person; {{version}} is the number of the older version they brought back.",
+    "origin.edited": "{{name}} is the person who edited it.",
+    "no-persona": "The socio's Soul has instructions only. _editable: for people who may edit it, pointing at the Edit button.",
+    "toggle.changes": "The toggle.* keys: Button on a version in the history: Hide its details, show its Changes from the version before, or Show it (the first version).",
+    "same": "A version that changed nothing from the one before.",
+    "editor.optional": "After the label of an optional part of the Soul. Keep the parentheses unless your language marks asides differently.",
+    "editor.preview": "Button that shows the text the socio reads; {{name}} is the socio's name.",
+    "saved": "Toast; {{name}} is the socio's name.",
+    "restore.title": "Confirm before bringing back an older version; {{version}} is its number.",
+    "restore.body": "{{name}} is the socio's name; {{next}} is the number the restored copy gets.",
+    "restore.done": "Toast; {{version}} is the restored version's number."
+}

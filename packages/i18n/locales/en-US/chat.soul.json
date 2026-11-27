@@ -1,1 +1,51 @@
-{}
+{
+    "crumb": "Soul",
+    "title": "{{name}}’s Soul",
+    "description": "Who {{name}} is: its role, voice, values and working style. It is part of every chat with {{name}}, and changes only when admins edit it. It shapes tone and role, never Socio’s rules, tool permissions or approvals.",
+    "description_owner": "Who {{name}} is: its role, voice, values and working style. It is part of every chat with {{name}}, and changes only when its owner edits it. It shapes tone and role, never Socio’s rules, tool permissions or approvals.",
+    "back": "Back to {{name}}",
+    "loading": "Loading…",
+    "this-socio": "This socio",
+    "someone": "Someone",
+    "in-use": "In use",
+    "history": "History",
+    "version": "Version {{version}}",
+    "edit": "Edit",
+    "origin": {
+        "migrated": "From its role instructions, at the upgrade to Soul",
+        "created": "Made by {{name}}",
+        "restored": "{{name}} restored version {{version}}",
+        "edited": "Edited by {{name}}"
+    },
+    "no-persona": "No voice, values or working style yet.",
+    "no-persona_editable": "No voice, values or working style yet: Edit adds them.",
+    "read-only": {
+        "archived": "This socio is archived: its Soul can’t change until it’s unarchived.",
+        "owner": "Only its owner can change this Soul.",
+        "admin": "Only an admin can change this Soul."
+    },
+    "toggle": {
+        "hide": "Hide",
+        "changes": "Changes",
+        "show": "Show"
+    },
+    "same": "The same as the version before.",
+    "editor": {
+        "optional": "(optional)",
+        "preview": "Preview what {{name}} reads",
+        "hide-preview": "Hide preview",
+        "save": "Save as a new version",
+        "cancel": "Cancel"
+    },
+    "saved": "{{name}}’s Soul saved",
+    "restore": {
+        "action": "Restore",
+        "title": "Restore version {{version}}?",
+        "body": "{{name}} uses it from its next turn, as version {{next}}. Every version stays in the history.",
+        "done": "Version {{version}} is back in use"
+    },
+    "errors": {
+        "load": "Could not load the Soul.",
+        "save": "Could not save the Soul."
+    }
+}

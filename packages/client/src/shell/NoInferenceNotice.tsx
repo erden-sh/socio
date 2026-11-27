@@ -1,5 +1,6 @@
 import { PlugZap } from 'lucide-react';
 
+import { useTranslation } from '@socio/i18n/react';
 import { NO_INFERENCE_MESSAGES, type ModelChoice, type ModelOptions } from '@socio/shared/inference';
 
 import { modelAvailability } from '../modules/chat/ModelSelect';
@@ -14,6 +15,7 @@ import { Button } from '@/components/ui/button';
  * one, else ask an operator. Turns sent anyway end with the same message.
  */
 export function NoInferenceNotice({ choice, options }: { choice?: ModelChoice | null; options?: ModelOptions }) {
+    const { t } = useTranslation(['shell']);
     const { workspace, openTarget } = useShell();
     const inference = workspace.setup.inference;
     if (modelAvailability(choice, options, inference?.available) !== false) {
@@ -37,7 +39,7 @@ export function NoInferenceNotice({ choice, options }: { choice?: ModelChoice | 
                 {inference?.byoAllowed && (
                     <div>
                         <Button size="sm" variant="outline" onClick={() => openTarget({ path: '/settings/inference' })}>
-                            Open Account → Inference
+                            {t('shell:no-inference.open')}
                         </Button>
                     </div>
                 )}

@@ -1,12 +1,11 @@
 // @vitest-environment jsdom
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
+import { getI18n } from 'react-i18next';
 import { RouterProvider } from 'react-router';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
 import type { Conversation, ConversationDeletion, State, WorkspaceState } from '@socio/shared/types';
-
-import { deleteSentence } from '../src/modules/chat/chat-menu';
 
 import { createTestRouter } from './helpers/app-router';
 
@@ -362,7 +361,13 @@ it('disables Delete while the socio works, saying why', async () => {
 });
 
 it('words the confirm for none, one and several tasks', () => {
-    expect(deleteSentence('Plan', 0)).toBe('This will delete “Plan”.');
-    expect(deleteSentence('Plan', 1)).toBe('This will delete “Plan” and its scheduled task.');
-    expect(deleteSentence('Plan', 3)).toBe('This will delete “Plan” and its 3 scheduled tasks.');
+    // The en-US instance tests/setup/en-us-i18n.ts sets up.
+    const { t } = getI18n();
+    expect(t('chat.menu:delete-dialog.body', { title: 'Plan' })).toBe('This will delete “Plan”.');
+    expect(t('chat.menu:delete-dialog.body-tasks', { title: 'Plan', count: 1 })).toBe(
+        'This will delete “Plan” and its scheduled task.',
+    );
+    expect(t('chat.menu:delete-dialog.body-tasks', { title: 'Plan', count: 3 })).toBe(
+        'This will delete “Plan” and its 3 scheduled tasks.',
+    );
 });

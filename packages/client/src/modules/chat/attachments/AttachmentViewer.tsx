@@ -1,6 +1,7 @@
 import { ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import type { KeyboardEvent } from 'react';
 
+import { useTranslation } from '@socio/i18n/react';
 import { attachmentContentUrl, type AttachmentKind } from '@socio/shared/media-types';
 import { formatSize } from '@socio/shared/text/format-size';
 
@@ -41,6 +42,7 @@ export function AttachmentViewer({
     shown?: string;
     onShow: (id?: string) => void;
 }) {
+    const { t } = useTranslation(['chat']);
     const index = items.findIndex((item) => item.id === shown);
     const item = items[index] as ViewedAttachment | undefined;
     const many = items.length > 1;
@@ -74,7 +76,7 @@ export function AttachmentViewer({
                                 {[
                                     typeLabel(item),
                                     item.size !== undefined && formatSize(item.size),
-                                    many && `${index + 1} of ${items.length}`,
+                                    many && t('chat:viewer.position', { at: index + 1, total: items.length }),
                                 ]
                                     .filter(Boolean)
                                     .join(' · ')}
@@ -92,7 +94,7 @@ export function AttachmentViewer({
                         ) : (
                             <div className="flex items-center gap-3 rounded-md bg-muted p-4 text-sm">
                                 <Icon className="size-8 text-muted-foreground" aria-hidden />
-                                <span>No preview for this file. Download it to open it on your device.</span>
+                                <span>{t('chat:viewer.no-preview')}</span>
                             </div>
                         )}
                         <div className="flex items-center justify-between gap-2">
@@ -101,14 +103,14 @@ export function AttachmentViewer({
                                 href={item.src ?? attachmentContentUrl(item.id, true)}
                                 download={item.name}
                             >
-                                <Download size={14} /> Download
+                                <Download size={14} /> {t('chat:viewer.download')}
                             </a>
                             {many && (
                                 <div className="flex gap-1">
                                     <Button
                                         variant="outline"
                                         size="icon-sm"
-                                        aria-label="Previous attachment"
+                                        aria-label={t('chat:viewer.previous')}
                                         onClick={() => step(-1)}
                                     >
                                         <ChevronLeft />
@@ -116,7 +118,7 @@ export function AttachmentViewer({
                                     <Button
                                         variant="outline"
                                         size="icon-sm"
-                                        aria-label="Next attachment"
+                                        aria-label={t('chat:viewer.next')}
                                         onClick={() => step(1)}
                                     >
                                         <ChevronRight />

@@ -2,8 +2,10 @@ import { ArrowDownToLine, ArrowUpRight, BookOpen, ExternalLink, Monitor, X, type
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 
+import { useTranslation } from '@socio/i18n/react';
 import type { Dot, Result, Status } from '@socio/shared/types';
 
+import { onDemand } from '../../i18n/on-demand';
 import { plainHover } from '../../lib/plain-button';
 import { Mascot } from '../../locals/Mascot';
 import { ComputerPanel, panel } from '../computers/ComputerPanel';
@@ -25,9 +27,13 @@ const sourceCard = 'mt-2.5 flex items-start gap-2.5 rounded-[8px] border border-
 
 /**
  * The findings panel beside a chat, or over the view (Show computer): a
- * Dot's computer, or the chat's research brief and its sources.
+ * Dot's computer, or the chat's research brief and its sources. The shell
+ * has it on every page and no route inlines chat.result: nothing until
+ * it's in (it only opens in the browser anyway).
  */
-export function ResultPane({
+export const ResultPane = onDemand(['chat.result'], ResultPanel);
+
+function ResultPanel({
     latest,
     status,
     dotState,
@@ -45,6 +51,7 @@ export function ResultPane({
     dotState: string;
     onClose: () => void;
 }) {
+    const { t } = useTranslation(['chat.result']);
     const [resultTab, setResultTab] = useState<'Brief' | 'Computer'>('Computer');
     const [computerDotId, setComputerDotId] = useState(defaultDotId);
     const computerDot =
@@ -60,25 +67,26 @@ export function ResultPane({
                 <div className="flex gap-1.5">
                     <button className={tab(resultTab === 'Brief')} onClick={() => setResultTab('Brief')}>
                         <BookOpen size={15} />
-                        Brief
+                        {t('chat.result:brief')}
                     </button>
                     <button className={tab(resultTab === 'Computer')} onClick={() => setResultTab('Computer')}>
-                        <Monitor size={15} /> {computerDot?.name ?? 'Socio'}’s computer
+                        <Monitor size={15} />{' '}
+                        {t('chat.result:computer', { name: computerDot?.name ?? t('chat.result:socio') })}
                     </button>
                 </div>
-                <button className={iconButton} aria-label="Close result panel" onClick={() => onClose()}>
+                <button className={iconButton} aria-label={t('chat.result:close')} onClick={() => onClose()}>
                     <X size={16} />
                 </button>
             </div>
             {resultTab === 'Computer' ? (
                 <>
                     <label className="flex items-center gap-3 border-b border-b-border px-4.5 py-2.5 text-[12px] text-[#666] dark:text-[#b2b2b2]">
-                        Computer for
+                        {t('chat.result:computer-for')}
                         <select
                             className="w-full min-w-0 flex-1 rounded-[6px] border-0 bg-transparent p-[5px] text-[13px] text-[#273243] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#476ba0] dark:text-[#d2e0f6] dark:focus-visible:outline-[#80a6df]"
                             value={computerDot?.id ?? ''}
                             onChange={(event) => setComputerDotId(event.target.value)}
-                            aria-label="Select socio computer"
+                            aria-label={t('chat.result:select-computer')}
                         >
                             {dots.map((dot) => (
                                 <option key={dot.id} value={dot.id}>
@@ -90,23 +98,23 @@ export function ResultPane({
                     {computerDot ? (
                         <ComputerPanel key={computerDot.id} dot={computerDot} />
                     ) : (
-                        <p className={panel}>Create a socio to give it a computer.</p>
+                        <p className={panel}>{t('chat.result:no-socio')}</p>
                     )}
                 </>
             ) : latest ? (
                 <div className="p-[29px] max-[1150px]:p-[23px] max-[920px]:m-auto max-[920px]:max-w-170">
                     <div className="mb-[15px] flex items-center justify-between">
                         <span className="text-[12px] font-semibold tracking-[1.7px] text-[#999ca8] dark:text-[#9ea1ad]">
-                            {latest.sample ? 'FICTIONAL SAMPLE BRIEF' : 'RESEARCH BRIEF'}
+                            {t('chat.result:heading', { context: latest.sample ? 'sample' : undefined })}
                         </span>
                         <button
                             className={iconButton}
-                            aria-label="Download brief"
+                            aria-label={t('chat.result:download')}
                             onClick={() => {
                                 const blob = new Blob(
                                     [
                                         latest.text +
-                                            '\n\nSources\n' +
+                                            `\n\n${t('chat.result:download-sources')}\n` +
                                             latest.sources.map((s) => `${s.title}: ${s.url}`).join('\n'),
                                     ],
                                     { type: 'text/plain' },
@@ -124,13 +132,17 @@ export function ResultPane({
                     </div>
                     {latest.sample && (
                         <div className="mb-5.5 rounded-[7px] border border-[#e8e6f1] bg-[#f1f0f8] px-[13px] py-[11px] text-[10px] leading-[1.8] text-[#9790b0] dark:border-[#323136] dark:bg-[#27272a] dark:text-[#a49dbd]">
-                            An example of what a socio can do. The findings and sources below are invented.
+                            {t('chat.result:sample-note')}
                         </div>
                     )}
                     <article className={brief}>
                         <ReactMarkdown
                             components={{
-                                img: ({ alt }) => <span>{alt ? `[Image: ${alt}]` : '[Image omitted]'}</span>,
+                                img: ({ alt }) => (
+                                    <span>
+                                        {alt ? t('chat.result:image', { alt }) : t('chat.result:image-omitted')}
+                                    </span>
+                                ),
                                 a: ({ children, href }) => (
                                     <a href={href} target="_blank" rel="noreferrer">
                                         {children}
@@ -143,7 +155,7 @@ export function ResultPane({
                     </article>
                     <section className="mt-7.5 border-t border-t-border pt-[23px]">
                         <h3 className="flex items-center gap-[7px] text-[12px] tracking-normal text-[#858998] dark:text-[#9ea2b2]">
-                            {'Source notes '}
+                            {`${t('chat.result:sources')} `}
                             <span className="text-[12px] font-normal text-[#b1b3bf] dark:text-[#9c9eaa]">
                                 {latest.sources.length}
                             </span>
@@ -155,7 +167,7 @@ export function ResultPane({
                                         icon={BookOpen}
                                         title={source.title}
                                         excerpt={source.excerpt}
-                                        note="Fictional source · not a live link"
+                                        note={t('chat.result:fictional-source')}
                                     />
                                 </div>
                             ) : (
@@ -187,13 +199,9 @@ export function ResultPane({
                         state={dotState}
                         className="size-32.5 opacity-70"
                     />
-                    <h3 className="text-[17px] text-[#969cae] dark:text-[#9ba1b3]">
-                        A little space for your findings.
-                    </h3>
+                    <h3 className="text-[17px] text-[#969cae] dark:text-[#9ba1b3]">{t('chat.result:empty.title')}</h3>
                     <p className="text-[11px] leading-[1.9] text-[#a7abb7] dark:text-[#9ca0ab]">
-                        {status === 'failed'
-                            ? 'Resolve the error and retry to create a research brief.'
-                            : 'Your brief and sources will appear here after a successful run.'}
+                        {t('chat.result:empty.text', { context: status === 'failed' ? 'failed' : undefined })}
                     </p>
                 </div>
             )}

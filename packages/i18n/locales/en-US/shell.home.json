@@ -1,1 +1,28 @@
-{}
+{
+    "title": "Home",
+    "counts": {
+        "socios_one": "{{count, number}} socio",
+        "socios_other": "{{count, number}} socios",
+        "spaces_one": "{{count, number}} Space",
+        "spaces_other": "{{count, number}} Spaces",
+        "chats_one": "{{count, number}} chat",
+        "chats_other": "{{count, number}} chats",
+        "tasks_one": "{{count, number}} scheduled task",
+        "tasks_other": "{{count, number}} scheduled tasks",
+        "separator": " · "
+    },
+    "new-chat": "New chat",
+    "new-chat-with": "New chat with {{name}}",
+    "socios": "Your socios",
+    "open-socio": "Open {{name}}, {{state}}",
+    "ready": "Ready when you are.",
+    "apps": "Apps",
+    "glance": "At a glance",
+    "recent": "Recent conversations",
+    "recent-kind_team": "{{name}} · Team",
+    "recent-kind_room": "{{name}} · Room",
+    "empty": "Your first conversation will live here.",
+    "empty-setup": "Set up text chat in Settings to start a conversation.",
+    "whats-new": "What’s new",
+    "all-releases": "All releases"
+}

@@ -101,13 +101,16 @@ const NAMESPACES = [
     'settings.workspace-github',
     'settings.workspace-limits',
     'settings.workspace-rooms',
+    'settings.workspace-setup',
 ];
+// Inlined by one route (Account's), on demand on another (a person's Sign-in tab).
+const SERVED = [...NAMESPACES, 'settings.devices'];
 const manifest = {
     release: '1.0.0',
     locales: {
         'en-XA': {
             coverage: 1,
-            ns: Object.fromEntries(NAMESPACES.map((ns) => [ns, { hash: 'test', sourceHash: 'test' }])),
+            ns: Object.fromEntries(SERVED.map((ns) => [ns, { hash: 'test', sourceHash: 'test' }])),
         },
     },
 };
@@ -543,7 +546,7 @@ beforeEach(() => {
         'fetch',
         vi.fn((url: string, init?: RequestInit) => {
             const file = /^\/i18n\/en-XA\/(.+)\.test\.json$/.exec(String(url));
-            if (file && NAMESPACES.includes(file[1]!)) {
+            if (file && SERVED.includes(file[1]!)) {
                 return Promise.resolve(Response.json(pseudo(file[1]!)));
             }
             const path = new URL(String(url), 'http://app.test').pathname;

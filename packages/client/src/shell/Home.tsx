@@ -1,6 +1,7 @@
 import { ArrowRight, MessageSquarePlus, Plus } from 'lucide-react';
 import { Link } from 'react-router';
 
+import { useTranslation } from '@socio/i18n/react';
 import { formatNumber } from '@socio/shared/locale';
 import { isRoom, shownChats } from '@socio/shared/rooms/room-view';
 
@@ -13,7 +14,7 @@ import { ReleaseFeed } from '../modules/whats-new/ReleaseFeed';
 import { useWhatsNew } from '../modules/whats-new/use-whats-new';
 import { allReleasesLink } from '../modules/whats-new/WhatsNewMenu';
 
-import { DOT_STATE_LABEL, DotStateLabel, dotState } from './dot-state';
+import { DotStateLabel, dotState, useDotStateLabel } from './dot-state';
 import { useShell } from './shell-context';
 import { toneTile } from './tones';
 
@@ -127,13 +128,14 @@ const HOME_RELEASE_CARDS = 5;
  * show.
  */
 function WhatsNew() {
+    const { t } = useTranslation(['shell.home']);
     const { releases, loading } = useWhatsNew();
     if (!releases.length && !loading) {
         return null;
     }
     return (
         <section aria-labelledby="home-whats-new" data-slot="home-whats-new">
-            <SectionTitle id="home-whats-new">What’s new</SectionTitle>
+            <SectionTitle id="home-whats-new">{t('shell.home:whats-new')}</SectionTitle>
             <div className="grid grid-cols-1 gap-2">
                 <div
                     data-slot="home-whats-new-list"
@@ -142,7 +144,7 @@ function WhatsNew() {
                     <ReleaseFeed limit={HOME_RELEASE_CARDS} />
                 </div>
                 <Link to="/releases" className={cn(allReleasesLink, 'justify-self-start')}>
-                    All releases
+                    {t('shell.home:all-releases')}
                     <ArrowRight className="size-3.5" />
                 </Link>
             </div>
@@ -150,31 +152,21 @@ function WhatsNew() {
     );
 }
 
-const count = (value: number, one: string, many: string) => `${formatNumber(value)} ${value === 1 ? one : many}`;
-
 /**
  * The line under Home's title (CB-308): real counts from what the shell
  * has already loaded, the socios always, the rest when there are any.
  */
-export function homeCounts({
-    socios,
-    spaces,
-    chats,
-    tasks,
-}: {
-    socios: number;
-    spaces: number;
-    chats: number;
-    tasks: number;
-}) {
-    return [
-        count(socios, 'socio', 'socios'),
-        spaces ? count(spaces, 'Space', 'Spaces') : '',
-        chats ? count(chats, 'chat', 'chats') : '',
-        tasks ? count(tasks, 'scheduled task', 'scheduled tasks') : '',
-    ]
-        .filter(Boolean)
-        .join(' · ');
+export function useHomeCounts() {
+    const { t } = useTranslation(['shell.home']);
+    return ({ socios, spaces, chats, tasks }: { socios: number; spaces: number; chats: number; tasks: number }) =>
+        [
+            t('shell.home:counts.socios', { count: socios }),
+            spaces ? t('shell.home:counts.spaces', { count: spaces }) : '',
+            chats ? t('shell.home:counts.chats', { count: chats }) : '',
+            tasks ? t('shell.home:counts.tasks', { count: tasks }) : '',
+        ]
+            .filter(Boolean)
+            .join(t('shell.home:counts.separator'));
 }
 
 /**
@@ -191,6 +183,9 @@ export function homeCounts({
  * window's, so they reflow the same with the sidebar open or collapsed.
  */
 export function Home() {
+    const { t } = useTranslation(['shell.home']);
+    const homeCounts = useHomeCounts();
+    const stateLabel = useDotStateLabel();
     const shell = useShell();
     const { workspace, state, configured, busy, homeDot } = shell;
     const modules = useModules();
@@ -210,7 +205,7 @@ export function Home() {
                         data-slot="home-title"
                         className="text-2xl font-medium tracking-tight break-words md:text-[1.75rem] md:leading-9"
                     >
-                        Home
+                        {t('shell.home:title')}
                     </h1>
                     <p data-slot="home-subtitle" className="text-sm text-muted-foreground tabular-nums">
                         {homeCounts({
@@ -225,14 +220,14 @@ export function Home() {
                 <div className="flex flex-wrap gap-2">
                     <Button disabled={!configured || busy} onClick={() => void shell.newConversation(homeDot)}>
                         <Plus />
-                        New chat
+                        {t('shell.home:new-chat')}
                     </Button>
                 </div>
             </div>
 
             <RoomInvitesNotice />
             <section aria-labelledby="home-dots" data-tour="socios">
-                <SectionTitle id="home-dots">Your socios</SectionTitle>
+                <SectionTitle id="home-dots">{t('shell.home:socios')}</SectionTitle>
                 <div className="grid grid-cols-1 gap-3 @lg:grid-cols-2 @3xl:grid-cols-3">
                     {dots.map((dot) => {
                         const now = dotState(dot.id, state);
@@ -241,7 +236,7 @@ export function Home() {
                                 <Link
                                     data-slot="dot-link"
                                     to={dotPath(dot)}
-                                    aria-label={`Open ${dot.name}, ${DOT_STATE_LABEL[now]}`}
+                                    aria-label={t('shell.home:open-socio', { name: dot.name, state: stateLabel(now) })}
                                     className="flex min-w-0 flex-1 items-start gap-4 rounded-lg py-2 outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
                                 >
                                     <Mascot
@@ -256,7 +251,7 @@ export function Home() {
                                     <span className="grid min-w-0 flex-1 grid-cols-1 gap-0.5">
                                         <span className="truncate text-[15px] font-medium">{dot.name}</span>
                                         <span className="line-clamp-2 text-[13px] leading-5 text-muted-foreground">
-                                            {dot.instructions || 'Ready when you are.'}
+                                            {dot.instructions || t('shell.home:ready')}
                                         </span>
                                         <DotStateLabel state={now} className="mt-1.5" />
                                     </span>
@@ -264,8 +259,8 @@ export function Home() {
                                 <Link
                                     data-slot="dot-new-chat"
                                     to={newChatPath(dot)}
-                                    aria-label={`New chat with ${dot.name}`}
-                                    title="New chat"
+                                    aria-label={t('shell.home:new-chat-with', { name: dot.name })}
+                                    title={t('shell.home:new-chat')}
                                     className="flex size-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground outline-none hover:bg-accent hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 md:size-9"
                                 >
                                     <MessageSquarePlus className="size-4" />
@@ -279,7 +274,7 @@ export function Home() {
             <div className="grid grid-cols-1 gap-8 @4xl:grid-cols-[minmax(0,1fr)_20rem]">
                 <section aria-labelledby="home-apps" className="@container/apps">
                     <SectionTitle id="home-apps" count={cards.length}>
-                        Apps
+                        {t('shell.home:apps')}
                     </SectionTitle>
                     <div
                         data-slot="home-apps"
@@ -292,7 +287,7 @@ export function Home() {
                 </section>
                 <div className="grid grid-cols-1 content-start gap-8">
                     <section aria-labelledby="home-glance">
-                        <SectionTitle id="home-glance">At a glance</SectionTitle>
+                        <SectionTitle id="home-glance">{t('shell.home:glance')}</SectionTitle>
                         {/* One card, a hairline between its rows. */}
                         <div
                             data-slot="home-glance"
@@ -302,7 +297,7 @@ export function Home() {
                         </div>
                     </section>
                     <section aria-labelledby="home-recent">
-                        <SectionTitle id="home-recent">Recent conversations</SectionTitle>
+                        <SectionTitle id="home-recent">{t('shell.home:recent')}</SectionTitle>
                         {recent.length ? (
                             <ul
                                 data-slot="home-recent"
@@ -329,8 +324,17 @@ export function Home() {
                                                 )}
                                                 <span className="min-w-0 flex-1 truncate">{thread.title}</span>
                                                 <span className="max-w-[40%] shrink-0 truncate text-xs text-muted-foreground">
-                                                    {dot?.name}
-                                                    {thread.team ? ' · Team' : isRoom(thread) ? ' · Room' : ''}
+                                                    {thread.team
+                                                        ? t('shell.home:recent-kind', {
+                                                              name: dot?.name ?? '',
+                                                              context: 'team',
+                                                          })
+                                                        : isRoom(thread)
+                                                          ? t('shell.home:recent-kind', {
+                                                                name: dot?.name ?? '',
+                                                                context: 'room',
+                                                            })
+                                                          : dot?.name}
                                                 </span>
                                             </Link>
                                         </li>
@@ -342,9 +346,7 @@ export function Home() {
                                 data-slot="home-empty"
                                 className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground"
                             >
-                                {configured
-                                    ? 'Your first conversation will live here.'
-                                    : 'Set up text chat in Settings to start a conversation.'}
+                                {configured ? t('shell.home:empty') : t('shell.home:empty-setup')}
                             </p>
                         )}
                     </section>

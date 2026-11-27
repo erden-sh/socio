@@ -1,4 +1,4 @@
-import type { TFunction } from 'i18next';
+import type { FlatNamespace, TFunction } from 'i18next';
 import { createContext, useContext, type ReactNode } from 'react';
 import { useMatches, type Params } from 'react-router';
 
@@ -112,7 +112,7 @@ export interface CrumbContext {
      * crumbs at each render, so they follow a language change. A route's
      * namespaces are in by then (route-namespaces.json).
      */
-    t: TFunction;
+    t: TFunction<FlatNamespace[]>;
 }
 
 /** One breadcrumb; the last is the current page, the others link. */

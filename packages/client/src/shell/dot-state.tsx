@@ -1,3 +1,4 @@
+import { useTranslation } from '@socio/i18n/react';
 import type { State } from '@socio/shared/types';
 
 import { cn } from '@/lib/utils';
@@ -11,11 +12,11 @@ import { cn } from '@/lib/utils';
  */
 export type DotState = 'idle' | 'working' | 'paused';
 
-export const DOT_STATE_LABEL: Record<DotState, string> = {
-    idle: 'Idle',
-    working: 'Working',
-    paused: 'Paused',
-};
+/** A state's word: Idle, Working or Paused (`shell.dot-state`, which Home and a socio's home page inline). */
+export function useDotStateLabel() {
+    const { t } = useTranslation(['shell.dot-state']);
+    return (state: DotState) => t(`shell.dot-state:${state}`);
+}
 
 export function dotState(dotId: string, state: Pick<State, 'settings' | 'tasks'>, running = false): DotState {
     if (state.settings.paused) {
@@ -33,6 +34,7 @@ export function dotState(dotId: string, state: Pick<State, 'settings' | 'tasks'>
  * color.
  */
 export function DotStateLabel({ state, className }: { state: DotState; className?: string }) {
+    const label = useDotStateLabel();
     return (
         <span
             data-slot="dot-state"
@@ -53,7 +55,7 @@ export function DotStateLabel({ state, className }: { state: DotState; className
                           : 'bg-muted-foreground/70',
                 )}
             />
-            {DOT_STATE_LABEL[state]}
+            {label(state)}
         </span>
     );
 }

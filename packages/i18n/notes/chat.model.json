@@ -1,0 +1,10 @@
+{
+    "gone": "In the AI model picker: the chosen model isn't offered any more.",
+    "not-connected": "A model option the person can't use until they connect its account. {{model}} is the model's name.",
+    "inherit.none": "Fills {{automatic}} when no AI model is available.",
+    "inherit.automatic": "Picker option: the workspace chooses the AI model. {{automatic}} is that model's name.",
+    "inherit.default": "Picker option: the socio's (AI agent's) default model. {{model}} is its provider and name.",
+    "inherit.default-gone": "Picker option: the socio's default model is gone. {{automatic}} is the model used instead.",
+    "inherit.default-needs-connection": "Picker option: the socio's default model needs an account connection. {{model}} is its provider and name, {{automatic}} the model used meanwhile.",
+    "inherit.model": "A model's provider ({{group}}, such as ChatGPT) and its name ({{model}})."
+}

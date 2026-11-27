@@ -1,11 +1,19 @@
 import { useCallback, useEffect, useRef, useState, type ClipboardEvent, type DragEvent } from 'react';
 
+import { useTranslation } from '@socio/i18n/react';
 import type { AttachmentRef } from '@socio/shared/media-types';
 import { formatSize } from '@socio/shared/text/format-size';
 
 import { dragHasFiles, namedFile, pastedFiles } from '../../../lib/files';
 
-import { DEFAULT_MEDIA_LIMITS, mediaLimits, removeAttachment, uploadAttachment } from './upload';
+import {
+    DEFAULT_MEDIA_LIMITS,
+    mediaLimits,
+    removeAttachment,
+    uploadAttachment,
+    UploadOffline,
+    UploadRefused,
+} from './upload';
 
 /** One file in a composer's tray. */
 export interface TrayItem {
@@ -30,6 +38,7 @@ let counter = 0;
  * server. `refs` are what the message carries; sending waits for uploads.
  */
 export function useAttachments(threadId?: string) {
+    const { t } = useTranslation(['chat.composer']);
     const [items, setItems] = useState<TrayItem[]>([]);
     const [notice, setNotice] = useState('');
     const [dropActive, setDropActive] = useState(false);
@@ -77,12 +86,20 @@ export function useAttachments(threadId?: string) {
                     }
                     update(key, {
                         status: 'failed',
-                        error: error instanceof Error ? error.message : 'Upload failed.',
+                        // The server's words as they are; the client's own in the person's language.
+                        error:
+                            error instanceof UploadRefused
+                                ? t('chat.composer:attachments.refused', { status: error.status })
+                                : error instanceof UploadOffline
+                                  ? t('chat.composer:attachments.offline')
+                                  : error instanceof Error
+                                    ? error.message
+                                    : t('chat.composer:attachments.failed'),
                     });
                 })
                 .finally(() => uploads.current.delete(key));
         },
-        [threadId],
+        [threadId, t],
     );
     const add = useCallback(
         (picked: readonly File[]) => {
@@ -91,13 +108,19 @@ export function useAttachments(threadId?: string) {
             picked.forEach((raw, index) => {
                 const file = namedFile(raw, index);
                 if (!file.size) {
-                    problems.push(`${file.name} is empty.`);
+                    problems.push(t('chat.composer:attachments.empty', { name: file.name }));
                 } else if (file.size > limits.fileMaxBytes) {
                     problems.push(
-                        `${file.name} is ${formatSize(file.size)}; files can be at most ${formatSize(limits.fileMaxBytes)}.`,
+                        t('chat.composer:attachments.too-big', {
+                            name: file.name,
+                            size: formatSize(file.size),
+                            max: formatSize(limits.fileMaxBytes),
+                        }),
                     );
                 } else if (items.length + accepted.length >= limits.perMessage) {
-                    problems.push(`${file.name}: a message can carry at most ${limits.perMessage} attachments.`);
+                    problems.push(
+                        t('chat.composer:attachments.too-many', { name: file.name, count: limits.perMessage }),
+                    );
                 } else {
                     const key = `attachment-${++counter}`;
                     files.current.set(key, file);
@@ -120,7 +143,7 @@ export function useAttachments(threadId?: string) {
                 start(item.key, files.current.get(item.key)!);
             }
         },
-        [items.length, limits, start],
+        [items.length, limits, start, t],
     );
     const remove = useCallback(
         (key: string) => {
@@ -134,12 +157,14 @@ export function useAttachments(threadId?: string) {
             if (item.ref) {
                 void removeAttachment(item.ref.id).catch((error: unknown) =>
                     setNotice(
-                        `${item.name} could not be removed: ${error instanceof Error ? error.message : 'try again'}`,
+                        error instanceof Error
+                            ? t('chat.composer:attachments.remove-failed', { name: item.name, reason: error.message })
+                            : t('chat.composer:attachments.remove-failed-retry', { name: item.name }),
                     ),
                 );
             }
         },
-        [items],
+        [items, t],
     );
     const retry = useCallback(
         (key: string) => {

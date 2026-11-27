@@ -5,7 +5,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 
 import type { ModelChoice, ModelOption, ModelOptions } from '@socio/shared/inference';
 
-import { INHERIT_MODEL, ModelPicker, ModelSelect, inheritedModelLabel } from '../src/modules/chat/ModelSelect';
+import { INHERIT_MODEL, ModelPicker, ModelSelect, useInheritedModelLabel } from '../src/modules/chat/ModelSelect';
 
 declare global {
     var IS_REACT_ACT_ENVIRONMENT: boolean;
@@ -132,6 +132,20 @@ it('lets a socio’s default name any model, and shows a choice that is gone', (
     expect(gone.getAttribute('aria-disabled')).toBe('true');
     expect(gone.getAttribute('data-state')).toBe('checked');
 });
+
+/** The hook's label, from a component (en-US). */
+function inheritedModelLabel(dotDefault: ModelChoice | null, choices: ModelOptions) {
+    let label = '';
+    function Probe() {
+        label = useInheritedModelLabel()(dotDefault, choices);
+        return null;
+    }
+    const box = document.createElement('div');
+    const probe = createRoot(box);
+    act(() => probe.render(<Probe />));
+    act(() => probe.unmount());
+    return label;
+}
 
 it('says what a chat without its own model runs on', () => {
     const astra: ModelChoice = {

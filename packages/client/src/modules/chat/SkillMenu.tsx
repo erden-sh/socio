@@ -1,6 +1,7 @@
 import { useEffect, useId, useState, type KeyboardEvent, type RefObject } from 'react';
 import { toast } from 'sonner';
 
+import { useTranslation } from '@socio/i18n/react';
 import { invokedSkill, type ActiveChatSkill, type ChatSkillView } from '@socio/shared/chat/chat-skills';
 
 import { api } from '../../lib/api';
@@ -22,6 +23,7 @@ export function useSkillMenu(
     setDraft: (value: string) => void,
     box: RefObject<HTMLTextAreaElement | null>,
 ) {
+    const { t } = useTranslation(['chat.composer']);
     const { skills, load } = useChatSkills();
     const id = useId();
     const [active, setActive] = useState(0);
@@ -107,7 +109,7 @@ export function useSkillMenu(
                     <ul
                         id={`${id}-skills`}
                         role="listbox"
-                        aria-label="Skills"
+                        aria-label={t('chat.composer:skills.menu')}
                         data-slot="skill-menu"
                         className="absolute inset-x-0 bottom-full z-20 mb-3 max-h-64 overflow-y-auto rounded-[14px] border bg-popover p-1 text-popover-foreground shadow-md"
                     >
@@ -172,6 +174,7 @@ export function SkillChip({ name, className }: { name: string; className?: strin
  * from the composer.
  */
 export function useActiveSkill(threadId: string, running: boolean) {
+    const { t } = useTranslation(['chat.composer']);
     const [active, setActive] = useState<ActiveChatSkill | null>(null);
     const path = `/chat-skills/threads/${encodeURIComponent(threadId)}`;
     useEffect(() => {
@@ -193,7 +196,9 @@ export function useActiveSkill(threadId: string, running: boolean) {
     const end = () =>
         api(`${path}/end`, 'POST')
             .then(() => setActive(null))
-            .catch((error) => toast.error(error instanceof Error ? error.message : 'Could not end the skill.'));
+            .catch((error) =>
+                toast.error(error instanceof Error ? error.message : t('chat.composer:skills.end-failed')),
+            );
     return { active, end };
 }
 
@@ -207,6 +212,7 @@ export function ActiveSkillBar({
     onEnd: () => void;
     disabled?: boolean;
 }) {
+    const { t } = useTranslation(['chat.composer']);
     if (!active) {
         return null;
     }
@@ -217,10 +223,10 @@ export function ActiveSkillBar({
         >
             <SkillChip name={active.name} className="bg-muted text-foreground" />
             <p className="m-0 min-w-0 flex-[1_1_14rem] text-[12px]/[1.7] text-muted-foreground">
-                On until you’re done: the socio follows it on every message.
+                {t('chat.composer:skills.active')}
             </p>
             <Button type="button" variant="outline" size="sm" className="ml-auto" disabled={disabled} onClick={onEnd}>
-                End
+                {t('chat.composer:skills.end')}
             </Button>
         </div>
     );

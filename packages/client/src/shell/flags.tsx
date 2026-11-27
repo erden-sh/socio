@@ -1,6 +1,7 @@
 import { Sparkles } from 'lucide-react';
 import { useContext } from 'react';
 
+import { useTranslation } from '@socio/i18n/react';
 import type { ClientFlags, FlagKey } from '@socio/shared/flags';
 
 import { ShellContext } from './shell-context';
@@ -21,10 +22,11 @@ export const useFlag = (key: FlagKey) => !!useFlags()?.on.includes(key);
 
 /** The "Early access" mark on a flagged feature, its release notes and Settings. */
 export function EarlyAccessBadge({ className }: { className?: string }) {
+    const { t } = useTranslation(['shell']);
     return (
         <Badge variant="outline" data-slot="early-access-badge" className={cn('gap-1 text-[11px]', className)}>
             <Sparkles aria-hidden />
-            Early access
+            {t('shell:early-access')}
         </Badge>
     );
 }

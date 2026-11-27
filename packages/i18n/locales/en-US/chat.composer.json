@@ -1,1 +1,110 @@
-{}
+{
+    "skills": {
+        "menu": "Skills",
+        "end-failed": "Could not end the skill.",
+        "active": "On until you’re done: the socio follows it on every message.",
+        "end": "End"
+    },
+    "attachments": {
+        "attach": "Attach files",
+        "attach-hint": "Attach files (or paste or drop them)",
+        "tray": "Attachments to send",
+        "view": "View {{name}}",
+        "uploading": "Uploading {{name}}",
+        "progress": "{{percent}}%",
+        "retry": "Retry {{name}}",
+        "remove": "Remove {{name}}",
+        "dismiss": "Dismiss",
+        "refused": "Upload failed ({{status}}).",
+        "offline": "The upload failed. Check your connection.",
+        "failed": "Upload failed.",
+        "empty": "{{name}} is empty.",
+        "too-big": "{{name}} is {{size}}; files can be at most {{max}}.",
+        "too-many_one": "{{name}}: a message can carry at most {{count, number}} attachment.",
+        "too-many_other": "{{name}}: a message can carry at most {{count, number}} attachments.",
+        "remove-failed": "{{name}} could not be removed: {{reason}}",
+        "remove-failed-retry": "{{name}} could not be removed: try again"
+    },
+    "tools": "Message actions",
+    "box": {
+        "label": "Message your socio",
+        "placeholder": "Message {{name}}…"
+    },
+    "send": {
+        "send": "Send message",
+        "stop": "Stop response",
+        "queue": "Queue message",
+        "waiting-uploads": "Waiting for uploads to finish",
+        "queue-after-reply": "{{name}} reads it once its reply is done",
+        "queue-after-step": "{{name}} reads it after its current step"
+    },
+    "queue-full_one": "A message is waiting for {{name}}, as many as a chat can queue. Yours stays here until {{name}} reads them, or you cancel one.",
+    "queue-full_other": "{{count, number}} messages are waiting for {{name}}, as many as a chat can queue. Yours stays here until {{name}} reads them, or you cancel one.",
+    "queued": {
+        "after-step": "{{name}} reads this after its current step",
+        "after-reply": "{{name}} reads this once its reply is done",
+        "next-turn": "{{name}} reads this on its next turn"
+    },
+    "source": {
+        "url": "Source page URL",
+        "remove": "Remove source",
+        "add": "Add source page link",
+        "add-hint": "Add a source page link — prepend “From <url>” to your message"
+    },
+    "held": {
+        "uploading": "Your files are still uploading. You can send once they’re done.",
+        "preparing": "Getting this chat ready. You can send in a moment.",
+        "paused": "Socio is paused, so your message stays here until an admin resumes it.",
+        "connecting": "Connecting to your conversation. You can send once it’s ready.",
+        "catching-up": "Catching up with this chat. You can send in a moment."
+    },
+    "unsent": {
+        "too-long": "That message is too long to send. Shorten it or attach it as a file, then send it again.",
+        "thread-running": "Your socio is still answering, so your message wasn’t sent. Send it again once it finishes.",
+        "offline": "You’re still offline, so your message wasn’t sent. Send it again once you’re back online.",
+        "updating": "Socio is still updating, so your message wasn’t sent. Send it again in a minute."
+    },
+    "unsure": {
+        "stopped": "Stopped waiting for Socio. Reconnect to see whether your message arrived.",
+        "offline": "You’re still offline. Reconnect once you’re back online to see whether your message arrived.",
+        "updating": "Socio is still updating. Reconnect in a minute to see whether your message arrived."
+    },
+    "errors": {
+        "context": "Conversation context could not load. Retry before sending your message.",
+        "retry-context": "Retry context",
+        "could-not-connect": "Conversation could not connect.",
+        "no-response": "The current turn returned no response. Check the runtime connection and retry.",
+        "turn-failed": "The turn failed. Your conversation remains saved.",
+        "queue-failed": "Your message couldn’t be queued."
+    },
+    "name-suggestion": {
+        "text": "Suggested name for this chat: <name>{{name}}</name>",
+        "field": "Suggested chat name",
+        "save": "Save",
+        "cancel": "Cancel",
+        "accept": "Accept",
+        "reject": "Not now",
+        "customize": "Customize",
+        "failed": "Something went wrong.",
+        "empty": "Enter a name."
+    },
+    "new": {
+        "edit": "Edit specialist",
+        "connect": {
+            "title": "Connect your socio",
+            "text": "Connect your model and conversation service in Settings to start chatting. Your Spaces and socio preferences are ready to use."
+        },
+        "starters": {
+            "think": "Help me think this through",
+            "research": "Research a public page",
+            "plan": "Make a plan I can follow"
+        },
+        "box": "Start a conversation",
+        "no-model": "No model is available yet.",
+        "after-setup": "Your first conversation starts after setup.",
+        "voice": "Start a voice call",
+        "voice-hint": "Start a voice call with your socio",
+        "model": "Model for this chat",
+        "start": "Start conversation"
+    }
+}

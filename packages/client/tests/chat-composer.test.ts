@@ -7,8 +7,16 @@ import {
     runErrorMessage,
     shouldSubmitComposerOnKeyDown,
     touchTyping,
-    UNSENT_THREAD_RUNNING,
+    type RunErrorWords,
 } from '../src/modules/chat/chat-composer';
+
+/** The chat's en-US words (chat.composer). */
+const UNSENT_THREAD_RUNNING =
+    'Your socio is still answering, so your message wasn’t sent. Send it again once it finishes.';
+const words: RunErrorWords = {
+    threadRunning: UNSENT_THREAD_RUNNING,
+    couldNotConnect: 'Conversation could not connect.',
+};
 
 function keyEvent({
     key = 'Enter',
@@ -146,16 +154,16 @@ it("shows a refused run's own message instead of the raw HTTP error", () => {
         status: 503,
         payload: { error: 'Socio is updating.' },
     });
-    expect(runErrorMessage(refused)).toBe('Socio is updating.');
-    expect(runErrorMessage(new Error('Network down'))).toBe('Network down');
-    expect(runErrorMessage(Object.assign(new Error('HTTP 500: x'), { payload: 'x' }))).toBe('HTTP 500: x');
+    expect(runErrorMessage(refused, words)).toBe('Socio is updating.');
+    expect(runErrorMessage(new Error('Network down'), words)).toBe('Network down');
+    expect(runErrorMessage(Object.assign(new Error('HTTP 500: x'), { payload: 'x' }), words)).toBe('HTTP 500: x');
     // A size refusal never shows as "Request is too large." (CB-156); a
     // run's is the chat's to explain, any other offers Reconnect.
     const tooBig = Object.assign(new Error('HTTP 413: {"error":"Request is too large."}'), {
         status: 413,
         payload: { error: 'Request is too large.' },
     });
-    expect(runErrorMessage(tooBig)).toBe('Conversation could not connect.');
+    expect(runErrorMessage(tooBig, words)).toBe('Conversation could not connect.');
 });
 
 it('reads a busy conversation from its code, never its text (CB-357)', () => {
@@ -163,14 +171,14 @@ it('reads a busy conversation from its code, never its text (CB-357)', () => {
         status: 409,
         payload: { error: 'Thread already running', code: 'thread_running' },
     });
-    expect(runErrorMessage(busy)).toBe(UNSENT_THREAD_RUNNING);
+    expect(runErrorMessage(busy, words)).toBe(UNSENT_THREAD_RUNNING);
     // The same words with another code, or none, are not it.
     const other = Object.assign(new Error('HTTP 409'), {
         status: 409,
         payload: { error: 'Thread already running', code: 'delivered' },
     });
-    expect(runErrorMessage(other)).toBe('Thread already running');
-    expect(runErrorMessage(new Error('Thread already running'))).toBe('Thread already running');
+    expect(runErrorMessage(other, words)).toBe('Thread already running');
+    expect(runErrorMessage(new Error('Thread already running'), words)).toBe('Thread already running');
 });
 
 /**

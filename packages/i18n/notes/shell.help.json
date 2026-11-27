@@ -1,0 +1,16 @@
+{
+    "items.guides": "Help menu item: opens the product's guides.",
+    "items.whats-new": "Help menu item: opens the release notes.",
+    "items.new": "Screen-reader label of the count of releases the person hasn't seen.",
+    "shortcuts.title": "Help menu item and the title of the dialog listing keyboard shortcuts.",
+    "shortcuts.description": "Under that title: the shortcuts work anywhere in the app.",
+    "shortcuts.search": "What the shortcut does: opens the search palette.",
+    "shortcuts.ask": "What the shortcut does: opens the panel to ask a socio (an AI agent).",
+    "get-the-app.title": "Title of the dialog with a QR code for the mobile app; also the label of the banner offering it. \"Socio\" is the product name.",
+    "get-the-app.code": "Alternative text of the QR code image.",
+    "get-the-app.banner": "Banner on a phone's browser offering the mobile app.",
+    "get-the-app.get": "Button on that banner.",
+    "get-the-app.not-now": "Screen-reader label of the banner's close button.",
+    "theme.title": "Label of the color theme choice (light, dark or the system's).",
+    "theme.system": "Theme choice: follow the device's light or dark setting."
+}

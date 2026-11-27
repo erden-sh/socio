@@ -20,14 +20,24 @@ import { SOCIO_METADATA, type User } from '@socio/shared/types';
 
 import { CHANGES_CHANNEL, closeChangeChannel, refreshShown } from '../src/lib/change-channel';
 import { ChatTranscript } from '../src/modules/chat/ChatTranscript';
-import { GENERIC_SOCIO, OTHER_AUTHOR, PREVIEW_FAILED } from '../src/modules/chat/MessageReactions';
-import { REPORT_NOTICE, useReactions, withReaction } from '../src/modules/chat/use-reactions';
+import { useReactions, withReaction } from '../src/modules/chat/use-reactions';
 import { CloudConnectionCard } from '../src/modules/operator/CloudConnectionCard';
 import { ReplyReportsCard } from '../src/modules/operator/ReplyReportsCard';
 import { CurrentUser } from '../src/shell/current-user';
 import { ShellContext, type Shell } from '../src/shell/shell-context';
 
 import { FakeBroadcastChannel } from './helpers/fake-broadcast-channel';
+
+/** What the chat says in place of a name, and after a failed preview (en-US). */
+const GENERIC_SOCIO = 'The socio';
+const OTHER_AUTHOR = 'Another person';
+const PREVIEW_FAILED = 'Couldn’t check what this report would include. Try again.';
+/** The quiet line a report's outcome gets, when there is one (en-US). */
+const REPORT_NOTICE: Partial<Record<string, string>> = {
+    'not-sharing': 'Reports aren’t shared with Ingenio any more, so this is a plain thumbs-down.',
+    'consent-changed': 'Reporting changed since you confirmed, so nothing was reported. It’s a plain thumbs-down.',
+    unavailable: 'The report couldn’t be made this time, so this is a plain thumbs-down.',
+};
 
 declare global {
     var IS_REACT_ACT_ENVIRONMENT: boolean;

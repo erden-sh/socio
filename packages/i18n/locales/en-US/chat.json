@@ -1,1 +1,121 @@
-{}
+{
+    "copy": {
+        "action": "Copy",
+        "copied": "Copied",
+        "failed": "Could not copy"
+    },
+    "scroll-to-end": "Scroll to end",
+    "earlier": {
+        "loading": "Loading earlier messages…",
+        "show": "Show earlier messages"
+    },
+    "reactions": {
+        "group": "React to this reply",
+        "added": "{{reaction}} added",
+        "removed": "{{reaction}} removed",
+        "counted": "{{reaction}}, {{total, number}}",
+        "failed": "Could not save that",
+        "generic-socio": "The socio",
+        "other-author": "Another person",
+        "preview-failed": "Couldn’t check what this report would include. Try again."
+    },
+    "over-limit_one": "This message is over the {{max, number}}-character limit. Remove {{count, number}} character to send it.",
+    "over-limit_other": "This message is over the {{max, number}}-character limit. Remove {{count, number}} characters to send it.",
+    "quote": {
+        "reply": "Reply",
+        "replying-to": "Replying to {{author}}",
+        "remove": "Remove quote",
+        "command-note": "Commands don’t run in a reply. Remove the quote to run it.",
+        "unknown-socio": "A socio"
+    },
+    "call": {
+        "failed": "Call failed",
+        "ended": "{{seconds}}s · Call ended",
+        "in-progress": "Call in progress"
+    },
+    "not-sent": {
+        "announce": "Your message “{{excerpt}}” wasn’t sent.",
+        "label": "Not sent",
+        "retry": "Retry",
+        "retry-named": "Retry “{{excerpt}}”",
+        "retry-later": "You can retry once the reply is done",
+        "edit": "Edit",
+        "edit-named": "Edit “{{excerpt}}”"
+    },
+    "viewer": {
+        "position": "{{at}} of {{total}}",
+        "no-preview": "No preview for this file. Download it to open it on your device.",
+        "download": "Download",
+        "previous": "Previous attachment",
+        "next": "Next attachment"
+    },
+    "attachment": {
+        "list": "Attachments",
+        "image": "Image",
+        "unnamed": "Attachment",
+        "removed": "Removed",
+        "view": "View {{name}}",
+        "view-image": "View image",
+        "download": "Download {{name}}",
+        "download-unnamed": "Download attachment"
+    },
+    "status": {
+        "paused": "Paused",
+        "offline": "Offline",
+        "updating": "Updating…",
+        "here": "Here with you",
+        "connecting": "Connecting to your conversation…"
+    },
+    "header": {
+        "model-tip": "The model this chat runs on",
+        "model": "Model for this chat",
+        "model-failed": "Could not change the model.",
+        "save-page": "Save conversation as page",
+        "save-page-later": "Save as a page once the reply is done",
+        "page-title": "Page title",
+        "save-page-failed": "Could not save conversation.",
+        "schedule": "Schedule a task in this conversation",
+        "voice-needs-self-hosted": "Self-hosted voice calls need a transcription server with a realtime socket (Settings → General → Transcription)",
+        "voice-needs-cloud": "Voice calls need VOICE_API_KEY and VOICE_MODEL",
+        "voice-start-tip": "Start a voice call with your socio",
+        "voice-end-tip": "End the voice call",
+        "voice-start": "Start voice call",
+        "voice-end": "End voice call"
+    },
+    "page-context": "Working on <pageLink>{{title}}</pageLink>",
+    "welcome": {
+        "title": "What’s on your mind?",
+        "text": "Your conversation stays with this socio, across text and calls."
+    },
+    "notice": {
+        "offline-running": "You’re offline. Your message will send once you’re back online.",
+        "updating-running": "Socio is updating. Your message will send as soon as it’s back."
+    },
+    "error": {
+        "reconnect": "Reconnect",
+        "cloud-voice": "Use cloud voice"
+    },
+    "voice-note": "Text and voice, one conversation.",
+    "queued": {
+        "list": "Queued messages",
+        "others": "Others’ queued messages",
+        "note": "Queued · {{note}}",
+        "held": "Queued · won’t be sent while {{name}} can’t write here",
+        "edit": "Edit",
+        "edit-box": "Edit queued message",
+        "files": "Files it sends",
+        "remove-file": "Remove {{name}}",
+        "keep": "Keep as it was",
+        "save": "Save",
+        "save-failed": "That didn’t save. Try again.",
+        "cancel": "Cancel",
+        "cancel-own": "Cancel queued message",
+        "cancel-named": "Cancel {{name}}’s queued message",
+        "cancel-ask": "Cancel {{name}}’s message?",
+        "keep-it": "Keep it",
+        "cancel-message": "Cancel message",
+        "cancel-failed": "That didn’t work. Try again.",
+        "file-count_one": "{{count, number}} file",
+        "file-count_other": "{{count, number}} files"
+    }
+}

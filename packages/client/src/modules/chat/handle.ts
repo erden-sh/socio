@@ -17,17 +17,18 @@ export const dotHomeHandle: RouteHandle = {
 
 /**
  * A new chat: the pane docks beside it; the crumbs are the Dot (its
- * chats menu) and "New chat".
+ * chats menu) and "New chat" (chat.menu, which its route inlines).
  */
 export const chatHandle: RouteHandle = {
     chat: true,
-    crumb: ({ dot }) => [
+    crumb: ({ dot, t }) => [
         {
             label: dot.name,
             to: dotPath(dot),
             node: createElement(DotCrumb, { dot }),
         },
-        { label: 'New chat' },
+        // oxlint-disable-next-line socio/translate-in-components -- the header's t, passed at each render (CrumbContext)
+        { label: t('chat.menu:new-chat') },
     ],
 };
 
@@ -58,11 +59,13 @@ export const chatThreadHandle: RouteHandle = {
 
 /**
  * A socio's Soul (CB-179): the socio (its home page, when the person has
- * it in their list), then "Soul".
+ * it in their list), then "Soul" (chat.soul, which its route inlines).
  */
 export const soulHandle: RouteHandle = {
-    crumb: ({ workspace, params }) => {
+    crumb: ({ workspace, params, t }) => {
         const dot = workspace.dots.find((item) => item.id === params.dotId);
-        return dot ? [{ label: dot.name, to: dotPath(dot) }, { label: 'Soul' }] : [{ label: 'Soul' }];
+        // oxlint-disable-next-line socio/translate-in-components -- the header's t, passed at each render (CrumbContext)
+        const soul = { label: t('chat.soul:crumb') };
+        return dot ? [{ label: dot.name, to: dotPath(dot) }, soul] : [soul];
     },
 };

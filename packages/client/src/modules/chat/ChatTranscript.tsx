@@ -2,6 +2,7 @@ import type { AssistantMessage, Message, ToolCall } from '@ag-ui/core';
 import { CircleAlert, PhoneOff } from 'lucide-react';
 import { Fragment, useEffect, type ReactNode } from 'react';
 
+import { useTranslation } from '@socio/i18n/react';
 import { isApprovalNote } from '@socio/shared/approvals';
 import { contentText } from '@socio/shared/chat/content-text';
 import { attachmentRefs } from '@socio/shared/media/refs';
@@ -46,15 +47,16 @@ export function isInternalNote(message: Message): boolean {
     return isInternalVoiceReceipt(message) || (message.role === 'user' && isApprovalNote(message));
 }
 function Receipt({ call }: { call: CallReceipt }) {
+    const { t } = useTranslation(['chat']);
     return (
         <div className="flex max-w-[85%] flex-wrap items-center gap-[7px] self-end rounded-[12px_12px_4px_12px] bg-[#e5f1ef] px-[13px] py-2.5 text-[10px] text-[#6e9d98] dark:bg-[#252a2a] dark:text-[#7dada8]">
             <PhoneOff size={13} />
             <span>
                 {call.status === 'failed'
-                    ? 'Call failed'
+                    ? t('chat:call.failed')
                     : call.endedAt
-                      ? `${Math.round((call.endedAt - call.startedAt) / 1000)}s · Call ended`
-                      : 'Call in progress'}
+                      ? t('chat:call.ended', { seconds: Math.round((call.endedAt - call.startedAt) / 1000) })
+                      : t('chat:call.in-progress')}
             </span>
             {call.error && (
                 <small className="basis-full text-[12px] leading-[1.7] text-[#ab9189] dark:text-[#b59b93]">
@@ -329,6 +331,7 @@ function MessageView({
     speaker?: (message: Message & { author?: MessageAuthor }) => ReactNode;
     reply?: ReplyTo;
 }) {
+    const { t } = useTranslation(['chat']);
     const parts = messageParts(message.content);
     const { attachments } = parts;
     // Older page chats' messages start with their page, which the banner
@@ -392,7 +395,7 @@ function MessageView({
             {delivery && (
                 // Said once, as it fails (CB-154).
                 <span className="sr-only" aria-live="polite">
-                    {delivery.status === 'failed' ? `Your message “${excerpt(text)}” wasn’t sent.` : ''}
+                    {delivery.status === 'failed' ? t('chat:not-sent.announce', { excerpt: excerpt(text) }) : ''}
                 </span>
             )}
             {delivery?.status === 'failed' ? (
@@ -439,32 +442,33 @@ function NotSent({
     const action =
         'h-6 px-1.5 text-[11px] font-medium text-foreground pointer-coarse:min-h-10 aria-disabled:cursor-not-allowed aria-disabled:opacity-50';
     const { onRetry } = delivery;
+    const { t } = useTranslation(['chat']);
     return (
         <div className="flex min-h-6 items-center gap-0.5 text-[11px] text-destructive" data-slot="message-not-sent">
             <CircleAlert size={13} className="mr-1 shrink-0" aria-hidden />
-            <span className="mr-1">Not sent</span>
+            <span className="mr-1">{t('chat:not-sent.label')}</span>
             <Button
                 type="button"
                 variant="ghost"
                 size="xs"
                 className={action}
-                aria-label={`Retry “${excerpt}”`}
+                aria-label={t('chat:not-sent.retry-named', { excerpt })}
                 // Focusable, and says why, while it can't be sent.
                 aria-disabled={!onRetry || undefined}
-                title={onRetry ? undefined : 'You can retry once the reply is done'}
+                title={onRetry ? undefined : t('chat:not-sent.retry-later')}
                 onClick={onRetry}
             >
-                Retry
+                {t('chat:not-sent.retry')}
             </Button>
             <Button
                 type="button"
                 variant="ghost"
                 size="xs"
                 className={action}
-                aria-label={`Edit “${excerpt}”`}
+                aria-label={t('chat:not-sent.edit-named', { excerpt })}
                 onClick={delivery.onEdit}
             >
-                Edit
+                {t('chat:not-sent.edit')}
             </Button>
         </div>
     );

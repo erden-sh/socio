@@ -1,6 +1,8 @@
 import { LoaderCircle } from 'lucide-react';
 import type { ComponentProps, ReactNode } from 'react';
 
+import { useTranslation } from '@socio/i18n/react';
+
 import { Mascot } from '../../locals/Mascot';
 
 import { Button } from '@/components/ui/button';
@@ -321,6 +323,7 @@ export function ComposerRow({
     send: ReactNode;
     className?: string;
 }) {
+    const { t } = useTranslation(['chat.composer']);
     return (
         <div data-slot="composer-row" className={cn('flex min-w-0 flex-col gap-1', className)}>
             <div data-slot="composer-text" className="flex min-w-0 w-full">
@@ -330,7 +333,7 @@ export function ComposerRow({
                 <div
                     data-slot="composer-tools"
                     role="group"
-                    aria-label="Message actions"
+                    aria-label={t('chat.composer:tools')}
                     className="flex shrink-0 items-center gap-0 [&_button]:size-11 [&_button]:p-0"
                 >
                     {tools}

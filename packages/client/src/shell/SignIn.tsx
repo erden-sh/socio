@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 
+import { useTranslation } from '@socio/i18n/react';
 import type { SignInMethods } from '@socio/shared/auth';
 import { DEFAULT_BRANDING, type Branding } from '@socio/shared/branding';
 import { roleLabel } from '@socio/shared/roles';
@@ -18,7 +19,7 @@ import {
     requestPasswordReset,
     requestSignInLink,
     setPasswordFromLink,
-    signInError,
+    useSignInError,
     signInWithPasskey,
     signInWithPassword,
     signInWithProvider,
@@ -48,10 +49,13 @@ export function SignIn({
     /** Leaves the link's address (the app navigates to `/`). */
     onPasswordSet?: () => void;
 }) {
+    const { t, ready } = useTranslation(['shell.sign-in']);
     const [brand, setBrand] = useState(session?.branding ?? DEFAULT_BRANDING);
     useBrandingDocument(brand);
     const [fetched, setFetched] = useState<SignInMethods | null>();
-    const [error, setError] = useState('');
+    // What failed: shown as its message, or ours.
+    const [failure, setFailure] = useState<{ error: unknown }>();
+    const error = failure && message(failure.error, t('shell.sign-in:errors.unreachable'));
     const given = !!session;
     useEffect(() => {
         if (given) {
@@ -62,7 +66,7 @@ export function SignIn({
                 setFetched(found.methods ?? null);
                 setBrand(found.branding ?? DEFAULT_BRANDING);
             })
-            .catch((e) => setError(message(e, 'Could not reach the server.')));
+            .catch((e) => setFailure({ error: e }));
     }, [given]);
     const methods = session ? (session.methods ?? null) : fetched;
     // The router's location: the same on the server and in the browser.
@@ -71,6 +75,15 @@ export function SignIn({
     const [token, setToken] = useState(() => (location.pathname === '/reset-password' ? query.get('token') : null));
     const [notice, setNotice] = useState('');
     const linkToken = location.pathname === '/sign-in-link' ? query.get('token') : null;
+    // Signed out in this tab, its words come before the loader's (or on
+    // demand, for a session that ended): the screen waits for them.
+    if (!ready) {
+        return (
+            <main className={unlock}>
+                <Mascot state="working" />
+            </main>
+        );
+    }
     if (linkToken) {
         return <SignInWithLink token={linkToken} />;
     }
@@ -81,7 +94,7 @@ export function SignIn({
                 onDone={() => {
                     onPasswordSet();
                     setToken(null);
-                    setNotice('Password set. Sign in with it.');
+                    setNotice(t('shell.sign-in:password-set'));
                 }}
             />
         );
@@ -108,19 +121,22 @@ export function SignIn({
 
 /** Development sign-in: pick one of the server's mock users. */
 function MockSignIn({ onSignedIn }: { onSignedIn: () => void }) {
+    const { t } = useTranslation(['shell.sign-in']);
     const [users, setUsers] = useState<User[]>();
     const [error, setError] = useState('');
+    const [unloaded, setUnloaded] = useState<{ error: unknown }>();
     const [busy, setBusy] = useState(false);
     useEffect(() => {
         api<User[]>('/auth/mock/users')
             .then(setUsers)
-            .catch((e) => setError(message(e, 'Could not load users.')));
+            .catch((e) => setUnloaded({ error: e }));
     }, []);
+    const shown = error || (unloaded ? message(unloaded.error, t('shell.sign-in:errors.users')) : '');
     return (
         <main className={unlock}>
             <Mascot />
-            <h1>Who’s thinking today?</h1>
-            <p>Choose your account to continue.</p>
+            <h1>{t('shell.sign-in:mock.title')}</h1>
+            <p>{t('shell.sign-in:mock.choose')}</p>
             <div className={accounts}>
                 {users?.map((user) => (
                     <button
@@ -130,27 +146,28 @@ function MockSignIn({ onSignedIn }: { onSignedIn: () => void }) {
                         onClick={async () => {
                             setBusy(true);
                             setError('');
+                            setUnloaded(undefined);
                             try {
                                 await api('/auth/mock/login', 'POST', { userId: user.id });
                                 onSignedIn();
                             } catch (e) {
-                                setError(message(e, 'Could not sign in.'));
+                                setError(message(e, t('shell.sign-in:errors.sign-in')));
                             } finally {
                                 setBusy(false);
                             }
                         }}
                     >
-                        Continue as {user.name}
+                        {t('shell.sign-in:mock.continue', { name: user.name })}
                         <small>{roleLabel(user.role)}</small>
                     </button>
                 ))}
             </div>
-            {error && (
+            {shown && (
                 <p className={unlockError} role="alert">
-                    {error}
+                    {shown}
                 </p>
             )}
-            <p>Development sign-in. Anyone who can reach this server can choose any account.</p>
+            <p>{t('shell.sign-in:mock.warning')}</p>
         </main>
     );
 }
@@ -167,10 +184,12 @@ function AccountSignIn({
     onSignedIn: () => void;
     notice?: string;
 }) {
+    const { t } = useTranslation(['shell.sign-in']);
+    const signInError = useSignInError();
     const location = useLocation();
     const navigate = useNavigate();
     const query = new URLSearchParams(location.search);
-    const [error, setError] = useState(signInError(query.get('error'), query.get('error_description')));
+    const [error, setError] = useState(() => signInError(query.get('error'), query.get('error_description')));
     const [notice, setNotice] = useState(initialNotice);
     const [busy, setBusy] = useState(false);
     const [mode, setMode] = useState<'sign-in' | 'sign-up' | 'forgot' | 'link'>('sign-in');
@@ -200,7 +219,7 @@ function AccountSignIn({
             await action();
             after();
         } catch (e) {
-            setError(message(e, 'Could not sign in.'));
+            setError(message(e, t('shell.sign-in:errors.sign-in')));
         } finally {
             setBusy(false);
         }
@@ -210,12 +229,12 @@ function AccountSignIn({
         if (mode === 'link') {
             void run(
                 () => requestSignInLink(email),
-                () => setNotice('If that account can receive links, one is on its way. Check your Telegram.'),
+                () => setNotice(t('shell.sign-in:link-sent')),
             );
         } else if (mode === 'forgot') {
             void run(
                 () => requestPasswordReset(email),
-                () => setNotice('If that address has an account, a link to set a new password is on its way.'),
+                () => setNotice(t('shell.sign-in:reset-sent')),
             );
         } else if (mode === 'sign-up') {
             void run(() => signUp(name, email, password));
@@ -230,12 +249,12 @@ function AccountSignIn({
             ) : (
                 <img src={brand.logo} alt="" className="size-32 object-contain" />
             )}
-            <h1>Welcome back.</h1>
-            <p>Sign in to {brand.name}.</p>
+            <h1>{t('shell.sign-in:welcome')}</h1>
+            <p>{t('shell.sign-in:sign-in-to', { name: brand.name })}</p>
             <div className={accounts}>
                 {methods.passkey && mode === 'sign-in' && (
                     <button className={primary} disabled={busy} onClick={() => void run(signInWithPasskey)}>
-                        Sign in with a passkey
+                        {t('shell.sign-in:passkey')}
                     </button>
                 )}
                 {methods.providers.map((provider) => (
@@ -244,21 +263,21 @@ function AccountSignIn({
                         disabled={busy}
                         onClick={() => void run(() => signInWithProvider(provider.id))}
                     >
-                        Sign in with {provider.name}
+                        {t('shell.sign-in:provider', { name: provider.name })}
                     </button>
                 ))}
                 {methods.signInLink && !methods.password && mode === 'sign-in' && (
                     <button disabled={busy} onClick={() => setMode('link')}>
-                        Send me a sign-in link
+                        {t('shell.sign-in:send-link')}
                     </button>
                 )}
             </div>
             {(methods.password || mode === 'link') && (
-                <form onSubmit={submit} aria-label="Sign in with email">
+                <form onSubmit={submit} aria-label={t('shell.sign-in:form')}>
                     {mode === 'sign-up' && (
                         <input
-                            aria-label="Name"
-                            placeholder="Your name"
+                            aria-label={t('shell.sign-in:name')}
+                            placeholder={t('shell.sign-in:name-placeholder')}
                             autoComplete="name"
                             value={name}
                             maxLength={80}
@@ -268,8 +287,8 @@ function AccountSignIn({
                     )}
                     <input
                         type="email"
-                        aria-label="Email"
-                        placeholder="Email"
+                        aria-label={t('shell.sign-in:email')}
+                        placeholder={t('shell.sign-in:email')}
                         autoComplete="username"
                         value={email}
                         required
@@ -278,8 +297,8 @@ function AccountSignIn({
                     {mode !== 'forgot' && mode !== 'link' && (
                         <input
                             type="password"
-                            aria-label="Password"
-                            placeholder="Password"
+                            aria-label={t('shell.sign-in:password')}
+                            placeholder={t('shell.sign-in:password')}
                             autoComplete={mode === 'sign-up' ? 'new-password' : 'current-password'}
                             value={password}
                             minLength={mode === 'sign-up' ? 10 : undefined}
@@ -289,31 +308,31 @@ function AccountSignIn({
                     )}
                     <button className={primary} disabled={busy}>
                         {mode === 'forgot'
-                            ? 'Send reset link'
+                            ? t('shell.sign-in:send-reset')
                             : mode === 'link'
-                              ? 'Send me a sign-in link'
+                              ? t('shell.sign-in:send-link')
                               : mode === 'sign-up'
-                                ? 'Create account'
-                                : 'Sign in'}
+                                ? t('shell.sign-in:create-account')
+                                : t('shell.sign-in:sign-in')}
                     </button>
                     {mode === 'sign-in' && methods.emailReset && (
                         <button type="button" onClick={() => setMode('forgot')}>
-                            Forgot password?
+                            {t('shell.sign-in:forgot')}
                         </button>
                     )}
                     {mode === 'sign-in' && methods.signInLink && (
                         <button type="button" onClick={() => setMode('link')}>
-                            Send me a sign-in link
+                            {t('shell.sign-in:send-link')}
                         </button>
                     )}
                     {mode === 'sign-in' && offerSignUp && (
                         <button type="button" onClick={() => setMode('sign-up')}>
-                            Create an account
+                            {t('shell.sign-in:sign-up')}
                         </button>
                     )}
                     {mode !== 'sign-in' && (
                         <button type="button" onClick={() => setMode('sign-in')}>
-                            Back to sign-in
+                            {t('shell.sign-in:back')}
                         </button>
                     )}
                 </form>
@@ -325,10 +344,7 @@ function AccountSignIn({
                 </p>
             )}
             {!methods.signUp && (
-                <p>
-                    Accounts are by invitation. Ask an admin for one
-                    {methods.emailReset ? '' : ', or for a new password link'}.
-                </p>
+                <p>{methods.emailReset ? t('shell.sign-in:invite-only') : t('shell.sign-in:invite-only-reset')}</p>
             )}
         </main>
     );
@@ -340,23 +356,25 @@ function AccountSignIn({
  * fetches it doesn't use the link up.
  */
 function SignInWithLink({ token }: { token: string }) {
+    const { t } = useTranslation(['shell.sign-in']);
     return (
         <main className={unlock}>
             <Mascot />
-            <h1>Sign in to Socio.</h1>
-            <p>This link works once, for 15 minutes.</p>
+            <h1>{t('shell.sign-in:link.title')}</h1>
+            <p>{t('shell.sign-in:link.once')}</p>
             <div className={accounts}>
                 <button className={primary} onClick={() => completeSignInLink(token)}>
-                    Continue
+                    {t('shell.sign-in:link.continue')}
                 </button>
             </div>
-            <p>Didn&apos;t ask for it? Close this page; the link expires on its own.</p>
+            <p>{t('shell.sign-in:link.unasked')}</p>
         </main>
     );
 }
 
 /** `/reset-password?token=…`: choose a password, then sign in with it. */
 function SetPassword({ token, onDone }: { token: string; onDone: () => void }) {
+    const { t } = useTranslation(['shell.sign-in']);
     const [password, setPassword] = useState('');
     const [repeat, setRepeat] = useState('');
     const [error, setError] = useState('');
@@ -364,13 +382,13 @@ function SetPassword({ token, onDone }: { token: string; onDone: () => void }) {
     return (
         <main className={unlock}>
             <Mascot />
-            <h1>Choose a password.</h1>
-            <p>At least 10 characters. The link works once.</p>
+            <h1>{t('shell.sign-in:set-password.title')}</h1>
+            <p>{t('shell.sign-in:set-password.rules')}</p>
             <form
                 onSubmit={async (e) => {
                     e.preventDefault();
                     if (password !== repeat) {
-                        return setError('The passwords differ.');
+                        return setError(t('shell.sign-in:set-password.differ'));
                     }
                     setBusy(true);
                     setError('');
@@ -378,7 +396,7 @@ function SetPassword({ token, onDone }: { token: string; onDone: () => void }) {
                         await setPasswordFromLink(token, password);
                         onDone();
                     } catch (e) {
-                        setError(message(e, 'Could not set the password. Ask for a new link.'));
+                        setError(message(e, t('shell.sign-in:set-password.failed')));
                     } finally {
                         setBusy(false);
                     }
@@ -386,7 +404,7 @@ function SetPassword({ token, onDone }: { token: string; onDone: () => void }) {
             >
                 <input
                     type="password"
-                    aria-label="New password"
+                    aria-label={t('shell.sign-in:set-password.new')}
                     autoComplete="new-password"
                     minLength={10}
                     maxLength={128}
@@ -396,14 +414,14 @@ function SetPassword({ token, onDone }: { token: string; onDone: () => void }) {
                 />
                 <input
                     type="password"
-                    aria-label="Repeat the password"
+                    aria-label={t('shell.sign-in:set-password.repeat')}
                     autoComplete="new-password"
                     required
                     value={repeat}
                     onChange={(e) => setRepeat(e.target.value)}
                 />
                 <button className={primary} disabled={busy}>
-                    Set password
+                    {t('shell.sign-in:set-password.submit')}
                 </button>
             </form>
             {error && (

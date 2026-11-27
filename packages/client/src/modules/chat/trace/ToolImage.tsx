@@ -1,7 +1,9 @@
 import { useState } from 'react';
 
+import { useTranslation } from '@socio/i18n/react';
 import { attachmentContentUrl } from '@socio/shared/media-types';
 
+import { useOnDemand } from '../../../i18n/on-demand';
 import { plainHover } from '../../../lib/plain-button';
 import { AttachmentViewer } from '../attachments/AttachmentViewer';
 
@@ -22,7 +24,9 @@ export interface ShownToolImage {
  * A screenshot or another image a tool returned, as a thumbnail that opens
  * the viewer at full size. Its bytes come from the chat's attachments,
  * which only people who can read the chat get; anyone else (an admin on
- * the Runs page) sees a note instead.
+ * the Runs page) sees a note instead. The Runs page doesn't inline
+ * chat.trace: its words wait for it there (the image's alt names the
+ * button meanwhile).
  */
 export function ToolImageThumb({
     image,
@@ -32,14 +36,16 @@ export function ToolImageThumb({
     /** The run view's line: a smaller thumbnail. */
     small?: boolean;
 }) {
+    const { t } = useTranslation(['chat.trace']);
+    const ready = useOnDemand(['chat.trace']);
     const [open, setOpen] = useState(false);
     const [failed, setFailed] = useState(false);
     if (failed) {
-        return (
+        return ready ? (
             <p className="m-0 text-[11px]" data-slot="trace-image-missing">
-                The image isn’t available: it was deleted, or you can’t read this chat.
+                {t('chat.trace:image.missing')}
             </p>
-        );
+        ) : null;
     }
     return (
         <>
@@ -50,7 +56,7 @@ export function ToolImageThumb({
                     plainHover,
                 )}
                 data-slot="trace-image"
-                aria-label={`View ${image.name}`}
+                aria-label={ready ? t('chat.trace:image.view', { name: image.name }) : undefined}
                 onClick={() => setOpen(true)}
             >
                 <img

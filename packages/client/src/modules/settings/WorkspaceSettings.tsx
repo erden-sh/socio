@@ -4,6 +4,7 @@ import { useTranslation } from '@socio/i18n/react';
 import { isAdmin } from '@socio/shared/roles';
 import type { BackupSchedule, RestoreDrillStatus, State, WorkspaceState } from '@socio/shared/types';
 
+import { onDemand } from '../../i18n/on-demand';
 import { useHydrated } from '../../lib/client-only';
 import { utcTime } from '../../lib/local-time';
 import { DictationAllowedSetting, TranscriptionSetting } from '../voice/DictationSettings';
@@ -44,12 +45,8 @@ export function WorkspaceSettings({
     workspace: WorkspaceState;
     mutate: (path: string, method: string, body?: unknown) => Promise<boolean>;
 }) {
-    const { t } = useTranslation(['settings.workspace-setup']);
-    const { backupLine, continuousLine, continuousOffsiteLine, pluginBackupsLine } = useSetupLines();
     const readOnly = !isAdmin(workspace.user);
     const { setup } = workspace;
-    // Match the server before switching setup timestamps to the reader’s zone.
-    const when = useHydrated() ? undefined : utcTime;
     return (
         <>
             {isAdmin(workspace.user) && (
@@ -89,6 +86,32 @@ export function WorkspaceSettings({
             {state.settings.backupSchedule && (
                 <BackupScheduleSetting schedule={state.settings.backupSchedule} readOnly={readOnly} mutate={mutate} />
             )}
+            <ServiceSetup setup={setup} readOnly={readOnly} mutate={mutate} />
+        </>
+    );
+}
+
+/**
+ * What the server has set up, the page's last card. Its words
+ * (`settings.workspace-setup`) load on demand, like the other cards below
+ * the fold, so the page's inlined dictionaries stay within the budget.
+ */
+const ServiceSetup = onDemand(
+    ['settings.workspace-setup'],
+    function ServiceSetup({
+        setup,
+        readOnly,
+        mutate,
+    }: {
+        setup: WorkspaceState['setup'];
+        readOnly: boolean;
+        mutate: (path: string, method: string, body?: unknown) => Promise<boolean>;
+    }) {
+        const { t } = useTranslation(['settings.workspace-setup']);
+        const { backupLine, continuousLine, continuousOffsiteLine, pluginBackupsLine } = useSetupLines();
+        // Match the server before switching setup timestamps to the reader’s zone.
+        const when = useHydrated() ? undefined : utcTime;
+        return (
             <SettingsCard>
                 <section className="grid gap-2" data-slot="service-setup">
                     <h3 className="font-medium">{t('settings.workspace-setup:title')}</h3>
@@ -188,9 +211,9 @@ export function WorkspaceSettings({
                     </div>
                 </section>
             </SettingsCard>
-        </>
-    );
-}
+        );
+    },
+);
 
 /**
  * Public research and saved memories for every socio. Each saves as it is

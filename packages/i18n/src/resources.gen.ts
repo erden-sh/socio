@@ -3,17 +3,560 @@
 // (docs/I18N.md) read it.
 
 export interface EnglishResources {
-    chat: {};
-    'chat.composer': {};
-    'chat.dot-home': {};
-    'chat.drafts': {};
-    'chat.menu': {};
-    'chat.model': {};
-    'chat.nav': {};
-    'chat.report': {};
-    'chat.result': {};
-    'chat.soul': {};
-    'chat.trace': {};
+    chat: {
+        copy: {
+            action: 'Copy';
+            copied: 'Copied';
+            failed: 'Could not copy';
+        };
+        'scroll-to-end': 'Scroll to end';
+        earlier: {
+            loading: 'Loading earlier messages…';
+            show: 'Show earlier messages';
+        };
+        reactions: {
+            group: 'React to this reply';
+            added: '{{reaction}} added';
+            removed: '{{reaction}} removed';
+            counted: '{{reaction}}, {{total, number}}';
+            failed: 'Could not save that';
+            'generic-socio': 'The socio';
+            'other-author': 'Another person';
+            'preview-failed': 'Couldn’t check what this report would include. Try again.';
+        };
+        'over-limit_one': 'This message is over the {{max, number}}-character limit. Remove {{count, number}} character to send it.';
+        'over-limit_other': 'This message is over the {{max, number}}-character limit. Remove {{count, number}} characters to send it.';
+        quote: {
+            reply: 'Reply';
+            'replying-to': 'Replying to {{author}}';
+            remove: 'Remove quote';
+            'command-note': 'Commands don’t run in a reply. Remove the quote to run it.';
+            'unknown-socio': 'A socio';
+        };
+        call: {
+            failed: 'Call failed';
+            ended: '{{seconds}}s · Call ended';
+            'in-progress': 'Call in progress';
+        };
+        'not-sent': {
+            announce: 'Your message “{{excerpt}}” wasn’t sent.';
+            label: 'Not sent';
+            retry: 'Retry';
+            'retry-named': 'Retry “{{excerpt}}”';
+            'retry-later': 'You can retry once the reply is done';
+            edit: 'Edit';
+            'edit-named': 'Edit “{{excerpt}}”';
+        };
+        viewer: {
+            position: '{{at}} of {{total}}';
+            'no-preview': 'No preview for this file. Download it to open it on your device.';
+            download: 'Download';
+            previous: 'Previous attachment';
+            next: 'Next attachment';
+        };
+        attachment: {
+            list: 'Attachments';
+            image: 'Image';
+            unnamed: 'Attachment';
+            removed: 'Removed';
+            view: 'View {{name}}';
+            'view-image': 'View image';
+            download: 'Download {{name}}';
+            'download-unnamed': 'Download attachment';
+        };
+        status: {
+            paused: 'Paused';
+            offline: 'Offline';
+            updating: 'Updating…';
+            here: 'Here with you';
+            connecting: 'Connecting to your conversation…';
+        };
+        header: {
+            'model-tip': 'The model this chat runs on';
+            model: 'Model for this chat';
+            'model-failed': 'Could not change the model.';
+            'save-page': 'Save conversation as page';
+            'save-page-later': 'Save as a page once the reply is done';
+            'page-title': 'Page title';
+            'save-page-failed': 'Could not save conversation.';
+            schedule: 'Schedule a task in this conversation';
+            'voice-needs-self-hosted': 'Self-hosted voice calls need a transcription server with a realtime socket (Settings → General → Transcription)';
+            'voice-needs-cloud': 'Voice calls need VOICE_API_KEY and VOICE_MODEL';
+            'voice-start-tip': 'Start a voice call with your socio';
+            'voice-end-tip': 'End the voice call';
+            'voice-start': 'Start voice call';
+            'voice-end': 'End voice call';
+        };
+        'page-context': 'Working on <pageLink>{{title}}</pageLink>';
+        welcome: {
+            title: 'What’s on your mind?';
+            text: 'Your conversation stays with this socio, across text and calls.';
+        };
+        notice: {
+            'offline-running': 'You’re offline. Your message will send once you’re back online.';
+            'updating-running': 'Socio is updating. Your message will send as soon as it’s back.';
+        };
+        error: {
+            reconnect: 'Reconnect';
+            'cloud-voice': 'Use cloud voice';
+        };
+        'voice-note': 'Text and voice, one conversation.';
+        queued: {
+            list: 'Queued messages';
+            others: 'Others’ queued messages';
+            note: 'Queued · {{note}}';
+            held: 'Queued · won’t be sent while {{name}} can’t write here';
+            edit: 'Edit';
+            'edit-box': 'Edit queued message';
+            files: 'Files it sends';
+            'remove-file': 'Remove {{name}}';
+            keep: 'Keep as it was';
+            save: 'Save';
+            'save-failed': 'That didn’t save. Try again.';
+            cancel: 'Cancel';
+            'cancel-own': 'Cancel queued message';
+            'cancel-named': 'Cancel {{name}}’s queued message';
+            'cancel-ask': 'Cancel {{name}}’s message?';
+            'keep-it': 'Keep it';
+            'cancel-message': 'Cancel message';
+            'cancel-failed': 'That didn’t work. Try again.';
+            'file-count_one': '{{count, number}} file';
+            'file-count_other': '{{count, number}} files';
+        };
+    };
+    'chat.composer': {
+        skills: {
+            menu: 'Skills';
+            'end-failed': 'Could not end the skill.';
+            active: 'On until you’re done: the socio follows it on every message.';
+            end: 'End';
+        };
+        attachments: {
+            attach: 'Attach files';
+            'attach-hint': 'Attach files (or paste or drop them)';
+            tray: 'Attachments to send';
+            view: 'View {{name}}';
+            uploading: 'Uploading {{name}}';
+            progress: '{{percent}}%';
+            retry: 'Retry {{name}}';
+            remove: 'Remove {{name}}';
+            dismiss: 'Dismiss';
+            refused: 'Upload failed ({{status}}).';
+            offline: 'The upload failed. Check your connection.';
+            failed: 'Upload failed.';
+            empty: '{{name}} is empty.';
+            'too-big': '{{name}} is {{size}}; files can be at most {{max}}.';
+            'too-many_one': '{{name}}: a message can carry at most {{count, number}} attachment.';
+            'too-many_other': '{{name}}: a message can carry at most {{count, number}} attachments.';
+            'remove-failed': '{{name}} could not be removed: {{reason}}';
+            'remove-failed-retry': '{{name}} could not be removed: try again';
+        };
+        tools: 'Message actions';
+        box: {
+            label: 'Message your socio';
+            placeholder: 'Message {{name}}…';
+        };
+        send: {
+            send: 'Send message';
+            stop: 'Stop response';
+            queue: 'Queue message';
+            'waiting-uploads': 'Waiting for uploads to finish';
+            'queue-after-reply': '{{name}} reads it once its reply is done';
+            'queue-after-step': '{{name}} reads it after its current step';
+        };
+        'queue-full_one': 'A message is waiting for {{name}}, as many as a chat can queue. Yours stays here until {{name}} reads them, or you cancel one.';
+        'queue-full_other': '{{count, number}} messages are waiting for {{name}}, as many as a chat can queue. Yours stays here until {{name}} reads them, or you cancel one.';
+        queued: {
+            'after-step': '{{name}} reads this after its current step';
+            'after-reply': '{{name}} reads this once its reply is done';
+            'next-turn': '{{name}} reads this on its next turn';
+        };
+        source: {
+            url: 'Source page URL';
+            remove: 'Remove source';
+            add: 'Add source page link';
+            'add-hint': 'Add a source page link — prepend “From <url>” to your message';
+        };
+        held: {
+            uploading: 'Your files are still uploading. You can send once they’re done.';
+            preparing: 'Getting this chat ready. You can send in a moment.';
+            paused: 'Socio is paused, so your message stays here until an admin resumes it.';
+            connecting: 'Connecting to your conversation. You can send once it’s ready.';
+            'catching-up': 'Catching up with this chat. You can send in a moment.';
+        };
+        unsent: {
+            'too-long': 'That message is too long to send. Shorten it or attach it as a file, then send it again.';
+            'thread-running': 'Your socio is still answering, so your message wasn’t sent. Send it again once it finishes.';
+            offline: 'You’re still offline, so your message wasn’t sent. Send it again once you’re back online.';
+            updating: 'Socio is still updating, so your message wasn’t sent. Send it again in a minute.';
+        };
+        unsure: {
+            stopped: 'Stopped waiting for Socio. Reconnect to see whether your message arrived.';
+            offline: 'You’re still offline. Reconnect once you’re back online to see whether your message arrived.';
+            updating: 'Socio is still updating. Reconnect in a minute to see whether your message arrived.';
+        };
+        errors: {
+            context: 'Conversation context could not load. Retry before sending your message.';
+            'retry-context': 'Retry context';
+            'could-not-connect': 'Conversation could not connect.';
+            'no-response': 'The current turn returned no response. Check the runtime connection and retry.';
+            'turn-failed': 'The turn failed. Your conversation remains saved.';
+            'queue-failed': 'Your message couldn’t be queued.';
+        };
+        'name-suggestion': {
+            text: 'Suggested name for this chat: <name>{{name}}</name>';
+            field: 'Suggested chat name';
+            save: 'Save';
+            cancel: 'Cancel';
+            accept: 'Accept';
+            reject: 'Not now';
+            customize: 'Customize';
+            failed: 'Something went wrong.';
+            empty: 'Enter a name.';
+        };
+        new: {
+            edit: 'Edit specialist';
+            connect: {
+                title: 'Connect your socio';
+                text: 'Connect your model and conversation service in Settings to start chatting. Your Spaces and socio preferences are ready to use.';
+            };
+            starters: {
+                think: 'Help me think this through';
+                research: 'Research a public page';
+                plan: 'Make a plan I can follow';
+            };
+            box: 'Start a conversation';
+            'no-model': 'No model is available yet.';
+            'after-setup': 'Your first conversation starts after setup.';
+            voice: 'Start a voice call';
+            'voice-hint': 'Start a voice call with your socio';
+            model: 'Model for this chat';
+            start: 'Start conversation';
+        };
+    };
+    'chat.dot-home': {
+        ready: 'Ready when you are.';
+        soul: 'Soul';
+        settings: 'Settings';
+        'new-chat': 'New chat';
+        team: 'Team';
+        room: 'Room';
+        run: {
+            running: 'Running';
+            finished: 'Finished';
+            stopped: 'Stopped';
+            failed: 'Failed';
+            interrupted: 'Interrupted';
+        };
+        archived: {
+            banner: 'This socio is archived. You can read its chats and history; it no longer answers.';
+            unarchive: 'Unarchive';
+        };
+        quiet: {
+            text: 'Nothing running, waiting for you or scheduled';
+            links: 'Where work shows up';
+            approvals: 'Approvals';
+            schedules: 'Schedules';
+            board: 'Board';
+        };
+        columns: {
+            now: 'Now';
+            earlier: 'Earlier';
+            next: 'Next';
+        };
+        all_one: 'All {{count, number}}';
+        all_other: 'All {{count, number}}';
+        panels: {
+            active: 'Active chats';
+            'active-empty': 'Start a chat with {{name}}.';
+            'active-empty_archived': 'No active chats.';
+            running: 'In progress';
+            'running-empty': 'Nothing running.';
+            'load-failed': 'Could not load its turns.';
+            archived: 'Archived chats';
+            'archived-empty': 'Chats you archive wait here.';
+            recent: 'Recent turns';
+            'recent-empty': 'No turns yet.';
+            'nothing-planned': 'Nothing planned.';
+        };
+        chats: {
+            title: 'Chats';
+            tabs: 'Chats with {{name}}';
+            active: 'Active';
+            archived: 'Archived';
+            'active-empty': 'Your chats with {{name}} will live here.';
+            'active-empty_archived': 'No active chats with this socio.';
+            'archived-empty': 'No archived chats with {{name}}.';
+        };
+    };
+    'chat.drafts': {
+        title: 'Sign out with unsent drafts?';
+        'sign-out': 'Sign out anyway';
+        body_one: 'You have {{count, number}} unsent draft, from the last day, in {{places, list}}. Signing out clears it.';
+        body_other: 'You have {{count, number}} unsent drafts, from the last day, in {{places, list}}. Signing out clears them.';
+        more_one: '{{count, number}} more';
+        more_other: '{{count, number}} more';
+        place: {
+            untitled: 'Untitled chat';
+            'new-chat': 'a new chat with {{socio}}';
+            unknown: 'a chat';
+        };
+        'leave-page-draft': 'Leave your unsaved page draft?';
+    };
+    'chat.menu': {
+        rename: 'Rename';
+        share: 'Share as a room…';
+        archive: 'Archive';
+        unarchive: 'Unarchive';
+        delete: 'Delete';
+        section: 'Chat';
+        'title-input': 'Chat title';
+        'chat-options': 'Chat options';
+        'room-options': 'Room options';
+        'new-chat': 'New chat';
+        undo: 'Undo';
+        blocked: {
+            running: 'Stop the socio first';
+            call: 'End the call first';
+            telegram: 'Telegram chats can’t be deleted here';
+            page: 'This chat belongs to a page';
+        };
+        'delete-dialog': {
+            title: 'Delete chat?';
+            body: 'This will delete “{{title}}”.';
+            'body-tasks_one': 'This will delete “{{title}}” and its scheduled task.';
+            'body-tasks_other': 'This will delete “{{title}}” and its {{count, number}} scheduled tasks.';
+        };
+        toasts: {
+            deleted: 'Deleted “{{title}}”';
+            archived: 'Chat archived';
+            unarchived: 'Chat unarchived';
+        };
+        errors: {
+            rename: 'Could not rename the chat.';
+            delete: 'Could not delete the chat.';
+            archive: 'Could not archive the chat.';
+            unarchive: 'Could not unarchive the chat.';
+        };
+        'dot-crumb': {
+            switch: '{{name}}: switch chat';
+            'chats-with': 'Chats with {{name}}';
+            none: 'No chats yet.';
+            all: 'All chats';
+        };
+        dot: {
+            'name-input': 'Socio name';
+            allowed: 'Allowed';
+            research: 'Public-page research';
+            memory: 'Use saved memories';
+            issues: 'File to the Improvements board';
+            activity: 'Activity';
+            soul: 'Soul';
+            archive: 'Archive…';
+            settings: 'All settings…';
+            archived: '{{name}} archived';
+            'archive-dialog': {
+                title: 'Archive {{name}}?';
+                body: 'It leaves every list and stops working: its schedules and goals pause. Its chats, filings and history are kept, and nothing is deleted. You can unarchive it from any of its chats.';
+            };
+            errors: {
+                save: 'Could not save the socio.';
+                archive: 'Could not archive the socio.';
+                unarchive: 'Could not unarchive the socio.';
+            };
+        };
+        'archived-notice': {
+            socio: 'This socio is archived. You can read its chats; it no longer answers.';
+            chat: 'This chat is archived.';
+            'unarchive-failed': 'Could not unarchive the socio.';
+        };
+    };
+    'chat.model': {
+        gone: 'No longer available';
+        'not-connected': '{{model}} (not connected)';
+        inherit: {
+            none: 'no model available';
+            automatic: 'Automatic: {{automatic}}';
+            default: 'Socio default: {{model}}';
+            'default-gone': 'Socio default unavailable; automatic: {{automatic}}';
+            'default-needs-connection': 'Socio default {{model}} needs a connection; automatic: {{automatic}}';
+            model: '{{group}} · {{model}}';
+        };
+    };
+    'chat.nav': {
+        socios: 'Socios';
+        'create-socio': 'Create socio';
+        dot: {
+            tooltip: '{{name}} (workspace)';
+            tooltip_personal: '{{name}} (personal)';
+            title: 'Workspace socio: everyone can see and use it.';
+            title_personal: 'Personal socio: only you see and chat with it.';
+            options: '{{name}} options';
+        };
+        recent: 'Recent chats';
+        'new-chat': 'New conversation';
+        setup: 'Set up text chat to begin a persistent conversation.';
+        empty: 'Your first conversation will live here.';
+        'show-fewer': 'Show fewer';
+        'show-all_one': 'Show all {{count, number}}';
+        'show-all_other': 'Show all {{count, number}}';
+        team: 'Team';
+        'chat-options': 'Options for {{title}}';
+        icon: {
+            team: 'Team conversation';
+            telegram: 'Telegram conversation';
+        };
+        loading: {
+            paused: 'Paused';
+            connecting: 'Connecting to your conversation…';
+        };
+    };
+    'chat.report': {
+        reason: 'Reason';
+        note: {
+            label: 'Note (optional)';
+            count: '{{length, number}} / {{max, number}}';
+            over_one: 'The note is {{count, number}} character too long.';
+            over_other: 'The note is {{count, number}} characters too long.';
+        };
+        remove: {
+            title: 'Remove your thumbs-down?';
+            went: 'Your report on this reply went to Ingenio.';
+            cancel: 'Cancel';
+            confirm: 'Remove thumbs-down';
+            'switch-up': 'Switch to thumbs-up';
+        };
+        notice: {
+            'not-sharing': 'Reports aren’t shared with Ingenio any more, so this is a plain thumbs-down.';
+            'consent-changed': 'Reporting changed since you confirmed, so nothing was reported. It’s a plain thumbs-down.';
+            unavailable: 'The report couldn’t be made this time, so this is a plain thumbs-down.';
+        };
+    };
+    'chat.result': {
+        brief: 'Brief';
+        computer: '{{name}}’s computer';
+        socio: 'Socio';
+        close: 'Close result panel';
+        'computer-for': 'Computer for';
+        'select-computer': 'Select socio computer';
+        'no-socio': 'Create a socio to give it a computer.';
+        heading: 'RESEARCH BRIEF';
+        heading_sample: 'FICTIONAL SAMPLE BRIEF';
+        download: 'Download brief';
+        'download-sources': 'Sources';
+        'sample-note': 'An example of what a socio can do. The findings and sources below are invented.';
+        image: '[Image: {{alt}}]';
+        'image-omitted': '[Image omitted]';
+        sources: 'Source notes';
+        'fictional-source': 'Fictional source · not a live link';
+        empty: {
+            title: 'A little space for your findings.';
+            text: 'Your brief and sources will appear here after a successful run.';
+            text_failed: 'Resolve the error and retry to create a research brief.';
+        };
+    };
+    'chat.soul': {
+        crumb: 'Soul';
+        title: '{{name}}’s Soul';
+        description: 'Who {{name}} is: its role, voice, values and working style. It is part of every chat with {{name}}, and changes only when admins edit it. It shapes tone and role, never Socio’s rules, tool permissions or approvals.';
+        description_owner: 'Who {{name}} is: its role, voice, values and working style. It is part of every chat with {{name}}, and changes only when its owner edits it. It shapes tone and role, never Socio’s rules, tool permissions or approvals.';
+        back: 'Back to {{name}}';
+        loading: 'Loading…';
+        'this-socio': 'This socio';
+        someone: 'Someone';
+        'in-use': 'In use';
+        history: 'History';
+        version: 'Version {{version}}';
+        edit: 'Edit';
+        origin: {
+            migrated: 'From its role instructions, at the upgrade to Soul';
+            created: 'Made by {{name}}';
+            restored: '{{name}} restored version {{version}}';
+            edited: 'Edited by {{name}}';
+        };
+        'no-persona': 'No voice, values or working style yet.';
+        'no-persona_editable': 'No voice, values or working style yet: Edit adds them.';
+        'read-only': {
+            archived: 'This socio is archived: its Soul can’t change until it’s unarchived.';
+            owner: 'Only its owner can change this Soul.';
+            admin: 'Only an admin can change this Soul.';
+        };
+        toggle: {
+            hide: 'Hide';
+            changes: 'Changes';
+            show: 'Show';
+        };
+        same: 'The same as the version before.';
+        editor: {
+            optional: '(optional)';
+            preview: 'Preview what {{name}} reads';
+            'hide-preview': 'Hide preview';
+            save: 'Save as a new version';
+            cancel: 'Cancel';
+        };
+        saved: '{{name}}’s Soul saved';
+        restore: {
+            action: 'Restore';
+            title: 'Restore version {{version}}?';
+            body: '{{name}} uses it from its next turn, as version {{next}}. Every version stays in the history.';
+            done: 'Version {{version}} is back in use';
+        };
+        errors: {
+            load: 'Could not load the Soul.';
+            save: 'Could not save the Soul.';
+        };
+    };
+    'chat.trace': {
+        working_one: 'Working · {{count, number}} step';
+        working_other: 'Working · {{count, number}} steps';
+        'worked-through_one': 'Worked through {{count, number}} step';
+        'worked-through_other': 'Worked through {{count, number}} steps';
+        'worked-for_one': 'Worked for {{duration}} · {{count, number}} step';
+        'worked-for_other': 'Worked for {{duration}} · {{count, number}} steps';
+        'failed-count_one': '{{count, number}} failed';
+        'failed-count_other': '{{count, number}} failed';
+        thinking: 'Thinking';
+        thought: 'Thought';
+        'thought-for': 'Thought for {{duration}}';
+        step: {
+            failed: 'Failed';
+            stopped: 'Stopped';
+            running: 'Running';
+        };
+        'open-dataset': 'Open the dataset';
+        details: {
+            failed: 'This step failed.';
+            stopped: 'It stopped before it finished.';
+            input: 'Input';
+            result: 'Result';
+            waiting: 'Waiting for the result…';
+            'loading-whole': 'Loading the whole result ({{size}})…';
+            partial: 'Only part of this result is shown: the rest didn’t load.';
+            retry: 'Try again';
+            'show-lines_one': 'Show all {{count, number}} line';
+            'show-lines_other': 'Show all {{count, number}} lines';
+            'show-characters_one': 'Show all {{count, number}} character';
+            'show-characters_other': 'Show all {{count, number}} characters';
+            more_one: 'and {{count, number}} more (copy for all)';
+            more_other: 'and {{count, number}} more (copy for all)';
+            item: 'Item {{position, number}}';
+            kilobytes: '{{kb, number}} KB';
+            binary: 'Binary data, {{size}}';
+        };
+        fields: {
+            stdout: 'Output';
+            stderr: 'Errors';
+            sql: 'SQL';
+            url: 'URL';
+            id: 'ID';
+            'timeout-ms': 'Time limit (ms)';
+        };
+        image: {
+            screenshot: 'Screenshot';
+            view: 'View {{name}}';
+            missing: 'The image isn’t available: it was deleted, or you can’t read this chat.';
+        };
+    };
     common: {
         product: 'Socio';
     };
@@ -2493,12 +3036,288 @@ export interface EnglishResources {
             updating: 'Socio is updating. Reconnecting…';
             offline: 'You’re offline. Reconnecting when you’re back online.';
             'connect-failed': 'Could not connect to the server.';
+            open: 'Open';
+        };
+        loading: {
+            title: 'Finding your socios…';
+            retry: 'Retry';
+        };
+        errors: {
+            save: 'Could not save.';
+            'new-chat': 'Could not create the conversation.';
+        };
+        'new-chat-title': 'A new thought';
+        'paused-banner': 'All socios are paused. Active compute stops and scheduled tasks wait.';
+        header: {
+            home: 'Home';
+            'full-path': 'Show full breadcrumb path';
+            pause: 'Pause all socios';
+            resume: 'Resume all socios';
+            search: 'Search';
+            'show-computer': 'Show computer';
+            'hide-computer': 'Hide computer';
+            help: 'Help';
+            'help-new': 'Help (new release)';
+            more: 'More options';
+            'more-new': 'More options (new release)';
+        };
+        connection: {
+            state: {
+                online: 'Online';
+                reconnecting: 'Reconnecting';
+                offline: 'Offline';
+            };
+            ms: '{{ms, number}} ms';
+            label: 'Connection: {{state}}';
+            restored: 'Connection to Socio restored.';
+        };
+        'early-access': 'Early access';
+        'no-inference': {
+            open: 'Open Account → Inference';
+        };
+        error: {
+            app: {
+                title: 'Something went wrong.';
+            };
+            page: {
+                title: 'This page failed to load.';
+            };
+            'reload-hint': 'Reloading usually fixes it.';
+            reload: 'Reload';
+            'not-found': {
+                title_page: 'Page not found.';
+                title_space: 'Space not found.';
+                title_socio: 'Socio not found.';
+                title_conversation: 'Conversation not found.';
+                why: "It may have been removed, or it isn't shared with you.";
+                back: 'Back to your socios';
+                crumb: 'Not found';
+            };
         };
     };
-    'shell.add-device': {};
-    'shell.help': {};
-    'shell.home': {};
-    'shell.palette': {};
-    'shell.sign-in': {};
-    'shell.status': {};
+    'shell.add-device': {
+        title: 'Add a device';
+        'title-claimed': 'Sign in on a new device?';
+        scan: 'Open the Socio app on your phone and scan this code with its camera, or with the phone’s camera.';
+        scan_preview: 'For the Socio Preview test app. Open the Socio app on your phone and scan this code with its camera, or with the phone’s camera.';
+        scan_development: 'For a development build of the Socio app. Open the Socio app on your phone and scan this code with its camera, or with the phone’s camera.';
+        waiting: '{{device}} is asking to sign in as you. If it’s yours, type the code it shows.';
+        allowed: 'Finishing sign-in on the new device…';
+        'signed-in': 'The new device is signed in.';
+        done: '{{device}} is signed in to your account. You can sign it out in Settings → Account.';
+        finishing: 'Finishing on {{device}}…';
+        'new-code': 'New code';
+        'not-mine': 'Not my device';
+        'no-app': 'No app yet? The Socio app is in a team beta until it reaches the app stores: ask your admin to add you.';
+        'send-link': 'Send me a link for the app';
+        'link-sent_email': 'A link for the app is on its way by email';
+        'link-sent_telegram': 'A link for the app is on its way by Telegram';
+        asking: {
+            new: 'A new device';
+            ios: 'An iPhone or iPad';
+            android: 'An Android phone';
+            other: 'A new device';
+            quoted: 'A device called “{{name}}”';
+            named: 'A {{name}}';
+            named_vowel: 'An {{name}}';
+        };
+        platforms: {
+            ios: 'iPhone or iPad';
+            android: 'Android phone';
+            new: 'a new device';
+        };
+        code: {
+            label: 'Code shown on your new device';
+            placeholder: '6-digit code';
+            hint: 'The 6 digits shown on that device.';
+            'time-left': 'Time left: {{left}}.';
+            wrong: 'That code didn’t match. Try again.';
+            'wrong-tries_one': 'That code didn’t match. {{count}} try left.';
+            'wrong-tries_other': 'That code didn’t match. {{count}} tries left.';
+        };
+        qr: {
+            code: 'QR code for the Socio app';
+            show: 'Show the QR code';
+            'show-short': 'Show';
+            'works-once': 'Works once, for {{left}}. Anyone who scans it can ask to sign in as you; you still confirm on this page.';
+            making: 'Making a QR code…';
+        };
+        ended: {
+            description: 'This request ended. Make a new code to add a device.';
+            refused: 'Could not make a QR code.';
+            expired: 'This QR code expired. Make a new one.';
+            denied: 'That code didn’t match. Make a new QR code.';
+            'not-mine': 'Nothing was signed in. That device can’t use this QR code.';
+        };
+        notices: {
+            'signed-in-anyway': 'That device had already signed in before Not my device. If it isn’t yours, sign it out in Settings → Account now.';
+            'check-failed': 'Could not check the code. Try again.';
+            unreachable: 'Could not reach the server. Try again.';
+            'end-failed': 'Could not end it yet. Choose Not my device again.';
+        };
+        errors: {
+            link: 'Could not send the link.';
+        };
+    };
+    'shell.dot-state': {
+        idle: 'Idle';
+        working: 'Working';
+        paused: 'Paused';
+    };
+    'shell.help': {
+        items: {
+            guides: 'Help and guides';
+            'whats-new': 'What’s new';
+            new_one: '{{count, number}} new';
+            new_other: '{{count, number}} new';
+        };
+        shortcuts: {
+            title: 'Keyboard shortcuts';
+            description: 'They work on every page.';
+            search: 'Search';
+            ask: 'Ask a socio';
+            sidebar: 'Collapse or expand the sidebar';
+        };
+        'get-the-app': {
+            title: 'Get the Socio app';
+            description: 'Scan this with a phone’s camera: it opens the Socio app (or how to get it) with this workspace filled in. Anyone can scan it; they still sign in as themselves. The app is in a team beta until it reaches the app stores.';
+            code: 'QR code for this workspace in the Socio app';
+            banner: 'This workspace is in the Socio app too.';
+            get: 'Get the app';
+            'not-now': 'Not now';
+        };
+        theme: {
+            title: 'Theme';
+            light: 'Light';
+            dark: 'Dark';
+            system: 'System';
+        };
+    };
+    'shell.home': {
+        title: 'Home';
+        counts: {
+            socios_one: '{{count, number}} socio';
+            socios_other: '{{count, number}} socios';
+            spaces_one: '{{count, number}} Space';
+            spaces_other: '{{count, number}} Spaces';
+            chats_one: '{{count, number}} chat';
+            chats_other: '{{count, number}} chats';
+            tasks_one: '{{count, number}} scheduled task';
+            tasks_other: '{{count, number}} scheduled tasks';
+            separator: ' · ';
+        };
+        'new-chat': 'New chat';
+        'new-chat-with': 'New chat with {{name}}';
+        socios: 'Your socios';
+        'open-socio': 'Open {{name}}, {{state}}';
+        ready: 'Ready when you are.';
+        apps: 'Apps';
+        glance: 'At a glance';
+        recent: 'Recent conversations';
+        'recent-kind_team': '{{name}} · Team';
+        'recent-kind_room': '{{name}} · Room';
+        empty: 'Your first conversation will live here.';
+        'empty-setup': 'Set up text chat in Settings to start a conversation.';
+        'whats-new': 'What’s new';
+        'all-releases': 'All releases';
+    };
+    'shell.palette': {
+        title: 'Search Socio';
+        description: 'Find a module, socio, page, chat or issue, or run an action.';
+        placeholder: 'Search modules, socios, pages, chats, issues…';
+        searching: 'Searching…';
+        nothing: 'Nothing found.';
+        corrected: 'Showing results for <words>{{words}}</words>';
+        'search-instead': 'Search instead for {{query}}';
+        'new-chat': 'New chat';
+        theme: 'Theme: {{theme}}';
+        groups: {
+            actions: 'Actions';
+            theme: 'Theme';
+            'go-to': 'Go to';
+            apps: 'Apps';
+            help: 'Help';
+            issues: 'Issues';
+            socios: 'Socios';
+            rooms: 'Rooms';
+            'recent-chats': 'Recent chats';
+            spaces: 'Spaces';
+            pages: 'Pages';
+        };
+    };
+    'shell.sign-in': {
+        welcome: 'Welcome back.';
+        'sign-in-to': 'Sign in to {{name}}.';
+        passkey: 'Sign in with a passkey';
+        provider: 'Sign in with {{name}}';
+        'send-link': 'Send me a sign-in link';
+        form: 'Sign in with email';
+        name: 'Name';
+        'name-placeholder': 'Your name';
+        email: 'Email';
+        password: 'Password';
+        'send-reset': 'Send reset link';
+        'create-account': 'Create account';
+        'sign-in': 'Sign in';
+        forgot: 'Forgot password?';
+        'sign-up': 'Create an account';
+        back: 'Back to sign-in';
+        'invite-only': 'Accounts are by invitation. Ask an admin for one.';
+        'invite-only-reset': 'Accounts are by invitation. Ask an admin for one, or for a new password link.';
+        'link-sent': 'If that account can receive links, one is on its way. Check your Telegram.';
+        'reset-sent': 'If that address has an account, a link to set a new password is on its way.';
+        'password-set': 'Password set. Sign in with it.';
+        mock: {
+            title: 'Who’s thinking today?';
+            choose: 'Choose your account to continue.';
+            continue: 'Continue as {{name}}';
+            warning: 'Development sign-in. Anyone who can reach this server can choose any account.';
+        };
+        link: {
+            title: 'Sign in to Socio.';
+            once: 'This link works once, for 15 minutes.';
+            continue: 'Continue';
+            unasked: "Didn't ask for it? Close this page; the link expires on its own.";
+        };
+        'set-password': {
+            title: 'Choose a password.';
+            rules: 'At least 10 characters. The link works once.';
+            differ: 'The passwords differ.';
+            failed: 'Could not set the password. Ask for a new link.';
+            new: 'New password';
+            repeat: 'Repeat the password';
+            submit: 'Set password';
+        };
+        errors: {
+            unreachable: 'Could not reach the server.';
+            users: 'Could not load users.';
+            'sign-in': 'Could not sign in.';
+            'not-invited': 'This account is not invited to this workspace. Ask an admin to add you.';
+            state: 'The sign-in expired or was started in another browser. Try again.';
+            'link-used': 'That sign-in link is used up or expired. Ask for a new one.';
+            'method-off': 'That way of signing in is turned off here. Sign in another way, or ask an operator.';
+            'not-linked': 'An account with this email exists, but the provider did not confirm the address. Sign in another way, or ask an admin.';
+            failed: 'Sign-in failed. Try again, or ask an admin.';
+        };
+    };
+    'shell.status': {
+        title: 'Connection to Socio';
+        status: 'Status';
+        'round-trip': 'Round trip';
+        'not-measured': 'Not measured yet';
+        'latency-quality': '{{latency}} ({{quality}})';
+        recent: 'Recent';
+        'recent-list': '{{latencies, list(type: unit; style: short)}}';
+        'last-check': 'Last check';
+        'not-yet': 'Not yet';
+        'last-disconnect': 'Last disconnect';
+        'no-disconnect': 'None since this tab opened';
+        how: 'Measured from this browser to the Socio server about every 30 seconds while this tab is in view.';
+        quality: {
+            good: 'good';
+            fair: 'fair';
+            slow: 'slow';
+        };
+        'label-measured': 'Connection: {{state}}, {{latency}}, {{quality}}';
+    };
 }

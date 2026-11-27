@@ -3,6 +3,7 @@ import { useContext, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { toast } from 'sonner';
 
+import { useTranslation } from '@socio/i18n/react';
 import { quotedDraft, quoteOf, withQuote } from '@socio/shared/chat/quote-reply';
 import { STEERING_MAX_CHARS, type QueuedMessage } from '@socio/shared/chat/steering';
 import type { MentionablePerson } from '@socio/shared/rooms/room-people-mentions';
@@ -148,6 +149,7 @@ function RoomSocios({
  * Looking at the room clears its unread count for the reader.
  */
 export function RoomChat({ thread, dot }: { thread: Conversation; dot: Dot }) {
+    const { t } = useTranslation(['chat']);
     const shell = useShell();
     const on = roomsOn(shell.state);
     const { room, update, reload } = useRoom(thread.id);
@@ -223,7 +225,7 @@ export function RoomChat({ thread, dot }: { thread: Conversation; dot: Dot }) {
               author: (message, text, streaming) => {
                   const socio = replySocio(message as RoomMessage, room, dot, shell.workspace.dots);
                   return messageReplyAuthor(message, text, {
-                      socio: socio.dot?.name ?? socio.name ?? 'A socio',
+                      socio: socio.dot?.name ?? socio.name ?? t('chat:quote.unknown-socio'),
                       streaming,
                       room: { view: room ?? null, me: shell.workspace.user.id },
                   });

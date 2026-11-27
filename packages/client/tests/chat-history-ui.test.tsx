@@ -9,7 +9,6 @@ import type { Conversation, Dot } from '@socio/shared/types';
 
 import { CHANGES_CHANNEL, closeChangeChannel } from '../src/lib/change-channel';
 import { Chat } from '../src/modules/chat/Chat';
-import { UNSENT_TOO_LONG } from '../src/modules/chat/chat-composer';
 import { forgetHistories } from '../src/modules/chat/sync/chat-history';
 import { CurrentUser } from '../src/shell/current-user';
 
@@ -482,7 +481,10 @@ it('puts a message the server refused for its size back in the box, calmly, and 
         return undefined;
     };
     type('A very long paste');
-    await until(() => shown(UNSENT_TOO_LONG), 'the notice');
+    await until(
+        () => shown('That message is too long to send. Shorten it or attach it as a file, then send it again.'),
+        'the notice',
+    );
     expect(host.textContent).not.toMatch(/too large/i);
     expect(host.querySelector('textarea')!.value).toBe('A very long paste');
     expect(kit.agent.messages.some((message) => message.content === 'A very long paste')).toBe(false);

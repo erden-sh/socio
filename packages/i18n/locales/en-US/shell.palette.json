@@ -1,1 +1,24 @@
-{}
+{
+    "title": "Search Socio",
+    "description": "Find a module, socio, page, chat or issue, or run an action.",
+    "placeholder": "Search modules, socios, pages, chats, issues…",
+    "searching": "Searching…",
+    "nothing": "Nothing found.",
+    "corrected": "Showing results for <words>{{words}}</words>",
+    "search-instead": "Search instead for {{query}}",
+    "new-chat": "New chat",
+    "theme": "Theme: {{theme}}",
+    "groups": {
+        "actions": "Actions",
+        "theme": "Theme",
+        "go-to": "Go to",
+        "apps": "Apps",
+        "help": "Help",
+        "issues": "Issues",
+        "socios": "Socios",
+        "rooms": "Rooms",
+        "recent-chats": "Recent chats",
+        "spaces": "Spaces",
+        "pages": "Pages"
+    }
+}

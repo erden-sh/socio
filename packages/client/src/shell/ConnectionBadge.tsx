@@ -1,23 +1,24 @@
 import { WifiOff, WifiSync, type LucideIcon } from 'lucide-react';
 import { useEffect, useId, useRef, useState, type MouseEvent, type PointerEvent, type ReactNode } from 'react';
 
-import { dateTimeFormat, formatNumber } from '@socio/shared/locale';
+import { useTranslation } from '@socio/i18n/react';
+import { dateTimeFormat } from '@socio/shared/locale';
 
+import { onDemand, useOnDemand } from '../i18n/on-demand';
 import { LocalTime } from '../lib/local-time';
 
-import { latencyQuality, useConnectionStatus, useLatencySampling, type ConnectionState } from './connection-status';
+import {
+    latencyQuality,
+    useConnectionStatus,
+    useLatencySampling,
+    type ConnectionState,
+    type LatencyQuality,
+} from './connection-status';
 
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 
-const STATE_LABEL: Record<ConnectionState, string> = {
-    online: 'Online',
-    reconnecting: 'Reconnecting',
-    offline: 'Offline',
-};
-/** What the live region says once the server answers again. */
-export const RESTORED_ANNOUNCEMENT = 'Connection to Socio restored.';
 /** How long the announcement stays, so the next one is heard again. */
 const ANNOUNCE_MS = 5000;
 /** Leaves a hover-opened popover this long to reach it. */
@@ -25,7 +26,26 @@ const HOVER_CLOSE_MS = 150;
 
 const clock = dateTimeFormat({ timeStyle: 'medium' });
 const time = (value: number) => clock.format(value);
-const ms = (value: number) => `${formatNumber(value)} ms`;
+
+/**
+ * The connection's words: its state and a round trip from the root's
+ * `shell` namespace; a round trip's quality, and the details, from
+ * `shell.status`, which loads once the page is up (round trips are only
+ * measured in the browser). `measured` says whether those are in.
+ */
+function useConnectionWords() {
+    const { t } = useTranslation(['shell']);
+    const status = useTranslation(['shell.status']).t;
+    const measured = useOnDemand(['shell.status']);
+    return {
+        state: (state: ConnectionState) => t(`shell:connection.state.${state}`),
+        ms: (value: number) => t('shell:connection.ms', { ms: value }),
+        quality: (quality: LatencyQuality) => status(`shell.status:quality.${quality}`),
+        measured,
+        t,
+        status,
+    };
+}
 
 function icon(state: ConnectionState): LucideIcon {
     return state === 'offline' ? WifiOff : WifiSync;
@@ -33,16 +53,19 @@ function icon(state: ConnectionState): LucideIcon {
 
 /** The connection as both indicators show it: its state, quality and label. */
 function useConnectionView() {
+    const words = useConnectionWords();
     const status = useConnectionStatus();
     const { state, latencies } = status;
     const latest = latencies.at(-1);
     const quality = state === 'online' && latest !== undefined ? latencyQuality(latest) : undefined;
-    const label = [
-        `Connection: ${STATE_LABEL[state]}`,
-        quality && latest !== undefined ? `${ms(latest)}, ${quality}` : '',
-    ]
-        .filter(Boolean)
-        .join(', ');
+    const label =
+        quality && latest !== undefined && words.measured
+            ? words.status('shell.status:label-measured', {
+                  state: words.state(state),
+                  latency: words.ms(latest),
+                  quality: words.quality(quality),
+              })
+            : words.t('shell:connection.label', { state: words.state(state) });
     return { ...status, latest, quality, label };
 }
 
@@ -60,7 +83,6 @@ function ConnectionDetails({
         onClick: (event: MouseEvent) => void;
     }) => ReactNode;
 }) {
-    const { state, latencies, lastCheck, lastDisconnect, latest, quality } = useConnectionView();
     const [open, setOpen] = useState(false);
     // Opened by a mouse hovering, not a click or tap: leaving closes it.
     const hovered = useRef(false);
@@ -126,40 +148,65 @@ function ConnectionDetails({
                 onPointerEnter={keep}
                 onPointerLeave={leave}
             >
-                <h2 id={title} className="mb-2 font-medium">
-                    Connection to Socio
-                </h2>
-                <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
-                    <dt className="text-muted-foreground">Status</dt>
-                    <dd>{STATE_LABEL[state]}</dd>
-                    <dt className="text-muted-foreground">Round trip</dt>
-                    <dd className="tabular-nums">
-                        {latest === undefined ? 'Not measured yet' : `${ms(latest)}${quality ? ` (${quality})` : ''}`}
-                    </dd>
-                    {latencies.length > 1 && (
-                        <>
-                            <dt className="text-muted-foreground">Recent</dt>
-                            <dd className="tabular-nums">{latencies.map(ms).join(', ')}</dd>
-                        </>
-                    )}
-                    <dt className="text-muted-foreground">Last check</dt>
-                    <dd>{lastCheck === undefined ? 'Not yet' : <LocalTime value={lastCheck} format={time} />}</dd>
-                    <dt className="text-muted-foreground">Last disconnect</dt>
-                    <dd>
-                        {lastDisconnect === undefined ? (
-                            'None since this tab opened'
-                        ) : (
-                            <LocalTime value={lastDisconnect} format={time} />
-                        )}
-                    </dd>
-                </dl>
-                <p className="mt-2 text-xs text-muted-foreground">
-                    Measured from this browser to the Socio server about every 30 seconds while this tab is in view.
-                </p>
+                <DetailsBody title={title} />
             </PopoverContent>
         </Popover>
     );
 }
+
+/** The popover's details, in `shell.status` (loaded when it first opens). */
+const DetailsBody = onDemand(['shell.status'], function DetailsBody({ title }: { title: string }) {
+    const { t } = useTranslation(['shell.status']);
+    const words = useConnectionWords();
+    const { state, latencies, lastCheck, lastDisconnect, latest, quality } = useConnectionView();
+    return (
+        <>
+            <h2 id={title} className="mb-2 font-medium">
+                {t('shell.status:title')}
+            </h2>
+            <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+                <dt className="text-muted-foreground">{t('shell.status:status')}</dt>
+                <dd>{words.state(state)}</dd>
+                <dt className="text-muted-foreground">{t('shell.status:round-trip')}</dt>
+                <dd className="tabular-nums">
+                    {latest === undefined
+                        ? t('shell.status:not-measured')
+                        : quality
+                          ? t('shell.status:latency-quality', {
+                                latency: words.ms(latest),
+                                quality: words.quality(quality),
+                            })
+                          : words.ms(latest)}
+                </dd>
+                {latencies.length > 1 && (
+                    <>
+                        <dt className="text-muted-foreground">{t('shell.status:recent')}</dt>
+                        <dd className="tabular-nums">
+                            {t('shell.status:recent-list', { latencies: latencies.map(words.ms) })}
+                        </dd>
+                    </>
+                )}
+                <dt className="text-muted-foreground">{t('shell.status:last-check')}</dt>
+                <dd>
+                    {lastCheck === undefined ? (
+                        t('shell.status:not-yet')
+                    ) : (
+                        <LocalTime value={lastCheck} format={time} />
+                    )}
+                </dd>
+                <dt className="text-muted-foreground">{t('shell.status:last-disconnect')}</dt>
+                <dd>
+                    {lastDisconnect === undefined ? (
+                        t('shell.status:no-disconnect')
+                    ) : (
+                        <LocalTime value={lastDisconnect} format={time} />
+                    )}
+                </dd>
+            </dl>
+            <p className="mt-2 text-xs text-muted-foreground">{t('shell.status:how')}</p>
+        </>
+    );
+});
 
 /**
  * The header's connection badge (CB-263, CB-308): nothing while all is
@@ -176,6 +223,7 @@ function ConnectionDetails({
  */
 export function ConnectionBadge() {
     useLatencySampling();
+    const words = useConnectionWords();
     const { state, quality, label } = useConnectionView();
     const announcement = useRestoredAnnouncement(state);
     const Icon = icon(state);
@@ -226,7 +274,7 @@ export function ConnectionBadge() {
                                 aria-hidden
                                 className={cn('size-4.5', state === 'reconnecting' && 'motion-safe:animate-pulse')}
                             />
-                            <span className="max-md:hidden">{STATE_LABEL[state]}</span>
+                            <span className="max-md:hidden">{words.state(state)}</span>
                         </Button>
                     )}
                 />
@@ -285,6 +333,8 @@ export function ConnectionDot({ className }: { className?: string }) {
  * back to online from reconnecting or offline, otherwise nothing.
  */
 function useRestoredAnnouncement(state: ConnectionState) {
+    const { t } = useTranslation(['shell']);
+    const restored = t('shell:connection.restored');
     const [announcement, setAnnouncement] = useState('');
     const previous = useRef(state);
     useEffect(() => {
@@ -297,9 +347,9 @@ function useRestoredAnnouncement(state: ConnectionState) {
         if (was === 'online') {
             return;
         }
-        setAnnouncement(RESTORED_ANNOUNCEMENT);
+        setAnnouncement(restored);
         const timer = setTimeout(() => setAnnouncement(''), ANNOUNCE_MS);
         return () => clearTimeout(timer);
-    }, [state]);
+    }, [state, restored]);
     return announcement;
 }

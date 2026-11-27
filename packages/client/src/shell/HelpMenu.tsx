@@ -1,6 +1,9 @@
 import { BookOpen, CircleHelp, Gift, Keyboard, MoreHorizontal } from 'lucide-react';
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 
+import { useTranslation } from '@socio/i18n/react';
+
+import { onDemand } from '../i18n/on-demand';
 import { askShortcut } from '../modules/ask/ask-context';
 import { openGuides } from '../modules/onboarding/events';
 import { usePluginReleaseNotes } from '../modules/whats-new/use-plugin-release-notes';
@@ -42,100 +45,108 @@ export function isShortcutsKey(event: KeyboardEvent) {
     );
 }
 
-/** The shortcuts that work anywhere in the app, in a dialog. */
-function ShortcutsDialog({
-    open,
-    onOpenChange,
-    returnFocus,
-}: {
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-    /** Where the focus goes back on closing, when a menu opened it. */
-    returnFocus?: { current: HTMLElement | null };
-}) {
-    const hints = useUiHints();
-    const mod = hints.mac ? '⌘' : 'Ctrl ';
-    const rows: [string, string][] = [
-        ['Search', paletteShortcut(hints)],
-        ['Ask a socio', askShortcut(hints)],
-        ['Collapse or expand the sidebar', `${mod}B`],
-        ['Keyboard shortcuts', '?'],
-    ];
-    return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent
-                data-slot="shortcuts-dialog"
-                className="sm:max-w-sm"
-                onCloseAutoFocus={(event) => {
-                    const back = returnFocus?.current;
-                    if (!back) {
-                        return;
-                    }
-                    returnFocus.current = null;
-                    event.preventDefault();
-                    back.focus();
-                }}
-            >
-                <DialogHeader>
-                    <DialogTitle>Keyboard shortcuts</DialogTitle>
-                    <DialogDescription>They work on every page.</DialogDescription>
-                </DialogHeader>
-                <dl className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-2 text-sm">
-                    {rows.map(([what, keys]) => (
-                        <div key={what} className="contents">
-                            <dt>{what}</dt>
-                            <dd>
-                                <kbd className={kbd}>{keys}</kbd>
-                            </dd>
-                        </div>
-                    ))}
-                </dl>
-            </DialogContent>
-        </Dialog>
-    );
-}
+/** The shortcuts that work anywhere in the app, in a dialog (`shell.help`, on demand). */
+const ShortcutsDialog = onDemand(
+    ['shell.help'],
+    function ShortcutsDialog({
+        open,
+        onOpenChange,
+        returnFocus,
+    }: {
+        open: boolean;
+        onOpenChange: (open: boolean) => void;
+        /** Where the focus goes back on closing, when a menu opened it. */
+        returnFocus?: { current: HTMLElement | null };
+    }) {
+        const { t } = useTranslation(['shell.help']);
+        const hints = useUiHints();
+        const mod = hints.mac ? '⌘' : 'Ctrl ';
+        const rows: [string, string][] = [
+            [t('shell.help:shortcuts.search'), paletteShortcut(hints)],
+            [t('shell.help:shortcuts.ask'), askShortcut(hints)],
+            [t('shell.help:shortcuts.sidebar'), `${mod}B`],
+            [t('shell.help:shortcuts.title'), '?'],
+        ];
+        return (
+            <Dialog open={open} onOpenChange={onOpenChange}>
+                <DialogContent
+                    data-slot="shortcuts-dialog"
+                    className="sm:max-w-sm"
+                    onCloseAutoFocus={(event) => {
+                        const back = returnFocus?.current;
+                        if (!back) {
+                            return;
+                        }
+                        returnFocus.current = null;
+                        event.preventDefault();
+                        back.focus();
+                    }}
+                >
+                    <DialogHeader>
+                        <DialogTitle>{t('shell.help:shortcuts.title')}</DialogTitle>
+                        <DialogDescription>{t('shell.help:shortcuts.description')}</DialogDescription>
+                    </DialogHeader>
+                    <dl className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-2 text-sm">
+                        {rows.map(([what, keys]) => (
+                            <div key={what} className="contents">
+                                <dt>{what}</dt>
+                                <dd>
+                                    <kbd className={kbd}>{keys}</kbd>
+                                </dd>
+                            </div>
+                        ))}
+                    </dl>
+                </DialogContent>
+            </Dialog>
+        );
+    },
+);
 
-/** The Help menu's items: in the Help menu, and in the phone header's ⋯. */
-function HelpItems({
-    unreadCount,
-    onGuides,
-    onWhatsNew,
-    onShortcuts,
-}: {
-    unreadCount: number;
-    onGuides: () => void;
-    onWhatsNew: () => void;
-    onShortcuts: () => void;
-}) {
-    return (
-        <>
-            <DropdownMenuItem className="h-8.5" onSelect={onGuides}>
-                <BookOpen />
-                Help and guides
-            </DropdownMenuItem>
-            <DropdownMenuItem className="h-8.5" data-slot="whats-new-button" onSelect={onWhatsNew}>
-                <Gift />
-                What’s new
-                {unreadCount > 0 && (
-                    <span
-                        data-slot="whats-new-count"
-                        aria-label={`${unreadCount} new`}
-                        className="ml-auto rounded-sm bg-primary/12 px-1.5 font-mono text-xs text-primary tabular-nums dark:bg-primary/20"
-                    >
-                        {unreadCount}
-                    </span>
-                )}
-            </DropdownMenuItem>
-            <DropdownMenuItem className="h-8.5" aria-keyshortcuts="Shift+?" onSelect={onShortcuts}>
-                <Keyboard />
-                Keyboard shortcuts
-                <kbd className={`ml-auto ${kbd}`}>?</kbd>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator className="mx-1 my-1.5" />
-            <ThemeSegments />
-        </>
-    );
-}
+/** The Help menu's items: in the Help menu, and in the phone header's ⋯ (`shell.help`, on demand). */
+const HelpItems = onDemand(
+    ['shell.help'],
+    function HelpItems({
+        unreadCount,
+        onGuides,
+        onWhatsNew,
+        onShortcuts,
+    }: {
+        unreadCount: number;
+        onGuides: () => void;
+        onWhatsNew: () => void;
+        onShortcuts: () => void;
+    }) {
+        const { t } = useTranslation(['shell.help']);
+        return (
+            <>
+                <DropdownMenuItem className="h-8.5" onSelect={onGuides}>
+                    <BookOpen />
+                    {t('shell.help:items.guides')}
+                </DropdownMenuItem>
+                <DropdownMenuItem className="h-8.5" data-slot="whats-new-button" onSelect={onWhatsNew}>
+                    <Gift />
+                    {t('shell.help:items.whats-new')}
+                    {unreadCount > 0 && (
+                        <span
+                            data-slot="whats-new-count"
+                            aria-label={t('shell.help:items.new', { count: unreadCount })}
+                            className="ml-auto rounded-sm bg-primary/12 px-1.5 font-mono text-xs text-primary tabular-nums dark:bg-primary/20"
+                        >
+                            {unreadCount}
+                        </span>
+                    )}
+                </DropdownMenuItem>
+                <DropdownMenuItem className="h-8.5" aria-keyshortcuts="Shift+?" onSelect={onShortcuts}>
+                    <Keyboard />
+                    {t('shell.help:shortcuts.title')}
+                    <kbd className={`ml-auto ${kbd}`}>?</kbd>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="mx-1 my-1.5" />
+                <ThemeSegments />
+            </>
+        );
+    },
+);
 
 /** The dot on a header button while there is a new release. */
 const newReleaseDot = (
@@ -159,6 +170,9 @@ const newReleaseDot = (
  * new and the onboarding offer open from whichever does.
  */
 export function HelpMenu({ overflow }: { overflow?: ReactNode }) {
+    const { t } = useTranslation(['shell']);
+    // The menu's own words load once the page is up, before it first opens.
+    useTranslation(['shell.help']);
     const workspaceNews = useWhatsNew();
     // CB-527: a plugin the person may open with a newer version counts too.
     const pluginNews = usePluginReleaseNotes();
@@ -222,8 +236,8 @@ export function HelpMenu({ overflow }: { overflow?: ReactNode }) {
         window.addEventListener(OPEN_WHATS_NEW, onOpen);
         return () => window.removeEventListener(OPEN_WHATS_NEW, onOpen);
     }, []);
-    const label = unread ? 'Help (new release)' : 'Help';
-    const moreLabel = unread ? 'More options (new release)' : 'More options';
+    const label = unread ? t('shell:header.help-new') : t('shell:header.help');
+    const moreLabel = unread ? t('shell:header.more-new') : t('shell:header.more');
     return (
         <>
             <Popover

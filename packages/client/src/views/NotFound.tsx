@@ -1,21 +1,42 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 
+import { error as EN_US_ERRORS } from '@socio/i18n/locales/en-US/shell.json';
+import { useTranslation } from '@socio/i18n/react';
+import { SOURCE_LOCALE } from '@socio/i18n/registry';
+
 import { plainHover } from '../lib/plain-button';
 import { Mascot } from '../locals/Mascot';
 
 import { cn } from '@/lib/utils';
 
+const WHAT = { Page: 'page', Space: 'space', Socio: 'socio', Conversation: 'conversation' } as const;
+
 /** Unknown URLs, and links to a Dot, chat or Space this user can't see. */
-export function NotFound({ what = 'Page' }: { what?: string }) {
+export function NotFound({ what = 'Page' }: { what?: keyof typeof WHAT }) {
+    const { t } = useErrorWords();
     return (
-        <EmptyPage role="status" title={<>{what} not found.</>}>
-            <p>It may have been removed, or it isn&apos;t shared with you.</p>
+        <EmptyPage role="status" title={t('shell:error.not-found.title', { context: WHAT[what] })}>
+            <p>{t('shell:error.not-found.why')}</p>
             <Link className={emptyAction} to="/">
-                Back to your socios
+                {t('shell:error.not-found.back')}
             </Link>
         </EmptyPage>
     );
+}
+
+/**
+ * The error pages' words (`shell:error`, which the root inlines). An
+ * error page can render without the root's loader data, and so without any
+ * dictionary: then it reads en-US's, which come with the code.
+ */
+export function useErrorWords() {
+    const translation = useTranslation(['shell']);
+    const { i18n } = translation;
+    if (!i18n.exists('shell:error.reload')) {
+        i18n.addResourceBundle(SOURCE_LOCALE, 'shell', { error: EN_US_ERRORS }, true, false);
+    }
+    return translation;
 }
 
 /** The quiet link or button under an empty page's message. */

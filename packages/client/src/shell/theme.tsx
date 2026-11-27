@@ -1,6 +1,8 @@
 import { ThemeProvider as NextThemesProvider, useTheme } from 'next-themes';
 import type { ReactNode } from 'react';
 
+import { useTranslation } from '@socio/i18n/react';
+
 import { useHydrated } from '../lib/client-only';
 
 export type ThemeChoice = 'light' | 'dark' | 'system';
@@ -8,11 +10,16 @@ export type ThemeChoice = 'light' | 'dark' | 'system';
 /** Where the choice is kept (per browser); public/theme-init.js reads it. */
 export const THEME_STORAGE_KEY = 'theme';
 
-export const themeChoices: { value: ThemeChoice; label: string }[] = [
-    { value: 'light', label: 'Light' },
-    { value: 'dark', label: 'Dark' },
-    { value: 'system', label: 'System' },
-];
+const THEME_CHOICES: readonly ThemeChoice[] = ['light', 'dark', 'system'];
+
+/**
+ * Light, Dark and System, in that order, with their words (`shell.help`,
+ * loaded on demand: only menus and the palette show them).
+ */
+export function useThemeChoices(): { value: ThemeChoice; label: string }[] {
+    const { t } = useTranslation(['shell.help']);
+    return THEME_CHOICES.map((value) => ({ value, label: t(`shell.help:theme.${value}`) }));
+}
 
 /**
  * Light, dark or the system's (the default), as a `light`/`dark` class on
