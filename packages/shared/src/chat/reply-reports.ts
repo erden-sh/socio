@@ -45,7 +45,7 @@ export const reportNoteLength = (note: string) => [...note.trim()].length;
  * audit records it when an admin turns sharing on. Change it whenever what
  * they say about what leaves changes.
  */
-export const REPLY_REPORTS_TEXT_VERSION = '2026-11-26';
+export const REPLY_REPORTS_TEXT_VERSION = '2026-11-26.2';
 
 /**
  * The confirmation a person sees before a report goes, every time. The
@@ -54,7 +54,7 @@ export const REPLY_REPORTS_TEXT_VERSION = '2026-11-26';
  */
 export const REPORT_CONFIRMATION = {
     title: 'Report this reply to Ingenio?',
-    body: "{socio}'s reply, the message it answered, the reason you pick and your note go to Ingenio, who make Socio, to keep it safe. Ingenio keeps the report for a year. Your name, your email and the rest of the conversation stay here.",
+    body: "{socio}'s reply, the message it answered, the reason you pick and your note go to Ingenio, who make Socio, to keep it safe. They go as written, with any names, emails or other details in them; only keys and passwords are taken out. Ingenio keeps the report for a year. Your account (your name, email and user id) and the rest of the conversation stay here.",
     /** The extra line when the answered message is another person's (`promptByOther`). */
     byOther: "{author}'s message goes to Ingenio too.",
     confirm: 'Report',
@@ -68,7 +68,7 @@ export const REPORT_CONFIRMATION = {
 /** The admins' setting (Settings → Cloud connection). */
 export const REPLY_REPORTS_SETTING = {
     label: 'Share AI reply reports with Ingenio',
-    body: "When someone gives a socio's reply a thumbs-down and confirms it, the reply, the message it answered, the reason and their note go to Ingenio, who make Socio, to keep it safe. Ingenio keeps each report for a year. Names, emails, the rest of the conversation and files stay here. Turning it off drops reports not sent yet.",
+    body: "When someone gives a socio's reply a thumbs-down and confirms it, the reply, the message it answered, the reason and their note go to Ingenio, who make Socio, to keep it safe. Those texts go as written, with any names, emails or other details in them; only keys and passwords are taken out. Ingenio keeps each report for a year. People's accounts (names, emails, user ids), the rest of the conversation and files stay here. Turning it off drops reports not sent yet.",
 } as const;
 
 /** The placeholders a text carries, in order: `{name}`. */

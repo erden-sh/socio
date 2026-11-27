@@ -721,8 +721,10 @@ export class ReplyReportsService implements ReplyReportsShape {
                 await transaction(this.db, 'reply reports cooldown', () => {
                     this.db
                         .prepare(
+                            // The later deadline wins: a shorter answer never cuts a longer wait short.
                             `INSERT INTO cloud_settings(key, value, updatedAt) VALUES (?, ?, ?)
-                             ON CONFLICT(key) DO UPDATE SET value=excluded.value, updatedAt=excluded.updatedAt`,
+                             ON CONFLICT(key) DO UPDATE SET value=excluded.value, updatedAt=excluded.updatedAt
+                             WHERE ifnull(json_extract(cloud_settings.value, '$.until'), 0) < json_extract(excluded.value, '$.until')`,
                         )
                         .run(COOLDOWN_KEY, JSON.stringify({ until }), this.now());
                 });

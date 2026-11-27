@@ -352,6 +352,11 @@ describe('the confirmation’s text', () => {
         expect(fillReportText(REPORT_CONFIRMATION.byOther, values)).toBe("Bob's message goes to Ingenio too.");
         expect(fillReportText('{missing} stays', {})).toBe('{missing} stays');
         expect(REPORT_REASONS.map((reason) => reason.id)).toEqual(['offensive', 'harmful', 'wrong', 'other']);
+        // What the person typed goes as written: the texts say so, and don't promise names stay.
+        for (const text of [REPORT_CONFIRMATION.body, REPLY_REPORTS_SETTING.body]) {
+            expect(text).toContain('as written, with any names, emails or other details in them');
+            expect(text).not.toMatch(/^(Names|Your name), /m);
+        }
     });
 });
 
@@ -477,6 +482,25 @@ describe('the report', () => {
         expect((body.reply as { text: string }).text).toContain('[redacted]');
         expect((body.prompt as { text: string }).text).toBe('Use [redacted] and [redacted] for the call.');
         expect(body.note).toBe('It printed [redacted]');
+    });
+
+    it('sends names and addresses typed into the texts as written, as the confirmation says', () => {
+        const body = reportBody(
+            {
+                threadId: SOLO,
+                messageId: SOLO_REPLY,
+                userId: ADA.id,
+                consent: 'c',
+                reason: 'other',
+                reply: { text: 'Write to ada@example.test.' },
+                prompt: { text: 'Ask Bob for it.', byOther: false },
+            },
+            reportHashes(randomBytes(32)),
+            'id',
+            1,
+        );
+        expect(body.reply.text).toBe('Write to ada@example.test.');
+        expect(body.prompt?.text).toBe('Ask Bob for it.');
     });
 
     it('keeps a note within 1,000 code points after redaction lengthens it', () => {
@@ -849,6 +873,41 @@ describe('what changes while a send waits', () => {
         await sending;
         expect(first.collector.posts).toHaveLength(1);
         expect(first.reports.admin().queued).toBe(2);
+    });
+});
+
+describe('the collector’s wait', () => {
+    it('keeps the longer Retry-After when two answers cross', async () => {
+        const first = await runtime();
+        const second = await runtime({
+            issuer: first.issuer,
+            collector: first.collector,
+            path: first.path,
+            clock: first.clock,
+            enroll: false,
+        });
+        const consent = await first.share();
+        await first.report(consent);
+        const hold = holdNextPost(first.collector);
+        const sending = first.reports.send();
+        await hold.arrived;
+        await first.report(consent, {}, BOB, ROOM, ROOM_REPLY);
+        // The second's answer comes first (10 minutes), the held one's after (1 second).
+        first.collector.answers.push(
+            { status: 429, headers: { 'retry-after': '600' } },
+            { status: 429, headers: { 'retry-after': '1' } },
+        );
+        await second.reports.send();
+        hold.release();
+        await sending;
+        expect(first.collector.posts).toHaveLength(2);
+        first.clock.advance(2_000);
+        await first.reports.send();
+        await second.reports.send();
+        expect(first.collector.posts).toHaveLength(2);
+        first.clock.advance(600_000);
+        await first.reports.send();
+        expect(first.collector.stored.size).toBe(2);
     });
 });
 
