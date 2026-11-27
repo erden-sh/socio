@@ -4,6 +4,7 @@ import type { ModelChoice } from '@socio/shared/inference';
 import { keptMentions } from '@socio/shared/rooms/room-view';
 import { MAX_CHAT_TITLE } from '@socio/shared/types';
 
+import { checkReportRequest, isReportOutcome, type ReportRequest } from '../chat/reply-reports';
 import { NetworkError } from '../net/errors';
 
 import {
@@ -18,6 +19,7 @@ import { CONVERSATION_IDS, isLocalChat, serverChatId, shownChatId } from './loca
 import type { NewOutboxWrite, Outbox, OutboxContext, OutboxKind, OutboxRow, OutboxWrite, SendOutcome } from './outbox';
 import { type Answer, type ClassifierAction, classify, readAnswer, reasonOf, type WriteMethod } from './outbox-answers';
 import type { Overlay, OverlayKind } from './outbox-overlay';
+import type { ReactionReport } from './reactions';
 import { ROOM_MESSAGE_KIND, ROOM_MESSAGE_VERSION, type RoomMessagePayload } from './room-send';
 import { CONVERSATIONS } from './shell';
 import type { SnapshotCache } from './snapshot-cache';
@@ -65,7 +67,12 @@ import type { SteeringStore } from './steering';
 //   404 is done: the chat is gone, which is what the person asked for.
 // - **Reactions** (`PUT`/`DELETE …/messages/:id/reactions/:kind`), only on a
 //   socio's finished reply: up, down, retry or needs-work. The answer's view
-//   goes to `onReactions` (reactions.ts's store).
+//   goes to `onReactions` (reactions.ts's store). A thumbs-down the person
+//   confirmed as an AI reply report (CB-382, docs/specs/REPLY-REPORTS.md §3)
+//   carries `report` and goes as the PUT's body; such a row is payload
+//   version 2, so an older build keeps it unsent rather than send it plain.
+//   The answer's `report` (queued, already, not-sharing, consent-changed,
+//   unavailable) is never an error: it goes to `onReactions` with the view.
 // - **Steering edit and cancel** (`PATCH`/`DELETE …/steering/:id`). A 409
 //   `delivered` means a turn took the message: an edit that gets it after an
 //   ambiguous attempt is kept as sent, and otherwise goes to `unsent`
@@ -84,6 +91,11 @@ export const REACTION_KIND = 'reaction';
 export const STEERING_EDIT_KIND = 'steering-edit';
 export const STEERING_CANCEL_KIND = 'steering-cancel';
 const VERSION = 1;
+/** The reaction kind reads version 2: a thumbs-down that carries a report. */
+export const REACTION_VERSION = 2;
+/** A reaction row's version: 2 only when it carries a report. */
+export const reactionVersion = (payload: ReactionPayload) =>
+    payload.report === undefined ? VERSION : REACTION_VERSION;
 
 /** How long a delete refused while the chat is busy (a turn, a task, a call) waits before it asks again. */
 export const DELETE_BUSY_WAIT_MS = 10_000;
@@ -121,6 +133,8 @@ export interface ReactionPayload {
     readonly reaction: ReactionKind;
     /** Added (PUT) or taken off (DELETE). */
     readonly on: boolean;
+    /** A confirmed report (CB-382): only on a thumbs-down being added. */
+    readonly report?: ReportRequest;
 }
 
 export interface SteeringEditPayload {
@@ -213,6 +227,7 @@ async function enqueueOrFold<P>(
     fold: ((queued: P) => P | null) | null,
     newId: () => string,
     replaces: readonly string[] = [],
+    versionOf: (payload: P) => number = () => VERSION,
 ): Promise<OutboxRow | 'folded'> {
     for (const refused of outbox.unsent()) {
         if (refused.lane === write.lane && replaces.includes(refused.kind)) {
@@ -225,7 +240,7 @@ async function enqueueOrFold<P>(
         if (found !== null && next !== null) {
             const updated = await outbox.update(
                 found.row.id,
-                { payload: JSON.stringify(next), payloadVersion: VERSION },
+                { payload: JSON.stringify(next), payloadVersion: versionOf(next) },
                 outbox.revisionOf(found.row.id),
             );
             if (updated) {
@@ -238,7 +253,7 @@ async function enqueueOrFold<P>(
         lane: write.lane,
         kind: write.kind,
         payload: JSON.stringify(write.payload),
-        payloadVersion: VERSION,
+        payloadVersion: versionOf(write.payload),
         idempotencyKey: newId(),
         ...(write.dependsOn === null ? {} : { dependsOn: write.dependsOn }),
     };
@@ -319,22 +334,51 @@ export function deleteChat(outbox: ManageOutbox, input: ManageInput & { threadId
     );
 }
 
-/** Adds (`on`) or takes off a reaction on a socio's reply. */
+/**
+ * Adds (`on`) or takes off a reaction on a socio's reply. A thumbs-down
+ * being added may carry the report the person confirmed (CB-382); a
+ * thumbs-down already there takes it too (the server makes the report then).
+ */
 export function react(
     outbox: ManageOutbox,
-    input: ManageInput & { threadId: string; messageId: string; reaction: ReactionKind; on: boolean },
+    input: ManageInput & {
+        threadId: string;
+        messageId: string;
+        reaction: ReactionKind;
+        on: boolean;
+        report?: ReportRequest;
+    },
 ) {
     if (!isReactionKind(input.reaction)) {
         throw new ChatManageError('React with up, down, retry or needs-work.');
     }
     const { threadId, messageId, reaction, on } = input;
+    let report: ReportRequest | undefined;
+    if (input.report !== undefined) {
+        const checked = reaction === 'down' && on ? checkReportRequest(input.report) : null;
+        if (checked === null) {
+            throw new ChatManageError(
+                'Only a thumbs-down being added carries a report, with a reason and its consent.',
+            );
+        }
+        report = checked;
+    }
+    const payload: ReactionPayload = { threadId, messageId, reaction, on, ...(report === undefined ? {} : { report }) };
     const where = route(outbox, threadId, (id) => reactionLane(id, messageId));
     return enqueueOrFold<ReactionPayload>(
         outbox,
-        { ...where, kind: REACTION_KIND, payload: { threadId, messageId, reaction, on } },
-        (queued) => (queued.messageId === messageId && queued.reaction === reaction ? { ...queued, on } : null),
+        { ...where, kind: REACTION_KIND, payload },
+        // The newest intent: a report replaces the queued one's, and a removal drops it.
+        (queued) => {
+            if (queued.messageId !== messageId || queued.reaction !== reaction) {
+                return null;
+            }
+            const { report: _queued, ...rest } = queued;
+            return { ...rest, on, ...(report === undefined ? {} : { report }) };
+        },
         input.newId,
         [REACTION_KIND],
+        reactionVersion,
     );
 }
 
@@ -480,8 +524,11 @@ export interface ChatManageOptions {
     readonly cache?: Pick<SnapshotCache, 'confirm'>;
     /** After a write the server took: what it changed is pulled (`notesForWrite`, the scope's). */
     readonly afterWrite?: (path: string) => void;
-    /** A reaction's answer: the chat's reactions view (reactions.ts's store). */
-    readonly onReactions?: (threadId: string, view: unknown) => void;
+    /**
+     * A reaction's answer: the chat's reactions view (reactions.ts's store),
+     * and for a write that carried a report, what became of it (CB-382).
+     */
+    readonly onReactions?: (threadId: string, view: unknown, report?: ReactionReport) => void;
     /** `DELETE_BUSY_WAIT_MS` and `CANCEL_TURN_WAIT_MS`, for tests. */
     readonly waits?: { readonly deleteBusyMs?: number; readonly cancelTurnMs?: number };
 }
@@ -684,15 +731,19 @@ export function chatManageKinds(options: ChatManageOptions): OutboxKind<unknown>
 
     const reaction: OutboxKind<ReactionPayload> = {
         kind: REACTION_KIND,
-        payloadVersion: VERSION,
+        payloadVersion: REACTION_VERSION,
         repeatable: true,
         decode: decoder<ReactionPayload>(
             (value) =>
-                typeof value.messageId === 'string' && isReactionKind(value.reaction) && typeof value.on === 'boolean',
+                typeof value.messageId === 'string' &&
+                isReactionKind(value.reaction) &&
+                typeof value.on === 'boolean' &&
+                (value.report === undefined ||
+                    (value.reaction === 'down' && value.on === true && checkReportRequest(value.report) !== null)),
             'reaction',
         ),
         async send(write, context) {
-            const { messageId, reaction: kind, on } = write.payload;
+            const { messageId, reaction: kind, on, report } = write.payload;
             const threadId = threadOf(context, write.payload.threadId);
             if (threadId === null) {
                 return on ? { action: 'unsent', reason: MANAGE_REASON.noChat } : { action: 'done' };
@@ -704,15 +755,19 @@ export function chatManageKinds(options: ChatManageOptions): OutboxKind<unknown>
                 path,
                 on ? 'PUT' : 'DELETE',
                 on ? either(goneAnswer, coded) : either(goneIsDone, coded),
+                report === undefined ? undefined : { report },
             );
             if (action.action !== 'delivered') {
                 return outcome(action, answer);
             }
             const view = answer.body;
+            const said = (view as { report?: unknown } | null)?.report;
+            const told: ReactionReport | undefined =
+                report !== undefined && isReportOutcome(said) ? { messageId, outcome: said } : undefined;
             return {
                 action: 'done',
                 ...(onReactions !== undefined && view !== null && answer.status !== 404 && answer.status !== 410
-                    ? { handOff: async () => onReactions(threadId, view) }
+                    ? { handOff: async () => onReactions(threadId, view, told) }
                     : {}),
             };
         },

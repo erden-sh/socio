@@ -27,6 +27,7 @@ import {
     deleteChat,
     editQueuedMessage,
     MANAGE_REASON,
+    REACTION_VERSION,
     react,
     renameChat,
     setChatModel,
@@ -37,6 +38,7 @@ import { CONVERSATION_IDS, isLocalChat } from '../../src/sync/local-ids';
 import { newChatKind, newChatWrites } from '../../src/sync/new-chat';
 import { type Outbox, type OutboxKind, openOutbox } from '../../src/sync/outbox';
 import { overlaysOf } from '../../src/sync/outbox-overlay';
+import type { ReactionReport } from '../../src/sync/reactions';
 import type { ConfirmedChange } from '../../src/sync/snapshot-cache';
 import { createSteeringStore, queuedBubbles, type SteeringStore } from '../../src/sync/steering';
 import { createNodeSqliteDriver } from '../helpers/node-sqlite-driver';
@@ -78,6 +80,21 @@ function server() {
     const runs: HistoryRun[] = [];
     const queue: QueuedMessage[] = [];
     const reactions = new Map<string, Set<ReactionKind>>();
+    /**
+     * AI reply reports (CB-382), as reaction-routes.ts checks them: sharing,
+     * consent, an existing report, then `shownByOther` against `promptByOther`.
+     */
+    const reports = {
+        sharing: true,
+        consent: 'consent-1',
+        promptByOther: false,
+        /** The next report can't be made (`unavailable`). */
+        unavailable: false,
+        /** By message: queued or shared (sent). */
+        made: new Map<string, 'queued' | 'shared'>(),
+        /** Every PUT's body, in order. */
+        bodies: [] as unknown[],
+    };
     /** The next answers, by `<METHOD> <route>`: `PATCH chat`, `DELETE chat`, `PUT reaction`, `PATCH queued`... */
     const scripts = new Map<string, Script[]>();
     const log: string[] = [];
@@ -86,6 +103,18 @@ function server() {
     let next = 1;
 
     const script = (key: string) => scripts.get(key)?.shift();
+    /** Removing the thumbs-down: an unsent report is deleted, a sent one kept (§5). */
+    const withdraw = (messageId: string) => {
+        const made = reports.made.get(messageId);
+        if (made === undefined) {
+            return undefined;
+        }
+        if (made === 'shared') {
+            return 'kept';
+        }
+        reports.made.delete(messageId);
+        return 'withdrawn';
+    };
     const view = () => ({ messages: [...queue], limit: 5, running });
     const store = (messages: Message[]) => {
         const seq = (runs.at(-1)?.seq ?? 0) + 10;
@@ -184,12 +213,41 @@ function server() {
                 }
                 const mine = reactions.get(messageId) ?? new Set<ReactionKind>();
                 reactions.set(messageId, mine);
+                let report: string | undefined;
                 if (method === 'PUT') {
+                    reports.bodies.push(init.json);
                     mine.add(kind);
+                    const asked = (init.json as { report?: { consent: string; shownByOther: boolean } } | undefined)
+                        ?.report;
+                    if (kind === 'up' && mine.delete('down')) {
+                        report = withdraw(messageId);
+                    } else if (asked !== undefined) {
+                        report = !reports.sharing
+                            ? 'not-sharing'
+                            : asked.consent !== reports.consent
+                              ? 'consent-changed'
+                              : reports.made.has(messageId)
+                                ? 'already'
+                                : reports.promptByOther && !asked.shownByOther
+                                  ? 'consent-changed'
+                                  : reports.unavailable
+                                    ? 'unavailable'
+                                    : (reports.made.set(messageId, 'queued'), 'queued');
+                    }
                 } else {
                     mine.delete(kind);
+                    if (kind === 'down') {
+                        report = withdraw(messageId);
+                    }
                 }
-                return json(200, { shared: false, messages: { [messageId]: { counts: {}, mine: [...mine] } } });
+                const mark = mine.has('down') ? reports.made.get(messageId) : undefined;
+                return json(200, {
+                    shared: false,
+                    messages: {
+                        [messageId]: { counts: {}, mine: [...mine], ...(mark === undefined ? {} : { report: mark }) },
+                    },
+                    ...(report === undefined ? {} : { report }),
+                });
             });
         }
         if (path === `/api/conversations/${THREAD}/steering` && method === 'GET') {
@@ -226,6 +284,7 @@ function server() {
         runs,
         queue,
         reactions,
+        reports,
         log,
         store,
         script(key: string, ...answers: Script[]) {
@@ -271,6 +330,8 @@ interface Phone {
     readonly steering: SteeringStore;
     readonly confirmed: ConfirmedChange[];
     readonly reactionViews: [string, unknown][];
+    /** What became of each report a write carried, as handed to the reactions store. */
+    readonly reportOutcomes: ReactionReport[];
     readonly kinds: OutboxKind<unknown>[];
     /** Settles until `done` holds, through the outbox's back-off (real timers), or fails after 15 s. */
     until(done: () => boolean): Promise<void>;
@@ -291,6 +352,7 @@ async function open(srv: Server, options: { extraKinds?: OutboxKind<unknown>[] }
     const steering = createSteeringStore({ scopeId: `t.${ids}`, fetch: srv.fetch, isLocal: isLocalChat });
     const confirmed: ConfirmedChange[] = [];
     const reactionViews: [string, unknown][] = [];
+    const reportOutcomes: ReactionReport[] = [];
     const kinds = chatManageKinds({
         histories,
         steering,
@@ -299,7 +361,12 @@ async function open(srv: Server, options: { extraKinds?: OutboxKind<unknown>[] }
                 confirmed.push(change);
             },
         },
-        onReactions: (threadId, view) => reactionViews.push([threadId, view]),
+        onReactions: (threadId, view, report) => {
+            reactionViews.push([threadId, view]);
+            if (report !== undefined) {
+                reportOutcomes.push(report);
+            }
+        },
         waits: { deleteBusyMs: 50, cancelTurnMs: 50 },
     });
     const outbox = await openOutbox({
@@ -325,6 +392,7 @@ async function open(srv: Server, options: { extraKinds?: OutboxKind<unknown>[] }
         steering,
         confirmed,
         reactionViews,
+        reportOutcomes,
         kinds,
         async settle() {
             for (let i = 0; i < 3; i += 1) {
@@ -693,6 +761,226 @@ describe('reactions', () => {
                 newId,
             }),
         ).toThrow(ChatManageError);
+    });
+});
+
+describe('AI reply reports (CB-382)', () => {
+    const REPORT = { reason: 'offensive', consent: 'consent-1', shownByOther: false } as const;
+    const stored = (srv: Server) => {
+        srv.store([{ id: 'u1', role: 'user', content: 'hi' }]);
+        return srv.runs[0]!.messages.at(-1)!.id;
+    };
+
+    it('sends the report as the thumbs-down PUT’s body, at payload version 2, and hands its outcome over', async () => {
+        const srv = server();
+        const reply = stored(srv);
+        const phone = await open(srv);
+        await react(phone.outbox, {
+            threadId: THREAD,
+            messageId: reply,
+            reaction: 'down',
+            on: true,
+            report: { ...REPORT, note: '  too rude  ' },
+            newId,
+        });
+        expect(phone.outbox.rows()[0]).toMatchObject({ payloadVersion: REACTION_VERSION });
+        await phone.until(() => empty(phone));
+        expect(srv.reports.bodies).toEqual([
+            { report: { reason: 'offensive', note: 'too rude', consent: 'consent-1', shownByOther: false } },
+        ]);
+        expect(phone.reportOutcomes).toEqual([{ messageId: reply, outcome: 'queued' }]);
+        expect(srv.reports.made.get(reply)).toBe('queued');
+    });
+
+    it('leaves a plain reaction at version 1 with no body, and hands no outcome', async () => {
+        const srv = server();
+        const reply = stored(srv);
+        const phone = await open(srv);
+        await react(phone.outbox, { threadId: THREAD, messageId: reply, reaction: 'down', on: true, newId });
+        expect(phone.outbox.rows()[0]).toMatchObject({ payloadVersion: 1 });
+        await phone.until(() => empty(phone));
+        expect(srv.reports.bodies).toEqual([undefined]);
+        expect(phone.reportOutcomes).toEqual([]);
+    });
+
+    it.each([
+        [
+            'not-sharing',
+            (srv: Server): void => {
+                srv.reports.sharing = false;
+            },
+        ],
+        [
+            'consent-changed',
+            (srv: Server): void => {
+                srv.reports.consent = 'consent-2';
+            },
+        ],
+        [
+            'consent-changed',
+            (srv: Server): void => {
+                srv.reports.promptByOther = true;
+            },
+        ],
+        [
+            'unavailable',
+            (srv: Server): void => {
+                srv.reports.unavailable = true;
+            },
+        ],
+        ['already', (srv: Server) => srv.reports.made.set(srv.runs[0]!.messages.at(-1)!.id, 'shared')],
+    ] as const)('takes %s without an error: the thumbs-down stays, nothing goes to unsent', async (outcome, set) => {
+        const srv = server();
+        const reply = stored(srv);
+        set(srv);
+        const phone = await open(srv);
+        await react(phone.outbox, {
+            threadId: THREAD,
+            messageId: reply,
+            reaction: 'down',
+            on: true,
+            report: REPORT,
+            newId,
+        });
+        await phone.until(() => empty(phone));
+        expect(phone.outbox.unsent()).toEqual([]);
+        expect(srv.reactions.get(reply)?.has('down')).toBe(true);
+        expect(phone.reportOutcomes).toEqual([{ messageId: reply, outcome }]);
+    });
+
+    it('reports another person’s message when the sheet said so (shownByOther)', async () => {
+        const srv = server();
+        const reply = stored(srv);
+        srv.reports.promptByOther = true;
+        const phone = await open(srv);
+        await react(phone.outbox, {
+            threadId: THREAD,
+            messageId: reply,
+            reaction: 'down',
+            on: true,
+            report: { ...REPORT, shownByOther: true },
+            newId,
+        });
+        await phone.until(() => empty(phone));
+        expect(phone.reportOutcomes).toEqual([{ messageId: reply, outcome: 'queued' }]);
+    });
+
+    it('offline, a plain thumbs-down waits; once back, reporting on it makes the report', async () => {
+        const srv = server();
+        const reply = stored(srv);
+        srv.script('PUT reaction', 'drop', { status: 503, body: { code: 'draining' } });
+        const phone = await open(srv);
+        await react(phone.outbox, { threadId: THREAD, messageId: reply, reaction: 'down', on: true, newId });
+        await phone.until(() => empty(phone));
+        expect(srv.reports.made.has(reply)).toBe(false);
+        // "Report it now?": the existing thumbs-down takes the report.
+        await react(phone.outbox, {
+            threadId: THREAD,
+            messageId: reply,
+            reaction: 'down',
+            on: true,
+            report: REPORT,
+            newId,
+        });
+        await phone.until(() => empty(phone));
+        expect(srv.reports.bodies.at(-1)).toEqual({ report: REPORT });
+        expect(phone.reportOutcomes).toEqual([{ messageId: reply, outcome: 'queued' }]);
+        expect(srv.reports.made.get(reply)).toBe('queued');
+    });
+
+    it('a report on a plain thumbs-down still queued folds into its row; a removal drops the report', async () => {
+        const srv = server();
+        const reply = stored(srv);
+        srv.script('PUT reaction', { status: 503, body: { code: 'draining' } });
+        const phone = await open(srv);
+        await react(phone.outbox, { threadId: THREAD, messageId: reply, reaction: 'down', on: true, newId });
+        await phone.settle();
+        await react(phone.outbox, {
+            threadId: THREAD,
+            messageId: reply,
+            reaction: 'down',
+            on: true,
+            report: REPORT,
+            newId,
+        });
+        expect(phone.outbox.rows()).toHaveLength(1);
+        expect(JSON.parse(phone.outbox.rows()[0]!.payload)).toMatchObject({ report: REPORT });
+        expect(phone.outbox.rows()[0]).toMatchObject({ payloadVersion: REACTION_VERSION });
+        await react(phone.outbox, { threadId: THREAD, messageId: reply, reaction: 'down', on: false, newId });
+        expect(phone.outbox.rows()).toHaveLength(1);
+        expect(JSON.parse(phone.outbox.rows()[0]!.payload)).not.toHaveProperty('report');
+        expect(phone.outbox.rows()[0]).toMatchObject({ payloadVersion: 1 });
+        await phone.until(() => empty(phone));
+        expect(srv.reports.made.has(reply)).toBe(false);
+    });
+
+    it('withdraws an unsent report when the thumbs-down goes, and keeps a sent one (§5)', async () => {
+        const srv = server();
+        const reply = stored(srv);
+        const phone = await open(srv);
+        await react(phone.outbox, {
+            threadId: THREAD,
+            messageId: reply,
+            reaction: 'down',
+            on: true,
+            report: REPORT,
+            newId,
+        });
+        await phone.until(() => empty(phone));
+        await react(phone.outbox, { threadId: THREAD, messageId: reply, reaction: 'down', on: false, newId });
+        await phone.until(() => empty(phone));
+        expect(srv.reports.made.has(reply)).toBe(false);
+        await react(phone.outbox, {
+            threadId: THREAD,
+            messageId: reply,
+            reaction: 'down',
+            on: true,
+            report: REPORT,
+            newId,
+        });
+        await phone.until(() => empty(phone));
+        srv.reports.made.set(reply, 'shared');
+        await react(phone.outbox, { threadId: THREAD, messageId: reply, reaction: 'up', on: true, newId });
+        await phone.until(() => empty(phone));
+        expect(srv.reports.made.get(reply)).toBe('shared');
+        expect(srv.reactions.get(reply)?.has('down')).toBe(false);
+        // Removals carry no report outcome to show (the web says nothing either).
+        expect(phone.reportOutcomes.map((item) => item.outcome)).toEqual(['queued', 'queued']);
+    });
+
+    it('refuses a report on anything but a thumbs-down being added, or one without its consent', async () => {
+        const srv = server();
+        const phone = await open(srv);
+        const base = { threadId: THREAD, messageId: 'm', newId };
+        expect(() => react(phone.outbox, { ...base, reaction: 'up', on: true, report: REPORT })).toThrow(
+            ChatManageError,
+        );
+        expect(() => react(phone.outbox, { ...base, reaction: 'down', on: false, report: REPORT })).toThrow(
+            ChatManageError,
+        );
+        expect(() =>
+            react(phone.outbox, { ...base, reaction: 'down', on: true, report: { ...REPORT, consent: '' } }),
+        ).toThrow(ChatManageError);
+        expect(() =>
+            react(phone.outbox, {
+                ...base,
+                reaction: 'down',
+                on: true,
+                report: { ...REPORT, reason: 'rude' as 'offensive' },
+            }),
+        ).toThrow(ChatManageError);
+        expect(phone.outbox.rows()).toEqual([]);
+    });
+
+    it('decodes a stored report row, and refuses one whose report is malformed', () => {
+        const kind = chatManageKinds({ histories: {} as HistoryStore, steering: {} as SteeringStore }).find(
+            (item) => item.kind === 'reaction',
+        )!;
+        const row = { threadId: THREAD, messageId: 'm', reaction: 'down', on: true, report: REPORT };
+        expect(kind.decode!(JSON.stringify(row), 2)).toEqual(row);
+        expect(() => kind.decode!(JSON.stringify({ ...row, reaction: 'up' }), 2)).toThrow(TypeError);
+        expect(() => kind.decode!(JSON.stringify({ ...row, report: { reason: 'offensive' } }), 2)).toThrow(TypeError);
+        expect(kind.payloadVersion).toBe(REACTION_VERSION);
     });
 });
 

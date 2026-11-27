@@ -1292,6 +1292,28 @@ describe('Google and Apple on the local servers (CB-570)', async () => {
         expect(env({ port: 4351, home: '/tmp/x', modelPort: 4550 })).not.toHaveProperty('SOCIO_CLOUD_ISSUER');
     });
 
+    it('--reports shares the fake cloud, which grants reports:write and names itself the collector (CB-382)', async () => {
+        expect(parse([]).reports).toBeNull();
+        expect(parse(['--reports'])).toMatchObject({ reports: { cloudPort: 4548 }, social: null });
+        expect(parse(['--reports', '--cloud-port', '4600']).reports).toEqual({ cloudPort: 4600 });
+        expect(() => parse(['--reports', '--cloud-port', '4549'])).toThrow(/different/);
+        const cloud = { issuer: 'http://127.0.0.1:4548', token: 'iat_x' };
+        expect(env({ port: 4351, home: '/tmp/x', modelPort: 4550, cloud: { ...cloud, reports: true } })).toMatchObject({
+            SOCIO_CLOUD_REPORTS_ORIGIN: 'http://127.0.0.1:4548',
+        });
+        expect(env({ port: 4351, home: '/tmp/x', modelPort: 4550, cloud })).not.toHaveProperty(
+            'SOCIO_CLOUD_REPORTS_ORIGIN',
+        );
+        const fake = await fakeCloud(0, { reports: true });
+        try {
+            const refused = await fetch(`${fake.origin}/v1/reports`, { method: 'POST', body: '{}' });
+            expect(refused.status).toBe(401);
+            expect(fake.reports).toEqual([]);
+        } finally {
+            await fake.close();
+        }
+    });
+
     it('verifies a test token with the nonce Google or Apple carries, and stands refuse-* accounts for the service’s refusals', () => {
         const nonce = 'n'.repeat(43);
         const google = testIdToken({ variant: 'development', provider: 'google', account: 'ada-test', nonce });

@@ -4,7 +4,7 @@ import { useFocusEffect, useIsFocused, useNavigation } from '@react-navigation/n
 import type { StaticScreenProps } from '@react-navigation/native';
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { type ReactNode, useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import {
     AccessibilityInfo,
     type AccessibilityActionEvent,
@@ -88,7 +88,8 @@ import {
 import { createPacedText, type PacedText } from '../chat/paced-text';
 import { type PageReviewCard, reviewCardView, reviewDecision, reviewDraftShown } from '../chat/page-review';
 import { replyBox as replyDraft } from '../chat/quote-reply';
-import { reactionButtons, reactionSaid, reactionsShown } from '../chat/reactions';
+import { reactionButtons, reactionsShown } from '../chat/reactions';
+import { replyReportsOf, replySocioName } from '../chat/reply-reports';
 import { ownWaiting, type RoomStarter } from '../chat/room-composer';
 import { roomHeader } from '../chat/room-people';
 import {
@@ -142,7 +143,7 @@ import { chatScreen, LAST_SCREEN_KEY } from '../shell/last-screen';
 import { LONG_PRESS_TO_MENU, MENU_TAKES_TAP } from '../shell/native-menu';
 import { shellQuery, shellRows, sociosQuery } from '../shell/queries';
 import { chatDraft, DraftError } from '../sync/chat-drafts';
-import { CHAT_MANAGE_VIEWS, react } from '../sync/chat-manage';
+import { CHAT_MANAGE_VIEWS } from '../sync/chat-manage';
 import { CHAT_MESSAGE_VIEW } from '../sync/chat-send';
 import { isLocalChat } from '../sync/local-ids';
 import type { Outbox, OutboxRow } from '../sync/outbox';
@@ -168,6 +169,7 @@ import { ReplyMarkdown } from './chat-markdown';
 import { MessageText } from './message-text';
 import { useOpenLink } from './open-link';
 import { PageContextBanner, usePageChatContext, usePageRefreshAfterTurn } from './page-chat-context';
+import { useReplyReports } from './reply-report';
 import { RoomComposer } from './room-composer';
 import { OthersBubbleView, RoomBar, RoomNote, SpeakerLine, useRoomFailures } from './room-parts';
 import { StatusBanners } from './shell-parts';
@@ -766,17 +768,32 @@ function Transcript({
     const openLink = useOpenLink();
     const webUrl = chatWebUrl(scope.workspace.origin, id);
     const reactionFailed = (error: unknown) => console.warn('[chat] the reaction was not saved', error);
-    const toggle = (messageId: string, kind: ReactionKind, on: boolean) => {
-        AccessibilityInfo.announceForAccessibility(reactionSaid(kind, on));
-        react(scope.outbox, { threadId: id, messageId, reaction: kind, on: !on, newId: randomId }).catch(
-            reactionFailed,
+    // AI reply reports (CB-382): a thumbs-down while the workspace shares them is confirmed in a sheet first.
+    const collections = useCollections();
+    const { data: shellData } = useLiveQuery({ query: shellQuery(collections) });
+    const { data: dots } = useLiveQuery({ query: sociosQuery(collections) });
+    const reports = useReplyReports({
+        threadId: id,
+        state: reactions,
+        shown: shownReactions,
+        reports: replyReportsOf(shellRows(shellData).workspace),
+        waiting: (messageId) =>
+            manageOverlays.some((item) => item.collection === 'reactions' && item.key === `${id}/${messageId}`),
+        onFailed: reactionFailed,
+    });
+    const socioOf = (row: UserRow | ReplyRow) =>
+        replySocioName(
+            row.kind === 'reply' ? row.socioId : undefined,
+            (dots ?? []) as { id: string; name?: unknown }[],
         );
+    const toggle = (row: UserRow | ReplyRow, kind: ReactionKind, on: boolean) => {
+        reports.press(row.id, socioOf(row), kind, on);
     };
     const onMessageAction = (row: UserRow | ReplyRow, name: string) => {
         const kind = reactionOf(name);
         if (kind !== null) {
             const button = reactionButtons(shownReactions, row.id).find((item) => item.kind === kind);
-            toggle(row.id, kind, button?.on === true);
+            toggle(row, kind, button?.on === true);
         } else if (name === 'copy') {
             Clipboard.setStringAsync(row.text).catch(() => {});
         } else if (name === 'share') {
@@ -1025,7 +1042,8 @@ function Transcript({
                                 }}
                                 onAction={(name) => onMessageAction(item, name)}
                                 rowActions={messageRowActions(item, () => reactionButtons(shownReactions, item.id))}
-                                onToggle={(button) => toggle(item.id, button.kind, button.on)}
+                                onToggle={(button) => toggle(item, button.kind, button.on)}
+                                below={item.kind === 'reply' ? reports.lines(item.id, socioOf(item)) : null}
                                 marked={viewing.shown?.key === item.id}
                             />
                         ) : (
@@ -1178,6 +1196,7 @@ function MessageItem({
     onAction,
     rowActions,
     onToggle,
+    below = null,
     marked = false,
 }: {
     row: UserRow | ReplyRow;
@@ -1188,6 +1207,8 @@ function MessageItem({
     /** The row under it (`messageRowActions`), or null while it streams or has no words. */
     rowActions: MessageRowActions | null;
     onToggle: (button: ReturnType<typeof reactionButtons>[number]) => void;
+    /** Under a reply's action row: its report's lines (CB-382). */
+    below?: ReactNode;
     /** View on an unconfirmed message scrolled here: ringed in the primary tone. */
     marked?: boolean;
 }) {
@@ -1259,6 +1280,7 @@ function MessageItem({
                 </Pressable>
             </ActionMenu>
             {actionRow('start')}
+            {below}
         </View>
     );
 }

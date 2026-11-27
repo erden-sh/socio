@@ -8,6 +8,7 @@
 //   node apps/mobile/e2e/servers.mjs [--count 1-3 | --ports 4351,4352,4353]
 //       [--model-port 4550] [--control 4549] [--device <serial>] [--no-adb] [--once]
 //       [--capture <dir>] [--no-rooms] [--dev-links] [--codes] [--feature-flags <list>]
+//       [--social] [--reports] [--cloud-port <port>]
 //
 // Every child gets an environment built from scratch (PATH, plus the
 // recipe's settings), so no key or token from the shell reaches a server.
@@ -30,6 +31,10 @@
 // and a fake Telegram of its own (web-side.mjs), and the control port plays Ada
 // on the web: the codes sent, Add a device's QR code and 6 digits, and Sign out
 // and erase (README, Getting in).
+// With --reports (CB-382) every workspace enrolls with the fake cloud, which grants
+// `reports:write` and is the reports collector too, and Ada turns "Share AI reply
+// reports with Ingenio" on; the control port's `/web/reports` turns it off and on,
+// holds the collector or takes reports again, and says what it took.
 import { spawn, spawnSync } from 'node:child_process';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -61,7 +66,7 @@ export const ROOT = resolve(import.meta.dirname, '../../..');
 export const DEFAULT_PORTS = [4351, 4352, 4353];
 export const DEFAULT_MODEL_PORT = 4550;
 export const DEFAULT_CONTROL_PORT = 4549;
-/** --social's fake cloud services (fake-cloud.mjs). */
+/** --social's and --reports' fake cloud services (fake-cloud.mjs). */
 export const DEFAULT_CLOUD_PORT = 4548;
 /** Cy (deactivated) is linked to Google and Apple as this test account, for the `deactivated` refusal. */
 export const CY_SOCIAL_ACCOUNT = 'cy-test';
@@ -111,6 +116,7 @@ const USAGE = `Usage: node apps/mobile/e2e/servers.mjs [options]
   --feature-flags <l>  FEATURE_FLAGS for every workspace (datasets-in-spaces=on, CB-469)
   --codes              sign-in codes: an SMTP sink and a fake Telegram per workspace, email on A, Telegram elsewhere
   --social             Google and Apple sign-in (CB-570): every workspace enrolls with a fake cloud that verifies test accounts
+  --reports            AI reply reports (CB-382): the fake cloud grants reports:write and collects them; Ada shares them
   --cloud-port <port>  the fake cloud's port (default ${DEFAULT_CLOUD_PORT})`;
 
 /** @param {string} value @param {string} flag */
@@ -145,6 +151,7 @@ export function parseServerArgs(argv, env = {}) {
             'feature-flags': { type: 'string' },
             codes: { type: 'boolean', default: false },
             social: { type: 'boolean', default: false },
+            reports: { type: 'boolean', default: false },
             'cloud-port': { type: 'string' },
             help: { type: 'boolean', short: 'h', default: false },
         },
@@ -176,10 +183,11 @@ export function parseServerArgs(argv, env = {}) {
     const control = values.control === undefined ? DEFAULT_CONTROL_PORT : port(values.control, '--control');
     const cloudPort =
         values['cloud-port'] === undefined ? DEFAULT_CLOUD_PORT : port(values['cloud-port'], '--cloud-port');
-    if (values['cloud-port'] !== undefined && !values.social) {
-        throw new Error('--cloud-port is for --social.');
+    const cloud = values.social || values.reports;
+    if (values['cloud-port'] !== undefined && !cloud) {
+        throw new Error('--cloud-port is for --social or --reports.');
     }
-    const all = [...ports, modelPort, control, ...(values.social ? [cloudPort] : [])];
+    const all = [...ports, modelPort, control, ...(cloud ? [cloudPort] : [])];
     if (new Set(all).size !== all.length) {
         throw new Error("Every port must be different, the fake model's, the control's and the cloud's included.");
     }
@@ -196,6 +204,7 @@ export function parseServerArgs(argv, env = {}) {
         featureFlags: values['feature-flags'],
         codes: values.codes,
         social: values.social ? { cloudPort } : null,
+        reports: values.reports ? { cloudPort } : null,
     };
 }
 
@@ -204,8 +213,9 @@ export function parseServerArgs(argv, env = {}) {
  * nothing from the shell or a .env. The provider is the fake model. Rooms
  * start on unless `rooms` is false (`--no-rooms`).
  * With `channels` (--codes), SMTP to the sink and Telegram to the fake Bot API.
- * With `cloud` (--social), the fake cloud's issuer and one enrollment token for this server.
- * @param {{ port: number, home: string, modelPort: number, path?: string, rooms?: boolean, devLinks?: boolean, featureFlags?: string, channels?: { smtpPort: number, telegramRoot: string }, cloud?: { issuer: string, token: string } }} options
+ * With `cloud` (--social, --reports), the fake cloud's issuer and one enrollment token for this server,
+ * and with its `reports` the collector's origin (the fake's own).
+ * @param {{ port: number, home: string, modelPort: number, path?: string, rooms?: boolean, devLinks?: boolean, featureFlags?: string, channels?: { smtpPort: number, telegramRoot: string }, cloud?: { issuer: string, token: string, reports?: boolean } }} options
  * @returns {Record<string, string>}
  */
 export function serverEnv({
@@ -256,6 +266,8 @@ export function serverEnv({
         // --social: the fake cloud services (fake-cloud.mjs), on loopback; otherwise the cloud
         // connection has no enrollment token and sends nothing.
         ...(cloud ? { SOCIO_CLOUD_ISSUER: cloud.issuer, SOCIO_CLOUD_ENROLLMENT_TOKEN: cloud.token } : {}),
+        // --reports: the fake cloud is the reports collector too (a loopback issuer has no sibling).
+        ...(cloud?.reports ? { SOCIO_CLOUD_REPORTS_ORIGIN: cloud.issuer } : {}),
         OPS_ANALYTICS_MODE: 'off',
         OPS_PRICE_SYNC: 'off',
         OTEL_SDK_DISABLED: 'true',
@@ -271,7 +283,7 @@ export function serverEnv({
  * letter, so a flow can tell the workspaces apart and see the archived chat
  * left out of the list. With `rooms` false (`--no-rooms`) Rooms stay off and
  * there is no room (`room: null`), so a flow can empty the chat list.
- * @param {{ ports: number[], modelPort: number, dir: string, path?: string, rooms?: boolean, devLinks?: boolean, featureFlags?: string, channels?: Array<{ smtpPort: number, telegramRoot: string }>, clouds?: Array<{ issuer: string, token: string }> }} options
+ * @param {{ ports: number[], modelPort: number, dir: string, path?: string, rooms?: boolean, devLinks?: boolean, featureFlags?: string, channels?: Array<{ smtpPort: number, telegramRoot: string }>, clouds?: Array<{ issuer: string, token: string, reports?: boolean }> }} options
  */
 export function seedPlan({
     ports,
@@ -1321,14 +1333,25 @@ async function main() {
             `SMTP sinks and fake Telegrams on ${channelSet.map(({ sink, telegram }) => `${sink.port} ${telegram.apiRoot}`).join(', ')}`,
         );
     }
-    // --social: the fake cloud services, and one enrollment token per workspace.
-    const cloud = options.social ? await fakeCloud(options.social.cloudPort) : null;
+    // --social and --reports: the fake cloud services, and one enrollment token per workspace.
+    const cloudPort = (options.social ?? options.reports)?.cloudPort;
+    const cloud = cloudPort === undefined ? null : await fakeCloud(cloudPort, { reports: options.reports !== null });
     if (cloud) {
         state.cloud = cloud;
-        say(`fake cloud services on ${cloud.origin} (Google and Apple test accounts)`);
+        const what = [
+            options.social ? 'Google and Apple test accounts' : '',
+            options.reports ? 'the reports collector' : '',
+        ];
+        say(`fake cloud services on ${cloud.origin} (${what.filter(Boolean).join(', ')})`);
     }
     const servers = seedPlan({
-        clouds: cloud ? options.ports.map(() => ({ issuer: cloud.origin, token: cloud.provision() })) : undefined,
+        clouds: cloud
+            ? options.ports.map(() => ({
+                  issuer: cloud.origin,
+                  token: cloud.provision(),
+                  reports: options.reports !== null,
+              }))
+            : undefined,
         ports: options.ports,
         modelPort: options.modelPort,
         dir,
@@ -1377,7 +1400,11 @@ async function main() {
             );
             say(`${server.letter}: sign-in codes by ${index === 0 ? 'email' : 'Telegram'}`);
         }
-        if (cloud) {
+        if (options.reports) {
+            await shareReports(server, password, true);
+            say(`${server.letter}: AI reply reports shared with the fake collector`);
+        }
+        if (options.social) {
             linkSocial(server.env.DATABASE_PATH, ACCOUNTS[2].email, CY_SOCIAL_ACCOUNT);
             await socialOffered(server);
             say(`${server.letter}: Google and Apple offered; Cy linked as ${CY_SOCIAL_ACCOUNT}`);
@@ -1402,7 +1429,8 @@ async function main() {
         password,
         accounts: ACCOUNTS,
         rooms: options.rooms,
-        ...(cloud
+        ...(options.reports ? { reports: true } : {}),
+        ...(options.social
             ? {
                   social: {
                       cy: CY_SOCIAL_ACCOUNT,
@@ -1459,7 +1487,7 @@ async function main() {
         return;
     }
     let restarting = Promise.resolve();
-    const web = webControl(servers, channelSet, password);
+    const web = webControl(servers, channelSet, password, cloud);
     const control = createHttpServer((request, response) => {
         const url = new URL(request.url ?? '/', 'http://127.0.0.1');
         if (url.pathname.startsWith('/web/')) {
@@ -1517,6 +1545,30 @@ export function linkSocial(database, email, sub) {
     }
 }
 
+/**
+ * Ada turns AI reply reports on (`on`) or off, once the workspace's cloud connection grants
+ * `reports:write` (`available`: it enrolled with the fake cloud).
+ * @param {{ port: number, letter: string, origin: string }} server
+ * @param {string} password
+ * @param {boolean} on
+ */
+async function shareReports(server, password, on, timeoutMs = 60_000) {
+    const call = await webSession(server, ACCOUNTS[0].email, password);
+    const end = Date.now() + timeoutMs;
+    while (Date.now() < end) {
+        const view = await call('GET', '/api/cloud/reply-reports');
+        if (view.status === 200 && view.body?.available === true) {
+            const answer = await call('PUT', '/api/cloud/reply-reports', { sharing: on });
+            if (answer.status !== 200) {
+                throw new Error(`${server.letter}: sharing reports answered ${answer.status}.`);
+            }
+            return;
+        }
+        await new Promise((done) => setTimeout(done, 500));
+    }
+    throw new Error(`${server.letter} never could share reports: did it enroll with the fake cloud?`);
+}
+
 /** Waits until the workspace's manifest offers Google and Apple (it enrolled with the fake cloud). */
 async function socialOffered(/** @type {{ port: number, letter: string }} */ server, timeoutMs = 60_000) {
     const until = Date.now() + timeoutMs;
@@ -1544,12 +1596,16 @@ async function socialOffered(/** @type {{ port: number, letter: string }} */ ser
  * `POST /web/other` another device claims that QR code first (its digits and redeem's answer);
  * `GET /web/pair?digits=` the states the page saw, and whether any poll held those digits;
  * `POST /web/erase` Sign out and erase for every device of Ada's;
- * `POST /web/social?google=off&apple=on` Opal's access policy for the app's Google and Apple (--social).
+ * `POST /web/social?google=off&apple=on` Opal's access policy for the app's Google and Apple (--social);
+ * `POST /web/reports?sharing=off|on` Ada's "Share AI reply reports with Ingenio" (--reports),
+ * `POST /web/reports?collector=hold|take` the fake collector holding reports unsent or taking them,
+ * `GET /web/reports` the admins' view and how many reports the collector took.
  * @param {ReturnType<typeof seedPlan>} servers
  * @param {Array<{ sink: { mail: any[] }, telegram: { calls: any[] } }>} channelSet
  * @param {string} password
+ * @param {Awaited<ReturnType<typeof fakeCloud>> | null} [cloud]
  */
-function webControl(servers, channelSet, password) {
+function webControl(servers, channelSet, password, cloud = null) {
     /** @type {Map<string, { call: Awaited<ReturnType<typeof webSession>>, pairing: ReturnType<typeof webPairing> }>} */
     const sessions = new Map();
     const of = async (/** @type {string} */ letter) => {
@@ -1587,6 +1643,25 @@ function webControl(servers, channelSet, password) {
                 return pairing.status(url.searchParams.get('digits') ?? undefined);
             case 'POST /web/erase':
                 return eraseDevices(call);
+            case 'GET /web/reports':
+            case 'POST /web/reports': {
+                if (!cloud) {
+                    throw new Error('No reports collector: start servers.mjs with --reports.');
+                }
+                const collector = url.searchParams.get('collector');
+                if (method === 'POST' && collector !== null) {
+                    cloud.holdReports(collector === 'hold');
+                }
+                const sharing = url.searchParams.get('sharing');
+                if (method === 'POST' && sharing !== null) {
+                    const answer = await call('PUT', '/api/cloud/reply-reports', { sharing: sharing === 'on' });
+                    if (answer.status !== 200) {
+                        throw new Error(`Sharing ${sharing} answered ${answer.status}.`);
+                    }
+                }
+                const view = await call('GET', '/api/cloud/reply-reports');
+                return { view: view.body, collected: cloud.reports.length };
+            }
             case 'POST /web/social': {
                 const server = servers.find((entry) => entry.letter === letter);
                 /** @param {string | null} value */

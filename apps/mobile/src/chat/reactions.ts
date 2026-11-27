@@ -50,7 +50,9 @@ export function withReaction(view: ReactionsView, messageId: string, kind: React
     }
     const messages = { ...view.messages };
     if (mine.length || Object.keys(counts).length) {
-        messages[messageId] = { counts, mine };
+        // The reader's report stays while their thumbs-down does (CB-382, the web's).
+        const report = mine.includes('down') ? current.report : undefined;
+        messages[messageId] = report === undefined ? { counts, mine } : { counts, mine, report };
     } else {
         delete messages[messageId];
     }
