@@ -1,6 +1,6 @@
 import type { Message } from '@ag-ui/core';
 // @vitest-environment jsdom
-import { act } from 'react';
+import { StrictMode, act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
@@ -136,9 +136,12 @@ function mount(node: React.ReactNode, replyReports: ReplyReportsState = null, us
     } as unknown as Shell;
     act(() =>
         root!.render(
-            <ShellContext.Provider value={shell}>
-                <CurrentUser.Provider value={user}>{node}</CurrentUser.Provider>
-            </ShellContext.Provider>,
+            // As the app renders: Strict Mode runs each effect's cleanup and setup twice.
+            <StrictMode>
+                <ShellContext.Provider value={shell}>
+                    <CurrentUser.Provider value={user}>{node}</CurrentUser.Provider>
+                </ShellContext.Provider>
+            </StrictMode>,
         ),
     );
 }

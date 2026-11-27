@@ -56,12 +56,13 @@ export function MessageReactions({ messageId, reactions }: { messageId: string; 
     const dots = useContext(ShellContext)?.workspace.dots;
     const [step, setStep] = useState<Step>();
     const mounted = useRef(true);
-    useEffect(
-        () => () => {
+    // Set again on each setup: Strict Mode runs the cleanup and setup twice.
+    useEffect(() => {
+        mounted.current = true;
+        return () => {
             mounted.current = false;
-        },
-        [],
-    );
+        };
+    }, []);
     const reply = transcript?.messages.find((message) => message.id === messageId) as
         | (Message & { socioId?: string })
         | undefined;
