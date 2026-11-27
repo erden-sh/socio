@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 
+import { useTranslation } from '@socio/i18n/react';
 import { compareText, formatNumber } from '@socio/shared/locale';
 import type {
     OpsCapabilitiesView,
@@ -19,16 +20,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
-const STATUS_LABELS: Record<string, string> = {
-    triage: 'Triage',
-    open: 'Open',
-    ready: 'Ready',
-    in_progress: 'In progress',
-    in_review: 'In review',
-    blocked: 'Blocked',
-    done: 'Done',
-    wont_fix: 'Won’t fix',
-};
+/** A request's board status, by its key in `requests.statuses`. */
+const STATUSES = {
+    triage: 'triage',
+    open: 'open',
+    ready: 'ready',
+    in_progress: 'in-progress',
+    in_review: 'in-review',
+    blocked: 'blocked',
+    done: 'done',
+    wont_fix: 'wont-fix',
+} as const;
+const statusKey = (status: string) =>
+    Object.hasOwn(STATUSES, status) ? STATUSES[status as keyof typeof STATUSES] : undefined;
 
 /** Gaps first, then by capability and name. */
 const order = (a: OpsCoverageTool, b: OpsCoverageTool) =>
@@ -42,6 +46,7 @@ const order = (a: OpsCoverageTool, b: OpsCoverageTool) =>
  * tool's use in the range, the gaps, and what socios asked for and lack.
  */
 export function CapabilitiesPage() {
+    const { t } = useTranslation(['operations.capabilities']);
     const { search } = useOpsQuery();
     const { timeZone } = useOpsSettings();
     const answer = useOpsAnswer<OpsCapabilitiesView>(`/operations/capabilities${search}`);
@@ -50,36 +55,42 @@ export function CapabilitiesPage() {
     const tools = useMemo(() => [...(coverage?.tools ?? [])].sort(order), [coverage]);
     const offered = tools.filter((tool) => tool.offered);
     const used = offered.filter((tool) => tool.calls > 0);
+    const status = (id: string) => {
+        const key = statusKey(id);
+        return key ? t(`operations.capabilities:requests.statuses.${key}`) : id;
+    };
     return (
         <>
             <OpsStatusNote status={answer.data?.status} error={answer.error} />
-            <OpsStats label="Capability totals" loading={answer.loading} count={4}>
+            <OpsStats label={t('operations.capabilities:totals')} loading={answer.loading} count={4}>
                 {coverage && (
                     <>
                         <OpsStat
                             id="tools"
-                            label="Socio tools"
+                            label={t('operations.capabilities:tiles.tools')}
                             value={formatNumber(offered.length)}
-                            note={`${formatNumber(coverage.capabilities.length)} capabilities`}
+                            note={t('operations.capabilities:tiles.tools-note', {
+                                count: coverage.capabilities.length,
+                            })}
                         />
                         <OpsStat
                             id="used"
-                            label="Used in the range"
+                            label={t('operations.capabilities:tiles.used')}
                             value={formatNumber(used.length)}
-                            note={`${formatNumber(offered.length - used.length)} not used`}
+                            note={t('operations.capabilities:tiles.used-note', { n: offered.length - used.length })}
                         />
                         <OpsStat
                             id="unregistered"
-                            label="Without an entry"
+                            label={t('operations.capabilities:tiles.unregistered')}
                             value={formatNumber(coverage.unregistered.length)}
                             tone={coverage.unregistered.length ? 'bad' : undefined}
-                            note="socios can’t discover them"
+                            note={t('operations.capabilities:tiles.unregistered-note')}
                         />
                         <OpsStat
                             id="unoffered"
-                            label="Not given here"
+                            label={t('operations.capabilities:tiles.unoffered')}
                             value={formatNumber(coverage.unoffered.length)}
-                            note="declared, but off in this deployment"
+                            note={t('operations.capabilities:tiles.unoffered-note')}
                         />
                     </>
                 )}
@@ -87,43 +98,39 @@ export function CapabilitiesPage() {
 
             <Card data-slot="ops-gaps" className="min-w-0 gap-4">
                 <CardHeader>
-                    <CardTitle>Gaps</CardTitle>
-                    <CardDescription>
-                        Tools no capability declares don’t show in what socios learn they can do. Declared tools nothing
-                        gives here usually wait for a service, such as computers.
-                    </CardDescription>
+                    <CardTitle>{t('operations.capabilities:gaps.title')}</CardTitle>
+                    <CardDescription>{t('operations.capabilities:gaps.description')}</CardDescription>
                 </CardHeader>
                 <CardContent className="grid gap-3 text-sm">
                     {coverage ? (
                         <>
                             <GapList
-                                label="Without a registry entry"
+                                label={t('operations.capabilities:gaps.unregistered')}
                                 names={coverage.unregistered}
-                                empty="Every tool is declared."
+                                empty={t('operations.capabilities:gaps.unregistered-empty')}
                                 variant="destructive"
                             />
                             <GapList
-                                label="Declared, not given here"
+                                label={t('operations.capabilities:gaps.unoffered')}
                                 names={coverage.unoffered}
-                                empty="Every declared tool is given."
+                                empty={t('operations.capabilities:gaps.unoffered-empty')}
                                 variant="secondary"
                             />
                             <GapList
-                                label="Features with no socio tools"
+                                label={t('operations.capabilities:gaps.no-tools')}
                                 names={coverage.modules
                                     .filter((module) => module.tools === 0)
                                     .map((module) => module.id)}
-                                empty="Every feature gives tools."
+                                empty={t('operations.capabilities:gaps.no-tools-empty')}
                                 variant="outline"
                             />
                             {coverage.modules.some((module) => !module.listed) && (
                                 <p className="m-0 text-xs text-muted-foreground">
-                                    Couldn’t list the tools of{' '}
-                                    {coverage.modules
-                                        .filter((module) => !module.listed)
-                                        .map((module) => module.id)
-                                        .join(', ')}
-                                    .
+                                    {t('operations.capabilities:gaps.unlisted', {
+                                        modules: coverage.modules
+                                            .filter((module) => !module.listed)
+                                            .map((module) => module.id),
+                                    })}
                                 </p>
                             )}
                         </>
@@ -135,22 +142,23 @@ export function CapabilitiesPage() {
 
             <Card data-slot="ops-coverage" className="min-w-0 gap-4">
                 <CardHeader>
-                    <CardTitle>Coverage</CardTitle>
-                    <CardDescription>
-                        Each socio tool, the feature that gives it, the capability that declares it, and its calls in
-                        the range. Gaps first.
-                    </CardDescription>
+                    <CardTitle>{t('operations.capabilities:coverage.title')}</CardTitle>
+                    <CardDescription>{t('operations.capabilities:coverage.description')}</CardDescription>
                 </CardHeader>
                 <CardContent>
                     {coverage ? (
                         <Table data-slot="ops-coverage-table">
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Tool</TableHead>
-                                    <TableHead>Feature</TableHead>
-                                    <TableHead>Capability</TableHead>
-                                    <TableHead className="text-right">Calls</TableHead>
-                                    <TableHead className="text-right">Failed</TableHead>
+                                    <TableHead>{t('operations.capabilities:coverage.tool')}</TableHead>
+                                    <TableHead>{t('operations.capabilities:coverage.feature')}</TableHead>
+                                    <TableHead>{t('operations.capabilities:coverage.capability')}</TableHead>
+                                    <TableHead className="text-right">
+                                        {t('operations.capabilities:coverage.calls')}
+                                    </TableHead>
+                                    <TableHead className="text-right">
+                                        {t('operations.capabilities:coverage.failed')}
+                                    </TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -161,13 +169,17 @@ export function CapabilitiesPage() {
                                         className={tool.offered ? undefined : 'opacity-60'}
                                     >
                                         <TableCell className="font-mono text-xs">{tool.name}</TableCell>
-                                        <TableCell>{tool.module ?? 'Not given'}</TableCell>
+                                        <TableCell>
+                                            {tool.module ?? t('operations.capabilities:coverage.not-given')}
+                                        </TableCell>
                                         <TableCell>
                                             {tool.capability ??
                                                 (tool.name === 'capabilities' ? (
-                                                    'The registry'
+                                                    t('operations.capabilities:coverage.registry')
                                                 ) : (
-                                                    <Badge variant="destructive">No entry</Badge>
+                                                    <Badge variant="destructive">
+                                                        {t('operations.capabilities:coverage.no-entry')}
+                                                    </Badge>
                                                 ))}
                                         </TableCell>
                                         <TableCell className="text-right tabular-nums">
@@ -188,33 +200,33 @@ export function CapabilitiesPage() {
 
             <Card data-slot="ops-requests" className="min-w-0 gap-4">
                 <CardHeader>
-                    <CardTitle>Capability requests</CardTitle>
-                    <CardDescription>
-                        What socios asked for and couldn’t do, latest asked first, whatever the range. Each is an item
-                        on the Improvements board.
-                    </CardDescription>
+                    <CardTitle>{t('operations.capabilities:requests.title')}</CardTitle>
+                    <CardDescription>{t('operations.capabilities:requests.description')}</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <InfiniteList
                         list={requests}
-                        label="Capability requests"
+                        label={t('operations.capabilities:requests.title')}
                         itemKey={(row) => row.issueId}
-                        empty="No socio has asked for a capability yet."
+                        empty={t('operations.capabilities:requests.empty')}
                         renderItem={(row) => (
                             <div
                                 data-slot="ops-request"
                                 className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2 text-sm"
                             >
                                 <span className="min-w-0 truncate font-medium">{row.capability}</span>
-                                {row.status && (
-                                    <Badge variant="secondary">{STATUS_LABELS[row.status] ?? row.status}</Badge>
-                                )}
+                                {row.status && <Badge variant="secondary">{status(row.status)}</Badge>}
                                 {row.number !== null && (
-                                    <span className="text-xs text-muted-foreground">CB-{row.number}</span>
+                                    <span className="text-xs text-muted-foreground">{`CB-${row.number}`}</span>
                                 )}
                                 <span className="ml-auto text-xs text-muted-foreground tabular-nums">
-                                    {formatNumber(row.people)} people · {formatNumber(row.socios)} socios · last{' '}
-                                    {formatWhen(row.lastAt, timeZone)}
+                                    {[
+                                        t('operations.capabilities:requests.people', { count: row.people }),
+                                        t('operations.capabilities:requests.socios', { count: row.socios }),
+                                        t('operations.capabilities:requests.last', {
+                                            when: formatWhen(row.lastAt, timeZone),
+                                        }),
+                                    ].join(' · ')}
                                 </span>
                             </div>
                         )}

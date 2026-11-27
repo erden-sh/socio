@@ -1,0 +1,46 @@
+{
+    "title": "What grounded chats",
+    "description": "What socios read to answer in the range: pages they read, found in a search or had open as the chat’s page, by Space; dataset queries and recalls of the chat are counted below the map. Titles and counts only.",
+    "none": "No numbers yet.",
+    "removed-space": "A removed Space",
+    "removed-page": "A removed page",
+    "kinds": {
+        "turns": "Turns grounded",
+        "chats": "Chats",
+        "page": "Page reads",
+        "search": "Search results",
+        "context": "The chat’s page",
+        "dataset": "Dataset queries",
+        "recall": "Recalls of the chat",
+        "in-turns_one": "in {{count, number}} turn",
+        "in-turns_other": "in {{count, number}} turns"
+    },
+    "heatmap": {
+        "empty": "No Space’s pages grounded a chat in this range.",
+        "label": "Reads by Space over the range",
+        "caption_hour": "Reads of each Space’s pages per hour: each turn and page once.",
+        "caption_day": "Reads of each Space’s pages per day: each turn and page once.",
+        "caption_week": "Reads of each Space’s pages per week: each turn and page once.",
+        "caption_month": "Reads of each Space’s pages per month: each turn and page once.",
+        "space": "Space",
+        "reads": "Reads",
+        "cell": "{{space}}, {{when}}: {{reads}}",
+        "cell-reads_one": "{{count, number}} read",
+        "cell-reads_other": "{{count, number}} reads",
+        "pages_one": "{{count, number}} page",
+        "pages_other": "{{count, number}} pages",
+        "chats_one": "{{count, number}} chat",
+        "chats_other": "{{count, number}} chats",
+        "fewer": "Fewer",
+        "more": "More",
+        "top": "the {{shown, number}} Spaces read most of {{total, number}}"
+    },
+    "pages": {
+        "title": "Pages that grounded most chats",
+        "page": "Page",
+        "space": "Space",
+        "chats": "Chats",
+        "turns": "Turns",
+        "last": "Last read"
+    }
+}

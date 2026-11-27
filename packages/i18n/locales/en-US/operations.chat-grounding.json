@@ -1,0 +1,25 @@
+{
+    "unavailable": "Analytics isn’t answering yet; try again shortly.",
+    "nothing": "Its turns read no pages or datasets that were recorded. Turns before this was recorded show nothing.",
+    "did": {
+        "page": "read",
+        "search": "in a search",
+        "context": "the chat’s page",
+        "dataset": "queried",
+        "recall": "recalled"
+    },
+    "turns_one": "{{count, number}} turn · last {{when}}",
+    "turns_other": "{{count, number}} turns · last {{when}}",
+    "recalls_one": "Recalled {{count, number}} earlier part of this chat.",
+    "recalls_other": "Recalled {{count, number}} earlier parts of this chat.",
+    "more": "Showing the most recent; older references are left out.",
+    "removed-page": "A removed page",
+    "removed-dataset": "A removed dataset",
+    "kinds": {
+        "page": "Page reads",
+        "search": "Search results",
+        "context": "The chat’s page",
+        "dataset": "Dataset queries",
+        "recall": "Recalls of the chat"
+    }
+}

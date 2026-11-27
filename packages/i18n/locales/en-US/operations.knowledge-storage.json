@@ -1,0 +1,53 @@
+{
+    "shared": {
+        "title": "Socios’ shared areas",
+        "description": "Storage shared by everyone who uses each company socio.",
+        "deleted": "Deleted socio",
+        "empty": "No shared data yet.",
+        "manage": "Manage shared data"
+    },
+    "storage": {
+        "title": "Storage",
+        "description": "What is kept now, deleted items included (they are kept too), and over the range.",
+        "chart-picker": "Chart",
+        "kinds": {
+            "datasets": "Datasets",
+            "history": "Dataset row history",
+            "files": "Files",
+            "attachments": "Chat attachments",
+            "apps": "App versions"
+        },
+        "kind-note": "{{items, number}} · {{deleted}} deleted",
+        "database": "Database",
+        "chat-history": "{{size}} chat history",
+        "chart": "{{kind}} over the range",
+        "bucket_hour": "hour",
+        "bucket_day": "day",
+        "bucket_week": "week",
+        "bucket_month": "month",
+        "mb": "MB",
+        "empty": "Nothing to chart in this range.",
+        "unit_hour": "In MB, at the end of each hour.",
+        "unit_day": "In MB, at the end of each day.",
+        "unit_week": "In MB, at the end of each week.",
+        "unit_month": "In MB, at the end of each month."
+    },
+    "quotas": {
+        "title": "Data space limits",
+        "description": "The limits in force (Settings → General), the fullest use of each, and how many people are near one (80%) or at it.",
+        "limit": "Limit",
+        "in-force": "In force",
+        "fullest": "Fullest",
+        "near": "Near",
+        "at": "At it",
+        "labels": {
+            "file": "Largest file",
+            "dataset": "Largest dataset",
+            "person": "Data per person",
+            "datasets": "Datasets per person"
+        },
+        "mb": "{{n, number}} MB",
+        "datasets_one": "{{count, number}} dataset",
+        "datasets_other": "{{count, number}} datasets"
+    }
+}

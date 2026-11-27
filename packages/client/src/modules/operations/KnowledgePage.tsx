@@ -1,16 +1,17 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
 
+import { useTranslation } from '@socio/i18n/react';
 import type { SharedAreaView } from '@socio/shared/data-types';
 import { formatNumber } from '@socio/shared/locale';
 import { opsSearch } from '@socio/shared/operations/operations';
 import {
     OPS_STALE_DAYS,
     OPS_STORAGE_KINDS,
-    OPS_STORAGE_LABELS,
     type OpsDatasetRow,
     type OpsKnowledgeView,
     type OpsPageRow,
+    type OpsQuota,
     type OpsStorageKind,
     type OpsStorageView,
 } from '@socio/shared/operations/operations-knowledge';
@@ -18,9 +19,10 @@ import {
 import { SeriesChart } from '../../components/charts/SeriesChart';
 import { InfiniteList } from '../../components/infinite-list/InfiniteList';
 import { useCursorList } from '../../components/infinite-list/use-cursor-list';
+import { onDemand } from '../../i18n/on-demand';
 import { formatBytes } from '../dataspace/format';
 
-import { bucketLabel, formatWhen } from './format';
+import { formatWhen, useOpsFormat } from './format';
 import { GroundingCard } from './GroundingCard';
 import { OpsStat, OpsStats, OpsStatusNote } from './OpsParts';
 import { opsPath } from './sections';
@@ -33,8 +35,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 const count = (value: number | null | undefined) => (value === null || value === undefined ? '–' : formatNumber(value));
-const plural = (n: number, word: string) => `${formatNumber(n)} ${word}${n === 1 ? '' : 's'}`;
-const ms = (value: number | null) => (value === null ? '–' : `${formatNumber(Math.round(value * 10) / 10)} ms`);
 
 /**
  * Knowledge (CB-191): Spaces and their pages (how many, how long, edited,
@@ -42,6 +42,8 @@ const ms = (value: number | null) => (value === null ? '–' : `${formatNumber(M
  * is stored and how full the data space quotas are. Picking a Space narrows the page to it.
  */
 export function KnowledgePage() {
+    const { t } = useTranslation(['operations.knowledge']);
+    const ms = (value: number | null) => (value === null ? '–' : t('operations.knowledge:ms', { n: value }));
     const { query, search } = useOpsQuery();
     const answer = useOpsAnswer<OpsKnowledgeView>(`/operations/knowledge${search}`);
     const storage = useOpsAnswer<OpsStorageView>(`/operations/storage${search}`);
@@ -52,61 +54,77 @@ export function KnowledgePage() {
     return (
         <>
             <OpsStatusNote status={answer.data?.status} error={answer.error} />
-            <OpsStats label="Knowledge totals" loading={answer.loading} count={8}>
+            <OpsStats label={t('operations.knowledge:totals')} loading={answer.loading} count={8}>
                 {answer.data && (
                     <>
                         <OpsStat
                             id="pages"
-                            label="Pages"
+                            label={t('operations.knowledge:tiles.pages')}
                             value={count(knowledge?.totals.pages)}
-                            note={knowledge && `${count(knowledge.totals.created)} new`}
+                            note={
+                                knowledge && t('operations.knowledge:tiles.pages-note', { n: knowledge.totals.created })
+                            }
                         />
                         <OpsStat
                             id="chars"
-                            label="Average length"
+                            label={t('operations.knowledge:tiles.chars')}
                             value={
                                 knowledge?.totals.pages
                                     ? `${formatNumber(Math.round(knowledge.totals.chars / knowledge.totals.pages))}`
                                     : '–'
                             }
-                            note="characters a page"
+                            note={t('operations.knowledge:tiles.chars-note')}
                         />
                         <OpsStat
                             id="edits"
-                            label="Edits"
+                            label={t('operations.knowledge:tiles.edits')}
                             value={count(knowledge?.totals.edits)}
-                            note={knowledge && `by ${count(knowledge.totals.editors)}`}
+                            note={
+                                knowledge && t('operations.knowledge:tiles.edits-note', { n: knowledge.totals.editors })
+                            }
                         />
                         <OpsStat
                             id="stale"
-                            label="Stale pages"
+                            label={t('operations.knowledge:tiles.stale')}
                             value={count(knowledge?.totals.stale)}
-                            note={`untouched ${OPS_STALE_DAYS} days`}
+                            note={t('operations.knowledge:tiles.stale-note', { days: OPS_STALE_DAYS })}
                         />
                         <OpsStat
                             id="searches"
-                            label="Searches"
+                            label={t('operations.knowledge:tiles.searches')}
                             value={count(knowledge?.search.queries)}
-                            note={knowledge && `${count(knowledge.search.empty)} found nothing`}
+                            note={
+                                knowledge &&
+                                t('operations.knowledge:tiles.searches-note', { n: knowledge.search.empty })
+                            }
                         />
                         <OpsStat
                             id="search-p95"
-                            label="Search time (95%)"
+                            label={t('operations.knowledge:tiles.search-p95')}
                             value={knowledge ? ms(knowledge.search.p95) : '–'}
-                            note={knowledge && `half under ${ms(knowledge.search.p50)}`}
+                            note={
+                                knowledge &&
+                                t('operations.knowledge:tiles.search-p95-note', { time: ms(knowledge.search.p50) })
+                            }
                         />
                         <OpsStat
                             id="access"
-                            label="Dataset access"
+                            label={t('operations.knowledge:tiles.access')}
                             value={count(knowledge?.access.total)}
-                            note={knowledge && `${count(knowledge.access.datasets)} datasets`}
+                            note={
+                                knowledge &&
+                                t('operations.knowledge:tiles.access-note', { count: knowledge.access.datasets })
+                            }
                         />
                         <OpsStat
                             id="denied"
-                            label="Access denied"
+                            label={t('operations.knowledge:tiles.denied')}
                             value={count(knowledge?.access.denied)}
                             tone={knowledge?.access.denied ? 'bad' : undefined}
-                            note={knowledge && `${count(knowledge.access.errors)} errors`}
+                            note={
+                                knowledge &&
+                                t('operations.knowledge:tiles.denied-note', { count: knowledge.access.errors })
+                            }
                         />
                     </>
                 )}
@@ -114,14 +132,14 @@ export function KnowledgePage() {
 
             <Card data-slot="ops-spaces" className="min-w-0 gap-4">
                 <CardHeader>
-                    <CardTitle>Spaces</CardTitle>
+                    <CardTitle>{t('operations.knowledge:spaces.title')}</CardTitle>
                     <CardDescription>
-                        Pages now, and what was created and edited in the range. Pick a Space to see only its pages.
+                        {t('operations.knowledge:spaces.description')}
                         {query.filters.space && (
                             <>
                                 {' '}
                                 <Link to={spaceLink(undefined)} className="underline">
-                                    Show every Space
+                                    {t('operations.knowledge:spaces.show-all')}
                                 </Link>
                             </>
                         )}
@@ -132,11 +150,19 @@ export function KnowledgePage() {
                         <Table data-slot="ops-spaces-table">
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Space</TableHead>
-                                    <TableHead className="text-right">Pages</TableHead>
-                                    <TableHead className="text-right">Avg length</TableHead>
-                                    <TableHead className="text-right">Edits</TableHead>
-                                    <TableHead className="text-right">Stale</TableHead>
+                                    <TableHead>{t('operations.knowledge:spaces.space')}</TableHead>
+                                    <TableHead className="text-right">
+                                        {t('operations.knowledge:spaces.pages')}
+                                    </TableHead>
+                                    <TableHead className="text-right">
+                                        {t('operations.knowledge:spaces.length')}
+                                    </TableHead>
+                                    <TableHead className="text-right">
+                                        {t('operations.knowledge:spaces.edits')}
+                                    </TableHead>
+                                    <TableHead className="text-right">
+                                        {t('operations.knowledge:spaces.stale')}
+                                    </TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -164,7 +190,9 @@ export function KnowledgePage() {
                             </TableBody>
                         </Table>
                     ) : answer.data ? (
-                        <p className="m-0 py-6 text-center text-sm text-muted-foreground">No numbers yet.</p>
+                        <p className="m-0 py-6 text-center text-sm text-muted-foreground">
+                            {t('operations.knowledge:none')}
+                        </p>
                     ) : (
                         <Skeleton className="h-40 w-full" />
                     )}
@@ -178,10 +206,21 @@ export function KnowledgePage() {
             <DatasetsCard search={search} />
             <StorageCard view={storage.data} error={storage.error} />
             <QuotasCard view={storage.data} />
+            <SharedAreasCard shared={shared} />
+        </>
+    );
+}
+
+/** Below the fold: its words load when it mounts (`onDemand`). */
+const SharedAreasCard = onDemand(
+    ['operations.knowledge-storage'],
+    function SharedAreasCard({ shared }: { shared: { data?: SharedAreaView[]; error: string } }) {
+        const { t } = useTranslation(['operations.knowledge-storage']);
+        return (
             <Card>
                 <CardHeader>
-                    <CardTitle>Socios’ shared areas</CardTitle>
-                    <CardDescription>Storage shared by everyone who uses each company socio.</CardDescription>
+                    <CardTitle>{t('operations.knowledge-storage:shared.title')}</CardTitle>
+                    <CardDescription>{t('operations.knowledge-storage:shared.description')}</CardDescription>
                 </CardHeader>
                 <CardContent>
                     {shared.error ? (
@@ -193,48 +232,53 @@ export function KnowledgePage() {
                             {shared.data.length ? (
                                 shared.data.map((area) => (
                                     <p key={area.dotId}>
-                                        {area.dotName ?? 'Deleted socio'} · {formatBytes(area.totalBytes)}
+                                        {area.dotName ?? t('operations.knowledge-storage:shared.deleted')} ·{' '}
+                                        {formatBytes(area.totalBytes)}
                                     </p>
                                 ))
                             ) : (
-                                <p>No shared data yet.</p>
+                                <p>{t('operations.knowledge-storage:shared.empty')}</p>
                             )}
                             <Link to="/data?tab=shared" className="underline">
-                                Manage shared data
+                                {t('operations.knowledge-storage:shared.manage')}
                             </Link>
                         </div>
                     )}
                 </CardContent>
             </Card>
-        </>
-    );
-}
+        );
+    },
+);
 
 function PagesCard({ search }: { search: string }) {
+    const { t } = useTranslation(['operations.knowledge']);
     const { timeZone } = useOpsSettings();
     const pages = useCursorList<OpsPageRow>(`/operations/knowledge/pages${search}`);
     return (
         <Card data-slot="ops-pages" className="min-w-0 gap-4">
             <CardHeader>
-                <CardTitle>Pages</CardTitle>
-                <CardDescription>
-                    Least recently edited or used first: the top of the list is what goes stale. Titles only.
-                </CardDescription>
+                <CardTitle>{t('operations.knowledge:pages.title')}</CardTitle>
+                <CardDescription>{t('operations.knowledge:pages.description')}</CardDescription>
             </CardHeader>
             <CardContent>
                 <InfiniteList
                     list={pages}
-                    label="Pages"
+                    label={t('operations.knowledge:pages.title')}
                     itemKey={(row) => row.pageId}
-                    empty="No pages."
+                    empty={t('operations.knowledge:pages.empty')}
                     renderItem={(row) => (
                         <div data-slot="ops-page" className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2 text-sm">
                             <span className="min-w-0 truncate font-medium">{row.title}</span>
-                            {row.stale && <Badge variant="secondary">Stale</Badge>}
+                            {row.stale && <Badge variant="secondary">{t('operations.knowledge:pages.stale')}</Badge>}
                             <span className="text-xs text-muted-foreground">{row.spaceName ?? row.spaceId}</span>
                             <span className="ml-auto text-xs text-muted-foreground tabular-nums">
-                                {formatNumber(row.chars)} characters · {plural(row.edits, 'edit')} · active{' '}
-                                {formatWhen(row.activeAt, timeZone)}
+                                {[
+                                    t('operations.knowledge:pages.chars', { count: row.chars }),
+                                    t('operations.knowledge:pages.edits', { count: row.edits }),
+                                    t('operations.knowledge:pages.active', {
+                                        when: formatWhen(row.activeAt, timeZone),
+                                    }),
+                                ].join(' · ')}
                             </span>
                         </div>
                     )}
@@ -245,29 +289,31 @@ function PagesCard({ search }: { search: string }) {
 }
 
 function SearchCard({ view }: { view: OpsKnowledgeView | undefined }) {
+    const { t } = useTranslation(['operations.knowledge']);
+    const { bucketLabel } = useOpsFormat();
     const search = view?.knowledge?.search;
     return (
         <Card data-slot="ops-search" className="min-w-0 gap-4">
             <CardHeader>
-                <CardTitle>Page search</CardTitle>
-                <CardDescription>
-                    Searches a day across the workspace (days in UTC); no query text is kept.
-                </CardDescription>
+                <CardTitle>{t('operations.knowledge:search.title')}</CardTitle>
+                <CardDescription>{t('operations.knowledge:search.description')}</CardDescription>
             </CardHeader>
             <CardContent>
                 {search && search.days.length ? (
                     <SeriesChart
                         kind="bar"
-                        label="Searches a day"
-                        xName="day"
-                        yName="searches"
+                        label={t('operations.knowledge:search.chart')}
+                        xName={t('operations.knowledge:search.x')}
+                        yName={t('operations.knowledge:search.y')}
                         points={search.days.map((day) => ({
                             label: bucketLabel(day.at, 'day', 'UTC'),
                             value: day.queries,
                         }))}
                     />
                 ) : view ? (
-                    <p className="m-0 py-6 text-center text-sm text-muted-foreground">No searches in this range.</p>
+                    <p className="m-0 py-6 text-center text-sm text-muted-foreground">
+                        {t('operations.knowledge:search.empty')}
+                    </p>
                 ) : (
                     <Skeleton className="h-60 w-full" />
                 )}
@@ -277,14 +323,13 @@ function SearchCard({ view }: { view: OpsKnowledgeView | undefined }) {
 }
 
 function AccessCard({ view }: { view: OpsKnowledgeView | undefined }) {
+    const { t } = useTranslation(['operations.knowledge']);
     const access = view?.knowledge?.access;
     return (
         <Card data-slot="ops-access" className="min-w-0 gap-4">
             <CardHeader>
-                <CardTitle>Dataset access</CardTitle>
-                <CardDescription>
-                    What people, socios and apps did with datasets in the range, and how it went.
-                </CardDescription>
+                <CardTitle>{t('operations.knowledge:access.title')}</CardTitle>
+                <CardDescription>{t('operations.knowledge:access.description')}</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-3">
                 {access && access.total ? (
@@ -292,21 +337,28 @@ function AccessCard({ view }: { view: OpsKnowledgeView | undefined }) {
                         <div className="flex flex-wrap gap-2">
                             {access.actors.map((actor) => (
                                 <Badge key={actor.kind} variant="outline">
-                                    {ACTOR_LABELS[actor.kind] ?? actor.kind}: {formatNumber(actor.count)}
+                                    {t('operations.knowledge:access.actor', {
+                                        actor: isActor(actor.kind)
+                                            ? t(`operations.knowledge:access.actors.${actor.kind}`)
+                                            : actor.kind,
+                                        n: actor.count,
+                                    })}
                                 </Badge>
                             ))}
                             {access.chats > 0 && (
                                 <Badge variant="outline" data-slot="ops-access-chats">
-                                    In {plural(access.chats, 'chat')}
+                                    {t('operations.knowledge:access.chats', { count: access.chats })}
                                 </Badge>
                             )}
                         </div>
                         <Table data-slot="ops-access-table">
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Action</TableHead>
-                                    <TableHead>Outcome</TableHead>
-                                    <TableHead className="text-right">Times</TableHead>
+                                    <TableHead>{t('operations.knowledge:access.action')}</TableHead>
+                                    <TableHead>{t('operations.knowledge:access.outcome')}</TableHead>
+                                    <TableHead className="text-right">
+                                        {t('operations.knowledge:access.times')}
+                                    </TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -328,7 +380,7 @@ function AccessCard({ view }: { view: OpsKnowledgeView | undefined }) {
                     </>
                 ) : view ? (
                     <p className="m-0 py-6 text-center text-sm text-muted-foreground">
-                        No dataset access in this range.
+                        {t('operations.knowledge:access.empty')}
                     </p>
                 ) : (
                     <Skeleton className="h-40 w-full" />
@@ -338,44 +390,53 @@ function AccessCard({ view }: { view: OpsKnowledgeView | undefined }) {
     );
 }
 
-const ACTOR_LABELS: Record<string, string> = {
-    user: 'People',
-    dot: 'Socios',
-    token: 'Apps and computers',
-    system: 'The app',
-};
+const ACTORS = ['user', 'dot', 'token', 'system'] as const;
+const isActor = (kind: string): kind is (typeof ACTORS)[number] => (ACTORS as readonly string[]).includes(kind);
 
 function DatasetsCard({ search }: { search: string }) {
+    const { t } = useTranslation(['operations.knowledge']);
     const { timeZone } = useOpsSettings();
     const datasets = useCursorList<OpsDatasetRow>(`/operations/knowledge/datasets${search}`);
     return (
         <Card data-slot="ops-datasets" className="min-w-0 gap-4">
             <CardHeader>
-                <CardTitle>Datasets</CardTitle>
-                <CardDescription>Largest first, row history included, with their access in the range.</CardDescription>
+                <CardTitle>{t('operations.knowledge:datasets.title')}</CardTitle>
+                <CardDescription>{t('operations.knowledge:datasets.description')}</CardDescription>
             </CardHeader>
             <CardContent>
                 <InfiniteList
                     list={datasets}
-                    label="Datasets"
+                    label={t('operations.knowledge:datasets.title')}
                     itemKey={(row) => row.datasetId}
-                    empty="No datasets."
+                    empty={t('operations.knowledge:datasets.empty')}
                     renderItem={(row) => (
                         <div
                             data-slot="ops-dataset"
                             className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2 text-sm"
                         >
                             <span className="min-w-0 truncate font-medium">{row.name}</span>
-                            {row.scratch && <Badge variant="secondary">Scratch</Badge>}
+                            {row.scratch && (
+                                <Badge variant="secondary">{t('operations.knowledge:datasets.scratch')}</Badge>
+                            )}
                             <span className="text-xs text-muted-foreground tabular-nums">
-                                {formatBytes(row.sizeBytes)}
-                                {row.historyBytes > 0 && ` + ${formatBytes(row.historyBytes)} history`} ·{' '}
-                                {formatNumber(row.tables)} tables
+                                {row.historyBytes > 0
+                                    ? t('operations.knowledge:datasets.history', {
+                                          size: formatBytes(row.sizeBytes),
+                                          history: formatBytes(row.historyBytes),
+                                      })
+                                    : formatBytes(row.sizeBytes)}
+                                {' · '}
+                                {t('operations.knowledge:datasets.tables', { count: row.tables })}
                             </span>
                             <span className="ml-auto text-xs text-muted-foreground tabular-nums">
-                                {plural(row.accesses, 'use')}
-                                {row.denied > 0 && `, ${formatNumber(row.denied)} denied`}
-                                {row.lastAccessAt !== null && ` · last ${formatWhen(row.lastAccessAt, timeZone)}`}
+                                {row.denied > 0
+                                    ? t('operations.knowledge:datasets.denied', {
+                                          uses: t('operations.knowledge:datasets.uses', { count: row.accesses }),
+                                          n: row.denied,
+                                      })
+                                    : t('operations.knowledge:datasets.uses', { count: row.accesses })}
+                                {row.lastAccessAt !== null &&
+                                    ` · ${t('operations.knowledge:datasets.last', { when: formatWhen(row.lastAccessAt, timeZone) })}`}
                             </span>
                         </div>
                     )}
@@ -385,133 +446,171 @@ function DatasetsCard({ search }: { search: string }) {
     );
 }
 
-function StorageCard({ view, error }: { view: OpsStorageView | undefined; error: string }) {
-    const [kind, setKind] = useState<OpsStorageKind>('datasets');
-    const storage = view?.storage;
-    const points = storage?.series.find((line) => line.kind === kind)?.points;
-    return (
-        <Card data-slot="ops-storage" className="min-w-0 gap-4">
-            <CardHeader className="flex flex-wrap items-center justify-between gap-2">
-                <div className="grid gap-1.5">
-                    <CardTitle>Storage</CardTitle>
-                    <CardDescription>
-                        What is kept now, deleted items included (they are kept too), and over the range.
-                    </CardDescription>
-                </div>
-                <Select value={kind} onValueChange={(value) => setKind(value as OpsStorageKind)}>
-                    <SelectTrigger size="sm" aria-label="Chart" className="w-52">
-                        <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {OPS_STORAGE_KINDS.map((item) => (
-                            <SelectItem key={item} value={item}>
-                                {OPS_STORAGE_LABELS[item]}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            </CardHeader>
-            <CardContent className="grid gap-4">
-                {error && (
-                    <p role="alert" className="m-0 text-sm text-destructive">
-                        {error}
-                    </p>
-                )}
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                    {storage ? (
-                        <>
-                            {storage.kinds.map((row) => (
-                                <OpsStat
-                                    key={row.kind}
-                                    id={`storage-${row.kind}`}
-                                    label={OPS_STORAGE_LABELS[row.kind]}
-                                    value={formatBytes(row.bytes)}
-                                    note={`${formatNumber(row.items)} · ${formatBytes(row.deletedBytes)} deleted`}
-                                />
+const StorageCard = onDemand(
+    ['operations.knowledge-storage'],
+    function StorageCard({ view, error }: { view: OpsStorageView | undefined; error: string }) {
+        const { t } = useTranslation(['operations.knowledge-storage']);
+        const { bucketLabel } = useOpsFormat();
+        const [kind, setKind] = useState<OpsStorageKind>('datasets');
+        const storage = view?.storage;
+        const points = storage?.series.find((line) => line.kind === kind)?.points;
+        return (
+            <Card data-slot="ops-storage" className="min-w-0 gap-4">
+                <CardHeader className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="grid gap-1.5">
+                        <CardTitle>{t('operations.knowledge-storage:storage.title')}</CardTitle>
+                        <CardDescription>{t('operations.knowledge-storage:storage.description')}</CardDescription>
+                    </div>
+                    <Select value={kind} onValueChange={(value) => setKind(value as OpsStorageKind)}>
+                        <SelectTrigger
+                            size="sm"
+                            aria-label={t('operations.knowledge-storage:storage.chart-picker')}
+                            className="w-52"
+                        >
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {OPS_STORAGE_KINDS.map((item) => (
+                                <SelectItem key={item} value={item}>
+                                    {t(`operations.knowledge-storage:storage.kinds.${item}`)}
+                                </SelectItem>
                             ))}
-                            <OpsStat
-                                id="storage-database"
-                                label="Database"
-                                value={storage.database ? formatBytes(storage.database.bytes) : '–'}
-                                note={
-                                    storage.database?.agentRunsBytes != null
-                                        ? `${formatBytes(storage.database.agentRunsBytes)} chat history`
-                                        : undefined
-                                }
-                            />
-                        </>
-                    ) : (
-                        Array.from({ length: 6 }, (_, index) => <Skeleton key={index} className="h-21 rounded-xl" />)
+                        </SelectContent>
+                    </Select>
+                </CardHeader>
+                <CardContent className="grid gap-4">
+                    {error && (
+                        <p role="alert" className="m-0 text-sm text-destructive">
+                            {error}
+                        </p>
                     )}
-                </div>
-                {storage && points?.length ? (
-                    <SeriesChart
-                        kind="line"
-                        label={`${OPS_STORAGE_LABELS[kind]} over the range`}
-                        xName={view!.window.bucket}
-                        yName="MB"
-                        points={points.map((point) => ({
-                            label: bucketLabel(point.at, view!.window.bucket, view!.window.timeZone),
-                            value: Math.round((point.value / 1024 / 1024) * 10) / 10,
-                        }))}
-                    />
-                ) : view ? (
-                    <p className="m-0 py-6 text-center text-sm text-muted-foreground">
-                        Nothing to chart in this range.
-                    </p>
-                ) : null}
-                {storage && points?.length ? (
-                    <p className="m-0 text-xs text-muted-foreground">
-                        In MB, at the end of each {view!.window.bucket === 'hour' ? 'hour' : view!.window.bucket}.
-                    </p>
-                ) : null}
-            </CardContent>
-        </Card>
-    );
-}
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                        {storage ? (
+                            <>
+                                {storage.kinds.map((row) => (
+                                    <OpsStat
+                                        key={row.kind}
+                                        id={`storage-${row.kind}`}
+                                        label={t(`operations.knowledge-storage:storage.kinds.${row.kind}`)}
+                                        value={formatBytes(row.bytes)}
+                                        note={t('operations.knowledge-storage:storage.kind-note', {
+                                            items: row.items,
+                                            deleted: formatBytes(row.deletedBytes),
+                                        })}
+                                    />
+                                ))}
+                                <OpsStat
+                                    id="storage-database"
+                                    label={t('operations.knowledge-storage:storage.database')}
+                                    value={storage.database ? formatBytes(storage.database.bytes) : '–'}
+                                    note={
+                                        storage.database?.agentRunsBytes != null
+                                            ? t('operations.knowledge-storage:storage.chat-history', {
+                                                  size: formatBytes(storage.database.agentRunsBytes),
+                                              })
+                                            : undefined
+                                    }
+                                />
+                            </>
+                        ) : (
+                            Array.from({ length: 6 }, (_, index) => (
+                                <Skeleton key={index} className="h-21 rounded-xl" />
+                            ))
+                        )}
+                    </div>
+                    {storage && points?.length ? (
+                        <SeriesChart
+                            kind="line"
+                            label={t('operations.knowledge-storage:storage.chart', {
+                                kind: t(`operations.knowledge-storage:storage.kinds.${kind}`),
+                            })}
+                            xName={t('operations.knowledge-storage:storage.bucket', { context: view!.window.bucket })}
+                            yName={t('operations.knowledge-storage:storage.mb')}
+                            points={points.map((point) => ({
+                                label: bucketLabel(point.at, view!.window.bucket, view!.window.timeZone),
+                                value: Math.round((point.value / 1024 / 1024) * 10) / 10,
+                            }))}
+                        />
+                    ) : view ? (
+                        <p className="m-0 py-6 text-center text-sm text-muted-foreground">
+                            {t('operations.knowledge-storage:storage.empty')}
+                        </p>
+                    ) : null}
+                    {storage && points?.length ? (
+                        <p className="m-0 text-xs text-muted-foreground">
+                            {t('operations.knowledge-storage:storage.unit', { context: view!.window.bucket })}
+                        </p>
+                    ) : null}
+                </CardContent>
+            </Card>
+        );
+    },
+);
 
-function QuotasCard({ view }: { view: OpsStorageView | undefined }) {
-    return (
-        <Card data-slot="ops-quotas" className="min-w-0 gap-4">
-            <CardHeader>
-                <CardTitle>Data space limits</CardTitle>
-                <CardDescription>
-                    The limits in force (Settings → General), the fullest use of each, and how many people are near one
-                    (80%) or at it.
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-                {view ? (
-                    <Table data-slot="ops-quotas-table">
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Limit</TableHead>
-                                <TableHead className="text-right">In force</TableHead>
-                                <TableHead className="text-right">Fullest</TableHead>
-                                <TableHead className="text-right">Near</TableHead>
-                                <TableHead className="text-right">At it</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {view.quotas.map((quota) => (
-                                <TableRow key={quota.key} data-quota={quota.key}>
-                                    <TableCell className="font-medium">{quota.label}</TableCell>
-                                    <TableCell className="text-right tabular-nums">
-                                        {formatNumber(quota.limit)} {quota.unit}
-                                    </TableCell>
-                                    <TableCell className="text-right tabular-nums">
-                                        {quota.highest === null ? '–' : `${formatNumber(quota.highest)} ${quota.unit}`}
-                                    </TableCell>
-                                    <TableCell className="text-right tabular-nums">{count(quota.near)}</TableCell>
-                                    <TableCell className="text-right tabular-nums">{count(quota.at)}</TableCell>
+const QUOTA_LABELS = {
+    dataFileMaxMb: 'file',
+    dataDatasetMaxMb: 'dataset',
+    dataUserMaxMb: 'person',
+    dataMaxDatasets: 'datasets',
+} as const satisfies Record<OpsQuota['key'], string>;
+
+const QuotasCard = onDemand(
+    ['operations.knowledge-storage'],
+    function QuotasCard({ view }: { view: OpsStorageView | undefined }) {
+        const { t } = useTranslation(['operations.knowledge-storage']);
+        const amount = (quota: OpsQuota, n: number) =>
+            quota.key === 'dataMaxDatasets'
+                ? t('operations.knowledge-storage:quotas.datasets', { count: n })
+                : t('operations.knowledge-storage:quotas.mb', { n });
+        return (
+            <Card data-slot="ops-quotas" className="min-w-0 gap-4">
+                <CardHeader>
+                    <CardTitle>{t('operations.knowledge-storage:quotas.title')}</CardTitle>
+                    <CardDescription>{t('operations.knowledge-storage:quotas.description')}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {view ? (
+                        <Table data-slot="ops-quotas-table">
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>{t('operations.knowledge-storage:quotas.limit')}</TableHead>
+                                    <TableHead className="text-right">
+                                        {t('operations.knowledge-storage:quotas.in-force')}
+                                    </TableHead>
+                                    <TableHead className="text-right">
+                                        {t('operations.knowledge-storage:quotas.fullest')}
+                                    </TableHead>
+                                    <TableHead className="text-right">
+                                        {t('operations.knowledge-storage:quotas.near')}
+                                    </TableHead>
+                                    <TableHead className="text-right">
+                                        {t('operations.knowledge-storage:quotas.at')}
+                                    </TableHead>
                                 </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                ) : (
-                    <Skeleton className="h-40 w-full" />
-                )}
-            </CardContent>
-        </Card>
-    );
-}
+                            </TableHeader>
+                            <TableBody>
+                                {view.quotas.map((quota) => (
+                                    <TableRow key={quota.key} data-quota={quota.key}>
+                                        <TableCell className="font-medium">
+                                            {t(`operations.knowledge-storage:quotas.labels.${QUOTA_LABELS[quota.key]}`)}
+                                        </TableCell>
+                                        <TableCell className="text-right tabular-nums">
+                                            {amount(quota, quota.limit)}
+                                        </TableCell>
+                                        <TableCell className="text-right tabular-nums">
+                                            {quota.highest === null ? '–' : amount(quota, quota.highest)}
+                                        </TableCell>
+                                        <TableCell className="text-right tabular-nums">{count(quota.near)}</TableCell>
+                                        <TableCell className="text-right tabular-nums">{count(quota.at)}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    ) : (
+                        <Skeleton className="h-40 w-full" />
+                    )}
+                </CardContent>
+            </Card>
+        );
+    },
+);

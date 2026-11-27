@@ -1,0 +1,37 @@
+{
+    "open-failed": "Could not open the chat.",
+    "failed": "This chat couldn’t be opened.",
+    "about": {
+        "loading": "Loading the chat…",
+        "since": "since {{when}}. Read-only.",
+        "since_archived": "since {{when}} · archived. Read-only.",
+        "room": "A room: {{socios}} with {{people}}, {{since}}",
+        "no-socio": "No socio now",
+        "chat": "{{socio}} with {{owner}}, {{since}}",
+        "removed-socio": "A removed socio",
+        "gone-owner": "someone no longer here",
+        "names": "{{names, list(type: unit; style: short)}}",
+        "admin": "{{name}} (admin)",
+        "nobody": "nobody now",
+        "invited_one": "{{people}}; {{count, number}} invited",
+        "invited_other": "{{people}}; {{count, number}} invited"
+    },
+    "note": "You’re reading this chat as an admin. Opening it was written to the <link>access log</link>, which every admin can see.",
+    "note_room": "You’re reading this room as an admin. Opening it was written to the <link>access log</link>, which every admin can see.",
+    "load-earlier": "Load earlier turns",
+    "try-again": "Try again",
+    "empty": "No finished turns in this chat yet.",
+    "loading": "Loading…",
+    "showing-more_one": "Showing {{count, number}} turn; earlier ones to load.",
+    "showing-more_other": "Showing {{count, number}} turns; earlier ones to load.",
+    "showing-all_one": "Showing {{count, number}} turn, all of them.",
+    "showing-all_other": "Showing {{count, number}} turns, all of them.",
+    "grounding": {
+        "title": "What grounded this chat",
+        "subtitle": "pages and datasets its turns read"
+    },
+    "audit": {
+        "title": "Room audit",
+        "subtitle": "who joined, left or was refused"
+    }
+}
