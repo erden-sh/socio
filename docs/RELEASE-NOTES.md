@@ -29,6 +29,13 @@ How this file is kept (scripts/release.mjs and the app's build read it):
 
 ## Unreleased
 
+## v0.57.1 (2026-11-27)
+
+The release v0.57.0 was meant to be, with its coding sandbox image building again. iPhones are now pointed at app 0.2.9.
+
+- Everything in v0.57.0: folder fixes, quote reply on the web, the groundwork for other languages and for Google and Apple sign-in
+- The coding sandbox image builds again
+
 ### Changed
 
 - **Socio on iPhone recommends app 0.2.9.** iPhones on an older app see the update banner, which can be dismissed; nobody is refused. Android stays as it was until 0.2.9 can be installed there.
