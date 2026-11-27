@@ -36,7 +36,7 @@ const dateTime = dateTimeFormat({ dateStyle: 'medium', timeStyle: 'short' });
 const when = (at: number) => dateTime.format(at);
 const failed = (e: unknown, fallback: string) => toast.error(e instanceof Error ? e.message : fallback);
 
-type Flag = 'password' | 'passkey' | 'signInLink' | 'emailLinks' | 'openSignUp';
+type Flag = 'password' | 'passkey' | 'signInLink' | 'emailLinks' | 'google' | 'apple' | 'openSignUp';
 type ListKey = 'providers' | 'allowedEmails' | 'allowedDomains' | 'adminEmails';
 
 /** What the page edits: what is on, per method and per entry. */
@@ -62,6 +62,18 @@ const FLAGS: { key: Flag; label: string; env: string; help?: string; optIn?: boo
         help: 'Codes and links go by email to every account. Off by default.',
         optIn: true,
     },
+    {
+        key: 'google',
+        label: 'Google in the Socio app',
+        env: 'the cloud connection',
+        help: 'For people who linked a Google account. Works while this server is connected to Socio’s cloud services.',
+    },
+    {
+        key: 'apple',
+        label: 'Sign in with Apple in the Socio app',
+        env: 'the cloud connection',
+        help: 'For people who linked an Apple account. Works while this server is connected to Socio’s cloud services.',
+    },
     { key: 'openSignUp', label: 'Open sign-up', env: 'AUTH_OPEN_SIGNUP' },
 ];
 
@@ -85,6 +97,8 @@ function draftOf(view: AccessPolicyView): Draft {
             passkey: signIn?.passkey ?? false,
             signInLink: signIn?.signInLink ?? false,
             emailLinks: signIn?.emailLinks ?? false,
+            google: signIn?.google ?? false,
+            apple: signIn?.apple ?? false,
             openSignUp: signIn?.openSignUp ?? false,
         },
         lists: {

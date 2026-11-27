@@ -41,6 +41,16 @@ export interface IssuerMetadata {
     registrationEndpoint: string;
     tokenEndpoint: string;
     syncEndpoint: string;
+    /** RFC 8414 `jwks_uri`: the issuer's signing keys (§2.5), when the metadata names them. */
+    jwksUri?: string;
+}
+
+/** One of the issuer's Ed25519 signing keys (RFC 8037), as its JWKS lists it. */
+export interface IssuerJwk {
+    kty: 'OKP';
+    crv: 'Ed25519';
+    x: string;
+    kid: string;
 }
 
 export interface Registration {
@@ -141,6 +151,15 @@ export class IssuerClient {
         return url.href;
     }
 
+    /** `endpoint`'s check, as undefined instead of an error. */
+    private ownEndpoint(value: unknown): string | undefined {
+        try {
+            return value === undefined ? undefined : this.endpoint(value, 'jwks_uri');
+        } catch {
+            return undefined;
+        }
+    }
+
     /** RFC 8414 §3: the metadata, accepted only if it is this issuer's own. */
     async discover(): Promise<IssuerMetadata> {
         const answer = await this.call('issuer metadata', `${this.issuer}/.well-known/oauth-authorization-server`, {
@@ -155,7 +174,43 @@ export class IssuerClient {
             tokenEndpoint: this.endpoint(answer.token_endpoint, 'token_endpoint'),
             // §2.7: sync is the issuer's own, at a fixed path.
             syncEndpoint: `${this.issuer}/v1/sync`,
+            // Keys off the issuer's origin are never fetched; nothing else depends on them.
+            ...(this.ownEndpoint(answer.jwks_uri) ? { jwksUri: this.ownEndpoint(answer.jwks_uri) } : {}),
         };
+    }
+
+    /**
+     * The issuer's signing keys (§2.5), from its `jwks_uri` on its own
+     * origin: the Ed25519 ones with a `kid`, for signatures only. At most 20.
+     */
+    async keys(metadata: IssuerMetadata): Promise<IssuerJwk[]> {
+        if (!metadata.jwksUri) {
+            throw new CloudRequestError('protocol', 'issuer keys (no jwks_uri)');
+        }
+        const answer = await this.call('issuer keys', metadata.jwksUri, { method: 'GET' });
+        if (!Array.isArray(answer.keys)) {
+            throw new CloudRequestError('protocol', 'issuer keys');
+        }
+        const keys: IssuerJwk[] = [];
+        for (const entry of answer.keys.slice(0, 20) as unknown[]) {
+            const jwk = entry as Record<string, unknown> | null;
+            if (
+                jwk &&
+                typeof jwk === 'object' &&
+                jwk.kty === 'OKP' &&
+                jwk.crv === 'Ed25519' &&
+                typeof jwk.x === 'string' &&
+                /^[A-Za-z0-9_-]{43}$/.test(jwk.x) &&
+                typeof jwk.kid === 'string' &&
+                jwk.kid.length > 0 &&
+                jwk.kid.length <= 200 &&
+                (jwk.use === undefined || jwk.use === 'sig') &&
+                (jwk.alg === undefined || jwk.alg === 'EdDSA')
+            ) {
+                keys.push({ kty: 'OKP', crv: 'Ed25519', x: jwk.x, kid: jwk.kid });
+            }
+        }
+        return keys;
     }
 
     /** RFC 7591: registers the deployment's public key with an initial access token. */
@@ -245,7 +300,7 @@ export class IssuerClient {
 }
 
 /** The answer's text, read no further than the bound. */
-async function bounded(response: Response): Promise<string> {
+export async function bounded(response: Response): Promise<string> {
     const reader = response.body?.getReader();
     if (!reader) {
         return '';

@@ -123,6 +123,10 @@ const TABLES: Record<string, string> = {
     auth_link_via: 'the channel of expired sign-in links; a link lives 15 minutes',
     auth_device_push_leftover: 'a push endpoint once its subscription is removed; the sign-out is in workspace_audit',
     auth_device_turn: 'a lease for one person’s device turn, let go when the turn ends; it records nothing',
+    // CB-570: the app's Google and Apple sign-in. A nonce lives 5 minutes and
+    // is used once; a link is the person's own, unlinked or replaced by them.
+    auth_social_nonce: 'used or expired single-use sign-in nonces, a day after they expired',
+    auth_account: 'a Google or Apple link its person unlinked or replaced; the log says so',
     // CB-376: a group an admin deleted; its members' roles drop it at once.
     auth_organization_role: 'a deleted group (settings); the change is logged',
     agent_settings: 'settings',

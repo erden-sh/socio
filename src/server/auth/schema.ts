@@ -282,5 +282,27 @@ CREATE INDEX auth_device_request_createdAt_idx ON auth_device_request(createdAt)
                 }
             },
         },
+        {
+            // CB-570: the Socio app's native Google and Apple sign-in. The
+            // nonces this server issues (their SHA-256, never the nonce),
+            // each for one provider and purpose, a link's bound to the
+            // session that asked, single use and short-lived. A link is a
+            // Better Auth account row (`google-native` or `apple-native`, the
+            // provider's subject as `accountId`), one per subject: the index
+            // makes a second link of one subject fail, whichever runtime
+            // tries. `linkEmail` is the token's email at link time, shown
+            // to the person only and never used to find an account. Only
+            // adds: the previous release ignores the table, the column and
+            // the rows.
+            version: 17,
+            name: 'native google and apple sign-in',
+            phase: 'expand',
+            compatible:
+                'The unique index covers only google-native and apple-native rows, which no earlier release writes and no generic provider can use (its ids are refused); the table is new and the column nullable.',
+            up: `CREATE TABLE auth_social_nonce(nonceHash TEXT PRIMARY KEY, provider TEXT NOT NULL CHECK(provider IN ('google','apple')), purpose TEXT NOT NULL CHECK(purpose IN ('signin','link')), sessionId TEXT, createdAt INTEGER NOT NULL, expiresAt INTEGER NOT NULL, usedAt INTEGER);
+CREATE INDEX auth_social_nonce_expiresAt_idx ON auth_social_nonce(expiresAt);
+ALTER TABLE "auth_account" ADD COLUMN "linkEmail" text;
+CREATE UNIQUE INDEX auth_account_native_uq ON auth_account(providerId, accountId) WHERE providerId IN ('google-native', 'apple-native');`,
+        },
     ],
 };

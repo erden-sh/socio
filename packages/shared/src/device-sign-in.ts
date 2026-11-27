@@ -198,6 +198,18 @@ export const DEVICE_ERROR_CODES = [
     'session_ended',
     'device_revoked',
     'deactivated',
+    /** Google or Apple sign-in (CB-570): no Socio account is linked to this Google or Apple account. */
+    'not_linked',
+    /** The ID token didn't verify (signature, audience, expiry, …). */
+    'invalid_token',
+    /** The nonce is not one this server issued for this, or it is used or expired. */
+    'nonce_invalid',
+    /** Socio's cloud services can't verify a Google or Apple sign-in now (or this server isn't connected). */
+    'provider_unavailable',
+    /** Linking: this Google or Apple account is linked to another Socio account. */
+    'already_linked_other',
+    /** Unlinking would leave the account with no way to sign in. */
+    'last_method',
 ] as const;
 export type DeviceErrorCode = (typeof DEVICE_ERROR_CODES)[number];
 export const deviceErrorSchema = z.object({
@@ -367,6 +379,83 @@ export const codeRedeemBodySchema = z
 export type CodeRedeemBody = z.input<typeof codeRedeemBodySchema>;
 
 // ---------------------------------------------------------------------------
+// Native Google and Apple sign-in (CB-570)
+
+/**
+ * The Socio app's native sign-ins: Google Sign-In (iOS) or Credential
+ * Manager (Android), and Sign in with Apple (iOS). The app gets an OpenID
+ * Connect ID token from the platform and sends it to its workspace's
+ * server, which has it verified by Socio's cloud services. The token must
+ * carry a nonce this server issued (`start`), single use: a token made for
+ * one server is no use on another.
+ */
+export const SOCIAL_PROVIDERS = ['google', 'apple'] as const;
+export type SocialProvider = (typeof SOCIAL_PROVIDERS)[number];
+export const socialProviderSchema = z.enum(SOCIAL_PROVIDERS);
+/** A start's purpose: a sign-in binds no session; a link binds the signed-in session that asked. */
+export const SOCIAL_PURPOSES = ['signin', 'link'] as const;
+export type SocialPurpose = (typeof SOCIAL_PURPOSES)[number];
+/** A nonce the server made: 32 random bytes in base64url, 43 characters. */
+export const socialNonceSchema = z.string().length(43).regex(base64url);
+/** An ID token as the platform gives it: a compact JWS, bounded. */
+export const idTokenSchema = z
+    .string()
+    .min(16)
+    .max(8192)
+    .regex(/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]*$/);
+
+/** `POST /api/auth/device/social/start`: a nonce for one Google or Apple sign-in or link. */
+export const socialStartBodySchema = z
+    .object({ provider: socialProviderSchema, purpose: z.enum(SOCIAL_PURPOSES) })
+    .strict();
+export type SocialStartBody = z.input<typeof socialStartBodySchema>;
+/**
+ * The start's answer: the nonce to put in the platform's request (Google
+ * as is; Apple wants its SHA-256 in hex, which the platform's token then
+ * carries), when it runs out, and for Google the server client id the
+ * app's Google Sign-In asks the token for.
+ */
+export const socialStartAnswerSchema = z.object({
+    nonce: socialNonceSchema,
+    expiresAt: z.string(),
+    serverClientId: z.string().optional(),
+});
+export type SocialStartAnswer = z.infer<typeof socialStartAnswerSchema>;
+
+/**
+ * `POST /api/auth/device/social/redeem`: the token, the nonce it was made
+ * with, and this device, as the other redeems take it. Answers
+ * `deviceSignedInSchema` with the session cookie, as they do.
+ */
+export const socialRedeemBodySchema = z
+    .object({
+        provider: socialProviderSchema,
+        idToken: idTokenSchema,
+        nonce: socialNonceSchema,
+        installId: installIdSchema,
+        platform: devicePlatformSchema,
+        label: deviceLabelSchema.optional(),
+        variant: appVariantSchema.optional(),
+    })
+    .strict();
+export type SocialRedeemBody = z.input<typeof socialRedeemBodySchema>;
+
+/** `POST /api/auth/social/link`, signed in: links this Google or Apple account to the session's. */
+export const socialLinkBodySchema = z
+    .object({ provider: socialProviderSchema, idToken: idTokenSchema, nonce: socialNonceSchema })
+    .strict();
+export type SocialLinkBody = z.input<typeof socialLinkBodySchema>;
+
+/** One link, as `GET /api/auth/social/links` lists them; the email is the token's at link time, for display. */
+export const socialLinkSchema = z.object({
+    provider: socialProviderSchema,
+    linkedAt: z.string(),
+    email: z.string().optional(),
+});
+export type SocialLink = z.infer<typeof socialLinkSchema>;
+export const socialLinksSchema = z.array(socialLinkSchema);
+
+// ---------------------------------------------------------------------------
 // Devices
 
 export const DEVICE_STATES = ['active', 'revoked', 'revoked_and_erase'] as const;
@@ -417,6 +506,12 @@ export const workspaceManifestSchema = z.object({
         sheet: z.boolean(),
         signInCodes: z.enum(SIGN_IN_CODE_CHANNELS).nullable(),
         addDevice: z.boolean(),
+        /**
+         * Native Google and Apple sign-in the app may offer (CB-570): while
+         * the cloud connection verifies them and the access policy allows
+         * them. Missing from a server before CB-570: none.
+         */
+        social: z.array(socialProviderSchema).default([]),
     }),
     serverVersion: z.string(),
     protocol: z.number().int().min(1),

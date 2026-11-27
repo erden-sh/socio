@@ -99,7 +99,10 @@ export interface SignInChip {
     warn?: boolean;
 }
 
-const providerLabel = (id: string) => (id ? id[0]!.toLocaleUpperCase(APP_LOCALE) + id.slice(1) : id);
+/** The Socio app's own Google and Apple links (CB-570), by their account rows' ids. */
+const NATIVE_LABELS: Record<string, string> = { 'google-native': 'Google (app)', 'apple-native': 'Apple (app)' };
+const providerLabel = (id: string) =>
+    NATIVE_LABELS[id] ?? (id ? id[0]!.toLocaleUpperCase(APP_LOCALE) + id.slice(1) : id);
 
 /**
  * How they sign in, as chips: passkeys, password, providers and a linked

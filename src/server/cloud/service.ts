@@ -12,7 +12,7 @@
  * tick). Each change is written against the sealed text it was read as, so
  * two runtimes can't write over each other.
  */
-import { createHash, randomUUID } from 'node:crypto';
+import { createHash, createPublicKey, randomUUID, type KeyObject } from 'node:crypto';
 
 import type { SealState, SecretBox } from '@socio/foundation/keys/secret-box';
 
@@ -39,6 +39,9 @@ const METADATA_MS = 60 * MINUTE;
 const RETRY_MS = 30_000;
 /** While the issuer holds tokens back or refuses an audience, it is asked again this often. */
 const HELD_MS = 5 * MINUTE;
+/** The issuer's signing keys are kept this long (§2.5), and read again at most this often for an unknown `kid`. */
+const KEYS_MS = 60 * MINUTE;
+const KEYS_REREAD_MS = MINUTE;
 
 /** The identity as kept: who the issuer says the deployment is, and the key that proves it. */
 interface StoredIdentity {
@@ -125,6 +128,10 @@ export class CloudService implements CloudShape {
     /** The record as last opened, by its sealed text. */
     private opened?: { sealed: string; record?: CloudRecord };
     private metadata?: { value: IssuerMetadata; at: number };
+    /** The issuer's signing keys, by `kid`, as last read. */
+    private signingKeys?: { byKid: Map<string, KeyObject>; at: number };
+    private readingKeys?: Promise<void>;
+    private keysNotBefore = 0;
     /** Access tokens in memory only, per identity and audience (§2.4). */
     private tokens = new Map<string, CachedToken>();
     private minting = new Map<string, Promise<string | undefined>>();
@@ -243,6 +250,51 @@ export class CloudService implements CloudShape {
             this.metadata = { value: await this.client.discover(), at: now };
         }
         return this.metadata.value;
+    }
+
+    /**
+     * One of the issuer's signing keys (§2.5), by `kid`: kept an hour, and
+     * read again for a `kid` it doesn't know, at most once a minute (the
+     * issuer publishes its next key before it signs with it). Undefined for
+     * a key the issuer doesn't publish; throws `CloudRequestError` when the
+     * keys can't be read and none are kept.
+     */
+    async issuerKey(kid: string): Promise<KeyObject | undefined> {
+        const now = this.now();
+        const kept = this.signingKeys;
+        const due = !kept || now - kept.at >= KEYS_MS || (!kept.byKid.has(kid) && now - kept.at >= KEYS_REREAD_MS);
+        if (due && (this.readingKeys || now >= this.keysNotBefore)) {
+            this.readingKeys ??= this.readKeys().finally(() => {
+                this.readingKeys = undefined;
+            });
+            try {
+                await this.readingKeys;
+            } catch (error) {
+                // A set read before still answers for the keys it has.
+                if (!this.signingKeys) {
+                    throw error;
+                }
+            }
+        } else if (!kept) {
+            throw new CloudRequestError('unreachable', 'issuer keys');
+        }
+        return this.signingKeys?.byKid.get(kid);
+    }
+
+    private async readKeys() {
+        const at = this.now();
+        // Read at most once a minute, whoever asks and however it ends.
+        this.keysNotBefore = at + KEYS_REREAD_MS;
+        const keys = await this.client.keys(await this.issuerMetadata());
+        const byKid = new Map<string, KeyObject>();
+        for (const jwk of keys) {
+            try {
+                byKid.set(jwk.kid, createPublicKey({ key: { kty: jwk.kty, crv: jwk.crv, x: jwk.x }, format: 'jwk' }));
+            } catch {
+                // A key node:crypto can't read is no key.
+            }
+        }
+        this.signingKeys = { byKid, at };
     }
 
     async token(audience: string, options: { renew?: boolean } = {}): Promise<string | undefined> {

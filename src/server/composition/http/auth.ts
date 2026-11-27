@@ -30,6 +30,7 @@ import { sessionRoutes } from '../../auth/mock.js';
 import { ownerNotice } from '../../auth/owner-notice.js';
 import { requestUserResolver } from '../../auth/request-user.js';
 import { backupDirFromEnv } from '../../backup/backup-service.js';
+import { SocialVerification } from '../../cloud/contract.js';
 import { telegramThreadOwnership } from '../../integrations/infra/sqlite/ownership.js';
 import { evidenceOwnership } from '../../learning/infra/sqlite/ownership.js';
 import type { AppEdge } from '../../main.js';
@@ -214,6 +215,8 @@ export function wireAccounts(auth: AuthSetup, edge: AppEdge) {
             remove: (userId, id) => notifications.push.unsubscribe(userId, id),
         }),
     );
+    // CB-570: the app's Google and Apple sign-in, verified by the cloud connection.
+    auth.provider.useSocialVerifier?.(Context.get(services, SocialVerification));
     const deactivated = auth.provider.deactivatedUsers?.bind(auth.provider);
     if (deactivated) {
         workspace.useDeactivated(deactivated);
@@ -276,8 +279,8 @@ export function mountSignIn(app: Hono<AppEnv>, auth: AuthSetup, store: CoreStore
     const serverPolicy = appPolicyFromEnv(process.env);
     // CB-352: what the Socio app reads before sign-in. Public, and no
     // cookie is read: the same answer for everyone, cached a minute.
-    app.get(WORKSPACE_MANIFEST_PATH, function workspaceManifest(c) {
-        const signIn = auth.provider.workspaceManifest?.();
+    app.get(WORKSPACE_MANIFEST_PATH, async function workspaceManifest(c) {
+        const signIn = await auth.provider.workspaceManifest?.();
         if (!signIn) {
             return c.json({ error: 'Not found.' }, 404);
         }

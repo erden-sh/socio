@@ -151,6 +151,10 @@ function providerFromEnv(
     id: string,
     read: (path: string) => string,
 ): OAuthProviderSettings {
+    // CB-570: the app's Google and Apple links are stored under these ids.
+    if (id === 'google-native' || id === 'apple-native') {
+        throw new Error(`AUTH_OAUTH_PROVIDERS: "${id}" is reserved for the Socio app's own Google and Apple sign-in.`);
+    }
     if (!PROVIDER_ID.test(id)) {
         throw new Error(
             `AUTH_OAUTH_PROVIDERS: "${id}" is not a valid provider id (lowercase letters, digits and dashes, e.g. logto).`,

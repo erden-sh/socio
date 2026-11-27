@@ -115,6 +115,9 @@ export const hasWayIn = (account: PolicyAccount, inForce: SignInInForce) =>
     (account.password && inForce.password) ||
     (account.passkeys > 0 && inForce.passkey) ||
     account.providers.some((id) => inForce.providers.includes(id)) ||
+    // CB-570: the app's Google and Apple sign-in, for an account linked to one.
+    (account.providers.includes('google-native') && inForce.google) ||
+    (account.providers.includes('apple-native') && inForce.apple) ||
     (account.linkReachable && inForce.signInLink) ||
     // Every account has an email: email links reach everyone while on (CB-352).
     inForce.emailLinks;

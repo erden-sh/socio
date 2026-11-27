@@ -35,7 +35,7 @@ import type {
     TransferParties,
 } from '@socio/shared/auth';
 import type { Branding } from '@socio/shared/branding';
-import type { DeviceErrorCode } from '@socio/shared/device-sign-in';
+import type { DeviceErrorCode, SocialProvider } from '@socio/shared/device-sign-in';
 import type { WorkspaceManifest } from '@socio/shared/device-sign-in';
 import type { PersonAccess, PersonTrail, PersonTrailSource } from '@socio/shared/people';
 import type { User } from '@socio/shared/types';
@@ -199,6 +199,25 @@ export interface DeviceSignInEvent {
     method: string;
 }
 
+/**
+ * Native Google and Apple sign-in's verifier (CB-570): something that
+ * checks an ID token made with a nonce this server issued and names the
+ * provider's subject. The composition hands in the cloud's
+ * (`cloud/social.ts`); tests hand in their own. Never throws.
+ */
+export interface SocialVerifier {
+    /** The providers offered now, with Google's server client id; null while none can be verified. */
+    config(): Promise<{ google?: { serverClientId: string }; apple?: Record<string, never> } | null>;
+    verify(input: {
+        provider: SocialProvider;
+        idToken: string;
+        nonce: string;
+    }): Promise<
+        | { ok: true; provider: SocialProvider; sub: string; email?: string; emailVerified?: boolean; nonce: string }
+        | { ok: false; code: 'invalid_token' | 'nonce_invalid' | 'too_many' | 'provider_unavailable' }
+    >;
+}
+
 /** Why a request from the app was refused (CB-352): the 401's `code` for it. */
 export type DeviceRefusalCode = Extract<
     DeviceErrorCode,
@@ -313,7 +332,9 @@ export interface AuthProvider {
      * What `/.well-known/socio/workspace` says of sign-in (CB-352): the
      * workspace's id and origin and the ways in the app can offer now.
      */
-    workspaceManifest?(): { id: string; origin: string; methods: WorkspaceManifest['methods'] };
+    workspaceManifest?(): Promise<{ id: string; origin: string; methods: WorkspaceManifest['methods'] }>;
+    /** Who verifies the app's Google and Apple sign-ins (CB-570); none: they aren't offered. Better Auth only. */
+    useSocialVerifier?(verifier: SocialVerifier): void;
     /**
      * Whether this app user may run code (CB-376): with Better Auth, the
      * organization plugin's `code:run` permission (admins have it, others
