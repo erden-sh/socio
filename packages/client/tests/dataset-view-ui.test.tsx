@@ -1,4 +1,7 @@
 // @vitest-environment jsdom
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
@@ -6,7 +9,6 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import type { DatasetView } from '@socio/shared/data-types';
 import { VIEW_NO_ACCESS, type ViewQueryResult } from '@socio/shared/dataset-view';
 
-import editorWords from '../../i18n/locales/en-US/pages.editor.json';
 import { niceTicks } from '../src/components/charts/scale';
 import RichEditor from '../src/modules/pages/editor/RichEditor';
 import { blocks } from '../src/modules/pages/editor/slash-commands';
@@ -263,7 +265,11 @@ it('inserts a view from the block menu and saves its spec into the page', async 
         ],
     );
     const block = blocks.find((b) => b.id === 'dataset-view')!;
-    expect(editorWords.blocks['dataset-view'].description).toMatch(/live table or chart/);
+    // Its words are the editor's en-US dictionary's (pages.editor).
+    const words = JSON.parse(
+        readFileSync(join(import.meta.dirname, '../../i18n/locales/en-US/pages.editor.json'), 'utf8'),
+    ) as { blocks: Record<string, { description: string }> };
+    expect(words.blocks['dataset-view']!.description).toMatch(/live table or chart/);
     const onChange = await editor('# Report\n\n');
     // The slash menu runs the block's command on the editor.
     const prose = host.querySelector('.ProseMirror')!;
