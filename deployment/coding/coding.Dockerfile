@@ -134,8 +134,9 @@ RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
     --mount=type=cache,target=/opt/corepack,sharing=locked \
     npm install -g corepack && corepack enable pnpm && pnpm install --frozen-lockfile
 # The server build reads the whole src/ tree (tsconfig.server.json includes
-# src/server, …) and the declarations of @socio/shared, @socio/foundation and
-# @socio/data, so the packages build first; only the host/ entry + its two
+# src/server, …) and the declarations of every workspace package the server
+# imports (@socio/shared, @socio/foundation, @socio/data and @socio/i18n;
+# scripts/workspace-packages.mjs), so the packages build first; only the host/ entry + its two
 # siblings are copied to the final image (none of them imports a package at run
 # time), but the compile needs the full server inputs.
 COPY tsconfig.json tsconfig.server.json ./
@@ -143,10 +144,12 @@ COPY src ./src
 COPY packages/shared ./packages/shared
 COPY packages/foundation ./packages/foundation
 COPY packages/data ./packages/data
+COPY packages/i18n ./packages/i18n
 RUN --mount=type=cache,target=/app/.tsbuildinfo \
     pnpm exec tsc -p packages/shared/tsconfig.json \
  && pnpm exec tsc -p packages/foundation/tsconfig.build.json \
  && pnpm exec tsc -p packages/data/tsconfig.build.json \
+ && pnpm exec tsc -p packages/i18n/tsconfig.build.json \
  && pnpm exec tsc -p tsconfig.server.json
 
 # The runtime node_modules for the entry: prod deps bring effect,

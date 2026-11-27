@@ -17,7 +17,7 @@ import {
     withoutComments,
     workspaceProblems,
 } from '../../scripts/check-package-boundary.mjs';
-import { builtPackages } from '../../scripts/workspace-packages.mjs';
+import { builtPackages, workspaceDependencies } from '../../scripts/workspace-packages.mjs';
 import { PACKAGE_SOURCES } from '../support/package-sources.js';
 
 const root = join(import.meta.dirname, '../..');
@@ -147,10 +147,21 @@ describe('the wiring of @socio/foundation and @socio/data', () => {
     });
 
     it('builds every package for the coding image, whose context lists them by hand', () => {
+        // Every package the build compiles (scripts/workspace-packages.mjs), not a list kept here:
+        // a new package missing from this Dockerfile otherwise first fails at release (v0.57.0).
         const dockerfile = text('deployment/coding/coding.Dockerfile');
-        for (const name of NEW) {
-            expect(dockerfile).toContain(`COPY packages/${name} ./packages/${name}`);
-            expect(dockerfile).toContain(`pnpm exec tsc -p packages/${name}/tsconfig.build.json`);
+        const built = builtPackages(root);
+        for (const { dir, build } of built) {
+            expect(dockerfile).toContain(`COPY ${dir} ./${dir}`);
+            expect(dockerfile).toContain(`pnpm exec tsc -p ${build}`);
+        }
+        // Each package compiles after the workspace packages it depends on, and before the server.
+        const at = (build: string) => dockerfile.indexOf(`pnpm exec tsc -p ${build}`);
+        for (const { manifest, build } of built) {
+            for (const dependency of built.filter(({ name }) => workspaceDependencies(manifest).includes(name))) {
+                expect(at(dependency.build), `${dependency.build} before ${build}`).toBeLessThan(at(build));
+            }
+            expect(at(build)).toBeLessThan(at('tsconfig.server.json'));
         }
     });
 
