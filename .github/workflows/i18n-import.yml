@@ -1,0 +1,161 @@
+# The translation import (docs/I18N.md, "Translations from contributors"):
+# sends the translation app the strings as main has them, so contributors
+# translate the current source.
+#
+# Hourly, and by hand: it builds the body (en-US, the translations, the
+# glossary and context notes in packages/i18n/, and the state of the i18n/
+# pull requests; scripts/i18n-sync.mjs) and POSTs it to
+# `${TRANSLATE_BASE_URL}/sync/import` with the import service token. When the
+# body's hash is the last import's, it skips: each import sent leaves its hash
+# in an actions/cache entry on main (pull requests can't write those), and the
+# next run restores the newest one.
+#
+# Security:
+# - only `schedule` and `workflow_dispatch`, on main: never on a push or a
+#   pull request, so a branch's code never runs with the token;
+# - the service token is in the `i18n-sync` environment, which only main
+#   may deploy to (a setting on the environment);
+# - nothing is installed: Node and the repository's own script, then curl;
+# - the token goes to curl in a 0600 header file, never on a command line or
+#   in the log;
+# - without the TRANSLATE_BASE_URL variable (a fork) it does nothing.
+name: i18n import
+
+on:
+  schedule:
+    - cron: '23 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: i18n-import
+  cancel-in-progress: false
+
+jobs:
+  import:
+    name: i18n import
+    if: github.ref == 'refs/heads/main'
+    runs-on: blacksmith-4vcpu-ubuntu-2604
+    environment: i18n-sync
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      # The i18n/ pull requests' states, for candidates whose pull request closed unmerged.
+      pull-requests: read
+    steps:
+      - name: Check the configuration
+        id: config
+        env:
+          BASE_URL: ${{ vars.TRANSLATE_BASE_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "$BASE_URL" ]; then
+            echo "::notice::TRANSLATE_BASE_URL is not set, so there is no translation app to import into (a fork?). Nothing to do."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [[ ! "$BASE_URL" =~ ^https://[A-Za-z0-9.-]+(:[0-9]+)?(/[A-Za-z0-9._~/-]*)?$ ]]; then
+            echo "::error::TRANSLATE_BASE_URL must be an https:// URL."
+            exit 1
+          fi
+          echo "enabled=true" >> "$GITHUB_OUTPUT"
+
+      - if: steps.config.outputs.enabled == 'true'
+        uses: useblacksmith/checkout@75c49b6ed30ce59336e9252425796cfcfac155f8 # v1
+        with:
+          persist-credentials: false
+
+      - if: steps.config.outputs.enabled == 'true'
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+
+      - name: Build the import
+        id: payload
+        if: steps.config.outputs.enabled == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh pr list --repo "$GITHUB_REPOSITORY" --state all --limit 300 --json number,state,headRefName > "$RUNNER_TEMP/i18n-prs.json"
+          hash="$(node scripts/i18n-sync.mjs payload --commit "$GITHUB_SHA" --pull-requests "$RUNNER_TEMP/i18n-prs.json" --out "$RUNNER_TEMP/i18n-import.json")"
+          [[ "$hash" =~ ^[0-9a-f]{64}$ ]]
+          echo "hash=$hash" >> "$GITHUB_OUTPUT"
+
+      - name: Restore the last import's hash
+        if: steps.config.outputs.enabled == 'true'
+        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: ${{ runner.temp }}/i18n-import-last
+          key: i18n-import-last-${{ github.run_id }}
+          restore-keys: i18n-import-last-
+
+      - name: Compare with the last import
+        id: sent
+        if: steps.config.outputs.enabled == 'true'
+        env:
+          HASH: ${{ steps.payload.outputs.hash }}
+        run: |
+          set -euo pipefail
+          last="$(cat "$RUNNER_TEMP/i18n-import-last/hash" 2>/dev/null || true)"
+          if [ "$last" = "$HASH" ]; then
+            echo "::notice::The translations, glossary, context notes and pull requests are unchanged since the last import. Nothing to send."
+            echo "unchanged=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "unchanged=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Send the import
+        if: steps.config.outputs.enabled == 'true' && steps.sent.outputs.unchanged == 'false'
+        env:
+          BASE_URL: ${{ vars.TRANSLATE_BASE_URL }}
+          CLIENT_ID: ${{ secrets.TRANSLATE_IMPORT_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.TRANSLATE_IMPORT_CLIENT_SECRET }}
+        run: |
+          set -euo pipefail
+          if [ -z "$CLIENT_ID" ] || [ -z "$CLIENT_SECRET" ]; then
+            echo "::error::Set TRANSLATE_IMPORT_CLIENT_ID and TRANSLATE_IMPORT_CLIENT_SECRET in the i18n-sync environment."
+            exit 1
+          fi
+          headers="$RUNNER_TEMP/i18n-import-headers"
+          trap 'rm -f "$headers"' EXIT
+          (umask 077 && printf 'CF-Access-Client-Id: %s\nCF-Access-Client-Secret: %s\nContent-Type: application/json\n' "$CLIENT_ID" "$CLIENT_SECRET" > "$headers")
+          response="$RUNNER_TEMP/i18n-import-response.json"
+          # 409 is another import, or an export, in progress: retry, as the app asks.
+          for attempt in 1 2 3 4 5 6; do
+            status="$(curl -sS --proto '=https' --max-time 120 -o "$response" -w '%{http_code}' -X POST -H "@$headers" --data-binary "@$RUNNER_TEMP/i18n-import.json" "${BASE_URL%/}/sync/import" || echo 000)"
+            case "$status" in
+              2??)
+                echo "Imported: $(head -c 2000 "$response")"
+                exit 0
+                ;;
+              409 | 429 | 5?? | 000)
+                echo "The app answered $status; retrying in $((attempt * 20)) s."
+                sleep $((attempt * 20))
+                ;;
+              *)
+                echo "::error::The import failed with $status: $(head -c 2000 "$response" | tr -d '\r')"
+                exit 1
+                ;;
+            esac
+          done
+          echo "::error::The import failed: the app was busy or unreachable after 6 tries."
+          exit 1
+
+      # Only a sent import is remembered: a failed one is tried again next hour.
+      - name: Write the import's hash
+        if: steps.config.outputs.enabled == 'true' && steps.sent.outputs.unchanged == 'false'
+        env:
+          HASH: ${{ steps.payload.outputs.hash }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/i18n-import-last"
+          echo "$HASH" > "$RUNNER_TEMP/i18n-import-last/hash"
+
+      - name: Remember the import
+        if: steps.config.outputs.enabled == 'true' && steps.sent.outputs.unchanged == 'false'
+        uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: ${{ runner.temp }}/i18n-import-last
+          key: i18n-import-last-${{ github.run_id }}-${{ github.run_attempt }}

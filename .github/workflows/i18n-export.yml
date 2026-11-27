@@ -1,0 +1,307 @@
+# The translation export (docs/I18N.md, "Translations from contributors"):
+# brings the translation app's approved translations in as pull requests,
+# reviewed like any other change.
+#
+# Daily, and by hand, in two jobs:
+# 1. prepare: installs the dependencies (no scripts) before any secret is in
+#    reach, then GETs `${TRANSLATE_BASE_URL}/export/approved` with the export
+#    service token, writes each locale's files over main
+#    (scripts/i18n-sync.mjs; es-US stays sparse over es-419), on top of the
+#    locale's open branch for the day when there is one, and runs
+#    `pnpm i18n:check`. It passes the files on as an artifact;
+# 2. publish: mints a GitHub App installation token (contents and pull
+#    requests, this repository only), commits each locale's files to
+#    `i18n/<locale>-<date>` as the App, opens or updates its pull request
+#    (contributors credited by alias only; self-approved strings marked),
+#    and POSTs `/export/ack` with the pull request, so the app marks those
+#    candidates exported. It runs no code from the repository: git, gh, jq
+#    and curl only.
+#
+# The App, not GITHUB_TOKEN, opens the pull requests, because a pull request
+# GITHUB_TOKEN opens starts no CI. The App has no `workflows` permission and
+# isn't on main's bypass list: its pull requests face the i18n guard, CI and
+# review like anyone's.
+#
+# Security:
+# - only `schedule` and `workflow_dispatch`, on main: never a pull request;
+# - the secrets are in the `i18n-sync` environment, which only main may
+#   deploy to (a setting on the environment);
+# - service tokens go to curl in a 0600 header file, never on a command line
+#   or in the log; the App token is revoked when its job ends;
+# - without the TRANSLATE_BASE_URL variable (a fork) it does nothing.
+name: i18n export
+
+on:
+  schedule:
+    - cron: '41 5 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: i18n-export
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: i18n export (prepare)
+    if: github.ref == 'refs/heads/main'
+    runs-on: blacksmith-4vcpu-ubuntu-2604
+    environment: i18n-sync
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    outputs:
+      locales: ${{ steps.write.outputs.locales }}
+      date: ${{ steps.write.outputs.date }}
+    steps:
+      - name: Check the configuration
+        id: config
+        env:
+          BASE_URL: ${{ vars.TRANSLATE_BASE_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "$BASE_URL" ]; then
+            echo "::notice::TRANSLATE_BASE_URL is not set, so there is no translation app to export from (a fork?). Nothing to do."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [[ ! "$BASE_URL" =~ ^https://[A-Za-z0-9.-]+(:[0-9]+)?(/[A-Za-z0-9._~/-]*)?$ ]]; then
+            echo "::error::TRANSLATE_BASE_URL must be an https:// URL."
+            exit 1
+          fi
+          echo "enabled=true" >> "$GITHUB_OUTPUT"
+
+      - if: steps.config.outputs.enabled == 'true'
+        uses: useblacksmith/checkout@75c49b6ed30ce59336e9252425796cfcfac155f8 # v1
+        with:
+          persist-credentials: false
+
+      - if: steps.config.outputs.enabled == 'true'
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+
+      - if: steps.config.outputs.enabled == 'true'
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+
+      # Before any secret is in reach, and without install scripts.
+      - name: Install the dependencies
+        if: steps.config.outputs.enabled == 'true'
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Fetch the approved translations
+        if: steps.config.outputs.enabled == 'true'
+        env:
+          BASE_URL: ${{ vars.TRANSLATE_BASE_URL }}
+          CLIENT_ID: ${{ secrets.TRANSLATE_EXPORT_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.TRANSLATE_EXPORT_CLIENT_SECRET }}
+        run: |
+          set -euo pipefail
+          if [ -z "$CLIENT_ID" ] || [ -z "$CLIENT_SECRET" ]; then
+            echo "::error::Set TRANSLATE_EXPORT_CLIENT_ID and TRANSLATE_EXPORT_CLIENT_SECRET in the i18n-sync environment."
+            exit 1
+          fi
+          headers="$RUNNER_TEMP/i18n-export-headers"
+          trap 'rm -f "$headers"' EXIT
+          (umask 077 && printf 'CF-Access-Client-Id: %s\nCF-Access-Client-Secret: %s\n' "$CLIENT_ID" "$CLIENT_SECRET" > "$headers")
+          exported="$RUNNER_TEMP/i18n-export.json"
+          # 409 is an import in progress: retry, as the app asks.
+          for attempt in 1 2 3 4 5 6; do
+            status="$(curl -sS --proto '=https' --max-time 120 -o "$exported" -w '%{http_code}' -H "@$headers" "${BASE_URL%/}/export/approved" || echo 000)"
+            case "$status" in
+              200)
+                exit 0
+                ;;
+              409 | 429 | 5?? | 000)
+                echo "The app answered $status; retrying in $((attempt * 20)) s."
+                sleep $((attempt * 20))
+                ;;
+              *)
+                echo "::error::The export failed with $status: $(head -c 2000 "$exported" | tr -d '\r')"
+                exit 1
+                ;;
+            esac
+          done
+          echo "::error::The export failed: the app was busy or unreachable after 6 tries."
+          exit 1
+
+      - name: Write the translations
+        id: write
+        if: steps.config.outputs.enabled == 'true'
+        run: |
+          set -euo pipefail
+          exported="$RUNNER_TEMP/i18n-export.json"
+          out="$RUNNER_TEMP/i18n-export-out"
+          date="$(date -u +%F)"
+          mkdir -p "$out"
+          locales=()
+          while IFS= read -r locale; do
+            [[ "$locale" =~ ^[a-z]{2,3}(-[A-Z]{2}|-[0-9]{3})?$ ]] || { echo "::error::Not a locale: $locale"; exit 1; }
+            branch="i18n/$locale-$date"
+            dir="packages/i18n/locales/$locale"
+            # Today's branch for the locale, if an earlier run opened it: build on its files.
+            if git fetch --quiet --no-tags --depth=1 origin "+refs/heads/$branch:refs/remotes/origin/$branch" 2>/dev/null; then
+              rm -rf "$dir"
+              if git cat-file -e "origin/$branch:$dir" 2>/dev/null; then
+                git archive "origin/$branch" "$dir" | tar -x
+              fi
+              echo "$locale: on top of $branch"
+            fi
+            mkdir -p "$out/$locale"
+            node scripts/i18n-sync.mjs apply --export "$exported" --locale "$locale" --body "$out/$locale/body.md" --ids "$out/$locale/ids.json"
+            if [ "$(jq length "$out/$locale/ids.json")" -eq 0 ]; then
+              echo "::warning::$locale: none of its candidates could be written (see above); they stay approved in the app."
+              git checkout --quiet -- "$dir" 2>/dev/null || true
+              rm -rf "${out:?}/$locale"
+              continue
+            fi
+            if [ -d "$dir" ]; then
+              cp -R "$dir" "$out/$locale/files"
+            fi
+            locales+=("$locale")
+          done < <(node scripts/i18n-sync.mjs locales --export "$exported")
+          if [ "${#locales[@]}" -eq 0 ]; then
+            echo "::notice::No approved translations to export."
+          fi
+          echo "locales=${locales[*]}" >> "$GITHUB_OUTPUT"
+          echo "date=$date" >> "$GITHUB_OUTPUT"
+
+      - name: Check the dictionaries
+        if: steps.write.outputs.locales != ''
+        run: pnpm i18n:check
+
+      - if: steps.write.outputs.locales != ''
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: i18n-export
+          path: ${{ runner.temp }}/i18n-export-out
+          retention-days: 1
+          if-no-files-found: error
+
+  publish:
+    name: i18n export (publish)
+    needs: prepare
+    if: needs.prepare.outputs.locales != ''
+    runs-on: blacksmith-4vcpu-ubuntu-2604
+    environment: i18n-sync
+    timeout-minutes: 20
+    # The App token does the writing; GITHUB_TOKEN only reads.
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: i18n-export
+          path: ${{ runner.temp }}/i18n-export-out
+
+      - name: Mint the GitHub App token
+        id: app
+        uses: actions/create-github-app-token@f418cff399f7aef4c2f0ad47e25ca7a6abbdd6fc # v3.4.0
+        with:
+          app-id: ${{ secrets.TRANSLATE_APP_ID }}
+          private-key: ${{ secrets.TRANSLATE_APP_PRIVATE_KEY }}
+          # No owner or repositories: the token is for this repository only.
+          permission-contents: write
+          permission-pull-requests: write
+
+      - uses: useblacksmith/checkout@75c49b6ed30ce59336e9252425796cfcfac155f8 # v1
+        with:
+          token: ${{ steps.app.outputs.token }}
+          ref: main
+
+      - name: Open or update the pull requests
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          APP_SLUG: ${{ steps.app.outputs.app-slug }}
+          LOCALES: ${{ needs.prepare.outputs.locales }}
+          DATE: ${{ needs.prepare.outputs.date }}
+          BASE_URL: ${{ vars.TRANSLATE_BASE_URL }}
+          CLIENT_ID: ${{ secrets.TRANSLATE_EXPORT_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.TRANSLATE_EXPORT_CLIENT_SECRET }}
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/i18n-export-out"
+          [[ "$DATE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || { echo "::error::Bad date"; exit 1; }
+          [[ "$APP_SLUG" =~ ^[a-z0-9-]+$ ]] || { echo "::error::Bad App slug"; exit 1; }
+          headers="$RUNNER_TEMP/i18n-ack-headers"
+          trap 'rm -f "$headers"' EXIT
+          (umask 077 && printf 'CF-Access-Client-Id: %s\nCF-Access-Client-Secret: %s\nContent-Type: application/json\n' "$CLIENT_ID" "$CLIENT_SECRET" > "$headers")
+          bot_id="$(gh api "/users/${APP_SLUG}%5Bbot%5D" --jq .id)"
+          git config user.name "${APP_SLUG}[bot]"
+          git config user.email "${bot_id}+${APP_SLUG}[bot]@users.noreply.github.com"
+          failed=0
+          for locale in $LOCALES; do
+            [[ "$locale" =~ ^[a-z]{2,3}(-[A-Z]{2}|-[0-9]{3})?$ ]] && [ "$locale" != en-US ] || { echo "::error::Not a locale: $locale"; exit 1; }
+            files="$out/$locale/files"
+            # Translations only: JSON files, no folders, links or anything else.
+            if [ -d "$files" ] && [ -n "$(find "$files" -mindepth 1 \( ! -type f -o ! -name '*.json' \) -print -quit)" ]; then
+              echo "::error::$locale: the export holds something other than JSON files."
+              exit 1
+            fi
+            branch="i18n/$locale-$DATE"
+            dir="packages/i18n/locales/$locale"
+            if git ls-remote --exit-code --heads origin "$branch" >/dev/null; then
+              git fetch --quiet --no-tags origin "+refs/heads/$branch:refs/remotes/origin/$branch"
+              git checkout --quiet -B "$branch" "origin/$branch"
+            else
+              git checkout --quiet -B "$branch" origin/main
+            fi
+            rm -rf "$dir"
+            if [ -d "$files" ]; then
+              cp -R "$files" "$dir"
+            fi
+            git add -A -- "$dir"
+            count="$(jq length "$out/$locale/ids.json")"
+            if ! git diff --cached --quiet; then
+              git commit --quiet -m "i18n($locale): $count translations from the translation app"
+              git push --quiet origin "HEAD:refs/heads/$branch"
+            fi
+            pr="$(gh pr list --head "$branch" --state open --json number,url --jq '.[0] // empty')"
+            if [ -z "$pr" ]; then
+              if [ -z "$(git rev-list origin/main..HEAD)" ]; then
+                echo "::warning::$locale: the approved translations are already on main; nothing to open."
+                continue
+              fi
+              {
+                echo "Translations for **$locale** from the translation app: approved there, and exported here for review like any change. The i18n guard checks that only translations changed and that none adds a URL, domain, email address, phone number or markup its en-US string doesn't have."
+                echo
+                cat "$out/$locale/body.md"
+              } > "$RUNNER_TEMP/i18n-body.md"
+              url="$(gh pr create --base main --head "$branch" --title "i18n($locale): translations from the translation app, $DATE" --body-file "$RUNNER_TEMP/i18n-body.md")"
+              number="${url##*/}"
+            else
+              number="$(jq -r .number <<<"$pr")"
+              url="$(jq -r .url <<<"$pr")"
+              gh pr view "$number" --json body --jq .body > "$RUNNER_TEMP/i18n-body.md"
+              printf '\n' >> "$RUNNER_TEMP/i18n-body.md"
+              cat "$out/$locale/body.md" >> "$RUNNER_TEMP/i18n-body.md"
+              if [ "$(wc -c < "$RUNNER_TEMP/i18n-body.md")" -gt 60000 ]; then
+                { echo "(Earlier exports' notes were cut: see this pull request's history.)"; echo; cat "$out/$locale/body.md"; } > "$RUNNER_TEMP/i18n-body.md"
+              fi
+              gh pr edit "$number" --body-file "$RUNNER_TEMP/i18n-body.md" >/dev/null
+            fi
+            [[ "$number" =~ ^[0-9]+$ ]] || { echo "::error::$locale: no pull request number"; exit 1; }
+            echo "$locale: $url"
+            if [ "$count" -eq 0 ]; then
+              continue
+            fi
+            jq -n --argjson pr "$number" --arg url "$url" --arg locale "$locale" --slurpfile ids "$out/$locale/ids.json" \
+              '{pr: $pr, url: $url, locale: $locale, candidateIds: $ids[0]}' > "$RUNNER_TEMP/i18n-ack.json"
+            acked=false
+            for attempt in 1 2 3 4 5; do
+              status="$(curl -sS --proto '=https' --max-time 60 -o "$RUNNER_TEMP/i18n-ack-response.json" -w '%{http_code}' -X POST -H "@$headers" --data-binary "@$RUNNER_TEMP/i18n-ack.json" "${BASE_URL%/}/export/ack" || echo 000)"
+              case "$status" in
+                2??) acked=true; break ;;
+                409 | 429 | 5?? | 000) sleep $((attempt * 15)) ;;
+                *) break ;;
+              esac
+            done
+            if [ "$acked" != true ]; then
+              # The candidates stay approved: the next export brings them to this branch again.
+              echo "::error::$locale: /export/ack failed with $status: $(head -c 2000 "$RUNNER_TEMP/i18n-ack-response.json" 2>/dev/null | tr -d '\r')"
+              failed=1
+            fi
+          done
+          exit "$failed"
