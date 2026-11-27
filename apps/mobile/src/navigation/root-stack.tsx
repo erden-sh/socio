@@ -24,6 +24,7 @@ import { RoomInviteScreen } from '../screens/room-invite';
 import { RoomMembersScreen } from '../screens/room-members';
 import { RoomMenuScreen } from '../screens/room-menu';
 import { RouteSheetScreen } from '../screens/route-sheet';
+import { ScanQrScreen } from '../screens/scan-qr';
 import { SheetSignInScreen } from '../screens/sheet-sign-in';
 import { SignInScreen } from '../screens/sign-in';
 import { SignInCodeScreen } from '../screens/sign-in-code';
@@ -71,6 +72,7 @@ export const RootStack = createNativeStackNavigator({
             NotificationAsk: NotificationAskScreen,
             AddWorkspace: AddWorkspaceScreen,
             WorkspaceAddress: WorkspaceAddressScreen,
+            ScanQr: ScanQrScreen,
             ConfirmWorkspace: ConfirmWorkspaceScreen,
             SignIn: SignInScreen,
             SheetSignIn: SheetSignInScreen,

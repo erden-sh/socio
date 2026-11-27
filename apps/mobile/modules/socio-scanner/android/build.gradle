@@ -1,0 +1,36 @@
+// socio-scanner: the add-workspace QR scanner's camera on Android (../README.md), with no Google
+// library: CameraX for the camera, ZXing's core for the QR code. Autolinking finds it in
+// apps/mobile/modules; Expo's Gradle plugin sets the SDK versions and Kotlin.
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'expo.modules.socioscanner'
+version = '0.1.0'
+
+android {
+  namespace "expo.modules.socioscanner"
+  defaultConfig {
+    versionCode 1
+    versionName '0.1.0'
+  }
+}
+
+// CameraX at expo-camera 58.0.14's version (its android/build.gradle), so Gradle keeps one copy;
+// expo-camera's ML Kit pieces are compileOnly in this app (expo.camera.barcode-scanner-enabled=false).
+// ZXing core: Apache-2.0, plain Java, no Android or network code (the com.google group is historical).
+dependencies {
+  def camerax = "1.6.0"
+  implementation "androidx.camera:camera-core:${camerax}"
+  implementation "androidx.camera:camera-camera2:${camerax}"
+  implementation "androidx.camera:camera-lifecycle:${camerax}"
+  implementation "androidx.camera:camera-view:${camerax}"
+  implementation "com.google.zxing:core:3.5.4"
+}
+
+// CameraX 1.6 needs the real ListenableFuture at compile time, which React Native's full Guava
+// replaces with an empty jar (9999.0-empty): expo-camera forces it the same way.
+configurations.configureEach {
+  resolutionStrategy.force "com.google.guava:listenablefuture:1.0"
+}

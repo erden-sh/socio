@@ -9,8 +9,8 @@ import type { DeviceLinkConfig } from './add-device';
 //
 // 1. the invite link an admin sent (src/data/invite.ts opens it);
 // 2. the QR code from Socio on a computer: Get the app (a `w` link, the workspace only) or Add a
-//    device (a `d` link, src/data/add-device.ts). The system camera opens either; the app has no
-//    scanner;
+//    device (a `d` link, src/data/add-device.ts), read by the app's own scanner (CB-566,
+//    qr-scan.ts), which opens either as the link from outside would;
 // 3. the workspace's address, typed: the address screen.
 //
 // A `w` link (`https://<link host>/<variant path>/w/<host>`, @socio/shared's `parseAppLink`, the
@@ -30,7 +30,7 @@ export const FIRST_SCREEN_COPY = {
         {
             id: 'qr',
             title: 'Scan the QR code from Socio on a computer',
-            detail: 'Choose Get the app, or Add a device to sign in at once. Use this device’s camera.',
+            detail: 'On Socio, choose Get the app, or Add a device to sign in at once.',
         },
         {
             id: 'address',
@@ -89,7 +89,7 @@ export interface FirstScreenWay {
     readonly id: FirstScreenWayId;
     readonly title: string;
     readonly detail: string;
-    /** Only the address is a button: the other two happen outside the app. */
+    /** The QR code (the scanner) and the address are buttons: the invite happens outside the app. */
     readonly pressable: boolean;
     readonly testID: string;
 }
@@ -116,7 +116,7 @@ export function firstScreenView({ adding, testBuild, link }: FirstScreenInput): 
         lead: FIRST_SCREEN_COPY.lead,
         ways: FIRST_SCREEN_COPY.ways.map((way) => ({
             ...way,
-            pressable: way.id === 'address',
+            pressable: way.id !== 'invite',
             testID: `first-screen-${way.id}`,
         })),
         link:

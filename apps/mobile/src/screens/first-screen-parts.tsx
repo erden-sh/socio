@@ -8,8 +8,8 @@ import type { SymbolName } from '../ui/symbols';
 
 import { WorkspaceHost } from './workspace-host';
 
-// Add workspace's first screen's parts: the ways in, one card of rows in their tones (only
-// the address is a button: the invite and the QR code happen outside the app), and a Get the app
+// Add workspace's first screen's parts: the ways in, one card of rows in their tones (the QR code
+// opens the scanner and the address its screen; the invite happens outside the app), and a Get the app
 // link's card, its host through WorkspaceHost with what is happening to it. Rows grow with their
 // text; the rules between them are the rows' own top borders.
 
@@ -60,14 +60,22 @@ function WayRow({ way, first, onPress }: { way: FirstScreenWay; first: boolean; 
     );
 }
 
-export function FirstScreenWays({ ways, onAddress }: { ways: FirstScreenView['ways']; onAddress: () => void }) {
+export function FirstScreenWays({
+    ways,
+    onScan,
+    onAddress,
+}: {
+    ways: FirstScreenView['ways'];
+    onScan: () => void;
+    onAddress: () => void;
+}) {
     return (
         <View
             testID="first-screen-ways"
             className="self-stretch overflow-hidden rounded-xl border border-border bg-card"
         >
             {ways.map((way, index) => (
-                <WayRow key={way.id} way={way} first={index === 0} onPress={onAddress} />
+                <WayRow key={way.id} way={way} first={index === 0} onPress={way.id === 'qr' ? onScan : onAddress} />
             ))}
         </View>
     );

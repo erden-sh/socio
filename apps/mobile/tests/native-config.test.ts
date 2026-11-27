@@ -30,6 +30,7 @@ import {
     variantCheckGradle,
     variantXcodeEnv,
 } from '../plugins/build-env';
+import { DOCUMENT_SCANNER_PROPERTY, MLKIT_DEPENDENCIES } from '../plugins/camera';
 import withNetworkSecurityConfig, {
     CLEARTEXT_HOSTS,
     DEBUG_SOURCE_SETS,
@@ -677,6 +678,13 @@ describe('package.json', () => {
         expect(typeof require('@bacons/apple-targets/app.plugin')).toBe('function');
     });
 
+    it('builds expo-camera from source, since a prebuilt one holds its ML Kit libraries (CB-566)', () => {
+        // Expo's prebuilt expo-camera AAR comes with a POM that lists ML Kit and the Play services code
+        // scanner whatever `expo.camera.barcode-scanner-enabled` says; only a source build reads it.
+        const pkg = JSON.parse(readFileSync(join(app, 'package.json'), 'utf8'));
+        expect(pkg.expo.autolinking.buildFromSource).toContain('expo-camera');
+    });
+
     it('builds expo-sqlite from source, since a prebuilt one has no cipher', () => {
         const pkg = JSON.parse(readFileSync(join(app, 'package.json'), 'utf8'));
         expect(pkg.expo.autolinking.buildFromSource).toContain('expo-sqlite');
@@ -738,7 +746,11 @@ interface Introspected {
         modResults: {
             android: {
                 manifest: {
-                    manifest: { application: { $: Record<string, string> }[]; 'uses-permission'?: Node[] };
+                    manifest: {
+                        $?: Record<string, string>;
+                        application: { $: Record<string, string> }[];
+                        'uses-permission'?: Node[];
+                    };
                 };
                 gradleProperties: { type: string; key?: string; value?: string }[];
                 colors: { resources: { color?: Node[] } };
@@ -930,24 +942,65 @@ describe('the introspected Expo config', () => {
         );
     });
 
-    it.each(variants)('%s: the pickers ask for the camera only, with its purpose string', (variant) => {
-        const { android, ios } = of(variant)._internal.modResults;
-        const usage = Object.keys(ios.infoPlist).filter((key) => /^NS(Camera|Microphone|PhotoLibrary)/.test(key));
-        expect(usage).toEqual(['NSCameraUsageDescription']);
-        expect(ios.infoPlist.NSCameraUsageDescription).toBe(CAMERA_PURPOSE);
-        // No iCloud container for the document picker.
-        expect(of(variant).ios.usesIcloudStorage).toBeFalsy();
-        expect(Object.keys(ios.entitlements).filter((key) => /icloud|ubiquity/i.test(key))).toEqual([]);
+    it.each(variants)(
+        '%s: the pickers and the QR scanner ask for the camera only, with one purpose string',
+        (variant) => {
+            const { android, ios } = of(variant)._internal.modResults;
+            const usage = Object.keys(ios.infoPlist).filter((key) => /^NS(Camera|Microphone|PhotoLibrary)/.test(key));
+            expect(usage).toEqual(['NSCameraUsageDescription']);
+            expect(ios.infoPlist.NSCameraUsageDescription).toBe(CAMERA_PURPOSE);
+            // No iCloud container for the document picker.
+            expect(of(variant).ios.usesIcloudStorage).toBeFalsy();
+            expect(Object.keys(ios.entitlements).filter((key) => /icloud|ubiquity/i.test(key))).toEqual([]);
 
-        const permissions = attrs(android.manifest.manifest['uses-permission'] ?? []);
-        const removed = permissions.filter((at) => at?.['tools:node'] === 'remove').map((at) => at?.['android:name']);
-        expect(new Set(removed)).toEqual(new Set(BLOCKED_PERMISSIONS));
-        for (const name of ['RECORD_AUDIO', 'READ_EXTERNAL_STORAGE', 'READ_MEDIA_IMAGES', 'READ_MEDIA_VIDEO']) {
-            expect(removed).toContain(`android.permission.${name}`);
-        }
-        const held = permissions.filter((at) => at?.['tools:node'] !== 'remove').map((at) => at?.['android:name']);
-        expect(held.filter((name) => /RECORD_AUDIO|READ_MEDIA_|EXTERNAL_STORAGE/.test(name ?? ''))).toEqual([]);
-    });
+            const permissions = attrs(android.manifest.manifest['uses-permission'] ?? []);
+            const removed = permissions
+                .filter((at) => at?.['tools:node'] === 'remove')
+                .map((at) => at?.['android:name']);
+            expect(new Set(removed)).toEqual(new Set(BLOCKED_PERMISSIONS));
+            for (const name of ['RECORD_AUDIO', 'READ_EXTERNAL_STORAGE', 'READ_MEDIA_IMAGES', 'READ_MEDIA_VIDEO']) {
+                expect(removed).toContain(`android.permission.${name}`);
+            }
+            const held = permissions.filter((at) => at?.['tools:node'] !== 'remove').map((at) => at?.['android:name']);
+            expect(held.filter((name) => /RECORD_AUDIO|READ_MEDIA_|EXTERNAL_STORAGE/.test(name ?? ''))).toEqual([]);
+            expect(held).toContain('android.permission.CAMERA');
+        },
+    );
+
+    it.each(variants)(
+        '%s: the QR scanner (CB-566): expo-camera with no microphone and nothing of Google’s on Android',
+        (variant) => {
+            const config = of(variant);
+            expect(CAMERA_PURPOSE).toMatch(/scan the QR code/);
+            expect(CAMERA_PURPOSE).toMatch(/photo to attach/);
+            const plugin = config.plugins.find((entry) => Array.isArray(entry) && entry[0] === 'expo-camera');
+            expect(plugin?.[1]).toEqual({
+                cameraPermission: CAMERA_PURPOSE,
+                microphonePermission: false,
+                recordAudioAndroid: false,
+                barcodeScannerEnabled: false,
+            });
+            const { android, ios } = config._internal.modResults;
+            expect(ios.infoPlist.NSMicrophoneUsageDescription).toBeUndefined();
+            const gradle = android.gradleProperties.filter(
+                (line) => line.type === 'property' && line.key?.startsWith('expo.camera.'),
+            );
+            // Both of expo-camera's ML Kit scanners off: its ML Kit and Play services libraries are
+            // compile-only, so the release build carries none (modules/socio-scanner's README).
+            expect(Object.fromEntries(gradle.map((line) => [line.key, line.value]))).toEqual({
+                'expo.camera.barcode-scanner-enabled': 'false',
+                [DOCUMENT_SCANNER_PROPERTY]: 'false',
+            });
+            // ML Kit's install-time model download is taken out of the merged manifest.
+            const { manifest } = android.manifest;
+            expect(manifest.$?.['xmlns:tools']).toBe('http://schemas.android.com/tools');
+            const application = manifest.application[0] as { 'meta-data'?: Node[] };
+            const mlkit = attrs(application['meta-data'] ?? []).filter(
+                (at) => at?.['android:name'] === MLKIT_DEPENDENCIES,
+            );
+            expect(mlkit).toEqual([{ 'android:name': MLKIT_DEPENDENCIES, 'tools:node': 'remove' }]);
+        },
+    );
 
     it.each(variants)('%s: push: its APNs environment, the keychain groups in order, no background mode', (variant) => {
         const { ios } = of(variant)._internal.modResults;

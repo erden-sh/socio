@@ -59,10 +59,12 @@ const VENDOR_DOMAINS: string[] = [];
 
 const T3 = './vendor/t3code/plugins';
 
-// The camera's purpose string, the only one the pickers ask for.
-// expo-document-picker needs none, and `ios.usesIcloudStorage` stays unset, so
-// it adds no iCloud entitlement.
-export const CAMERA_PURPOSE = 'Socio uses the camera when you take a photo to attach.';
+// The camera's purpose string, the only one the app asks for: the add-workspace QR scanner
+// (expo-camera, CB-566) and the pickers' camera (expo-image-picker) share iOS's one
+// NSCameraUsageDescription, so it names both. expo-document-picker needs none, and
+// `ios.usesIcloudStorage` stays unset, so it adds no iCloud entitlement.
+export const CAMERA_PURPOSE =
+    'Socio uses the camera to scan the QR code from Socio on a computer, and when you take a photo to attach.';
 
 // Permissions the app never holds, blocked even when a library's manifest asks
 // (expo-image-picker's asks for storage up to Android 12).
@@ -279,6 +281,22 @@ export default ({ config }: ConfigContext): ExpoConfig => {
                 'expo-image-picker',
                 { cameraPermission: CAMERA_PURPOSE, photosPermission: false, microphonePermission: false },
             ],
+            // The add-workspace QR scanner (CB-566): the same camera purpose string, no microphone
+            // (no purpose string on iOS, RECORD_AUDIO not asked on Android, and blocked anyway), and
+            // its barcode scanner off: on Android it is ML Kit, and the app holds nothing of Google's
+            // (the owner, 2026-11-26), so modules/socio-scanner reads QR codes there; iOS reads them
+            // through AVFoundation, which this setting doesn't touch. Its Android document scanner and
+            // ML Kit's manifest entry go too (plugins/camera.ts).
+            [
+                'expo-camera',
+                {
+                    cameraPermission: CAMERA_PURPOSE,
+                    microphonePermission: false,
+                    recordAudioAndroid: false,
+                    barcodeScannerEnabled: false,
+                },
+            ],
+            './plugins/camera.ts',
             // Push: the Android icon and tint, and iOS's APNs environment (`aps`). No
             // background remote notifications: a push starts no sync in v1.
             [

@@ -365,10 +365,28 @@ fake fetch:
   `probe-copy.ts`, never the server's text, and test builds add the answer's status and origin under it.
   A workspace already on the device opens. The first screen (words and view model in
   `src/net/first-screen.ts`) says the ways in, in order: the invite link, the QR code from Socio on a
-  computer (Get the app or Add a device; the system camera opens it, the app has no scanner), then
-  "Enter your workspace address", its one button, to the address screen, and ends with the Privacy
-  Policy link (Settings, Legal). It never lists workspaces. A
-  Get the app link (`…/<variant path>/w/<host>`, `readWorkspaceLink` through `parseAppLink`, this build's
+  computer (Get the app or Add a device), a button to the app's own scanner, then "Enter your
+  workspace address", a button to the address screen, and ends with the Privacy Policy link
+  (Settings, Legal). It never lists workspaces. The drawer's "Add a workspace" opens the same screen.
+  **The QR scanner** (CB-566, `ScanQr`, `modal()`, `screens/scan-qr.tsx`; words, rules and the
+  permission steps in `src/net/qr-scan.ts`) draws `QrCamera`, QR codes only, with the torch and
+  Cancel: on Android `modules/socio-scanner` (CameraX and ZXing core, its README; the owner,
+  2026-11-26: nothing of Google's in the app, no ML Kit, Play services or data transport), on iOS
+  expo-camera's `CameraView` (`qr-camera.ios.tsx`, AVFoundation's reader). expo-camera stays for the
+  permission and iOS, with its barcode scanner (`barcodeScannerEnabled: false`) and Android document
+  scanner off and ML Kit's manifest entry removed (`plugins/camera.ts`), and built from source
+  (`expo.autolinking.buildFromSource`: Expo's prebuilt AAR ignores those settings), so its ML Kit and
+  Play services libraries are compile-only; the README's Gradle check lists the release build's. The camera permission is asked only as it opens (the tap; one purpose string,
+  `CAMERA_PURPOSE`, shared with the pickers' camera); refused, it says so with Open Settings (and
+  Allow the camera while Android can still ask), and reads it again on each return to the front. A
+  code is this build's own `d`, `w` or `i` link (the same readers, link host and variant as a link
+  from outside; `cb` and `c` never come from a QR code) or nothing: it closes the scanner and hands
+  the URL to root-navigation's `openExternalUrl` (`src/navigation/scanned-link.ts`), so the app opens
+  it with no request to the link domain. A link of another build (another variant's path, or the
+  other known link host) says "This code is for another version of the Socio app.", anything else
+  "This isn't a Socio code.", each with Try again while the camera keeps reading. Development builds
+  (`__DEV__` only) add a field that stands in for the camera on simulators and emulators. A Get
+  the app link (`…/<variant path>/w/<host>`, `readWorkspaceLink` through `parseAppLink`, this build's
   link host and variant only) is held in memory (`src/navigation/workspace-link.ts`, bound in
   `src/platform/workspace-link.ts`) and opens the first screen through links.ts `openRoute`, a cold start
   included; its host is checked as a typed address (`addByLink`, `src/data/first-screen.ts`) and probed,

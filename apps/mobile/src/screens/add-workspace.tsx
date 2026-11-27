@@ -19,8 +19,8 @@ import { PrivacyLink } from './legal-links';
 // Add workspace's first screen, where the app
 // opens with no workspace on the device (the root gate). With no directory it can't find a
 // workspace from an email, so it says the ways in, in order (net/first-screen.ts's words): the
-// invite link, the QR code from Socio on a computer (the system camera opens it), and the address,
-// the one button, which opens the address screen. It never lists workspaces.
+// invite link, the QR code from Socio on a computer (a button: the app's own scanner, CB-566), and
+// the address, which opens the address screen. It never lists workspaces.
 //
 // A Get the app link (platform/workspace-link.ts, held until the gate shows this screen, a cold
 // start included) is taken here: its host shows through WorkspaceHost while it is checked and
@@ -100,7 +100,11 @@ export function AddWorkspaceScreen() {
                 {view.lead}
             </Text>
             {view.link === null ? null : <LinkCard link={view.link} />}
-            <FirstScreenWays ways={view.ways} onAddress={() => navigation.navigate('WorkspaceAddress')} />
+            <FirstScreenWays
+                ways={view.ways}
+                onScan={() => navigation.navigate('ScanQr')}
+                onAddress={() => navigation.navigate('WorkspaceAddress')}
+            />
             {view.cancel ? (
                 <Button variant="ghost" label="Cancel" onPress={cancelAdding} testID="add-workspace-cancel" />
             ) : null}

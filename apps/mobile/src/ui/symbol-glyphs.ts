@@ -56,6 +56,8 @@ import FilePlus from 'lucide-react-native/icons/file-plus';
 import FileText from 'lucide-react-native/icons/file-text';
 import FileUp from 'lucide-react-native/icons/file-up';
 import FilesIcon from 'lucide-react-native/icons/files';
+import Flashlight from 'lucide-react-native/icons/flashlight';
+import FlashlightOff from 'lucide-react-native/icons/flashlight-off';
 import FlaskConical from 'lucide-react-native/icons/flask-conical';
 import FolderIcon from 'lucide-react-native/icons/folder';
 import FolderInput from 'lucide-react-native/icons/folder-input';
@@ -218,6 +220,8 @@ export const GLYPHS: Readonly<Record<SymbolName, LucideIcon>> = {
     files: FilesIcon,
     'file-text': FileText,
     'file-up': FileUp,
+    flashlight: Flashlight,
+    'flashlight-off': FlashlightOff,
     'flask-conical': FlaskConical,
     folder: FolderIcon,
     'folder-input': FolderInput,
