@@ -175,6 +175,7 @@ const detail: IssueDetail = {
         ['assignee', null, 'u-ada'],
         ['blocked_by', null, 'CB-3'],
         ['components', '[]', '["plugin:forms","app:crm"]'],
+        ['labels', 'ux', 'needs-decision,security'],
     ].map(([kind, fromValue, toValue], index) => ({
         id: `e${index}`,
         issueId: 'i1',
@@ -286,7 +287,15 @@ const respond = (path: string): [number, unknown] => {
         case '/api/issues/assignees':
             return [200, { users: [{ id: 'u-ada', name: 'Ada' }], deactivated: [] }];
         case '/api/issues/components':
-            return [200, { options: [{ ref: 'plugin:forms', label: 'Delta', kind: 'plugin', state: 'disabled' }] }];
+            return [
+                200,
+                {
+                    options: [
+                        { ref: 'plugins:*', label: 'All plugins', kind: 'plugins' },
+                        { ref: 'plugin:forms', label: 'Delta', kind: 'plugin', state: 'disabled' },
+                    ],
+                },
+            ];
         case '/api/issues/titles':
             return [200, issues.map(({ number, title, status }) => ({ number, title, status }))];
         case '/api/approvals':
@@ -444,6 +453,24 @@ it('renders an open issue in en-XA: fields, triage, links, requesters, comments 
     await settle();
     $('[data-slot="issue-history"]');
     expect(untranslated(readable(dialog, BOARD_SKIP))).toEqual([]);
+    // A row's values are words too, not only its sentence (which the check above strips whole).
+    const terms = pseudo('issues.terms') as { label: Record<string, string> };
+    const labelsRow = [...dialog.querySelectorAll('[data-slot="issue-event"]')].at(-1)!.textContent!;
+    for (const label of ['ux', 'needs-decision', 'security']) {
+        expect(labelsRow, label).toContain(terms.label[label]);
+    }
+});
+
+it('opens the component picker in en-XA, the wildcards in the reader’s words', async () => {
+    await open('/issues/CB-1');
+    await settle(12);
+    const add = $('[data-slot="issue-components-add"]') as HTMLButtonElement;
+    await act(async () => add.click());
+    await settle();
+    const picker = $('[data-slot="issue-components-picker"]');
+    expect(untranslated(readable(picker))).toEqual([]);
+    const terms = pseudo('issues.terms') as { component: Record<string, string> };
+    expect(picker.textContent).toContain(terms.component['all-plugins']);
 });
 
 it('opens the report dialog with its words loaded on demand', async () => {

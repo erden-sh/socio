@@ -13,7 +13,7 @@ import type {
     IssuePriority,
     IssueStatus,
 } from '@socio/shared/issues/issue-types';
-import { dateTimeFormat } from '@socio/shared/locale';
+import { dateTimeFormat, listFormat } from '@socio/shared/locale';
 import type { User } from '@socio/shared/types';
 
 import { api } from '../../lib/api';
@@ -407,6 +407,9 @@ function useEventText() {
                     return terms.kind(raw as IssueKind);
                 case 'area':
                     return terms.area(raw as IssueArea);
+                case 'labels':
+                    // Stored comma-separated: each label in the reader's words.
+                    return listFormat({ type: 'unit', style: 'short' }).format(raw.split(',').map(terms.label));
                 default:
                     return raw;
             }

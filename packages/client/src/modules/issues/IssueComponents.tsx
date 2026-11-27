@@ -245,11 +245,19 @@ const GROUPS: { id: 'all' | 'plugins' | 'apps'; kinds: readonly ComponentKind[] 
     { id: 'apps', kinds: ['app'] },
 ];
 
-/** The options matching a search (name or owner, case and accents folded), grouped. */
-export function groupOptions(options: readonly IssueComponentOption[], query: string) {
+/**
+ * The options matching a search (name or owner, case and accents folded),
+ * grouped. `nameOf` is how an option reads (the picker's: wildcards in the
+ * reader's words).
+ */
+export function groupOptions(
+    options: readonly IssueComponentOption[],
+    query: string,
+    nameOf: (option: IssueComponentOption) => string = (option) => option.label,
+) {
     const words = foldText(query).split(' ').filter(Boolean);
     const matching = options.filter((option) => {
-        const text = foldText(`${option.label} ${option.ownerName ?? ''}`);
+        const text = foldText(`${nameOf(option)} ${option.ownerName ?? ''}`);
         return words.every((word) => text.includes(word));
     });
     return GROUPS.map((group) => ({
@@ -286,7 +294,7 @@ export function ComponentPicker({
     const [open, setOpen] = useState(false);
     const [query, setQuery] = useState('');
     const full = value.length >= ISSUE_COMPONENTS_MAX;
-    const groups = groupOptions(options ?? [], query);
+    const groups = groupOptions(options ?? [], query, (option) => text(option.ref, labels, options));
     const toggle = (ref: string, on: boolean) =>
         onChange(
             on ? (value.includes(ref) || full ? [...value] : [...value, ref]) : value.filter((item) => item !== ref),
@@ -403,7 +411,7 @@ export function ComponentPicker({
                                                                 className="size-3.5 text-muted-foreground"
                                                             />
                                                             <span className="min-w-0 flex-1 truncate">
-                                                                {option.label}
+                                                                {text(option.ref, labels, options)}
                                                             </span>
                                                             {option.state === 'disabled' && (
                                                                 <span className="text-xs text-muted-foreground">
