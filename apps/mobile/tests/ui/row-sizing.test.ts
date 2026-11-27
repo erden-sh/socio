@@ -112,6 +112,9 @@ const FIXED_HEIGHTS: Record<string, readonly string[]> = {
     'screens/media.tsx': ['size', 'cell', 'ROW_TILE'],
     // The QR scanner's viewfinder (CB-566): a square mark over the camera, its width and height together.
     'screens/scan-qr.tsx': ['FRAME'],
+    // Apple's own Sign in with Apple button (CB-570): drawn natively at a fixed height, which Apple's
+    // button doesn't size from its text (50 pt, Apple's).
+    'screens/social-buttons.tsx': ['APPLE_HEIGHT'],
     // Swipe actions: the panes are the row's own height, whatever its text.
     // and an iOS action's circle, a square mark (iOS 26's).
     'screens/swipe-row.tsx': ["'100%'", 'look.circle'],
