@@ -20,7 +20,7 @@ import type { User } from '@socio/shared/types';
 
 import { CHANGES_CHANNEL, closeChangeChannel, refreshShown } from '../src/lib/change-channel';
 import { ChatTranscript } from '../src/modules/chat/ChatTranscript';
-import { OTHER_AUTHOR, PREVIEW_FAILED } from '../src/modules/chat/MessageReactions';
+import { GENERIC_SOCIO, OTHER_AUTHOR, PREVIEW_FAILED } from '../src/modules/chat/MessageReactions';
 import { REPORT_NOTICE, useReactions, withReaction } from '../src/modules/chat/use-reactions';
 import { CloudConnectionCard } from '../src/modules/operator/CloudConnectionCard';
 import { ReplyReportsCard } from '../src/modules/operator/ReplyReportsCard';
@@ -59,6 +59,8 @@ beforeEach(() => {
     admin = { available: true, sharing: false, queued: 0, failed: 0 };
     calls = [];
     refreshes = 0;
+    shown = messages;
+    dots = [];
     vi.stubGlobal('fetch', async (input: string, init?: RequestInit) => {
         const method = init?.method ?? 'GET';
         const path = new URL(input, 'http://app.test').pathname;
@@ -110,9 +112,11 @@ const messages: Message[] = [
     { id: 'u1', role: 'user', content: 'Plan the offsite', metadata: { author: { name: 'Bob', you: false } } },
     { id: 'a1', role: 'assistant', content: 'Talks, then lunch.' },
 ];
+let shown: Message[] = messages;
+let dots: Array<{ id: string; name: string }> = [];
 function Harness() {
     const reactions = useReactions('c1', true);
-    return <ChatTranscript messages={messages} calls={[]} dotName="Pilot" reactions={reactions} />;
+    return <ChatTranscript messages={shown} calls={[]} dotName="Pilot" reactions={reactions} />;
 }
 const tick = (ms = 10) => new Promise((resolve) => setTimeout(resolve, ms));
 async function until(check: () => boolean, what: string, ms = 3000) {
@@ -129,7 +133,7 @@ function mount(node: React.ReactNode, replyReports: ReplyReportsState = null, us
     document.body.append(host);
     root = createRoot(host);
     const shell = {
-        workspace: { user, dots: [], replyReports },
+        workspace: { user, dots, replyReports },
         refresh: async () => {
             refreshes += 1;
         },
@@ -323,6 +327,27 @@ it('says “Another person” when the server’s answer names nobody, never the
         fillReportText(REPORT_CONFIRMATION.byOther, { author: OTHER_AUTHOR }),
     );
     expect(dialog()!.textContent).not.toContain('Bob');
+});
+
+it('names the reply’s own socio, and never another one for a socio it can’t name', async () => {
+    const roomReply = (socioId: string): Message[] => [
+        messages[0]!,
+        { id: 'a1', role: 'assistant', content: 'Talks, then lunch.', socioId } as Message,
+    ];
+    dots = [{ id: 'dot-scout', name: 'Scout' }];
+    shown = roomReply('dot-scout');
+    await chat();
+    await pressDown();
+    expect(dialog()!.textContent).toContain(fillReportText(REPORT_CONFIRMATION.body, { socio: 'Scout' }));
+    act(() => root!.unmount());
+    host!.remove();
+    document.body.innerHTML = '';
+    // A former member's private socio: not in this reader's list, and not the room's current one.
+    shown = roomReply('dot-gone');
+    await chat();
+    await pressDown();
+    expect(dialog()!.textContent).toContain(fillReportText(REPORT_CONFIRMATION.body, { socio: GENERIC_SOCIO }));
+    expect(dialog()!.textContent).not.toContain('Pilot');
 });
 
 it('sends the consent the server answered with when it is newer', async () => {

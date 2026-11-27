@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useRef, useState } from 'react';
 
 import { REACTIONS, REACTION_LABELS, type ReactionKind } from '@socio/shared/chat/reactions';
 import { REPORT_CONFIRMATION, type ReportPreview } from '@socio/shared/chat/reply-reports';
+import { socioField } from '@socio/shared/runs/socio-fields';
 
 import { api } from '../../lib/api';
 import { ShellContext } from '../../shell/shell-context';
@@ -34,6 +35,9 @@ export const ReportTranscript = createContext<{ messages: readonly Message[]; do
 /** Said when the server couldn't say what a report would include. */
 export const PREVIEW_FAILED = 'Couldn’t check what this report would include. Try again.';
 
+/** `{socio}` when the reply's socio can't be named here. */
+export const GENERIC_SOCIO = 'The socio';
+
 /** `{author}` when the server's answer names nobody (an older server): it opens the sentence. */
 export const OTHER_AUTHOR = 'Another person';
 
@@ -63,11 +67,15 @@ export function MessageReactions({ messageId, reactions }: { messageId: string; 
             mounted.current = false;
         };
     }, []);
-    const reply = transcript?.messages.find((message) => message.id === messageId) as
-        | (Message & { socioId?: string })
-        | undefined;
+    // The reply's own socio (a room's, CB-212); one this reader can't name
+    // is "The socio", never the chat's current one. A reply without one is
+    // the chat's socio's.
+    const reply = transcript?.messages.find((message) => message.id === messageId);
+    const socioId = socioField(reply, 'socioId');
     const socio =
-        (reply?.socioId && dots?.find((dot) => dot.id === reply.socioId)?.name) || transcript?.dotName || 'The socio';
+        typeof socioId === 'string' && socioId
+            ? (dots?.find((dot) => dot.id === socioId)?.name ?? GENERIC_SOCIO)
+            : transcript?.dotName || GENERIC_SOCIO;
     const send = (kind: ReactionKind, add = !current.mine.includes(kind)) => {
         setSaid(`${REACTION_LABELS[kind]} ${add ? 'added' : 'removed'}`);
         reactions.toggle(messageId, kind, { add });
