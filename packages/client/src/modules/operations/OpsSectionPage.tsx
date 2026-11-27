@@ -1,3 +1,5 @@
+import { useTranslation } from '@socio/i18n/react';
+
 import { SettingsCard } from '../settings/AccountSettings';
 
 import { AccessLogPage } from './AccessLogPage';
@@ -16,7 +18,7 @@ import { PriceSyncSetting } from './PriceSyncSetting';
 import { ReliabilitySection } from './ReliabilitySection';
 import { ResourcePanel } from './ResourcePanel';
 import { ResourceSettings } from './ResourceSettings';
-import { findOpsSection, type OpsSectionId } from './sections';
+import type { OpsSectionId } from './sections';
 import { SessionGapSetting } from './SessionGapSetting';
 import { SocioAccessPage } from './SocioAccessPage';
 import { IntentSettings, ThemeSettings } from './ThemeSettings';
@@ -25,12 +27,11 @@ import { ValueSection } from './ValueSection';
 
 /** A section that later work fills in; its page and address exist already. */
 function PendingSection({ id }: { id: OpsSectionId }) {
-    const section = findOpsSection(id)!;
+    const { t } = useTranslation(['operations', 'operations.dashboard']);
     return (
         <SettingsCard>
             <p className="m-0 text-muted-foreground" data-slot="ops-pending">
-                {section.label} comes in a later release. Like Overview, it will follow the range and filters above, and
-                its links will open the same view for another admin.
+                {t('operations.dashboard:pending', { section: t(`operations:sections.${id}.label`) })}
             </p>
         </SettingsCard>
     );

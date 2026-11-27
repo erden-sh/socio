@@ -1,5 +1,6 @@
+import { useTranslation } from '@socio/i18n/react';
 import { formatNumber } from '@socio/shared/locale';
-import { OPS_OUTCOME_LABELS, OPS_OUTCOMES, type OpsOutcome } from '@socio/shared/operations/operations-activity';
+import { OPS_OUTCOMES, type OpsOutcome } from '@socio/shared/operations/operations-activity';
 import { intentName, type OpsIntentRow } from '@socio/shared/operations/operations-themes';
 
 import { formatShare } from './activity-parts';
@@ -16,12 +17,16 @@ export const OUTCOME_MARK: Record<OpsOutcome, string> = {
 
 /** A row's outcomes as one thin bar, with its shares as its name. */
 export function OutcomeBar({ row }: { row: Record<OpsOutcome, number> & { sessions: number } }) {
+    const { t } = useTranslation(['operations', 'operations.dashboard']);
     const total = OPS_OUTCOMES.reduce((sum, id) => sum + row[id], 0);
     return (
         <div
             role="img"
-            aria-label={OPS_OUTCOMES.map(
-                (id) => `${OPS_OUTCOME_LABELS[id]} ${formatShare(total ? row[id] / total : null)}`,
+            aria-label={OPS_OUTCOMES.map((id) =>
+                t('operations.dashboard:outcomes.share', {
+                    outcome: t(`operations.dashboard:outcomes.${id}`),
+                    share: formatShare(total ? row[id] / total : null),
+                }),
             ).join(', ')}
             className="flex h-2 min-w-24 gap-0.5 overflow-hidden rounded-full bg-muted"
         >
@@ -41,12 +46,13 @@ export function OutcomeBar({ row }: { row: Record<OpsOutcome, number> & { sessio
 
 /** The outcome legend under a card's bars. */
 export function OutcomeLegend() {
+    const { t } = useTranslation(['operations', 'operations.dashboard']);
     return (
         <ul className="m-0 flex list-none flex-wrap gap-x-4 gap-y-1 p-0 text-xs text-muted-foreground">
             {OPS_OUTCOMES.map((id) => (
                 <li key={id} className="flex items-center gap-1.5">
                     <span aria-hidden className={cn('size-2 rounded-full', OUTCOME_MARK[id])} />
-                    {OPS_OUTCOME_LABELS[id]}
+                    {t(`operations.dashboard:outcomes.${id}`)}
                 </li>
             ))}
         </ul>
@@ -55,24 +61,25 @@ export function OutcomeLegend() {
 
 /** Sessions by intent with how they ended: Value's card and Themes'. */
 export function IntentTable({ rows, slot = 'ops-intents' }: { rows: OpsIntentRow[]; slot?: string }) {
+    const { t } = useTranslation(['operations', 'operations.dashboard']);
     return (
         <div className="grid gap-3" data-slot={slot}>
-            <Table aria-label="Sessions by intent">
+            <Table aria-label={t('operations.dashboard:intents.label')}>
                 <TableHeader>
                     <TableRow>
-                        <TableHead>Intent</TableHead>
-                        <TableHead className="text-right">Sessions</TableHead>
-                        <TableHead className="text-right">People</TableHead>
-                        <TableHead className="text-right">Completed</TableHead>
-                        <TableHead className="text-right">Abandoned</TableHead>
-                        <TableHead className="w-40">Outcomes</TableHead>
+                        <TableHead>{t('operations.dashboard:intents.intent')}</TableHead>
+                        <TableHead className="text-right">{t('operations.dashboard:intents.sessions')}</TableHead>
+                        <TableHead className="text-right">{t('operations.dashboard:intents.people')}</TableHead>
+                        <TableHead className="text-right">{t('operations.dashboard:intents.completed')}</TableHead>
+                        <TableHead className="text-right">{t('operations.dashboard:intents.abandoned')}</TableHead>
+                        <TableHead className="w-40">{t('operations.dashboard:intents.outcomes')}</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                     {rows.map((row) => (
                         <TableRow key={row.intent ?? ''} data-intent={row.intent ?? ''}>
                             <TableCell className={cn('font-medium', row.intent === null && 'text-muted-foreground')}>
-                                {intentName(row.intent)}
+                                {row.intent === null ? t('operations.dashboard:intents.none') : intentName(row.intent)}
                             </TableCell>
                             <TableCell className="text-right tabular-nums">{formatNumber(row.sessions)}</TableCell>
                             <TableCell className="text-right tabular-nums">{formatNumber(row.people)}</TableCell>

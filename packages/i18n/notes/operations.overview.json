@@ -1,0 +1,20 @@
+{
+    "tiles.turns": "Each tiles.*: a stat tile's label on the Overview page, over the chosen range. \"Turns\": answers from socios (AI agents), one per message they answer.",
+    "tiles.failed": "Turns that ended in an error.",
+    "tiles.people": "People who wrote to a socio in the range.",
+    "tiles.chats": "Chats that had at least one turn in the range.",
+    "tiles.tokens": "Units the AI model counts text in, summed over the turns.",
+    "metrics.turns": "Each metrics.*: a choice in the chart's menu and the chart's heading. The same words as tiles.*.",
+    "axis.turns": "Each axis.*: the chart's value in its accessible description (\"Bar chart of turns by day…\"); lowercase, as it sits inside a sentence. The same as metrics.*.",
+    "chart": "Accessible name of the menu that picks what the chart shows.",
+    "no-chart": "In place of the chart when the range has no data.",
+    "turns.title": "Heading of the card listing turns (answers from socios), and the list's accessible name.",
+    "turns.description": "Under the heading. \"Socio\" is a product noun (an AI agent). The access log records each time an admin opens a person's chat.",
+    "turns.empty": "In place of the list when the range has no turns.",
+    "turns.tokens": "In a turn's row: how many tokens (units the AI model counts text in) it used. Followed by its start time.",
+    "turns.open": "Link in a turn's row that opens its chat's transcript.",
+    "turns.open-label": "Accessible name of that link. {{socio}} is the socio's name (an AI agent); {{when}} the turn's start, a date and time.",
+    "status.running": "Each status.*: a badge on a turn's row, how it stands or ended. Running: still working.",
+    "status.stopped": "Someone stopped the turn before it finished.",
+    "status.interrupted": "The turn was cut off (by a restart or a lost connection) and didn't finish."
+}

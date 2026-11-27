@@ -1,0 +1,111 @@
+{
+    "load-failed": "Could not load prices.",
+    "per-million": "{{price}} / M",
+    "stats": {
+        "label": "Cost totals",
+        "cost": "Cost",
+        "priced": "Priced turns",
+        "priced-of_one": "of {{count, number}} turn",
+        "priced-of_other": "of {{count, number}} turns",
+        "unpriced": "Turns without a price",
+        "unpriced-note": "their cost is unknown, not zero",
+        "idle": "Idle capacity",
+        "idle-note": "cost pools’ hours without turns"
+    },
+    "change": {
+        "new": "new vs the period before",
+        "same": "same as before",
+        "percent": "{{change, number(style: percent; signDisplay: exceptZero; maximumFractionDigits: 0)}} vs the period before"
+    },
+    "chart": {
+        "title": "Cost over the range",
+        "description": "Turns’ cost per {{bucket}}, priced and pooled together. Idle capacity is not in it.",
+        "x": "bucket",
+        "x_hour": "hour",
+        "x_day": "day",
+        "x_week": "week",
+        "x_month": "month",
+        "y": "US dollars"
+    },
+    "empty": {
+        "none": "No numbers yet.",
+        "no-turns": "No turns in this range."
+    },
+    "columns": {
+        "model": "Model",
+        "socio": "Socio",
+        "person": "Person",
+        "paid-by": "Paid by",
+        "room": "Room",
+        "backend": "Backend",
+        "cycles": "Cycles",
+        "turns": "Turns",
+        "tokens": "Tokens",
+        "cost": "Cost",
+        "self-hosted": "Self-hosted",
+        "cloud-price": "Cloud price"
+    },
+    "unpriced_one": "{{count, number}} unpriced",
+    "unpriced_other": "{{count, number}} unpriced",
+    "not-recorded": "Not recorded",
+    "by-model": {
+        "title": "By model",
+        "description": "What each model’s turns cost."
+    },
+    "by-socio": {
+        "title": "By socio"
+    },
+    "by-person": {
+        "title": "By person",
+        "description": "Turns a person started."
+    },
+    "payers": {
+        "title": "Who paid",
+        "description": "A person’s own model subscription, or the workspace’s models. Turns before work cycles didn’t record it.",
+        "workspace": "The workspace",
+        "person": "A person"
+    },
+    "cycles": {
+        "title": "Work cycles",
+        "description": "A cycle is one person’s message and everything it led to. Time working leaves out waits, such as for an approval.",
+        "cycles": "Work cycles",
+        "cycles-value": "{{cycles, number}} ({{rooms, number}} in rooms)",
+        "steps": "Steps",
+        "steps-value": "{{steps, number}}, {{handoffs, number}} handed on",
+        "deadline": "Stopped at the time limit",
+        "tokens": "Stopped at the token limit",
+        "handoffs": "Stopped at the handoff limit",
+        "spend": "Stopped at the spend limit",
+        "stopped": "Stopped by a person",
+        "spend-unknown": "Spend not reported",
+        "running": "Time working",
+        "wall": "Start to end"
+    },
+    "rooms": {
+        "title": "By room",
+        "description": "Each room’s turns, people and socios, and its work cycles: one per message a person sent there.",
+        "unnamed": "A room",
+        "people_one": "{{count, number}} person",
+        "people_other": "{{count, number}} people",
+        "socios_one": "{{count, number}} socio",
+        "socios_other": "{{count, number}} socios",
+        "hit-limit_one": "{{count, number}} hit a limit",
+        "hit-limit_other": "{{count, number}} hit a limit",
+        "handed-on_one": "{{count, number}} handed on",
+        "handed-on_other": "{{count, number}} handed on"
+    },
+    "backends": {
+        "title": "Backends",
+        "description": "What each backend’s turns cost. For a self-hosted backend, its cost pools’ share per million tokens beside what the cheapest listed cloud provider charges for the same turns.",
+        "shared": "A shared backend (older turns)",
+        "connections": "{{name}} connections",
+        "removed": "Removed backend ({{id}})"
+    },
+    "unpriced-models": {
+        "title": "Models without a price",
+        "description": "Turns on these show as unpriced. Add a price below, or a cost pool for a self-hosted backend.",
+        "on_one": "on {{backend}} · {{count, number}} turn",
+        "on_other": "on {{backend}} · {{count, number}} turns",
+        "add": "Add a price"
+    }
+}

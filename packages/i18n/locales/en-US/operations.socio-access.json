@@ -1,0 +1,8 @@
+{
+    "intro": "Each grant lets one socio use one app for one person, from one conversation, until it ends. Ending one stops it at once.",
+    "list": "Live socio access",
+    "empty": "No live socio access.",
+    "ended": "Access ended",
+    "load-failed": "Could not load socio access.",
+    "end-failed": "Could not end the access."
+}

@@ -3,6 +3,7 @@ import { Eye } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
 
+import { Trans, useTranslation } from '@socio/i18n/react';
 import { ACCESS_VIA, type OpsChatView, type OpsTranscriptRun } from '@socio/shared/operations/operations-access';
 import { TraceTimes } from '@socio/shared/runs/trace-times';
 import type { MessageAuthor } from '@socio/shared/types';
@@ -16,7 +17,7 @@ import { ChatTranscript } from '../chat/ChatTranscript';
 import { ChatGrounding } from './ChatGrounding';
 import { formatWhen } from './format';
 import { OperationsLayout } from './OperationsLayout';
-import { RoomAudit, roomPeople } from './RoomAudit';
+import { RoomAudit, useRoomPeople } from './RoomAudit';
 import { opsPath } from './sections';
 import { useOpsSettings } from './use-ops';
 
@@ -31,18 +32,30 @@ type Shown = Message & { author?: MessageAuthor };
  * The heading's line under the title: the socio, who it's with, since
  * when. A room (CB-213) names its people, admins marked, never an owner.
  */
-function about(chat: OpsChatView | undefined, timeZone: string) {
-    if (!chat) {
-        return 'Loading the chat…';
-    }
-    const since = `since ${formatWhen(chat.createdAt, timeZone)}${chat.archivedAt ? ' · archived' : ''}. Read-only.`;
-    if (chat.room) {
-        const socios = chat.room.socios.map((socio) => socio.name).join(', ') || 'No socio now';
-        return `A room: ${socios} with ${roomPeople(chat.room)}, ${since}`;
-    }
-    const socio = chat.socioName ?? 'A removed socio';
-    const owner = chat.ownerName ?? 'someone no longer here';
-    return `${socio} with ${owner}, ${since}`;
+function useAbout() {
+    const { t } = useTranslation(['operations.transcript']);
+    const roomPeople = useRoomPeople();
+    return (chat: OpsChatView | undefined, timeZone: string) => {
+        if (!chat) {
+            return t('operations.transcript:about.loading');
+        }
+        const since = t('operations.transcript:about.since', {
+            when: formatWhen(chat.createdAt, timeZone),
+            context: chat.archivedAt ? 'archived' : undefined,
+        });
+        if (chat.room) {
+            const names = chat.room.socios.map((socio) => socio.name);
+            const socios = names.length
+                ? t('operations.transcript:about.names', { names })
+                : t('operations.transcript:about.no-socio');
+            return t('operations.transcript:about.room', { socios, people: roomPeople(chat.room), since });
+        }
+        return t('operations.transcript:about.chat', {
+            socio: chat.socioName ?? t('operations.transcript:about.removed-socio'),
+            owner: chat.ownerName ?? t('operations.transcript:about.gone-owner'),
+            since,
+        });
+    };
 }
 
 /**
@@ -53,6 +66,7 @@ function about(chat: OpsChatView | undefined, timeZone: string) {
  * names each message's author: in a team topic, several people write.
  */
 function Transcript({ chat, via }: { chat: OpsChatView; via: string }) {
+    const { t } = useTranslation(['operations.transcript']);
     const turns = useCursorList<OpsTranscriptRun>(
         `/operations/chats/${encodeURIComponent(chat.id)}/history?via=${via}`,
     );
@@ -79,7 +93,7 @@ function Transcript({ chat, via }: { chat: OpsChatView; via: string }) {
             {hasMore && !loading && !error && runs.length > 0 && (
                 <div className="self-center">
                     <Button variant="outline" size="sm" onClick={loadMore}>
-                        Load earlier turns
+                        {t('operations.transcript:load-earlier')}
                     </Button>
                 </div>
             )}
@@ -96,21 +110,23 @@ function Transcript({ chat, via }: { chat: OpsChatView; via: string }) {
                 >
                     <span>{error}</span>
                     <Button variant="outline" size="sm" onClick={loadMore}>
-                        Try again
+                        {t('operations.transcript:try-again')}
                     </Button>
                 </div>
             )}
             {!loading && !error && !hasMore && !runs.length && (
-                <p className="m-0 text-sm text-muted-foreground">No finished turns in this chat yet.</p>
+                <p className="m-0 text-sm text-muted-foreground">{t('operations.transcript:empty')}</p>
             )}
             {runs.length > 0 && (
                 <ChatTranscript messages={messages} calls={[]} times={times} dotName={chat.socioName ?? undefined} />
             )}
             <p role="status" className="sr-only">
                 {loading
-                    ? 'Loading…'
+                    ? t('operations.transcript:loading')
                     : runs.length
-                      ? `Showing ${runs.length} turns${hasMore ? '; earlier ones to load' : ', all of them'}.`
+                      ? hasMore
+                          ? t('operations.transcript:showing-more', { count: runs.length })
+                          : t('operations.transcript:showing-all', { count: runs.length })
                       : ''}
             </p>
         </div>
@@ -130,6 +146,8 @@ export function TranscriptPage({
     /** The section it was opened from, kept with the access log entry. */
     via: string | null;
 }) {
+    const { t } = useTranslation(['operations.transcript', 'operations']);
+    const about = useAbout();
     const { timeZone } = useOpsSettings();
     const via = asked && ACCESS_VIA.test(asked) ? asked : 'link';
     const [chat, setChat] = useState<OpsChatView>();
@@ -147,17 +165,17 @@ export function TranscriptPage({
             .then((view) => !controller.signal.aborted && setChat(view))
             .catch((e: unknown) => {
                 if (!controller.signal.aborted) {
-                    setError(e instanceof Error ? e.message : 'Could not open the chat.');
+                    setError(e instanceof Error ? e.message : t('operations.transcript:open-failed'));
                 }
             });
         return () => controller.abort();
-    }, [threadId, via]);
-    useCrumbTitle(threadId, chat?.title ?? 'Chat');
+    }, [threadId, via, t]);
+    useCrumbTitle(threadId, chat?.title ?? t('operations:crumbs.chat'));
     return (
         <OperationsLayout
             section={{
-                label: chat?.title || 'Chat',
-                description: error ? 'This chat couldn’t be opened.' : about(chat, timeZone),
+                label: chat?.title || t('operations:crumbs.chat'),
+                description: error ? t('operations.transcript:failed') : about(chat, timeZone),
                 ranged: false,
             }}
         >
@@ -169,11 +187,19 @@ export function TranscriptPage({
                 >
                     <Eye size={16} className="mt-0.5 shrink-0" aria-hidden />
                     <p className="m-0">
-                        You’re reading this {chat?.room ? 'room' : 'chat'} as an admin. Opening it was written to the{' '}
-                        <Link to={opsPath('access-log')} className="text-foreground underline underline-offset-3">
-                            access log
-                        </Link>
-                        , which every admin can see.
+                        <Trans
+                            t={t}
+                            i18nKey="operations.transcript:note"
+                            context={chat?.room ? 'room' : undefined}
+                            components={{
+                                link: (
+                                    <Link
+                                        to={opsPath('access-log')}
+                                        className="text-foreground underline underline-offset-3"
+                                    />
+                                ),
+                            }}
+                        />
                     </p>
                 </Card>
                 {error ? (

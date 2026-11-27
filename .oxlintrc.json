@@ -134,6 +134,7 @@
                 "packages/client/src/modules/chat/**",
                 "packages/client/src/modules/rooms/**",
                 "packages/client/src/modules/spaces/**",
+                "packages/client/src/modules/operations/**",
                 "packages/client/src/shell/**",
                 "packages/client/src/root.tsx",
                 "packages/client/src/views/ChatViews.tsx",

@@ -19,9 +19,6 @@ export type OpsSectionId = (typeof OPS_SECTIONS)[number];
 
 export interface OpsSection {
     id: OpsSectionId;
-    label: string;
-    /** The page's intro, under its title. */
-    description: string;
     /** It reads the range and filters, so the range bar shows above it. */
     ranged: boolean;
     /** Listed only while this feature flag is on for the admin (CB-169). */
@@ -33,75 +30,38 @@ export const OPS_HOME = '/operations';
 export const opsPath = (id: OpsSectionId, search = '') =>
     `${id === 'overview' ? OPS_HOME : `${OPS_HOME}/${id}`}${search}`;
 
-const section = (id: OpsSectionId, label: string, description: string, ranged = true, flag?: FlagKey): OpsSection => ({
+const section = (id: OpsSectionId, ranged = true, flag?: FlagKey): OpsSection => ({
     id,
-    label,
-    description,
     ranged,
     ...(flag ? { flag } : {}),
 });
 
 /**
  * The section nav, in two groups: what happened, then who looked and how
- * the dashboard is set up.
+ * the dashboard is set up. Their names and intros are the `operations`
+ * namespace's (`groups.<id>`, `sections.<id>.label` and `.description`).
  */
-export const OPS_GROUPS: { label: string; sections: OpsSection[] }[] = [
+export const OPS_GROUPS: { id: 'dashboard' | 'oversight'; sections: OpsSection[] }[] = [
     {
-        label: 'Dashboard',
+        id: 'dashboard',
         sections: [
-            section(
-                'overview',
-                'Overview',
-                'The workspace at a glance: turns, people, failures and tokens, against the period before.',
-            ),
-            section('activity', 'Activity', 'Who works with which socios, how often, and through which channels.'),
-            section('value', 'Value', 'Which work gets finished, which is left, and what people come back for.'),
-            section(
-                'themes',
-                'Themes',
-                'What people come to socios for: intents and recurring topics, and which get left unfinished.',
-            ),
-            section(
-                'knowledge',
-                'Knowledge',
-                'Spaces and pages, datasets and storage: what is written, searched and used, what goes stale, and how full the limits are.',
-            ),
-            section('reliability', 'Reliability', 'What fails and why: turns, tools, retries and fallbacks.'),
-            section(
-                'capabilities',
-                'Capabilities',
-                'What socios can do, what they are asked for and can’t, and what gets used.',
-            ),
-            section('health', 'Health', 'Models, queues, schedules, backups, and how fresh these numbers are.'),
-            section(
-                'cost',
-                'Cost',
-                'What turns cost, by model, socio, person and backend; self-hosted backends’ cost pools; and the prices behind them.',
-            ),
+            section('overview'),
+            section('activity'),
+            section('value'),
+            section('themes'),
+            section('knowledge'),
+            section('reliability'),
+            section('capabilities'),
+            section('health'),
+            section('cost'),
         ],
     },
     {
-        label: 'Oversight',
+        id: 'oversight',
         sections: [
-            section(
-                'access-log',
-                'Access log',
-                'Each time an admin opened a person’s activity, a chat or a turn’s trace. Every admin sees every entry.',
-                false,
-            ),
-            section(
-                'socio-access',
-                'Socio access',
-                'Which socios may use which apps for whom, right now, and ending that access.',
-                false,
-                'socio-actor-access',
-            ),
-            section(
-                'settings',
-                'Settings',
-                'The reporting time zone the dashboard cuts days in, how sessions are cut, retention, the price sync, and what the model may label.',
-                false,
-            ),
+            section('access-log', false),
+            section('socio-access', false, 'socio-actor-access'),
+            section('settings', false),
         ],
     },
 ];

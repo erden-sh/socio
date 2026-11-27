@@ -254,19 +254,19 @@ it('renders and hydrates a page in its inlined locale', async () => {
 /**
  * Successive and interleaved page renders in two locales, as the server's
  * renderer scopes them (entry.server.tsx): every formatter, made at module
- * load (`formatNumber`) or kept in a cache (`bucketLabel`'s, by zone and
+ * load (`formatNumber`) or kept in a cache (`bucketDate`'s, by zone and
  * shape), writes in the render's own locale, never the one before it.
  */
 it('formats each render in its own locale, whatever rendered before', async () => {
     const { AsyncLocalStorage } = await import('node:async_hooks');
-    const { bucketLabel } = await import('../src/modules/operations/format');
+    const { bucketDate } = await import('../src/modules/operations/format');
     const store = new AsyncLocalStorage<string>();
     scopeActiveLocale(() => store.getStore());
     const at = Date.UTC(2026, 9, 22, 12);
     function Report() {
         return (
             <p>
-                {bucketLabel(at, 'day', 'UTC')} | {formatNumber(1234.5)} | {['Zebra', 'Äpple'].sort(compareText)[0]}
+                {bucketDate(at, 'day', 'UTC')} | {formatNumber(1234.5)} | {['Zebra', 'Äpple'].sort(compareText)[0]}
             </p>
         );
     }

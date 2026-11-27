@@ -1,0 +1,11 @@
+{
+    "name": "Accessible name of the label panel and of its category menu: the category an admin or the model gives a failure.",
+    "saved": "Toast after an admin saves a label.",
+    "subject": "What the rules said about a failed turn. {{category}} is one of category.* (or –); <code> wraps {{rule}}, the rule's internal name; keep it as is. The _tool form starts with {{tool}}, a tool's name; _tool-call with a tool call whose name wasn't recorded.",
+    "input": "Label over the error text the model reads to suggest a category.",
+    "suggests": "{{category}} is one of category.*; {{confidence}} how sure the model is. The base form: its suggestion was applied. The _only form: it wasn't.",
+    "in-force": "The label that counts now. {{category}} is one of category.*; {{name}} the admin's name; {{when}} a date and time. The _an-admin form: the admin's name is unknown; _model: the model labeled it.",
+    "choose": "Placeholder of the category menu.",
+    "counts": "Beside Save label: it counts within a minute, and joins the \"golden set\" (the admin-labeled examples the model is evaluated against).",
+    "rules-only": "Shown when a failure can't be labeled: the rules already sorted it."
+}

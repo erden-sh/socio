@@ -1,0 +1,57 @@
+{
+    "totals": "Capability totals",
+    "tiles": {
+        "tools": "Socio tools",
+        "tools-note_one": "{{count, number}} capability",
+        "tools-note_other": "{{count, number}} capabilities",
+        "used": "Used in the range",
+        "used-note": "{{n, number}} not used",
+        "unregistered": "Without an entry",
+        "unregistered-note": "socios can’t discover them",
+        "unoffered": "Not given here",
+        "unoffered-note": "declared, but off in this deployment"
+    },
+    "gaps": {
+        "title": "Gaps",
+        "description": "Tools no capability declares don’t show in what socios learn they can do. Declared tools nothing gives here usually wait for a service, such as computers.",
+        "unregistered": "Without a registry entry",
+        "unregistered-empty": "Every tool is declared.",
+        "unoffered": "Declared, not given here",
+        "unoffered-empty": "Every declared tool is given.",
+        "no-tools": "Features with no socio tools",
+        "no-tools-empty": "Every feature gives tools.",
+        "unlisted": "Couldn’t list the tools of {{modules, list(type: unit; style: short)}}."
+    },
+    "coverage": {
+        "title": "Coverage",
+        "description": "Each socio tool, the feature that gives it, the capability that declares it, and its calls in the range. Gaps first.",
+        "tool": "Tool",
+        "feature": "Feature",
+        "capability": "Capability",
+        "calls": "Calls",
+        "failed": "Failed",
+        "not-given": "Not given",
+        "registry": "The registry",
+        "no-entry": "No entry"
+    },
+    "requests": {
+        "title": "Capability requests",
+        "description": "What socios asked for and couldn’t do, latest asked first, whatever the range. Each is an item on the Improvements board.",
+        "empty": "No socio has asked for a capability yet.",
+        "statuses": {
+            "triage": "Triage",
+            "open": "Open",
+            "ready": "Ready",
+            "in-progress": "In progress",
+            "in-review": "In review",
+            "blocked": "Blocked",
+            "done": "Done",
+            "wont-fix": "Won’t fix"
+        },
+        "people_one": "{{count, number}} person",
+        "people_other": "{{count, number}} people",
+        "socios_one": "{{count, number}} socio",
+        "socios_other": "{{count, number}} socios",
+        "last": "last {{when}}"
+    }
+}

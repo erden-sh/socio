@@ -1,0 +1,95 @@
+{
+    "descriptions": {
+        "overview": "The workspace at a glance: turns, people, failures and tokens, against the period before.",
+        "activity": "Who works with which socios, how often, and through which channels.",
+        "value": "Which work gets finished, which is left, and what people come back for.",
+        "themes": "What people come to socios for: intents and recurring topics, and which get left unfinished.",
+        "knowledge": "Spaces and pages, datasets and storage: what is written, searched and used, what goes stale, and how full the limits are.",
+        "reliability": "What fails and why: turns, tools, retries and fallbacks.",
+        "capabilities": "What socios can do, what they are asked for and can’t, and what gets used.",
+        "health": "Models, queues, schedules, backups, and how fresh these numbers are.",
+        "cost": "What turns cost, by model, socio, person and backend; self-hosted backends’ cost pools; and the prices behind them.",
+        "access-log": "Each time an admin opened a person’s activity, a chat or a turn’s trace. Every admin sees every entry.",
+        "socio-access": "Which socios may use which apps for whom, right now, and ending that access.",
+        "settings": "The reporting time zone the dashboard cuts days in, how sessions are cut, retention, the price sync, and what the model may label."
+    },
+    "pending": "{{section}} comes in a later release. Like Overview, it will follow the range and filters above, and its links will open the same view for another admin.",
+    "range": {
+        "label": "Range",
+        "short": {
+            "24h": "24h",
+            "7d": "7d",
+            "30d": "30d",
+            "90d": "90d",
+            "12m": "12m",
+            "all": "All"
+        },
+        "long": {
+            "24h": "24 hours",
+            "7d": "7 days",
+            "30d": "30 days",
+            "90d": "90 days",
+            "12m": "12 months",
+            "all": "All time"
+        },
+        "custom": "Custom",
+        "points": "Chart points",
+        "bucket": {
+            "hour": "By hour",
+            "day": "By day",
+            "week": "By week",
+            "month": "By month"
+        },
+        "time-zone": "Days in {{zone}}",
+        "from": "From",
+        "to": "To",
+        "show": "Show",
+        "filters": "Filters",
+        "filter": {
+            "socio": "Socio",
+            "person": "Person",
+            "space": "Space",
+            "source": "Source"
+        },
+        "filter-value": "{{filter}}: {{value}}",
+        "clear": "Clear {{filter}}"
+    },
+    "status": {
+        "unavailable": "Analytics isn’t running yet, so there are no numbers to show. They appear here once it is set up.",
+        "starting": "Analytics is starting. Numbers appear in a moment.",
+        "rebuilding": "Analytics is rebuilding. Numbers appear when it is done.",
+        "rebuilding-progress": "Analytics is rebuilding ({{progress, number(style: percent; maximumFractionDigits: 0)}}). Numbers appear when it is done.",
+        "empty": "No data yet.",
+        "as-of": "Data as of {{when}} ({{zone}})."
+    },
+    "week-of": "Week of {{day}}",
+    "change": {
+        "same": "Same",
+        "new": "New",
+        "versus": "{{change}} vs {{against}}"
+    },
+    "previous": "the period before",
+    "previous_24h": "the 24 hours before",
+    "previous_7d": "the 7 days before",
+    "previous_30d": "the 30 days before",
+    "previous_90d": "the 90 days before",
+    "previous_12m": "the 12 months before",
+    "telegram-team": "A Telegram team",
+    "totals": "Totals",
+    "outcomes": {
+        "completed": "Completed",
+        "answered": "Answered",
+        "abandoned": "Abandoned",
+        "share": "{{outcome}} {{share}}"
+    },
+    "intents": {
+        "label": "Sessions by intent",
+        "intent": "Intent",
+        "sessions": "Sessions",
+        "people": "People",
+        "completed": "Completed",
+        "abandoned": "Abandoned",
+        "outcomes": "Outcomes",
+        "none": "No intent"
+    }
+}

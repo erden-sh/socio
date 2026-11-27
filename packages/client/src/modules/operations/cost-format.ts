@@ -1,7 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 
+import { useTranslation } from '@socio/i18n/react';
 import { numberFormat } from '@socio/shared/locale';
-import { PRICE_SOURCES, type PriceOrigin, type PricingView } from '@socio/shared/operations/operations-cost';
+import {
+    PRICE_SOURCES,
+    type PriceOrigin,
+    type PriceSourceId,
+    type PricingView,
+} from '@socio/shared/operations/operations-cost';
 
 import { api } from '../../lib/api';
 
@@ -42,21 +48,27 @@ export function formatUsd(value: number | null | undefined) {
     return (size >= 1000 ? whole : cents).format(value);
 }
 
-/** A price: "$0.15 / M" (US dollars per million tokens). */
-export const formatPerM = (value: number | null | undefined) =>
-    value === null || value === undefined ? '–' : `${rate.format(value)} / M`;
+/** A price: "$0.15 / M" (US dollars per million tokens); "–" for none. */
+export function useFormatPerM() {
+    const { t } = useTranslation(['operations.cost']);
+    return (value: number | null | undefined) =>
+        value === null || value === undefined ? '–' : t('operations.cost:per-million', { price: rate.format(value) });
+}
 
 /** Dollars per million tokens of `tokens`, or null without tokens. */
 export const perMillion = (usd: number | null, tokens: number) =>
     usd === null || tokens <= 0 ? null : (usd / tokens) * 1e6;
 
-/** Where a price came from, as people know it. */
-export function originLabel(source: PriceOrigin) {
-    if (source === 'admin') {
-        return 'Admin';
-    }
-    const id = source.slice(source.indexOf(':') + 1);
-    return PRICE_SOURCES[id as keyof typeof PRICE_SOURCES]?.label ?? id;
+/** Where a price came from, as people know it: an admin, a list's name, or its id. */
+export function useOriginLabel() {
+    const { t } = useTranslation(['operations.cost-admin']);
+    return (source: PriceOrigin) => {
+        if (source === 'admin') {
+            return t('operations.cost-admin:sources.admin');
+        }
+        const id = source.slice(source.indexOf(':') + 1);
+        return Object.hasOwn(PRICE_SOURCES, id) ? t(`operations.cost-admin:sources.${id as PriceSourceId}`) : id;
+    };
 }
 
 /** A UTC day for a date input, and back. */
@@ -71,21 +83,25 @@ export const dayOf = (value: string) => {
  * way to read them again after a change.
  */
 export function usePricing() {
+    const { t } = useTranslation(['operations.cost']);
     const [view, setView] = useState<PricingView>();
     const [error, setError] = useState('');
-    const reload = useCallback(async (signal?: AbortSignal) => {
-        try {
-            const next = await api<PricingView>('/operations/pricing', 'GET', undefined, signal);
-            if (!signal?.aborted) {
-                setView(next);
-                setError('');
+    const reload = useCallback(
+        async (signal?: AbortSignal) => {
+            try {
+                const next = await api<PricingView>('/operations/pricing', 'GET', undefined, signal);
+                if (!signal?.aborted) {
+                    setView(next);
+                    setError('');
+                }
+            } catch (e) {
+                if (!signal?.aborted) {
+                    setError(e instanceof Error ? e.message : t('operations.cost:load-failed'));
+                }
             }
-        } catch (e) {
-            if (!signal?.aborted) {
-                setError(e instanceof Error ? e.message : 'Could not load prices.');
-            }
-        }
-    }, []);
+        },
+        [t],
+    );
     useEffect(() => {
         const controller = new AbortController();
         void reload(controller.signal);

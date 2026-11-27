@@ -1,0 +1,27 @@
+{
+    "title": "The board",
+    "description": "Items filed on the Improvements board, how fast they close, and how soon a failed turn is reported with File issue in Runs. Only the person filter applies: who reported them.",
+    "chart": "Board chart",
+    "reported": "Reported",
+    "resolved": "Resolved",
+    "series": {
+        "reported": "Items reported",
+        "resolved": "Items resolved"
+    },
+    "axis": {
+        "reported": "items reported",
+        "resolved": "items resolved"
+    },
+    "bugs_one": "{{count, number}} bug",
+    "bugs_other": "{{count, number}} bugs",
+    "resolve-time": "Time to resolve",
+    "median": "Median",
+    "within": "90% within {{span}}",
+    "open": "Open",
+    "open-note": "At the end of the range",
+    "report-time": "Time to report",
+    "filed": "Failed turns filed from Runs",
+    "filed-count_one": "{{count, number}} failed turn filed from Runs",
+    "filed-count_other": "{{count, number}} failed turns filed from Runs",
+    "empty": "No items on the board yet."
+}

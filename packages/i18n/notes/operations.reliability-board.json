@@ -1,0 +1,15 @@
+{
+    "title": "Card title: the Improvements board (where people file issues and requests), as seen from Reliability.",
+    "description": "\"File issue\" is a button's name in Runs; \"Runs\" is the page listing turns.",
+    "chart": "Accessible name of the menu that picks what the board's chart shows.",
+    "reported": "Tile and menu choice: items filed on the board.",
+    "resolved": "Tile and menu choice: items closed as done on the board.",
+    "series.reported": "Chart title.",
+    "axis.reported": "What the chart's values are, in a sentence for screen readers. Lowercase.",
+    "bugs": "Of the items reported, how many were bugs.",
+    "median": "The tile's value is the median.",
+    "within": "90% of items took at most {{span}} (a span such as 3 h or 2.5 days).",
+    "open-note": "The Open tile counts items still open when the range ends.",
+    "report-time": "Tile: how long after a turn failed someone filed an issue about it.",
+    "filed-count": "How many failed turns were filed as issues from the Runs page."
+}

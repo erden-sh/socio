@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
 
+import { Trans, useTranslation } from '@socio/i18n/react';
 import { formatNumber } from '@socio/shared/locale';
 import {
-    OPS_OUTCOME_LABELS,
     OPS_OUTCOMES,
-    OPS_VALUE_TILE_LABELS,
+    OPS_VALUE_TILES,
     type OpsOutcome,
     type OpsSessionRow,
     type OpsSocioRow,
@@ -21,12 +21,12 @@ import {
     counts,
     filterLink,
     formatShare,
-    previousLabel,
     RowLink,
     StatusNote,
     Tiles,
+    useActivityWords,
 } from './activity-parts';
-import { bucketLabel, formatWhen } from './format';
+import { formatWhen, useOpsFormat } from './format';
 import { IntentTable, OUTCOME_MARK } from './outcome-parts';
 import { opsPath } from './sections';
 import { transcriptPath } from './transcript-path';
@@ -47,6 +47,9 @@ import { cn } from '@/lib/utils';
  * a reaction; then socios' usefulness and the sessions themselves.
  */
 export function ValueSection() {
+    const { t } = useTranslation(['operations.value', 'operations', 'operations.dashboard']);
+    const { bucketLabel } = useOpsFormat();
+    const { previousLabel } = useActivityWords();
     const { query, search } = useOpsQuery();
     const { timeZone } = useOpsSettings();
     const [metric, setMetric] = useState<OpsOutcome>('completed');
@@ -56,12 +59,16 @@ export function ValueSection() {
         ? OPS_OUTCOMES.reduce((sum, id) => sum + (data.tiles.find((tile) => tile.id === id)?.value ?? 0), 0)
         : 0;
     const reactions = data?.reactions;
+    const labels = Object.fromEntries(OPS_VALUE_TILES.map((id) => [id, t(`operations.value:tiles.${id}`)])) as Record<
+        (typeof OPS_VALUE_TILES)[number],
+        string
+    >;
     return (
         <>
             <StatusNote answer={data} timeZone={timeZone} error={answer.error} />
             <Tiles
                 tiles={data?.tiles}
-                labels={OPS_VALUE_TILE_LABELS}
+                labels={labels}
                 against={previousLabel(query)}
                 // Answered is a band of its own, neither success nor failure.
                 upIsGood={(id) => (id === 'answered' ? undefined : id !== 'abandoned')}
@@ -70,25 +77,23 @@ export function ValueSection() {
             />
             <Card data-slot="ops-outcomes" className="gap-4">
                 <CardHeader>
-                    <CardTitle>How people’s sessions ended</CardTitle>
-                    <CardDescription>
-                        Completed: the last turn finished and something came of it within a day (a thumbs up, an
-                        approval carried out, a page the socio wrote, a memory kept). Abandoned: nobody came back within
-                        a day after a failure, a stop, an expired approval or a thumbs down. Answered: the rest.
-                    </CardDescription>
+                    <CardTitle>{t('operations.value:outcomes.title')}</CardTitle>
+                    <CardDescription>{t('operations.value:outcomes.description')}</CardDescription>
                 </CardHeader>
                 <CardContent className="grid gap-3">
                     {data ? (
                         <>
                             <div
                                 role="img"
-                                aria-label={OPS_OUTCOMES.map(
-                                    (id) =>
-                                        `${OPS_OUTCOME_LABELS[id]} ${formatShare(
+                                aria-label={OPS_OUTCOMES.map((id) =>
+                                    t('operations.dashboard:outcomes.share', {
+                                        outcome: t(`operations.dashboard:outcomes.${id}`),
+                                        share: formatShare(
                                             total
                                                 ? (data.tiles.find((tile) => tile.id === id)?.value ?? 0) / total
                                                 : null,
-                                        )}`,
+                                        ),
+                                    }),
                                 ).join(', ')}
                                 className="flex h-3 gap-0.5 overflow-hidden rounded-full bg-muted"
                             >
@@ -110,8 +115,11 @@ export function ValueSection() {
                                     return (
                                         <li key={id} className="flex items-center gap-1.5">
                                             <span aria-hidden className={cn('size-2 rounded-full', OUTCOME_MARK[id])} />
-                                            {OPS_OUTCOME_LABELS[id]}: {formatNumber(value)} (
-                                            {formatShare(total ? value / total : null)})
+                                            {t('operations.value:outcomes.legend', {
+                                                outcome: t(`operations.dashboard:outcomes.${id}`),
+                                                n: value,
+                                                share: formatShare(total ? value / total : null),
+                                            })}
                                         </li>
                                     );
                                 })}
@@ -121,15 +129,17 @@ export function ValueSection() {
                         <Skeleton className="h-8 w-full" />
                     )}
                     <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
-                        <span className="text-sm font-medium">{OPS_OUTCOME_LABELS[metric]} sessions over time</span>
+                        <span className="text-sm font-medium">
+                            {t('operations.value:chart.title', { context: metric })}
+                        </span>
                         <Select value={metric} onValueChange={(value) => setMetric(value as OpsOutcome)}>
-                            <SelectTrigger size="sm" aria-label="Chart" className="w-40">
+                            <SelectTrigger size="sm" aria-label={t('operations.value:chart.label')} className="w-40">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
                                 {OPS_OUTCOMES.map((id) => (
                                     <SelectItem key={id} value={id}>
-                                        {OPS_OUTCOME_LABELS[id]}
+                                        {t(`operations.dashboard:outcomes.${id}`)}
                                     </SelectItem>
                                 ))}
                             </SelectContent>
@@ -138,9 +148,9 @@ export function ValueSection() {
                     {data && data.points.length ? (
                         <SeriesChart
                             kind={data.window.bucket === 'hour' ? 'line' : 'bar'}
-                            label={`${OPS_OUTCOME_LABELS[metric]} sessions`}
+                            label={t('operations.value:chart.series', { context: metric })}
                             xName={data.window.bucket}
-                            yName="sessions"
+                            yName={t('operations.value:chart.axis')}
                             points={data.points.map((point) => ({
                                 label: bucketLabel(point.at, data.window.bucket, data.window.timeZone),
                                 value: point[metric],
@@ -148,7 +158,7 @@ export function ValueSection() {
                         />
                     ) : data ? (
                         <p className="m-0 py-6 text-center text-sm text-muted-foreground">
-                            Nothing to chart in this range.
+                            {t('operations.value:chart.empty')}
                         </p>
                     ) : (
                         <Skeleton className="h-60 w-full" />
@@ -157,21 +167,20 @@ export function ValueSection() {
             </Card>
             <Card data-slot="ops-value-intents" className="gap-4">
                 <CardHeader>
-                    <CardTitle>Completion by intent</CardTitle>
+                    <CardTitle>{t('operations.value:intents.title')}</CardTitle>
                     <CardDescription>
-                        How sessions ended by what people came for. Intents come from the session intent labels
-                        (Operations → Settings); sessions without one are counted apart.{' '}
-                        <Link to={opsPath('themes', search)} className="underline">
-                            Themes
-                        </Link>{' '}
-                        breaks them down by topic.
+                        <Trans
+                            t={t}
+                            i18nKey="operations.value:intents.description"
+                            components={{ link: <Link to={opsPath('themes', search)} className="underline" /> }}
+                        />
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     {data?.intents.length ? (
                         <IntentTable rows={data.intents} slot="ops-value-intent-table" />
                     ) : data ? (
-                        <p className="m-0 py-2 text-sm text-muted-foreground">No sessions in this range.</p>
+                        <p className="m-0 py-2 text-sm text-muted-foreground">{t('operations.value:intents.empty')}</p>
                     ) : (
                         <Skeleton className="h-24 w-full" />
                     )}
@@ -180,10 +189,8 @@ export function ValueSection() {
             <div className="grid gap-6 lg:grid-cols-2">
                 <Card data-slot="ops-approvals" className="gap-3">
                     <CardHeader>
-                        <CardTitle>Approvals</CardTitle>
-                        <CardDescription>
-                            What socios asked to do, what people allowed, and what was carried out, by capability.
-                        </CardDescription>
+                        <CardTitle>{t('operations.value:approvals.title')}</CardTitle>
+                        <CardDescription>{t('operations.value:approvals.description')}</CardDescription>
                     </CardHeader>
                     <CardContent>
                         {data?.approvals.length ? (
@@ -193,13 +200,23 @@ export function ValueSection() {
                                         <BreakdownRow
                                             slot="ops-approval"
                                             name={row.capability}
-                                            numbers={`${formatNumber(row.requested)} asked → ${formatNumber(row.approved)} allowed, ${formatNumber(row.denied)} denied, ${formatNumber(row.expired)} expired → ${formatNumber(row.executed)} done${row.failed ? `, ${formatNumber(row.failed)} failed` : ''}`}
+                                            numbers={t('operations.value:approvals.row', {
+                                                context: row.failed ? 'failed' : undefined,
+                                                asked: row.requested,
+                                                allowed: row.approved,
+                                                denied: row.denied,
+                                                expired: row.expired,
+                                                done: row.executed,
+                                                failed: row.failed,
+                                            })}
                                         />
                                     </li>
                                 ))}
                             </ul>
                         ) : data ? (
-                            <p className="m-0 py-2 text-sm text-muted-foreground">No approvals in this range.</p>
+                            <p className="m-0 py-2 text-sm text-muted-foreground">
+                                {t('operations.value:approvals.empty')}
+                            </p>
                         ) : (
                             <Skeleton className="h-24 w-full" />
                         )}
@@ -207,10 +224,8 @@ export function ValueSection() {
                 </Card>
                 <Card data-slot="ops-reactions" className="gap-3">
                     <CardHeader>
-                        <CardTitle>Reactions</CardTitle>
-                        <CardDescription>
-                            How many socio answers got a reaction, and which. Few reactions say little either way.
-                        </CardDescription>
+                        <CardTitle>{t('operations.value:reactions.title')}</CardTitle>
+                        <CardDescription>{t('operations.value:reactions.description')}</CardDescription>
                     </CardHeader>
                     <CardContent>
                         {reactions ? (
@@ -218,17 +233,27 @@ export function ValueSection() {
                                 {(
                                     [
                                         [
-                                            'Answers with a reaction',
-                                            `${formatNumber(reactions.reacted)} of ${formatNumber(reactions.socioMessages)} (${formatShare(reactions.socioMessages ? reactions.reacted / reactions.socioMessages : null)})`,
+                                            'reacted',
+                                            t('operations.value:reactions.reacted-value', {
+                                                reacted: reactions.reacted,
+                                                total: reactions.socioMessages,
+                                                share: formatShare(
+                                                    reactions.socioMessages
+                                                        ? reactions.reacted / reactions.socioMessages
+                                                        : null,
+                                                ),
+                                            }),
                                         ],
-                                        ['Thumbs up', formatNumber(reactions.up)],
-                                        ['Thumbs down', formatNumber(reactions.down)],
-                                        ['Retry', formatNumber(reactions.retry)],
-                                        ['Needs work', formatNumber(reactions.needsWork)],
+                                        ['up', formatNumber(reactions.up)],
+                                        ['down', formatNumber(reactions.down)],
+                                        ['retry', formatNumber(reactions.retry)],
+                                        ['needs-work', formatNumber(reactions.needsWork)],
                                     ] as const
-                                ).map(([label, value]) => (
-                                    <div key={label} className="grid gap-0.5">
-                                        <dt className="text-xs text-muted-foreground">{label}</dt>
+                                ).map(([id, value]) => (
+                                    <div key={id} className="grid gap-0.5">
+                                        <dt className="text-xs text-muted-foreground">
+                                            {t(`operations.value:reactions.${id}`)}
+                                        </dt>
                                         <dd className="m-0 font-semibold tabular-nums">{value}</dd>
                                     </div>
                                 ))}
@@ -245,21 +270,19 @@ export function ValueSection() {
 }
 
 function ValueLists() {
+    const { t } = useTranslation(['operations.value']);
     const [tab, setTab] = useState('socios');
     return (
         <Card data-slot="ops-value-lists" className="gap-4">
             <CardHeader>
-                <CardTitle>Usefulness and sessions</CardTitle>
-                <CardDescription>
-                    Each socio’s completed share next to how often its people come back, and people’s sessions, newest
-                    first.
-                </CardDescription>
+                <CardTitle>{t('operations.value:lists.title')}</CardTitle>
+                <CardDescription>{t('operations.value:lists.description')}</CardDescription>
             </CardHeader>
             <CardContent>
                 <Tabs value={tab} onValueChange={setTab}>
                     <TabsList>
-                        <TabsTrigger value="socios">Socios</TabsTrigger>
-                        <TabsTrigger value="sessions">Sessions</TabsTrigger>
+                        <TabsTrigger value="socios">{t('operations.value:lists.socios')}</TabsTrigger>
+                        <TabsTrigger value="sessions">{t('operations.value:lists.sessions')}</TabsTrigger>
                     </TabsList>
                     <TabsContent value="socios">
                         <UsefulnessList />
@@ -274,14 +297,15 @@ function ValueLists() {
 }
 
 function UsefulnessList() {
+    const { t } = useTranslation(['operations.value']);
     const { query, search } = useOpsQuery();
     const list = useCursorList<OpsSocioRow>(`/operations/activity/socios${search}`);
     return (
         <InfiniteList
             list={list}
-            label="Socios"
+            label={t('operations.value:lists.socios')}
             itemKey={(row) => row.socioId}
-            empty="No socio had people’s sessions in this range."
+            empty={t('operations.value:lists.socios-empty')}
             renderItem={(row) => (
                 <BreakdownRow
                     slot="ops-usefulness"
@@ -290,7 +314,14 @@ function UsefulnessList() {
                             {row.name ?? row.socioId}
                         </RowLink>
                     }
-                    numbers={`${formatShare(row.sessions ? row.completed / row.sessions : null)} completed of ${counts([row.sessions, 'session', 'sessions'])} · ${formatShare(row.returnRate)} back within 7 days · ${formatShare(row.repeatUse)} came on 2+ days of 28`}
+                    numbers={counts(
+                        t('operations.value:usefulness.completed', {
+                            count: row.sessions,
+                            share: formatShare(row.sessions ? row.completed / row.sessions : null),
+                        }),
+                        t('operations.value:usefulness.back', { share: formatShare(row.returnRate) }),
+                        t('operations.value:usefulness.repeat', { share: formatShare(row.repeatUse) }),
+                    )}
                 />
             )}
         />
@@ -298,6 +329,7 @@ function UsefulnessList() {
 }
 
 function SessionsList() {
+    const { t } = useTranslation(['operations.value', 'operations', 'operations.dashboard']);
     const { search } = useOpsQuery();
     const { timeZone } = useOpsSettings();
     const [outcome, setOutcome] = useState<OpsOutcome | 'all'>('all');
@@ -308,29 +340,29 @@ function SessionsList() {
     return (
         <div className="grid gap-3">
             <Select value={outcome} onValueChange={(value) => setOutcome(value as OpsOutcome | 'all')}>
-                <SelectTrigger size="sm" aria-label="Outcome" className="w-40">
+                <SelectTrigger size="sm" aria-label={t('operations.value:sessions.outcome')} className="w-40">
                     <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="all">Every outcome</SelectItem>
+                    <SelectItem value="all">{t('operations.value:sessions.every-outcome')}</SelectItem>
                     {OPS_OUTCOMES.map((id) => (
                         <SelectItem key={id} value={id}>
-                            {OPS_OUTCOME_LABELS[id]}
+                            {t(`operations.dashboard:outcomes.${id}`)}
                         </SelectItem>
                     ))}
                 </SelectContent>
             </Select>
             <InfiniteList
                 list={list}
-                label="Sessions"
+                label={t('operations.value:lists.sessions')}
                 itemKey={(row) => row.id}
-                empty="No sessions like that in this range."
+                empty={t('operations.value:sessions.empty')}
                 renderItem={(row) => (
                     <BreakdownRow
                         slot="ops-session"
                         name={
                             <RowLink to={transcriptPath(row.threadId, 'value')}>
-                                {row.socioName ?? row.socioId ?? 'A chat'}
+                                {row.socioName ?? row.socioId ?? t('operations.value:sessions.a-chat')}
                             </RowLink>
                         }
                         meta={
@@ -343,13 +375,15 @@ function SessionsList() {
                                           : 'secondary'
                                 }
                             >
-                                {OPS_OUTCOME_LABELS[row.outcome]}
+                                {t(`operations.dashboard:outcomes.${row.outcome}`)}
                             </Badge>
                         }
-                        numbers={`${counts(
-                            [row.messages, 'message', 'messages'],
-                            [row.people, 'person', 'people'],
-                        )} · ${row.source} · ${formatWhen(row.startedAt, timeZone)}`}
+                        numbers={counts(
+                            t('operations.value:sessions.messages', { count: row.messages }),
+                            t('operations.value:sessions.people', { count: row.people }),
+                            row.source,
+                            formatWhen(row.startedAt, timeZone),
+                        )}
                     />
                 )}
             />

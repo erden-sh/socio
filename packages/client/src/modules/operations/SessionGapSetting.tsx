@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
+import { useTranslation } from '@socio/i18n/react';
 import type { OperationsSettingsView } from '@socio/shared/operations/operations';
 import { OPS_SESSION_GAP } from '@socio/shared/operations/operations-activity';
 
@@ -19,6 +20,7 @@ import { Input } from '@/components/ui/input';
  * new gap applies to every range at once, past ones included.
  */
 export function SessionGapSetting() {
+    const { t } = useTranslation(['operations.settings', 'operations']);
     const { settings, saved } = useOpsSettings();
     const [minutes, setMinutes] = useState('');
     const [busy, setBusy] = useState(false);
@@ -35,9 +37,9 @@ export function SessionGapSetting() {
             const view = await api<OperationsSettingsView>('/operations/settings', 'PUT', { sessionGapMinutes });
             saved(view);
             setMinutes(String(view.sessionGapMinutes));
-            toast.success('Settings saved');
+            toast.success(t('operations.settings:saved'));
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Could not save.');
+            setError(e instanceof Error ? e.message : t('operations.settings:save-failed'));
         } finally {
             setBusy(false);
         }
@@ -57,15 +59,15 @@ export function SessionGapSetting() {
                 }}
             >
                 <div className="grid gap-1">
-                    <h3 className="font-medium">Sessions</h3>
+                    <h3 className="font-medium">{t('operations.settings:session-gap.title')}</h3>
                     <p className="text-muted-foreground">
-                        Activity and Value count a chat’s messages as one session until nobody writes for this long. A
-                        change applies to every range at once. The server’s is{' '}
-                        {settings?.defaults.sessionGapMinutes ?? OPS_SESSION_GAP.default} minutes.
+                        {t('operations.settings:session-gap.description', {
+                            count: settings?.defaults.sessionGapMinutes ?? OPS_SESSION_GAP.default,
+                        })}
                     </p>
                 </div>
                 <label className="grid max-w-56 gap-1.5">
-                    <span className="font-medium">Gap in minutes</span>
+                    <span className="font-medium">{t('operations.settings:session-gap.label')}</span>
                     <Input
                         inputMode="numeric"
                         value={minutes}
@@ -75,7 +77,10 @@ export function SessionGapSetting() {
                     />
                     {minutes && !valid && (
                         <small className="text-destructive">
-                            A whole number from {OPS_SESSION_GAP.min} to {OPS_SESSION_GAP.max}.
+                            {t('operations.settings:session-gap.invalid', {
+                                min: OPS_SESSION_GAP.min,
+                                max: OPS_SESSION_GAP.max,
+                            })}
                         </small>
                     )}
                 </label>
@@ -89,11 +94,13 @@ export function SessionGapSetting() {
                         type="submit"
                         disabled={busy || !settings || !valid || value === settings.sessionGapMinutes}
                     >
-                        Save
+                        {t('operations.settings:save')}
                     </Button>
                     {settings && settings.sessionGapMinutes !== settings.defaults.sessionGapMinutes && (
                         <Button type="button" variant="outline" disabled={busy} onClick={() => void save(null)}>
-                            Use the server’s ({settings.defaults.sessionGapMinutes} minutes)
+                            {t('operations.settings:session-gap.reset', {
+                                count: settings.defaults.sessionGapMinutes,
+                            })}
                         </Button>
                     )}
                 </div>

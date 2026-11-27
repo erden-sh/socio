@@ -1,8 +1,9 @@
 import { useState } from 'react';
 
+import { useTranslation } from '@socio/i18n/react';
 import { formatNumber } from '@socio/shared/locale';
 import {
-    OPS_ACTIVITY_TILE_LABELS,
+    OPS_ACTIVITY_TILES,
     type OpsActivity,
     type OpsActivityPoint,
     type OpsChatRow,
@@ -14,17 +15,8 @@ import { SeriesChart } from '../../components/charts/SeriesChart';
 import { InfiniteList } from '../../components/infinite-list/InfiniteList';
 import { useCursorList } from '../../components/infinite-list/use-cursor-list';
 
-import {
-    BreakdownRow,
-    counts,
-    filterLink,
-    personLabel,
-    previousLabel,
-    RowLink,
-    StatusNote,
-    Tiles,
-} from './activity-parts';
-import { bucketLabel, formatWhen } from './format';
+import { BreakdownRow, counts, filterLink, RowLink, StatusNote, Tiles, useActivityWords } from './activity-parts';
+import { formatWhen, useOpsFormat } from './format';
 import { transcriptPath } from './transcript-path';
 import { useOpsAnswer, useOpsQuery, useOpsSettings } from './use-ops';
 
@@ -35,17 +27,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 type ChartMetric = keyof Omit<OpsActivityPoint, 'at'>;
-const CHART: { id: ChartMetric; label: string }[] = [
-    { id: 'people', label: 'Active people' },
-    { id: 'sessions', label: 'Sessions' },
-    { id: 'messages', label: 'Messages from people' },
-];
-
-const KIND_LABEL = {
-    human: 'People',
-    automation: 'Automation',
-    unknown: 'Unregistered',
-} as const;
+/** The chart's metrics, in its menu's order; named by the `metrics.<id>` keys. */
+const CHART: ChartMetric[] = ['people', 'sessions', 'messages'];
 
 /**
  * Activity (CB-190): who works with which socios, how often and through
@@ -56,40 +39,44 @@ const KIND_LABEL = {
  * person's or socio's name narrows the whole page to them.
  */
 export function ActivitySection() {
+    const { t } = useTranslation(['operations.activity', 'operations']);
+    const { bucketLabel } = useOpsFormat();
+    const { previousLabel } = useActivityWords();
     const { query, search } = useOpsQuery();
     const { timeZone } = useOpsSettings();
     const [metric, setMetric] = useState<ChartMetric>('people');
     const answer = useOpsAnswer<OpsActivity>(`/operations/activity${search}`);
     const data = answer.data;
-    const metricLabel = CHART.find((item) => item.id === metric)!.label;
+    const metricLabel = t(`operations.activity:metrics.${metric}`);
+    const labels = Object.fromEntries(
+        OPS_ACTIVITY_TILES.map((id) => [id, t(`operations.activity:tiles.${id}`)]),
+    ) as Record<(typeof OPS_ACTIVITY_TILES)[number], string>;
     return (
         <>
             <StatusNote answer={data} timeZone={timeZone} error={answer.error} />
             <Tiles
                 tiles={data?.tiles}
-                labels={OPS_ACTIVITY_TILE_LABELS}
+                labels={labels}
                 against={previousLabel(query)}
                 loading={answer.loading}
                 count={6}
             />
             {data && (
                 <p className="m-0 text-xs text-muted-foreground">
-                    A session is a chat’s messages with less than {data.sessionGapMinutes} minutes between them; a
-                    shared one counts once here and for each person in it. Stickiness is daily people over the people of
-                    the last 7 days.
+                    {t('operations.activity:sessions-note', { minutes: data.sessionGapMinutes })}
                 </p>
             )}
             <Card data-slot="ops-activity-chart" className="gap-4">
                 <CardHeader className="flex flex-wrap items-center justify-between gap-2">
                     <CardTitle>{metricLabel}</CardTitle>
                     <Select value={metric} onValueChange={(value) => setMetric(value as ChartMetric)}>
-                        <SelectTrigger size="sm" aria-label="Chart" className="w-52">
+                        <SelectTrigger size="sm" aria-label={t('operations.activity:chart')} className="w-52">
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                            {CHART.map((item) => (
-                                <SelectItem key={item.id} value={item.id}>
-                                    {item.label}
+                            {CHART.map((id) => (
+                                <SelectItem key={id} value={id}>
+                                    {t(`operations.activity:metrics.${id}`)}
                                 </SelectItem>
                             ))}
                         </SelectContent>
@@ -101,7 +88,7 @@ export function ActivitySection() {
                             kind={data.window.bucket === 'hour' ? 'line' : 'bar'}
                             label={metricLabel}
                             xName={data.window.bucket}
-                            yName={metricLabel.toLowerCase()}
+                            yName={t(`operations.activity:axis.${metric}`)}
                             points={data.points.map((point) => ({
                                 label: bucketLabel(point.at, data.window.bucket, data.window.timeZone),
                                 value: point[metric],
@@ -109,7 +96,7 @@ export function ActivitySection() {
                         />
                     ) : data ? (
                         <p className="m-0 py-6 text-center text-sm text-muted-foreground">
-                            Nothing to chart in this range.
+                            {t('operations.activity:no-chart')}
                         </p>
                     ) : (
                         <Skeleton className="h-60 w-full" />
@@ -119,11 +106,8 @@ export function ActivitySection() {
             <div className="grid gap-6 lg:grid-cols-2">
                 <Card data-slot="ops-sources" className="gap-3">
                     <CardHeader>
-                        <CardTitle>Channels</CardTitle>
-                        <CardDescription>
-                            Turns and people’s messages by where they came from. Automation, such as schedules, is
-                            counted apart from people.
-                        </CardDescription>
+                        <CardTitle>{t('operations.activity:sources.title')}</CardTitle>
+                        <CardDescription>{t('operations.activity:sources.description')}</CardDescription>
                     </CardHeader>
                     <CardContent>
                         {data?.sources.length ? (
@@ -143,12 +127,12 @@ export function ActivitySection() {
                                             }
                                             meta={
                                                 <Badge variant={source.kind === 'human' ? 'secondary' : 'outline'}>
-                                                    {KIND_LABEL[source.kind]}
+                                                    {t(`operations.activity:sources.kind.${source.kind}`)}
                                                 </Badge>
                                             }
                                             numbers={counts(
-                                                [source.turns, 'turn', 'turns'],
-                                                [source.people, 'person', 'people'],
+                                                t('operations.activity:count.turns', { count: source.turns }),
+                                                t('operations.activity:count.people', { count: source.people }),
                                             )}
                                         />
                                     </li>
@@ -161,25 +145,24 @@ export function ActivitySection() {
                 </Card>
                 <Card data-slot="ops-participation" className="gap-3">
                     <CardHeader>
-                        <CardTitle>Who takes part</CardTitle>
-                        <CardDescription>
-                            Chats can have several people and several socios. Turns one socio starts for another are
-                            collaboration, not use.
-                        </CardDescription>
+                        <CardTitle>{t('operations.activity:participation.title')}</CardTitle>
+                        <CardDescription>{t('operations.activity:participation.description')}</CardDescription>
                     </CardHeader>
                     <CardContent>
                         {data ? (
                             <dl className="m-0 grid grid-cols-2 gap-3 text-sm">
                                 {(
                                     [
-                                        ['Chats with people', data.participation.chats],
-                                        ['With several people', data.participation.withSeveralPeople],
-                                        ['With several socios', data.participation.withSeveralSocios],
-                                        ['Socio-to-socio turns', data.participation.collaboration],
+                                        ['chats', data.participation.chats],
+                                        ['several-people', data.participation.withSeveralPeople],
+                                        ['several-socios', data.participation.withSeveralSocios],
+                                        ['collaboration', data.participation.collaboration],
                                     ] as const
-                                ).map(([label, value]) => (
-                                    <div key={label} className="grid gap-0.5">
-                                        <dt className="text-xs text-muted-foreground">{label}</dt>
+                                ).map(([id, value]) => (
+                                    <div key={id} className="grid gap-0.5">
+                                        <dt className="text-xs text-muted-foreground">
+                                            {t(`operations.activity:participation.${id}`)}
+                                        </dt>
                                         <dd className="m-0 text-lg font-semibold tabular-nums">
                                             {formatNumber(value)}
                                         </dd>
@@ -193,12 +176,11 @@ export function ActivitySection() {
                 </Card>
                 <Card data-slot="ops-features" className="gap-3">
                     <CardHeader>
-                        <CardTitle>Feature use</CardTitle>
+                        <CardTitle>{t('operations.activity:features.title')}</CardTitle>
                         <CardDescription>
-                            Tool calls by capability.{' '}
                             {query.filters.person
-                                ? 'Only the turns this person started.'
-                                : 'Pick a person below to see theirs.'}
+                                ? t('operations.activity:features.description_person')
+                                : t('operations.activity:features.description')}
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -209,10 +191,20 @@ export function ActivitySection() {
                                         <BreakdownRow
                                             slot="ops-feature"
                                             name={<span title={feature.tools.join(', ')}>{feature.label}</span>}
-                                            numbers={`${counts(
-                                                [feature.calls, 'call', 'calls'],
-                                                [feature.people, 'person', 'people'],
-                                            )}${feature.errors || feature.refusals ? ` · ${counts([feature.errors, 'error', 'errors'], [feature.refusals, 'refusal', 'refusals'])}` : ''}`}
+                                            numbers={counts(
+                                                t('operations.activity:count.calls', { count: feature.calls }),
+                                                t('operations.activity:count.people', { count: feature.people }),
+                                                ...(feature.errors || feature.refusals
+                                                    ? [
+                                                          t('operations.activity:count.errors', {
+                                                              count: feature.errors,
+                                                          }),
+                                                          t('operations.activity:count.refusals', {
+                                                              count: feature.refusals,
+                                                          }),
+                                                      ]
+                                                    : []),
+                                            )}
                                         />
                                     </li>
                                 ))}
@@ -224,10 +216,8 @@ export function ActivitySection() {
                 </Card>
                 <Card data-slot="ops-spaces" className="gap-3">
                     <CardHeader>
-                        <CardTitle>Spaces</CardTitle>
-                        <CardDescription>
-                            Pages made and edited in each Space, by people and by socios, and who works with its socios.
-                        </CardDescription>
+                        <CardTitle>{t('operations.activity:spaces.title')}</CardTitle>
+                        <CardDescription>{t('operations.activity:spaces.description')}</CardDescription>
                     </CardHeader>
                     <CardContent>
                         {data?.spaces.length ? (
@@ -245,10 +235,15 @@ export function ActivitySection() {
                                                     {space.name ?? space.spaceId}
                                                 </RowLink>
                                             }
-                                            numbers={`${counts(
-                                                [space.writesByPeople, 'write by people', 'writes by people'],
-                                                [space.writesBySocios, 'by socios', 'by socios'],
-                                            )} · ${counts([space.people, 'person', 'people'])}`}
+                                            numbers={counts(
+                                                t('operations.activity:count.writes-by-people', {
+                                                    count: space.writesByPeople,
+                                                }),
+                                                t('operations.activity:count.writes-by-socios', {
+                                                    count: space.writesBySocios,
+                                                }),
+                                                t('operations.activity:count.people', { count: space.people }),
+                                            )}
                                         />
                                     </li>
                                 ))}
@@ -265,30 +260,30 @@ export function ActivitySection() {
 }
 
 function Empty({ loading }: { loading: boolean }) {
+    const { t } = useTranslation(['operations.activity']);
     return loading ? (
         <Skeleton className="h-24 w-full" />
     ) : (
-        <p className="m-0 py-2 text-sm text-muted-foreground">Nothing in this range.</p>
+        <p className="m-0 py-2 text-sm text-muted-foreground">{t('operations.activity:empty')}</p>
     );
 }
 
 /** People, socios and chats: cursor-paged, last active first. */
 function Drilldowns() {
+    const { t } = useTranslation(['operations.activity']);
     const [tab, setTab] = useState('people');
     return (
         <Card data-slot="ops-activity-lists" className="gap-4">
             <CardHeader>
-                <CardTitle>Who and where</CardTitle>
-                <CardDescription>
-                    Last active first, without what anyone wrote. Opening a chat is recorded in the access log.
-                </CardDescription>
+                <CardTitle>{t('operations.activity:lists.title')}</CardTitle>
+                <CardDescription>{t('operations.activity:lists.description')}</CardDescription>
             </CardHeader>
             <CardContent>
                 <Tabs value={tab} onValueChange={setTab}>
                     <TabsList>
-                        <TabsTrigger value="people">People</TabsTrigger>
-                        <TabsTrigger value="socios">Socios</TabsTrigger>
-                        <TabsTrigger value="chats">Chats</TabsTrigger>
+                        <TabsTrigger value="people">{t('operations.activity:lists.people')}</TabsTrigger>
+                        <TabsTrigger value="socios">{t('operations.activity:lists.socios')}</TabsTrigger>
+                        <TabsTrigger value="chats">{t('operations.activity:lists.chats')}</TabsTrigger>
                     </TabsList>
                     <TabsContent value="people">
                         <PeopleList />
@@ -306,15 +301,17 @@ function Drilldowns() {
 }
 
 function PeopleList() {
+    const { t } = useTranslation(['operations.activity']);
+    const { personLabel } = useActivityWords();
     const { query, search } = useOpsQuery();
     const { timeZone } = useOpsSettings();
     const list = useCursorList<OpsPersonRow>(`/operations/activity/people${search}`);
     return (
         <InfiniteList
             list={list}
-            label="People"
+            label={t('operations.activity:lists.people')}
             itemKey={(row) => row.personId}
-            empty="No one wrote to a socio in this range."
+            empty={t('operations.activity:lists.people-empty')}
             renderItem={(row) => (
                 <BreakdownRow
                     slot="ops-person"
@@ -323,13 +320,14 @@ function PeopleList() {
                             {personLabel(row.personId, row.name)}
                         </RowLink>
                     }
-                    numbers={`${counts(
-                        [row.sessions, 'session', 'sessions'],
-                        [row.messages, 'message', 'messages'],
-                        [row.activeDays, 'day', 'days'],
-                        [row.socios, 'socio', 'socios'],
-                        [row.toolCalls, 'tool call', 'tool calls'],
-                    )} · ${formatWhen(row.lastAt, timeZone)}`}
+                    numbers={counts(
+                        t('operations.activity:count.sessions', { count: row.sessions }),
+                        t('operations.activity:count.messages', { count: row.messages }),
+                        t('operations.activity:count.days', { count: row.activeDays }),
+                        t('operations.activity:count.socios', { count: row.socios }),
+                        t('operations.activity:count.tool-calls', { count: row.toolCalls }),
+                        formatWhen(row.lastAt, timeZone),
+                    )}
                 />
             )}
         />
@@ -337,15 +335,16 @@ function PeopleList() {
 }
 
 function SociosList() {
+    const { t } = useTranslation(['operations.activity']);
     const { query, search } = useOpsQuery();
     const { timeZone } = useOpsSettings();
     const list = useCursorList<OpsSocioRow>(`/operations/activity/socios${search}`);
     return (
         <InfiniteList
             list={list}
-            label="Socios"
+            label={t('operations.activity:lists.socios')}
             itemKey={(row) => row.socioId}
-            empty="No socio had people’s messages in this range."
+            empty={t('operations.activity:lists.socios-empty')}
             renderItem={(row) => (
                 <BreakdownRow
                     slot="ops-socio"
@@ -354,15 +353,16 @@ function SociosList() {
                             {row.name ?? row.socioId}
                         </RowLink>
                     }
-                    numbers={`${counts(
-                        [row.people, 'person', 'people'],
-                        [row.sessions, 'session', 'sessions'],
-                        [row.chats, 'chat', 'chats'],
-                    )} · ${row.perChat.toFixed(1)} messages a chat${
-                        row.collaboration
-                            ? ` · ${counts([row.collaboration, 'turn for socios', 'turns for socios'])}`
-                            : ''
-                    } · ${formatWhen(row.lastAt, timeZone)}`}
+                    numbers={counts(
+                        t('operations.activity:count.people', { count: row.people }),
+                        t('operations.activity:count.sessions', { count: row.sessions }),
+                        t('operations.activity:count.chats', { count: row.chats }),
+                        t('operations.activity:count.per-chat', { n: row.perChat }),
+                        ...(row.collaboration
+                            ? [t('operations.activity:count.turns-for-socios', { count: row.collaboration })]
+                            : []),
+                        formatWhen(row.lastAt, timeZone),
+                    )}
                 />
             )}
         />
@@ -370,36 +370,42 @@ function SociosList() {
 }
 
 function ChatsList() {
+    const { t } = useTranslation(['operations.activity']);
     const { search } = useOpsQuery();
     const { timeZone } = useOpsSettings();
     const list = useCursorList<OpsChatRow>(`/operations/activity/chats${search}`);
     return (
         <InfiniteList
             list={list}
-            label="Chats"
+            label={t('operations.activity:lists.chats')}
             itemKey={(row) => row.threadId}
-            empty="No chats with people in this range."
+            empty={t('operations.activity:lists.chats-empty')}
             renderItem={(row) => (
                 <BreakdownRow
                     slot="ops-chat"
                     name={
                         <RowLink to={transcriptPath(row.threadId, 'activity')}>
-                            {row.socioName ?? row.socioId ?? 'A chat'}
+                            {row.socioName ?? row.socioId ?? t('operations.activity:lists.a-chat')}
                         </RowLink>
                     }
                     meta={
                         <>
-                            {row.ownerKind === 'team' && <Badge variant="outline">Shared</Badge>}
-                            {row.ownerKind === 'room' && <Badge variant="outline">Room</Badge>}
-                            {row.resumed && <Badge variant="secondary">Resumed</Badge>}
+                            {row.ownerKind === 'team' && (
+                                <Badge variant="outline">{t('operations.activity:lists.shared')}</Badge>
+                            )}
+                            {row.ownerKind === 'room' && (
+                                <Badge variant="outline">{t('operations.activity:lists.room')}</Badge>
+                            )}
+                            {row.resumed && <Badge variant="secondary">{t('operations.activity:lists.resumed')}</Badge>}
                         </>
                     }
-                    numbers={`${counts(
-                        [row.people, 'person', 'people'],
-                        [row.socios, 'socio', 'socios'],
-                        [row.sessions, 'session', 'sessions'],
-                        [row.messages, 'message', 'messages'],
-                    )} · ${formatWhen(row.lastAt, timeZone)}`}
+                    numbers={counts(
+                        t('operations.activity:count.people', { count: row.people }),
+                        t('operations.activity:count.socios', { count: row.socios }),
+                        t('operations.activity:count.sessions', { count: row.sessions }),
+                        t('operations.activity:count.messages', { count: row.messages }),
+                        formatWhen(row.lastAt, timeZone),
+                    )}
                 />
             )}
         />

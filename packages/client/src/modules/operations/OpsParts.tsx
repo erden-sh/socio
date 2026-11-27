@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 
 import type { OpsStatus } from '@socio/shared/operations/operations';
 
-import { statusLine } from './format';
+import { useOpsFormat } from './format';
 import { useOpsSettings } from './use-ops';
 
 import { Card } from '@/components/ui/card';
@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 /** The store's status above a section's numbers, and what failed to load. */
 export function OpsStatusNote({ status, error }: { status: OpsStatus | undefined; error: string }) {
     const { timeZone } = useOpsSettings();
+    const { statusLine } = useOpsFormat();
     return (
         <>
             {status && (

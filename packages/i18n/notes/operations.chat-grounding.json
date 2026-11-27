@@ -1,0 +1,19 @@
+{
+    "unavailable": "When the analytics store can't answer yet.",
+    "nothing": "When no recorded page or dataset was read in this chat.",
+    "did.page": "Each did.*: a short badge beside a page or dataset, what the chat's turns did with it. Read: they read the page.",
+    "did.search": "It came up in a page search.",
+    "did.context": "It was the page open beside the chat.",
+    "did.dataset": "They queried the dataset.",
+    "did.recall": "They recalled earlier parts of the chat.",
+    "turns": "Beside a page or dataset: how many turns (answers from a socio) read it; {{when}} the last time, a date and time.",
+    "recalls": "How many earlier parts of this chat the socio looked back at.",
+    "more": "When the list is cut short.",
+    "removed-page": "In place of the title of a page that was deleted.",
+    "removed-dataset": "In place of the name of a dataset that was deleted.",
+    "kinds.page": "Each kinds.*: tooltip on the badge, the kind of reference. Page reads: pages a socio read.",
+    "kinds.search": "Pages that came up in a socio's page search.",
+    "kinds.context": "The page open beside the chat while the socio answered.",
+    "kinds.dataset": "Queries of datasets (tables of data).",
+    "kinds.recall": "A socio looking back at earlier parts of the same chat."
+}

@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -16,7 +16,6 @@ import {
     type HealthFacts,
 } from '@socio/shared/operations/operations-health';
 
-import { SOURCE_LABELS } from '../../packages/client/src/modules/operations/health-format.js';
 import { AnalyticsEngine } from '../../src/server/operations/analytics/engine.js';
 import { ETL_STEPS, ETL_VERSION } from '../../src/server/operations/analytics/steps.js';
 import type { OpsQueryName } from '../../src/server/operations/domain/ops-queries.js';
@@ -214,7 +213,10 @@ describe('health states', () => {
 });
 
 it('names every ETL source in Health’s freshness, every section’s included', () => {
-    expect(ETL_STEPS.map((step) => step.source).filter((source) => !SOURCE_LABELS[source])).toEqual([]);
+    const health = JSON.parse(
+        readFileSync(new URL('../../packages/i18n/locales/en-US/operations.health.json', import.meta.url), 'utf8'),
+    ) as { freshness: { source: Record<string, string> } };
+    expect(ETL_STEPS.map((step) => step.source).filter((source) => !health.freshness.source[source])).toEqual([]);
 });
 
 describe('a turn’s rounds as facts', () => {
