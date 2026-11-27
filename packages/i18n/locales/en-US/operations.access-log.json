@@ -1,0 +1,46 @@
+{
+    "title": "Who opened what",
+    "description": "Lists of people’s turns are written once per admin and filters every {{minutes, number}} minutes; every chat or turn trace opened is written each time. Entries can’t be edited or removed, and the people whose chats were read aren’t told.",
+    "empty": "No one has opened a person’s activity or a chat here yet.",
+    "content": "Content",
+    "request": "Request {{id}}",
+    "subject": {
+        "workspace": "Every turn",
+        "removed-room": "A removed room",
+        "deleted-chat": "A deleted chat",
+        "room": "Room"
+    },
+    "context": {
+        "from": "from {{section}}",
+        "filter_socio": "socio {{value}}",
+        "filter_person": "person {{value}}",
+        "filter_space": "space {{value}}",
+        "filter_source": "source {{value}}",
+        "filter_room": "room {{value}}",
+        "filter_initiator": "started by {{value}}",
+        "other": "{{name}} {{value}}"
+    },
+    "surfaces": {
+        "turns": "Turns list",
+        "chat": "Chat transcript",
+        "trace": "Turn trace",
+        "activity": "Activity, for one person",
+        "value": "Value, for one person",
+        "activity-people": "Activity: people",
+        "activity-socios": "Activity: socios",
+        "activity-chats": "Activity: chats",
+        "value-sessions": "Value: sessions",
+        "failures": "Reliability: recent failures",
+        "failure-label": "Reliability: a failure’s label",
+        "health": "Health, tokens by person",
+        "health-schedules": "Health: schedules",
+        "health-long-runs": "Health: long runs",
+        "knowledge-datasets": "Knowledge: datasets",
+        "chat-grounding": "Chat grounding",
+        "cost": "Cost, by person",
+        "themes": "Themes, for one person",
+        "session-labels": "Themes: sessions to review",
+        "session-label": "Themes: a session’s labels",
+        "room-events": "Room audit"
+    }
+}

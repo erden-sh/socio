@@ -1,0 +1,97 @@
+{
+    "notes": {
+        "off_intent": "Intent labels are off, so new sessions get none. Turn them on in <link>Settings</link>",
+        "off_themes": "Theme labels are off, so new sessions get none. Turn them on in <link>Settings</link>",
+        "unevaluated_intent": "Intent labels are on, but the model’s answers are suggestions until its version passes an evaluation: review sessions below, then evaluate it in <link>Settings</link>",
+        "unevaluated_themes": "Theme labels are on, but the model’s answers are suggestions until its version passes an evaluation: review sessions below, then evaluate it in <link>Settings</link>"
+    },
+    "totals": {
+        "sessions": "People’s sessions",
+        "with-intent": "With an intent",
+        "with-themes": "With themes"
+    },
+    "intents": {
+        "title": "Intents",
+        "description": "What people came for, by session, and how those sessions ended. A session takes the intent of the first labeled turn in it.",
+        "empty": "No sessions in this range."
+    },
+    "themes": {
+        "title": "Themes",
+        "description_one": "Topics the model named for people’s sessions, grouped when they use the same words. A theme is named only when at least {{count, number}} person had sessions on it in this range; smaller ones are counted together. The hint is the model’s read of the first messages; the outcome is what happened.",
+        "description_other": "Topics the model named for people’s sessions, grouped when they use the same words. A theme is named only when at least {{count, number}} different people had sessions on it in this range; smaller ones are counted together. The hint is the model’s read of the first messages; the outcome is what happened.",
+        "chart": "Chart",
+        "chart-all": "Sessions with themes by week",
+        "chart-topic": "“{{topic}}” by week",
+        "series-topic": "{{topic}} by week",
+        "axis": "sessions",
+        "every": "Every theme",
+        "empty": "No sessions with themes in this range.",
+        "no-answer": "Analytics has no answer yet."
+    },
+    "hidden": {
+        "themes_one": "{{count, number}} smaller theme not named: fewer than {{min, number}} people each.",
+        "themes_other": "{{count, number}} smaller themes not named: fewer than {{min, number}} people each.",
+        "more_one": "{{count, number}} more theme past the first {{shown, number}}.",
+        "more_other": "{{count, number}} more themes past the first {{shown, number}}.",
+        "sessions_one": "{{count, number}} session is on none of the themes shown.",
+        "sessions_other": "{{count, number}} sessions are on none of the themes shown."
+    },
+    "table": {
+        "theme": "Theme",
+        "mostly": "Mostly",
+        "hint": "Hint",
+        "unresolved": "{{share}} seems unresolved"
+    },
+    "outcome": {
+        "resolved": "Seems resolved",
+        "unresolved": "Seems unresolved",
+        "unclear": "Unclear"
+    },
+    "outcome-inline": {
+        "resolved": "seems resolved",
+        "unresolved": "seems unresolved",
+        "unclear": "unclear"
+    },
+    "sure": "{{confidence, number(style: percent; maximumFractionDigits: 0)}} sure",
+    "review": {
+        "title": "Review",
+        "description": "Sessions the model labeled. Open one to read its title and first messages, scrubbed as the model got them, and set its intent or topics: yours count at once and form the golden set the model is evaluated against. Opening one, and this list, is recorded in the access log.",
+        "labels": "Labels",
+        "intent": "Intent",
+        "themes": "Themes",
+        "which": "Which sessions",
+        "unreviewed": "Not reviewed yet",
+        "all": "Every labeled session",
+        "list": "Sessions to review",
+        "empty-unreviewed": "Nothing waits for review. Sessions appear here once the model has labeled them.",
+        "empty": "No session has a label yet.",
+        "no-topics": "No topics",
+        "reviewed": "Reviewed"
+    },
+    "label": {
+        "title": "Session labels",
+        "load-failed": "Could not load its labels.",
+        "saved": "Saved. Themes counts it within a minute.",
+        "save-failed": "Could not save.",
+        "by-model": "the model, {{when}}",
+        "by-admin": "{{name}}, {{when}}",
+        "by-unknown": "an admin, {{when}}",
+        "input": "What the model reads, scrubbed of contact details and secrets",
+        "untitled": "Untitled",
+        "intent": "Intent",
+        "model-intent": "The model says <strong>{{intent}}</strong>, {{confidence, number(style: percent; maximumFractionDigits: 0)}} sure; a suggestion only.",
+        "model-intent_applied": "The model says <strong>{{intent}}</strong>, {{confidence, number(style: percent; maximumFractionDigits: 0)}} sure; it counts.",
+        "in-force": "In force: {{value}}, by {{by}}.",
+        "choose-intent": "Choose an intent",
+        "save-intent": "Save intent",
+        "topics": "Topics",
+        "model-topics": "The model says <strong>{{topics}}</strong> ({{outcome}}), {{confidence, number(style: percent; maximumFractionDigits: 0)}} sure; a suggestion only.",
+        "model-topics_applied": "The model says <strong>{{topics}}</strong> ({{outcome}}), {{confidence, number(style: percent; maximumFractionDigits: 0)}} sure; it counts.",
+        "topic": "Topic {{n, number}}",
+        "main-topic": "Main topic",
+        "another-topic": "Another topic (optional)",
+        "outcome-hint": "Outcome hint",
+        "save-topics": "Save topics",
+        "topics-hint": "A few plain words each; never a person’s name."
+    }
+}

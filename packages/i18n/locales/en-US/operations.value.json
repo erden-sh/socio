@@ -1,0 +1,70 @@
+{
+    "tiles": {
+        "completed": "Completed sessions",
+        "answered": "Answered sessions",
+        "abandoned": "Abandoned sessions",
+        "completedShare": "Share completed",
+        "resumption": "Chats resumed"
+    },
+    "outcomes": {
+        "title": "How people’s sessions ended",
+        "description": "Completed: the last turn finished and something came of it within a day (a thumbs up, an approval carried out, a page the socio wrote, a memory kept). Abandoned: nobody came back within a day after a failure, a stop, an expired approval or a thumbs down. Answered: the rest.",
+        "legend": "{{outcome}}: {{n, number}} ({{share}})"
+    },
+    "chart": {
+        "title_completed": "Completed sessions over time",
+        "title_answered": "Answered sessions over time",
+        "title_abandoned": "Abandoned sessions over time",
+        "series_completed": "Completed sessions",
+        "series_answered": "Answered sessions",
+        "series_abandoned": "Abandoned sessions",
+        "axis": "sessions",
+        "label": "Chart",
+        "empty": "Nothing to chart in this range."
+    },
+    "intents": {
+        "title": "Completion by intent",
+        "description": "How sessions ended by what people came for. Intents come from the session intent labels (Operations → Settings); sessions without one are counted apart. <link>Themes</link> breaks them down by topic.",
+        "empty": "No sessions in this range."
+    },
+    "approvals": {
+        "title": "Approvals",
+        "description": "What socios asked to do, what people allowed, and what was carried out, by capability.",
+        "row": "{{asked, number}} asked → {{allowed, number}} allowed, {{denied, number}} denied, {{expired, number}} expired → {{done, number}} done",
+        "row_failed": "{{asked, number}} asked → {{allowed, number}} allowed, {{denied, number}} denied, {{expired, number}} expired → {{done, number}} done, {{failed, number}} failed",
+        "empty": "No approvals in this range."
+    },
+    "reactions": {
+        "title": "Reactions",
+        "description": "How many socio answers got a reaction, and which. Few reactions say little either way.",
+        "reacted": "Answers with a reaction",
+        "reacted-value": "{{reacted, number}} of {{total, number}} ({{share}})",
+        "up": "Thumbs up",
+        "down": "Thumbs down",
+        "retry": "Retry",
+        "needs-work": "Needs work"
+    },
+    "lists": {
+        "title": "Usefulness and sessions",
+        "description": "Each socio’s completed share next to how often its people come back, and people’s sessions, newest first.",
+        "socios": "Socios",
+        "sessions": "Sessions",
+        "socios-empty": "No socio had people’s sessions in this range."
+    },
+    "usefulness": {
+        "completed_one": "{{share}} completed of {{count, number}} session",
+        "completed_other": "{{share}} completed of {{count, number}} sessions",
+        "back": "{{share}} back within 7 days",
+        "repeat": "{{share}} came on 2+ days of 28"
+    },
+    "sessions": {
+        "outcome": "Outcome",
+        "every-outcome": "Every outcome",
+        "empty": "No sessions like that in this range.",
+        "a-chat": "A chat",
+        "messages_one": "{{count, number}} message",
+        "messages_other": "{{count, number}} messages",
+        "people_one": "{{count, number}} person",
+        "people_other": "{{count, number}} people"
+    }
+}
