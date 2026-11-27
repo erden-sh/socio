@@ -77,16 +77,14 @@ it('keeps every page loader’s data under 64 kB on the seeded workspace', async
             expect(data, name).not.toBeNull();
             const bytes = Buffer.byteLength(JSON.stringify(data));
             expect(bytes, name).toBeLessThanOrEqual(LIMIT);
-            // What the bench times is what the route returns, beside the
-            // route's words (`i18n`, the same for every user).
-            const { i18n: _words, ...own } = data as Record<string, unknown>;
+            // What the bench times is what the route returns.
             expect(
                 await loader.load(
                     userServices(sources, async () => user),
                     user,
                 ),
                 name,
-            ).toEqual(own);
+            ).toEqual(data);
         }
     }
 }, 120_000);
