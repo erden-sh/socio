@@ -8,7 +8,8 @@
 #    service token, writes each locale's files over main
 #    (scripts/i18n-sync.mjs; es-US stays sparse over es-419), on top of the
 #    locale's open branch for the day when there is one, and runs
-#    `pnpm i18n:check`. It passes the files on as an artifact;
+#    `pnpm i18n:check`. Each locale starts from a clean copy of main, as its
+#    own pull request would merge. It passes the files on as an artifact;
 # 2. publish: mints a GitHub App installation token (contents and pull
 #    requests, this repository only), commits each locale's files to
 #    `i18n/<locale>-<date>` as the App, opens or updates its pull request
@@ -137,18 +138,24 @@ jobs:
           date="$(date -u +%F)"
           mkdir -p "$out"
           locales=()
-          while IFS= read -r locale; do
+          mapfile -t wanted < <(node scripts/i18n-sync.mjs locales --export "$exported")
+          for locale in "${wanted[@]}"; do
             [[ "$locale" =~ ^[a-z]{2,3}(-[A-Z]{2}|-[0-9]{3})?$ ]] || { echo "::error::Not a locale: $locale"; exit 1; }
             branch="i18n/$locale-$date"
             dir="packages/i18n/locales/$locale"
+            # Each locale on its own clean copy of main's dictionaries, as its own pull request
+            # will be merged: es-US is made sparse against main's es-419, never against an es-419
+            # this run is still proposing.
+            git checkout --quiet HEAD -- packages/i18n/locales
+            git clean -fdq -- packages/i18n/locales
             # Today's branch for the locale, if an earlier run opened it: build on its files, and
             # tell publish which commit that was, so it never writes over a later one.
             base=none
             if git fetch --quiet --no-tags --depth=1 origin "+refs/heads/$branch:refs/remotes/origin/$branch" 2>/dev/null; then
-              base="$(git rev-parse "origin/$branch")"
+              base="$(git rev-parse "refs/remotes/origin/$branch")"
               rm -rf "$dir"
-              if git cat-file -e "origin/$branch:$dir" 2>/dev/null; then
-                git archive "origin/$branch" "$dir" | tar -x
+              if git cat-file -e "$base:$dir" 2>/dev/null; then
+                git archive "$base" "$dir" | tar -x
               fi
               echo "$locale: on top of $branch"
             fi
@@ -157,24 +164,23 @@ jobs:
             node scripts/i18n-sync.mjs apply --export "$exported" --locale "$locale" --body "$out/$locale/body.md" --ids "$out/$locale/ids.json"
             if [ "$(jq length "$out/$locale/ids.json")" -eq 0 ]; then
               echo "::warning::$locale: none of its candidates could be written (see above); they stay approved in the app."
-              git checkout --quiet -- "$dir" 2>/dev/null || true
               rm -rf "${out:?}/$locale"
               continue
             fi
+            # The dictionaries as this locale's pull request would leave main.
+            pnpm i18n:check
             if [ -d "$dir" ]; then
               cp -R "$dir" "$out/$locale/files"
             fi
             locales+=("$locale")
-          done < <(node scripts/i18n-sync.mjs locales --export "$exported")
+          done
+          git checkout --quiet HEAD -- packages/i18n/locales
+          git clean -fdq -- packages/i18n/locales
           if [ "${#locales[@]}" -eq 0 ]; then
             echo "::notice::No approved translations to export."
           fi
           echo "locales=${locales[*]}" >> "$GITHUB_OUTPUT"
           echo "date=$date" >> "$GITHUB_OUTPUT"
-
-      - name: Check the dictionaries
-        if: steps.write.outputs.locales != ''
-        run: pnpm i18n:check
 
       - if: steps.write.outputs.locales != ''
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -246,20 +252,26 @@ jobs:
             fi
             branch="i18n/$locale-$DATE"
             dir="packages/i18n/locales/$locale"
-            # The branch must still be where prepare built on: a commit pushed since (a reviewer's
-            # fix) would be overwritten. Its candidates stay approved for the next export.
+            # The commit is built on exactly the branch commit prepare read, and pushed without
+            # force: if anyone pushed to the branch since (a reviewer's fix), the check or the
+            # push fails, their commit stays, and this locale is reported, not retried. Its
+            # candidates stay approved in the app for the next export.
             expected="$(cat "$out/$locale/base")"
             [[ "$expected" =~ ^([0-9a-f]{40}|none)$ ]] || { echo "::error::$locale: bad base"; exit 1; }
-            current="$(git ls-remote --heads origin "refs/heads/$branch" | cut -f1)"
-            if [ "${current:-none}" != "$expected" ]; then
-              echo "::error::$locale: $branch moved since this export was prepared; the next export builds on it."
-              failed=1
-              continue
-            fi
             if [ "$expected" != none ]; then
-              git fetch --quiet --no-tags origin "+refs/heads/$branch:refs/remotes/origin/$branch"
-              git checkout --quiet -B "$branch" "origin/$branch"
+              if ! git fetch --quiet --no-tags origin "+refs/heads/$branch:refs/remotes/origin/$branch" ||
+                [ "$(git rev-parse "refs/remotes/origin/$branch")" != "$expected" ]; then
+                echo "::error::$locale: $branch moved since this export was prepared; skipped, and the next export builds on it."
+                failed=1
+                continue
+              fi
+              git checkout --quiet -B "$branch" "$expected"
             else
+              if git ls-remote --exit-code --heads origin "refs/heads/$branch" >/dev/null; then
+                echo "::error::$locale: $branch was created since this export was prepared; skipped, and the next export builds on it."
+                failed=1
+                continue
+              fi
               git checkout --quiet -B "$branch" origin/main
             fi
             rm -rf "$dir"
@@ -270,7 +282,11 @@ jobs:
             count="$(jq length "$out/$locale/ids.json")"
             if ! git diff --cached --quiet; then
               git commit --quiet -m "i18n($locale): $count translations from the translation app"
-              git push --quiet origin "HEAD:refs/heads/$branch"
+              if ! git push --quiet origin "HEAD:refs/heads/$branch"; then
+                echo "::error::$locale: $branch moved while this export was publishing; skipped, and the next export builds on it."
+                failed=1
+                continue
+              fi
             fi
             pr="$(gh pr list --head "$branch" --state open --json number,url --jq '.[0] // empty')"
             if [ -z "$pr" ]; then

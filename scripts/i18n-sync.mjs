@@ -204,6 +204,28 @@ const formsOf = (key) => [
     ...FORMS.map((form) => `${key}_ordinal_${form}`),
 ];
 
+/** The segments of every string in a tree, with its dotted key. */
+function stringPaths(tree, prefix = [], out = []) {
+    for (const [key, value] of Object.entries(tree ?? {})) {
+        if (typeof value === 'string') {
+            out.push({ key: [...prefix, key].join('.'), path: [...prefix, key] });
+        } else if (isObject(value)) {
+            stringPaths(value, [...prefix, key], out);
+        }
+    }
+    return out;
+}
+
+/** Removes a key and its plural forms in every layout a file may hold them: nested, flat or both. */
+export function removeKey(tree, key) {
+    const keys = new Set(formsOf(key));
+    for (const { key: dotted, path } of stringPaths(tree)) {
+        if (keys.has(dotted)) {
+            deleteAt(tree, path);
+        }
+    }
+}
+
 /** Keys in en-US's order, a plural form en-US lacks beside its `_other`, anything else last. */
 function ordered(tree, english) {
     if (!isObject(tree)) {
@@ -314,10 +336,10 @@ export function applyLocale({ exported, locale, localesDir }) {
             continue;
         }
         const file = fileFor(candidate.ns);
-        // The key's old entry and forms go first: a plural's forms are replaced as a whole.
-        for (const key of formsOf(candidate.key)) {
-            deleteAt(file.tree, keyPath(file.english, key));
-        }
+        // The key's old entry and forms go first, wherever the file has them (nested or flat, which
+        // may differ from en-US's layout): a plural's forms are replaced as a whole. A context form
+        // (`edited_socio`) is a key of its own in the app, with its own candidates.
+        removeKey(file.tree, candidate.key);
         // Sparse over the parent as a whole: a plural's forms are all kept when any differs (the build
         // wants every form of a plural a file has), and left out only when all match.
         const values = candidate.inherit === true ? [] : Object.entries(candidate.values);

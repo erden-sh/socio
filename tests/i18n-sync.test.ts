@@ -11,6 +11,7 @@ import {
     checkCandidate,
     importPayload,
     keyPath,
+    removeKey,
     pullRequestStates,
     sparseParent,
     type ExportBody,
@@ -302,6 +303,65 @@ describe('the export', () => {
             encoding: 'utf8',
         });
         expect(build.status, build.stderr).toBe(0);
+    });
+
+    it("replaces and removes a key in the translation's own layout, when it isn't en-US's", () => {
+        // en-US nests; the translation has the same keys flat, and one both ways.
+        const dir = setup({
+            'en-US/common.json': {
+                errors: { offline: 'Offline', retry: 'Retry' },
+                files_one: 'One file',
+                files_other: '{{count}} files',
+            },
+            'es-419/common.json': {
+                'errors.offline': 'Viejo',
+                'errors.retry': 'Reintentar viejo',
+                errors: { retry: 'Otro viejo' },
+                files_one: 'Un archivo',
+                files_many: 'viejo',
+                files_other: '{{count}} archivos',
+            },
+        });
+        applyLocale({
+            exported: exportOf('es-419', [
+                candidate({ ns: 'common', key: 'errors.offline', inherit: true }),
+                candidate({ ns: 'common', key: 'errors.retry', values: { 'errors.retry': 'Reintentar' } }),
+            ]),
+            locale: 'es-419',
+            localesDir: dir,
+        });
+        const tree = readJson(join(dir, 'es-419/common.json'));
+        expect(tree).toEqual({
+            errors: { retry: 'Reintentar' },
+            files_one: 'Un archivo',
+            files_many: 'viejo',
+            files_other: '{{count}} archivos',
+        });
+        // One entry per logical key.
+        const keys: string[] = [];
+        const walk = (node: Record<string, unknown>, prefix: string) => {
+            for (const [key, value] of Object.entries(node)) {
+                const path = prefix ? `${prefix}.${key}` : key;
+                if (typeof value === 'string') {
+                    keys.push(path);
+                } else {
+                    walk(value as Record<string, unknown>, path);
+                }
+            }
+        };
+        walk(tree, '');
+        expect(new Set(keys).size).toBe(keys.length);
+    });
+
+    it("removes a plural's every form, flat and nested, before writing it", () => {
+        const tree: Record<string, unknown> = {
+            list: { files_one: 'a', files_many: 'b' },
+            'list.files_other': 'c',
+            'list.filesystem': 'keep',
+            list_files: 'keep',
+        };
+        removeKey(tree, 'list.files');
+        expect(tree).toEqual({ 'list.filesystem': 'keep', list_files: 'keep' });
     });
 
     it('removes a file left empty, and writes nothing when nothing changes', () => {

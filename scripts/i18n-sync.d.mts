@@ -32,6 +32,7 @@ export function importPayload(options: {
     i18nDir: string;
     pullRequests?: PullRequestState[];
 }): { body: Record<string, unknown> & { commit: string }; hash: string };
+export function removeKey(tree: Record<string, unknown>, key: string): void;
 export function keyPath(english: Record<string, unknown>, key: string): string[];
 export function checkCandidate(candidate: unknown): string | null;
 export function aliasForBody(alias: unknown): string;
