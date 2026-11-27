@@ -14,7 +14,7 @@ import { useLiveTopic } from '../../lib/change-channel';
 import { useCrumbTitle } from '../../shell/crumb-title';
 import { MissingPage } from '../pages/MissingPage';
 import { LibraryEmpty } from '../pages/page-chrome';
-import { notifyPagesChanged } from '../pages/page-events';
+import { notifyPagesChanged, reportPageFolder } from '../pages/page-events';
 import { mergePageSnapshot } from '../pages/page-snapshots';
 import { PageDocument } from '../pages/PageDocument';
 import { PageOutline } from '../pages/PageOutline';
@@ -173,6 +173,17 @@ export function SpaceWorkspace({
     }, [space.id, pageId, stale, listed?.revision, retry]);
     // Shown once its body is here, unless the list says it is gone.
     const page = body && (listed || !loaded) ? body : undefined;
+    // Whether the page shown is a folder, for the Ask panel (CB-426): as read, saved or switched.
+    useEffect(() => {
+        if (page) {
+            reportPageFolder(page);
+        }
+    }, [page]);
+    useEffect(() => {
+        if (listed) {
+            reportPageFolder(listed);
+        }
+    }, [listed]);
     const waiting = listed ?? seeded?.pages.find((item) => item.id === pageId);
     const saved = useCallback((next: Page) => {
         setOpen((current) => newer(current, next));

@@ -24,6 +24,7 @@ vi.mock('../src/modules/chat/ClientChat', () => ({
 const { AskButton } = await import('../src/modules/ask/AskPanel');
 const { askContextOf, isAskShortcut } = await import('../src/modules/ask/ask-context');
 const { ShellContext } = await import('../src/shell/shell-context');
+const { reportPageFolder } = await import('../src/modules/pages/page-events');
 
 const dot = (id: string, name: string, extra: Partial<Dot> = {}): Dot => ({
     id,
@@ -52,9 +53,12 @@ const thread: Conversation = {
 
 let requests: { method: string; url: string; body?: unknown }[] = [];
 let existing: Conversation | null = null;
+// The pages the server says are folders (CB-426).
+let folders = new Set<string>();
 beforeEach(() => {
     requests = [];
     existing = null;
+    folders = new Set(['f1', 'f2', 'f3']);
     window.innerWidth = 1280;
     vi.stubGlobal('matchMedia', () => ({
         matches: false,
@@ -71,8 +75,14 @@ beforeEach(() => {
             const kind = query.get('kind');
             return Response.json({
                 context:
-                    kind === 'page' && query.get('id') === 'f1'
-                        ? { kind, id: 'f1', title: 'Clients', path: '/spaces/s1/pages/f1', folder: true }
+                    kind === 'page' && folders.has(query.get('id') ?? '')
+                        ? {
+                              kind,
+                              id: query.get('id') ?? '',
+                              title: 'Clients',
+                              path: `/spaces/s1/pages/${query.get('id')}`,
+                              folder: true,
+                          }
                         : kind === 'page'
                           ? {
                                 kind,
@@ -303,4 +313,65 @@ it('offers no "Ask about this page" on a folder: it asks as on a screen with no 
         'Nothing on this screen is shared. Ask anything.',
     );
     expect(dialog()!.textContent).not.toContain('this page');
+});
+
+/** What the open panel offers: the page it asks about, or none. */
+const offered = () => ({
+    placeholder: document.querySelector<HTMLTextAreaElement>('#ask-prompt')?.placeholder,
+    context: document.querySelector('[data-slot="ask-context"]')?.textContent,
+});
+const PAGE_MODE = { placeholder: 'Ask about this page…', context: 'About this page: Launch plan' };
+const FOLDER_MODE = { placeholder: 'Ask anything…', context: 'Nothing on this screen is shared. Ask anything.' };
+const go = async (router: Awaited<ReturnType<typeof render>>, path: string) => {
+    await act(async () => router.navigate(path));
+    await settle();
+    await settle();
+};
+
+it('follows a folder turned into a page and back, on coming back to it with the panel open (CB-426)', async () => {
+    const router = await render('/spaces/s1/pages/f2');
+    await act(async () => button().click());
+    await settle();
+    await settle();
+    expect(offered()).toEqual(FOLDER_MODE);
+    // Turned into a page elsewhere: away and back, the panel asks the server again.
+    folders.delete('f2');
+    await go(router, '/');
+    await go(router, '/spaces/s1/pages/f2');
+    expect(requests.at(-1)?.url).toBe('/api/ask/conversation?kind=page&id=f2');
+    expect(offered()).toMatchObject({ placeholder: PAGE_MODE.placeholder });
+    expect(offered().context).toContain('About this page');
+    // And into a folder again.
+    folders.add('f2');
+    await go(router, '/');
+    await go(router, '/spaces/s1/pages/f2');
+    expect(offered()).toEqual(FOLDER_MODE);
+    expect(requests.at(-1)?.url).toBe('/api/ask/conversation?kind=general&id=');
+});
+
+it('follows the shown page turning into a folder and back in place, with the panel open (CB-426)', async () => {
+    folders.delete('p3');
+    await render('/spaces/s1/pages/p3');
+    await act(async () => button().click());
+    await settle();
+    act(() => reportPageFolder({ id: 'p3', revision: 1, folder: false }));
+    await settle();
+    expect(offered()).toEqual(PAGE_MODE);
+    // The view shows it turned into a folder: folder mode, with no page lookup since.
+    folders.add('p3');
+    const before = requests.length;
+    act(() => reportPageFolder({ id: 'p3', revision: 2, folder: true }));
+    await settle();
+    expect(offered()).toEqual(FOLDER_MODE);
+    expect(requests.slice(before).map((request) => request.url)).toEqual(['/api/ask/conversation?kind=general&id=']);
+    // An older report changes nothing.
+    act(() => reportPageFolder({ id: 'p3', revision: 1, folder: false }));
+    await settle();
+    expect(offered()).toEqual(FOLDER_MODE);
+    // Back into a page: the page lookup again, and page mode.
+    folders.delete('p3');
+    act(() => reportPageFolder({ id: 'p3', revision: 3, folder: false }));
+    await settle();
+    expect(requests.at(-1)?.url).toBe('/api/ask/conversation?kind=page&id=p3');
+    expect(offered()).toEqual(PAGE_MODE);
 });
