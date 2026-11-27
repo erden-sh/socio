@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 
+import { useTranslation } from '@socio/i18n/react';
 import type { Page, PageSummary } from '@socio/shared/pages/page-library';
 import type { Space } from '@socio/shared/types';
 
+import { onDemand } from '../../i18n/on-demand';
 import { api } from '../../lib/api';
 
 import { subpagesOf } from './DeletePageDialog';
@@ -21,15 +23,14 @@ import { Button } from '@/components/ui/button';
 
 type PageNode = Pick<PageSummary, 'id' | 'spaceId' | 'parentId' | 'title' | 'createdBy'>;
 
-const titleOf = (page: Pick<PageSummary, 'title'>) => page.title.trim() || 'Untitled page';
-
 /**
  * "Move to…" (CB-142): picks another Space for a page, which goes with its
  * subpages, its link and its history. Anyone may move a page between
  * Spaces they can edit; the server checks again. Unsaved changes are saved
- * first (`beforeMove`), so nothing typed stays behind.
+ * first (`beforeMove`), so nothing typed stays behind. Its words load on
+ * demand (pages.dialogs).
  */
-export function MovePageDialog({
+function MovePageConfirm({
     page,
     pages,
     spaces,
@@ -49,6 +50,8 @@ export function MovePageDialog({
     /** The page where it is now, and the ids of every page that moved. */
     onMoved: (page: Page, moved: string[]) => void;
 }) {
+    const { t } = useTranslation(['pages.dialogs', 'spaces.nav']);
+    const titleOf = (item: Pick<PageSummary, 'title'>) => item.title.trim() || t('spaces.nav:untitled-page');
     const targets = spaces.filter((space) => space.id !== page.spaceId);
     const [to, setTo] = useState('');
     const [busy, setBusy] = useState(false);
@@ -64,7 +67,7 @@ export function MovePageDialog({
         setError('');
         try {
             if (!(await beforeMove())) {
-                setError('Your latest changes could not be saved. Save them, then move the page.');
+                setError(t('pages.dialogs:move.save-first'));
                 return;
             }
             const result = await api<{ page: Page; moved: string[] }>(
@@ -73,10 +76,10 @@ export function MovePageDialog({
                 { spaceId: chosen.id },
             );
             onOpenChange(false);
-            toast.success(`Moved “${title}” to ${chosen.name}`);
+            toast.success(t('pages.dialogs:move.moved', { title, space: chosen.name }));
             onMoved(result.page, result.moved);
         } catch (cause) {
-            setError(cause instanceof Error ? cause.message : 'Could not move the page.');
+            setError(cause instanceof Error ? cause.message : t('pages.dialogs:move.failed'));
         } finally {
             setBusy(false);
         }
@@ -94,20 +97,22 @@ export function MovePageDialog({
         >
             <AlertDialogContent>
                 <AlertDialogHeader>
-                    <AlertDialogTitle>Move “{title}”</AlertDialogTitle>
+                    <AlertDialogTitle>{t('pages.dialogs:move.title', { title })}</AlertDialogTitle>
                     <AlertDialogDescription>
-                        {targets.length
-                            ? `It goes to the top of the Space you pick${subpages.length ? `, with its ${subpages.length === 1 ? 'subpage' : `${subpages.length} subpages`}` : ''}. Its history goes with it, and links to it keep working.`
-                            : 'There is no other Space to move it to.'}
+                        {!targets.length
+                            ? t('pages.dialogs:move.none')
+                            : subpages.length
+                              ? t('pages.dialogs:move.description-subpages', { count: subpages.length })
+                              : t('pages.dialogs:move.description')}
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 {targets.length > 0 && (
                     <label className="flex flex-col gap-2 text-xs">
-                        Move to
+                        {t('pages.dialogs:move.to')}
                         <select
                             autoFocus
                             data-slot="native-select"
-                            aria-label="Destination Space"
+                            aria-label={t('pages.dialogs:move.destination')}
                             className="w-full min-w-0 rounded-[9px] border border-input bg-background p-[9px] text-base text-foreground outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 md:text-xs dark:bg-input/30"
                             value={chosen?.id ?? ''}
                             disabled={busy}
@@ -122,7 +127,10 @@ export function MovePageDialog({
                     </label>
                 )}
                 {subpages.length > 0 && (
-                    <ul aria-label="Subpages moved with it" className="max-h-32 list-disc overflow-auto pl-5 text-sm">
+                    <ul
+                        aria-label={t('pages.dialogs:move.list')}
+                        className="max-h-32 list-disc overflow-auto pl-5 text-sm"
+                    >
                         {subpages.map((item) => (
                             <li key={item.id}>{titleOf(item)}</li>
                         ))}
@@ -134,12 +142,17 @@ export function MovePageDialog({
                     </p>
                 )}
                 <AlertDialogFooter>
-                    <AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel>
+                    <AlertDialogCancel disabled={busy}>{t('pages.dialogs:move.cancel')}</AlertDialogCancel>
                     <Button disabled={busy || !chosen} onClick={() => void move()}>
-                        {busy ? 'Moving…' : subpages.length ? 'Move pages' : 'Move page'}
+                        {busy
+                            ? t('pages.dialogs:move.moving')
+                            : t('pages.dialogs:move.action', { count: subpages.length + 1 })}
                     </Button>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
     );
 }
+
+/** "Move to…" (`MovePageConfirm`), once its words are in. */
+export const MovePageDialog = onDemand(['pages.dialogs', 'spaces.nav'], MovePageConfirm);

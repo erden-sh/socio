@@ -1,8 +1,10 @@
 import { afterEach, expect, it, vi } from 'vitest';
 
+import { pageDraftError } from '@socio/shared/pages/page-draft';
 import type { Page } from '@socio/shared/pages/page-library';
 
 import { PageAutosave, type SavePage } from '../../packages/client/src/modules/pages/editor/autosave';
+import pages from '../../packages/i18n/locales/en-US/pages.json' with { type: 'json' };
 
 const page: Page = {
     id: 'a',
@@ -211,8 +213,14 @@ it('keeps an invalid draft unsent with the shared limits’ words, and counts th
     expect(autosave.getSnapshot()).toMatchObject({
         status: 'error',
         draft: { title: '   ' },
-        error: 'Use a title up to 160 characters and a document up to 100,000 characters. Your draft is still here.',
+        problem: 'invalid',
     });
+    // The page view words it as shared does, with the shared limits.
+    expect(
+        pages.document['save-errors'].invalid
+            .replace('{{title, number}}', '160')
+            .replace('{{content, number}}', '100,000'),
+    ).toBe(pageDraftError({ title: '   ', content: '', parentId: null }));
     autosave.edit({ title: `${'x'.repeat(160)}  ` });
     expect(await autosave.flush(true)).toBe(true);
     expect(save).toHaveBeenCalledTimes(1);

@@ -7,6 +7,8 @@ import type { Page } from '@socio/shared/pages/page-library';
 import type { WorkspaceState } from '@socio/shared/types';
 
 import { PageConversation } from '../../packages/client/src/modules/pages/PageConversation';
+// The page chat's words (pages), as the client's tests read them.
+import '../../packages/client/tests/setup/en-us-i18n';
 
 vi.mock('../../packages/client/src/modules/chat/ClientChat', () => ({ ClientChat: () => null }));
 vi.mock('../../packages/client/src/lib/api', () => ({ api: vi.fn() }));

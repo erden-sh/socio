@@ -2,6 +2,7 @@ import { NodeViewWrapper, type ReactNodeViewProps } from '@tiptap/react';
 import { ExternalLink, FileText, Image as ImageIcon, Link2, MessageSquareQuote, Play } from 'lucide-react';
 import { useState } from 'react';
 
+import { useTranslation } from '@socio/i18n/react';
 import { embedCard, embedMediaUrl, type EmbedCard, type EmbedKind, type EmbedMedia } from '@socio/shared/embed-card';
 import { dateTimeFormat } from '@socio/shared/locale';
 
@@ -32,13 +33,19 @@ const hostOf = (url: string) => {
  * place, so the card still reads.
  */
 function CardImage({ card, media }: { card: EmbedCard; media: EmbedMedia }) {
+    const { t } = useTranslation(['pages.editor']);
     const [failed, setFailed] = useState(!media.id);
     const playable = media.kind !== 'image';
     if (failed) {
         return (
             <div className="embed-card-missing">
-                {playable ? 'Video' : 'Image'} not available here
-                {media.alt ? `: ${media.alt}` : ''}
+                {playable
+                    ? media.alt
+                        ? t('pages.editor:embed.video-missing-alt', { alt: media.alt })
+                        : t('pages.editor:embed.video-missing')
+                    : media.alt
+                      ? t('pages.editor:embed.image-missing-alt', { alt: media.alt })
+                      : t('pages.editor:embed.image-missing')}
             </div>
         );
     }
@@ -63,7 +70,7 @@ function CardImage({ card, media }: { card: EmbedCard; media: EmbedMedia }) {
             href={card.url}
             target="_blank"
             rel="noopener noreferrer nofollow"
-            aria-label={`Play on ${card.provider ?? hostOf(card.url)} (opens in a new tab)`}
+            aria-label={t('pages.editor:embed.play', { site: card.provider ?? hostOf(card.url) })}
         >
             {image}
             <span aria-hidden="true">
@@ -80,11 +87,12 @@ function CardImage({ card, media }: { card: EmbedCard; media: EmbedMedia }) {
  * there in a new tab. A card that doesn't parse shows a note instead.
  */
 export function EmbedCardBlock({ node, selected }: ReactNodeViewProps) {
+    const { t } = useTranslation(['pages.editor']);
     const card = embedCard(node.attrs.card);
     if (!card) {
         return (
             <NodeViewWrapper className={`embed-card${selected ? ' selected' : ''}`} contentEditable={false}>
-                <div className="embed-card-missing">This link card can’t be shown.</div>
+                <div className="embed-card-missing">{t('pages.editor:embed.broken')}</div>
             </NodeViewWrapper>
         );
     }
@@ -97,7 +105,11 @@ export function EmbedCardBlock({ node, selected }: ReactNodeViewProps) {
             className={`embed-card${selected ? ' selected' : ''}`}
             data-kind={card.kind}
             contentEditable={false}
-            aria-label={`${site} card${card.title ? `: ${card.title}` : ''}`}
+            aria-label={
+                card.title
+                    ? t('pages.editor:embed.label-titled', { site, title: card.title })
+                    : t('pages.editor:embed.label', { site })
+            }
         >
             <div className="embed-card-header">
                 <span className="embed-card-icon" aria-hidden="true">
@@ -133,9 +145,9 @@ export function EmbedCardBlock({ node, selected }: ReactNodeViewProps) {
             <figcaption className="embed-card-footer">
                 {Number.isFinite(time) && <LocalTime value={time} format={(value) => published.format(value)} />}
                 <a href={card.url} target="_blank" rel="noopener noreferrer nofollow">
-                    Open on {hostOf(card.url)}
+                    {t('pages.editor:embed.open', { host: hostOf(card.url) })}
                     <ExternalLink size={12} aria-hidden="true" />
-                    <span className="sr-only"> (opens in a new tab)</span>
+                    <span className="sr-only"> {t('pages.editor:embed.new-tab')}</span>
                 </a>
             </figcaption>
         </NodeViewWrapper>

@@ -1,5 +1,7 @@
 import { useLayoutEffect, useRef } from 'react';
 
+import { useTranslation } from '@socio/i18n/react';
+
 /** Line breaks (typed, pasted or dropped) become one space: a title is one line. */
 export function singleLine(text: string) {
     return text.replace(/\s*[\r\n\p{Zl}\p{Zp}]+\s*/gu, ' ');
@@ -19,6 +21,7 @@ export function PageTitleField({
     onChange: (value: string) => void;
     className?: string;
 }) {
+    const { t } = useTranslation(['pages', 'spaces.nav']);
     const field = useRef<HTMLTextAreaElement>(null);
     // Fit the height to the text, also after a resize (a phone turned around).
     useLayoutEffect(() => {
@@ -50,8 +53,8 @@ export function PageTitleField({
             ref={field}
             data-slot="page-title"
             className={className}
-            aria-label="Page title"
-            placeholder="Untitled page"
+            aria-label={t('pages:title.label')}
+            placeholder={t('spaces.nav:untitled-page')}
             maxLength={160}
             rows={1}
             spellCheck
@@ -62,10 +65,7 @@ export function PageTitleField({
                     return;
                 }
                 event.preventDefault();
-                event.currentTarget
-                    .closest('article')
-                    ?.querySelector<HTMLElement>('[aria-label="Page content"], [aria-label="Page Markdown"]')
-                    ?.focus();
+                event.currentTarget.closest('article')?.querySelector<HTMLElement>('[data-page-body]')?.focus();
             }}
         />
     );

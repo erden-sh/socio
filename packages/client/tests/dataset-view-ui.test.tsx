@@ -6,6 +6,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import type { DatasetView } from '@socio/shared/data-types';
 import { VIEW_NO_ACCESS, type ViewQueryResult } from '@socio/shared/dataset-view';
 
+import editorWords from '../../i18n/locales/en-US/pages.editor.json';
 import { niceTicks } from '../src/components/charts/scale';
 import RichEditor from '../src/modules/pages/editor/RichEditor';
 import { blocks } from '../src/modules/pages/editor/slash-commands';
@@ -261,8 +262,8 @@ it('inserts a view from the block menu and saves its spec into the page', async 
             }),
         ],
     );
-    const block = blocks.find((b) => b.title === 'Dataset view')!;
-    expect(block.description).toMatch(/live table or chart/);
+    const block = blocks.find((b) => b.id === 'dataset-view')!;
+    expect(editorWords.blocks['dataset-view'].description).toMatch(/live table or chart/);
     const onChange = await editor('# Report\n\n');
     // The slash menu runs the block's command on the editor.
     const prose = host.querySelector('.ProseMirror')!;

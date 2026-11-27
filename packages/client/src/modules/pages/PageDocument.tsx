@@ -1,10 +1,13 @@
 import { ArrowLeft, PanelLeft, Check, LoaderCircle, FileCode2, FolderPlus, Plus } from 'lucide-react';
 import { type ComponentProps, lazy, Suspense, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
+import { useTranslation } from '@socio/i18n/react';
+import { PAGE_CONTENT_MAX, PAGE_TITLE_MAX } from '@socio/shared/pages/page-draft';
 import { pageAncestors, pageChildren } from '@socio/shared/pages/page-hierarchy';
 import type { Page, PageCover, PageSummary } from '@socio/shared/pages/page-library';
 import type { WorkspaceState } from '@socio/shared/types';
 
+import { useOnDemand } from '../../i18n/on-demand';
 import { api } from '../../lib/api';
 import { ClientOnly } from '../../lib/client-only';
 import { importOrReload } from '../../shell/chunk-reload';
@@ -80,6 +83,9 @@ export function PageDocument({
     onSettings: () => void;
     onCreateDot: () => void;
 }) {
+    const { t } = useTranslation(['pages']);
+    // The editor's words load on demand (the page's clientLoader starts them): its loading line until they're in.
+    const editorWords = useOnDemand(['pages.editor']);
     const { controller, state } = usePageAutosave(page, onSaved);
     const draft = state.draft!;
     // The header's breadcrumb shows the title, as it is typed (CB-38).
@@ -113,7 +119,7 @@ export function PageDocument({
     const toggleFolder = async () => {
         // A title typed a moment ago is saved first, as the page it was typed on.
         if (!(await controller.flush(true))) {
-            setNotice('Save your changes before turning this page into a folder.');
+            setNotice(t('pages:document.notices.folder-save-first'));
             return;
         }
         try {
@@ -123,7 +129,7 @@ export function PageDocument({
             onFolder?.(next);
             setNotice('');
         } catch (error) {
-            setNotice(error instanceof Error ? error.message : 'Could not change this page. Try again.');
+            setNotice(error instanceof Error ? error.message : t('pages:document.notices.folder-failed'));
         }
     };
     const [goalSeed, setGoalSeed] = useState<{
@@ -155,16 +161,12 @@ export function PageDocument({
         const url = URL.createObjectURL(new Blob([draft.content], { type: 'text/markdown;charset=utf-8' }));
         const link = document.createElement('a');
         link.href = url;
-        link.download = `${draft.title.replace(/[^\p{L}\p{N} -]/gu, '').slice(0, 80) || 'page'}.md`;
+        link.download = `${draft.title.replace(/[^\p{L}\p{N} -]/gu, '').slice(0, 80) || t('pages:document.download-name')}.md`;
         link.click();
         URL.revokeObjectURL(url);
     };
     const latest = async () => {
-        if (
-            !window.confirm(
-                'Load the latest saved page and replace this draft? Download your draft first if you want to keep it.',
-            )
-        ) {
+        if (!window.confirm(t('pages:document.notices.latest-confirm'))) {
             return;
         }
         try {
@@ -172,9 +174,7 @@ export function PageDocument({
             controller.useLatest();
             setNotice('');
         } catch (error) {
-            setNotice(
-                error instanceof Error ? error.message : 'Could not load the latest page. Your draft is unchanged.',
-            );
+            setNotice(error instanceof Error ? error.message : t('pages:document.notices.latest-failed'));
         }
     };
     const descendants = new Set([page.id]);
@@ -188,16 +188,12 @@ export function PageDocument({
             }
         }
     }
-    const status =
-        state.status === 'saving'
-            ? 'Saving…'
-            : state.status === 'saved'
-              ? 'All changes saved'
-              : state.status === 'dirty'
-                ? 'Unsaved changes'
-                : state.status === 'conflict'
-                  ? 'Changes need review'
-                  : 'Could not save';
+    const status = t(`pages:document.status.${state.status}`);
+    // Why the last save didn't go: the server's reason, or ours in the page's words.
+    const saveError = state.problem
+        ? t(`pages:document.save-errors.${state.problem}`, { title: PAGE_TITLE_MAX, content: PAGE_CONTENT_MAX })
+        : state.error;
+    const sourceReason = safety.code ? t(`pages:document.source.reasons.${safety.code}`) : safety.reason;
     // No data-slot on the frames around the page's text (page-chrome.tsx).
     return (
         <section
@@ -205,7 +201,7 @@ export function PageDocument({
                 'relative flex min-h-0 min-w-0 flex-1 bg-card',
                 chatShown && 'max-[900px]:flex-col max-[900px]:overflow-auto',
             )}
-            aria-label="Document workspace"
+            aria-label={t('pages:document.label')}
             data-tour="page-document"
         >
             <div
@@ -224,9 +220,9 @@ export function PageDocument({
                         onClick={onHome}
                     >
                         <ArrowLeft />
-                        <span className="max-[700px]:text-[11px]">All pages</span>
+                        <span className="max-[700px]:text-[11px]">{t('pages:document.all-pages')}</span>
                     </Button>
-                    <PageIconButton aria-label="Toggle page outline" onClick={onOutline}>
+                    <PageIconButton aria-label={t('pages:document.toggle-outline')} onClick={onOutline}>
                         <PanelLeft className="size-[17px]" />
                     </PageIconButton>
                     <span
@@ -248,17 +244,21 @@ export function PageDocument({
                     <DocumentMenu
                         items={[
                             {
-                                label: 'Save now · ⌘/Ctrl S',
+                                label: t('pages:document.menu.save'),
                                 action: () => void controller.flush(true),
                             },
                             ...(folder
                                 ? []
                                 : [
                                       {
-                                          label: sourceMode ? 'Visual editor' : 'Markdown source',
+                                          label: sourceMode
+                                              ? t('pages:document.menu.visual')
+                                              : t('pages:document.menu.source'),
                                           action: () => {
                                               if (sourceMode && !safety.supported) {
-                                                  setNotice(safety.reason ?? 'This document needs source mode.');
+                                                  setNotice(
+                                                      sourceReason ?? t('pages:document.source.reasons.unreadable'),
+                                                  );
                                                   return;
                                               }
                                               setSource(!sourceMode);
@@ -268,18 +268,25 @@ export function PageDocument({
                             // Whoever opens a page may edit it (no read-only page view); the
                             // server checks again.
                             {
-                                label: folder ? 'Turn into page' : 'Turn into folder',
+                                label: folder ? t('pages:document.menu.to-page') : t('pages:document.menu.to-folder'),
                                 action: () => void toggleFolder(),
                             },
-                            { label: 'Move within Space', action: () => setMove(!move) },
-                            { label: 'Move to…', action: () => setMoveSpace(true) },
-                            { label: folder ? 'New page inside' : 'New subpage', action: onSubpage },
-                            ...(folder ? [] : [{ label: 'Create follow-up…', action: () => setPromote(true) }]),
-                            ...(folder ? [] : [{ label: 'Download Markdown', action: download }]),
+                            { label: t('pages:document.menu.move-within'), action: () => setMove(!move) },
+                            { label: t('pages:document.menu.move-to'), action: () => setMoveSpace(true) },
+                            {
+                                label: folder
+                                    ? t('pages:document.menu.new-inside')
+                                    : t('pages:document.menu.new-subpage'),
+                                action: onSubpage,
+                            },
+                            ...(folder
+                                ? []
+                                : [{ label: t('pages:document.menu.follow-up'), action: () => setPromote(true) }]),
+                            ...(folder ? [] : [{ label: t('pages:document.menu.download'), action: download }]),
                             ...(page.sourceThreadId
                                 ? [
                                       {
-                                          label: 'Open source conversation',
+                                          label: t('pages:document.menu.source-thread'),
                                           action: () => onThread(page.sourceThreadId!),
                                       },
                                   ]
@@ -287,7 +294,7 @@ export function PageDocument({
                             ...(deletable
                                 ? [
                                       {
-                                          label: 'Delete page',
+                                          label: t('pages:document.menu.delete'),
                                           action: () => setConfirmDelete(true),
                                       },
                                   ]
@@ -322,18 +329,22 @@ export function PageDocument({
                                 : 'max-[1150px]:px-[35px] max-[1150px]:pt-10 max-[1150px]:pb-[185px] max-[700px]:px-6 max-[700px]:pt-7.5 max-[700px]:pb-45',
                         )}
                     >
-                        {state.error && (
+                        {saveError && (
                             <PageNotice role="alert" data-status={state.status}>
-                                <p className="mt-0 mb-2.5">{state.error}</p>
+                                <p className="mt-0 mb-2.5">{saveError}</p>
                                 <div className="flex flex-wrap gap-2">
                                     {state.status === 'error' && (
                                         <NoticeButton onClick={() => void controller.flush(true)}>
-                                            Retry save
+                                            {t('pages:document.notices.retry')}
                                         </NoticeButton>
                                     )}
-                                    <NoticeButton onClick={download}>Download draft</NoticeButton>
+                                    <NoticeButton onClick={download}>
+                                        {t('pages:document.notices.download')}
+                                    </NoticeButton>
                                     {state.status === 'conflict' && (
-                                        <NoticeButton onClick={() => void latest()}>Load latest</NoticeButton>
+                                        <NoticeButton onClick={() => void latest()}>
+                                            {t('pages:document.notices.load-latest')}
+                                        </NoticeButton>
                                     )}
                                 </div>
                             </PageNotice>
@@ -341,7 +352,9 @@ export function PageDocument({
                         {notice && (
                             <PageNotice role="status" className="flex items-center gap-3">
                                 {notice}
-                                <NoticeButton onClick={() => setNotice('')}>Dismiss</NoticeButton>
+                                <NoticeButton onClick={() => setNotice('')}>
+                                    {t('pages:document.notices.dismiss')}
+                                </NoticeButton>
                             </PageNotice>
                         )}
                         {move && (
@@ -355,16 +368,16 @@ export function PageDocument({
                                 }}
                             >
                                 <label className="flex flex-1 items-center gap-3 text-xs max-[700px]:flex-wrap">
-                                    Move under
+                                    {t('pages:document.move.label')}
                                     <select
                                         autoFocus
                                         data-slot="native-select"
-                                        aria-label="Parent page"
+                                        aria-label={t('pages:document.move.parent')}
                                         className="w-full max-w-62.5 min-w-0 rounded-[9px] border border-input bg-background p-[9px] text-base text-foreground outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 md:text-xs dark:bg-input/30"
                                         value={draft.parentId ?? ''}
                                         onChange={(e) => controller.edit({ parentId: e.target.value || null })}
                                     >
-                                        <option value="">Space root</option>
+                                        <option value="">{t('pages:document.move.root')}</option>
                                         {pages
                                             .filter((p) => p.spaceId === page.spaceId && !descendants.has(p.id))
                                             .map((p) => (
@@ -379,7 +392,7 @@ export function PageDocument({
                                     className="h-auto rounded-[9px] px-[13px] py-[9px] text-xs font-normal"
                                     onClick={() => setMove(false)}
                                 >
-                                    Done
+                                    {t('pages:document.move.done')}
                                 </Button>
                             </div>
                         )}
@@ -413,14 +426,16 @@ export function PageDocument({
                             <>
                                 <div className="mt-0 mb-3 flex items-center gap-2 text-xs font-medium text-muted-foreground">
                                     <FileCode2 size={15} />
-                                    <span>Markdown source</span>
+                                    <span>{t('pages:document.source.heading')}</span>
                                 </div>
                                 {!safety.supported && (
-                                    <p className="text-xs/[1.7] text-muted-foreground">{safety.reason}</p>
+                                    <p className="text-xs/[1.7] text-muted-foreground">{sourceReason}</p>
                                 )}
                                 <Textarea
                                     className="field-sizing-fixed min-h-105 resize-y rounded-lg border bg-muted/30 p-4.5 font-mono text-base/[1.8] text-foreground shadow-none md:text-[13px]/[1.8]"
-                                    aria-label="Page Markdown"
+                                    aria-label={t('pages:document.source.label')}
+                                    // What the title's Enter moves to (PageTitleField).
+                                    data-page-body
                                     spellCheck={false}
                                     value={draft.content}
                                     maxLength={100000}
@@ -430,16 +445,20 @@ export function PageDocument({
                         ) : (
                             // In the browser only: the server never runs the editor.
                             <ClientOnly fallback={editorLoading}>
-                                {() => (
-                                    <Suspense fallback={editorLoading}>
-                                        <RichEditor
-                                            value={draft.content}
-                                            onChange={(content) => controller.edit({ content })}
-                                            onNotice={setNotice}
-                                            page={viewPage}
-                                        />
-                                    </Suspense>
-                                )}
+                                {() =>
+                                    !editorWords ? (
+                                        editorLoading
+                                    ) : (
+                                        <Suspense fallback={editorLoading}>
+                                            <RichEditor
+                                                value={draft.content}
+                                                onChange={(content) => controller.edit({ content })}
+                                                onNotice={setNotice}
+                                                page={viewPage}
+                                            />
+                                        </Suspense>
+                                    )
+                                }
                             </ClientOnly>
                         )}
                         {!folder && <PageChildLinks pages={children} />}
@@ -500,26 +519,27 @@ function FolderContents({
     onNewPage: () => void;
     onNewFolder?: () => void;
 }) {
+    const { t } = useTranslation(['pages']);
     return (
         <div data-slot="folder-contents">
             <div className="mb-2 flex flex-wrap items-center gap-2">
                 <Button size="sm" onClick={onNewPage}>
-                    <Plus /> New page
+                    <Plus /> {t('pages:folder.new-page')}
                 </Button>
                 {onNewFolder && (
                     <Button size="sm" variant="outline" onClick={onNewFolder}>
-                        <FolderPlus /> New folder
+                        <FolderPlus /> {t('pages:folder.new-folder')}
                     </Button>
                 )}
             </div>
             {pages.length ? (
-                <PageChildLinks pages={pages} title="In this folder" className="mt-4" />
+                <PageChildLinks pages={pages} title={t('pages:folder.contents')} className="mt-4" />
             ) : (
-                <p className="mt-6 text-sm text-muted-foreground">This folder is empty.</p>
+                <p className="mt-6 text-sm text-muted-foreground">{t('pages:folder.empty')}</p>
             )}
             {kept && (
                 <p data-slot="folder-kept-text" className="mt-6 text-xs text-muted-foreground">
-                    This folder keeps its page text. Turn it back into a page to see it.
+                    {t('pages:folder.kept')}
                 </p>
             )}
         </div>

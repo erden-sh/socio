@@ -3,93 +3,81 @@ import { ReactRenderer } from '@tiptap/react';
 import Suggestion, { exitSuggestion, type SuggestionProps } from '@tiptap/suggestion';
 import type { ComponentProps } from 'react';
 
+import { lowerText } from '@socio/shared/locale';
+
 import { SlashMenu, type SlashMenuItem } from './SlashMenu';
 
 type SlashMenuProps = ComponentProps<typeof SlashMenu>;
+/** A block's words: its title and description (pages.editor:blocks), in the page's language. */
+export type BlockWords = (id: BlockId) => { title: string; description: string };
+export type BlockId =
+    | 'text'
+    | 'heading-1'
+    | 'heading-2'
+    | 'heading-3'
+    | 'bullet-list'
+    | 'numbered-list'
+    | 'checklist'
+    | 'quote'
+    | 'code'
+    | 'divider'
+    | 'table'
+    | 'dataset-view';
 interface Block {
-    title: string;
-    description: string;
+    id: BlockId;
     run: (editor: Editor, range: Range) => void;
 }
+/** A block as the menu shows it: with its words. */
+type ShownBlock = Block & SlashMenuItem;
 const command = (action: (editor: Editor) => void) => (editor: Editor, range: Range) => {
     editor.chain().focus().deleteRange(range).run();
     action(editor);
 };
 export const blocks: Block[] = [
-    {
-        title: 'Text',
-        description: 'Start with a plain paragraph',
-        run: command((e) => e.chain().setParagraph().run()),
-    },
+    { id: 'text', run: command((e) => e.chain().setParagraph().run()) },
     ...([1, 2, 3] as const).map((level) => ({
-        title: `Heading ${level}`,
-        description:
-            level === 1
-                ? 'A large section heading'
-                : level === 2
-                  ? 'A medium section heading'
-                  : 'A small section heading',
+        id: `heading-${level}` as const,
         run: command((e) => e.chain().setHeading({ level }).run()),
     })),
+    { id: 'bullet-list', run: command((e) => e.chain().toggleBulletList().run()) },
+    { id: 'numbered-list', run: command((e) => e.chain().toggleOrderedList().run()) },
+    { id: 'checklist', run: command((e) => e.chain().toggleTaskList().run()) },
+    { id: 'quote', run: command((e) => e.chain().toggleBlockquote().run()) },
+    { id: 'code', run: command((e) => e.chain().toggleCodeBlock().run()) },
+    { id: 'divider', run: command((e) => e.chain().setHorizontalRule().run()) },
     {
-        title: 'Bullet list',
-        description: 'A simple unordered list',
-        run: command((e) => e.chain().toggleBulletList().run()),
-    },
-    {
-        title: 'Numbered list',
-        description: 'An ordered sequence',
-        run: command((e) => e.chain().toggleOrderedList().run()),
-    },
-    {
-        title: 'Checklist',
-        description: 'Track things to do',
-        run: command((e) => e.chain().toggleTaskList().run()),
-    },
-    {
-        title: 'Quote',
-        description: 'Highlight a passage',
-        run: command((e) => e.chain().toggleBlockquote().run()),
-    },
-    {
-        title: 'Code',
-        description: 'A code block',
-        run: command((e) => e.chain().toggleCodeBlock().run()),
-    },
-    {
-        title: 'Divider',
-        description: 'Separate sections',
-        run: command((e) => e.chain().setHorizontalRule().run()),
-    },
-    {
-        title: 'Table',
-        description: 'Three columns with a header',
+        id: 'table',
         run: command((e) => e.chain().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()),
     },
-    {
-        title: 'Dataset view',
-        description: 'A live table or chart of a dataset',
-        run: command((e) => e.chain().insertDatasetView().run()),
-    },
+    { id: 'dataset-view', run: command((e) => e.chain().insertDatasetView().run()) },
 ];
-export const SlashCommands = Extension.create({
+/**
+ * The "/" menu. `words` names each block in the page's language
+ * (RichEditor passes its translations), so the menu shows and filters
+ * by the words the person reads.
+ */
+export const SlashCommands = Extension.create<{ words: BlockWords }>({
     name: 'slashCommands',
+    addOptions() {
+        return { words: (id: BlockId) => ({ title: id, description: '' }) };
+    },
     addProseMirrorPlugins() {
+        const words = this.options.words;
         return [
-            Suggestion<Block>({
+            Suggestion<ShownBlock>({
                 editor: this.editor,
                 char: '/',
                 startOfLine: true,
                 allowedPrefixes: null,
                 items: ({ query }) =>
-                    blocks.filter((block) =>
-                        `${block.title} ${block.description}`.toLowerCase().includes(query.toLowerCase()),
-                    ),
+                    blocks
+                        .map((block) => ({ ...block, ...words(block.id) }))
+                        .filter((block) => lowerText(`${block.title} ${block.description}`).includes(lowerText(query))),
                 command: ({ editor, range, props }) => props.run(editor, range),
                 render: () => {
                     // The menu (SlashMenu.tsx), in a popup on <body> under the "/".
                     let menu: ReactRenderer<unknown, SlashMenuProps> | undefined;
-                    let current: SuggestionProps<Block> | undefined;
+                    let current: SuggestionProps<ShownBlock> | undefined;
                     let index = 0;
                     const close = () => {
                         menu?.element.remove();
@@ -118,7 +106,7 @@ export const SlashCommands = Extension.create({
                             items: props.items,
                             index,
                             dom: props.editor.view.dom,
-                            onChoose: (item: SlashMenuItem) => props.command(item as Block),
+                            onChoose: (item: SlashMenuItem) => props.command(item as ShownBlock),
                         });
                         const rect = props.clientRect?.();
                         const style = (menu.element as HTMLElement).style;
@@ -137,7 +125,7 @@ export const SlashCommands = Extension.create({
                                     items: props.items,
                                     index,
                                     dom: props.editor.view.dom,
-                                    onChoose: (item: SlashMenuItem) => props.command(item as Block),
+                                    onChoose: (item: SlashMenuItem) => props.command(item as ShownBlock),
                                 },
                             });
                             const element = menu.element as HTMLElement;
