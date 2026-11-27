@@ -5,7 +5,7 @@ import { ACTOR_ENVELOPE_PATTERN, DATA_TOKEN_PREFIX, SOCIO_TOKEN_PATTERN } from '
 // its characters starts (the lookbehinds), and every repetition that has
 // to stop before something else is bounded. A pattern that may start
 // anywhere in a run and scan to its end is quadratic on a long line.
-// Few passes: a line is read six times, plus once per known value. The
+// Few passes: a line is read seven times, plus once per known value. The
 // Socio token and envelope patterns (packages/foundation/src/actors/redact.ts) start at a fixed
 // prefix and stop at their run's end, so they stay linear too.
 const RUN = 'A-Za-z0-9_-';
@@ -22,9 +22,26 @@ const AUTHORIZATION =
     /(?<![A-Za-z0-9])(?:(Bearer)[ \t]{1,8}[^\s"',;]{1,4096}|(Basic)[ \t]{1,8}[A-Za-z0-9+/=]{8,4096})/gi;
 /** `scheme://user:password@`: the scheme only where a word starts. */
 const URL_CREDENTIALS = /(?<![a-z0-9+.-])([a-z][a-z0-9+.-]{0,30}:\/\/)[^\s/@:]{1,256}:[^\s/@]{1,256}@/gi;
-/** `password=…`, `"apiKey": "…"`, `token: …` and the like. */
-const ASSIGNED =
-    /(?<![A-Za-z0-9])((?:api[_-]?key|access[_-]?token|auth[_-]?token|token|secret|password|passwd|client[_-]?secret)["']?[ \t]{0,8}[:=][ \t]{0,8}["']?)[^\s"',;&]{1,4096}/gi;
+/** The names a credential goes by, as a key: `password`, `apiKey`, `client_secret`, `refresh-token`… */
+const CREDENTIAL_KEYS =
+    'api[_-]?key|access[_-]?token|refresh[_-]?token|auth[_-]?token|id[_-]?token|session[_-]?token|token|client[_-]?secret|secret[_-]?key|secret|password|passwd|passphrase|private[_-]?key';
+/**
+ * A credential key's quoted value, whole (`"password": "two words"`,
+ * `token='a b'`, `secret: "with \"quotes\""`), in JSON, `key=value` and
+ * `key: value` forms, with double or single quotes and escapes inside;
+ * `authorization` too. A quote not closed on its line is redacted to the
+ * line's end. Each alternative stops at its closing quote or the line's
+ * end, at most 4,096 characters, so a line costs time in proportion to it.
+ */
+const QUOTED = new RegExp(
+    `(?<![A-Za-z0-9])((?:${CREDENTIAL_KEYS}|authorization)["']?[ \t]{0,8}[:=][ \t]{0,8})(?:"(?:[^"\\\\\n]|\\\\.){0,4096}"|'(?:[^'\\\\\n]|\\\\.){0,4096}'|(["'])[^\n]{0,4096})`,
+    'gi',
+);
+/** `password=…`, `"apiKey": "…"`, `token: …` and the like, unquoted: to the end of the value's token. */
+const ASSIGNED = new RegExp(
+    `(?<![A-Za-z0-9])((?:${CREDENTIAL_KEYS})["']?[ \t]{0,8}[:=][ \t]{0,8}["']?)[^\\s"',;&]{1,4096}`,
+    'gi',
+);
 
 /** Values shorter than this are never redacted: they would blank words. */
 export const MIN_SECRET_LENGTH = 6;
@@ -200,6 +217,11 @@ export class LogRedactor {
                 .replace(ACTOR_ENVELOPE_PATTERN, '[redacted]')
                 .replace(AUTHORIZATION, (_match, bearer?: string, basic?: string) => `${bearer ?? basic} [redacted]`)
                 .replace(URL_CREDENTIALS, '$1[redacted]@')
+                .replace(QUOTED, (match, key: string, open?: string) => {
+                    // The value's own quotes stay, so JSON stays JSON; an unclosed one gets none.
+                    const quote = open ?? match[key.length];
+                    return open ? `${key}${open}[redacted]` : `${key}${quote}[redacted]${quote}`;
+                })
                 .replace(ASSIGNED, '$1[redacted]')
         );
     }

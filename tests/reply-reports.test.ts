@@ -574,6 +574,40 @@ describe('the report', () => {
         expect(body.prompt?.text).toBe('Ask Bob for it.');
     });
 
+    it('redacts a credential’s whole quoted value in the reply, the prompt and the note, as sent', async () => {
+        const server = await runtime({
+            prompts: { solo: 'Log in with {"password": "say \\"open\\" sesame", "user": "ada"} please.' },
+            replies: { solo: 'Use {"password":"demo passphrase with spaces"}\nand token=abcdef123456 then.' },
+        });
+        const consent = await server.share();
+        await server.report(consent, { note: "It said password='two words here' to me." });
+        await server.reports.send();
+        const { raw, body } = server.collector.posts[0]!;
+        for (const secret of ['passphrase with spaces', 'demo', 'open', 'sesame', 'two words', 'abcdef123456']) {
+            expect(raw).not.toContain(secret);
+        }
+        expect((body.reply as { text: string }).text).toBe('Use {"password":"[redacted]"}\nand token=[redacted] then.');
+        expect((body.prompt as { text: string }).text).toBe(
+            'Log in with {"password": "[redacted]", "user": "ada"} please.',
+        );
+        expect(body.note).toBe("It said password='[redacted]' to me.");
+    });
+
+    it('redacts a secret on an inner line of a multi-line JSON blob in the prompt, and an unquoted one in the note', async () => {
+        const blob = '{\n  "user": "ada",\n  "client_secret": "inner line value",\n  "n": 1\n}';
+        const server = await runtime({ prompts: { solo: `Here is my config:\n${blob}` } });
+        const consent = await server.share();
+        await server.report(consent, { note: 'passwd=letmein99 was in it' });
+        await server.reports.send();
+        const { raw, body } = server.collector.posts[0]!;
+        expect(raw).not.toContain('inner line value');
+        expect(raw).not.toContain('letmein99');
+        expect((body.prompt as { text: string }).text).toBe(
+            'Here is my config:\n{\n  "user": "ada",\n  "client_secret": "[redacted]",\n  "n": 1\n}',
+        );
+        expect(body.note).toBe('passwd=[redacted] was in it');
+    });
+
     it('keeps a note within 1,000 code points after redaction lengthens it', () => {
         const note = `${'x'.repeat(990)} token=a`;
         expect([...note].length).toBeLessThanOrEqual(1000);
