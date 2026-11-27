@@ -1,0 +1,49 @@
+{
+    "title": "Operations",
+    "crumbs": {
+        "chat": "Chat"
+    },
+    "groups": {
+        "dashboard": "Dashboard",
+        "oversight": "Oversight"
+    },
+    "sections": {
+        "overview": {
+            "label": "Overview"
+        },
+        "activity": {
+            "label": "Activity"
+        },
+        "value": {
+            "label": "Value"
+        },
+        "themes": {
+            "label": "Themes"
+        },
+        "knowledge": {
+            "label": "Knowledge"
+        },
+        "reliability": {
+            "label": "Reliability"
+        },
+        "capabilities": {
+            "label": "Capabilities"
+        },
+        "health": {
+            "label": "Health"
+        },
+        "cost": {
+            "label": "Cost"
+        },
+        "access-log": {
+            "label": "Access log"
+        },
+        "socio-access": {
+            "label": "Socio access"
+        },
+        "settings": {
+            "label": "Settings"
+        }
+    },
+    "load-failed": "Could not load."
+}
