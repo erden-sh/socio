@@ -73,7 +73,9 @@ it('ignores stale page/Space ancestry and never reads a foreign loader title', (
     ]) {
         expect(spaceHandle.crumb!(context({ title })).some((c) => c.label === 'Secret')).toBe(false);
     }
-    expect(spaceHandle.crumb!(context({ data: { library: { pages: [p('leaf', null, 'private')] } } })).at(-1)?.label).toBe('Pages');
+    expect(
+        spaceHandle.crumb!(context({ data: { library: { pages: [p('leaf', null, 'private')] } } })).at(-1)?.label,
+    ).toBe('Pages');
 });
 
 it('keeps the Space library breadcrumb safe before any title is published', () => {

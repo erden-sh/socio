@@ -1,0 +1,7 @@
+{
+    "legend": "Default legend of the two radio cards that choose who sees a Space, in the new Space dialog. \"Space\" is a product noun (a shared area of pages).",
+    "whole.title": "Radio card: the Space is open to everyone in the workspace.",
+    "whole.detail": "Under the Whole workspace choice. The _member form is shown to people who aren't workspace admins, who can't pick it.",
+    "private.title": "Radio card: only the people added to the Space see it.",
+    "private.detail": "Under the Only its people choice. \"Socios\" are AI agents. The list of what a private Space covers matches the Space's other audience texts."
+}

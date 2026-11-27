@@ -1,1 +1,10 @@
-{}
+{
+    "title": "Rooms",
+    "body": "In a room you hear when someone mentions you and when your own turns finish while you’re away. Choose more or less for each room in its ⋯ menu, under Notify me about.",
+    "presence": {
+        "label": "Show when I’m in a room",
+        "hint": "The room’s members see your avatar while you have it open. Turn this off to look without showing.",
+        "shown": "Rooms show when you’re in them",
+        "hidden": "Your presence is hidden"
+    }
+}

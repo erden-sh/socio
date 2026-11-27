@@ -449,7 +449,7 @@ export function AccessTab({
  * The Sign-in & devices tab: each signed-in device, with a sign-out of
  * its own; passkeys, password, providers and the newest password link.
  */
-export function SignInTab({
+function SignInTabBody({
     detail,
     locked,
     run,
@@ -463,16 +463,16 @@ export function SignInTab({
     /** A device signed out from the card: the sessions above reload too. */
     onChanged?: () => void;
 }) {
-    const { t } = useTranslation(['settings.person']);
+    const { t } = useTranslation(['settings.person-tabs', 'settings.person']);
     const { deviceLabel, lastActive, shortDate, signInMethodLabel } = usePeopleFormat();
     const providerLabel = useProviderLabel();
     const { person, signIn } = detail;
     const off = person.status === 'deactivated';
     return (
         <div className="grid gap-4 lg:grid-cols-2" data-slot="person-sign-in">
-            <PanelCard title={t('settings.person:signIn.sessions')} slot="person-sessions">
+            <PanelCard title={t('settings.person-tabs:signIn.sessions')} slot="person-sessions">
                 {signIn.sessions.length ? (
-                    <ul aria-label={t('settings.person:signIn.sessions')}>
+                    <ul aria-label={t('settings.person-tabs:signIn.sessions')}>
                         {signIn.sessions.map((session) => {
                             const method = signInMethodLabel(session.signInMethod);
                             return (
@@ -484,7 +484,7 @@ export function SignInTab({
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
-                                                aria-label={t('settings.person:signIn.signOutDevice', {
+                                                aria-label={t('settings.person-tabs:signIn.signOutDevice', {
                                                     device: deviceLabel(session.userAgent),
                                                 })}
                                                 onClick={() =>
@@ -494,12 +494,12 @@ export function SignInTab({
                                                                 `/accounts/${encodeURIComponent(person.id)}/sessions/${encodeURIComponent(session.id)}`,
                                                                 'DELETE',
                                                             ),
-                                                        t('settings.person:signIn.signOutFailed'),
-                                                        t('settings.person:signIn.signedOut'),
+                                                        t('settings.person-tabs:signIn.signOutFailed'),
+                                                        t('settings.person-tabs:signIn.signedOut'),
                                                     )
                                                 }
                                             >
-                                                {t('settings.person:signIn.signOut')}
+                                                {t('settings.person-tabs:signIn.signOut')}
                                             </Button>
                                         )
                                     }
@@ -507,12 +507,14 @@ export function SignInTab({
                                     <span title={session.userAgent ?? undefined}>{deviceLabel(session.userAgent)}</span>{' '}
                                     <Muted>
                                         {[
-                                            method && t('settings.person:signIn.by', { method }),
-                                            t('settings.person:signIn.lastUsed', {
+                                            method && t('settings.person-tabs:signIn.by', { method }),
+                                            t('settings.person-tabs:signIn.lastUsed', {
                                                 ago: lastActive(Date.parse(session.renewedAt), undefined, true),
                                             }),
                                             session.ip,
-                                            t('settings.person:signIn.since', { date: shortDate(session.createdAt) }),
+                                            t('settings.person-tabs:signIn.since', {
+                                                date: shortDate(session.createdAt),
+                                            }),
                                         ]
                                             .filter(Boolean)
                                             .join(' · ')}
@@ -522,26 +524,28 @@ export function SignInTab({
                         })}
                     </ul>
                 ) : (
-                    <Empty>{t('settings.person:signIn.nowhere', { context: off ? 'deactivated' : undefined })}</Empty>
+                    <Empty>
+                        {t('settings.person-tabs:signIn.nowhere', { context: off ? 'deactivated' : undefined })}
+                    </Empty>
                 )}
             </PanelCard>
-            <PanelCard title={t('settings.person:signIn.app')} slot="person-devices">
+            <PanelCard title={t('settings.person-tabs:signIn.app')} slot="person-devices">
                 <PersonDevices accountId={person.id} locked={locked} onChanged={onChanged} version={detail} />
             </PanelCard>
-            <PanelCard title={t('settings.person:signIn.methods')} slot="person-methods">
-                <ul aria-label={t('settings.person:signIn.methods')}>
+            <PanelCard title={t('settings.person-tabs:signIn.methods')} slot="person-methods">
+                <ul aria-label={t('settings.person-tabs:signIn.methods')}>
                     <Row
                         slot="person-passkeys"
-                        aside={<Muted>{signIn.passkeys.length || t('settings.person:signIn.none')}</Muted>}
+                        aside={<Muted>{signIn.passkeys.length || t('settings.person-tabs:signIn.none')}</Muted>}
                     >
-                        {t('settings.person:signIn.passkeys')}
+                        {t('settings.person-tabs:signIn.passkeys')}
                         {signIn.passkeys.length > 0 && (
                             <span className="block">
                                 {signIn.passkeys.map((passkey) => (
                                     <Muted key={passkey.id}>
-                                        {passkey.name || t('settings.person:signIn.passkey')}
+                                        {passkey.name || t('settings.person-tabs:signIn.passkey')}
                                         {passkey.createdAt
-                                            ? t('settings.person:signIn.passkeyAdded', {
+                                            ? t('settings.person-tabs:signIn.passkeyAdded', {
                                                   date: shortDate(passkey.createdAt),
                                               })
                                             : ''}
@@ -555,21 +559,24 @@ export function SignInTab({
                         slot="person-password"
                         aside={
                             <Muted>
-                                {signIn.password ? t('settings.person:signIn.set') : t('settings.person:signIn.notSet')}
+                                {signIn.password
+                                    ? t('settings.person-tabs:signIn.set')
+                                    : t('settings.person-tabs:signIn.notSet')}
                             </Muted>
                         }
                     >
-                        {t('settings.person:signIn.password')}
+                        {t('settings.person-tabs:signIn.password')}
                     </Row>
                     <Row
                         slot="person-providers"
                         aside={
                             <Muted>
-                                {signIn.providers.map(providerLabel).join(', ') || t('settings.person:signIn.none')}
+                                {signIn.providers.map(providerLabel).join(', ') ||
+                                    t('settings.person-tabs:signIn.none')}
                             </Muted>
                         }
                     >
-                        {t('settings.person:signIn.providers')}
+                        {t('settings.person-tabs:signIn.providers')}
                     </Row>
                     <Row
                         slot="person-password-link"
@@ -577,18 +584,18 @@ export function SignInTab({
                             !off &&
                             !locked && (
                                 <Button variant="outline" size="sm" onClick={onPasswordLink}>
-                                    {t('settings.person:signIn.newLink')}
+                                    {t('settings.person-tabs:signIn.newLink')}
                                 </Button>
                             )
                         }
                     >
-                        {t('settings.person:signIn.newestLink')}{' '}
+                        {t('settings.person-tabs:signIn.newestLink')}{' '}
                         <Muted>
                             {person.invite
                                 ? person.invite.expired
                                     ? t('settings.person:dates.expired', { date: shortDate(person.invite.expiresAt) })
                                     : t('settings.person:dates.expires', { date: shortDate(person.invite.expiresAt) })
-                                : t('settings.person:signIn.noLink')}
+                                : t('settings.person-tabs:signIn.noLink')}
                         </Muted>
                     </Row>
                 </ul>
@@ -613,7 +620,7 @@ function useKeyStanding() {
 
 /** One kind's card on the Owns tab: its items (live first), with how many more there are. */
 function OwnedCard({ kind, onTransfer }: { kind: OwnedKind; onTransfer?: (kind: AssetKind) => void }) {
-    const { t } = useTranslation(['settings.person']);
+    const { t } = useTranslation(['settings.person-tabs', 'settings.person']);
     const { assetTitle, assetCount } = useAssetWords();
     const title = assetTitle(kind.kind);
     const more = kind.count - kind.items.length;
@@ -628,10 +635,10 @@ function OwnedCard({ kind, onTransfer }: { kind: OwnedKind; onTransfer?: (kind: 
                         <Button
                             variant="outline"
                             size="sm"
-                            aria-label={t('settings.person:owns.transferKind', { kind: title })}
+                            aria-label={t('settings.person-tabs:owns.transferKind', { kind: title })}
                             onClick={() => onTransfer(kind.kind)}
                         >
-                            {t('settings.person:owns.transfer')}
+                            {t('settings.person-tabs:owns.transfer')}
                         </Button>
                     )}
                 </span>
@@ -644,7 +651,9 @@ function OwnedCard({ kind, onTransfer }: { kind: OwnedKind; onTransfer?: (kind: 
                         slot="person-owned-item"
                         aside={
                             <Muted>
-                                {item.deleted ? t('settings.person:owns.deletedKept', { type: item.type }) : item.type}
+                                {item.deleted
+                                    ? t('settings.person-tabs:owns.deletedKept', { type: item.type })
+                                    : item.type}
                             </Muted>
                         }
                     >
@@ -652,7 +661,7 @@ function OwnedCard({ kind, onTransfer }: { kind: OwnedKind; onTransfer?: (kind: 
                     </Row>
                 ))}
             </ul>
-            {more > 0 && <Muted>{t('settings.person:owns.more', { count: more })}</Muted>}
+            {more > 0 && <Muted>{t('settings.person-tabs:owns.more', { count: more })}</Muted>}
         </PanelCard>
     );
 }
@@ -664,7 +673,7 @@ function OwnedCard({ kind, onTransfer }: { kind: OwnedKind; onTransfer?: (kind: 
  * live and ended, each linking to its account on the Service accounts tab.
  * `version` changes after a transfer, to load it again.
  */
-export function OwnsTab({
+function OwnsTabBody({
     detail,
     version = 0,
     onTransfer,
@@ -674,7 +683,7 @@ export function OwnsTab({
     /** Opens the transfer dialog: all kinds, or one kind's alone. */
     onTransfer?: (only?: AssetKind[]) => void;
 }) {
-    const { t } = useTranslation(['settings.person']);
+    const { t } = useTranslation(['settings.person-tabs', 'settings.person']);
     const { lastActive } = usePeopleFormat();
     const { assetCount } = useAssetWords();
     const keyStanding = useKeyStanding();
@@ -692,13 +701,13 @@ export function OwnsTab({
             .then(setAssets)
             .catch((e: unknown) => {
                 if (!controller.signal.aborted) {
-                    setError(e instanceof Error ? e.message : t('settings.person:owns.loadFailed'));
+                    setError(e instanceof Error ? e.message : t('settings.person-tabs:owns.loadFailed'));
                 }
             });
         return () => controller.abort();
     }, [person.id, access, version, t]);
     if (!access) {
-        return <Empty>{t('settings.person:owns.unknown', { first })}</Empty>;
+        return <Empty>{t('settings.person-tabs:owns.unknown', { first })}</Empty>;
     }
     const now = Date.now();
     const kinds = assets?.kinds.filter((kind) => kind.count > 0) ?? [];
@@ -713,22 +722,22 @@ export function OwnsTab({
                     {error ? (
                         <span className="text-destructive">{error}</span>
                     ) : !assets ? (
-                        <Muted>{t('settings.person:owns.loading', { first })}</Muted>
+                        <Muted>{t('settings.person-tabs:owns.loading', { first })}</Muted>
                     ) : kinds.length ? (
                         <>
-                            {t('settings.person:owns.owns', {
+                            {t('settings.person-tabs:owns.owns', {
                                 first,
                                 list: kinds.map((kind) => assetCount(kind.kind, kind.count)).join(', '),
                             })}{' '}
-                            <Muted>{t('settings.person:owns.companyOwns')}</Muted>
+                            <Muted>{t('settings.person-tabs:owns.companyOwns')}</Muted>
                         </>
                     ) : (
-                        <Muted>{t('settings.person:owns.nothing', { first })}</Muted>
+                        <Muted>{t('settings.person-tabs:owns.nothing', { first })}</Muted>
                     )}
                 </span>
                 {transferable && kinds.length > 0 && (
                     <Button size="sm" onClick={() => onTransfer()}>
-                        {t('settings.person:owns.transferAll')}
+                        {t('settings.person-tabs:owns.transferAll')}
                     </Button>
                 )}
             </div>
@@ -741,12 +750,12 @@ export function OwnsTab({
                     />
                 ))}
                 <PanelCard
-                    title={t('settings.person:owns.keys', { first })}
+                    title={t('settings.person-tabs:owns.keys', { first })}
                     slot="person-keys"
-                    action={<Muted>{t('settings.person:owns.keysNote', { first })}</Muted>}
+                    action={<Muted>{t('settings.person-tabs:owns.keysNote', { first })}</Muted>}
                 >
                     {access.keysMade.length ? (
-                        <ul aria-label={t('settings.person:owns.keysList')}>
+                        <ul aria-label={t('settings.person-tabs:owns.keysList')}>
                             {access.keysMade.map((key) => {
                                 const standing = keyStanding(key, now);
                                 return (
@@ -772,8 +781,8 @@ export function OwnsTab({
                                             {standing.live &&
                                                 ` · ${
                                                     key.lastUsedAt === null
-                                                        ? t('settings.person:owns.neverUsed')
-                                                        : t('settings.person:owns.used', {
+                                                        ? t('settings.person-tabs:owns.neverUsed')
+                                                        : t('settings.person-tabs:owns.used', {
                                                               ago: lastActive(key.lastUsedAt, undefined, true),
                                                           })
                                                 }`}
@@ -783,7 +792,7 @@ export function OwnsTab({
                             })}
                         </ul>
                     ) : (
-                        <Empty>{t('settings.person:owns.noKeys', { first })}</Empty>
+                        <Empty>{t('settings.person-tabs:owns.noKeys', { first })}</Empty>
                     )}
                 </PanelCard>
             </div>
@@ -792,18 +801,18 @@ export function OwnsTab({
 }
 
 const SOURCE_KEYS = {
-    workspace: 'settings.person:activity.sources.workspace',
-    access_policy: 'settings.person:activity.sources.access_policy',
-    socio_access: 'settings.person:activity.sources.socio_access',
-    room: 'settings.person:activity.sources.room',
+    workspace: 'settings.person-tabs:activity.sources.workspace',
+    access_policy: 'settings.person-tabs:activity.sources.access_policy',
+    socio_access: 'settings.person-tabs:activity.sources.socio_access',
+    room: 'settings.person-tabs:activity.sources.room',
 } as const satisfies Record<PersonTrailSource, string>;
 
 /**
  * The Activity tab: their audit trail, newest first, a page at a time
  * (`GET /api/accounts/:id/audit`), with "Load more" while there is more.
  */
-export function ActivityTab({ accountId }: { accountId: string }) {
-    const { t } = useTranslation(['settings.person']);
+function ActivityTabBody({ accountId }: { accountId: string }) {
+    const { t } = useTranslation(['settings.person-tabs', 'settings.person']);
     const [lines, setLines] = useState<PersonTrailLine[]>();
     const [next, setNext] = useState<string | null>(null);
     const [error, setError] = useState<string>();
@@ -824,7 +833,7 @@ export function ActivityTab({ accountId }: { accountId: string }) {
                 setError(undefined);
             } catch (e) {
                 if (!signal?.aborted) {
-                    setError(e instanceof Error ? e.message : t('settings.person:activity.loadFailed'));
+                    setError(e instanceof Error ? e.message : t('settings.person-tabs:activity.loadFailed'));
                 }
             } finally {
                 if (!signal?.aborted) {
@@ -841,11 +850,11 @@ export function ActivityTab({ accountId }: { accountId: string }) {
         return () => controller.abort();
     }, [page]);
     return (
-        <PanelCard title={t('settings.person:activity.title')} slot="person-activity">
+        <PanelCard title={t('settings.person-tabs:activity.title')} slot="person-activity">
             {lines === undefined ? (
-                <Empty>{error ?? t('settings.person:activity.loading')}</Empty>
+                <Empty>{error ?? t('settings.person-tabs:activity.loading')}</Empty>
             ) : lines.length ? (
-                <ul aria-label={t('settings.person:activity.title')}>
+                <ul aria-label={t('settings.person-tabs:activity.title')}>
                     {lines.map((line) => (
                         <Row
                             key={line.id}
@@ -853,7 +862,7 @@ export function ActivityTab({ accountId }: { accountId: string }) {
                             aside={
                                 <Muted>
                                     <time dateTime={new Date(line.at).toISOString()}>
-                                        {t('settings.person:activity.at', { at: new Date(line.at) })}
+                                        {t('settings.person-tabs:activity.at', { at: new Date(line.at) })}
                                     </time>
                                 </Muted>
                             }
@@ -866,14 +875,21 @@ export function ActivityTab({ accountId }: { accountId: string }) {
                     ))}
                 </ul>
             ) : (
-                <Empty>{t('settings.person:activity.empty')}</Empty>
+                <Empty>{t('settings.person-tabs:activity.empty')}</Empty>
             )}
             {lines !== undefined && error && <p className="text-destructive">{error}</p>}
             {lines !== undefined && next && (
                 <Button variant="outline" size="sm" className="w-fit" disabled={busy} onClick={() => void page(next)}>
-                    {t('settings.person:activity.more')}
+                    {t('settings.person-tabs:activity.more')}
                 </Button>
             )}
         </PanelCard>
     );
 }
+
+// The Sign-in, Owns and Activity tabs aren't the page's first: their words load on
+// demand (route-namespaces.json inlines settings.person-tabs nowhere), which
+// keeps a person's page within its budget.
+export const SignInTab = onDemand(['settings.person-tabs', 'settings.person'], SignInTabBody);
+export const OwnsTab = onDemand(['settings.person-tabs', 'settings.person'], OwnsTabBody);
+export const ActivityTab = onDemand(['settings.person-tabs', 'settings.person'], ActivityTabBody);

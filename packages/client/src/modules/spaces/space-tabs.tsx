@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router';
 
+import { useTranslation } from '@socio/i18n/react';
 import type { Space } from '@socio/shared/types';
 
 import { spacePath } from '../pages/page-navigation';
@@ -31,24 +32,30 @@ export function spaceTitle(space: Space) {
  * own address, so the browser's back and a shared link keep the tab.
  */
 export function SpaceTabs({ space }: { space: Space }) {
+    const { t } = useTranslation(['spaces']);
     const tab = ({ isActive }: { isActive: boolean }) =>
         cn(
             'inline-flex min-h-9 items-center rounded-md px-3 text-[13px] text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring pointer-coarse:min-h-11',
             isActive && 'bg-accent font-medium text-foreground',
         );
     return (
-        <nav aria-label={`${space.name} sections`} data-slot="space-tabs" className="flex flex-wrap gap-1 px-4 md:px-6">
-            <NavLink end to={spacePath(space.id)} className={tab}>
-                Pages
+        <nav
+            aria-label={t('spaces:tabs.label', { space: space.name })}
+            data-slot="space-tabs"
+            className="flex flex-wrap gap-1 px-4 md:px-6"
+        >
+            {/* Each tab's route has its own loader (its words): fetched on intent. */}
+            <NavLink end to={spacePath(space.id)} prefetch="intent" className={tab}>
+                {t('spaces:tabs.pages')}
             </NavLink>
-            <NavLink to={spaceMemoryPath(space.id)} className={tab}>
-                Memory
+            <NavLink to={spaceMemoryPath(space.id)} prefetch="intent" className={tab}>
+                {t('spaces:tabs.memory')}
             </NavLink>
-            <NavLink to={spaceRadarPath(space.id)} className={tab}>
-                Radar
+            <NavLink to={spaceRadarPath(space.id)} prefetch="intent" className={tab}>
+                {t('spaces:tabs.radar')}
             </NavLink>
-            <NavLink to={spaceSettingsPath(space.id)} className={tab}>
-                Settings
+            <NavLink to={spaceSettingsPath(space.id)} prefetch="intent" className={tab}>
+                {t('spaces:tabs.settings')}
             </NavLink>
         </nav>
     );

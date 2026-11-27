@@ -1,6 +1,7 @@
 import { EventType, type BaseEvent } from '@ag-ui/core';
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 
+import { useTranslation } from '@socio/i18n/react';
 import type { QueuedMessage, SteeringView } from '@socio/shared/chat/steering';
 import {
     applyRoomEvent,
@@ -122,6 +123,7 @@ export const ROOM_STREAM_RETRY_MS = { first: 2_000, most: 30_000 } as const;
  * an older answer never undoes a newer one.
  */
 export function useRoomFeed(threadId: string): RoomFeed {
+    const { t } = useTranslation(['rooms']);
     const me = useContext(CurrentUser)?.id;
     const [messages, setMessages] = useState<RoomMessage[]>();
     const [problems, setProblems] = useState<TranscriptTurnProblem[]>([]);
@@ -194,10 +196,10 @@ export function useRoomFeed(threadId: string): RoomFeed {
             if (cause instanceof ApiError && cause.status === 404) {
                 setGone(true);
             } else {
-                setError(cause instanceof Error ? cause.message : 'Could not load this room.');
+                setError(cause instanceof Error ? cause.message : t('rooms:errors.load-room'));
             }
         }
-    }, [base]);
+    }, [base, t]);
     useEffect(() => {
         setMessages(undefined);
         setProblems([]);

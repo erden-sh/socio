@@ -1,0 +1,60 @@
+{
+    "signIn": {
+        "sessions": "Devices signed in",
+        "signOutDevice": "Sign out {{device}}",
+        "signOut": "Sign out",
+        "signOutFailed": "Could not sign the device out.",
+        "signedOut": "Signed out on that device",
+        "by": "by {{method}}",
+        "lastUsed": "last used {{ago}}",
+        "since": "since {{date}}",
+        "nowhere": "Not signed in anywhere now.",
+        "nowhere_deactivated": "Deactivated: signed in nowhere.",
+        "app": "The $t(common:product) app",
+        "methods": "How they sign in",
+        "none": "None",
+        "passkeys": "Passkeys",
+        "passkey": "Passkey",
+        "passkeyAdded": ", added {{date}}",
+        "password": "Password",
+        "set": "Set",
+        "notSet": "Not set",
+        "providers": "Sign-in providers",
+        "newLink": "New password link",
+        "newestLink": "Newest password link",
+        "noLink": "none made"
+    },
+    "owns": {
+        "unknown": "What {{first}} owns isn’t known here: the account has no workspace user yet.",
+        "loadFailed": "Could not load what they own.",
+        "loading": "Loading what {{first}} owns…",
+        "owns": "{{first}} owns {{list}}.",
+        "companyOwns": "The company owns it: hand it to another active person at any time.",
+        "nothing": "{{first}} owns nothing that can be transferred.",
+        "transferAll": "Transfer everything…",
+        "transferKind": "Transfer {{kind}}",
+        "transfer": "Transfer…",
+        "deletedKept": "{{type}} · deleted, kept",
+        "more": "and {{count}} more",
+        "keys": "Service keys {{first}} made",
+        "keysNote": "revoked if {{first}} is deactivated",
+        "keysList": "Service keys",
+        "neverUsed": "never used",
+        "used": "used {{ago}}",
+        "noKeys": "{{first}} made no service keys."
+    },
+    "activity": {
+        "title": "Activity",
+        "at": "{{at, datetime(month: short; day: numeric; year: numeric; hour: numeric; minute: 2-digit)}}",
+        "loading": "Loading…",
+        "loadFailed": "Could not load the activity.",
+        "empty": "Nothing recorded yet.",
+        "more": "Load more",
+        "sources": {
+            "workspace": "Workspace",
+            "access_policy": "Access",
+            "socio_access": "Socio access",
+            "room": "Room"
+        }
+    }
+}

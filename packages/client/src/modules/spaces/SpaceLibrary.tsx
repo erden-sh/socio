@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useContext, useMemo, useState, type ReactNode } from 'react';
 
+import { Trans, useTranslation } from '@socio/i18n/react';
 import { compareText, lowerText } from '@socio/shared/locale';
 import { MODULE_IDS } from '@socio/shared/modules';
 import { pageHierarchy } from '@socio/shared/pages/page-hierarchy';
@@ -91,6 +92,7 @@ export function SpaceLibrary({
     onNewFolder?: (parentId: string | null, title: string) => Promise<unknown>;
     onDeleted: (ids: string[]) => void;
 }) {
+    const { t } = useTranslation(['spaces', 'spaces.nav']);
     const user = useContext(CurrentUser);
     const datasets = useFlag('datasets-in-spaces');
     const hierarchy = useMemo(() => pageHierarchy(pages, space.id), [pages, space.id]);
@@ -184,7 +186,7 @@ export function SpaceLibrary({
             data-slot="space-library"
             data-tour="space-library"
             className="w-full pb-8"
-            aria-label={`${space.name} page library`}
+            aria-label={t('spaces:library.label', { space: space.name })}
         >
             <PageHeader
                 module={MODULE_IDS.spaces}
@@ -197,11 +199,11 @@ export function SpaceLibrary({
                         )}
                         {onNewFolder && (
                             <Button size="sm" variant="outline" onClick={() => setNaming(true)}>
-                                <FolderPlus /> New folder
+                                <FolderPlus /> {t('spaces:library.new-folder')}
                             </Button>
                         )}
                         <Button size="sm" onClick={() => onNew(level)} data-tour="new-page">
-                            <Plus /> New page
+                            <Plus /> {t('spaces:library.new-page')}
                         </Button>
                     </>
                 }
@@ -214,8 +216,8 @@ export function SpaceLibrary({
                     <label className="flex min-h-9 flex-1 items-center gap-2 rounded-lg bg-muted px-3 text-muted-foreground focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-ring max-[900px]:basis-full">
                         <Search className="size-4 shrink-0" />
                         <Input
-                            aria-label="Search pages"
-                            placeholder="Search pages"
+                            aria-label={t('spaces:library.search')}
+                            placeholder={t('spaces:library.search')}
                             className="h-auto min-w-0 rounded-none border-0 bg-transparent px-0 py-2 text-base text-foreground shadow-none placeholder:text-muted-foreground focus-visible:ring-0 md:text-sm dark:bg-transparent"
                             value={query}
                             onChange={(e) => {
@@ -227,40 +229,44 @@ export function SpaceLibrary({
                     {!query && (
                         <Select value={browse} onValueChange={(value) => setBrowse(value as Browse)}>
                             <SelectTrigger
-                                aria-label="Browse pages"
+                                aria-label={t('spaces:library.browse.label')}
                                 className="h-8 gap-2 rounded-lg border-0 bg-transparent px-3 text-sm font-medium text-muted-foreground shadow-none hover:bg-accent hover:text-foreground max-[900px]:flex-1 pointer-coarse:text-base dark:bg-transparent dark:hover:bg-accent [&_svg:not([class*='text-'])]:text-current"
                             >
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent position="popper" align="end">
-                                <SelectItem value="level">By level</SelectItem>
-                                <SelectItem value="all">All pages</SelectItem>
+                                <SelectItem value="level">{t('spaces:library.browse.level')}</SelectItem>
+                                <SelectItem value="all">{t('spaces:library.browse.all')}</SelectItem>
                             </SelectContent>
                         </Select>
                     )}
                     {searching ? (
                         <span className="flex min-h-8 items-center px-3 text-sm text-muted-foreground max-[900px]:flex-1 pointer-coarse:text-base">
-                            Sorted by relevance
+                            {t('spaces:library.relevance')}
                         </span>
                     ) : (
                         <Select value={sort} onValueChange={setSort}>
                             <SelectTrigger
-                                aria-label="Sort pages"
+                                aria-label={t('spaces:library.sort.label')}
                                 className="h-8 gap-2 rounded-lg border-0 bg-transparent px-3 text-sm font-medium text-muted-foreground shadow-none hover:bg-accent hover:text-foreground max-[900px]:flex-1 pointer-coarse:text-base dark:bg-transparent dark:hover:bg-accent [&_svg:not([class*='text-'])]:text-current"
                             >
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent position="popper" align="end">
-                                <SelectItem value="recent">Recently edited</SelectItem>
-                                <SelectItem value="name">Name A–Z</SelectItem>
+                                <SelectItem value="recent">{t('spaces:library.sort.recent')}</SelectItem>
+                                <SelectItem value="name">{t('spaces:library.sort.name')}</SelectItem>
                             </SelectContent>
                         </Select>
                     )}
-                    <div className="flex rounded-[9px] border p-[3px]" role="group" aria-label="Library view">
+                    <div
+                        className="flex rounded-[9px] border p-[3px]"
+                        role="group"
+                        aria-label={t('spaces:library.view.label')}
+                    >
                         {(
                             [
-                                ['grid', 'Grid view', <LayoutGrid key="grid" />],
-                                ['list', 'List view', <List key="list" className="size-4.5" />],
+                                ['grid', t('spaces:library.view.grid'), <LayoutGrid key="grid" />],
+                                ['list', t('spaces:library.view.list'), <List key="list" className="size-4.5" />],
                             ] as const
                         ).map(([value, label, icon]) => (
                             <Button
@@ -278,7 +284,7 @@ export function SpaceLibrary({
                 </div>
                 {byLevel && folder && (
                     <nav
-                        aria-label="Library level"
+                        aria-label={t('spaces:library.trail.label')}
                         data-slot="library-trail"
                         className="mb-2 flex flex-wrap items-center gap-1 text-sm"
                     >
@@ -287,7 +293,7 @@ export function SpaceLibrary({
                             className="rounded-md px-1 text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
                             onClick={() => open(null)}
                         >
-                            Top level
+                            {t('spaces:library.trail.top')}
                         </button>
                         {trail.map((item) => (
                             <span key={item.id} className="flex min-w-0 items-center gap-1">
@@ -297,7 +303,7 @@ export function SpaceLibrary({
                                         aria-current="location"
                                         className="min-w-0 font-medium [overflow-wrap:anywhere]"
                                     >
-                                        {item.title.trim() || 'Untitled page'}
+                                        {item.title.trim() || t('spaces.nav:untitled-page')}
                                     </span>
                                 ) : (
                                     <button
@@ -305,7 +311,7 @@ export function SpaceLibrary({
                                         className="min-w-0 rounded-md px-1 text-left text-muted-foreground underline-offset-2 [overflow-wrap:anywhere] hover:text-foreground hover:underline"
                                         onClick={() => open(item.id)}
                                     >
-                                        {item.title.trim() || 'Untitled page'}
+                                        {item.title.trim() || t('spaces.nav:untitled-page')}
                                     </button>
                                 )}
                             </span>
@@ -316,7 +322,10 @@ export function SpaceLibrary({
                             className="ml-auto h-7 text-muted-foreground"
                             onClick={() => onPage(folder.id)}
                         >
-                            {folder.folder ? 'Open folder' : 'Open page'} <ArrowUpRight className="size-3.5" />
+                            {folder.folder
+                                ? t('spaces:library.trail.open-folder')
+                                : t('spaces:library.trail.open-page')}{' '}
+                            <ArrowUpRight className="size-3.5" />
                         </Button>
                     </nav>
                 )}
@@ -325,17 +334,20 @@ export function SpaceLibrary({
                     data-slot="library-count"
                 >
                     {query
-                        ? 'Search results'
+                        ? t('spaces:library.heading.search')
                         : !byLevel
-                          ? 'All pages'
+                          ? t('spaces:library.heading.all')
                           : folder
                             ? folder.folder
-                                ? 'In this folder'
-                                : 'Inside this page'
-                            : 'Top level'}
+                                ? t('spaces:library.heading.folder')
+                                : t('spaces:library.heading.page')
+                            : t('spaces:library.heading.top')}
                     <span
                         className="font-mono text-xs text-muted-foreground/80 tabular-nums"
-                        aria-label={`${count}${searching && remote.answer?.more ? ' or more' : ''} ${count === 1 ? 'page' : 'pages'}`}
+                        aria-label={t('spaces:library.count', {
+                            count,
+                            context: searching && remote.answer?.more ? 'more' : undefined,
+                        })}
                     >
                         {count}
                         {searching && remote.answer?.more ? '+' : ''}
@@ -343,14 +355,19 @@ export function SpaceLibrary({
                 </h2>
                 {searching && remote.answer?.corrected && (
                     <p className="-mt-2 mb-4 text-xs opacity-80" data-slot="library-correction">
-                        Showing results for <strong>{remote.answer.corrected}</strong>.{' '}
+                        <Trans
+                            t={t}
+                            i18nKey="spaces:library.corrected"
+                            values={{ words: remote.answer.corrected }}
+                            components={{ words: <strong /> }}
+                        />{' '}
                         <button
                             type="button"
                             data-slot="library-search-instead"
                             className="underline underline-offset-2"
                             onClick={() => setExact(true)}
                         >
-                            Search instead for {query.trim()}
+                            {t('spaces:library.search-instead', { query: query.trim() })}
                         </button>
                     </p>
                 )}
@@ -368,7 +385,7 @@ export function SpaceLibrary({
                                             {hit.snippet.length ? (
                                                 <Snippet parts={hit.snippet} />
                                             ) : (
-                                                'An empty page, ready to write.'
+                                                t('spaces:library.empty-page')
                                             )}
                                         </span>
                                     ),
@@ -397,9 +414,9 @@ export function SpaceLibrary({
                     ) : (
                         <LibraryEmpty
                             icon={<Search size={30} strokeWidth={1.3} />}
-                            title={remote.pending ? 'Searching pages…' : 'No matching pages'}
+                            title={remote.pending ? t('spaces:library.searching') : t('spaces:library.no-matches')}
                         >
-                            {!remote.pending && 'Try a different title or phrase.'}
+                            {!remote.pending && t('spaces:library.try-different')}
                         </LibraryEmpty>
                     )
                 ) : filtered.length ? (
@@ -415,7 +432,7 @@ export function SpaceLibrary({
                                 page.folder ? (
                                     <FolderLine inside={inside} />
                                 ) : (
-                                    page.excerpt || 'An empty page, ready to write.'
+                                    page.excerpt || t('spaces:library.empty-page')
                                 ),
                                 <>
                                     {!page.folder && inside > 0 && (
@@ -424,12 +441,23 @@ export function SpaceLibrary({
                                             className="flex shrink-0 items-center gap-1 font-medium text-foreground/80"
                                         >
                                             <FolderOpen aria-hidden className="size-3.5" />
-                                            {inside} inside
+                                            {t('spaces:library.inside', { count: inside })}
                                         </span>
                                     )}
                                     <span className="font-mono tabular-nums">
-                                        Edited{' '}
-                                        <LocalTime value={page.updatedAt} format={editedDate} title={editedTime} />
+                                        <Trans
+                                            t={t}
+                                            i18nKey="spaces:library.edited"
+                                            components={{
+                                                time: (
+                                                    <LocalTime
+                                                        value={page.updatedAt}
+                                                        format={editedDate}
+                                                        title={editedTime}
+                                                    />
+                                                ),
+                                            }}
+                                        />
                                     </span>
                                     {/* A level already says where it is; All pages names each page's path. */}
                                     {!byLevel && (
@@ -456,22 +484,22 @@ export function SpaceLibrary({
                         }
                         title={
                             query
-                                ? 'No matching pages'
+                                ? t('spaces:library.no-matches')
                                 : byLevel && folder
                                   ? folder.folder
-                                      ? 'This folder is empty'
-                                      : 'Nothing inside this page yet'
-                                  : 'No pages yet'
+                                      ? t('spaces:library.empty.folder')
+                                      : t('spaces:library.empty.page')
+                                  : t('spaces:library.empty.none')
                         }
                         action={
                             !query && (
                                 <div className="flex flex-wrap items-center justify-center gap-2">
                                     <PagePrimaryButton onClick={() => onNew(level)}>
-                                        <Plus className="size-4" /> New page
+                                        <Plus className="size-4" /> {t('spaces:library.new-page')}
                                     </PagePrimaryButton>
                                     {onNewFolder && (
                                         <Button variant="outline" onClick={() => setNaming(true)}>
-                                            <FolderPlus className="size-4" /> New folder
+                                            <FolderPlus className="size-4" /> {t('spaces:library.new-folder')}
                                         </Button>
                                     )}
                                 </div>
@@ -479,12 +507,12 @@ export function SpaceLibrary({
                         }
                     >
                         {query
-                            ? 'Try a different title or phrase.'
+                            ? t('spaces:library.try-different')
                             : byLevel && folder
                               ? folder.folder
-                                  ? 'Pages and folders you create here go inside it.'
-                                  : 'Pages you create here go inside it.'
-                              : 'Create your first page to start organizing this Space.'}
+                                  ? t('spaces:library.empty-hint.folder')
+                                  : t('spaces:library.empty-hint.page')
+                              : t('spaces:library.empty-hint.none')}
                     </LibraryEmpty>
                 )}
                 {onNewFolder && (
@@ -517,19 +545,21 @@ type Browse = 'level' | 'all';
 
 /** A folder card's line (CB-426) where a page's card shows its text: what it holds. */
 export function FolderLine({ inside }: { inside: number }) {
+    const { t } = useTranslation(['spaces']);
     return (
         <span data-slot="library-folder" className="inline-flex items-center gap-1.5">
             <Folder aria-hidden className="size-3.5 shrink-0" />
-            {inside ? `Folder · ${inside} inside` : 'Empty folder'}
+            {inside ? t('spaces:library.folder-line', { count: inside }) : t('spaces:library.empty-folder')}
         </span>
     );
 }
 
 /** A page's parents, root first, on its card (CB-237); nothing for a top-level page. */
 function PagePath({ titles }: { titles: string[] }) {
+    const { t } = useTranslation(['spaces', 'spaces.nav']);
     return titles.length ? (
-        <span className="min-w-0 [overflow-wrap:anywhere]" aria-label="Parent pages">
-            {titles.map((title) => title.trim() || 'Untitled page').join(' › ')}
+        <span className="min-w-0 [overflow-wrap:anywhere]" aria-label={t('spaces:library.parents')}>
+            {titles.map((title) => title.trim() || t('spaces.nav:untitled-page')).join(' › ')}
         </span>
     ) : null;
 }
@@ -602,6 +632,7 @@ function LibraryCard({
     onOpen: () => void;
     onDelete?: () => void;
 }) {
+    const { t } = useTranslation(['spaces', 'spaces.nav']);
     const list = layout === 'list';
     return (
         <div className="group/page relative flex min-w-0">
@@ -660,8 +691,8 @@ function LibraryCard({
             {onDelete && (
                 <Button
                     variant="ghost"
-                    aria-label={`Delete ${title.trim() || 'Untitled page'}`}
-                    title="Delete page"
+                    aria-label={t('spaces:library.delete', { title: title.trim() || t('spaces.nav:untitled-page') })}
+                    title={t('spaces:library.delete-title')}
                     className={cn(
                         'absolute size-7.5 rounded-lg p-0 text-muted-foreground opacity-0 transition-[opacity,background-color] group-hover/page:opacity-100 hover:bg-destructive/10 hover:text-destructive focus-visible:opacity-100 [@media(hover:none)]:opacity-100 dark:hover:bg-destructive/15',
                         list ? 'top-1/2 right-11.5 -translate-y-1/2 max-[700px]:right-3' : 'right-3.5 bottom-3.5',

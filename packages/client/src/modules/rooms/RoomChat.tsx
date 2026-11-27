@@ -30,6 +30,7 @@ import { messageAuthor } from '@socio/shared/runs/socio-fields';
 import type { Conversation, Dot, TranscriptTurnProblem } from '@socio/shared/types';
 
 import { useStickToBottom } from '../../hooks/use-stick-to-bottom';
+import { useOnDemand } from '../../i18n/on-demand';
 import { api, ApiError } from '../../lib/api';
 import { Mascot } from '../../locals/Mascot';
 import { CurrentUser } from '../../shell/current-user';
@@ -147,9 +148,34 @@ function RoomSocios({
  * Each member sees, edits and cancels only their own queued messages; a
  * room admin also sees everyone else's and may cancel them (CB-215).
  * Looking at the room clears its unread count for the reader.
+ *
+ * Its words (`rooms`) load on demand (chat:thread's clientLoader starts
+ * them with the route's data): until they're in, and on the server, it
+ * shows the chat's loading state, in the root's words.
  */
 export function RoomChat({ thread, dot }: { thread: Conversation; dot: Dot }) {
-    const { t } = useTranslation(['chat']);
+    const ready = useOnDemand(['rooms', 'chat']);
+    return ready ? <RoomChatView thread={thread} dot={dot} /> : <RoomLoading thread={thread} dot={dot} />;
+}
+
+/** A room's or team chat's first state, while its words load and on the server: its header, connecting. */
+export function RoomLoading({ thread, dot }: { thread: Conversation; dot: Dot }) {
+    const { t } = useTranslation(['chat.nav']);
+    return (
+        <ChatFrame aria-busy="true">
+            <ChatHeader
+                identity={dot.id}
+                mascotCharacter={dot.character}
+                mascotName={dot.name}
+                title={thread.title}
+                status={t('chat.nav:loading.connecting')}
+            />
+        </ChatFrame>
+    );
+}
+
+function RoomChatView({ thread, dot }: { thread: Conversation; dot: Dot }) {
+    const { t } = useTranslation(['rooms', 'chat']);
     const shell = useShell();
     const on = roomsOn(shell.state);
     const { room, update, reload } = useRoom(thread.id);
@@ -211,7 +237,7 @@ export function RoomChat({ thread, dot }: { thread: Conversation; dot: Dot }) {
     // Several socios (CB-206): who a message goes to, and whose turn runs.
     const several = answeringSocios(room?.socios).length > 1;
     // A handoff the live stream brought has ids only: the room's names.
-    const running = runningNote(several ? 'A socio' : dot.name, feed.phase);
+    const running = runningNote(several ? t('rooms:a-socio') : dot.name, feed.phase);
     // Where focus goes once a queued message it was on is gone (CB-219).
     const composerBox = () => document.querySelector<HTMLTextAreaElement>('[data-slot="room-composer"] textarea');
     // The reader's draft for the room (CB-153), which Reply quotes into.
@@ -239,7 +265,7 @@ export function RoomChat({ thread, dot }: { thread: Conversation; dot: Dot }) {
         name ||
         room?.socios.find((socio) => socio.dotId === id)?.name ||
         shell.workspace.dots.find((item) => item.id === id)?.name ||
-        'A socio';
+        t('rooms:a-socio');
     const mascots = roomSocios.length ? (
         <RoomSocios
             socios={roomSocios}
@@ -256,10 +282,10 @@ export function RoomChat({ thread, dot }: { thread: Conversation; dot: Dot }) {
                     mascotCharacter={dot.character}
                     mascotName={dot.name}
                     title={thread.title}
-                    status="Room"
+                    status={t('rooms:status')}
                 />
                 <div role="status" data-slot="room-gone" className={notice}>
-                    <p className="flex-1">You are no longer in this room, so you can’t read it here.</p>
+                    <p className="flex-1">{t('rooms:gone')}</p>
                 </div>
             </ChatFrame>
         );
@@ -290,7 +316,7 @@ export function RoomChat({ thread, dot }: { thread: Conversation; dot: Dot }) {
                             onClick={() => setPinsOpen(true)}
                         >
                             <Pin aria-hidden />
-                            <span className="max-[520px]:sr-only">Pinned</span>
+                            <span className="max-[520px]:sr-only">{t('rooms:pinned')}</span>
                         </Button>
                         <Button
                             ref={membersButton}
@@ -303,7 +329,7 @@ export function RoomChat({ thread, dot }: { thread: Conversation; dot: Dot }) {
                             disabled={!room}
                         >
                             <Users aria-hidden />
-                            <span className="max-[420px]:sr-only">Members</span>
+                            <span className="max-[420px]:sr-only">{t('rooms:members')}</span>
                         </Button>
                     </div>
                 }
@@ -315,7 +341,7 @@ export function RoomChat({ thread, dot }: { thread: Conversation; dot: Dot }) {
                     <ChatTranscript
                         messages={feed.messages}
                         calls={[]}
-                        dotName={soleSocio(room, dot)?.name ?? 'A socio'}
+                        dotName={soleSocio(room, dot)?.name ?? t('rooms:a-socio')}
                         reactions={reactions}
                         streamingId={feed.streamingId}
                         running={feed.running}
@@ -354,9 +380,7 @@ export function RoomChat({ thread, dot }: { thread: Conversation; dot: Dot }) {
                     />
                 )}
                 {feed.messages && !feed.messages.length && (
-                    <p className="mt-0 mb-3 text-[12px]/[1.7] text-muted-foreground">
-                        No messages yet. Everyone in the room reads what is written here.
-                    </p>
+                    <p className="mt-0 mb-3 text-[12px]/[1.7] text-muted-foreground">{t('rooms:empty')}</p>
                 )}
                 {feed.delivering.map((message) => (
                     <div
@@ -364,20 +388,24 @@ export function RoomChat({ thread, dot }: { thread: Conversation; dot: Dot }) {
                         data-delivering-message={message.id}
                         className="flex min-w-0 flex-col items-end gap-1"
                     >
-                        <span className="px-1 text-[12px] font-medium text-muted-foreground">You</span>
+                        <span className="px-1 text-[12px] font-medium text-muted-foreground">{t('rooms:you')}</span>
                         <div className={pendingUserBubble}>
                             <Markdown>{message.text}</Markdown>
                         </div>
                         <span className="px-1 text-[11px] text-muted-foreground">
-                            {`${several ? (messageTargets(message.text, room?.socios ?? [])[0]?.name ?? 'A socio') : dot.name} is reading this`}
+                            {t('rooms:reading', {
+                                name: several
+                                    ? (messageTargets(message.text, room?.socios ?? [])[0]?.name ?? t('rooms:a-socio'))
+                                    : dot.name,
+                            })}
                         </span>
                     </div>
                 ))}
                 <QueuedMessages
                     messages={queued}
                     returnFocus={composerBox}
-                    note={`${dot.name} reads this after its current step`}
-                    laterNote={`${dot.name} reads this once the reply is done`}
+                    note={t('rooms:queued.next', { name: dot.name })}
+                    laterNote={t('rooms:queued.later', { name: dot.name })}
                     onEdit={async (id, text) => {
                         await api(
                             `/conversations/${encodeURIComponent(thread.id)}/steering/${encodeURIComponent(id)}`,
@@ -397,7 +425,7 @@ export function RoomChat({ thread, dot }: { thread: Conversation; dot: Dot }) {
                 <OthersQueuedMessages
                     messages={othersQueued}
                     returnFocus={composerBox}
-                    note={`${dot.name} reads it in turn`}
+                    note={t('rooms:queued.others', { name: dot.name })}
                     onCancel={othersQueue.cancel}
                 />
             </ChatScroller>
@@ -482,12 +510,13 @@ function problemNote(problem: TranscriptTurnProblem) {
 
 /** Above an archived room: it's kept; its admins can bring it back. */
 function ArchivedRoomNotice({ thread, admin }: { thread: Conversation; admin: boolean }) {
+    const { t } = useTranslation(['rooms']);
     const { unarchive } = useArchiveRoom();
     const [busy, setBusy] = useState(false);
     return (
         <div role="status" data-slot="archived-room" className={notice}>
             <Archive className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-            <p className="min-w-0 flex-1">This room is archived.</p>
+            <p className="min-w-0 flex-1">{t('rooms:archived.notice')}</p>
             {admin && (
                 <Button
                     size="sm"
@@ -502,7 +531,7 @@ function ArchivedRoomNotice({ thread, admin }: { thread: Conversation; admin: bo
                         }
                     }}
                 >
-                    Unarchive
+                    {t('rooms:archived.unarchive')}
                 </Button>
             )}
         </div>
@@ -553,6 +582,7 @@ function RoomComposer({
     /** After a send (the queued message) or a stop (none). */
     onSent: (message?: QueuedMessage) => void;
 }) {
+    const { t } = useTranslation(['rooms']);
     // The box holds the words after a quote-reply's quote (CB-571), the
     // chip over it the quote.
     const quoted = useQuotedDraft(draft.text, draft.setText);
@@ -638,7 +668,7 @@ function RoomComposer({
             mentions.reset();
             onSent(answer.message);
         } catch (error) {
-            setProblem(failure(error, 'Your message wasn’t sent. Try again.'));
+            setProblem(failure(error, t('rooms:composer.send-failed')));
         } finally {
             setBusy(false);
         }
@@ -658,11 +688,11 @@ function RoomComposer({
                 const data = (await response.json().catch(() => ({}))) as {
                     error?: string;
                 };
-                throw new ApiError(data.error ?? 'Could not stop the answer.', response.status);
+                throw new ApiError(data.error ?? t('rooms:composer.stop-failed'), response.status);
             }
             onSent();
         } catch (error) {
-            toast.error(failure(error, 'Could not stop the answer.'));
+            toast.error(failure(error, t('rooms:composer.stop-failed')));
         } finally {
             setStopping(false);
         }
@@ -702,7 +732,7 @@ function RoomComposer({
                 ref={box}
                 {...mentions.inputProps}
                 {...(invite.active ? invite.inputProps : {})}
-                aria-label="Message the room"
+                aria-label={t('rooms:composer.label')}
                 // One line on a phone (CB-219): who answers is said under the box.
                 // A long lead socio name is truncated so the placeholder stays on
                 // one line rather than wrapping (Rooms follow-ups). An admin gets a
@@ -710,11 +740,11 @@ function RoomComposer({
                 placeholder={
                     admin
                         ? several
-                            ? 'Message the room, @ a socio, or /invite…'
-                            : `Message the room and ${fitName(dot.name)}, or /invite…`
+                            ? t('rooms:composer.placeholder-admin-several')
+                            : t('rooms:composer.placeholder-admin', { name: fitName(dot.name) })
                         : several
-                          ? 'Message the room, or @ a socio…'
-                          : `Message the room and ${fitName(dot.name)}…`
+                          ? t('rooms:composer.placeholder-several')
+                          : t('rooms:composer.placeholder', { name: fitName(dot.name) })
                 }
                 rows={1}
                 value={quoted.text}
@@ -750,17 +780,17 @@ function RoomComposer({
                     aria-live="polite"
                 >
                     {named
-                        ? `To ${targetsLine(targets)} · everyone in the room reads it`
+                        ? t('rooms:composer.to-targets', { targets: targetsLine(targets) })
                         : running
-                          ? `Waits for the current step`
+                          ? t('rooms:composer.waits')
                           : several
-                            ? `To ${dot.name}, the lead · everyone in the room reads it`
-                            : 'Everyone in the room reads it'}
+                            ? t('rooms:composer.to-lead', { name: dot.name })
+                            : t('rooms:composer.everyone')}
                 </span>
                 {running && (
                     <ChatIconButton
-                        aria-label="Stop the answer"
-                        title="Stop the answer (yours, or any as a room admin)"
+                        aria-label={t('rooms:composer.stop')}
+                        title={t('rooms:composer.stop-title')}
                         disabled={stopping}
                         onClick={() => void stop()}
                         className="size-11"
@@ -770,7 +800,7 @@ function RoomComposer({
                 )}
                 <SendButton
                     type="submit"
-                    aria-label={running ? 'Queue message' : 'Send message'}
+                    aria-label={running ? t('rooms:composer.queue') : t('rooms:composer.send')}
                     disabled={busy || !typed || invite.active || !!overLimit}
                 >
                     <ArrowUp size={19} />

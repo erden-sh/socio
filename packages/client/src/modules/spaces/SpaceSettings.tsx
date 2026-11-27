@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 
+import { useTranslation } from '@socio/i18n/react';
 import { MODULE_IDS } from '@socio/shared/modules';
 import { isAdmin } from '@socio/shared/roles';
 import { SPACE_ROLES, type SpacePeopleView, type SpaceRole } from '@socio/shared/space-memory';
@@ -19,16 +20,15 @@ import { SpaceTabs, spaceTitle } from './space-tabs';
 import { SpaceAudienceField } from './SpaceAudienceField';
 
 import { ConfirmDelete } from '@/components/confirm-delete';
-import { PRIVATE_SPACE_COVERS } from '@/components/private-space';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-const ROLE_LABELS: Record<SpaceRole, string> = {
-    editor: 'Editor',
-    member: 'Member',
-};
+const ROLE_KEYS = {
+    editor: 'spaces.settings:roles.editor',
+    member: 'spaces.settings:roles.member',
+} as const satisfies Record<SpaceRole, string>;
 
 const failure = (error: unknown, fallback: string) => (error instanceof Error ? error.message : fallback);
 
@@ -38,6 +38,7 @@ const failure = (error: unknown, fallback: string) => (error instanceof Error ? 
  * (CB-277: a private one's editors, admins any) find that last.
  */
 export function SpaceSettings({ space }: { space: Space }) {
+    const { t } = useTranslation(['spaces.settings']);
     const shell = useShell();
     const navigate = useNavigate();
     const [view, setView] = useState<SpacePeopleView>();
@@ -48,9 +49,9 @@ export function SpaceSettings({ space }: { space: Space }) {
         try {
             setView(await api<SpacePeopleView>(`${base}/people`));
         } catch (error) {
-            toast.error(failure(error, 'Could not load the Space’s people.'));
+            toast.error(failure(error, t('spaces.settings:people.load-failed')));
         }
-    }, [base]);
+    }, [base, t]);
     useEffect(() => {
         void load();
     }, [load]);
@@ -67,27 +68,31 @@ export function SpaceSettings({ space }: { space: Space }) {
                 setView(next);
             }
         } catch (error) {
-            toast.error(failure(error, 'Could not save. Try again.'));
+            toast.error(failure(error, t('spaces.settings:people.save-failed')));
         }
     };
 
     const editor = view?.access === 'editor';
     const admin = isAdmin(shell.workspace.user);
     return (
-        <section data-slot="space-settings" className="w-full pb-8" aria-label={`${space.name} settings`}>
+        <section
+            data-slot="space-settings"
+            className="w-full pb-8"
+            aria-label={t('spaces.settings:label', { space: space.name })}
+        >
             <PageHeader module={MODULE_IDS.spaces} title={spaceTitle(space)}>
-                Who sees this Space, and its people.
+                {t('spaces.settings:description')}
             </PageHeader>
             <SpaceTabs space={space} />
             <div className="max-w-3xl px-4 pt-5 md:px-6">
                 {!view ? (
-                    <p className="text-xs text-muted-foreground">Loading…</p>
+                    <p className="text-xs text-muted-foreground">{t('spaces.settings:loading')}</p>
                 ) : (
                     <>
                         {editor && <SpaceName space={space} onRenamed={() => shell.refresh()} />}
                         {editor ? (
                             <SpaceAudienceField
-                                legend="Who can see this Space"
+                                legend={t('spaces.settings:audience-legend')}
                                 admin={admin}
                                 value={view.membersOnly}
                                 onChange={(next) => {
@@ -101,10 +106,9 @@ export function SpaceSettings({ space }: { space: Space }) {
                                 data-slot="space-audience-note"
                                 className="mb-6 text-xs leading-[1.7] text-muted-foreground"
                             >
-                                {view.membersOnly
-                                    ? `Private: only its people and workspace admins see it, ${PRIVATE_SPACE_COVERS}.`
-                                    : 'Everyone in the workspace sees this Space and everything in it.'}{' '}
-                                Its editors choose.
+                                {t('spaces.settings:audience-note', {
+                                    context: view.membersOnly ? 'private' : undefined,
+                                })}
                             </p>
                         )}
                         <SpacePeople view={view} onChange={change} />
@@ -114,10 +118,9 @@ export function SpaceSettings({ space }: { space: Space }) {
                                 data-slot="space-delete"
                                 className="mt-8 grid gap-2 rounded-lg border border-destructive/40 p-4"
                             >
-                                <SectionTitle id="space-delete">Delete this Space</SectionTitle>
+                                <SectionTitle id="space-delete">{t('spaces.settings:delete.title')}</SectionTitle>
                                 <p className="text-xs leading-[1.7] text-muted-foreground">
-                                    It goes for everyone at once, with its pages, chats, memory, app shares and socios’
-                                    access. A workspace admin can restore it.
+                                    {t('spaces.settings:delete.body')}
                                 </p>
                                 <div>
                                     <Button
@@ -127,7 +130,7 @@ export function SpaceSettings({ space }: { space: Space }) {
                                         onClick={() => setDeleting(true)}
                                     >
                                         <Trash2 className="size-4" aria-hidden />
-                                        Delete this Space
+                                        {t('spaces.settings:delete.action')}
                                     </Button>
                                 </div>
                             </section>
@@ -148,17 +151,15 @@ export function SpaceSettings({ space }: { space: Space }) {
                 <ConfirmDelete
                     slot="space-audience-confirm"
                     variant="default"
-                    title={confirming ? 'Make this Space private?' : 'Open this Space to the whole workspace?'}
-                    action={confirming ? 'Make private' : 'Open to everyone'}
+                    title={t('spaces.settings:confirm.title', { context: confirming ? 'private' : undefined })}
+                    action={t('spaces.settings:confirm.action', { context: confirming ? 'private' : undefined })}
                     onClose={() => setConfirming(undefined)}
                     onConfirm={async () => {
                         await change('/access', 'PUT', { membersOnly: confirming });
                         setConfirming(undefined);
                     }}
                 >
-                    {confirming
-                        ? `From now on only its people and workspace admins see it, ${PRIVATE_SPACE_COVERS}. Everyone else stops seeing it at once, and socios use it only in chats where everyone may.`
-                        : 'Everyone in the workspace will see it and everything in it.'}
+                    {t('spaces.settings:confirm.body', { context: confirming ? 'private' : undefined })}
                 </ConfirmDelete>
             )}
         </section>
@@ -170,6 +171,7 @@ export function SpaceSettings({ space }: { space: Space }) {
  * pages, chats and links, which name its id, stay as they are.
  */
 function SpaceName({ space, onRenamed }: { space: Space; onRenamed: () => Promise<unknown> }) {
+    const { t } = useTranslation(['spaces.settings']);
     const [name, setName] = useState(space.name);
     const [saving, setSaving] = useState(false);
     // Another tab, or a socio, renamed it: show the name in force.
@@ -194,21 +196,19 @@ function SpaceName({ space, onRenamed }: { space: Space; onRenamed: () => Promis
                 try {
                     await api<Space>(`/spaces/${encodeURIComponent(space.id)}`, 'PATCH', { name: next });
                     await onRenamed();
-                    toast.success('Space renamed.');
+                    toast.success(t('spaces.settings:name.renamed'));
                 } catch (error) {
-                    toast.error(failure(error, 'Could not rename the Space. Try again.'));
+                    toast.error(failure(error, t('spaces.settings:name.failed')));
                 } finally {
                     setSaving(false);
                 }
             }}
         >
-            <SectionTitle id="space-name">Name</SectionTitle>
-            <p className="text-xs leading-[1.7] text-muted-foreground">
-                Renaming keeps its pages, chats and links as they are.
-            </p>
+            <SectionTitle id="space-name">{t('spaces.settings:name.title')}</SectionTitle>
+            <p className="text-xs leading-[1.7] text-muted-foreground">{t('spaces.settings:name.hint')}</p>
             <div className="flex flex-wrap items-center gap-2">
                 <Input
-                    aria-label="Space name"
+                    aria-label={t('spaces.settings:name.label')}
                     className="min-w-44 flex-1 sm:max-w-sm"
                     value={name}
                     maxLength={SPACE_NAME_MAX}
@@ -217,7 +217,7 @@ function SpaceName({ space, onRenamed }: { space: Space; onRenamed: () => Promis
                     onChange={(event) => setName(event.target.value)}
                 />
                 <Button type="submit" size="sm" variant="outline" disabled={saving || !next || unchanged}>
-                    Rename
+                    {t('spaces.settings:name.rename')}
                 </Button>
             </div>
         </form>
@@ -232,16 +232,14 @@ function SpacePeople({
     view: SpacePeopleView;
     onChange: (path: string, method: string, body?: unknown) => Promise<void>;
 }) {
+    const { t } = useTranslation(['spaces.settings']);
     const editor = view.access === 'editor';
     const [adding, setAdding] = useState('');
     const [role, setRole] = useState<SpaceRole>('member');
     return (
         <section aria-labelledby="space-people" data-slot="space-people">
-            <SectionTitle id="space-people">People</SectionTitle>
-            <p className="mb-3 text-xs leading-[1.7] text-muted-foreground">
-                Editors manage its people and who sees it, and approve its memory; members read it and propose.
-                Workspace admins are editors of every Space.
-            </p>
+            <SectionTitle id="space-people">{t('spaces.settings:people.title')}</SectionTitle>
+            <p className="mb-3 text-xs leading-[1.7] text-muted-foreground">{t('spaces.settings:people.hint')}</p>
             {view.people.length ? (
                 <ul className="grid gap-2">
                     {view.people.map((person) => (
@@ -261,13 +259,17 @@ function SpacePeople({
                                             })
                                         }
                                     >
-                                        <SelectTrigger size="sm" aria-label={`${person.name}’s role`} className="w-28">
+                                        <SelectTrigger
+                                            size="sm"
+                                            aria-label={t('spaces.settings:people.role-of', { name: person.name })}
+                                            className="w-28"
+                                        >
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {SPACE_ROLES.map((value) => (
                                                 <SelectItem key={value} value={value}>
-                                                    {ROLE_LABELS[value]}
+                                                    {t(ROLE_KEYS[value])}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
@@ -277,8 +279,8 @@ function SpacePeople({
                                         size="icon"
                                         variant="ghost"
                                         className="size-8 pointer-coarse:size-11"
-                                        aria-label={`Remove ${person.name}`}
-                                        title={`Remove ${person.name}`}
+                                        aria-label={t('spaces.settings:people.remove', { name: person.name })}
+                                        title={t('spaces.settings:people.remove', { name: person.name })}
                                         onClick={() =>
                                             void onChange(`/people/${encodeURIComponent(person.userId)}`, 'DELETE')
                                         }
@@ -287,18 +289,18 @@ function SpacePeople({
                                     </Button>
                                 </>
                             ) : (
-                                <Badge variant="secondary">{ROLE_LABELS[person.role]}</Badge>
+                                <Badge variant="secondary">{t(ROLE_KEYS[person.role])}</Badge>
                             )}
                         </li>
                     ))}
                 </ul>
             ) : (
-                <p className="text-xs text-muted-foreground">No one added yet: workspace admins manage it.</p>
+                <p className="text-xs text-muted-foreground">{t('spaces.settings:people.none')}</p>
             )}
             {editor && view.candidates.length > 0 && (
                 <form
                     className="mt-3 flex flex-wrap items-center gap-2"
-                    aria-label="Add a person"
+                    aria-label={t('spaces.settings:people.add-form')}
                     onSubmit={(event) => {
                         event.preventDefault();
                         if (!adding) {
@@ -310,8 +312,12 @@ function SpacePeople({
                     }}
                 >
                     <Select value={adding} onValueChange={setAdding}>
-                        <SelectTrigger size="sm" aria-label="Person to add" className="min-w-44 flex-1 sm:flex-none">
-                            <SelectValue placeholder="Choose a person" />
+                        <SelectTrigger
+                            size="sm"
+                            aria-label={t('spaces.settings:people.person-to-add')}
+                            className="min-w-44 flex-1 sm:flex-none"
+                        >
+                            <SelectValue placeholder={t('spaces.settings:people.choose')} />
                         </SelectTrigger>
                         <SelectContent>
                             {view.candidates.map((candidate) => (
@@ -322,19 +328,19 @@ function SpacePeople({
                         </SelectContent>
                     </Select>
                     <Select value={role} onValueChange={(value) => setRole(value as SpaceRole)}>
-                        <SelectTrigger size="sm" aria-label="Role" className="w-28">
+                        <SelectTrigger size="sm" aria-label={t('spaces.settings:people.role')} className="w-28">
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
                             {SPACE_ROLES.map((value) => (
                                 <SelectItem key={value} value={value}>
-                                    {ROLE_LABELS[value]}
+                                    {t(ROLE_KEYS[value])}
                                 </SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
                     <Button size="sm" variant="outline" disabled={!adding}>
-                        Add
+                        {t('spaces.settings:people.add')}
                     </Button>
                 </form>
             )}

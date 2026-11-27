@@ -1,1 +1,89 @@
-{}
+{
+    "label": "{{space}} memory",
+    "description": "Shared memory: what this Space’s socios know for everyone who can read it. Approved by its editors.",
+    "add": "Add entry",
+    "propose": "Propose entry",
+    "missing": "Space not found.",
+    "loading": "Loading memory…",
+    "load-failed": "Could not load the Space’s memory.",
+    "save-failed": "Could not save. Try again.",
+    "audience": {
+        "who": "Everyone in the workspace reads this Space’s memory.",
+        "who_private": "This Space is private: only its people and workspace admins read its memory.",
+        "use": "Socios with this Space use matching entries in chats, and in a chat with other people only when every one of them can read it.",
+        "waits": "What you propose waits for its editors.",
+        "waits_editor": "Socios’ proposals wait for you or another editor."
+    },
+    "provenance": {
+        "proposed": "Proposed by {{person}}",
+        "proposed_socio": "Proposed by {{socio}} for {{person}}",
+        "proposed-in": "Proposed by {{person}} in <chat>{{chat}}</chat>",
+        "proposed-in_socio": "Proposed by {{socio}} for {{person}} in <chat>{{chat}}</chat>"
+    },
+    "proposals": {
+        "title": "Your proposals",
+        "title_editor": "Waiting for approval",
+        "changes": "Changes: “{{text}}”",
+        "changes_unknown": "Changes: “an earlier entry”",
+        "approve": "Approve",
+        "edit-approve": "Edit and approve",
+        "reject": "Reject",
+        "withdraw": "Withdraw"
+    },
+    "entries": {
+        "title": "In use",
+        "version": "Version {{version}}",
+        "approved-by": "Approved by {{name}}",
+        "approved-by_unknown": "Approved by an editor",
+        "history": "Entry history",
+        "edit": "Suggest a change",
+        "edit_editor": "Edit entry",
+        "retire": "Retire entry",
+        "empty": "Nothing yet. Propose a lasting team fact, convention or decision, like “Invoices go out on the 1st”, or ask a socio with this Space to propose one."
+    },
+    "retired": {
+        "title": "Retired",
+        "by": "Retired by {{name}}",
+        "by_unknown": "Retired by an editor",
+        "delete": "Delete retired entry",
+        "kept_one": "Kept {{count, number}} day after they are retired, with earlier versions and proposals turned down.",
+        "kept_other": "Kept {{count, number}} days after they are retired, with earlier versions and proposals turned down."
+    },
+    "retire-confirm": {
+        "title": "Retire this entry?",
+        "action": "Retire",
+        "body": "Socios stop using it in every chat at once. Proposals waiting to change it are turned down. It stays under Retired until it is deleted."
+    },
+    "delete-confirm": {
+        "title": "Delete this entry for good?",
+        "body": "Every version of it goes. Backups keep it until they age out."
+    },
+    "editor": {
+        "title-approve": "Approve in your words.",
+        "title-change": "Suggest a change.",
+        "title-change_editor": "Keep it accurate.",
+        "title-new": "Propose shared knowledge.",
+        "title-new_editor": "Something the team knows.",
+        "label": "Entry",
+        "note": "It waits for one of the Space’s editors, and is used only once they approve it.",
+        "note_now": "It is in use as soon as you save: socios with this Space use it with everyone who can read it. The version before is kept in its history.",
+        "rule": "One lasting fact, convention or decision; nothing private about a person, and no secrets."
+    },
+    "history": {
+        "title": "Entry history",
+        "description": "Every version, newest first, with who proposed and approved it.",
+        "load-failed": "Could not load its history.",
+        "version": "Version {{version}}",
+        "proposal": "Proposal",
+        "decided": "approved by {{name}}",
+        "decided_rejected": "rejected by {{name}}"
+    },
+    "status": {
+        "proposed": "Waiting for approval",
+        "active": "In use",
+        "superseded": "Replaced",
+        "rejected": "Rejected",
+        "withdrawn": "Withdrawn",
+        "retired": "Retired"
+    }
+}

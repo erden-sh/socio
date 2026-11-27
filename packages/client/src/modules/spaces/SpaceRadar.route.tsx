@@ -11,9 +11,16 @@ import { spacePath } from '../pages/page-navigation';
  * inlines the tab's words.
  */
 export const handle: RouteHandle = {
-    crumb: ({ workspace, params }) => {
+    crumb: ({ workspace, params, t }) => {
         const found = workspace.spaces.find((item) => item.id === params.spaceId);
-        return [found ? { label: found.name, to: spacePath(found.id) } : { label: 'Spaces' }, { label: 'Radar' }];
+        return [
+            found
+                ? { label: found.name, to: spacePath(found.id) }
+                : // oxlint-disable-next-line socio/translate-in-components -- the header's t, passed at each render (CrumbContext)
+                  { label: t('spaces.nav:crumbs.spaces') },
+            // oxlint-disable-next-line socio/translate-in-components -- the header's t, passed at each render (CrumbContext)
+            { label: t('spaces.nav:crumbs.radar') },
+        ];
     },
 };
 

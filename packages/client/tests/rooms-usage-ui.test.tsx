@@ -10,7 +10,7 @@ vi.mock('../src/lib/api', () => ({
 import type { RoomCycleUsage, RoomUsageView } from '@socio/shared/rooms/rooms';
 
 import { api } from '../src/lib/api';
-import { RoomUsage, cycleLines, limitsLine } from '../src/modules/rooms/RoomUsage';
+import { RoomUsage, useRoomUsageWords } from '../src/modules/rooms/RoomUsage';
 
 // CB-218: a room's use and limits in its Members panel, in words.
 
@@ -56,7 +56,19 @@ const current: RoomCycleUsage = {
     stoppedBy: null,
 };
 
+/** The hook's words, read through a component. */
+function usageWords() {
+    let words!: ReturnType<typeof useRoomUsageWords>;
+    function Probe() {
+        words = useRoomUsageWords();
+        return null;
+    }
+    act(() => root.render(<Probe />));
+    return words;
+}
+
 it('says the limits and the current message’s use, never another’s spend', () => {
+    const { limitsLine, cycleLines } = usageWords();
     expect(limitsLine(limits)).toBe(
         'Each message: up to 10 min of work, 2,000,000 tokens, 4 handoffs. 20 messages a minute, 10 waiting at most.',
     );

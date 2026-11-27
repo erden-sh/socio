@@ -119,7 +119,8 @@ export async function pageLoaders(seed: SeededWorkspace): Promise<PageLoader[]> 
             route: 'spaces:space',
             kept: true,
             address: () => `/spaces/${space.id}/pages/${oldest.id}`,
-            load: (services) => services.spaceLibrary(space.id, oldest.id),
+            // The route's data beside its words (`i18n`, which isn't timed).
+            load: async (services) => ({ library: await services.spaceLibrary(space.id, oldest.id) }),
         },
         {
             page: '/approvals',

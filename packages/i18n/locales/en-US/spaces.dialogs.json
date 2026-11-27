@@ -1,1 +1,42 @@
-{}
+{
+    "delete": {
+        "title": "Delete “{{name}}”?",
+        "description": "It’s removed for everyone at once, and these go with it:",
+        "goes-with": "Deleted with it",
+        "items": {
+            "pages": "Its pages and their history",
+            "chats": "Page chats and Ask chats about its pages, for everyone",
+            "memory": "Its shared memory",
+            "shares": "Apps, datasets and link cards shared with it (their owners keep them)",
+            "socios": "Socios’ access to it"
+        },
+        "restore": "Nothing is erased: a workspace admin can restore it, with everything in it, from Settings → Deleted Spaces.",
+        "confirm": "Type <name>{{name}}</name> to confirm",
+        "cancel": "Cancel",
+        "action": "Delete Space",
+        "deleting": "Deleting…",
+        "deleted": "Deleted “{{name}}”",
+        "failed": "Could not delete the Space."
+    },
+    "dataset": {
+        "new": "New dataset",
+        "existing": "Add existing dataset",
+        "description-new": "A dataset of yours in {{space}}: everyone who reads the Space can read it.",
+        "description-existing": "Everyone who reads {{space}} can read the dataset you add.",
+        "name-label": "Dataset name",
+        "name-placeholder": "Name",
+        "loading": "Loading…",
+        "choose-label": "Dataset",
+        "option": "{{title}} ({{note}})",
+        "socio": "Socio",
+        "written-by": "Written by {{plugin}}",
+        "workspace": "Workspace",
+        "none": "Every dataset you manage is in a Space already.",
+        "cancel": "Cancel",
+        "create": "Create",
+        "add": "Add",
+        "placed": "“{{dataset}}” is in {{space}}.",
+        "load-failed": "Could not load your datasets.",
+        "failed": "Could not place the dataset."
+    }
+}

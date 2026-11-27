@@ -1,1 +1,47 @@
-{}
+{
+    "label": "{{space}} settings",
+    "description": "Who sees this Space, and its people.",
+    "loading": "Loading…",
+    "audience-legend": "Who can see this Space",
+    "audience-note": "Everyone in the workspace sees this Space and everything in it. Its editors choose.",
+    "audience-note_private": "Private: only its people and workspace admins see it, its pages and their history, page chats, search results, apps, datasets and files shared with it, and its memory. Its editors choose.",
+    "delete": {
+        "title": "Delete this Space",
+        "body": "It goes for everyone at once, with its pages, chats, memory, app shares and socios’ access. A workspace admin can restore it.",
+        "action": "Delete this Space"
+    },
+    "confirm": {
+        "title": "Open this Space to the whole workspace?",
+        "title_private": "Make this Space private?",
+        "action": "Open to everyone",
+        "action_private": "Make private",
+        "body": "Everyone in the workspace will see it and everything in it.",
+        "body_private": "From now on only its people and workspace admins see it, its pages and their history, page chats, search results, apps, datasets and files shared with it, and its memory. Everyone else stops seeing it at once, and socios use it only in chats where everyone may."
+    },
+    "name": {
+        "title": "Name",
+        "hint": "Renaming keeps its pages, chats and links as they are.",
+        "label": "Space name",
+        "rename": "Rename",
+        "renamed": "Space renamed.",
+        "failed": "Could not rename the Space. Try again."
+    },
+    "people": {
+        "title": "People",
+        "hint": "Editors manage its people and who sees it, and approve its memory; members read it and propose. Workspace admins are editors of every Space.",
+        "role-of": "{{name}}’s role",
+        "remove": "Remove {{name}}",
+        "none": "No one added yet: workspace admins manage it.",
+        "add-form": "Add a person",
+        "person-to-add": "Person to add",
+        "choose": "Choose a person",
+        "role": "Role",
+        "add": "Add",
+        "load-failed": "Could not load the Space’s people.",
+        "save-failed": "Could not save. Try again."
+    },
+    "roles": {
+        "editor": "Editor",
+        "member": "Member"
+    }
+}

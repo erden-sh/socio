@@ -1,1 +1,48 @@
-{}
+{
+    "title": "Create follow-up",
+    "description": "Turn this finding into a goal, a recurring schedule, or a board issue. It's prefilled from the page — edit, then confirm. Nothing is created until you do.",
+    "untitled": "Untitled page",
+    "fields": {
+        "title": "Title",
+        "body": "Body",
+        "destination": "Destination",
+        "kind": "Kind",
+        "priority": "Priority",
+        "area": "Area",
+        "no-area": "No area",
+        "repeat": "Repeat after each successful run"
+    },
+    "destinations": {
+        "issue": "Board issue",
+        "issue-hint": "Filed into triage for review.",
+        "schedule": "Recurring schedule",
+        "schedule-hint": "Runs in a conversation of its own, on a cadence.",
+        "goal": "Goal",
+        "goal-hint": "Ask this specialist to work toward it; you approve it."
+    },
+    "intervals": {
+        "hour": "Every hour",
+        "day": "Every day",
+        "week": "Every week"
+    },
+    "goal-note": "{{socio}} will propose the goal and work toward it on its own cadence. You approve the request before anything starts — the same way goals are always set.",
+    "cancel": "Cancel",
+    "creating": "Creating…",
+    "submit": {
+        "issue": "File issue",
+        "schedule": "Create schedule",
+        "goal": "Ask for goal"
+    },
+    "toasts": {
+        "filed": "Filed {{key}}",
+        "open": "Open",
+        "scheduled": "Schedule created",
+        "scheduled-detail": "It runs in its own conversation.",
+        "asked": "Asked for a goal",
+        "asked-detail": "{{socio}} will propose it; you approve before it starts."
+    },
+    "errors": {
+        "no-specialist": "No specialist for this Space.",
+        "failed": "Could not create the follow-up."
+    }
+}

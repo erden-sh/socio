@@ -1,1 +1,99 @@
-{}
+{
+    "day": "{{at, datetime(month: short; day: numeric)}}",
+    "load-failed": "Could not load the pinned facts.",
+    "outcome": {
+        "pinned": "Pinned. The socio reads it from the next message.",
+        "proposed": "Proposed. A room admin decides whether to pin it.",
+        "unchanged": "That is pinned or proposed already.",
+        "done": "Done."
+    },
+    "title": "Pinned facts",
+    "description": "The socio reads these with every message. This room is read-only now, so nothing changes here.",
+    "description_loading": "Facts the room’s socio reads with every message.",
+    "description_manage": "The socio reads these with every message. As a room admin you pin, edit and unpin them, and decide what others propose.",
+    "description_propose": "The socio reads these with every message. Propose a fact and a room admin decides; you can edit or unpin the ones you pinned.",
+    "loading": "Loading…",
+    "pinned": "Pinned ({{pins, number}} of {{max, number}})",
+    "pinned-list": "Pinned facts",
+    "nothing": "Nothing pinned yet.",
+    "chars": "{{chars, number}} of {{max, number}} characters used.",
+    "pin-a-fact": "Pin a fact",
+    "propose-a-fact": "Propose a fact",
+    "pin": "Pin",
+    "propose": "Propose",
+    "pin-failed": "Could not pin that.",
+    "proposed": "Proposed ({{n, number}})",
+    "proposed-list": "Proposed facts",
+    "pin-row": {
+        "save": "Save",
+        "propose-change": "Propose change",
+        "change-failed": "Could not change it.",
+        "pinned-by": "Pinned by {{name}}",
+        "pinned-by_you": "Pinned by you",
+        "version": "version {{version, number}}",
+        "from-notes": "from the notes",
+        "edit": "Edit",
+        "suggest": "Suggest a change",
+        "unpin": "Unpin",
+        "unpin-failed": "Could not unpin it.",
+        "history": "History",
+        "hide-history": "Hide history"
+    },
+    "former-member": "a former member",
+    "status": {
+        "proposed": "Proposed",
+        "pinned": "In use",
+        "superseded": "Replaced",
+        "unpinned": "Unpinned",
+        "rejected": "Not pinned",
+        "withdrawn": "Withdrawn"
+    },
+    "line": {
+        "pinned": "Pinned by {{name}}",
+        "edited": "Edited by {{name}}",
+        "proposed": "Proposed by {{name}}",
+        "turned-down": "turned down by {{name}}",
+        "approved": "approved by {{name}}",
+        "unpinned": "unpinned by {{name}}",
+        "replaced": "replaced by {{name}}",
+        "joined": "{{parts, list(type: unit; style: short)}}"
+    },
+    "history": {
+        "failed": "Could not load its history.",
+        "list": "History",
+        "version": "v{{version}}",
+        "proposal": "proposal"
+    },
+    "proposal": {
+        "proposed-by": "Proposed by {{name}}",
+        "proposed-by_you": "Proposed by you",
+        "changes": "changes “{{text}}”",
+        "changes-stale": "changes a pin that has changed since",
+        "approve": "Approve",
+        "approve-failed": "Could not pin it.",
+        "turn-down": "Turn down",
+        "turn-down-failed": "Could not turn it down.",
+        "withdraw": "Withdraw",
+        "withdraw-failed": "Could not withdraw it."
+    },
+    "fact": {
+        "label": "The fact",
+        "placeholder": "Decision: launch on 3 November",
+        "limit": "One fact, up to {{max, number}} characters.",
+        "cancel": "Cancel"
+    },
+    "notes": {
+        "title": "Notes on earlier messages",
+        "none": "None yet. When the room gets long, Socio keeps notes on its earlier messages for everyone in it, with who said what. They never hold what a socio found with someone’s own access.",
+        "current_one": "Version {{version, number}}, covering the first {{count, number}} turn",
+        "current_other": "Version {{version, number}}, covering the first {{count, number}} turns",
+        "facts": "Facts",
+        "pin-fact": "Pin: {{fact}}",
+        "propose-fact": "Propose: {{fact}}",
+        "versions": "Versions ({{n, number}})",
+        "version-turns": "v{{version}} · turns {{from}}–{{to}}",
+        "by": "by {{name}}",
+        "in-turn": "in {{name}}’s turn",
+        "fallback": "kept plainly (the notes’ model failed)"
+    }
+}

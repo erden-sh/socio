@@ -1,1 +1,42 @@
-{}
+{
+    "group": "Rooms",
+    "room": "Room",
+    "new-room": "New room",
+    "invitations": "Invitations",
+    "invitations-waiting": ", {{n, number}} waiting",
+    "empty": "Rooms you create or join show here: one conversation for several people and a socio.",
+    "show-fewer": "Show fewer",
+    "show-all_one": "Show all {{count, number}}",
+    "show-all_other": "Show all {{count, number}}",
+    "muted": ", muted",
+    "unread": ", {{unread}} unread",
+    "admin": "Admin",
+    "options-for": "Options for {{title}}",
+    "invites": {
+        "one": "You’re invited to the room “{{title}}”.",
+        "many_one": "You’re invited to {{count, number}} room.",
+        "many_other": "You’re invited to {{count, number}} rooms.",
+        "review": "Review"
+    },
+    "menu": {
+        "section": "Room",
+        "members": "Members",
+        "topic": "Telegram topic",
+        "rename": "Rename",
+        "archive": "Archive",
+        "unarchive": "Unarchive",
+        "leave": "Leave room",
+        "notify": "Notify me about"
+    },
+    "toasts": {
+        "archived": "Room archived",
+        "undo": "Undo",
+        "unarchived": "Room unarchived"
+    },
+    "errors": {
+        "archive": "Could not archive the room.",
+        "unarchive": "Could not unarchive the room.",
+        "read": "Could not read the room.",
+        "notify": "Could not change this room’s notifications."
+    }
+}

@@ -40,6 +40,8 @@
                 "$TURBO_ROOT$/packages/client/src/modules/types.ts",
                 "$TURBO_ROOT$/packages/client/src/modules/settings/WorkspaceDialog.tsx",
                 "$TURBO_ROOT$/packages/i18n/locales/en-US/settings.dialogs.json",
+                "$TURBO_ROOT$/packages/i18n/locales/en-US/spaces*.json",
+                "$TURBO_ROOT$/packages/i18n/locales/en-US/rooms*.json",
                 "$TURBO_ROOT$/packages/i18n/locales/en-US/shell*.json",
                 "$TURBO_ROOT$/packages/i18n/locales/en-US/chat*.json",
                 "$TURBO_ROOT$/packages/i18n/locales/en-US/issues*.json",

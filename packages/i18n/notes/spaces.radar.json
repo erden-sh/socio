@@ -1,0 +1,22 @@
+{
+    "label": "Accessible name of a Space's Radar tab. {{space}} is the Space's name. \"Space\" is a product noun (a shared area of pages).",
+    "description": "Subtitle under the Space's name on its Radar tab: a view of what changed recently, what's still open and what may be out of date across its pages.",
+    "refresh": "Button that loads the radar again.",
+    "refresh-label": "Accessible name of the Refresh button.",
+    "missing": "Shown when the Space doesn't exist or the person can't read it.",
+    "scope": "Explains the radar's scope. {{count}} is how many pages the Space has; {{days}} the stale threshold in days. \"Markers\" are keywords found in a page (todo, decision…); a dismissal hides an entry until the tab closes.",
+    "recent.title": "Section heading: pages changed most recently.",
+    "open.title": "Section heading: pages that carry an open decision or experiment.",
+    "open.empty": "The <em> tags wrap marker keywords the radar looks for in pages; keep them in English, as the radar matches them literally.",
+    "stale.title": "Section heading: pages that may be out of date.",
+    "stale.empty": "{{count}} is the stale threshold in days.",
+    "stale.today": "On a stale page's card: it was edited today.",
+    "stale.age": "On a stale page's card: {{count}} is the days since its last edit.",
+    "stale.dismiss": "Button that hides a stale page's card for this session.",
+    "resolved": "Button that hides an open decision's card for this session.",
+    "clear": "Link that shows the cards hidden this session again. {{count}} is how many are hidden.",
+    "untitled": "A page with no title, shown in its place.",
+    "revisions": "After a page's last-edited date: {{count}} earlier versions kept in its history.",
+    "ago-days": "Tooltip on a page's date: how long ago it changed, in days ({{days}} is negative, for the past).",
+    "ago-months": "Tooltip on a page's date: how long ago it changed, in months ({{months}} is negative, for the past)."
+}

@@ -1,6 +1,7 @@
 import { Mail } from 'lucide-react';
 import { useState } from 'react';
 
+import { useTranslation } from '@socio/i18n/react';
 import { roomsOn } from '@socio/shared/rooms/room-view';
 
 import { useShell } from '../../shell/shell-context';
@@ -17,6 +18,7 @@ import { Button } from '@/components/ui/button';
  * a phone's sidebar is closed, so an invitation would go unseen.
  */
 export function RoomInvitesNotice() {
+    const { t } = useTranslation(['rooms.nav']);
     const { state, workspace } = useShell();
     const { invites, reload } = useRoomInvites(roomsOn(state), workspace);
     const [open, setOpen] = useState(false);
@@ -32,10 +34,12 @@ export function RoomInvitesNotice() {
         >
             <Mail className="size-4 shrink-0 text-muted-foreground" aria-hidden />
             <p className="min-w-0 flex-1">
-                {only ? `You’re invited to the room “${only.title}”.` : `You’re invited to ${invites.length} rooms.`}
+                {only
+                    ? t('rooms.nav:invites.one', { title: only.title })
+                    : t('rooms.nav:invites.many', { count: invites.length })}
             </p>
             <Button size="sm" variant="outline" className={touchTarget} onClick={() => setOpen(true)}>
-                Review
+                {t('rooms.nav:invites.review')}
             </Button>
             <InvitesDialog open={open} onOpenChange={setOpen} invites={invites} onChanged={() => void reload()} />
         </div>

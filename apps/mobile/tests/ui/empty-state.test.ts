@@ -90,9 +90,13 @@ describe('the shared empty state', () => {
 
     it('offers New page on an empty Space, as the web’s library does', () => {
         const space = read('screens/space.tsx');
-        expect(web('modules/spaces/SpaceLibrary.tsx')).toContain(
-            "'Create your first page to start organizing this Space.'",
-        );
+        // The web's words are its en-US dictionary's (spaces).
+        const library = (
+            JSON.parse(
+                readFileSync(new URL('../../../../packages/i18n/locales/en-US/spaces.json', import.meta.url), 'utf8'),
+            ) as { library: { 'empty-hint': { none: string } } }
+        ).library;
+        expect(library['empty-hint'].none).toBe('Create your first page to start organizing this Space.');
         expect(space).toContain("NO_PAGES_LINE = 'Create your first page to start organizing this Space.'");
         expect(space).toMatch(/action=\{\{\s*label: NEW_PAGE,\s*onPress: manage\.newPage,\s*variant: 'primary'/);
     });

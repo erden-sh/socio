@@ -1186,6 +1186,493 @@ export interface EnglishResources {
             note: '({{note}})';
         };
     };
+    rooms: {
+        'a-socio': 'A socio';
+        you: 'You';
+        status: 'Room';
+        gone: 'You are no longer in this room, so you can’t read it here.';
+        pinned: 'Pinned';
+        members: 'Members';
+        empty: 'No messages yet. Everyone in the room reads what is written here.';
+        reading: '{{name}} is reading this';
+        queued: {
+            next: '{{name}} reads this after its current step';
+            later: '{{name}} reads this once the reply is done';
+            others: '{{name}} reads it in turn';
+        };
+        archived: {
+            notice: 'This room is archived.';
+            unarchive: 'Unarchive';
+        };
+        composer: {
+            label: 'Message the room';
+            placeholder: 'Message the room and {{name}}…';
+            'placeholder-several': 'Message the room, or @ a socio…';
+            'placeholder-admin': 'Message the room and {{name}}, or /invite…';
+            'placeholder-admin-several': 'Message the room, @ a socio, or /invite…';
+            'to-targets': 'To {{targets}} · everyone in the room reads it';
+            'to-lead': 'To {{name}}, the lead · everyone in the room reads it';
+            waits: 'Waits for the current step';
+            everyone: 'Everyone in the room reads it';
+            stop: 'Stop the answer';
+            'stop-title': 'Stop the answer (yours, or any as a room admin)';
+            queue: 'Queue message';
+            send: 'Send message';
+            'send-failed': 'Your message wasn’t sent. Try again.';
+            'stop-failed': 'Could not stop the answer.';
+        };
+        speaker: {
+            socio: 'socio';
+            'team-member': 'Team member';
+        };
+        mentions: {
+            list: 'People and socios in the room';
+            socio: 'socio';
+            'socio-lead': 'socio · lead';
+            people_one: '{{count, number}} person';
+            people_other: '{{count, number}} people';
+            socios_one: '{{count, number}} socio';
+            socios_other: '{{count, number}} socios';
+            status: '{{parts, list}} to mention';
+            you: 'you';
+            'you-sr': 'mentions you';
+        };
+        presence: {
+            here_one: '{{names, list}} is here';
+            here_other: '{{names, list}} are here';
+            more_one: '{{first}}, {{second}} and {{count, number}} other are here';
+            more_other: '{{first}}, {{second}} and {{count, number}} others are here';
+        };
+        topic: {
+            status: 'Team conversation in Telegram · read-only here';
+            empty: 'No messages yet.';
+            reply: 'Reply in the Telegram topic to continue this conversation.';
+            convert: 'Make this topic a room…';
+            'load-failed': 'Could not load this topic.';
+        };
+        usage: {
+            limits: 'Each message: {{parts, list(type: unit; style: short)}}. {{perMinute}}, {{waiting}}.';
+            work: 'up to {{time}} of work';
+            tokens_one: '{{count, number}} token';
+            tokens_other: '{{count, number}} tokens';
+            handoffs_one: '{{count, number}} handoff';
+            handoffs_other: '{{count, number}} handoffs';
+            'spend-limit': '{{amount}} of spend';
+            'per-minute_one': '{{count, number}} message a minute';
+            'per-minute_other': '{{count, number}} messages a minute';
+            waiting: '{{n, number}} waiting at most';
+            'tokens-of': '{{used}} of {{limit, number}}';
+            'time-of': '{{elapsed}} of work of {{limit}}';
+            'handoffs-of': '{{n, number}} of {{limit, number}} handoffs';
+            spend: 'Spend: {{amount}}';
+            'spend-of': 'Spend: {{amount}} of {{limit}}';
+            'spend-private': 'Spend: on the sender’s own model subscription';
+            'spend-unknown': 'Spend: not reported by the model';
+            stopped: 'Stopped at a limit';
+            stopped_deadline: 'Stopped at the time limit';
+            stopped_tokens: 'Stopped at the token limit';
+            stopped_handoffs: 'Stopped at the handoff limit';
+            stopped_spend: 'Stopped at the spend limit';
+            heading: {
+                running: 'Working now';
+                'running-mine': 'Your message, working now';
+                last: 'The last message';
+                'last-mine': 'Your last message';
+            };
+            messages_one: '{{count, number}} message';
+            messages_other: '{{count, number}} messages';
+            day: 'Last 24 hours: {{messages}} worked on, {{tokens}}.';
+            'day-stopped': 'Last 24 hours: {{messages}} worked on, {{tokens}}, {{stopped, number}} stopped at a limit.';
+            'day-hidden': 'The last 24 hours’ total shows once at least {{n, number}} people have sent messages, so it never shows one person’s use.';
+            loading: 'Loading…';
+            'load-failed': 'Could not load the room’s use.';
+        };
+        errors: {
+            'load-room': 'Could not load this room.';
+            'read-room': 'Could not load the room.';
+        };
+        picker: {
+            label: 'Mention a socio';
+            title: 'Mention a socio: it answers instead of the lead';
+            heading: 'Mention a socio';
+            lead: 'lead';
+        };
+        'invite-command': {
+            list: 'People to invite';
+            count_one: '{{count, number}} person to invite';
+            count_other: '{{count, number}} people to invite';
+            invited: 'Invited {{name}}. They join once they accept.';
+            failed: 'Could not invite them.';
+            'list-failed': 'Could not list people to invite.';
+        };
+    };
+    'rooms.dialogs': {
+        cancel: 'Cancel';
+        day: '{{at, datetime(month: short; day: numeric)}}';
+        clock: '{{at, datetime(hour: numeric; minute: 2-digit)}}';
+        create: {
+            title: 'New room';
+            description: 'A room is one conversation for several people and company socios. Each message runs as the person who sent it; nobody’s private memories or data are shared.';
+            action: 'Create room';
+            busy: 'Creating…';
+            created: 'Created “{{title}}”. Invite people from Members.';
+            failed: 'Could not create the room.';
+            name: 'Name';
+            'name-placeholder': 'Launch planning';
+            lead: 'Lead socio';
+            'lead-hint': 'Company socios only. A room admin can ask for more later.';
+            'lead-hint_none': 'There is no company socio yet: ask an admin to add one.';
+            more: 'More socios (optional)';
+            'more-hint': 'Each starts as a request a workspace admin approves.';
+            people: 'Invite people (optional)';
+            'people-hint': 'You are a member and admin already. Invited people get an invite to accept.';
+            purpose: 'Description / purpose (optional)';
+            'purpose-hint': 'Shown to the room’s members. What is this room for?';
+            'purpose-placeholder': 'What this room is for, in a sentence or two';
+        };
+        convert: {
+            title: 'Share this chat as a room?';
+            description: '“{{title}}” becomes a room you are the admin of, with the same link and history. You can then invite people.';
+            action: 'Make it a room';
+            busy: 'Sharing…';
+            done: 'This chat is now a room. Invite people from Members.';
+            failed: 'Could not make it a room.';
+            confirm: 'I understand: everyone I invite reads this whole chat.';
+        };
+        rename: {
+            title: 'Rename room';
+            description: 'Everyone in the room sees the new name.';
+            action: 'Save';
+            busy: 'Saving…';
+            failed: 'Could not rename the room.';
+            name: 'Name';
+        };
+        leave: {
+            title: 'Leave “{{title}}”?';
+            description: 'You stop reading the room and it leaves your sidebar. An admin can invite you again.';
+            description_stuck: 'You are the only person in this room. Archive it instead: it is kept, and you can bring it back.';
+            description_handover: 'A room always keeps an admin. Choose who takes the role on: you leave once they have it.';
+            action: 'Leave room';
+            action_stuck: 'Archive room';
+            action_handover: 'Hand over and leave';
+            busy: 'Leaving…';
+            archived: 'Archived “{{title}}”.';
+            left: 'You left “{{title}}”.';
+            failed: 'Could not leave the room.';
+            'new-admin': 'New admin';
+        };
+        invites: {
+            title: 'Room invitations';
+            description: 'Join to read and write in a room, or decline. Nobody sees the room’s messages before they join.';
+            none: 'You have no invitations.';
+            list: 'Invitations';
+            joined: 'You joined “{{title}}”.';
+            declined: 'Declined “{{title}}”.';
+            failed: 'That didn’t work. Try again.';
+            'invited-by': '{{name}} invited you';
+            'invited-by_admin': '{{name}} invited you as an admin';
+            invited: 'You were invited';
+            invited_admin: 'You were invited as an admin';
+            members_one: '{{count, number}} person in it';
+            members_other: '{{count, number}} people in it';
+            until: 'until <date></date>';
+            understood: 'I understand what joining shares.';
+            decline: 'Decline';
+            'decline-label': 'Decline {{title}}';
+            declining: 'Declining…';
+            join: 'Join room';
+            'join-label': 'Join room {{title}}';
+            joining: 'Joining…';
+        };
+        topic: {
+            name: 'topic #{{id}}';
+            name_general: 'the General topic';
+            title: 'Telegram topic';
+            description: 'In a linked forum topic, room members talk to the room’s socio by mentioning the bot or replying to it. It answers no one else.';
+            loading: 'Loading…';
+            linked: 'Linked to {{topic}} in the Telegram group, <date></date>.';
+            linked_by: 'Linked to {{topic}} in the Telegram group by {{name}}, <date></date>.';
+            ended: 'Not linked. It was linked to {{topic}} until <date></date>.';
+            'not-linked': 'Not linked to a Telegram topic.';
+            unavailable: 'Telegram isn’t connected on this server.';
+            'link-account': 'Link your Telegram account first: choose Telegram in the sidebar. The code works only from your account.';
+            understood: 'I understand who reads the topic.';
+            unanswered: 'Not answered in the topic';
+            'not-in-room': 'not in the room';
+            'no-username': 'A Telegram account without a username';
+            'not-on-socio': '{{sender}} · not linked to Socio';
+            seen: 'Seen in the Telegram group';
+            'seen-hint': 'People with a linked account who wrote in the group and aren’t in the room. They join only if they accept.';
+            invite: 'Invite';
+            invited: 'Invited {{name}}';
+            'invite-failed': 'Could not invite them.';
+            close: 'Close';
+            unlink: 'Unlink topic';
+            unlinked: 'The Telegram topic is unlinked.';
+            'unlink-failed': 'Could not unlink the topic.';
+            'get-code': 'Get a code';
+            'code-failed': 'Could not get a code.';
+            'now-linked': 'The Telegram topic is linked to this room.';
+            'read-failed': 'Could not read the room’s topic.';
+        };
+        steps: {
+            send: 'In the Telegram topic, from your linked account and as an admin of the group, send:';
+            'copy-label': 'Copy the command';
+            copy: 'Copy';
+            copied: 'Copied';
+            'copy-failed': 'Could not copy. Select the command instead.';
+            expires: 'It works once, until <time></time>. The bot (@{{bot}}) answers in the topic.';
+        };
+        'convert-topic': {
+            title: 'Make this topic a room?';
+            description: 'A new room you are the admin of, with this topic’s socio, linked to the Telegram topic.';
+            busy: 'Getting a code…';
+            action: 'Get a code';
+            'code-title': 'Make this topic a room';
+            'code-description': 'The room appears under Rooms once the bot confirms it in the topic. Then invite people from its Members. This transcript stays as it is, for the people who can read it now.';
+            done: 'Done';
+        };
+    };
+    'rooms.members': {
+        title: 'Members';
+        description: 'Room admins invite people and choose the socios.';
+        description_admin: 'You are an admin here: you invite and remove people, and choose the socios.';
+        description_archived: 'This room is archived: nothing changes in it until an admin unarchives it.';
+        description_off: 'Rooms are turned off in Settings: this room is read-only.';
+        people: 'People ({{n, number}})';
+        'people-list': 'People in the room';
+        invited: 'Invited ({{n, number}})';
+        'invited-list': 'Invited people';
+        'invite-someone': 'Invite someone';
+        socios: 'Socios';
+        usage: 'Use and limits';
+        leave: 'Leave room';
+        day: '{{at, datetime(month: short; day: numeric)}}';
+        member: {
+            you: '(you)';
+            invited: 'Invited';
+            'invited-until': 'Invited · until <date></date>';
+            role: {
+                admin: 'Admin';
+                member: 'Member';
+            };
+            options: 'Options for {{name}}';
+            'make-admin': 'Make admin';
+            'now-admin': '{{name}} is now an admin.';
+            'role-failed': 'Could not change the role.';
+            'step-down': 'Step down as admin';
+            'make-member': 'Make member';
+            'not-admin': '{{name}} is no longer an admin.';
+            'not-admin_you': 'You are no longer an admin.';
+            'take-back': 'Take back invite';
+            remove: 'Remove from room';
+            'taken-back': 'Invite to {{name}} taken back.';
+            removed: '{{name}} was removed.';
+            'remove-failed': 'Could not remove them.';
+        };
+        invite: {
+            'list-failed': 'Could not list people to invite.';
+            loading: 'Loading people…';
+            everyone: 'Everyone who uses Socio is in this room or invited.';
+            invited: 'Invited {{name}}. They join once they accept.';
+            failed: 'Could not invite them.';
+            person: 'Person';
+            role: 'Role';
+            action: 'Invite';
+            busy: 'Inviting…';
+            note: 'An invite works for 7 days. Before joining they are told they will read the room’s whole history.';
+        };
+        socio: {
+            list: 'Socios in the room';
+            status: {
+                active: 'Answers in this room';
+                requested: 'Waiting for a workspace admin to let it in';
+                withdrawn: 'Taken out by a workspace admin';
+                removed: 'Removed';
+            };
+            lead: 'Lead';
+            'let-in': 'Let in';
+            'let-in-done': '{{name}} can answer in this room.';
+            'let-in-failed': 'Could not let it in.';
+            'make-lead': 'Make lead';
+            'lead-done': '{{name}} now leads this room.';
+            'lead-failed': 'Could not change the lead.';
+            remove: 'Remove';
+            'remove-label': 'Remove {{name}}';
+            removed: '{{name}} left the room.';
+            'remove-failed': 'Could not remove it.';
+            'take-out': 'Take out';
+            'take-out-label': 'Take {{name}} out';
+            'taken-out': '{{name}} was taken out.';
+            'taken-out_lead': '{{name}} was taken out: the room has no socio answering until another leads.';
+            'take-out-failed': 'Could not take it out.';
+            'ask-label': 'Ask for a company socio';
+            ask: 'Ask';
+            asked: 'Asked for {{name}}. A workspace admin lets it in.';
+            'ask-failed': 'Could not ask for it.';
+        };
+        handoffs: {
+            saved: 'Handoffs per message saved.';
+            'save-failed': 'Could not save the handoffs.';
+            none: 'Socios here can’t hand a message’s work to each other.';
+            'up-to_one': 'A message’s work can pass between socios up to {{count, number}} time.';
+            'up-to_other': 'A message’s work can pass between socios up to {{count, number}} times.';
+            label: 'Handoffs per message';
+            workspace: 'The workspace’s ({{n, number}})';
+            note: 'How many times one message’s work may pass between this room’s socios. You can only lower the workspace’s limit.';
+        };
+    };
+    'rooms.nav': {
+        group: 'Rooms';
+        room: 'Room';
+        'new-room': 'New room';
+        invitations: 'Invitations';
+        'invitations-waiting': ', {{n, number}} waiting';
+        empty: 'Rooms you create or join show here: one conversation for several people and a socio.';
+        'show-fewer': 'Show fewer';
+        'show-all_one': 'Show all {{count, number}}';
+        'show-all_other': 'Show all {{count, number}}';
+        muted: ', muted';
+        unread: ', {{unread}} unread';
+        admin: 'Admin';
+        'options-for': 'Options for {{title}}';
+        invites: {
+            one: 'You’re invited to the room “{{title}}”.';
+            many_one: 'You’re invited to {{count, number}} room.';
+            many_other: 'You’re invited to {{count, number}} rooms.';
+            review: 'Review';
+        };
+        menu: {
+            section: 'Room';
+            members: 'Members';
+            topic: 'Telegram topic';
+            rename: 'Rename';
+            archive: 'Archive';
+            unarchive: 'Unarchive';
+            leave: 'Leave room';
+            notify: 'Notify me about';
+        };
+        toasts: {
+            archived: 'Room archived';
+            undo: 'Undo';
+            unarchived: 'Room unarchived';
+        };
+        errors: {
+            archive: 'Could not archive the room.';
+            unarchive: 'Could not unarchive the room.';
+            read: 'Could not read the room.';
+            notify: 'Could not change this room’s notifications.';
+        };
+    };
+    'rooms.notify': {
+        title: 'Rooms';
+        body: 'In a room you hear when someone mentions you and when your own turns finish while you’re away. Choose more or less for each room in its ⋯ menu, under Notify me about.';
+        presence: {
+            label: 'Show when I’m in a room';
+            hint: 'The room’s members see your avatar while you have it open. Turn this off to look without showing.';
+            shown: 'Rooms show when you’re in them';
+            hidden: 'Your presence is hidden';
+        };
+    };
+    'rooms.pins': {
+        day: '{{at, datetime(month: short; day: numeric)}}';
+        'load-failed': 'Could not load the pinned facts.';
+        outcome: {
+            pinned: 'Pinned. The socio reads it from the next message.';
+            proposed: 'Proposed. A room admin decides whether to pin it.';
+            unchanged: 'That is pinned or proposed already.';
+            done: 'Done.';
+        };
+        title: 'Pinned facts';
+        description: 'The socio reads these with every message. This room is read-only now, so nothing changes here.';
+        description_loading: 'Facts the room’s socio reads with every message.';
+        description_manage: 'The socio reads these with every message. As a room admin you pin, edit and unpin them, and decide what others propose.';
+        description_propose: 'The socio reads these with every message. Propose a fact and a room admin decides; you can edit or unpin the ones you pinned.';
+        loading: 'Loading…';
+        pinned: 'Pinned ({{pins, number}} of {{max, number}})';
+        'pinned-list': 'Pinned facts';
+        nothing: 'Nothing pinned yet.';
+        chars: '{{chars, number}} of {{max, number}} characters used.';
+        'pin-a-fact': 'Pin a fact';
+        'propose-a-fact': 'Propose a fact';
+        pin: 'Pin';
+        propose: 'Propose';
+        'pin-failed': 'Could not pin that.';
+        proposed: 'Proposed ({{n, number}})';
+        'proposed-list': 'Proposed facts';
+        'pin-row': {
+            save: 'Save';
+            'propose-change': 'Propose change';
+            'change-failed': 'Could not change it.';
+            'pinned-by': 'Pinned by {{name}}';
+            'pinned-by_you': 'Pinned by you';
+            version: 'version {{version, number}}';
+            'from-notes': 'from the notes';
+            edit: 'Edit';
+            suggest: 'Suggest a change';
+            unpin: 'Unpin';
+            'unpin-failed': 'Could not unpin it.';
+            history: 'History';
+            'hide-history': 'Hide history';
+        };
+        'former-member': 'a former member';
+        status: {
+            proposed: 'Proposed';
+            pinned: 'In use';
+            superseded: 'Replaced';
+            unpinned: 'Unpinned';
+            rejected: 'Not pinned';
+            withdrawn: 'Withdrawn';
+        };
+        line: {
+            pinned: 'Pinned by {{name}}';
+            edited: 'Edited by {{name}}';
+            proposed: 'Proposed by {{name}}';
+            'turned-down': 'turned down by {{name}}';
+            approved: 'approved by {{name}}';
+            unpinned: 'unpinned by {{name}}';
+            replaced: 'replaced by {{name}}';
+            joined: '{{parts, list(type: unit; style: short)}}';
+        };
+        history: {
+            failed: 'Could not load its history.';
+            list: 'History';
+            version: 'v{{version}}';
+            proposal: 'proposal';
+        };
+        proposal: {
+            'proposed-by': 'Proposed by {{name}}';
+            'proposed-by_you': 'Proposed by you';
+            changes: 'changes “{{text}}”';
+            'changes-stale': 'changes a pin that has changed since';
+            approve: 'Approve';
+            'approve-failed': 'Could not pin it.';
+            'turn-down': 'Turn down';
+            'turn-down-failed': 'Could not turn it down.';
+            withdraw: 'Withdraw';
+            'withdraw-failed': 'Could not withdraw it.';
+        };
+        fact: {
+            label: 'The fact';
+            placeholder: 'Decision: launch on 3 November';
+            limit: 'One fact, up to {{max, number}} characters.';
+            cancel: 'Cancel';
+        };
+        notes: {
+            title: 'Notes on earlier messages';
+            none: 'None yet. When the room gets long, Socio keeps notes on its earlier messages for everyone in it, with who said what. They never hold what a socio found with someone’s own access.';
+            current_one: 'Version {{version, number}}, covering the first {{count, number}} turn';
+            current_other: 'Version {{version, number}}, covering the first {{count, number}} turns';
+            facts: 'Facts';
+            'pin-fact': 'Pin: {{fact}}';
+            'propose-fact': 'Propose: {{fact}}';
+            versions: 'Versions ({{n, number}})';
+            'version-turns': 'v{{version}} · turns {{from}}–{{to}}';
+            by: 'by {{name}}';
+            'in-turn': 'in {{name}}’s turn';
+            fallback: 'kept plainly (the notes’ model failed)';
+        };
+    };
     settings: {
         title: 'Settings';
         groups: {
@@ -2354,68 +2841,10 @@ export interface EnglishResources {
             revokeFailed: 'Could not revoke the access.';
             disconnectFailed: 'Could not disconnect the agent.';
         };
-        signIn: {
-            sessions: 'Devices signed in';
-            signOutDevice: 'Sign out {{device}}';
-            signOut: 'Sign out';
-            signOutFailed: 'Could not sign the device out.';
-            signedOut: 'Signed out on that device';
-            by: 'by {{method}}';
-            lastUsed: 'last used {{ago}}';
-            since: 'since {{date}}';
-            nowhere: 'Not signed in anywhere now.';
-            nowhere_deactivated: 'Deactivated: signed in nowhere.';
-            app: 'The $t(common:product) app';
-            methods: 'How they sign in';
-            none: 'None';
-            passkeys: 'Passkeys';
-            passkey: 'Passkey';
-            passkeyAdded: ', added {{date}}';
-            password: 'Password';
-            set: 'Set';
-            notSet: 'Not set';
-            providers: 'Sign-in providers';
-            newLink: 'New password link';
-            newestLink: 'Newest password link';
-            noLink: 'none made';
-        };
         dates: {
             revoked: 'revoked {{date}}';
             expires: 'expires {{date}}';
             expired: 'expired {{date}}';
-        };
-        owns: {
-            unknown: 'What {{first}} owns isn’t known here: the account has no workspace user yet.';
-            loadFailed: 'Could not load what they own.';
-            loading: 'Loading what {{first}} owns…';
-            owns: '{{first}} owns {{list}}.';
-            companyOwns: 'The company owns it: hand it to another active person at any time.';
-            nothing: '{{first}} owns nothing that can be transferred.';
-            transferAll: 'Transfer everything…';
-            transferKind: 'Transfer {{kind}}';
-            transfer: 'Transfer…';
-            deletedKept: '{{type}} · deleted, kept';
-            more: 'and {{count}} more';
-            keys: 'Service keys {{first}} made';
-            keysNote: 'revoked if {{first}} is deactivated';
-            keysList: 'Service keys';
-            neverUsed: 'never used';
-            used: 'used {{ago}}';
-            noKeys: '{{first}} made no service keys.';
-        };
-        activity: {
-            title: 'Activity';
-            at: '{{at, datetime(month: short; day: numeric; year: numeric; hour: numeric; minute: 2-digit)}}';
-            loading: 'Loading…';
-            loadFailed: 'Could not load the activity.';
-            empty: 'Nothing recorded yet.';
-            more: 'Load more';
-            sources: {
-                workspace: 'Workspace';
-                access_policy: 'Access';
-                socio_access: 'Socio access';
-                room: 'Room';
-            };
         };
         assets: {
             apps: {
@@ -2628,6 +3057,66 @@ export interface EnglishResources {
             withConfirm: 'Remove {{first}} permanently (development sign-in)';
             back: 'Back to People';
             continue: 'Continue';
+        };
+    };
+    'settings.person-tabs': {
+        signIn: {
+            sessions: 'Devices signed in';
+            signOutDevice: 'Sign out {{device}}';
+            signOut: 'Sign out';
+            signOutFailed: 'Could not sign the device out.';
+            signedOut: 'Signed out on that device';
+            by: 'by {{method}}';
+            lastUsed: 'last used {{ago}}';
+            since: 'since {{date}}';
+            nowhere: 'Not signed in anywhere now.';
+            nowhere_deactivated: 'Deactivated: signed in nowhere.';
+            app: 'The $t(common:product) app';
+            methods: 'How they sign in';
+            none: 'None';
+            passkeys: 'Passkeys';
+            passkey: 'Passkey';
+            passkeyAdded: ', added {{date}}';
+            password: 'Password';
+            set: 'Set';
+            notSet: 'Not set';
+            providers: 'Sign-in providers';
+            newLink: 'New password link';
+            newestLink: 'Newest password link';
+            noLink: 'none made';
+        };
+        owns: {
+            unknown: 'What {{first}} owns isn’t known here: the account has no workspace user yet.';
+            loadFailed: 'Could not load what they own.';
+            loading: 'Loading what {{first}} owns…';
+            owns: '{{first}} owns {{list}}.';
+            companyOwns: 'The company owns it: hand it to another active person at any time.';
+            nothing: '{{first}} owns nothing that can be transferred.';
+            transferAll: 'Transfer everything…';
+            transferKind: 'Transfer {{kind}}';
+            transfer: 'Transfer…';
+            deletedKept: '{{type}} · deleted, kept';
+            more: 'and {{count}} more';
+            keys: 'Service keys {{first}} made';
+            keysNote: 'revoked if {{first}} is deactivated';
+            keysList: 'Service keys';
+            neverUsed: 'never used';
+            used: 'used {{ago}}';
+            noKeys: '{{first}} made no service keys.';
+        };
+        activity: {
+            title: 'Activity';
+            at: '{{at, datetime(month: short; day: numeric; year: numeric; hour: numeric; minute: 2-digit)}}';
+            loading: 'Loading…';
+            loadFailed: 'Could not load the activity.';
+            empty: 'Nothing recorded yet.';
+            more: 'Load more';
+            sources: {
+                workspace: 'Workspace';
+                access_policy: 'Access';
+                socio_access: 'Socio access';
+                room: 'Room';
+            };
         };
     };
     'settings.secrets': {
@@ -3945,5 +4434,378 @@ export interface EnglishResources {
             slow: 'slow';
         };
         'label-measured': 'Connection: {{state}}, {{latency}}, {{quality}}';
+    };
+    spaces: {
+        workspace: {
+            label: 'Space documents';
+            'loading-page': 'Loading page…';
+            errors: {
+                'load-pages': 'Could not load pages.';
+                'load-page': 'Could not load the page.';
+                'create-page': 'Could not create page.';
+            };
+        };
+        tabs: {
+            label: '{{space}} sections';
+            pages: 'Pages';
+            memory: 'Memory';
+            radar: 'Radar';
+            settings: 'Settings';
+        };
+        library: {
+            label: '{{space}} page library';
+            'new-folder': 'New folder';
+            'new-page': 'New page';
+            search: 'Search pages';
+            browse: {
+                label: 'Browse pages';
+                level: 'By level';
+                all: 'All pages';
+            };
+            relevance: 'Sorted by relevance';
+            sort: {
+                label: 'Sort pages';
+                recent: 'Recently edited';
+                name: 'Name A–Z';
+            };
+            view: {
+                label: 'Library view';
+                grid: 'Grid view';
+                list: 'List view';
+            };
+            trail: {
+                label: 'Library level';
+                top: 'Top level';
+                'open-folder': 'Open folder';
+                'open-page': 'Open page';
+            };
+            heading: {
+                search: 'Search results';
+                all: 'All pages';
+                folder: 'In this folder';
+                page: 'Inside this page';
+                top: 'Top level';
+            };
+            count_one: '{{count, number}} page';
+            count_other: '{{count, number}} pages';
+            count_more_one: '{{count, number}} or more pages';
+            count_more_other: '{{count, number}} or more pages';
+            corrected: 'Showing results for <words>{{words}}</words>.';
+            'search-instead': 'Search instead for {{query}}';
+            'empty-page': 'An empty page, ready to write.';
+            searching: 'Searching pages…';
+            'no-matches': 'No matching pages';
+            'try-different': 'Try a different title or phrase.';
+            inside_one: '{{count, number}} inside';
+            inside_other: '{{count, number}} inside';
+            edited: 'Edited <time></time>';
+            empty: {
+                folder: 'This folder is empty';
+                page: 'Nothing inside this page yet';
+                none: 'No pages yet';
+            };
+            'empty-hint': {
+                folder: 'Pages and folders you create here go inside it.';
+                page: 'Pages you create here go inside it.';
+                none: 'Create your first page to start organizing this Space.';
+            };
+            'folder-line_one': 'Folder · {{count, number}} inside';
+            'folder-line_other': 'Folder · {{count, number}} inside';
+            'empty-folder': 'Empty folder';
+            parents: 'Parent pages';
+            delete: 'Delete {{title}}';
+            'delete-title': 'Delete page';
+        };
+        'dataset-menu': {
+            button: 'Dataset';
+            new: 'New dataset';
+            existing: 'Add existing dataset';
+        };
+    };
+    'spaces.audience': {
+        legend: 'Who can see it';
+        whole: {
+            title: 'Whole workspace';
+            detail: 'Everyone in the workspace sees it and everything in it.';
+            detail_member: 'Everyone in the workspace sees it and everything in it. Only workspace admins make a Space for everyone.';
+        };
+        private: {
+            title: 'Only its people';
+            detail: 'Private: only the people added to it, and workspace admins, see it, its pages and their history, page chats, search results, apps, datasets and files shared with it, and its memory. Socios use it only when everyone in the chat may. Anyone else doesn’t see it exists.';
+        };
+    };
+    'spaces.dialogs': {
+        delete: {
+            title: 'Delete “{{name}}”?';
+            description: 'It’s removed for everyone at once, and these go with it:';
+            'goes-with': 'Deleted with it';
+            items: {
+                pages: 'Its pages and their history';
+                chats: 'Page chats and Ask chats about its pages, for everyone';
+                memory: 'Its shared memory';
+                shares: 'Apps, datasets and link cards shared with it (their owners keep them)';
+                socios: 'Socios’ access to it';
+            };
+            restore: 'Nothing is erased: a workspace admin can restore it, with everything in it, from Settings → Deleted Spaces.';
+            confirm: 'Type <name>{{name}}</name> to confirm';
+            cancel: 'Cancel';
+            action: 'Delete Space';
+            deleting: 'Deleting…';
+            deleted: 'Deleted “{{name}}”';
+            failed: 'Could not delete the Space.';
+        };
+        dataset: {
+            new: 'New dataset';
+            existing: 'Add existing dataset';
+            'description-new': 'A dataset of yours in {{space}}: everyone who reads the Space can read it.';
+            'description-existing': 'Everyone who reads {{space}} can read the dataset you add.';
+            'name-label': 'Dataset name';
+            'name-placeholder': 'Name';
+            loading: 'Loading…';
+            'choose-label': 'Dataset';
+            option: '{{title}} ({{note}})';
+            socio: 'Socio';
+            'written-by': 'Written by {{plugin}}';
+            workspace: 'Workspace';
+            none: 'Every dataset you manage is in a Space already.';
+            cancel: 'Cancel';
+            create: 'Create';
+            add: 'Add';
+            placed: '“{{dataset}}” is in {{space}}.';
+            'load-failed': 'Could not load your datasets.';
+            failed: 'Could not place the dataset.';
+        };
+    };
+    'spaces.memory': {
+        label: '{{space}} memory';
+        description: 'Shared memory: what this Space’s socios know for everyone who can read it. Approved by its editors.';
+        add: 'Add entry';
+        propose: 'Propose entry';
+        missing: 'Space not found.';
+        loading: 'Loading memory…';
+        'load-failed': 'Could not load the Space’s memory.';
+        'save-failed': 'Could not save. Try again.';
+        audience: {
+            who: 'Everyone in the workspace reads this Space’s memory.';
+            who_private: 'This Space is private: only its people and workspace admins read its memory.';
+            use: 'Socios with this Space use matching entries in chats, and in a chat with other people only when every one of them can read it.';
+            waits: 'What you propose waits for its editors.';
+            waits_editor: 'Socios’ proposals wait for you or another editor.';
+        };
+        provenance: {
+            proposed: 'Proposed by {{person}}';
+            proposed_socio: 'Proposed by {{socio}} for {{person}}';
+            'proposed-in': 'Proposed by {{person}} in <chat>{{chat}}</chat>';
+            'proposed-in_socio': 'Proposed by {{socio}} for {{person}} in <chat>{{chat}}</chat>';
+        };
+        proposals: {
+            title: 'Your proposals';
+            title_editor: 'Waiting for approval';
+            changes: 'Changes: “{{text}}”';
+            changes_unknown: 'Changes: “an earlier entry”';
+            approve: 'Approve';
+            'edit-approve': 'Edit and approve';
+            reject: 'Reject';
+            withdraw: 'Withdraw';
+        };
+        entries: {
+            title: 'In use';
+            version: 'Version {{version}}';
+            'approved-by': 'Approved by {{name}}';
+            'approved-by_unknown': 'Approved by an editor';
+            history: 'Entry history';
+            edit: 'Suggest a change';
+            edit_editor: 'Edit entry';
+            retire: 'Retire entry';
+            empty: 'Nothing yet. Propose a lasting team fact, convention or decision, like “Invoices go out on the 1st”, or ask a socio with this Space to propose one.';
+        };
+        retired: {
+            title: 'Retired';
+            by: 'Retired by {{name}}';
+            by_unknown: 'Retired by an editor';
+            delete: 'Delete retired entry';
+            kept_one: 'Kept {{count, number}} day after they are retired, with earlier versions and proposals turned down.';
+            kept_other: 'Kept {{count, number}} days after they are retired, with earlier versions and proposals turned down.';
+        };
+        'retire-confirm': {
+            title: 'Retire this entry?';
+            action: 'Retire';
+            body: 'Socios stop using it in every chat at once. Proposals waiting to change it are turned down. It stays under Retired until it is deleted.';
+        };
+        'delete-confirm': {
+            title: 'Delete this entry for good?';
+            body: 'Every version of it goes. Backups keep it until they age out.';
+        };
+        editor: {
+            'title-approve': 'Approve in your words.';
+            'title-change': 'Suggest a change.';
+            'title-change_editor': 'Keep it accurate.';
+            'title-new': 'Propose shared knowledge.';
+            'title-new_editor': 'Something the team knows.';
+            label: 'Entry';
+            note: 'It waits for one of the Space’s editors, and is used only once they approve it.';
+            note_now: 'It is in use as soon as you save: socios with this Space use it with everyone who can read it. The version before is kept in its history.';
+            rule: 'One lasting fact, convention or decision; nothing private about a person, and no secrets.';
+        };
+        history: {
+            title: 'Entry history';
+            description: 'Every version, newest first, with who proposed and approved it.';
+            'load-failed': 'Could not load its history.';
+            version: 'Version {{version}}';
+            proposal: 'Proposal';
+            decided: 'approved by {{name}}';
+            decided_rejected: 'rejected by {{name}}';
+        };
+        status: {
+            proposed: 'Waiting for approval';
+            active: 'In use';
+            superseded: 'Replaced';
+            rejected: 'Rejected';
+            withdrawn: 'Withdrawn';
+            retired: 'Retired';
+        };
+    };
+    'spaces.nav': {
+        group: 'Spaces';
+        create: 'Create Space';
+        'untitled-page': 'Untitled page';
+        crumbs: {
+            spaces: 'Spaces';
+            pages: 'Pages';
+            memory: 'Memory';
+            radar: 'Radar';
+            settings: 'Settings';
+        };
+    };
+    'spaces.promote': {
+        title: 'Create follow-up';
+        description: "Turn this finding into a goal, a recurring schedule, or a board issue. It's prefilled from the page — edit, then confirm. Nothing is created until you do.";
+        untitled: 'Untitled page';
+        fields: {
+            title: 'Title';
+            body: 'Body';
+            destination: 'Destination';
+            kind: 'Kind';
+            priority: 'Priority';
+            area: 'Area';
+            'no-area': 'No area';
+            repeat: 'Repeat after each successful run';
+        };
+        destinations: {
+            issue: 'Board issue';
+            'issue-hint': 'Filed into triage for review.';
+            schedule: 'Recurring schedule';
+            'schedule-hint': 'Runs in a conversation of its own, on a cadence.';
+            goal: 'Goal';
+            'goal-hint': 'Ask this specialist to work toward it; you approve it.';
+        };
+        intervals: {
+            hour: 'Every hour';
+            day: 'Every day';
+            week: 'Every week';
+        };
+        'goal-note': '{{socio}} will propose the goal and work toward it on its own cadence. You approve the request before anything starts — the same way goals are always set.';
+        cancel: 'Cancel';
+        creating: 'Creating…';
+        submit: {
+            issue: 'File issue';
+            schedule: 'Create schedule';
+            goal: 'Ask for goal';
+        };
+        toasts: {
+            filed: 'Filed {{key}}';
+            open: 'Open';
+            scheduled: 'Schedule created';
+            'scheduled-detail': 'It runs in its own conversation.';
+            asked: 'Asked for a goal';
+            'asked-detail': '{{socio}} will propose it; you approve before it starts.';
+        };
+        errors: {
+            'no-specialist': 'No specialist for this Space.';
+            failed: 'Could not create the follow-up.';
+        };
+    };
+    'spaces.radar': {
+        label: '{{space}} change radar';
+        description: "A project change radar: what changed, what stays open, and what may be stale across this Space's pages.";
+        refresh: 'Refresh';
+        'refresh-label': 'Refresh radar';
+        missing: 'Space not found.';
+        loading: 'Loading radar…';
+        'load-failed': 'Could not load the change radar.';
+        scope_one: '{{count, number}} live page in this Space. Stale is older than {{days, number}} days, relative to the most recent change. Markers are a simple heuristic, not deep scan. Dismissals last only this session.';
+        scope_other: '{{count, number}} live pages in this Space. Stale is older than {{days, number}} days, relative to the most recent change. Markers are a simple heuristic, not deep scan. Dismissals last only this session.';
+        recent: {
+            title: 'Recent changes';
+            empty: 'No pages yet.';
+        };
+        open: {
+            title: 'Open decisions & experiments';
+            empty: 'Nothing flagged. A page shows here when its title or excerpt carries a marker like <em>todo</em>, <em>decision</em>, <em>experiment</em>, <em>tbd</em> or <em>unresolved</em>.';
+        };
+        stale: {
+            title: 'Potentially stale';
+            empty_one: 'Nothing stale. Every page was updated within {{count, number}} day of the most recent change.';
+            empty_other: 'Nothing stale. Every page was updated within {{count, number}} days of the most recent change.';
+            today: 'Updated today';
+            age_one: '{{count, number}} day since the last edit';
+            age_other: '{{count, number}} days since the last edit';
+            dismiss: 'Not stale';
+        };
+        resolved: 'Resolved';
+        clear_one: 'Clear {{count, number}} dismissed this session';
+        clear_other: 'Clear {{count, number}} dismissed this session';
+        untitled: 'Untitled page';
+        revisions_one: '{{count, number}} revision kept';
+        revisions_other: '{{count, number}} revisions kept';
+        'ago-days': '{{days, relativetime(range: day)}}';
+        'ago-months': '{{months, relativetime(range: month)}}';
+    };
+    'spaces.settings': {
+        label: '{{space}} settings';
+        description: 'Who sees this Space, and its people.';
+        loading: 'Loading…';
+        'audience-legend': 'Who can see this Space';
+        'audience-note': 'Everyone in the workspace sees this Space and everything in it. Its editors choose.';
+        'audience-note_private': 'Private: only its people and workspace admins see it, its pages and their history, page chats, search results, apps, datasets and files shared with it, and its memory. Its editors choose.';
+        delete: {
+            title: 'Delete this Space';
+            body: 'It goes for everyone at once, with its pages, chats, memory, app shares and socios’ access. A workspace admin can restore it.';
+            action: 'Delete this Space';
+        };
+        confirm: {
+            title: 'Open this Space to the whole workspace?';
+            title_private: 'Make this Space private?';
+            action: 'Open to everyone';
+            action_private: 'Make private';
+            body: 'Everyone in the workspace will see it and everything in it.';
+            body_private: 'From now on only its people and workspace admins see it, its pages and their history, page chats, search results, apps, datasets and files shared with it, and its memory. Everyone else stops seeing it at once, and socios use it only in chats where everyone may.';
+        };
+        name: {
+            title: 'Name';
+            hint: 'Renaming keeps its pages, chats and links as they are.';
+            label: 'Space name';
+            rename: 'Rename';
+            renamed: 'Space renamed.';
+            failed: 'Could not rename the Space. Try again.';
+        };
+        people: {
+            title: 'People';
+            hint: 'Editors manage its people and who sees it, and approve its memory; members read it and propose. Workspace admins are editors of every Space.';
+            'role-of': '{{name}}’s role';
+            remove: 'Remove {{name}}';
+            none: 'No one added yet: workspace admins manage it.';
+            'add-form': 'Add a person';
+            'person-to-add': 'Person to add';
+            choose: 'Choose a person';
+            role: 'Role';
+            add: 'Add';
+            'load-failed': 'Could not load the Space’s people.';
+            'save-failed': 'Could not save. Try again.';
+        };
+        roles: {
+            editor: 'Editor';
+            member: 'Member';
+        };
     };
 }

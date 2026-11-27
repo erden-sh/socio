@@ -3,6 +3,8 @@ import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { toast } from 'sonner';
 
+import { Trans, useTranslation } from '@socio/i18n/react';
+import { dateTimeFormat } from '@socio/shared/locale';
 import { MODULE_IDS } from '@socio/shared/modules';
 import { SPACE_MEMORY_TEXT_MAX, type SpaceMemoryState, type SpaceMemoryView } from '@socio/shared/space-memory';
 import type { Space } from '@socio/shared/types';
@@ -23,25 +25,33 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/compone
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 
-const day = (value: number) => new Date(value).toLocaleDateString(undefined, { dateStyle: 'medium' });
+const mediumDate = dateTimeFormat({ dateStyle: 'medium' });
+const day = (value: number) => mediumDate.format(value);
 const failure = (error: unknown, fallback: string) => (error instanceof Error ? error.message : fallback);
 /** Who proposed a version, and where: "Mingo for Ada, in Planning". */
 function Provenance({ version }: { version: SpaceMemoryView }) {
+    const { t } = useTranslation(['spaces.memory']);
+    const context = version.dotName ? 'socio' : undefined;
+    const names = { socio: version.dotName ?? '', person: version.proposedByName };
     return (
         <>
-            {version.dotName
-                ? `Proposed by ${version.dotName} for ${version.proposedByName}`
-                : `Proposed by ${version.proposedByName}`}
-            {version.chatTitle && version.threadId && (
-                <>
-                    {' in '}
-                    <Link
-                        className="underline underline-offset-2 hover:text-foreground"
-                        to={`/chats/${encodeURIComponent(version.threadId)}`}
-                    >
-                        {version.chatTitle}
-                    </Link>
-                </>
+            {version.chatTitle && version.threadId ? (
+                <Trans
+                    t={t}
+                    i18nKey="spaces.memory:provenance.proposed-in"
+                    context={context}
+                    values={{ ...names, chat: version.chatTitle }}
+                    components={{
+                        chat: (
+                            <Link
+                                className="underline underline-offset-2 hover:text-foreground"
+                                to={`/chats/${encodeURIComponent(version.threadId)}`}
+                            />
+                        ),
+                    }}
+                />
+            ) : (
+                t('spaces.memory:provenance.proposed', { context, ...names })
             )}
             {' · '}
             <LocalTime value={version.createdAt} format={day} />
@@ -65,6 +75,7 @@ type Editing =
  * the Space are under Settings (`SpaceSettings`).
  */
 export function SpaceMemory({ space }: { space: Space }) {
+    const { t } = useTranslation(['spaces.memory']);
     const [state, setState] = useState<SpaceMemoryState>();
     const [missing, setMissing] = useState(false);
     const [editing, setEditing] = useState<Editing>();
@@ -77,10 +88,10 @@ export function SpaceMemory({ space }: { space: Space }) {
             if ((error as { status?: number }).status === 404) {
                 setMissing(true);
             } else {
-                toast.error(failure(error, 'Could not load the Space’s memory.'));
+                toast.error(failure(error, t('spaces.memory:load-failed')));
             }
         }
-    }, [base]);
+    }, [base, t]);
     useEffect(() => {
         void load();
         // Proposals arrive from socios' chats: a poll finds them.
@@ -95,7 +106,7 @@ export function SpaceMemory({ space }: { space: Space }) {
             await load();
             return undefined;
         } catch (error) {
-            return failure(error, 'Could not save. Try again.');
+            return failure(error, t('spaces.memory:save-failed'));
         }
     };
     const act = async (path: string, method: string, body?: unknown) => {
@@ -111,19 +122,23 @@ export function SpaceMemory({ space }: { space: Space }) {
     const textOf = (versionId: string | null) => entries.find((entry) => entry.id === versionId)?.text;
 
     return (
-        <section data-slot="space-memory" className="w-full pb-8" aria-label={`${space.name} memory`}>
+        <section
+            data-slot="space-memory"
+            className="w-full pb-8"
+            aria-label={t('spaces.memory:label', { space: space.name })}
+        >
             <PageHeader
                 module={MODULE_IDS.spaces}
                 title={spaceTitle(space)}
                 actions={
                     state && (
                         <Button size="sm" onClick={() => setEditing({ kind: 'new' })}>
-                            <Plus /> {editor ? 'Add entry' : 'Propose entry'}
+                            <Plus /> {editor ? t('spaces.memory:add') : t('spaces.memory:propose')}
                         </Button>
                     )
                 }
             >
-                Shared memory: what this Space’s socios know for everyone who can read it. Approved by its editors.
+                {t('spaces.memory:description')}
             </PageHeader>
             <SpaceTabs space={space} />
             <div className="px-4 pt-5 md:px-6">
@@ -132,30 +147,25 @@ export function SpaceMemory({ space }: { space: Space }) {
                         data-slot="space-memory-missing"
                         className="rounded-xl border border-dashed p-4 text-xs text-muted-foreground"
                     >
-                        Space not found.
+                        {t('spaces.memory:missing')}
                     </p>
                 ) : !state ? (
-                    <p className="text-xs text-muted-foreground">Loading memory…</p>
+                    <p className="text-xs text-muted-foreground">{t('spaces.memory:loading')}</p>
                 ) : (
                     <>
                         <p
                             data-slot="space-memory-audience"
                             className="mb-6 max-w-3xl text-xs leading-[1.7] text-muted-foreground"
                         >
-                            {space.private
-                                ? 'This Space is private: only its people and workspace admins read its memory.'
-                                : 'Everyone in the workspace reads this Space’s memory.'}{' '}
-                            Socios with this Space use matching entries in chats, and in a chat with other people only
-                            when every one of them can read it.
-                            {editor
-                                ? ' Socios’ proposals wait for you or another editor.'
-                                : ' What you propose waits for its editors.'}
+                            {t('spaces.memory:audience.who', { context: space.private ? 'private' : undefined })}{' '}
+                            {t('spaces.memory:audience.use')}{' '}
+                            {t('spaces.memory:audience.waits', { context: editor ? 'editor' : undefined })}
                         </p>
 
                         {proposals.length > 0 && (
                             <section aria-labelledby="space-memory-proposals" className="mb-8">
                                 <SectionTitle id="space-memory-proposals">
-                                    {editor ? 'Waiting for approval' : 'Your proposals'}
+                                    {t('spaces.memory:proposals.title', { context: editor ? 'editor' : undefined })}
                                 </SectionTitle>
                                 <div
                                     data-slot="space-memory-proposals"
@@ -171,7 +181,13 @@ export function SpaceMemory({ space }: { space: Space }) {
                                             <Sparkles size={18} className="text-slate-400" />
                                             {proposal.supersedes && (
                                                 <p className="mt-4 text-xs leading-[1.6] text-muted-foreground">
-                                                    Changes: “{textOf(proposal.supersedes) ?? 'an earlier entry'}”
+                                                    {t('spaces.memory:proposals.changes', {
+                                                        context:
+                                                            textOf(proposal.supersedes) === undefined
+                                                                ? 'unknown'
+                                                                : undefined,
+                                                        text: textOf(proposal.supersedes) ?? '',
+                                                    })}
                                                 </p>
                                             )}
                                             <p className="mt-4 mb-2 text-[13px] leading-[1.7] whitespace-pre-wrap">
@@ -194,7 +210,7 @@ export function SpaceMemory({ space }: { space: Space }) {
                                                             }
                                                         >
                                                             <Check className="size-3.5" />
-                                                            Approve
+                                                            {t('spaces.memory:proposals.approve')}
                                                         </Button>
                                                         <Button
                                                             variant="outline"
@@ -202,7 +218,7 @@ export function SpaceMemory({ space }: { space: Space }) {
                                                             className="text-xs"
                                                             onClick={() => setEditing({ kind: 'approve', proposal })}
                                                         >
-                                                            Edit and approve
+                                                            {t('spaces.memory:proposals.edit-approve')}
                                                         </Button>
                                                         <Button
                                                             variant="ghost"
@@ -215,7 +231,7 @@ export function SpaceMemory({ space }: { space: Space }) {
                                                                 )
                                                             }
                                                         >
-                                                            Reject
+                                                            {t('spaces.memory:proposals.reject')}
                                                         </Button>
                                                     </>
                                                 )}
@@ -231,7 +247,7 @@ export function SpaceMemory({ space }: { space: Space }) {
                                                             )
                                                         }
                                                     >
-                                                        Withdraw
+                                                        {t('spaces.memory:proposals.withdraw')}
                                                     </Button>
                                                 )}
                                             </div>
@@ -242,7 +258,7 @@ export function SpaceMemory({ space }: { space: Space }) {
                         )}
 
                         <section aria-labelledby="space-memory-entries" className="mb-8">
-                            <SectionTitle id="space-memory-entries">In use</SectionTitle>
+                            <SectionTitle id="space-memory-entries">{t('spaces.memory:entries.title')}</SectionTitle>
                             {entries.length ? (
                                 <div
                                     data-slot="space-memory-entries"
@@ -259,7 +275,9 @@ export function SpaceMemory({ space }: { space: Space }) {
                                                 <BookOpen size={18} className="text-slate-400" />
                                                 {(entry.version ?? 1) > 1 && (
                                                     <Badge variant="secondary" className="py-0 leading-5">
-                                                        Version {entry.version}
+                                                        {t('spaces.memory:entries.version', {
+                                                            version: entry.version ?? 1,
+                                                        })}
                                                     </Badge>
                                                 )}
                                             </div>
@@ -271,8 +289,10 @@ export function SpaceMemory({ space }: { space: Space }) {
                                             </small>
                                             <div className="flex flex-wrap items-center gap-0.75">
                                                 <small className="mr-auto text-xs text-muted-foreground">
-                                                    {'Approved by '}
-                                                    {entry.decidedByName ?? 'an editor'}
+                                                    {t('spaces.memory:entries.approved-by', {
+                                                        context: entry.decidedByName ? undefined : 'unknown',
+                                                        name: entry.decidedByName ?? '',
+                                                    })}
                                                     {entry.decidedAt && (
                                                         <>
                                                             {' · '}
@@ -281,20 +301,22 @@ export function SpaceMemory({ space }: { space: Space }) {
                                                     )}
                                                 </small>
                                                 <IconButton
-                                                    label="Entry history"
+                                                    label={t('spaces.memory:entries.history')}
                                                     onClick={() => setEditing({ kind: 'history', entry })}
                                                 >
                                                     <History className="size-4" />
                                                 </IconButton>
                                                 <IconButton
-                                                    label={editor ? 'Edit entry' : 'Suggest a change'}
+                                                    label={t('spaces.memory:entries.edit', {
+                                                        context: editor ? 'editor' : undefined,
+                                                    })}
                                                     onClick={() => setEditing({ kind: 'change', entry })}
                                                 >
                                                     <Pencil className="size-3.75" />
                                                 </IconButton>
                                                 {editor && (
                                                     <IconButton
-                                                        label="Retire entry"
+                                                        label={t('spaces.memory:entries.retire')}
                                                         onClick={() => setEditing({ kind: 'retire', entry })}
                                                     >
                                                         <Archive className="size-3.75" />
@@ -309,23 +331,26 @@ export function SpaceMemory({ space }: { space: Space }) {
                                     data-slot="space-memory-empty"
                                     className="max-w-3xl text-xs leading-[1.8] text-muted-foreground"
                                 >
-                                    Nothing yet. Propose a lasting team fact, convention or decision, like “Invoices go
-                                    out on the 1st”, or ask a socio with this Space to propose one.
+                                    {t('spaces.memory:entries.empty')}
                                 </p>
                             )}
                         </section>
 
                         {editor && state.retired.length > 0 && (
                             <section aria-labelledby="space-memory-retired" className="mb-8">
-                                <SectionTitle id="space-memory-retired">Retired</SectionTitle>
+                                <SectionTitle id="space-memory-retired">
+                                    {t('spaces.memory:retired.title')}
+                                </SectionTitle>
                                 <ul data-slot="space-memory-retired" className="grid gap-2 text-[13px]">
                                     {state.retired.map((entry) => (
                                         <li key={entry.id} className="flex items-start gap-2 rounded-lg border p-3">
                                             <span className="mr-auto min-w-0 whitespace-pre-wrap text-muted-foreground">
                                                 {entry.text}
                                                 <small className="block text-xs">
-                                                    {'Retired by '}
-                                                    {entry.endedByName ?? 'an editor'}
+                                                    {t('spaces.memory:retired.by', {
+                                                        context: entry.endedByName ? undefined : 'unknown',
+                                                        name: entry.endedByName ?? '',
+                                                    })}
                                                     {entry.endedAt && (
                                                         <>
                                                             {' · '}
@@ -335,7 +360,7 @@ export function SpaceMemory({ space }: { space: Space }) {
                                                 </small>
                                             </span>
                                             <IconButton
-                                                label="Delete retired entry"
+                                                label={t('spaces.memory:retired.delete')}
                                                 onClick={() => setEditing({ kind: 'delete', entry })}
                                             >
                                                 <Trash2 className="size-3.75" />
@@ -344,8 +369,7 @@ export function SpaceMemory({ space }: { space: Space }) {
                                     ))}
                                 </ul>
                                 <p className="mt-2 text-xs text-muted-foreground">
-                                    Kept {state.retentionDays} days after they are retired, with earlier versions and
-                                    proposals turned down.
+                                    {t('spaces.memory:retired.kept', { count: state.retentionDays })}
                                 </p>
                             </section>
                         )}
@@ -371,22 +395,21 @@ export function SpaceMemory({ space }: { space: Space }) {
             )}
             {editing?.kind === 'retire' && (
                 <ConfirmDelete
-                    title="Retire this entry?"
+                    title={t('spaces.memory:retire-confirm.title')}
                     slot="retire-space-memory"
-                    action="Retire"
+                    action={t('spaces.memory:retire-confirm.action')}
                     onClose={() => setEditing(undefined)}
                     onConfirm={async () => {
                         await act(`/memory/entries/${encodeURIComponent(editing.entry.entryId)}/retire`, 'POST');
                         setEditing(undefined);
                     }}
                 >
-                    Socios stop using it in every chat at once. Proposals waiting to change it are turned down. It stays
-                    under Retired until it is deleted.
+                    {t('spaces.memory:retire-confirm.body')}
                 </ConfirmDelete>
             )}
             {editing?.kind === 'delete' && (
                 <ConfirmDelete
-                    title="Delete this entry for good?"
+                    title={t('spaces.memory:delete-confirm.title')}
                     slot="delete-space-memory"
                     onClose={() => setEditing(undefined)}
                     onConfirm={async () => {
@@ -394,7 +417,7 @@ export function SpaceMemory({ space }: { space: Space }) {
                         setEditing(undefined);
                     }}
                 >
-                    Every version of it goes. Backups keep it until they age out.
+                    {t('spaces.memory:delete-confirm.body')}
                 </ConfirmDelete>
             )}
             {editing?.kind === 'history' && (
@@ -434,24 +457,22 @@ function EntryEditor({
     onClose: () => void;
     onSave: (text: string) => Promise<string | undefined>;
 }) {
+    const { t } = useTranslation(['spaces.memory']);
     const [text, setText] = useState(
         editing.kind === 'change' ? editing.entry.text : editing.kind === 'approve' ? editing.proposal.text : '',
     );
     const { label, note, area } = memoryDialogStyles;
+    const context = editor ? 'editor' : undefined;
     const title =
         editing.kind === 'approve'
-            ? 'Approve in your words.'
+            ? t('spaces.memory:editor.title-approve')
             : editing.kind === 'change'
-              ? editor
-                  ? 'Keep it accurate.'
-                  : 'Suggest a change.'
-              : editor
-                ? 'Something the team knows.'
-                : 'Propose shared knowledge.';
+              ? t('spaces.memory:editor.title-change', { context })
+              : t('spaces.memory:editor.title-new', { context });
     return (
         <MemoryDialog title={title} slot="space-memory-editor" onClose={onClose} onSave={() => onSave(text.trim())}>
             <label className={label} htmlFor="space-memory-text">
-                Entry
+                {t('spaces.memory:editor.label')}
             </label>
             <Textarea
                 id="space-memory-text"
@@ -463,10 +484,8 @@ function EntryEditor({
                 onChange={(event) => setText(event.target.value)}
             />
             <p className={cn(note, 'mt-2')}>
-                {editor || editing.kind === 'approve'
-                    ? 'It is in use as soon as you save: socios with this Space use it with everyone who can read it. The version before is kept in its history.'
-                    : 'It waits for one of the Space’s editors, and is used only once they approve it.'}{' '}
-                One lasting fact, convention or decision; nothing private about a person, and no secrets.
+                {t('spaces.memory:editor.note', { context: editor || editing.kind === 'approve' ? 'now' : undefined })}{' '}
+                {t('spaces.memory:editor.rule')}
             </p>
         </MemoryDialog>
     );
@@ -474,21 +493,22 @@ function EntryEditor({
 
 /** An entry's versions, newest first, with who proposed and approved each. */
 function EntryHistory({ path, onClose }: { path: string; onClose: () => void }) {
+    const { t } = useTranslation(['spaces.memory']);
     const [versions, setVersions] = useState<SpaceMemoryView[]>();
     const [error, setError] = useState('');
     useEffect(() => {
         api<SpaceMemoryView[]>(path).then(setVersions, (failed: unknown) =>
-            setError(failure(failed, 'Could not load its history.')),
+            setError(failure(failed, t('spaces.memory:history.load-failed'))),
         );
-    }, [path]);
+    }, [path, t]);
     return (
         <Dialog open onOpenChange={(open) => !open && onClose()}>
             <DialogContent
                 data-slot="space-memory-history"
                 className="max-h-[calc(100dvh-48px)] overflow-y-auto sm:max-w-130"
             >
-                <DialogTitle>Entry history</DialogTitle>
-                <DialogDescription>Every version, newest first, with who proposed and approved it.</DialogDescription>
+                <DialogTitle>{t('spaces.memory:history.title')}</DialogTitle>
+                <DialogDescription>{t('spaces.memory:history.description')}</DialogDescription>
                 {error && (
                     <p role="alert" className="text-xs text-destructive">
                         {error}
@@ -499,17 +519,22 @@ function EntryHistory({ path, onClose }: { path: string; onClose: () => void }) 
                         <li key={version.id} className="rounded-lg border p-3 text-[13px]">
                             <div className="mb-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                                 <Badge variant="secondary" className="py-0 leading-5">
-                                    {version.version ? `Version ${version.version}` : 'Proposal'}
+                                    {version.version
+                                        ? t('spaces.memory:history.version', { version: version.version })
+                                        : t('spaces.memory:history.proposal')}
                                 </Badge>
-                                <span>{STATUS_LABELS[version.status]}</span>
+                                <span>{t(STATUS_KEYS[version.status])}</span>
                             </div>
                             <p className="whitespace-pre-wrap">{version.text}</p>
                             <small className="mt-1 block text-xs text-muted-foreground">
                                 <Provenance version={version} />
                                 {version.decidedByName && version.decidedAt && (
                                     <>
-                                        {version.status === 'rejected' ? ' · rejected by ' : ' · approved by '}
-                                        {version.decidedByName}
+                                        {' · '}
+                                        {t('spaces.memory:history.decided', {
+                                            context: version.status === 'rejected' ? 'rejected' : undefined,
+                                            name: version.decidedByName,
+                                        })}
                                     </>
                                 )}
                             </small>
@@ -521,11 +546,11 @@ function EntryHistory({ path, onClose }: { path: string; onClose: () => void }) 
     );
 }
 
-const STATUS_LABELS: Record<SpaceMemoryView['status'], string> = {
-    proposed: 'Waiting for approval',
-    active: 'In use',
-    superseded: 'Replaced',
-    rejected: 'Rejected',
-    withdrawn: 'Withdrawn',
-    retired: 'Retired',
-};
+const STATUS_KEYS = {
+    proposed: 'spaces.memory:status.proposed',
+    active: 'spaces.memory:status.active',
+    superseded: 'spaces.memory:status.superseded',
+    rejected: 'spaces.memory:status.rejected',
+    withdrawn: 'spaces.memory:status.withdrawn',
+    retired: 'spaces.memory:status.retired',
+} as const satisfies Record<SpaceMemoryView['status'], string>;

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 
+import { useTranslation } from '@socio/i18n/react';
 import { areaLabel, issuePath, KIND_LABEL, PRIORITY_LABEL } from '@socio/shared/issues/issue-board';
 import {
     ISSUE_AREAS,
@@ -17,6 +18,7 @@ import {
 import { pageExcerpt, type Page } from '@socio/shared/pages/page-library';
 import type { WorkspaceState } from '@socio/shared/types';
 
+import { onDemand } from '../../i18n/on-demand';
 import { api, ApiError } from '../../lib/api';
 import { Field, ChoiceField } from '../issues/IssueFields';
 import { spacePath } from '../pages/page-navigation';
@@ -39,14 +41,21 @@ import { cn } from '@/lib/utils';
  * `schedule`): reused here so the two stay in sync. The server takes seconds
  * (`/api/tasks`, `intervalSeconds`, minimum 60).
  */
-const INTERVALS: { value: number; label: string }[] = [
-    { value: 3600, label: 'Every hour' },
-    { value: 86400, label: 'Every day' },
-    { value: 604800, label: 'Every week' },
-];
+const INTERVALS = [
+    { value: 3600, label: 'spaces.promote:intervals.hour' },
+    { value: 86400, label: 'spaces.promote:intervals.day' },
+    { value: 604800, label: 'spaces.promote:intervals.week' },
+] as const;
 
 /** The three kinds of follow-up a Space finding can become (CB-281). */
 export type FollowUpDestination = 'issue' | 'schedule' | 'goal';
+
+/** The submit button's words for each destination. */
+const SUBMIT_KEYS = {
+    issue: 'spaces.promote:submit.issue',
+    schedule: 'spaces.promote:submit.schedule',
+    goal: 'spaces.promote:submit.goal',
+} as const satisfies Record<FollowUpDestination, string>;
 
 /**
  * The citation line that ties a follow-up to its source page, matching the
@@ -74,8 +83,10 @@ export function pageCitation(page: Pick<Page, 'id' | 'spaceId' | 'title'>) {
  * - Goal: needs a specialist for the Space — there is no web "create a goal"
  *   endpoint, so the goal destination asks that specialist to set the goal,
  *   reusing the existing chat → `goal_set` → approval path.
+ *
+ * Its words load on demand (spaces.promote).
  */
-export function PromoteFindingDialog({
+function PromoteFinding({
     page,
     workspace,
     onClose,
@@ -91,12 +102,13 @@ export function PromoteFindingDialog({
      */
     onAskGoal: (prompt: string, dotId: string) => void;
 }) {
+    const { t } = useTranslation(['spaces.promote']);
     const navigate = useNavigate();
     const citation = pageCitation(page);
     const excerpt = pageExcerpt(page.content);
     const bodyDefault = `${citation}:\n\n${excerpt}`.trim();
 
-    const [title, setTitle] = useState(page.title.trim() || 'Untitled page');
+    const [title, setTitle] = useState(page.title.trim() || t('spaces.promote:untitled'));
     const [body, setBody] = useState(bodyDefault);
     const [destination, setDestination] = useState<FollowUpDestination>('issue');
     const [intervalSeconds, setIntervalSeconds] = useState(86400);
@@ -125,22 +137,22 @@ export function PromoteFindingDialog({
     }[] = [
         {
             value: 'issue',
-            label: 'Board issue',
-            hint: 'Filed into triage for review.',
+            label: t('spaces.promote:destinations.issue'),
+            hint: t('spaces.promote:destinations.issue-hint'),
         },
     ];
     if (canSchedule) {
         destinations.push({
             value: 'schedule',
-            label: 'Recurring schedule',
-            hint: 'Runs in a conversation of its own, on a cadence.',
+            label: t('spaces.promote:destinations.schedule'),
+            hint: t('spaces.promote:destinations.schedule-hint'),
         });
     }
     if (canGoal) {
         destinations.push({
             value: 'goal',
-            label: 'Goal',
-            hint: 'Ask this specialist to work toward it; you approve it.',
+            label: t('spaces.promote:destinations.goal'),
+            hint: t('spaces.promote:destinations.goal-hint'),
         });
     }
 
@@ -161,10 +173,10 @@ export function PromoteFindingDialog({
                     ...(area ? { area } : {}),
                 });
                 const key = issueKey(issue.number);
-                toast.success(`Filed ${key}`, {
+                toast.success(t('spaces.promote:toasts.filed', { key }), {
                     description: issue.title,
                     action: {
-                        label: 'Open',
+                        label: t('spaces.promote:toasts.open'),
                         onClick: () => void navigate(issuePath(issue.number)),
                     },
                 });
@@ -173,7 +185,7 @@ export function PromoteFindingDialog({
             }
             if (effective === 'schedule') {
                 if (!spaceDot) {
-                    throw new Error('No specialist for this Space.');
+                    throw new Error(t('spaces.promote:errors.no-specialist'));
                 }
                 // A schedule runs in a conversation the person owns: ensure the page's
                 // conversation exists, then bind the task to it (the same /tasks
@@ -188,10 +200,10 @@ export function PromoteFindingDialog({
                     threadId: thread.id,
                     intervalSeconds,
                 });
-                toast.success('Schedule created', {
-                    description: 'It runs in its own conversation.',
+                toast.success(t('spaces.promote:toasts.scheduled'), {
+                    description: t('spaces.promote:toasts.scheduled-detail'),
                     action: {
-                        label: 'Open',
+                        label: t('spaces.promote:toasts.open'),
                         onClick: () => void navigate(`/schedules/${encodeURIComponent(task.id)}`),
                     },
                 });
@@ -201,17 +213,17 @@ export function PromoteFindingDialog({
             // goal: ask the specialist to set it, reusing the existing goal_set
             // path (the person approves the request it produces).
             if (!spaceDot) {
-                throw new Error('No specialist for this Space.');
+                throw new Error(t('spaces.promote:errors.no-specialist'));
             }
             onAskGoal(body.trim(), spaceDot.id);
-            toast.message('Asked for a goal', {
-                description: `${spaceDot.name} will propose it; you approve before it starts.`,
+            toast.message(t('spaces.promote:toasts.asked'), {
+                description: t('spaces.promote:toasts.asked-detail', { socio: spaceDot.name }),
             });
             onClose();
             return;
         } catch (e) {
             setError(
-                e instanceof ApiError ? e.message : e instanceof Error ? e.message : 'Could not create the follow-up.',
+                e instanceof ApiError ? e.message : e instanceof Error ? e.message : t('spaces.promote:errors.failed'),
             );
         } finally {
             setBusy(false);
@@ -228,12 +240,9 @@ export function PromoteFindingDialog({
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2 text-[22px] leading-tight font-[550] tracking-[-0.03em]">
                         <Sparkles className="size-5 text-muted-foreground" />
-                        Create follow-up
+                        {t('spaces.promote:title')}
                     </DialogTitle>
-                    <DialogDescription>
-                        Turn this finding into a goal, a recurring schedule, or a board issue. It&apos;s prefilled from
-                        the page — edit, then confirm. Nothing is created until you do.
-                    </DialogDescription>
+                    <DialogDescription>{t('spaces.promote:description')}</DialogDescription>
                 </DialogHeader>
                 <form
                     data-slot="promote-finding-form"
@@ -243,7 +252,7 @@ export function PromoteFindingDialog({
                         void submit();
                     }}
                 >
-                    <Field label="Title">
+                    <Field label={t('spaces.promote:fields.title')}>
                         {(id) => (
                             <Input
                                 aria-labelledby={id}
@@ -255,7 +264,7 @@ export function PromoteFindingDialog({
                             />
                         )}
                     </Field>
-                    <Field label="Body">
+                    <Field label={t('spaces.promote:fields.body')}>
                         {(id) => (
                             <Textarea
                                 aria-labelledby={id}
@@ -268,7 +277,7 @@ export function PromoteFindingDialog({
                         )}
                     </Field>
                     {!onlyIssue && (
-                        <Field label="Destination">
+                        <Field label={t('spaces.promote:fields.destination')}>
                             {(id) => (
                                 <div role="radiogroup" aria-labelledby={id} className="grid gap-2">
                                     {destinations.map((d) => {
@@ -312,31 +321,31 @@ export function PromoteFindingDialog({
                     {effective === 'issue' && (
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                             <ChoiceField
-                                label="Kind"
+                                label={t('spaces.promote:fields.kind')}
                                 value={kind}
                                 options={ISSUE_KINDS}
                                 labelOf={(value) => KIND_LABEL[value]}
                                 onChange={(value) => value && setKind(value)}
                             />
                             <ChoiceField
-                                label="Priority"
+                                label={t('spaces.promote:fields.priority')}
                                 value={priority}
                                 options={ISSUE_PRIORITIES}
                                 labelOf={(value) => PRIORITY_LABEL[value]}
                                 onChange={(value) => value && setPriority(value)}
                             />
                             <ChoiceField
-                                label="Area"
+                                label={t('spaces.promote:fields.area')}
                                 value={area}
                                 options={ISSUE_AREAS}
                                 labelOf={areaLabel}
-                                none="No area"
+                                none={t('spaces.promote:fields.no-area')}
                                 onChange={setArea}
                             />
                         </div>
                     )}
                     {effective === 'schedule' && (
-                        <Field label="Repeat after each successful run">
+                        <Field label={t('spaces.promote:fields.repeat')}>
                             {(id) => (
                                 <select
                                     aria-labelledby={id}
@@ -347,7 +356,7 @@ export function PromoteFindingDialog({
                                 >
                                     {INTERVALS.map((opt) => (
                                         <option key={opt.value} value={opt.value}>
-                                            {opt.label}
+                                            {t(opt.label)}
                                         </option>
                                     ))}
                                 </select>
@@ -356,8 +365,7 @@ export function PromoteFindingDialog({
                     )}
                     {effective === 'goal' && (
                         <p className="text-[11px] leading-[1.7] text-muted-foreground">
-                            {spaceDot?.name} will propose the goal and work toward it on its own cadence. You approve
-                            the request before anything starts — the same way goals are always set.
+                            {t('spaces.promote:goal-note', { socio: spaceDot?.name ?? '' })}
                         </p>
                     )}
                     {error && (
@@ -370,16 +378,10 @@ export function PromoteFindingDialog({
                     )}
                     <DialogFooter>
                         <Button type="button" variant="outline" onClick={onClose} disabled={busy}>
-                            Cancel
+                            {t('spaces.promote:cancel')}
                         </Button>
                         <Button type="submit" disabled={busy || title.trim().length < 3}>
-                            {busy
-                                ? 'Creating…'
-                                : effective === 'goal'
-                                  ? 'Ask for goal'
-                                  : effective === 'schedule'
-                                    ? 'Create schedule'
-                                    : 'File issue'}
+                            {busy ? t('spaces.promote:creating') : t(SUBMIT_KEYS[effective])}
                         </Button>
                     </DialogFooter>
                 </form>
@@ -387,3 +389,6 @@ export function PromoteFindingDialog({
         </DialogRoot>
     );
 }
+
+/** The follow-up dialog (`PromoteFinding`), once its words are in. */
+export const PromoteFindingDialog = onDemand(['spaces.promote'], PromoteFinding);

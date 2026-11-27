@@ -1,0 +1,22 @@
+{
+    "title": "Title of the dialog that turns a finding on a Space page into a follow-up: a goal, a recurring schedule or a board issue.",
+    "description": "The dialog's description. A \"board issue\" is an item on the workspace's Improvements board.",
+    "untitled": "Default title for a page with no title, prefilled in the Title box.",
+    "fields.body": "Label of the follow-up's text box (its description or prompt).",
+    "fields.destination": "Label of the choice between a board issue, a recurring schedule and a goal.",
+    "fields.kind": "Label of the issue's kind picker (bug, improvement…).",
+    "fields.area": "Label of the issue's product area picker.",
+    "fields.no-area": "The area picker's option for no area.",
+    "fields.repeat": "Label of the schedule's interval picker: the time between one successful run and the next.",
+    "destinations.issue-hint": "Triage is the board's first column, where new issues wait to be reviewed.",
+    "destinations.schedule-hint": "A schedule runs a socio's (AI agent's) task repeatedly, each run in its own chat.",
+    "destinations.goal-hint": "A specialist is the Space's socio (AI agent). The goal is set only once the person approves it.",
+    "goal-note": "{{socio}} is the specialist socio's (AI agent's) name.",
+    "creating": "The submit button while the follow-up is created.",
+    "submit.issue": "Submit button that files the board issue.",
+    "submit.goal": "Submit button that asks the socio (AI agent) to propose the goal.",
+    "toasts.filed": "Toast after filing the issue. {{key}} is its key, like CB-42; don't translate it.",
+    "toasts.open": "Button in the toast that opens what was created.",
+    "toasts.asked-detail": "Under the toast's title. {{socio}} is the socio's (AI agent's) name.",
+    "errors.no-specialist": "Error when the Space has no socio (AI agent) to run the schedule or goal."
+}

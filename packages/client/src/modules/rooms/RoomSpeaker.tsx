@@ -1,6 +1,7 @@
 import type { Message } from '@ag-ui/core';
 import { Bot } from 'lucide-react';
 
+import { useTranslation } from '@socio/i18n/react';
 import type { TranscriptMention } from '@socio/shared/rooms/room-notices';
 import { initials, personTones as personToneIndexes, toneIndex } from '@socio/shared/rooms/room-speakers';
 import { messageAuthor } from '@socio/shared/runs/socio-fields';
@@ -84,14 +85,17 @@ export function RoomSpeaker({
      */
     shownName?: string;
 }) {
+    const { t } = useTranslation(['rooms']);
     const label = 'flex max-w-full min-w-0 items-center gap-1.5 px-1 text-[12px] font-medium text-muted-foreground';
     if (message.role === 'assistant' && !dot) {
         return (
             <span className={label} data-room-speaker="socio">
                 <Bot className="size-4 shrink-0" aria-hidden />
-                <span className="truncate text-foreground">{socioName ?? 'A socio'}</span>
+                <span className="truncate text-foreground">{socioName ?? t('rooms:a-socio')}</span>
                 {socioName && (
-                    <span className="shrink-0 rounded-sm border px-1 text-[10px] leading-4 font-normal">socio</span>
+                    <span className="shrink-0 rounded-sm border px-1 text-[10px] leading-4 font-normal">
+                        {t('rooms:speaker.socio')}
+                    </span>
                 )}
             </span>
         );
@@ -108,7 +112,9 @@ export function RoomSpeaker({
                     className="size-5 shrink-0"
                 />
                 <span className="truncate text-foreground">{dot.name}</span>
-                <span className="shrink-0 rounded-sm border px-1 text-[10px] leading-4 font-normal">socio</span>
+                <span className="shrink-0 rounded-sm border px-1 text-[10px] leading-4 font-normal">
+                    {t('rooms:speaker.socio')}
+                </span>
             </span>
         );
     }
@@ -119,11 +125,11 @@ export function RoomSpeaker({
     if (author?.you) {
         return (
             <span className={label} data-room-speaker="you">
-                You
+                {t('rooms:you')}
             </span>
         );
     }
-    const name = author?.name ?? 'Team member';
+    const name = author?.name ?? t('rooms:speaker.team-member');
     return (
         <span className={label} data-room-speaker="person" data-chat-author>
             <PersonAvatar name={name} tone={tone} />

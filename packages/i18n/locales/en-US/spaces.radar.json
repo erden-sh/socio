@@ -1,1 +1,36 @@
-{}
+{
+    "label": "{{space}} change radar",
+    "description": "A project change radar: what changed, what stays open, and what may be stale across this Space's pages.",
+    "refresh": "Refresh",
+    "refresh-label": "Refresh radar",
+    "missing": "Space not found.",
+    "loading": "Loading radar…",
+    "load-failed": "Could not load the change radar.",
+    "scope_one": "{{count, number}} live page in this Space. Stale is older than {{days, number}} days, relative to the most recent change. Markers are a simple heuristic, not deep scan. Dismissals last only this session.",
+    "scope_other": "{{count, number}} live pages in this Space. Stale is older than {{days, number}} days, relative to the most recent change. Markers are a simple heuristic, not deep scan. Dismissals last only this session.",
+    "recent": {
+        "title": "Recent changes",
+        "empty": "No pages yet."
+    },
+    "open": {
+        "title": "Open decisions & experiments",
+        "empty": "Nothing flagged. A page shows here when its title or excerpt carries a marker like <em>todo</em>, <em>decision</em>, <em>experiment</em>, <em>tbd</em> or <em>unresolved</em>."
+    },
+    "stale": {
+        "title": "Potentially stale",
+        "empty_one": "Nothing stale. Every page was updated within {{count, number}} day of the most recent change.",
+        "empty_other": "Nothing stale. Every page was updated within {{count, number}} days of the most recent change.",
+        "today": "Updated today",
+        "age_one": "{{count, number}} day since the last edit",
+        "age_other": "{{count, number}} days since the last edit",
+        "dismiss": "Not stale"
+    },
+    "resolved": "Resolved",
+    "clear_one": "Clear {{count, number}} dismissed this session",
+    "clear_other": "Clear {{count, number}} dismissed this session",
+    "untitled": "Untitled page",
+    "revisions_one": "{{count, number}} revision kept",
+    "revisions_other": "{{count, number}} revisions kept",
+    "ago-days": "{{days, relativetime(range: day)}}",
+    "ago-months": "{{months, relativetime(range: month)}}"
+}
