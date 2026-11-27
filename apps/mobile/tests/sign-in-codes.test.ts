@@ -40,6 +40,9 @@ import {
     codeRequestLine,
     codeSentLine,
     codeStepTitle,
+    codeToSubmit,
+    CODE_TRIES,
+    codeWrongLine,
     readCodeField,
     readCodeLink,
     requestSignInCode,
@@ -312,6 +315,36 @@ describe('the view models', () => {
         expect(readCodeField('ABCD-EFG0').hint).toMatch(/never use 0, 1, I, L, O or U/);
         expect(readCodeField('ABCD-EFGO').hint).toMatch(/never use/);
         expect(readCodeField('ABCD-EFGHJ').hint).toBe('A code has 8 letters and digits.');
+    });
+
+    it('submits on the last symbol or a paste, once per code, with no button (owner, 2026-11-26)', () => {
+        // Typed to its last symbol, with or without the dash, any case.
+        expect(codeToSubmit('ABCD-EFG', 'ABCD-EFGH')).toBe('ABCDEFGH');
+        expect(codeToSubmit('abcdefg', 'abcdefgh')).toBe('ABCDEFGH');
+        // Pasted whole into an empty field, spaces and dashes stripped.
+        expect(codeToSubmit('', ' abcd - efgh ')).toBe('ABCDEFGH');
+        // Not whole yet, or not a code: nothing goes.
+        expect(codeToSubmit('', 'ABCD-EFG')).toBeNull();
+        expect(codeToSubmit('ABCD-EFG', 'ABCD-EFG0')).toBeNull();
+        expect(codeToSubmit('ABCD-EFGH', 'ABCD-EFGHJ')).toBeNull();
+        // The same code again (a dash added, a symbol's case changed) isn't sent twice in a row.
+        expect(codeToSubmit('ABCDEFGH', 'ABCD-EFGH')).toBeNull();
+        expect(codeToSubmit('ABCD-EFGH', 'abcd-efgh')).toBeNull();
+        // Another whole code (one symbol fixed) goes.
+        expect(codeToSubmit('ABCD-EFGH', 'ABCD-EFGJ')).toBe('ABCDEFGJ');
+    });
+
+    it('says the tries left after a wrong code', () => {
+        expect(CODE_TRIES).toBe(5);
+        expect(codeWrongLine(1)).toBe('That code isn’t right. 4 tries left.');
+        expect(codeWrongLine(4)).toBe('That code isn’t right. 1 try left.');
+        expect(codeWrongLine(5)).toMatch(/last try\. Ask for a new code/);
+        expect(codeWrongLine(9)).toMatch(/last try/);
+    });
+
+    it('keeps the server’s count of tries', () => {
+        const server = readFileSync(join(import.meta.dirname, '../../../src/server/auth/device-sign-in.ts'), 'utf8');
+        expect(server).toMatch(new RegExp(`export const CODE_TRIES = ${CODE_TRIES};`));
     });
 
     it('Send again waits 60 s after each send, counting down whole seconds', () => {

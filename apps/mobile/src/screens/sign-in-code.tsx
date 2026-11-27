@@ -1,11 +1,12 @@
 import type { StaticScreenProps } from '@react-navigation/native';
-import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator } from 'react-native';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { ActivityIndicator, View } from 'react-native';
 
 import { formatCode } from '@socio/shared/device-sign-in';
 
 import type { PendingCodeView } from '../data/code-flow';
 import type { StagedLogo } from '../data/logo';
+import type { SignInOutcome } from '../data/sign-in-flow';
 import {
     CODE_REQUEST_GONE,
     type CodeChannel,
@@ -14,6 +15,8 @@ import {
     codeRequestLine,
     codeSentLine,
     codeStepTitle,
+    codeToSubmit,
+    codeWrongLine,
     readCodeField,
     sendAgainLabel,
     sendAgainSeconds,
@@ -31,10 +34,13 @@ import { WorkspaceHost } from './workspace-host';
 // - the email, then Send code: a fresh request (src/data/code-flow.ts). Nothing on the screen says
 //   whether the email has an account: the server answers the same either way.
 // - "Enter the code we sent to your email" (or "…to your Telegram"): the field takes the code with
-//   or without its dash, pasted or typed (`readCodeField`); the code's link fills it in. Sign in
-//   redeems and commits as the password form does (`settle`: the same another-person question),
-//   with the codes' own words for each refusal (`codeRefusal`). A dead request (expired, its 5 tries
-//   used, another build's, its channel changed, the method off) goes back to the email with its line.
+//   or without its dash, pasted or typed, any case (`readCodeField`); the code's link fills it in.
+//   There is no Sign in button (the owner, 2026-11-26): the field submits itself on its last symbol,
+//   a paste or the link's code (`codeToSubmit`), and redeems and commits as the password form does
+//   (`settle`: the same another-person question), with the codes' own words for each refusal
+//   (`codeRefusal`). A wrong code clears the field and says the tries left (`codeWrongLine`). A dead
+//   request (expired, its 5 tries used, another build's, its channel changed, the method off) goes
+//   back to the email with its line.
 //   Send again waits a minute after each send; "Use another email" starts over.
 // The code is in the field and the redeem's body only: never in params, a log or a problem.
 
@@ -46,6 +52,9 @@ export type SignInCodeParams =
     | undefined;
 
 const MASCOT: StagedLogo = { kind: 'mascot' };
+
+/** The server said the code isn't right (`code_invalid`): the request still has tries. */
+const isWrongCode = (outcome: SignInOutcome) => outcome.kind === 'problem' && outcome.problem.kind === 'code-invalid';
 
 type Phase = 'loading' | 'email' | 'code' | 'gone';
 
@@ -65,6 +74,10 @@ export function SignInCodeScreen({ route }: StaticScreenProps<SignInCodeParams>)
     const [held, setHeld] = useState<{ origin: string; name: string; channel: CodeChannel } | null>(null);
     const [email, setEmail] = useState('');
     const [codeText, setCodeText] = useState('');
+    /** A whole code to redeem as soon as the screen can (typed, pasted or filled in by its link). */
+    const [queued, setQueued] = useState<string | null>(null);
+    /** The wrong codes this screen saw for the pending request: the tries left are counted from it. */
+    const [wrong, setWrong] = useState(0);
     const [busy, setBusy] = useState(false);
     const [shown, setShown] = useState<Shown | null>(null);
     const [now, setNow] = useState(() => Date.now());
@@ -102,6 +115,7 @@ export function SignInCodeScreen({ route }: StaticScreenProps<SignInCodeParams>)
                         setPhase('code');
                         if (filled !== null) {
                             setCodeText(formatCode(filled));
+                            setQueued(formatCode(filled));
                         }
                     } else {
                         setPhase(given === null ? 'gone' : 'email');
@@ -124,6 +138,7 @@ export function SignInCodeScreen({ route }: StaticScreenProps<SignInCodeParams>)
                 if (filled !== null) {
                     setCodeText(formatCode(filled));
                     setShown(null);
+                    setQueued(formatCode(filled));
                 }
             }),
         [],
@@ -153,6 +168,7 @@ export function SignInCodeScreen({ route }: StaticScreenProps<SignInCodeParams>)
                     setPending(sent.pending);
                     setNow(Date.now());
                     setCodeText('');
+                    setWrong(0);
                     setPhase('code');
                 }
             } else {
@@ -170,21 +186,23 @@ export function SignInCodeScreen({ route }: StaticScreenProps<SignInCodeParams>)
 
     const field = readCodeField(codeText);
 
-    const signIn = async () => {
-        if (busy || origin === null || field.code === null) {
+    const signIn = async (typed: string) => {
+        if (busy || origin === null || readCodeField(typed).code === null) {
             return;
         }
         setBusy(true);
         setShown(null);
         let next: Shown | null = null;
         let startOver = false;
+        let wrongCode = false;
         try {
-            const redeemed = await codeFlow().redeem({ origin, typed: codeText, logo });
+            const redeemed = await codeFlow().redeem({ origin, typed, logo });
             if (redeemed.kind === 'no-request') {
                 startOver = true;
                 next = { line: CODE_REQUEST_GONE, detail: null, openWeb: false };
             } else if (redeemed.kind === 'outcome') {
                 startOver = redeemed.startOver;
+                wrongCode = isWrongCode(redeemed.outcome);
                 next = await settle(redeemed.outcome, (problem) => codeRefusal(problem).line);
             }
         } catch (error) {
@@ -198,9 +216,38 @@ export function SignInCodeScreen({ route }: StaticScreenProps<SignInCodeParams>)
         if (startOver) {
             setPending(null);
             setCodeText('');
+            setWrong(0);
             setPhase('email');
+        } else if (wrongCode && next !== null) {
+            // A wrong code: the field empties for the next try, and the line says how many are left.
+            setCodeText('');
+            setWrong(wrong + 1);
+            next = { ...next, line: codeWrongLine(wrong + 1) };
         }
         setShown(next !== null && next.line === '' ? null : next);
+    };
+
+    // A whole code goes as soon as nothing else is going and the request is in hand, through the
+    // latest `signIn` (a link's code can come before the pending request is read).
+    const latestSignIn = useRef(signIn);
+    useLayoutEffect(() => {
+        latestSignIn.current = signIn;
+    });
+    useEffect(() => {
+        if (queued === null || busy || phase !== 'code' || pending === null) {
+            return;
+        }
+        setQueued(null);
+        void latestSignIn.current(queued);
+    }, [queued, busy, phase, pending]);
+
+    const changeCode = (text: string) => {
+        const whole = codeToSubmit(codeText, text);
+        setCodeText(text);
+        if (whole !== null) {
+            setShown(null);
+            setQueued(text);
+        }
     };
 
     const anotherEmail = () => {
@@ -210,6 +257,7 @@ export function SignInCodeScreen({ route }: StaticScreenProps<SignInCodeParams>)
         setShown(null);
         setPending(null);
         setCodeText('');
+        setWrong(0);
         setPhase('email');
         codeFlow()
             .clear()
@@ -268,24 +316,32 @@ export function SignInCodeScreen({ route }: StaticScreenProps<SignInCodeParams>)
                         hint={field.hint === null ? 'Like ABCD-EFGH. With or without the dash.' : undefined}
                         error={field.hint ?? undefined}
                         value={codeText}
-                        onChangeText={setCodeText}
+                        onChangeText={changeCode}
                         autoCapitalize="characters"
                         autoCorrect={false}
                         autoComplete="one-time-code"
                         textContentType="oneTimeCode"
                         maxLength={24}
                         returnKeyType="go"
-                        onSubmitEditing={() => void signIn()}
+                        onSubmitEditing={() => void signIn(codeText)}
                         editable={!busy}
+                        autoFocus
                         testID="sign-in-code-field"
                     />
-                    <Button
-                        label="Sign in"
-                        onPress={() => void signIn()}
-                        busy={busy}
-                        disabled={field.code === null}
-                        testID="sign-in-code-submit"
-                    />
+                    {busy ? (
+                        <View
+                            className="flex-row items-center justify-center gap-2"
+                            accessible
+                            accessibilityLabel="Signing in"
+                            accessibilityLiveRegion="polite"
+                            testID="sign-in-code-busy"
+                        >
+                            <ActivityIndicator size="small" />
+                            <Text variant="subheadline" tone="muted">
+                                Signing in…
+                            </Text>
+                        </View>
+                    ) : null}
                     <Button
                         variant="secondary"
                         label={sendAgainLabel(waitSeconds)}

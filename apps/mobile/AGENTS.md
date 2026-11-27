@@ -519,7 +519,10 @@ Signing in is `src/net/sign-in.ts` and `sign-in-copy.ts`, then
   and keeps the pending request (request id, verifier, origin, name, email, channel, variant, `sentAt`) as
   `socio.code` through `store.keys` (`src/data/code-flow.ts`) for 15 minutes; a refused Send again keeps
   the last. Its words never say whether the email has an account. The field takes the code with or
-  without its dash, any case (`readCodeField`); Send again waits 60 s (`sendAgainSeconds`). The code's
+  without its dash, any case (`readCodeField`), and has no Sign in button (the owner, 2026-11-26): it
+  submits itself once it holds a whole code, typed to its last symbol, pasted or filled in by the link,
+  never the same code twice in a row (`codeToSubmit`); a wrong code clears it and says the tries left
+  (`codeWrongLine`, counted from the wrong answers the screen saw). Send again waits 60 s (`sendAgainSeconds`). The code's
   link (`…/<variant path>/c#code=…&ws=<host>`, `readCodeLink`) fills it in (`root-navigation.ts` →
   `src/platform/code-sign-in.ts`, opening SignInCode over the gate when it isn't showing) only when the
   pending request is that host's; otherwise it only shows the code in an alert. The redeem
@@ -539,8 +542,17 @@ Signing in is `src/net/sign-in.ts` and `sign-in-copy.ts`, then
   no cookie). Someone else's copy of the workspace on the device (by email, `otherAccounts`) asks "This
   device is signed in to Acme as <email>. Sign in as <other> instead?" first, Cancel the default; going
   on agrees to remove exactly those copies, so the commit's another-person question isn't asked again
-  for them. Then "Sign in to Acme as <name> (<email>)?", the 6 digits, "Type this code on your computer to
-  sign in" and the 2-minute countdown (this device's clock from the claim's answer). The redeem
+  for them. Then the code (CB-568, `digitsLook`): the workspace's logo (the one the device keeps for it,
+  `keptLogoPath`, else the mascot), name and host, "Sign in on this device", the name and email on one
+  line, "On your computer, type this code" over the 6 digits, large, in two groups of three (a screen
+  reader says them one by one; no copy, which would outlive the claim on the clipboard), and the 2-minute
+  countdown (this device's clock from the claim's answer) as a bar and words, red in its last 20
+  seconds, then "Waiting for your computer…" or "Still trying". The moment the countdown ends the digits
+  go and "This code expired" says to choose Add a device on the computer again (`endLook`, the poll's
+  own end of a run-out claim too). The bar's Cancel is the one way out while the claim lives (no Back
+  chevron or swipe: `useNativeBar`'s `back: false`); an end has Close. At the accessibility text sizes
+  (`stacksAccessory`) the code comes first and who signs in follows it, and each step opens at its top
+  (the screen is keyed by the step). The redeem
   (`redeemPairing`, `POST …/pair/redeem`) is polled every `POLL_MS` (2 s; the server refuses more than one a
   second) inside `signInAndCommit`'s stage with the claim's email, so the install id, the person check
   and the commit are every sign-in's; `pollVerdict` keeps polling past `not_allowed_yet`, 429 and no

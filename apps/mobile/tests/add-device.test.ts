@@ -35,7 +35,18 @@ import {
     readDeviceLink,
     secondsLeft,
     shownDigits,
-    signInAsQuestion,
+    accountLabel,
+    accountLine,
+    countdown,
+    countdownSpoken,
+    digitsLabel,
+    digitsLook,
+    endLook,
+    EXPIRED_TITLE,
+    NOT_SIGNED_IN_TITLE,
+    START_AGAIN_LINE,
+    STILL_TRYING,
+    WAITING_LINE,
 } from '../src/net/add-device';
 import { AbortedError } from '../src/net/errors';
 import { probeWorkspace } from '../src/net/probe';
@@ -480,10 +491,9 @@ describe('the view models', () => {
 
     it('words the questions, the digits and the countdown, never with “phone”', () => {
         const ada = { name: 'Ada', email: 'ada@example.test' };
-        expect(signInAsQuestion('Acme', ada)).toBe('Sign in to Acme as Ada (ada@example.test)?');
-        expect(signInAsQuestion('Acme', { name: '', email: 'ada@example.test' })).toBe(
-            'Sign in to Acme as ada@example.test?',
-        );
+        expect(accountLine(ada)).toBe('Ada · ada@example.test');
+        expect(accountLine({ name: '  ', email: 'ada@example.test' })).toBe('ada@example.test');
+        expect(accountLabel(ada)).toBe('Signing in as Ada, ada@example.test');
         expect(otherAccountQuestion('Acme', 'ada@example.test', 'ben@example.test')).toBe(
             'This device is signed in to Acme as ada@example.test. Sign in as ben@example.test instead?',
         );
@@ -495,10 +505,90 @@ describe('the view models', () => {
         expect(secondsLeft(T0 + CLAIM_MS, T0 + CLAIM_MS + 5)).toBe(0);
         expect(countdownLabel(120)).toBe('Expires in 2:00');
         expect(countdownLabel(65)).toBe('Expires in 1:05');
-        for (const line of [CODE_USED, CLAIM_DENIED, CLAIM_EXPIRED, CLAIM_SIGNED_OUT, CLAIM_METHOD_OFF, CLAIM_DEAD]) {
+        for (const line of [
+            CODE_USED,
+            CLAIM_DENIED,
+            CLAIM_EXPIRED,
+            CLAIM_SIGNED_OUT,
+            CLAIM_METHOD_OFF,
+            CLAIM_DEAD,
+            START_AGAIN_LINE,
+            EXPIRED_TITLE,
+            WAITING_LINE,
+        ]) {
             expect(line).not.toMatch(/phone/i);
         }
         expect(CODE_USED).toBe('This code was already used. Make a new one on your computer.');
+    });
+
+    it('draws the code as the hero: two groups, said digit by digit', () => {
+        expect(shownDigits('907153')).toBe('907 153');
+        expect(digitsLabel('907153')).toBe('Code: 9 0 7, 1 5 3');
+        const view = {
+            digits: '907153',
+            deadline: T0 + CLAIM_MS,
+            reaching: true,
+            account: { name: 'Ada', email: 'ada@example.test' },
+        };
+        expect(digitsLook(view, T0)).toEqual({
+            kind: 'code',
+            shown: '907 153',
+            label: 'Code: 9 0 7, 1 5 3',
+            account: 'Ada · ada@example.test',
+            accountLabel: 'Signing in as Ada, ada@example.test',
+            countdown: {
+                seconds: 120,
+                fraction: 1,
+                label: 'Expires in 2:00',
+                spoken: 'Expires in 2 minutes',
+                urgent: false,
+            },
+            status: { kind: 'waiting', line: WAITING_LINE },
+        });
+        // Polls with no answer: still the code, with "Still trying".
+        expect(digitsLook({ ...view, reaching: false }, T0 + 30_000)).toMatchObject({
+            kind: 'code',
+            status: { kind: 'offline', line: STILL_TRYING },
+        });
+    });
+
+    it('counts the claim down as a bar and words, urgent in its last 20 seconds', () => {
+        const deadline = T0 + CLAIM_MS;
+        expect(countdown(deadline, T0 + 60_000)).toEqual({
+            seconds: 60,
+            fraction: 0.5,
+            label: 'Expires in 1:00',
+            spoken: 'Expires in 1 minute',
+            urgent: false,
+        });
+        expect(countdown(deadline, T0 + 18_000)).toMatchObject({ seconds: 102, label: 'Expires in 1:42' });
+        expect(countdown(deadline, T0 + 18_000).spoken).toBe('Expires in 1 minute 42 seconds');
+        expect(countdown(deadline, T0 + 100_000)).toMatchObject({ seconds: 20, urgent: true });
+        expect(countdown(deadline, T0 + 99_000)).toMatchObject({ seconds: 21, urgent: false });
+        expect(countdown(deadline, T0 + CLAIM_MS + 5000)).toMatchObject({ seconds: 0, fraction: 0 });
+        // A clock that stepped back never overfills the bar.
+        expect(countdown(deadline, T0 - 10_000).fraction).toBe(1);
+        expect(countdownSpoken(1)).toBe('Expires in 1 second');
+        expect(countdownSpoken(0)).toBe('Expires in 0 seconds');
+        expect(countdownSpoken(61)).toBe('Expires in 1 minute 1 second');
+    });
+
+    it('takes the digits off the screen the moment the claim runs out, and says how to start again', () => {
+        const view = {
+            digits: '907153',
+            deadline: T0 + CLAIM_MS,
+            reaching: true,
+            account: { name: 'Ada', email: 'ada@example.test' },
+        };
+        expect(digitsLook(view, T0 + CLAIM_MS - 1).kind).toBe('code');
+        const expired = digitsLook(view, T0 + CLAIM_MS);
+        expect(expired).toEqual({ kind: 'expired', title: EXPIRED_TITLE, line: START_AGAIN_LINE });
+        expect(JSON.stringify(expired)).not.toContain(DIGITS);
+        expect(EXPIRED_TITLE).toBe('This code expired');
+        expect(START_AGAIN_LINE).toMatch(/Add a device on your computer.*scan the new QR code/);
+        // The poll's own end of a run-out claim looks the same; any other end says what happened.
+        expect(endLook(CLAIM_EXPIRED)).toEqual({ title: EXPIRED_TITLE, line: START_AGAIN_LINE, expired: true });
+        expect(endLook(CLAIM_DENIED)).toEqual({ title: NOT_SIGNED_IN_TITLE, line: CLAIM_DENIED, expired: false });
     });
 
     it('words each refusal, and polls past the ones that mean “not yet”', () => {
