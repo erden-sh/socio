@@ -1,10 +1,11 @@
 import { useEffect, useSyncExternalStore } from 'react';
 import { View } from 'react-native';
 
+import { type Quote, quoting, splitQuote } from '@socio/shared/chat/quote-reply';
+
 import type { BubbleSurface } from '../chat/bubble-style';
 import { type ChatSkills, createChatSkills, messageSkill, namesUnknownSkill } from '../chat/chat-skills';
 import { safeMarkdown } from '../chat/markdown';
-import { type Quote, quoting, splitQuote } from '../chat/quote-reply';
 import { useWorkspaceScope } from '../live';
 import type { WorkspaceScope } from '../sync/scope';
 import { useScheme } from '../theme/scheme';
@@ -20,7 +21,7 @@ import { MarkdownBlock } from './chat-markdown';
 // skill as a chip above the rest of its words (the web's SkillChip). The
 // workspace's skills are read only when a message names one the built-in
 // ones don't have (chat-skills.ts), once per scope. A message that starts
-// with a quote-reply's quote (CB-571, quote-reply.ts) draws it as a quote of
+// with a quote-reply's quote (CB-571, @socio/shared/chat/quote-reply) draws it as a quote of
 // its own above the rest: Markdown's blockquote would do, but on iOS its view
 // takes a long-press for a menu of its own (Copy, Copy as Markdown) in place
 // of the bubble's Reply, Copy and Share.

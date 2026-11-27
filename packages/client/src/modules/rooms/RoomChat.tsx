@@ -3,6 +3,7 @@ import { useContext, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { toast } from 'sonner';
 
+import { quotedDraft, quoteOf, withQuote } from '@socio/shared/chat/quote-reply';
 import { STEERING_MAX_CHARS, type QueuedMessage } from '@socio/shared/chat/steering';
 import type { MentionablePerson } from '@socio/shared/rooms/room-people-mentions';
 import { personLabels } from '@socio/shared/rooms/room-speakers';
@@ -45,10 +46,18 @@ import {
     composerText,
 } from '../chat/chat-chrome';
 import { shouldSubmitComposerOnKeyDown, useFitComposer } from '../chat/chat-composer';
-import { chatDraft, useDraft } from '../chat/chat-drafts';
+import { chatDraft, useDraft, type Draft } from '../chat/chat-drafts';
 import { Markdown } from '../chat/ChatMarkdown';
 import { ChatTranscript, pendingUserBubble } from '../chat/ChatTranscript';
 import { OthersQueuedMessages, QueuedMessages } from '../chat/QueuedMessages';
+import {
+    messageReplyAuthor,
+    OverLimitNote,
+    overLimitBy,
+    QuoteChip,
+    useQuotedDraft,
+    type ReplyTo,
+} from '../chat/quote-reply';
 import { ScrollToEnd } from '../chat/ScrollToEnd';
 import { useReactions } from '../chat/use-reactions';
 
@@ -203,6 +212,27 @@ export function RoomChat({ thread, dot }: { thread: Conversation; dot: Dot }) {
     const running = runningNote(several ? 'A socio' : dot.name, feed.phase);
     // Where focus goes once a queued message it was on is gone (CB-219).
     const composerBox = () => document.querySelector<HTMLTextAreaElement>('[data-slot="room-composer"] textarea');
+    // The reader's draft for the room (CB-153), which Reply quotes into.
+    const draft = useDraft(useContext(CurrentUser)?.id, chatDraft(thread.id));
+    // Reply (CB-571): a socio's reply by its socio, a person's message by
+    // their name, the reader's own by theirs in the room. None while the
+    // room is read-only: it has no box.
+    const reply: ReplyTo | undefined = readOnly
+        ? undefined
+        : {
+              author: (message, text, streaming) => {
+                  const socio = replySocio(message as RoomMessage, room, dot, shell.workspace.dots);
+                  return messageReplyAuthor(message, text, {
+                      socio: socio.dot?.name ?? socio.name ?? 'A socio',
+                      streaming,
+                      room: { view: room ?? null, me: shell.workspace.user.id },
+                  });
+              },
+              quote: (author, text) => {
+                  draft.setText((current) => quotedDraft(current, quoteOf(author, text)));
+                  composerBox()?.focus();
+              },
+          };
     const socioNamed = (id: string, name: string) =>
         name ||
         room?.socios.find((socio) => socio.dotId === id)?.name ||
@@ -318,6 +348,7 @@ export function RoomChat({ thread, dot }: { thread: Conversation; dot: Dot }) {
                             ) : undefined;
                         }}
                         after={(message) => (problems.get(message.id) ?? []).map(problemNote)}
+                        reply={reply}
                     />
                 )}
                 {feed.messages && !feed.messages.length && (
@@ -383,6 +414,7 @@ export function RoomChat({ thread, dot }: { thread: Conversation; dot: Dot }) {
                 ) : (
                     <RoomComposer
                         thread={thread}
+                        draft={draft}
                         dot={dot}
                         people={mentionablePeople(room?.members ?? [], shell.workspace.user.id)}
                         tones={tones}
@@ -485,6 +517,7 @@ function ArchivedRoomNotice({ thread, admin }: { thread: Conversation; admin: bo
  */
 function RoomComposer({
     thread,
+    draft,
     dot,
     people,
     tones,
@@ -497,6 +530,8 @@ function RoomComposer({
     onSent,
 }: {
     thread: Conversation;
+    /** The reader's draft for the room, which may start with a quote (CB-571). */
+    draft: Draft;
     dot: Dot;
     /** Whom a message may mention (CB-216): the room's other active members. */
     people: readonly MentionablePerson[];
@@ -516,9 +551,10 @@ function RoomComposer({
     /** After a send (the queued message) or a stop (none). */
     onSent: (message?: QueuedMessage) => void;
 }) {
-    const userId = useContext(CurrentUser)?.id;
-    const draft = useDraft(userId, chatDraft(thread.id));
-    const box = useFitComposer(draft.text);
+    // The box holds the words after a quote-reply's quote (CB-571), the
+    // chip over it the quote.
+    const quoted = useQuotedDraft(draft.text, draft.setText);
+    const box = useFitComposer(quoted.text);
     const [busy, setBusy] = useState(false);
     const [stopping, setStopping] = useState(false);
     const [problem, setProblem] = useState('');
@@ -526,8 +562,8 @@ function RoomComposer({
     // pick inserts @Name and routes by the text the server parses.
     const socioCandidates = mentionableSocios(socios);
     const mentions = usePeopleMentions({
-        text: draft.text,
-        setText: draft.setText,
+        text: quoted.text,
+        setText: quoted.setText,
         box,
         people,
         tones,
@@ -550,8 +586,9 @@ function RoomComposer({
     // The `/invite` slash command (CB-285): admins only, lists invitable
     // people and invites the one picked. A member's composer shows nothing.
     const invite = useRoomInviteCommand({
-        draft: draft.text,
-        setDraft: draft.setText,
+        // A command doesn't run after a quote: `/invite` is words there.
+        draft: quoted.quote ? '' : quoted.text,
+        setDraft: quoted.setText,
         box,
         roomId: thread.id,
         admin,
@@ -565,18 +602,26 @@ function RoomComposer({
     const named = targets.some((socio) => !socio.lead) || targets.length > 1;
     const pick = (socio: RoomSocioView) => {
         const textarea = box.current;
-        const next = withMention(draft.text, socio.name, textarea?.selectionStart ?? draft.text.length);
-        draft.setText(next.text);
+        const next = withMention(quoted.text, socio.name, textarea?.selectionStart ?? quoted.text.length);
+        quoted.setText(next.text);
         // Back to the message, after the name.
         requestAnimationFrame(() => {
             textarea?.focus();
             textarea?.setSelectionRange(next.caret, next.caret);
         });
     };
+    // The message as sent: the quote first, so it starts with it (CB-571).
+    const typed = quoted.text.trim();
+    const outgoing = quoted.quote ? withQuote(quoted.quote, typed) : typed;
+    // The whole of it within the server's limit: a quote added to a long
+    // draft can pass it, which the box's maxLength never shortens. Send
+    // waits; the draft stays.
+    const overLimit = overLimitBy(outgoing, STEERING_MAX_CHARS);
     const send = async () => {
-        const text = draft.text.trim();
-        // `/invite` is a command, not a message (CB-285): the picker handles it.
-        if (!text || busy || invite.active) {
+        const text = outgoing;
+        // `/invite` is a command, not a message (CB-285): the picker handles
+        // it. A quote alone is no message (CB-571).
+        if (!typed || busy || invite.active || overLimit) {
             return;
         }
         setBusy(true);
@@ -642,6 +687,15 @@ function RoomComposer({
             {mentions.status}
             {invite.menu}
             {invite.status}
+            <QuoteChip
+                quote={quoted.quote}
+                command={quoted.command}
+                onRemove={() => {
+                    quoted.removeQuote();
+                    box.current?.focus();
+                }}
+            />
+            <OverLimitNote over={overLimit} max={STEERING_MAX_CHARS} />
             <Textarea
                 ref={box}
                 {...mentions.inputProps}
@@ -661,10 +715,11 @@ function RoomComposer({
                           : `Message the room and ${fitName(dot.name)}…`
                 }
                 rows={1}
-                value={draft.text}
-                maxLength={STEERING_MAX_CHARS}
+                value={quoted.text}
+                // The limit counts the whole message, its quote too.
+                maxLength={Math.max(0, STEERING_MAX_CHARS - (draft.text.length - quoted.text.length))}
                 onChange={(event) => {
-                    draft.setText(event.target.value);
+                    quoted.setText(event.target.value);
                     if (problem) {
                         setProblem('');
                     }
@@ -714,7 +769,7 @@ function RoomComposer({
                 <SendButton
                     type="submit"
                     aria-label={running ? 'Queue message' : 'Send message'}
-                    disabled={busy || !draft.text.trim() || invite.active}
+                    disabled={busy || !typed || invite.active || !!overLimit}
                 >
                     <ArrowUp size={19} />
                 </SendButton>

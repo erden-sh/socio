@@ -18,6 +18,7 @@ import { MessageAttachments, type AttachmentPart } from './attachments/MessageAt
 import { Markdown } from './ChatMarkdown';
 import { MessageActions } from './MessageActions';
 import { MessageReactions, ReportTranscript, hasReactions } from './MessageReactions';
+import type { ReplyTo } from './quote-reply';
 import { SkillChip, useSkillSplit } from './SkillMenu';
 import { TurnTrace } from './trace/TurnTrace';
 import type { ReactionsApi } from './use-reactions';
@@ -109,7 +110,7 @@ function kind(message: Message & { author?: MessageAuthor }) {
  * a card stack's list) keeps them.
  */
 const prose =
-    'text-[14px] leading-[1.75] [overflow-wrap:anywhere] [:where(&)_p]:mt-0 [:where(&)_p]:mb-3 [:where(&)_p]:leading-[1.95] [:where(&)_p:last-child]:m-0 [:where(&)_a]:underline [:where(&)_a]:underline-offset-3 [:where(&)_pre]:max-w-full [:where(&)_pre]:overflow-x-auto [:where(&)_pre]:rounded-[8px] [:where(&)_pre]:bg-[#efeff2] [:where(&)_pre]:p-[13px] [:where(&)_pre]:whitespace-pre [:where(&)_pre]:[overflow-wrap:normal] dark:[:where(&)_pre]:bg-[#282829]';
+    'text-[14px] leading-[1.75] [overflow-wrap:anywhere] [:where(&)_p]:mt-0 [:where(&)_p]:mb-3 [:where(&)_p]:leading-[1.95] [:where(&)_p:last-child]:m-0 [:where(&)_a]:underline [:where(&)_a]:underline-offset-3 [:where(&)_pre]:max-w-full [:where(&)_pre]:overflow-x-auto [:where(&)_pre]:rounded-[8px] [:where(&)_pre]:bg-[#efeff2] [:where(&)_pre]:p-[13px] [:where(&)_pre]:whitespace-pre [:where(&)_pre]:[overflow-wrap:normal] dark:[:where(&)_pre]:bg-[#282829] [:where(&)_blockquote]:mt-0 [:where(&)_blockquote]:mb-2 [:where(&)_blockquote]:border-l-[3px] [:where(&)_blockquote]:border-current/25 [:where(&)_blockquote]:pl-3 [:where(&)_blockquote_p]:mb-0';
 const links = '[:where(&)_a]:text-chat-link';
 const bodyClass = {
     // A Dot's reply: full-width text, no bubble.
@@ -196,6 +197,7 @@ export function ChatTranscript({
     speaker,
     after,
     notice,
+    reply,
 }: {
     /**
      * In a team transcript, user messages carry their `author`, and each
@@ -236,6 +238,8 @@ export function ChatTranscript({
      * room's handoff between socios, CB-206); undefined: the message.
      */
     notice?: (message: Message) => ReactNode | undefined;
+    /** Reply on the messages that can be quoted (CB-571); none: no Reply anywhere. */
+    reply?: ReplyTo;
 }) {
     useEffect(() => recordRender('transcript'));
     const ids = new Set(messages.filter((message) => !isInternalNote(message)).map((message) => message.id));
@@ -281,6 +285,7 @@ export function ChatTranscript({
                                     reactions={reactions}
                                     delivery={delivery?.get(message.id)}
                                     speaker={speaker}
+                                    reply={reply}
                                 />
                             ))}
                         {message.role === 'assistant' &&
@@ -313,6 +318,7 @@ function MessageView({
     reactions,
     delivery,
     speaker,
+    reply,
 }: {
     message: Message & { author?: MessageAuthor };
     streaming: boolean;
@@ -321,14 +327,18 @@ function MessageView({
     reactions?: ReactionsApi;
     delivery?: MessageDelivery;
     speaker?: (message: Message & { author?: MessageAuthor }) => ReactNode;
+    reply?: ReplyTo;
 }) {
     const parts = messageParts(message.content);
     const { attachments } = parts;
     // Older page chats' messages start with their page, which the banner
     // shows already (CB-158): never in the bubble.
     const text = message.role === 'user' ? withoutPageLine(parts.text) : parts.text;
-    // A skill the person invoked shows as a chip (CB-143).
+    // A skill the person invoked shows as a chip (CB-143); one that starts
+    // with a quote-reply's quote is never a command (`invokedSkill`).
     const invoked = useSkillSplit(message.role === 'user' ? text : '');
+    // Who a quote of it names, where it can be quoted (CB-571).
+    const replyAuthor = reply && !delivery ? reply.author(message, text, streaming) : null;
     if (message.role !== 'user' && message.role !== 'assistant') {
         return null;
     }
@@ -395,6 +405,7 @@ function MessageView({
                         text={text}
                         at={at}
                         pinned={message.role === 'assistant' && hasReactions(reactions, message.id)}
+                        onReply={replyAuthor === null ? undefined : () => reply?.quote(replyAuthor, text)}
                     >
                         {message.role === 'assistant' && reactions && (
                             <MessageReactions messageId={message.id} reactions={reactions} />

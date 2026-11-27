@@ -19,6 +19,7 @@ import { useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { HistoryRun } from '@socio/shared/chat/chat-history';
+import { quotedDraft, quoteOf, replyAuthor } from '@socio/shared/chat/quote-reply';
 import type { ReactionKind } from '@socio/shared/chat/reactions';
 import type { ModelChoice, ModelOptions } from '@socio/shared/inference';
 import type { LocalId } from '@socio/shared/mascot';
@@ -86,7 +87,7 @@ import {
 } from '../chat/name-suggestion';
 import { createPacedText, type PacedText } from '../chat/paced-text';
 import { type PageReviewCard, reviewCardView, reviewDecision, reviewDraftShown } from '../chat/page-review';
-import { quotedDraft, quoteOf, replyAuthor, replyBox as replyDraft } from '../chat/quote-reply';
+import { replyBox as replyDraft } from '../chat/quote-reply';
 import { reactionButtons, reactionSaid, reactionsShown } from '../chat/reactions';
 import { ownWaiting, type RoomStarter } from '../chat/room-composer';
 import { roomHeader } from '../chat/room-people';

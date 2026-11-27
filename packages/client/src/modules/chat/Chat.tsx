@@ -6,6 +6,7 @@ import { useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type
 import { approvalCardId } from '@socio/shared/approvals';
 import type { HistoryRun } from '@socio/shared/chat/chat-history';
 import { mergeHistory } from '@socio/shared/chat/history-chain';
+import { quotedDraft, quoteOf, withQuote } from '@socio/shared/chat/quote-reply';
 import type { ModelChoice } from '@socio/shared/inference';
 import type { AttachmentRef } from '@socio/shared/media-types';
 import { attachmentPart } from '@socio/shared/media/refs';
@@ -74,6 +75,15 @@ import { ModelPicker, inheritedModelLabel, useModelOptions } from './ModelSelect
 import { NameSuggestionCard } from './NameSuggestionCard';
 import { placeOutgoing, type Outgoing } from './outgoing';
 import { QueuedMessages } from './QueuedMessages';
+import {
+    chatTakesReplies,
+    messageReplyAuthor,
+    OverLimitNote,
+    overLimitBy,
+    QuoteChip,
+    useQuotedDraft,
+    type ReplyTo,
+} from './quote-reply';
 import { RunStatus } from './RunStatus';
 import { ScrollToEnd } from './ScrollToEnd';
 import { ActiveSkillBar, useActiveSkill, useSkillMenu } from './SkillMenu';
@@ -218,11 +228,15 @@ export function Chat({
     }, [thread.id, contextAttempt]);
     // The box's text, kept per person and chat until it is sent (CB-153).
     const kept = useDraft(user?.id, chatDraft(thread.id));
-    const draft = kept.text;
-    const setDraft = kept.setText;
+    // A quote-reply's quote (CB-571) is the draft's start, shown as a chip
+    // over the box; the box holds the words after it.
+    const quoted = useQuotedDraft(kept.text, kept.setText);
+    const draft = quoted.text;
+    const setDraft = quoted.setText;
     const draftBox = useFitComposer(draft);
-    // The `/` menu of chat skills (CB-143).
-    const skillMenu = useSkillMenu(draft, setDraft, draftBox);
+    // The `/` menu of chat skills (CB-143): none after a quote, where a
+    // command doesn't run.
+    const skillMenu = useSkillMenu(quoted.quote ? '' : draft, setDraft, draftBox);
     // Dictation (CB-101): only the ways that work in this browser, on this
     // server, and that the admin allows. Read after mounting: the server
     // render can't know the browser.
@@ -813,7 +827,7 @@ export function Chat({
                                 },
                       onEdit: () => {
                           dropOutgoing(message.id);
-                          setDraft((current) => joinDraft(current, text));
+                          kept.setText((current) => joinDraft(current, text));
                           // In the box now: nothing to give back on a reload.
                           kept.settle(message.id, false);
                           draftBox.current?.focus();
@@ -856,6 +870,32 @@ export function Chat({
     }, [loaded, running, follow.syncing, serverTurn]);
     // At most the admin's limit wait (CB-170): another stays in the box.
     const queueFull = steering.limit !== undefined && steering.queued.length >= steering.limit;
+    // The message as sent: a skill's name first (CB-143), the source's line
+    // before the words; a quote-reply's quote (CB-571) before all of it, so
+    // the message starts with it and is never a command. A quote alone is
+    // no message: words or files go with it.
+    const outgoingText = () => {
+        if (!draft.trim()) {
+            return quoted.quote && attachments.refs.length ? withQuote(quoted.quote, '') : '';
+        }
+        const wrap = (text: string) => `${source ? `From ${source}:\n\n` : ''}${text}`;
+        return quoted.quote ? withQuote(quoted.quote, wrap(draft)) : skillFirst(draft, skillMenu.skills, wrap);
+    };
+    // The whole message, its quote and source line too, within the box's
+    // limit: a quote added to a long draft can pass it, which the box's
+    // maxLength never shortens. Send waits; the draft stays (CB-571).
+    const overLimit = overLimitBy(outgoingText(), CHAT_MESSAGE_MAX);
+    // Reply (CB-571): a socio's reply quoted in front of the draft, the
+    // words typed kept. Not in a team topic or a Telegram chat.
+    const reply: ReplyTo | undefined = chatTakesReplies(thread)
+        ? {
+              author: (message, text, streaming) => messageReplyAuthor(message, text, { socio: dot.name, streaming }),
+              quote: (author, text) => {
+                  kept.setText((current) => quotedDraft(current, quoteOf(author, text)));
+                  draftBox.current?.focus();
+              },
+          }
+        : undefined;
     // Something to queue: words, or files attached or on their way (CB-223).
     const queueable = !!draft.trim() || !!attachments.refs.length || attachments.uploading;
     // Why the box can't send or queue what is in it now, in words beside it:
@@ -894,7 +934,7 @@ export function Chat({
             if (refs.length) {
                 attachments.clear();
             }
-            setDraft('');
+            kept.setText('');
             setSource('');
             setSourceOpen(false);
             scroll.toEnd();
@@ -1238,6 +1278,7 @@ export function Chat({
                     isCard={isCard}
                     renderTools={(message) => <CopilotChatToolCallsView message={message} messages={messages} />}
                     reactions={reactions}
+                    reply={reply}
                     traceExtra={(turnCalls) =>
                         toolRenderers.map(({ moduleId, afterSteps }) => {
                             if (!afterSteps) {
@@ -1367,39 +1408,30 @@ export function Chat({
                 {...attachments.dropProps}
                 onSubmit={(e) => {
                     e.preventDefault();
-                    if (attachments.uploading) {
+                    if (attachments.uploading || overLimit) {
                         return;
                     }
                     // While the Dot works, a message waits for its next step (CB-151);
                     // one with attachments for its reply's end (CB-223).
                     if (running) {
                         if (!updating) {
-                            void queue(
-                                draft.trim()
-                                    ? skillFirst(
-                                          draft,
-                                          skillMenu.skills,
-                                          (text) => `${source ? `From ${source}:\n\n` : ''}${text}`,
-                                      )
-                                    : '',
-                                attachments.refs,
-                            );
+                            void queue(outgoingText(), attachments.refs);
                         }
                         return;
                     }
-                    void send(
-                        draft.trim()
-                            ? skillFirst(
-                                  draft,
-                                  skillMenu.skills,
-                                  (text) => `${source ? `From ${source}:\n\n` : ''}${text}`,
-                              )
-                            : '',
-                        attachments.refs,
-                    );
+                    void send(outgoingText(), attachments.refs);
                 }}
             >
                 {skillMenu.menu}
+                <QuoteChip
+                    quote={quoted.quote}
+                    command={quoted.command}
+                    onRemove={() => {
+                        quoted.removeQuote();
+                        draftBox.current?.focus();
+                    }}
+                />
+                <OverLimitNote over={overLimit} max={CHAT_MESSAGE_MAX} />
                 <ActiveSkillBar active={activeSkill.active} onEnd={() => void activeSkill.end()} disabled={running} />
                 {/* Above the text box, which stays usable: a draft survives the bar. */}
                 <ApprovalBar pending={pendingApprovals} onShow={showApprovalCard} />
@@ -1474,7 +1506,8 @@ export function Chat({
                             placeholder={`Message ${dot.name}…`}
                             rows={1}
                             value={draft}
-                            maxLength={4000}
+                            // The limit counts the whole message, its quote too.
+                            maxLength={Math.max(0, CHAT_MESSAGE_MAX - (kept.text.length - draft.length))}
                             onChange={(e) => setDraft(e.target.value)}
                             onPaste={attachments.onPaste}
                             {...skillMenu.boxProps}
@@ -1521,7 +1554,13 @@ export function Chat({
                                                     ? `${dot.name} reads it once its reply is done`
                                                     : `${dot.name} reads it after its current step`
                                         }
-                                        disabled={attachments.uploading || queueing || queueFull || !contextReady}
+                                        disabled={
+                                            attachments.uploading ||
+                                            queueing ||
+                                            queueFull ||
+                                            !contextReady ||
+                                            !!overLimit
+                                        }
                                     >
                                         <ArrowUp size={19} />
                                     </SendButton>
@@ -1534,6 +1573,7 @@ export function Chat({
                                 title={attachments.uploading ? 'Waiting for uploads to finish' : undefined}
                                 disabled={
                                     (!draft.trim() && !attachments.refs.length) ||
+                                    !!overLimit ||
                                     attachments.uploading ||
                                     follow.syncing ||
                                     !loaded ||
@@ -1558,6 +1598,9 @@ export function Chat({
         </ChatFrame>
     );
 }
+
+/** The most a message from the box may hold, its quote and source line included. */
+const CHAT_MESSAGE_MAX = 4000;
 
 /** The header's icon buttons: 30 px, or 32 px in the page's panel. */
 const headerButton = 'in-data-[placement=page]:size-8 in-data-[placement=page]:p-0';

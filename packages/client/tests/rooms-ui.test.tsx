@@ -4,9 +4,11 @@ import { createRoot, type Root } from 'react-dom/client';
 import { RouterProvider } from 'react-router';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
-import type { OthersQueuedMessage, QueuedMessage } from '@socio/shared/chat/steering';
+import { quoteOf, QUOTED_COMMAND_NOTE, withQuote } from '@socio/shared/chat/quote-reply';
+import { STEERING_MAX_CHARS, type OthersQueuedMessage, type QueuedMessage } from '@socio/shared/chat/steering';
 import type { RoomPinOutcome, RoomPinVersion, RoomPinsState } from '@socio/shared/rooms/room-pins';
 import { ROOM_TOPIC_CONVERT_TEXT, type RoomTopicCode, type RoomTopicView } from '@socio/shared/rooms/room-telegram';
+import { messageTargets } from '@socio/shared/rooms/room-view';
 import {
     ROOM_CONVERT_TEXT,
     ROOM_DISCLOSURE_TEXT,
@@ -1672,4 +1674,213 @@ it('gives focus back to what opened a room dialog: a sidebar button, a notice, a
     key($('[data-slot="rename-room"]')!, 'Escape');
     await until(() => !$('[data-slot="rename-room"]'), 'the dialog closed');
     await until(() => document.activeElement === options, 'focus on its ⋯');
+});
+
+// Quote-reply (CB-571): the room's half (the format and the private chat's are in quote-reply-ui.test.tsx).
+const replyOn = (id: string) => $<HTMLButtonElement>(`[data-message-id="${id}"] [data-message-reply]`);
+const quoteChip = () => $('[data-slot="quote-chip"]');
+const roomBox = () => $<HTMLTextAreaElement>('textarea[aria-label="Message the room"]')!;
+
+it('offers Reply on the socio’s reply and on everyone’s messages, yours too, and sends the quote first (CB-571)', async () => {
+    await open('/chats/r1');
+    await until(() => !!replyOn('m3'), 'the transcript');
+    expect(['m1', 'm2', 'm3'].map((id) => replyOn(id)?.getAttribute('aria-label'))).toEqual([
+        'Reply',
+        'Reply',
+        'Reply',
+    ]);
+    // First in each row.
+    expect(replyOn('m1')!.closest('[data-slot="message-actions"]')!.querySelector('button')).toBe(replyOn('m1'));
+    click(replyOn('m3'));
+    expect(quoteChip()!.textContent).toContain('Replying to Alice Lima');
+    click(replyOn('m1'));
+    // A new Reply replaces the quote.
+    expect(quoteChip()!.textContent).toContain('Replying to Bob Reyes');
+    expect($('[data-slot="quote-chip-excerpt"]')!.textContent).toBe('Can we ship Friday?');
+    expect(roomBox().value).toBe('');
+    expect(document.activeElement).toBe(roomBox());
+    // A quote alone isn't a message.
+    expect(byLabel('Send message')!.hasAttribute('disabled')).toBe(true);
+    key(roomBox(), 'Enter');
+    expect(requests.some((line) => line.includes('/steering'))).toBe(false);
+    type(roomBox(), 'Yes');
+    key(roomBox(), 'Enter');
+    await until(() => requests.some((line) => line.includes('/steering')), 'the send');
+    expect(requests).toContain(
+        `POST /api/conversations/r1/steering ${JSON.stringify({
+            text: withQuote(quoteOf('Bob Reyes', 'Can we ship Friday?'), 'Yes'),
+        })}`,
+    );
+    expect(requests.find((line) => line.includes('/steering'))).toContain(
+        JSON.stringify('> **Bob Reyes:** Can we ship Friday?\n\nYes'),
+    );
+    await until(() => !quoteChip(), 'the chip gone with the send');
+});
+
+it('keeps the quote in the room’s draft across a reopen, and its x takes it out (CB-571)', async () => {
+    await open('/chats/r1');
+    await until(() => !!replyOn('m2'), 'the transcript');
+    click(replyOn('m2'));
+    type(roomBox(), 'Half a thought');
+    expect(localStorage.getItem('socio:draft:alice:chat:r1')).toContain('> **Sebas:** Friday works.');
+    act(() => root.unmount());
+    root = createRoot(host);
+    await open('/chats/r1');
+    await until(() => !!quoteChip(), 'the chip again');
+    expect(quoteChip()!.textContent).toContain('Replying to Sebas');
+    expect(roomBox().value).toBe('Half a thought');
+    click(quoteChip()!.querySelector('button[aria-label="Remove quote"]'));
+    expect(quoteChip()).toBeNull();
+    expect(roomBox().value).toBe('Half a thought');
+    expect(localStorage.getItem('socio:draft:alice:chat:r1')).not.toContain('Sebas');
+});
+
+it('a quoted @mention routes no one, and a command after a quote is words, with the note (CB-571)', async () => {
+    moreDots = [
+        {
+            id: 'd2',
+            spaceId: 's1',
+            spaceIds: ['s1'],
+            name: 'Ledger',
+            instructions: 'Knows billing.',
+            researchAllowed: false,
+            memoryAllowed: false,
+            createdAt: 1,
+        },
+    ];
+    view = roomView({
+        socios: [
+            { dotId: 'd1', name: 'Sebas', status: 'active', lead: true },
+            { dotId: 'd2', name: 'Ledger', status: 'active', lead: false },
+        ],
+    });
+    transcript = [
+        { id: 'm1', role: 'user', content: 'Ask @Ledger and @Alice Lima', author: { name: 'Bob Reyes', you: false } },
+    ];
+    await open('/chats/r1');
+    await until(() => !!replyOn('m1'), 'the transcript');
+    click(replyOn('m1'));
+    // `/invite` after the quote: no picker, the note instead.
+    type(roomBox(), '/invite');
+    expect($('[data-slot="room-invite-menu"]')).toBeNull();
+    expect($('[data-slot="quote-command-note"]')!.textContent).toBe(QUOTED_COMMAND_NOTE);
+    expect($('[data-slot="quote-command-note"]')!.getAttribute('role')).toBe('status');
+    type(roomBox(), 'ok');
+    expect($('[data-slot="quote-command-note"]')!.textContent).toBe('');
+    // Not to Ledger: the quote names no one.
+    expect($('[data-slot="room-send-to"]')!.textContent).toBe('To Sebas, the lead · everyone in the room reads it');
+    key(roomBox(), 'Enter');
+    await until(() => requests.some((line) => line.includes('/steering')), 'the send');
+    const sent = JSON.parse(
+        requests
+            .find((line) => line.includes('/steering'))!
+            .split(' ')
+            .slice(2)
+            .join(' '),
+    ) as {
+        text: string;
+        mentions?: unknown;
+    };
+    expect(sent.text.startsWith('> **Bob Reyes:** Ask @⁠Ledger and @⁠Alice Lima\n\n')).toBe(true);
+    expect(sent.mentions).toBeUndefined();
+});
+
+it('offers no Reply in a read-only room (CB-571)', async () => {
+    conversations = [];
+    archived = [chat('r1', 'Launch room', { kind: 'room', ownerId: 'room:r1', roomRole: 'admin', archivedAt: 9 })];
+    view = roomView({ archivedAt: 9 });
+    await open('/chats/r1');
+    await until(() => !!$('[data-room-speaker="person"]'), 'the transcript');
+    expect($('[data-slot="message-actions"]')).not.toBeNull();
+    expect($('[data-message-reply]')).toBeNull();
+});
+
+it('a quote added to a long draft: the note says how much to cut, Send waits, the draft stays (CB-571)', async () => {
+    await open('/chats/r1');
+    await until(() => !!replyOn('m2'), 'the transcript');
+    const long = 'x'.repeat(STEERING_MAX_CHARS);
+    type(roomBox(), long);
+    expect($('[data-slot="composer-over-limit"]')!.textContent).toBe('');
+    click(replyOn('m2'));
+    const over = withQuote(quoteOf('Sebas', 'Friday works.'), long).length - STEERING_MAX_CHARS;
+    const note = $('[data-slot="composer-over-limit"]')!;
+    expect(note.getAttribute('role')).toBe('status');
+    expect(note.textContent).toBe(
+        `This message is over the 8,000-character limit. Remove ${over} characters to send it.`,
+    );
+    expect(byLabel('Send message')!.hasAttribute('disabled')).toBe(true);
+    key(roomBox(), 'Enter');
+    expect(requests.some((line) => line.includes('/steering'))).toBe(false);
+    expect(roomBox().value).toBe(long);
+    expect(quoteChip()).not.toBeNull();
+    // Cut to fit: it sends.
+    type(roomBox(), long.slice(over));
+    expect(note.textContent).toBe('');
+    expect(byLabel('Send message')!.hasAttribute('disabled')).toBe(false);
+    key(roomBox(), 'Enter');
+    await until(() => requests.some((line) => line.includes('/steering')), 'the send');
+});
+
+it('after a quote, an @mention typed or picked mentions and routes as without one (CB-571)', async () => {
+    moreDots = [
+        {
+            id: 'd3',
+            spaceId: 's1',
+            spaceIds: ['s1'],
+            name: 'Pilot',
+            instructions: 'Checks builds.',
+            researchAllowed: false,
+            memoryAllowed: false,
+            createdAt: 1,
+        },
+    ];
+    const socios: RoomView['socios'] = [
+        { dotId: 'd1', name: 'Sebas', status: 'active', lead: true },
+        { dotId: 'd3', name: 'Pilot', status: 'active', lead: false },
+    ];
+    view = roomView({ socios });
+    transcript = [{ id: 'm1', role: 'user', content: 'The build broke, @Sebas', author: { name: 'Ada', you: false } }];
+    await open('/chats/r1');
+    await until(() => !!replyOn('m1'), 'the transcript');
+    click(replyOn('m1'));
+    const box = roomBox();
+    act(() => box.focus());
+    // The socio picker's way: @Pi, then Pilot.
+    type(box, '@Pi');
+    await until(() => !!$('[data-slot="people-mentions"]'), 'the picker');
+    const pilot = [...$('[data-slot="people-mentions"]')!.querySelectorAll('[role="option"]')].find((option) =>
+        option.textContent?.includes('Pilot'),
+    );
+    click(pilot);
+    await until(() => box.value === '@Pilot ', 'the socio mention inserted');
+    // And a person, picked after it.
+    type(box, '@Pilot and @Bo');
+    await until(() => !!$('[data-mention-option]'), 'the people picker');
+    click(
+        [...document.querySelectorAll('[data-mention-option]')].find((option) => option.textContent?.includes('Bob')),
+    );
+    await until(() => box.value.startsWith('@Pilot and @Bob Reyes'), 'the person mention inserted');
+    type(box, '@Pilot and @Bob Reyes can you check?');
+    expect($('[data-slot="room-send-to"]')!.textContent).toBe('To Pilot · everyone in the room reads it');
+    key(box, 'Enter');
+    await until(() => requests.some((line) => line.includes('/steering')), 'the send');
+    const sent = JSON.parse(
+        requests
+            .find((line) => line.includes('/steering'))!
+            .split(' ')
+            .slice(2)
+            .join(' '),
+    ) as {
+        text: string;
+        mentions?: unknown;
+    };
+    const quote = quoteOf('Ada', 'The build broke, @Sebas');
+    expect(sent.text).toBe(withQuote(quote, '@Pilot and @Bob Reyes can you check?'));
+    // The server routes by the text: Pilot, not the quoted Sebas.
+    expect(messageTargets(sent.text, socios).map((socio) => socio.name)).toEqual(['Pilot']);
+    expect(sent.mentions).toEqual([{ userId: 'bob', label: 'Bob Reyes' }]);
+    // The same words with no quote route and mention the same.
+    expect(messageTargets('@Pilot and @Bob Reyes can you check?', socios).map((socio) => socio.name)).toEqual([
+        'Pilot',
+    ]);
 });

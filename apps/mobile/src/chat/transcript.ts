@@ -2,6 +2,7 @@ import type { Message } from '@ag-ui/core';
 
 import type { HistoryRun } from '@socio/shared/chat/chat-history';
 import { contentText } from '@socio/shared/chat/content-text';
+import { spokenMessage, splitQuote } from '@socio/shared/chat/quote-reply';
 import { dateTimeFormat } from '@socio/shared/locale';
 import type { LocalId } from '@socio/shared/mascot';
 import type { LiveTurn } from '@socio/shared/rooms/live-turn';
@@ -14,7 +15,6 @@ import { type MessageFile, messageFiles } from './attachment-tray';
 import { type CardRow, cardsOf, isInternalNote, lastScreenshotCall, receiptRow } from './cards';
 import { liveSteps } from './live-steps';
 import { withoutPageLine } from './page-line';
-import { spokenMessage, splitQuote } from './quote-reply';
 import { NO_LIFECYCLE, type ThreadLifecycle } from './run-lifecycle';
 import {
     chatTurns,

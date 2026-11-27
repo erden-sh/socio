@@ -5,6 +5,8 @@ import { dateTimeFormat } from '@socio/shared/locale';
 
 import { LocalTime } from '../../lib/local-time';
 
+import { ReplyButton } from './quote-reply';
+
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -14,7 +16,8 @@ export const COPIED_MS = 2_000;
 /**
  * The row under a message (T3 Code's message meta row): shown on hover or
  * focus (the message is the `group/message`), always on touch screens and
- * when `pinned`; a finger gets 44px buttons. Copy, then
+ * when `pinned`; a finger gets 44px buttons. Reply where the message can be
+ * quoted (CB-571), Copy, then
  * `children` (a Dot's reactions, CB-133; Edit and Fork later), then the
  * message's time, when known (CB-72).
  */
@@ -22,6 +25,7 @@ export function MessageActions({
     text,
     at,
     pinned,
+    onReply,
     children,
 }: {
     /** The message's Markdown source, as Copy puts it on the clipboard. */
@@ -30,15 +34,18 @@ export function MessageActions({
     at?: number;
     /** Stays in view (a message with reactions), not only on hover or focus. */
     pinned?: boolean;
+    /** Quotes the message over the composer (CB-571); none where Reply isn't offered. */
+    onReply?: () => void;
     children?: ReactNode;
 }) {
     return (
         <TooltipProvider delayDuration={300}>
             <div
-                className="flex min-h-6 items-center gap-0.5 opacity-0 transition-opacity duration-[120ms] group-focus-within/message:opacity-100 group-hover/message:opacity-100 data-pinned:opacity-100 [@media(hover:none)]:opacity-100 pointer-coarse:[&_:is([data-reaction],[data-state-copy])]:min-h-11 pointer-coarse:[&_:is([data-reaction],[data-state-copy])]:min-w-11"
+                className="flex min-h-6 items-center gap-0.5 opacity-0 transition-opacity duration-[120ms] group-focus-within/message:opacity-100 group-hover/message:opacity-100 data-pinned:opacity-100 [@media(hover:none)]:opacity-100 pointer-coarse:[&_:is([data-reaction],[data-state-copy],[data-message-reply])]:min-h-11 pointer-coarse:[&_:is([data-reaction],[data-state-copy],[data-message-reply])]:min-w-11"
                 data-slot="message-actions"
                 data-pinned={pinned ? '' : undefined}
             >
+                {onReply && <ReplyButton onReply={onReply} />}
                 <CopyButton text={text} />
                 {children}
                 {at !== undefined && <MessageTime at={at} />}
