@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs';
 
-import { createInstance } from 'i18next';
+import { createInstance, type ResourceLanguage } from 'i18next';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import {
@@ -15,6 +15,7 @@ import {
 
 import { createI18n } from '../src/create.js';
 import { FORMATTERS, formatBytes, formatDuration } from '../src/format.js';
+import { flatten } from '../src/keys.js';
 import { createReactI18n } from '../src/react.js';
 
 afterEach(() => {
@@ -113,8 +114,8 @@ describe('the formatters', () => {
                     file.slice(0, -'.json'.length),
                     JSON.parse(readFileSync(new URL(file, folder), 'utf8')),
                 ]),
-        ) as Record<string, Record<string, string>>;
-        // The catalog has no formatted strings yet, so every formatter is checked through these too.
+        ) as ResourceLanguage;
+        // Not every formatter is in the catalog yet, so these check each one too.
         resources['formatted.fixture'] = {
             n: '{{n, number}}',
             fixed: 'Total: {{n, number(minimumFractionDigits: 2)}}',
@@ -146,7 +147,8 @@ describe('the formatters', () => {
         };
         const formats = new Set<string>();
         for (const [namespace, strings] of Object.entries(resources)) {
-            for (const [key, text] of Object.entries(strings)) {
+            // Nested keys read as `a.b`; a plural form is looked up by its own key, the same in both.
+            for (const [key, text] of flatten(strings)) {
                 const values: Record<string, unknown> = {};
                 for (const [, name, format] of text.matchAll(/\{\{\s*([\w.]+)\s*(?:,\s*(\w+))?[^}]*\}\}/g)) {
                     values[name!] = format ? sample[format.toLowerCase()] : 'Ada';
