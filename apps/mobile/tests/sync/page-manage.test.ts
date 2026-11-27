@@ -993,6 +993,39 @@ describe('folders (CB-426)', () => {
         expect(old.pages.get('p1')).toMatchObject({ revision: 3, content: 'Hello' });
     });
 
+    it('a create that never landed is never acknowledged by a page made the same way with the other mark', async () => {
+        for (const folder of [true, false]) {
+            const server = pagesServer();
+            const p = await phone(server);
+            server.offline(true);
+            const { localId } = await createPage({
+                ...p.write,
+                spaceId: 's1',
+                title: 'Notes',
+                createdBy: ME,
+                serverAt: SERVER_START,
+                known: ['p1'],
+                ...(folder ? { folder: true } : {}),
+            });
+            // A recent page by the same person, under the same parent, with the same title and no
+            // text, but the other mark: an ordinary page for a folder's create, a folder for a page's.
+            server.add('twin', { title: 'Notes', content: '', createdBy: ME, folder: !folder });
+            p.outbox.start();
+            await vi.waitFor(() => expect(requests(server, 'POST')).toHaveLength(1), { timeout: 5_000 });
+            server.offline(false);
+            p.outbox.wake();
+            await settled(p.outbox);
+            // The check found no match: the create went again, and its local id names its own page.
+            expect(requests(server, 'POST')).toHaveLength(2);
+            const made = p.outbox.resolve(PAGE_IDS, localId);
+            expect(made).not.toBeNull();
+            expect(made).not.toBe('twin');
+            expect(server.pages.get(made!)).toMatchObject({ title: 'Notes', folder });
+            expect(server.pages.get('twin')).toMatchObject({ folder: !folder });
+            expect(p.outbox.unsent()).toEqual([]);
+        }
+    });
+
     it('New folder sends `folder: true` with its create; a page made on the phone takes a toggle into its create', async () => {
         const server = pagesServer();
         const p = await phone(server);

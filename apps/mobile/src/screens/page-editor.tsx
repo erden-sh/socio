@@ -72,17 +72,23 @@ function EditorRoute({ spaceId, pageId }: { spaceId: string; pageId: string }) {
     const body = usePageBody(spaceId, pageId);
     const [start, setStart] = useState<EditorDraft | null>(null);
     // A folder (CB-426) has no editor: its body is kept, hidden, and nothing here may show or save
-    // over it. A toggle waiting on the phone counts, and so does the Space's list.
-    const folder =
+    // over it. A toggle waiting on the phone counts, and so does the Space's list. That holds also
+    // when it turns into one with the editor open (another device's toggle, found by a refresh):
+    // the editor closes to the folder's words, and its draft stays on the phone, unsent (the
+    // scope's page saves take none for a folder), for when it is a page again.
+    const shut =
         pendingFolder(scope.outbox, pageId) ?? (isFolder(body.value) || heldFolder(scope.cache, spaceId, pageId));
     const found =
-        start ?? (folder ? null : editorStart(scope.pageDrafts.stored(pageId), scope.outbox, pageId, body.value));
+        start ?? (shut ? null : editorStart(scope.pageDrafts.stored(pageId), scope.outbox, pageId, body.value));
     useEffect(() => {
-        if (start === null && found !== null) {
+        if (shut && start !== null) {
+            // Opened again later, it starts from the draft kept on disk.
+            setStart(null);
+        } else if (!shut && start === null && found !== null) {
             setStart(found);
         }
-    }, [start, found]);
-    if (start === null && folder) {
+    }, [shut, start, found]);
+    if (shut) {
         return <Waiting line={FOLDER_NO_EDITOR} />;
     }
     if (start === null) {

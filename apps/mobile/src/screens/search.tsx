@@ -5,6 +5,7 @@ import { Platform, type TextInputInstance, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import type { SearchBarCommands } from 'react-native-screens';
 
+import { outboxStateStore } from '../chat/composer';
 import { useCollections, useHasWorkspaceScope, useLiveQuery, useSyncStatus, useWorkspaceScope } from '../live';
 import { barSearch } from '../navigation/bar-items';
 import { useNativeBar } from '../navigation/native-bar';
@@ -16,7 +17,7 @@ import { homeSocios } from '../shell/home';
 import { issuesQuery, shellQuery, shellRows, sociosQuery, spacesQuery } from '../shell/queries';
 import { addMemoryAction, type SearchIconName, type SearchItem, type SearchTarget, searchView } from '../shell/search';
 import { spaceList } from '../shell/spaces';
-import { heldFolder } from '../sync/page-manage';
+import { heldFolder, loadHeldFolders } from '../sync/page-manage';
 import { createServerSearch } from '../sync/server-search';
 import { AppSymbol, Screen, SearchField, Text, ToneTile } from '../ui';
 import { SearchEmptyState, useEmptyFill } from '../ui/empty-state';
@@ -97,6 +98,26 @@ function ScopedSearch() {
         }
     }, [server, query, offline, focused]);
     const serverState = useSyncExternalStore(server.subscribe, server.state);
+    // Folders (CB-426) among the server's hits: a toggle waiting on the phone counts, and so do the
+    // lists of Spaces not read from cache.db yet this run, read now (a restart onto Search).
+    const [outboxStore] = useState(() => outboxStateStore(scope.outbox));
+    useSyncExternalStore(outboxStore.subscribe, outboxStore.get);
+    const [, setListsRead] = useState(0);
+    const hitSpaces =
+        serverState.status === 'done'
+            ? [...new Set((serverState.answer.pages?.results ?? []).map((hit) => hit.spaceId))].sort().join('\n')
+            : '';
+    useEffect(() => {
+        const reading = hitSpaces === '' ? null : loadHeldFolders(scope.cache, hitSpaces.split('\n'));
+        let live = true;
+        void reading?.then(
+            () => live && setListsRead((count) => count + 1),
+            () => {},
+        );
+        return () => {
+            live = false;
+        };
+    }, [scope.cache, hitSpaces]);
     const newChatWith = defaultSocioId(dots, state);
     const newChatName = dots.find((dot) => dot.id === newChatWith)?.name ?? null;
     const view = searchView({
@@ -107,7 +128,7 @@ function ScopedSearch() {
         spaces: spaceList(spaces),
         issues,
         server: serverState,
-        isFolder: (spaceId, pageId) => heldFolder(scope.cache, spaceId, pageId),
+        isFolder: (spaceId, pageId) => heldFolder(scope.cache, spaceId, pageId, scope.outbox),
         role: workspace?.user.role ?? null,
     });
     const go = (target: SearchTarget) => {

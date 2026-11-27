@@ -223,9 +223,12 @@ async function phone(
         outboxes.push(outbox);
     }
     const drafts = await openDrafts({ db, state: file.state, outbox });
+    /** Whether the page is a folder now (CB-426), as the scope's check would say. */
+    let folder = false;
     const saves = createPageSaves({
         outbox,
         drafts,
+        isFolder: (spaceId, pageId) => folder && spaceId === 's1' && pageId === 'p1',
         baseOf: async (spaceId, pageId, revision) => {
             const page = bodies.get(pageBodyKey(spaceId, pageId));
             return page?.revision === revision ? page : null;
@@ -243,6 +246,9 @@ async function phone(
         saves,
         pageDrafts,
         bodies,
+        setFolder(on: boolean) {
+            folder = on;
+        },
         setConnected(on: boolean) {
             connected = on;
             server.offline(!on);
@@ -515,6 +521,49 @@ describe('page saves', () => {
         });
         // Never created: once resolved through `ids` it would go; without, a refused create holds it.
         expect(again.outbox.resolve(PAGE_IDS, local)).toBeNull();
+    });
+
+    it('turned into a folder with the editor open: nothing more is saved, and the draft is kept for later', async ({
+        signal,
+    }) => {
+        const time = fakeTime(signal, { toFake: ['setTimeout', 'clearTimeout', 'Date'] });
+        const server = pageServer();
+        const p = await phone(server);
+        p.outbox.start();
+        const editor = p.pageDrafts.open('p1', START);
+        editor.change({ title: 'Roadmap', content: 'Hello, first' });
+        await time.advance(5_000);
+        await p.outbox.idle();
+        expect(patches(server)).toHaveLength(1);
+        // Another device turns it into a folder; a refresh tells the phone while the editor is open.
+        p.setFolder(true);
+        editor.change({ title: 'Roadmap', content: 'Hello, first, then more' });
+        await time.advance(5_000);
+        await p.outbox.idle();
+        // The screen closes the editor: a debounce still pending goes nowhere either.
+        editor.change({ title: 'Roadmap', content: 'Hello, first, then more, and more' });
+        await editor.close();
+        await time.advance(5_000);
+        await p.outbox.idle();
+        expect(patches(server)).toHaveLength(1);
+        expect(p.outbox.rows()).toEqual([]);
+        expect(server.pages.get('p1')).toMatchObject({ content: 'Hello, first' });
+        // Offline, it doesn't go into a queued row either.
+        p.setConnected(false);
+        expect(await p.saves.updateQueued('p1', draft('Offline words'))).toBe(false);
+        expect(await p.saves.savePage('p1', draft('Offline words'))).toBe('folder');
+        expect(p.outbox.rows()).toEqual([]);
+        p.setConnected(true);
+        // The draft is kept on the phone, and saves once it is a page again.
+        const kept = p.pageDrafts.stored('p1');
+        expect(kept).toMatchObject({ content: 'Hello, first, then more, and more', revision: 4 });
+        p.setFolder(false);
+        const again = p.pageDrafts.open('p1', kept!);
+        again.change({ title: 'Roadmap', content: 'Hello, first, then more, and more!' });
+        await time.advance(5_000);
+        await p.outbox.idle();
+        expect(server.pages.get('p1')).toMatchObject({ content: 'Hello, first, then more, and more!', revision: 5 });
+        await again.close();
     });
 
     it('a kill between every two steps saves the last draft once, with no row left', async ({ signal }) => {

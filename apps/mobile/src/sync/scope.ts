@@ -53,7 +53,7 @@ import { createOwnTurns, type OwnTurns } from './own-turns';
 import { createPageLandings, type PageLandings } from './page-conflicts';
 import { createPageChats, type PageChats } from './page-conversation';
 import { createPageDrafts, type PageDrafts } from './page-drafts';
-import { createLocalPages, type LocalPages } from './page-manage';
+import { createLocalPages, heldFolder, isFolder, type LocalPages, pendingFolder } from './page-manage';
 import { followStoredReviews, reviewLane } from './page-review';
 import { createPageSaves, type PageLanding, type PageText, type PageTheirs } from './page-save';
 import { createPagesStore, type PageMove, type PagesStore } from './page-store';
@@ -798,6 +798,11 @@ export async function openWorkspaceScope(options: WorkspaceScopeOptions): Promis
                 return page !== null && page.revision === revision ? page : null;
             },
             newId: options.newId ?? (() => `page-save-${now()}-${(fallbackIds += 1)}`),
+            // A folder's hidden body takes no saves (CB-426): the editor's draft waits on the phone.
+            isFolder: (spaceId, pageId) =>
+                pendingFolder(outbox, pageId) ??
+                (isFolder(pages.bodies.peek(pageBodyKey(spaceId, pageId))?.state.value) ||
+                    heldFolder(cache, spaceId, pageId)),
         });
         const pageDrafts = createPageDrafts({
             drafts,

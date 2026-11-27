@@ -25,8 +25,8 @@ import { unsentListRows } from '../../src/shell/unsent';
 import type { UnsentWrite } from '../../src/sync/outbox';
 import type { OverlayItem } from '../../src/sync/outbox-overlay';
 import type { PageConflict } from '../../src/sync/page-conflicts';
-import { heldFolder, isFolder, knowsFolders, PAGE_FOLDER_KIND } from '../../src/sync/page-manage';
-import { PAGES } from '../../src/sync/pages';
+import { heldFolder, isFolder, knowsFolders, loadHeldFolders, PAGE_FOLDER_KIND } from '../../src/sync/page-manage';
+import { PAGES, PAGES_SNAPSHOT } from '../../src/sync/pages';
 import type { ServerSearchState } from '../../src/sync/server-search';
 
 // Folders in Spaces (CB-426): a folder is a page marked as one, its body kept
@@ -121,6 +121,50 @@ describe('the mark', () => {
         expect(heldFolder(cache, 'ops', 'q1')).toBe(false);
         expect(heldFolder(cache, 'ops', 'legacy')).toBe(false);
         expect(heldFolder(cache, 'elsewhere', 'plans')).toBe(false);
+    });
+    it('counts a toggle still waiting on the phone before the held list', () => {
+        const rows = new Map([
+            ['plans', { key: 'plans', json: json(pages[0]), version: 2 }],
+            ['q1', { key: 'q1', json: json(pages[1]), version: 2 }],
+        ]);
+        const cache = {
+            rows: (collection: string, scope?: string) => (collection === PAGES && scope === 'ops' ? rows : new Map()),
+        };
+        const toggle = (pageId: string, folder: boolean) => ({
+            id: `t-${pageId}`,
+            lane: `page:${pageId}`,
+            kind: PAGE_FOLDER_KIND,
+            payload: json({ spaceId: 'ops', pageId, folder, revision: 2 }),
+            payloadVersion: 1,
+            state: 'queued',
+        });
+        const outbox = {
+            rows: () => [toggle('q1', true), toggle('plans', false)] as never,
+            unsent: () => [],
+            resolve: () => null,
+        };
+        expect(heldFolder(cache, 'ops', 'q1', outbox)).toBe(true);
+        expect(heldFolder(cache, 'ops', 'plans', outbox)).toBe(false);
+        // Without the outbox, the list alone.
+        expect(heldFolder(cache, 'ops', 'q1')).toBe(false);
+    });
+
+    it('reads from disk only the lists of the Spaces not read yet this run (a restart onto Search)', async () => {
+        const read = new Set(['ops']);
+        const loads: string[] = [];
+        const cache = {
+            loaded: (definition: { id: string }, scope?: string) =>
+                definition.id === PAGES_SNAPSHOT.id && read.has(scope ?? ''),
+            load: async (definitions: readonly { id: string }[], scope?: string) => {
+                expect(definitions).toEqual([PAGES_SNAPSHOT]);
+                loads.push(scope ?? '');
+                read.add(scope ?? '');
+            },
+        };
+        expect(loadHeldFolders(cache as never, ['ops'])).toBeNull();
+        await loadHeldFolders(cache as never, ['ops', 'eng', 'eng', 'hr']);
+        expect(loads).toEqual(['eng', 'hr']);
+        expect(loadHeldFolders(cache as never, ['eng', 'hr'])).toBeNull();
     });
 });
 

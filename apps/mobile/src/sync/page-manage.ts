@@ -35,7 +35,7 @@ import {
     sameText,
 } from './page-save';
 import type { PageMove } from './page-store';
-import { pageBodyKey, pageLocationPath, PAGES } from './pages';
+import { pageBodyKey, pageLocationPath, PAGES, PAGES_SNAPSHOT } from './pages';
 import { serverSince } from './server-clock';
 import type { SnapshotCache } from './snapshot-cache';
 import type { FileUploads } from './upload-file';
@@ -126,10 +126,22 @@ export const isFolder = (page: object | null | undefined): boolean =>
     (page as { readonly folder?: unknown } | null | undefined)?.folder === true;
 
 /**
- * Whether page `pageId` of Space `spaceId` is a folder by the Space's list the
- * phone holds (cache.db's `pages` rows, memory first); false when it holds none.
+ * Whether page `pageId` of Space `spaceId` is a folder as the phone holds it:
+ * a toggle of this phone still waiting on it first (`pendingFolder`, given
+ * `outbox`), else the Space's list (cache.db's `pages` rows, memory first);
+ * false when it holds none. A Space's list read from disk only once asked
+ * (`loadHeldFolders`) counts once it is read.
  */
-export function heldFolder(cache: Pick<SnapshotCache, 'rows'>, spaceId: string, pageId: string): boolean {
+export function heldFolder(
+    cache: Pick<SnapshotCache, 'rows'>,
+    spaceId: string,
+    pageId: string,
+    outbox?: Pick<Outbox, 'rows' | 'unsent' | 'resolve'>,
+): boolean {
+    const pending = outbox === undefined ? null : pendingFolder(outbox, pageId);
+    if (pending !== null) {
+        return pending;
+    }
     const row = cache.rows(PAGES, spaceId).get(pageId);
     if (row === undefined) {
         return false;
@@ -139,6 +151,21 @@ export function heldFolder(cache: Pick<SnapshotCache, 'rows'>, spaceId: string, 
     } catch {
         return false;
     }
+}
+
+/**
+ * Reads from cache.db the lists of the Spaces among `spaceIds` not read yet
+ * this run (a restart onto Search, before any of their screens), so
+ * `heldFolder` knows their folders. Null when all are read already.
+ */
+export function loadHeldFolders(
+    cache: Pick<SnapshotCache, 'load' | 'loaded'>,
+    spaceIds: Iterable<string>,
+): Promise<void> | null {
+    const unread = [...new Set(spaceIds)].filter((spaceId) => !cache.loaded(PAGES_SNAPSHOT, spaceId));
+    return unread.length === 0
+        ? null
+        : Promise.all(unread.map((spaceId) => cache.load([PAGES_SNAPSHOT], spaceId))).then(() => undefined);
 }
 
 /** Whether the server sent the page with its `folder` mark: one from before folders doesn't. */
@@ -944,7 +971,10 @@ export function pageManageKinds(options: PageManageKindOptions = {}): OutboxKind
                     (since === null || page.createdAt >= since) &&
                     !context.claimed(PAGE_IDS, page.id),
             );
-            // Told apart by content (two "Untitled page" made offline): each candidate's body.
+            // Told apart by content (two "Untitled page" made offline): each candidate's body. And by
+            // the folder mark (CB-426): a folder's create is never a page made the same way, nor the
+            // reverse; missing (a server from before folders) is a page.
+            const folder = payload.folder === true;
             const found: Page[] = [];
             for (const candidate of candidates) {
                 const answer = await readAnswer(
@@ -958,7 +988,7 @@ export function pageManageKinds(options: PageManageKindOptions = {}): OutboxKind
                 if (page === null) {
                     throw new NetworkError(pagePath(payload.spaceId, candidate.id));
                 }
-                if (page.content === payload.content) {
+                if (page.content === payload.content && isFolder(page) === folder) {
                     found.push(page);
                 }
             }

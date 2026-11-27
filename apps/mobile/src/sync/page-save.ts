@@ -263,6 +263,12 @@ export interface PageSavesOptions {
     readonly baseOf: (spaceId: string, pageId: string, revision: number) => Promise<Page | null>;
     /** A fresh UUID (expo-crypto): a new row's id and key. */
     readonly newId: () => string;
+    /**
+     * Page `pageId` is now a folder (CB-426), as the phone holds it or a toggle
+     * waiting on it says: its hidden body takes no saves. The editor's draft
+     * stays in `drafts`, kept for when it is a page again. None by default.
+     */
+    readonly isFolder?: (spaceId: string, pageId: string) => boolean;
 }
 
 /** The editor draft's sink (page-drafts.ts), and `savePage` for a draft given directly. */
@@ -272,7 +278,7 @@ export interface PageSaves extends PageDraftSink {
 }
 
 /** What a save did. */
-export type PageSaveResult = 'queued' | 'folded' | 'removed' | 'none' | 'invalid';
+export type PageSaveResult = 'queued' | 'folded' | 'removed' | 'none' | 'invalid' | 'folder';
 
 type Plan =
     | { readonly action: 'fold'; readonly row: OutboxRow; readonly payload: PageSavePayload }
@@ -286,6 +292,7 @@ type Plan =
 
 export function createPageSaves(options: PageSavesOptions): PageSaves {
     const { outbox, drafts, baseOf, newId } = options;
+    const folder = (pageId: string, draft: EditorDraft) => options.isFolder?.(draft.spaceId, pageId) === true;
     /** Each page's saves, one at a time: a plan is never made beside another's write. */
     const chains = new Map<string, Promise<unknown>>();
     const inOrder = <T>(pageId: string, task: () => Promise<T>): Promise<T> => {
@@ -408,6 +415,10 @@ export function createPageSaves(options: PageSavesOptions): PageSaves {
         if (pageDraftError({ title: draft.title, content: draft.content, parentId: null }) !== undefined) {
             return 'invalid';
         }
+        if (folder(pageId, draft)) {
+            // Turned into a folder while the editor was open: nothing goes, and the draft stays where it is.
+            return 'folder';
+        }
         const scope = pageDraft(pageId);
         const clear = (text: string) => {
             // The row holds it now; text typed meanwhile stays for the next save.
@@ -459,6 +470,10 @@ export function createPageSaves(options: PageSavesOptions): PageSaves {
         updateQueued: (pageId, draft) =>
             inOrder(pageId, async () => {
                 if (pageDraftError({ title: draft.title, content: draft.content, parentId: null }) !== undefined) {
+                    return false;
+                }
+                if (folder(pageId, draft)) {
+                    // Kept in `drafts` instead (page-drafts.ts), not in a row that would send it.
                     return false;
                 }
                 return (await fold(pageId, draft)) !== null;

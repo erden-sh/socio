@@ -174,3 +174,26 @@ describe("the page editor's native layout", () => {
         expect(toolbar).toContain('border-t border-border bg-muted');
     });
 });
+
+// CB-426 (Sol's review of #52): a page that turns into a folder while its
+// editor is open (another device's toggle, found by a refresh of the cached
+// copy) closes the editor to the folder's words, whatever it opened on; the
+// scope's page saves take nothing for a folder, so a pending debounce and the
+// close's last write stay in the draft on the phone (tests/sync/page-save.test.ts).
+describe("the page editor's folder guard", () => {
+    const screen = readFileSync(join(src, 'screens/page-editor.tsx'), 'utf8');
+    const scope = readFileSync(join(src, 'sync/scope.ts'), 'utf8');
+
+    it('shows the folder words whenever the page is a folder, also after the editor opened', () => {
+        expect(screen).toMatch(/if \(shut\) \{\s+return <Waiting line=\{FOLDER_NO_EDITOR\} \/>;\s+\}/);
+        expect(screen).not.toMatch(/start === null && folder/);
+        // Its start goes, so opening again begins from the draft kept on disk.
+        expect(screen).toMatch(/if \(shut && start !== null\) \{[^}]*setStart\(null\);/);
+    });
+
+    it("gives the scope's page saves the same folder check", () => {
+        expect(scope).toMatch(
+            /isFolder: \(spaceId, pageId\) =>\s+pendingFolder\(outbox, pageId\) \?\?\s+\(isFolder\(pages\.bodies\.peek\(pageBodyKey\(spaceId, pageId\)\)\?\.state\.value\) \|\|\s+heldFolder\(cache, spaceId, pageId\)\)/,
+        );
+    });
+});

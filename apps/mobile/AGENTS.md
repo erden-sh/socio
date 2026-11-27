@@ -1565,13 +1565,19 @@ ported (no Effect), its test's cases as specs:
   `PUT …/folder` takes no revision), safe to repeat; a toggle back while one is queued takes it out,
   and a page whose create is queued takes the mark into the create. A save or move of this phone
   ahead of it moves its revision (`folderOn`); a 409 reads the page: already so is done, else a
-  `rewrite` on its revision. 410 `page-deleted`, 403 `page-refused`, 400 `page-invalid`. Its overlay
+  `rewrite` on its revision. 410 `page-deleted`, 403 `page-refused`, 400 `page-invalid`. A lost
+  create's check matches the mark too (missing is false), so a folder's create is never a page made
+  the same way, nor the reverse. Its overlay
   is `{ folder, excerpt: '' }`; `pendingFolder` gives the reader and the editor the mark still waiting.
   **Nothing of a folder's body shows**: the library's rows say what it holds (`folderLine`), its
   title alone matches a search, the server's body-only matches (its text search still finds a
-  folder by its hidden body) and snippets are dropped in the library and Search (`heldFolder`), the
-  radar shows no excerpt of it, the reader shows no body or excerpt and no Edit, Ask about this page
-  or Compare, and the editor doesn't open on one. `tests/shell/folders.test.ts` checks each place.
+  folder by its hidden body) and snippets are dropped in the library and Search (`heldFolder`, with
+  the outbox's waiting toggles; Search reads the hit Spaces' lists from cache.db first,
+  `loadHeldFolders`), the radar shows no excerpt of it, the reader shows no body or excerpt and no
+  Edit, Ask about this page or Compare, and the editor doesn't open on one. One that becomes a
+  folder with the editor open closes it to the folder's words; the scope's page saves
+  (`isFolder`) take nothing for a folder, so its draft stays on the phone, unsent, for when it is a
+  page again. `tests/shell/folders.test.ts` checks each place.
 - **Exactly once.** A run's check, and the busy-thread rule before it moves a
   row to steering, ask shared's `recoverTurn` through `turn-recovery.ts`'s `recoverRun`: `connect`
   replays the runs after the newest one held and stops at the first run's start; the row's id in a
