@@ -8,13 +8,14 @@
                 "$TURBO_DEFAULT$",
                 "$TURBO_ROOT$/packages/shared/src/**",
                 "$TURBO_ROOT$/packages/client/src/**",
+                "$TURBO_ROOT$/packages/ui/src/**",
                 "$TURBO_ROOT$/vendor/**"
             ],
             "outputs": []
         },
         "lint": {
             "description": "oxlint's import rules read the client components it imports.",
-            "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/packages/client/src/**"],
+            "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/packages/client/src/**", "$TURBO_ROOT$/packages/ui/src/**"],
             "outputs": []
         }
     }

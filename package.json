@@ -95,6 +95,7 @@
         "@socio/i18n": "workspace:*",
         "@socio/plugin-ui": "workspace:*",
         "@socio/shared": "workspace:*",
+        "@socio/ui": "workspace:*",
         "@t3tools/contracts": "link:vendor/t3code/contracts",
         "@t3tools/provider-acp": "link:vendor/t3code/provider-acp",
         "@t3tools/provider-acp-registry": "link:vendor/t3code/provider-acp-registry",

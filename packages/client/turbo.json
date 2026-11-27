@@ -9,12 +9,13 @@
                 "$TURBO_ROOT$/packages/i18n/src/**",
                 "$TURBO_ROOT$/packages/i18n/locales/**",
                 "$TURBO_ROOT$/packages/plugin-ui/src/**",
+                "$TURBO_ROOT$/packages/ui/src/**",
                 "$TURBO_ROOT$/vendor/**"
             ],
             "outputs": []
         },
         "lint": {
-            "inputs": ["$TURBO_DEFAULT$"],
+            "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/packages/ui/src/**"],
             "outputs": []
         },
         "test": {
@@ -25,6 +26,7 @@
                 "$TURBO_ROOT$/packages/i18n/src/**",
                 "$TURBO_ROOT$/packages/i18n/locales/**",
                 "$TURBO_ROOT$/packages/plugin-ui/src/**",
+                "$TURBO_ROOT$/packages/ui/src/**",
                 "$TURBO_ROOT$/public/**",
                 "$TURBO_ROOT$/packages/foundation/src/no-vendor-telemetry.ts",
                 "$TURBO_ROOT$/vendor/**"
@@ -40,6 +42,7 @@
                 "$TURBO_ROOT$/packages/i18n/src/**",
                 "$TURBO_ROOT$/packages/i18n/locales/**",
                 "$TURBO_ROOT$/packages/plugin-ui/src/**",
+                "$TURBO_ROOT$/packages/ui/src/**",
                 "$TURBO_ROOT$/public/**",
                 "$TURBO_ROOT$/content/**",
                 "$TURBO_ROOT$/vendor/**",

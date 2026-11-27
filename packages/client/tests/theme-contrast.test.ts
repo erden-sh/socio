@@ -4,7 +4,7 @@ import { expect, it } from 'vitest';
 
 import { color, contrast, light, themes } from './helpers/theme-tokens';
 
-// The theme's tokens (globals.css) meet WCAG AA where text sits on them,
+// The theme's tokens meet WCAG AA where text sits on them,
 // in light and in dark: white (or the dark theme's ink) on the primary
 // fill at rest, hovered and disabled; the sidebar's quieter words on its
 // rows; muted words on the surfaces they're used on; the menus' focus
@@ -87,9 +87,9 @@ it.each(Object.entries(themes))(
 const workspacePalettes = ['indigo', 'erden', 'erden-glass', 'cobalt', 'plum', 'clay'] as const;
 
 it.each(workspacePalettes)('ships both schemes of %s with usable text, controls and focus', (id) => {
-    const globals = readFileSync(new URL('../src/globals.css', import.meta.url), 'utf8');
-    expect(globals).toContain(`./styles/themes/${id}.css`);
-    const css = readFileSync(new URL(`../src/styles/themes/${id}.css`, import.meta.url), 'utf8');
+    const theme = readFileSync(new URL(import.meta.resolve('@socio/ui/theme.css')), 'utf8');
+    expect(theme).toContain(`./themes/${id}.css`);
+    const css = readFileSync(new URL(import.meta.resolve(`@socio/ui/themes/${id}.css`)), 'utf8');
 
     for (const scheme of ['light', 'dark'] as const) {
         const selector = `:root[data-theme='${id}']${scheme === 'dark' ? '.dark' : ''}`;

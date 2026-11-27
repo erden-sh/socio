@@ -1,0 +1,18 @@
+{
+    "$schema": "../../node_modules/turbo/schema.json",
+    "extends": ["//"],
+    "tasks": {
+        "lint": {
+            "inputs": ["$TURBO_DEFAULT$", "!dist/**"],
+            "outputs": []
+        },
+        "typecheck": {
+            "inputs": ["$TURBO_DEFAULT$", "!dist/**"],
+            "outputs": []
+        },
+        "build": {
+            "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/LICENSE", "$TURBO_ROOT$/THIRD_PARTY_NOTICES", "!dist/**"],
+            "outputs": ["dist/**"]
+        }
+    }
+}

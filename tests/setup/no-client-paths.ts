@@ -3,7 +3,7 @@ import { join, resolve, sep } from 'node:path';
 // What the server bucket can't reach: the client, and the plugin UI, which
 // imports the client's components. Tests that do belong in tests/integration.
 const root = join(import.meta.dirname, '../..');
-const CLIENT_SIDE = ['packages/client', 'packages/plugin-ui'].map((dir) => join(root, dir));
+const CLIENT_SIDE = ['packages/client', 'packages/plugin-ui', 'packages/ui'].map((dir) => join(root, dir));
 
 export const isClientSide = (path: string) => {
     const full = resolve(root, path);

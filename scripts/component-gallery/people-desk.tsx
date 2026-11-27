@@ -11,25 +11,19 @@ import {
 import { useState } from 'react';
 import { toast } from 'sonner';
 
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
+import { AccessReview, QuickActions } from '@socio/ui';
+import { Avatar, AvatarFallback } from '@socio/ui/components/avatar';
+import { Badge } from '@socio/ui/components/badge';
 import {
     Breadcrumb,
     BreadcrumbItem,
     BreadcrumbList,
     BreadcrumbPage,
     BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import {
-    CommandDialog,
-    CommandEmpty,
-    CommandGroup,
-    CommandInput,
-    CommandItem,
-    CommandList,
-} from '@/components/ui/command';
+} from '@socio/ui/components/breadcrumb';
+import { Button } from '@socio/ui/components/button';
+import { Card } from '@socio/ui/components/card';
+import { CommandGroup, CommandItem } from '@socio/ui/components/command';
 import {
     Dialog,
     DialogClose,
@@ -39,18 +33,10 @@ import {
     DialogHeader,
     DialogTitle,
     DialogTrigger,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import {
-    Sheet,
-    SheetClose,
-    SheetContent,
-    SheetDescription,
-    SheetHeader,
-    SheetTitle,
-    SheetTrigger,
-} from '@/components/ui/sheet';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+} from '@socio/ui/components/dialog';
+import { Input } from '@socio/ui/components/input';
+import { SheetClose } from '@socio/ui/components/sheet';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@socio/ui/components/tabs';
 
 const members = [
     {
@@ -147,11 +133,14 @@ export function PeopleDesk() {
                     </BreadcrumbList>
                 </Breadcrumb>
                 <div className="gallery-flow">
-                    <CommandDialog
+                    <QuickActions
                         open={quickActions}
                         onOpenChange={setQuickActions}
                         title="Quick actions"
                         description="Find a person or open groups."
+                        searchLabel="Find a person or run an action"
+                        placeholder="Find a person or run an action…"
+                        emptyMessage="No matching actions or people"
                         trigger={
                             <Button variant="outline">
                                 <Search aria-hidden="true" />
@@ -159,71 +148,59 @@ export function PeopleDesk() {
                             </Button>
                         }
                     >
-                        <CommandInput
-                            placeholder="Find a person or run an action…"
-                            aria-label="Find a person or run an action"
-                            className="pr-8"
-                        />
-                        <CommandList className="p-2">
-                            <CommandEmpty>No matching actions or people</CommandEmpty>
-                            <CommandGroup heading="Actions">
+                        <CommandGroup heading="Actions">
+                            <CommandItem
+                                onSelect={() => {
+                                    setTab('groups');
+                                    setQuickActions(false);
+                                }}
+                            >
+                                <Layers aria-hidden="true" /> Open groups
+                                <ArrowUpRight aria-hidden="true" className="ml-auto" />
+                            </CommandItem>
+                        </CommandGroup>
+                        <CommandGroup heading="People">
+                            {members.map((person) => (
                                 <CommandItem
+                                    key={person.email}
+                                    value={`${person.name} ${person.email}`}
                                     onSelect={() => {
-                                        setTab('groups');
+                                        showMember(person);
                                         setQuickActions(false);
                                     }}
                                 >
-                                    <Layers aria-hidden="true" /> Open groups
-                                    <ArrowUpRight aria-hidden="true" className="ml-auto" />
+                                    <Identity member={person} />
+                                    <ChevronRight aria-hidden="true" className="ml-auto" />
                                 </CommandItem>
-                            </CommandGroup>
-                            <CommandGroup heading="People">
-                                {members.map((person) => (
-                                    <CommandItem
-                                        key={person.email}
-                                        value={`${person.name} ${person.email}`}
-                                        onSelect={() => {
-                                            showMember(person);
-                                            setQuickActions(false);
-                                        }}
-                                    >
-                                        <Identity member={person} />
-                                        <ChevronRight aria-hidden="true" className="ml-auto" />
-                                    </CommandItem>
-                                ))}
-                            </CommandGroup>
-                        </CommandList>
-                    </CommandDialog>
-                    <Sheet>
-                        <SheetTrigger asChild>
+                            ))}
+                        </CommandGroup>
+                    </QuickActions>
+                    <AccessReview
+                        state="ready"
+                        title="Access review"
+                        description="Check workspace roles and outstanding invitations."
+                        trigger={
                             <Button variant="outline">
                                 <Shield aria-hidden="true" />
                                 Access review
                             </Button>
-                        </SheetTrigger>
-                        <SheetContent>
-                            <SheetHeader>
-                                <SheetTitle>Access review</SheetTitle>
-                                <SheetDescription>Check workspace roles and outstanding invitations.</SheetDescription>
-                            </SheetHeader>
-                            <div className="grid gap-2 px-4">
-                                {members
-                                    .filter((person) => person.status !== 'Active' || person.role === 'Admin')
-                                    .map((person) => (
-                                        <SheetClose key={person.email} asChild>
-                                            <Button
-                                                variant="outline"
-                                                className="h-auto justify-start py-2"
-                                                onClick={() => showMember(person)}
-                                            >
-                                                <Identity member={person} />
-                                                <ChevronRight aria-hidden="true" className="ml-auto" />
-                                            </Button>
-                                        </SheetClose>
-                                    ))}
-                            </div>
-                        </SheetContent>
-                    </Sheet>
+                        }
+                    >
+                        {members
+                            .filter((person) => person.status !== 'Active' || person.role === 'Admin')
+                            .map((person) => (
+                                <SheetClose key={person.email} asChild>
+                                    <Button
+                                        variant="outline"
+                                        className="h-auto justify-start py-2"
+                                        onClick={() => showMember(person)}
+                                    >
+                                        <Identity member={person} />
+                                        <ChevronRight aria-hidden="true" className="ml-auto" />
+                                    </Button>
+                                </SheetClose>
+                            ))}
+                    </AccessReview>
                 </div>
             </header>
             <div className="desk-heading">

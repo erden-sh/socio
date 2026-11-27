@@ -46,10 +46,14 @@ Primer lote verificado en Chromium. Button, Input y Badge muestran un indicador 
 
 ## 2.4 · Patrones compuestos · UI-05
 
-**Archivos.** Revisar `packages/client/src/views/WorkspacePage.tsx`, `packages/client/src/components/data-grid/DataGrid.tsx` y `packages/client/src/components/infinite-list/InfiniteList.tsx`. Crear `packages/client/src/components/quick-actions.tsx` y `packages/client/src/components/access-review.tsx` cuando la composición esté validada en la galería.
+**Archivos.** Los patrones Quick actions y Access review viven en `packages/ui/src/components/`. La galería los demuestra con datos ficticios. Revisar `WorkspacePage`, `DataGrid` e `InfiniteList` al aplicarlos en las vistas.
 
-**Contrato.** `QuickActions({ children }: { children: ReactNode })` agrupa las acciones suministradas por la vista. `AccessReview({ state, children }: { state: 'loading' | 'ready' | 'partial' | 'error'; children: ReactNode })` presenta el estado y el contenido que el flujo aporta. Título y orden de interacción siguen el patrón validado. Cada vista conserva sus datos y permisos.
+**Contrato.** `QuickActions` agrupa las acciones suministradas por la vista y permite buscarlas con teclado. `AccessReview` presenta el contenido y los estados `loading`, `ready`, `partial` y `error`. La vista aporta los textos, los datos y las acciones que permiten sus permisos.
 
 - [ ] Probar directorio responsive, formulario, detalle contextual y paneles vacíos, parciales y con error. Revisar foco si una acción desaparece al filtrar o cambia el dato mostrado.
 - [ ] Ajustar estructura de página y tabla responsive. Construir los dos paneles con ejemplos ficticios. La API permite usar enlaces y botones existentes.
 - [ ] Ejecutar la matriz de galería y `pnpm run check:cached`, `pnpm run test:cached` y `pnpm run build`. Registrar qué variantes se validaron antes de pasar al shell.
+
+## 2.5 · Distribución
+
+`packages/ui` contiene los componentes, los patrones y la fuente de los temas. `pnpm --dir packages/ui pack` genera el archivo instalable para React 19. La galería importa la API del paquete. El cliente mantiene sus puntos de importación y aplica las preferencias de Socio al tema.

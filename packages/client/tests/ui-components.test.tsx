@@ -243,8 +243,9 @@ it('keeps the stylesheets free of external URLs and layers the legacy CSS', () =
 
 it('spaces every page frame and heading by the page chrome tokens (CB-91)', () => {
     const read = (path: string) => readFileSync(join(import.meta.dirname, '../src', path), 'utf8');
-    expect(read('globals.css')).toMatch(/--page-top: [\d.]+rem;/);
-    expect(read('globals.css')).toMatch(/--page-gap: [\d.]+rem;/);
+    const tokens = readFileSync(new URL(import.meta.resolve('@socio/ui/tokens.css')), 'utf8');
+    expect(tokens).toMatch(/--page-top: [\d.]+rem;/);
+    expect(tokens).toMatch(/--page-gap: [\d.]+rem;/);
     // Each rule of a frame (at every width) starts at --page-top, and each
     // heading's space below is --page-gap: no literal pixels creep back.
     const rules = (css: string, selector: string) =>

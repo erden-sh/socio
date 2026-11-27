@@ -12,6 +12,7 @@
 //   i18n        packages/i18n (NodeNext), its source and tests
 //   foundation  packages/foundation (NodeNext)
 //   data        packages/data (NodeNext)
+//   ui         the reusable React UI package
 //   plugin-ui   packages/plugin-ui, and the client components it imports
 //   app-sdk     packages/app-sdk
 //   mobile      apps/mobile, the native app, and the packages/shared source it
@@ -37,6 +38,7 @@ const PARTS = {
     foundation: ['-p', 'packages/foundation/tsconfig.json', '--noEmit', ...cached('foundation')],
     data: ['-p', 'packages/data/tsconfig.json', '--noEmit', ...cached('data')],
     mixed: ['-p', 'tests/integration/tsconfig.json', '--noEmit', ...cached('mixed')],
+    ui: ['-p', 'packages/ui/tsconfig.json', '--noEmit'],
     'plugin-ui': ['-p', 'packages/plugin-ui/tsconfig.json', '--noEmit'],
     'app-sdk': ['-p', 'packages/app-sdk/tsconfig.json', '--noEmit'],
     mobile: ['-p', 'apps/mobile/tsconfig.json', '--noEmit', ...cached('mobile')],

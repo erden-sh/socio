@@ -149,7 +149,7 @@ describe('the graph keeps what the root scripts do', () => {
     it('builds the same steps, split by what each one reads', () => {
         const steps = (script: string) => script.split(' && ').sort();
         const builds = PACKAGES.filter((name) => json(`packages/${name}/package.json`).scripts?.build);
-        expect(builds).toEqual(['client']);
+        expect(builds).toEqual(['client', 'ui']);
         expect(json('packages/client/package.json').scripts.build).toBe('pnpm -w run build:pages');
         expect(scripts['build:packages']).toBe('node scripts/build-packages.mjs');
         expect(steps(scripts.build)).toEqual(
@@ -186,7 +186,7 @@ const CLIENT_TEST = '@socio/client#test';
 const CLIENT_BUILD = '@socio/client#build';
 const PLUGIN_TYPECHECK = '@socio/plugin-ui#typecheck';
 const PLUGIN_LINT = '@socio/plugin-ui#lint';
-const PACKAGE_CHECKS = ['shared', 'i18n', 'foundation', 'data'].flatMap((name) => [
+const PACKAGE_CHECKS = ['shared', 'i18n', 'foundation', 'data', 'ui'].flatMap((name) => [
     `@socio/${name}#lint`,
     `@socio/${name}#typecheck`,
 ]);
@@ -228,6 +228,10 @@ const CASES: [string, string, string[] | typeof EVERYTHING][] = [
             MIXED,
         ],
     ],
+    // In the CI copy without .git, Turbo includes @socio/ui in the root
+    // internal-dependency hash. Source and token edits invalidate that hash.
+    ['reusable UI source', 'packages/ui/src/components/button.tsx', EVERYTHING],
+    ['shared UI tokens', 'packages/ui/src/styles/tokens.css', EVERYTHING],
     [
         'a client test',
         'packages/client/tests/access-policy-ui.test.tsx',
@@ -236,26 +240,24 @@ const CASES: [string, string, string[] | typeof EVERYTHING][] = [
     // What the native app takes from the web client (its theme and its modules)
     // reruns the app's tests too (apps/mobile/turbo.json); the rest of the client doesn't.
     // The public site copies the theme too (apps/site/turbo.json), so its tests rerun as well.
-    ...['packages/client/src/globals.css', 'packages/client/src/shell/tones.ts'].map(
-        (path): [string, string, string[]] => [
-            'client theme the app and the site read',
-            path,
-            [
-                FORMAT,
-                LINT_ROOT,
-                CLIENT_LINT,
-                CLIENT_TYPECHECK,
-                CLIENT_TEST,
-                CLIENT_BUILD,
-                PLUGIN_TYPECHECK,
-                PLUGIN_LINT,
-                TYPECHECK_MIXED,
-                MIXED,
-                '@socio/mobile#test',
-                '@socio/site#test',
-            ],
+    ...['packages/client/src/shell/tones.ts'].map((path): [string, string, string[]] => [
+        'client theme the app and the site read',
+        path,
+        [
+            FORMAT,
+            LINT_ROOT,
+            CLIENT_LINT,
+            CLIENT_TYPECHECK,
+            CLIENT_TEST,
+            CLIENT_BUILD,
+            PLUGIN_TYPECHECK,
+            PLUGIN_LINT,
+            TYPECHECK_MIXED,
+            MIXED,
+            '@socio/mobile#test',
+            '@socio/site#test',
         ],
-    ),
+    ]),
     [
         // The site builds its character art from the client's (cream tiles stripped) and tests it.
         'the character art the site serves',
@@ -346,7 +348,21 @@ const CASES: [string, string, string[] | typeof EVERYTHING][] = [
         'scripts/build-packages.mjs',
         [FORMAT, LINT_ROOT, TYPECHECK_ROOT, TYPECHECK_MIXED, SERVER, MIXED, BUILD_SERVER, CLIENT_BUILD, BUILD_PACKAGES],
     ],
-    ['plugin UI source', 'packages/plugin-ui/src/index.ts', EVERYTHING],
+    [
+        'plugin UI source',
+        'packages/plugin-ui/src/index.ts',
+        [
+            FORMAT,
+            LINT_ROOT,
+            CLIENT_TYPECHECK,
+            CLIENT_TEST,
+            CLIENT_BUILD,
+            PLUGIN_TYPECHECK,
+            PLUGIN_LINT,
+            TYPECHECK_MIXED,
+            MIXED,
+        ],
+    ],
     ['server source', 'src/server/platform.ts', ROOT_CODE],
     // The relay's config test holds wrangler.toml's hosts against its DEFAULT_PUSH_HOSTS.
     ['the notifications contract', 'src/server/notifications/contract.ts', [...ROOT_CODE, '@socio/push-relay#test']],
@@ -576,6 +592,7 @@ describe('which tasks rerun', () => {
                 ...LINK,
                 ...SITE,
                 ...PACKAGE_CHECKS,
+                '@socio/ui#build',
                 BUILD_PACKAGES,
             ].sort(),
         );

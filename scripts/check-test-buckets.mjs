@@ -22,7 +22,7 @@ const LOCATED = [
 // A path in any string, however it is split: 'packages/client/x', or
 // join(root, 'packages', 'client').
 const NAMES_CLIENT =
-    /['"`][^'"`\n]*packages\/(?:client|plugin-ui)\b|['"`]packages['"`]\s*,\s*['"`](?:client|plugin-ui)\b/;
+    /['"`][^'"`\n]*packages\/(?:client|plugin-ui|ui)\b|['"`]packages['"`]\s*,\s*['"`](?:client|plugin-ui|ui)\b/;
 const EXTENSIONS = [
     '',
     '.ts',
@@ -40,7 +40,7 @@ const EXTENSIONS = [
 const CODE = /\.[cm]?[jt]sx?$/;
 
 const clientSide = (root, path) =>
-    ['packages/client', 'packages/plugin-ui', 'tests/integration'].some((dir) =>
+    ['packages/client', 'packages/plugin-ui', 'packages/ui', 'tests/integration'].some((dir) =>
         `${path}${sep}`.startsWith(`${join(root, dir)}${sep}`),
     );
 
@@ -60,6 +60,9 @@ const resolveFile = (from, target) => {
 const workspaceTarget = (root, specifier) => {
     if (specifier === '@' || specifier.startsWith('@/')) {
         return join(root, 'packages/client/src', specifier.slice(2));
+    }
+    if (specifier === '@socio/ui' || specifier.startsWith('@socio/ui/')) {
+        return join(root, 'packages/ui/src', specifier.slice('@socio/ui/'.length) || 'index.ts');
     }
     if (specifier.startsWith('@socio/plugin-ui') || specifier.startsWith('@socio/client')) {
         return join(root, 'packages/plugin-ui/src/index.ts');

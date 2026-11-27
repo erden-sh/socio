@@ -49,7 +49,8 @@ export default defineConfig({
     // dependency at CopilotKit's exact version: Vite keeps it external only
     // when it resolves from the top level. Bundled, its `import "zod"` got
     // Socio's zod 4 and the built server crashed at startup.
-    ssr: { noExternal: ['@copilotkit/react-core'] },
+    // Bundle the @socio/ui workspace source with the server's compiled UI.
+    ssr: { noExternal: ['@copilotkit/react-core', '@socio/ui'] },
     // Development: find the browser's dependencies up front, from the entry and
     // every route (there's no index.html to start from). Otherwise each first
     // visit to a module finds new ones and Vite reloads the page.

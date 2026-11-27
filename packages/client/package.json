@@ -19,6 +19,7 @@
         "@socio/i18n": "workspace:*",
         "@socio/plugin-ui": "workspace:*",
         "@socio/shared": "workspace:*",
+        "@socio/ui": "workspace:*",
         "@tanstack/db": "0.15.2",
         "@tiptap/core": "3.35.0",
         "@tiptap/extension-placeholder": "3.35.0",

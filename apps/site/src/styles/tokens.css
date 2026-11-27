@@ -1,6 +1,6 @@
 /*
  * The site's tokens. The light :root and the dark set are copied from the web client's
- * packages/client/src/globals.css (:root and .dark), with the dark set under
+ * packages/ui/src/styles/tokens.css (:root and .dark), with the dark set under
  * prefers-color-scheme: the site has no theme toggle and stores nothing.
  * tests/tokens.test.ts fails if a copied value drifts from the client's.
  * The tone shades are Tailwind 4's palette (tailwindcss/theme.css), used the way the client's

@@ -1,0 +1,9 @@
+@import './tokens.css';
+@import './themes/indigo.css';
+@import './themes/erden.css';
+@import './themes/erden-glass.css';
+@import './themes/cobalt.css';
+@import './themes/plum.css';
+@import './themes/clay.css';
+
+@custom-variant dark (&:where(.dark, .dark *));

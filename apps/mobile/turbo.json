@@ -30,11 +30,11 @@
             "outputs": []
         },
         "test": {
-            "description": "The app's Vitest projects. They may import packages/shared source. Its checks also read what the app takes from the web client: its theme (globals.css, shell/tones.ts) and its modules (modules/*/module.ts*, modules/types.ts). Those are listed in one go, before the checks land, since each change to this file reruns every task. The editor tests build the page editor's bundle from the web's page editor (modules/pages/editor) and check it against the web's. The type tests read the web's type roles (Home, dot-state, WorkspacePage, ChatTranscript, editor.css, PageDocument, IssueMarkdown, IssueBoard, SpaceLibrary).",
+            "description": "The app's Vitest projects. They may import packages/shared source. Its checks also read what the app takes from the web client: its theme (the UI package tokens and shell/tones.ts) and its modules (modules/*/module.ts*, modules/types.ts). Those are listed in one go, before the checks land, since each change to this file reruns every task. The editor tests build the page editor's bundle from the web's page editor (modules/pages/editor) and check it against the web's. The type tests read the web's type roles (Home, dot-state, WorkspacePage, ChatTranscript, editor.css, PageDocument, IssueMarkdown, IssueBoard, SpaceLibrary).",
             "inputs": [
                 "$TURBO_DEFAULT$",
                 "$TURBO_ROOT$/packages/shared/src/**",
-                "$TURBO_ROOT$/packages/client/src/globals.css",
+                "$TURBO_ROOT$/packages/ui/src/styles/tokens.css",
                 "$TURBO_ROOT$/packages/client/src/shell/tones.ts",
                 "$TURBO_ROOT$/packages/client/src/modules/*/module.ts*",
                 "$TURBO_ROOT$/packages/client/src/modules/types.ts",

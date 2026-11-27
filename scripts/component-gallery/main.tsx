@@ -10,12 +10,6 @@ import {
     type ColorMode,
     type ThemeId,
 } from '@socio/shared/settings/appearance';
-
-import logo from '../../public/favicon.svg?inline';
-
-import { PeopleDesk } from './people-desk';
-
-import { nativeSelect } from '@/components/form-fields';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -26,21 +20,21 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
     AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
+} from '@socio/ui/components/alert-dialog';
+import { Avatar, AvatarFallback } from '@socio/ui/components/avatar';
+import { Badge } from '@socio/ui/components/badge';
 import {
     Breadcrumb,
     BreadcrumbItem,
     BreadcrumbList,
     BreadcrumbPage,
     BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
-import { Button } from '@/components/ui/button';
-import { Card, CardAction, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+} from '@socio/ui/components/breadcrumb';
+import { Button } from '@socio/ui/components/button';
+import { Card, CardAction, CardDescription, CardHeader, CardTitle } from '@socio/ui/components/card';
+import { Checkbox } from '@socio/ui/components/checkbox';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@socio/ui/components/collapsible';
+import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from '@socio/ui/components/command';
 import {
     Dialog,
     DialogContent,
@@ -48,19 +42,26 @@ import {
     DialogHeader,
     DialogTitle,
     DialogTrigger,
-} from '@/components/ui/dialog';
+} from '@socio/ui/components/dialog';
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Input } from '@/components/ui/input';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+} from '@socio/ui/components/dropdown-menu';
+import { Input } from '@socio/ui/components/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@socio/ui/components/popover';
+import { ScrollArea } from '@socio/ui/components/scroll-area';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@socio/ui/components/select';
+import { Separator } from '@socio/ui/components/separator';
+import {
+    Sheet,
+    SheetContent,
+    SheetDescription,
+    SheetHeader,
+    SheetTitle,
+    SheetTrigger,
+} from '@socio/ui/components/sheet';
 import {
     Sidebar,
     SidebarContent,
@@ -68,14 +69,20 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
     SidebarProvider,
-} from '@/components/ui/sidebar';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Toaster } from '@/components/ui/sonner';
-import { Switch } from '@/components/ui/switch';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Textarea } from '@/components/ui/textarea';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+} from '@socio/ui/components/sidebar';
+import { Skeleton } from '@socio/ui/components/skeleton';
+import { Toaster } from '@socio/ui/components/sonner';
+import { Switch } from '@socio/ui/components/switch';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@socio/ui/components/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@socio/ui/components/tabs';
+import { Textarea } from '@socio/ui/components/textarea';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@socio/ui/components/tooltip';
+
+import logo from '../../public/favicon.svg?inline';
+
+import { PeopleDesk } from './people-desk';
+
+import { nativeSelect } from '@/components/form-fields';
 import { ThemeProvider } from '@/shell/theme';
 import './gallery.css';
 
@@ -501,7 +508,7 @@ function Gallery() {
                         </div>
                     </div>
                 </main>
-                <Toaster />
+                <Toaster theme={mode} />
             </TooltipProvider>
         </ThemeProvider>
     );

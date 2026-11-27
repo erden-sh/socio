@@ -94,8 +94,16 @@ export function clientBoundaryProblems(pkg) {
                         continue;
                     }
                     const target = resolve(dirname(file), reference);
-                    // Tailwind reads classes from the plugin UI (globals.css).
-                    if (!inside(target, resolve(pkg)) && !inside(target, resolve(siblings, 'plugin-ui'))) {
+                    // The two UI packages supply Tailwind classes to globals.css.
+                    const uiSource =
+                        pattern === ASSET[0] &&
+                        [
+                            ['@socio/plugin-ui', 'plugin-ui'],
+                            ['@socio/ui', 'ui'],
+                        ].some(
+                            ([name, directory]) => declared.has(name) && inside(target, resolve(siblings, directory)),
+                        );
+                    if (!inside(target, resolve(pkg)) && !uiSource) {
                         report(reference, 'leaves the package');
                     }
                 }

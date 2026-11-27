@@ -4,7 +4,7 @@ Propuesta para revisión · [Programa](../WEB-REDESIGN.md) · [Plan](plans/02-co
 
 ## Resultado
 
-Diseño puede comparar componentes funcionales antes de decidir cómo se usarán en cada vista. Desarrollo puede usar una misma API y esperar el mismo comportamiento en los siete temas. El resultado incluye una galería interna con ejemplos que corresponden al código real.
+Diseño puede comparar componentes funcionales antes de decidir cómo se usarán en cada vista. Socio y otros proyectos React pueden usar la misma API y esperar el mismo comportamiento en los siete temas. La galería interna renderiza la implementación de [`@socio/ui`](../../../packages/ui/README.md), que se distribuye como JavaScript, tipos y CSS compilado.
 
 ## Requisitos
 
@@ -30,6 +30,7 @@ Quick actions agrupa acciones del flujo. Access review presenta un estado verifi
 
 ## Aceptación
 
+- Un proyecto React independiente puede instalar el paquete e importar sus componentes y estilos compilados.
 - Revisión visual con escritorio y móvil de 390 px, claro y oscuro, zoom de 200 %, movimiento reducido, transparencia reducida y colores forzados. Validar todos los temas en la galería y guardar muestras comparables de Erden Glass y Socio.
 - Interacciones accesibles comprobadas con teclado y tacto. Los ejemplos que requieren cursor tienen una vía identificable por teclado y toque.
 - La galería de desarrollo usa las primitivas reales y vive fuera de las rutas de producción. Los patrones compuestos se prueban con contenido variable, estados vacíos y error.

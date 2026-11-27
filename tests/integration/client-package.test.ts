@@ -55,13 +55,17 @@ describe('the @socio/client boundary', () => {
     it('allows the package, Node built-ins, what it declares and public files by location', () => {
         expect(
             fixture({
+                'package.json': JSON.stringify({
+                    dependencies: { react: '1', '@socio/plugin-ui': 'workspace:*', '@socio/ui': 'workspace:*' },
+                    devDependencies: { vitest: '1' },
+                }),
                 'src/a.ts': "import React from 'react';\nimport { b } from './deep/b';\nimport c from '@/deep/b';\n",
                 'src/deep/b.ts': "import 'node:fs';\nexport { a } from '../a';\nexport const b = 1;\n",
                 'tests/a.test.ts':
                     "import { vi } from 'vitest';\nimport { a } from '../src/a';\nvi.mock('../src/deep/b');\n" +
                     "const glob = import.meta.glob('../src/**/*.ts');\n" +
                     "const page = new URL('../../../public/theme-init.js', import.meta.url);\n",
-                'src/globals.css': '@import \'./style.css\';\n@source "../../plugin-ui";\n',
+                'src/globals.css': '@import \'./style.css\';\n@source "../../plugin-ui";\n@source "../../ui/src";\n',
                 'src/index.html': '<script src="./main.tsx"></script>',
             }),
         ).toEqual([]);
