@@ -3,6 +3,7 @@ import { Hono, type Context } from 'hono';
 import { z } from 'zod';
 
 import { transaction } from '@socio/data/open';
+import { roomReaderView } from '@socio/foundation/context/room-context';
 import type { AppEnv } from '@socio/foundation/http/app-env';
 import { conditionalJson } from '@socio/foundation/http/conditional';
 import { messageText } from '@socio/foundation/turns/media-parts';
@@ -39,6 +40,8 @@ const reactionBody = z
                     .refine((note) => reportNoteLength(note) <= REPORT_NOTE_MAX)
                     .optional(),
                 consent: z.string().min(1).max(200),
+                // Whether the confirmation the person saw said another person's message goes too.
+                shownByOther: z.boolean(),
             })
             .strict()
             .optional(),
@@ -174,12 +177,18 @@ export function reactionRoutes(platform: ReactionRouteSources, replay: Pick<Even
                         : undefined;
             if (!outcome && reports) {
                 try {
-                    prepared = await reports.prepare(
-                        await reportInput(platform, thread, messageId, userId, request, {
-                            reply: message,
-                            ...surfaceOf(c.req.header('user-agent'), platform.version?.()),
-                        }),
-                    );
+                    const input = await reportInput(platform, thread, messageId, userId, request, {
+                        at: message.at,
+                        ...surfaceOf(c.req.header('user-agent'), platform.version?.()),
+                    });
+                    if (input.prompt?.byOther && !request.shownByOther) {
+                        // Another person's message would go, and the confirmation the person saw didn't say so
+                        // (a room changed while an offline app waited): nothing goes. The other way round, the
+                        // person agreed to more than goes, so it does.
+                        outcome = 'consent-changed';
+                    } else {
+                        prepared = await reports.prepare(input);
+                    }
                 } catch {
                     // The conversation couldn't be read (a replay that timed out, say): the thumbs-down still counts.
                     outcome = 'unavailable';
@@ -206,7 +215,7 @@ export function reactionRoutes(platform: ReactionRouteSources, replay: Pick<Even
             return c.json(missing('Message'), 404);
         }
         const state = platform.reports?.state() ?? null;
-        const messages = await platform.runner.messages(thread.id);
+        const messages = await readerMessages(platform, thread, userId);
         const preview: ReportPreview = {
             sharing: !!state,
             ...(state ? { consent: state.consent } : {}),
@@ -224,9 +233,25 @@ const withReport = (view: ReactionsView, report: ReportOutcome | ReportRemoval |
     report ? { ...view, report } : view;
 
 /**
- * What a confirmed report holds, from the conversation's stored messages:
- * the reply as shown, the message it answered (and whether another person
- * wrote it), the model of the turn that wrote it, and the socio.
+ * The conversation's stored messages as `reader` sees them: in a room,
+ * exactly what its history shows them (`roomReaderView`, as
+ * `workspace/chat-history.ts` reads it): another member's private results
+ * and approval notes withheld. A private chat or Telegram topic is read
+ * whole, as its history is.
+ */
+async function readerMessages(platform: ReactionRouteSources, thread: Conversation, reader: string) {
+    const messages: Message[] = await platform.runner.messages(thread.id);
+    return thread.kind === 'room' ? roomReaderView(messages, platform.runner.toolActors(thread.id), reader) : messages;
+}
+
+/**
+ * What a confirmed report holds, from the reactor's own view of the
+ * conversation (`readerMessages`): the reply as it shows there, the
+ * person's message it answered (never a note the server wrote, such as an
+ * approval's continuation; `answeredMessage`) and whether another person
+ * wrote it, the model of the turn that wrote it, and the socio. A reply
+ * the reactor's view doesn't hold makes no report (it throws, and the
+ * route answers `unavailable`).
  */
 async function reportInput(
     platform: ReactionRouteSources,
@@ -234,10 +259,14 @@ async function reportInput(
     messageId: string,
     userId: string,
     request: NonNullable<ReactionBody['report']>,
-    seen: { reply: { text: string; at?: number }; surface: 'web' | 'mobile'; appVersion?: string },
+    seen: { at?: number; surface: 'web' | 'mobile'; appVersion?: string },
 ): Promise<ReactionReportInput> {
-    const messages: Message[] = await platform.runner.messages(thread.id);
-    const reply = messages.find((message) => message.id === messageId);
+    const messages = await readerMessages(platform, thread, userId);
+    const reply = messages.find((message) => message.id === messageId && message.role === 'assistant');
+    const replyText = reply ? messageText(reply.content) : '';
+    if (!replyText.trim()) {
+        throw new Error('the reply is not in the reactor’s view');
+    }
     const answered = answeredMessage(messages, messageId, thread.ownerId);
     const promptText = answered ? messageText(answered.message.content) : '';
     const socio = (reply as { metadata?: Record<string, unknown> } | undefined)?.metadata?.[SOCIO_METADATA];
@@ -253,7 +282,7 @@ async function reportInput(
         consent: request.consent,
         reason: request.reason,
         ...(note ? { note } : {}),
-        reply: seen.reply,
+        reply: { text: replyText, ...(seen.at ? { at: seen.at } : {}) },
         ...(promptText.trim() ? { prompt: { text: promptText, byOther: promptByOther(answered, userId) } } : {}),
         ...(model ? { model } : {}),
         socioId: typeof socio === 'string' ? socio : thread.dotId,

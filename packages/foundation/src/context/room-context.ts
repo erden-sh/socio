@@ -253,6 +253,20 @@ export function withPrivateResultsWithheld(messages: readonly Message[], actingU
 }
 
 /**
+ * A room's stored messages as `reader` sees them in its history (CB-210):
+ * whose turn each result was stamped from `actors` (`toolActors`),
+ * `withPrivateResultsWithheld` for the reader, and the stamp left out.
+ * The room's history and its reply reports (CB-382) both read this.
+ */
+export function roomReaderView(
+    messages: readonly Message[],
+    actors: ReadonlyMap<string, string>,
+    reader: string,
+): Message[] {
+    return withoutToolActors(withPrivateResultsWithheld(withToolActors(messages, actors), reader));
+}
+
+/**
  * Who wrote each of the conversation's person's messages, in order, as
  * `speakersOf` names them: the sender the server stamped (CB-66, CB-225)
  * and their name then; a note the server wrote itself (`socioSource`, an

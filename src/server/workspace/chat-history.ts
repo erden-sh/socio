@@ -1,12 +1,7 @@
 import { EventType, type BaseEvent, type Message } from '@ag-ui/core';
 import { Hono } from 'hono';
 
-import {
-    withPrivateResultsWithheld,
-    withToolActors,
-    withheldResult,
-    withoutToolActors,
-} from '@socio/foundation/context/room-context';
+import { roomReaderView, withheldResult } from '@socio/foundation/context/room-context';
 import type { AppEnv } from '@socio/foundation/http/app-env';
 import {
     HISTORY_PAGE_CHARS,
@@ -161,8 +156,7 @@ export const chatHistory = (runner: RunnerShape, replay: EventReplayShape): Chat
  */
 function readerView(runner: RunnerShape, threadId: string, reader: string) {
     const actors = runner.toolActors(threadId);
-    return (messages: Message[]) =>
-        withoutToolActors(withPrivateResultsWithheld(withToolActors(messages, actors), reader));
+    return (messages: Message[]) => roomReaderView(messages, actors, reader);
 }
 
 /** One tool call's whole result, as stored: what a cut preview stands for. */

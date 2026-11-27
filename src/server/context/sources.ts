@@ -83,7 +83,7 @@ export type RoutesWorkspace = Pick<ConversationsShape, 'thread' | 'access' | 'al
 /** What the reactions' routes read (`reaction-routes.ts`, CB-133). */
 export interface ReactionRouteSources {
     readonly workspace: Pick<RoutesWorkspace, 'db' | 'readableThread' | 'access'>;
-    readonly runner: Pick<RunnerShape, 'rowsMentioning' | 'messages' | 'runTrace'>;
+    readonly runner: Pick<RunnerShape, 'rowsMentioning' | 'messages' | 'runTrace' | 'toolActors'>;
     /**
      * The AI reply reports (CB-382): `cloud/`'s `ReplyReports`, by the slice
      * stated in the contract (cloud is above context in the folder order).

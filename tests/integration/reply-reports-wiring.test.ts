@@ -80,7 +80,7 @@ it('wires the reports into the workspace payload, the admins’ setting and the 
         ]),
     );
     const reported = await alice('/conversations/solo/messages/a1/reactions/down', 'PUT', {
-        report: { reason: 'wrong', consent: 'any' },
+        report: { reason: 'wrong', consent: 'any', shownByOther: false },
     });
     expect(reported.status).toBe(200);
     expect(await reported.json()).toEqual({

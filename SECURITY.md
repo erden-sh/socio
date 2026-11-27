@@ -177,7 +177,7 @@ Ingenio can revoke a deployment; the server then stops calling and tells its adm
 
 **AI reply reports.** While a workspace's admins turn on **Share AI reply reports with Ingenio** (off by default; it is offered only when the cloud connection grants `reports:write`), a person who gives a socio's reply a thumbs-down may report it. They pick a reason, may add a note, and confirm each time on a screen that says what goes, and that another person's message goes too when the reply answered someone else. The report goes to `reports.socio.sh` and holds only:
 
-- the reply's text and when it was written, and the message it answered (text only; attachments as `[attachment: …]`), each cut to the collector's caps, marked when that message is another person's;
+- the reply's text and when it was written, and the person's message it answered (text only; attachments as `[attachment: …]`), each cut to the collector's caps, marked when that message is another person's. Both come from what the reacting person can see: in a room, what its history shows them. A note the server wrote, such as an approval's continuation that may quote an action's private result, is never sent; and a report that would carry another person's message goes only when the person's confirmation said so;
 - the reason, the note, when it was reported, the model's id, where it was given (web or the app) and the app's version;
 - two per-deployment hashes (HMAC-SHA256 under a key that never leaves the server): one of the conversation, to group reports on one thread, and one of the socio. Neither can be turned back into an id.
 

@@ -5,6 +5,7 @@
  * share: the state, the confirmation's text, the reasons, and which
  * message a reply answered. docs/specs/REPLY-REPORTS.md is the contract.
  */
+import { isApprovalNote } from '../approvals.js';
 import { SENDER_METADATA } from '../types.js';
 
 // ── Is sharing on? (`GET /api/workspace`'s `replyReports`) ──────────────
@@ -119,7 +120,13 @@ export interface ReplyReportsAdminView {
     failed: number;
 }
 
-// ── Which message a reply answered ───────────────────────────────────────
+// ── Which message a reply answered (the server's) ────────────────────────
+//
+// The server decides this from the reactor's own view of the conversation
+// (in a room, what its history shows them) and tells clients through
+// `GET …/messages/:messageId/report`: clients take `promptByOther` from
+// there and don't compute it, since their transcript can't always tell a
+// note the server wrote from a person's message.
 
 /** A stored message, as far as this module reads it (AG-UI's `Message`). */
 export interface StoredMessageLike {
@@ -137,11 +144,31 @@ export function messageSender(message: StoredMessageLike): string | undefined {
 }
 
 /**
+ * A `user` message the server wrote rather than a person: an approval's
+ * note that starts a continuation turn (it can quote an action's private
+ * result), a voice call's receipt, a room's hand-off note. They carry
+ * `socioSource` (which a client can't send: `withSender` strips it) or a
+ * `socio:` id.
+ */
+export function isServerNote(message: StoredMessageLike): boolean {
+    if (message.role !== 'user') {
+        return false;
+    }
+    const metadata = message.metadata as Record<string, unknown> | undefined;
+    return (
+        isApprovalNote(message) ||
+        message.id.startsWith('socio:') ||
+        (!!metadata && typeof metadata === 'object' && metadata.socioSource !== undefined)
+    );
+}
+
+/**
  * The message the reply `replyId` answered: the nearest `user` message
- * before it in the conversation's stored messages, with its author (its
- * sender, or `fallbackAuthor`, the conversation's owner, for a message
- * stored without one). Undefined when the reply isn't there or nothing
- * comes before it.
+ * before it that a person wrote (never a note the server wrote,
+ * `isServerNote`), with its author (its sender, or `fallbackAuthor`, the
+ * conversation's owner, for a message stored without one). Undefined when
+ * the reply isn't there or no person's message comes before it. The
+ * server runs it on the reactor's own view of the conversation.
  */
 export function answeredMessage<M extends StoredMessageLike>(
     messages: readonly M[],
@@ -151,7 +178,7 @@ export function answeredMessage<M extends StoredMessageLike>(
     const at = messages.findIndex((message) => message.id === replyId);
     for (let index = at - 1; index >= 0; index--) {
         const message = messages[index]!;
-        if (message.role === 'user') {
+        if (message.role === 'user' && !isServerNote(message)) {
             const author = messageSender(message) ?? fallbackAuthor;
             return author ? { message, author } : { message };
         }

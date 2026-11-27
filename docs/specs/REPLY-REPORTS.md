@@ -46,16 +46,23 @@ The type is `ReplyReportsState` in `@socio/shared/chat/reply-reports`.
 - `REPORT_NOTE_MAX = 1000`, counted in Unicode code points (`reportNoteLength(note)`,
   `[...note.trim()].length`), after trimming.
 
-**Which message a reply answered** (`answeredMessage(messages, replyId, owner)`, the same module):
-the nearest `user` message before the reply in the conversation's stored messages. Its author is
-that message's sender (its `socioSender` metadata, as `senderOf` stamps it), or, for a message
-stored without one, the conversation's owner (`owner`; a room's owner is `room:<id>`, never a
-person). `promptByOther(answered, reactorId)` is true exactly when that author isn't the person
-reacting. A client that has the transcript computes it with the same functions; online clients may
-ask instead:
+**Which message a reply answered** is the server's to decide, from the reactor's own view of the
+conversation: in a room, exactly what its history shows that person (another member's private
+results and approval notes withheld). It is the nearest `user` message before the reply that a
+person wrote: a note the server wrote (an approval's continuation, which can quote an action's
+private result; a call's receipt; a room's hand-off) is never the answered message, and is never
+sent. Its author is that message's sender (its `socioSender` metadata, as `senderOf` stamps it),
+or, for a message stored without one, the conversation's owner (a room's owner is `room:<id>`,
+never a person). `promptByOther` is true exactly when that author isn't the person reacting.
+
+**Clients take `promptByOther` from the server, and don't compute it themselves**:
 
 `GET /api/conversations/:id/messages/:messageId/report` → `{ sharing: boolean, consent?: string,
 promptByOther: boolean }` (404 as for reactions).
+
+A client's transcript can't always tell a note the server wrote from a person's message, so this
+answer is the source of truth. `answeredMessage()`, `isServerNote()` and `promptByOther()` in
+`@socio/shared/chat/reply-reports` are what the server runs; clients don't need them.
 
 ## 3. Reporting rides on the thumbs-down
 
@@ -66,13 +73,28 @@ One request, one write: the existing
 takes an optional JSON body:
 
 ```json
-{ "report": { "reason": "offensive", "note": "optional", "consent": "<replyReports.consent>" } }
+{
+    "report": {
+        "reason": "offensive",
+        "note": "optional",
+        "consent": "<replyReports.consent>",
+        "shownByOther": false
+    }
+}
 ```
 
 - No body, or no `report`: a plain thumbs-down, as today.
 - `reason`: one of `REPORT_REASONS`, else 400. `note`: optional, at most 1,000 code points after
   trimming, else 400. Unknown fields: 400.
+- `shownByOther`: required, a boolean: whether the confirmation the person saw said another
+  person's message goes too (`byOther`, from `GET …/report`'s `promptByOther`). Missing or not a
+  boolean: 400.
 - A `report` on any kind other than `down`: 400.
+- The server works `promptByOther` out again when the report arrives (an offline app sends minutes
+  after the confirmation, and a room's messages may have changed). If it is now true but
+  `shownByOther` is false, the person didn't agree to another person's message going: a plain
+  thumbs-down, nothing reported, `report: 'consent-changed'`. If `shownByOther` is true and it is
+  now false, the person agreed to more than goes: it is reported as usual.
 - The thumbs-down is stored whatever happens to the report. The response is the reactions view as
   today, plus:
 
@@ -87,13 +109,16 @@ report?: 'queued' | 'already' | 'not-sharing' | 'consent-changed' | 'unavailable
 - `not-sharing`: sharing is off now (or the server can't share): a plain thumbs-down; the reason
   and note are dropped, not kept.
 - `consent-changed`: `consent` isn't the current one (sharing was turned off and on again since
-  the client showed the confirmation): a plain thumbs-down; nothing is reported.
+  the client showed the confirmation), or another person's message would go and the confirmation
+  didn't say so (`shownByOther`): a plain thumbs-down; nothing is reported.
 - `unavailable`: the server couldn't make the report this time (it couldn't read the
   conversation): a plain thumbs-down; nothing is reported. The person may give the thumbs-down
   again with a report later.
 
 None of these is an error, so an offline outbox sending later never retries or shows a failure.
-The server checks them in this order: sharing, consent, an existing report.
+The server checks them in this order: sharing, consent, an existing report, then `shownByOther`.
+The reply that goes is the reply as the reactor's view shows it; a reply their view doesn't hold
+makes no report (`unavailable`).
 
 Each person's report on a reply is one report: a unique key on (conversation, message, person),
 over the reports that still exist. A withdrawn report is deleted (§5), so a later thumbs-down with

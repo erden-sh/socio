@@ -13,8 +13,10 @@ import type { BaseEvent } from '@ag-ui/core';
 import { Hono } from 'hono';
 import { afterEach, describe, expect, it } from 'vitest';
 
+import { noteActorKey } from '@socio/foundation/context/room-context';
 import type { AppEnv } from '@socio/foundation/http/app-env';
 import { SecretBox } from '@socio/foundation/keys/secret-box';
+import { approvalNoteMessagePrefix, approvalNoteSource } from '@socio/shared/approvals';
 import {
     REPLY_REPORTS_SETTING,
     REPLY_REPORTS_TEXT_VERSION,
@@ -129,6 +131,51 @@ interface Options {
     /** The answered messages' text, by thread. */
     prompts?: { solo?: string; room?: string };
     replies?: { solo?: string; room?: string };
+    /**
+     * In the room, after the first reply: an approval's continuation turn
+     * for `actor`, whose note quotes their private result, and the socio's
+     * next reply (`ROOM_NEXT_REPLY`).
+     */
+    continuation?: { actor: string };
+}
+
+const ROOM_NEXT_REPLY = 'reply-msg-room-0002';
+const NOTE_ID = `${approvalNoteMessagePrefix}note-0001`;
+const PRIVATE_RESULT = 'PRIVATE-RESULT: the payroll export for person-bob';
+
+/** The continuation turn: the room's messages so far, an approval's note, then the socio's next reply. */
+function continuation(threadId: string, prompt: string, reply: string) {
+    let at = Date.UTC(2026, 10, 20, 15, 0, 0);
+    const stamp = <T extends object>(event: T) => ({ ...event, timestamp: (at += 1_000) }) as unknown as BaseEvent;
+    return [
+        stamp({
+            type: 'RUN_STARTED',
+            threadId,
+            runId: 'run-room-continued',
+            input: {
+                threadId,
+                runId: 'run-room-continued',
+                state: {},
+                tools: [],
+                context: [],
+                forwardedProps: {},
+                messages: [
+                    { id: 'user-msg-run-room', role: 'user', content: prompt, metadata: { [SENDER_METADATA]: ADA.id } },
+                    { id: ROOM_REPLY, role: 'assistant', content: reply },
+                    {
+                        id: NOTE_ID,
+                        role: 'user',
+                        content: `The approval was decided. Result: ${PRIVATE_RESULT}`,
+                        metadata: { socioSource: approvalNoteSource },
+                    },
+                ],
+            },
+        }),
+        stamp({ type: 'TEXT_MESSAGE_START', messageId: ROOM_NEXT_REPLY, role: 'assistant' }),
+        stamp({ type: 'TEXT_MESSAGE_CONTENT', messageId: ROOM_NEXT_REPLY, delta: 'The export is ready.' }),
+        stamp({ type: 'TEXT_MESSAGE_END', messageId: ROOM_NEXT_REPLY }),
+        stamp({ type: 'RUN_FINISHED', threadId, runId: 'run-room-continued' }),
+    ];
 }
 
 /** One server runtime: the cloud connection, the reply reports and the reactions' routes on one database. */
@@ -209,9 +256,29 @@ async function runtime(options: Options = {}) {
                         options.replies?.room ?? 'Bob brings the snacks.',
                     ),
                 },
+                ...(options.continuation
+                    ? [
+                          {
+                              seq: 2,
+                              runId: 'run-room-continued',
+                              status: 'finished' as const,
+                              startedAt: 3,
+                              finishedAt: 4,
+                              events: continuation(
+                                  ROOM,
+                                  options.prompts?.room ?? 'Who brings the snacks?',
+                                  options.replies?.room ?? 'Bob brings the snacks.',
+                              ),
+                          },
+                      ]
+                    : []),
             ],
         ],
     ]);
+    // Whose turn each stored result and note was, as the runner records it.
+    const actors = new Map<string, string>(
+        options.continuation ? [[noteActorKey(NOTE_ID), options.continuation.actor]] : [],
+    );
     const threads: Record<string, Conversation & { members: string[] }> = {
         [SOLO]: { id: SOLO, dotId: SOCIO, ownerId: ADA.id, title: 'Plans', createdAt: 1, members: [ADA.id] },
         [ROOM]: {
@@ -242,6 +309,7 @@ async function runtime(options: Options = {}) {
                         threadId,
                         (rows.get(threadId) ?? []).flatMap((row) => row.events),
                     ),
+                toolActors: () => new Map(actors),
                 runTrace: (runId) => ({
                     runId,
                     threadId: '',
@@ -315,7 +383,10 @@ async function runtime(options: Options = {}) {
         user = ADA,
         thread = SOLO,
         reply = SOLO_REPLY,
-    ) => call(user, reaction(thread, reply), 'PUT', { report: { reason: 'wrong', consent, ...extra } });
+    ) =>
+        call(user, reaction(thread, reply), 'PUT', {
+            report: { reason: 'wrong', consent, shownByOther: true, ...extra },
+        });
     return {
         issuer,
         collector,
@@ -456,7 +527,7 @@ describe('the report', () => {
             ADA,
             server.reaction(SOLO, SOLO_REPLY),
             'PUT',
-            { report: { reason: 'offensive', consent } },
+            { report: { reason: 'offensive', consent, shownByOther: false } },
             { 'user-agent': APP_UA },
         );
         await server.reports.send();
@@ -930,18 +1001,30 @@ describe('what the server refuses', () => {
         const consent = await server.share();
         const put = (body: unknown, kind = 'down') =>
             server.call(ADA, server.reaction(SOLO, SOLO_REPLY, kind), 'PUT', body);
-        expect((await put({ report: { reason: 'rude', consent } })).status).toBe(400);
-        expect((await put({ report: { reason: 'wrong', consent, note: '😀'.repeat(1001) } })).status).toBe(400);
-        expect((await put({ report: { reason: 'wrong', consent, user: 'someone' } })).status).toBe(400);
+        expect((await put({ report: { reason: 'rude', consent, shownByOther: false } })).status).toBe(400);
+        // shownByOther is required, and a boolean.
+        expect((await put({ report: { reason: 'wrong', consent } })).status).toBe(400);
+        expect((await put({ report: { reason: 'wrong', consent, shownByOther: 'no' } })).status).toBe(400);
+        expect((await put({ report: { reason: 'wrong', consent, shownByOther: null } })).status).toBe(400);
+        expect(
+            (await put({ report: { reason: 'wrong', consent, shownByOther: false, note: '😀'.repeat(1001) } })).status,
+        ).toBe(400);
+        expect((await put({ report: { reason: 'wrong', consent, shownByOther: false, user: 'someone' } })).status).toBe(
+            400,
+        );
         expect((await put({ report: { reason: 'wrong' } })).status).toBe(400);
-        expect((await put({ report: { reason: 'wrong', consent }, extra: true })).status).toBe(400);
+        expect((await put({ report: { reason: 'wrong', consent, shownByOther: false }, extra: true })).status).toBe(
+            400,
+        );
         expect((await put('{"report":')).status).toBe(400);
-        expect((await put({ report: { reason: 'wrong', consent } }, 'up')).status).toBe(400);
+        expect((await put({ report: { reason: 'wrong', consent, shownByOther: false } }, 'up')).status).toBe(400);
         // Refused before anything is written.
         expect((await server.call(ADA, `/conversations/${SOLO}/reactions`)).body.messages).toEqual({});
         expect(server.outbox()).toEqual([]);
         // 1,000 code points (2,000 UTF-16 units), with spaces trimmed around them: accepted.
-        const fits = await put({ report: { reason: 'wrong', consent, note: `  ${'😀'.repeat(1000)}  ` } });
+        const fits = await put({
+            report: { reason: 'wrong', consent, shownByOther: false, note: `  ${'😀'.repeat(1000)}  ` },
+        });
         expect(fits.body.report).toBe('queued');
         // Another person's chat is not found, as for reactions.
         expect((await server.report(consent, {}, BOB, SOLO, SOLO_REPLY)).status).toBe(404);
@@ -970,6 +1053,61 @@ describe('in a room', () => {
         expect((await preview(BOB)).body).toEqual({ sharing: false, promptByOther: true });
     });
 
+    it('never sends another member’s approval continuation, and the next reply answers the person’s message', async () => {
+        // The stored messages do hold the note, right before the next reply.
+        const stored = await replayMessages(
+            ROOM,
+            continuation(ROOM, 'Who brings the snacks?', 'Bob brings the snacks.'),
+        );
+        expect(stored.map((message) => message.id).slice(-2)).toEqual([NOTE_ID, ROOM_NEXT_REPLY]);
+        const server = await runtime({ continuation: { actor: BOB.id } });
+        const consent = await server.share();
+        const preview = (user: User) => server.call(user, `/conversations/${ROOM}/messages/${ROOM_NEXT_REPLY}/report`);
+        // Ada wrote the message the next reply answers: for her it is her own, for Bob another person's.
+        expect((await preview(ADA)).body.promptByOther).toBe(false);
+        expect((await preview(BOB)).body.promptByOther).toBe(true);
+        expect((await server.report(consent, { shownByOther: false }, ADA, ROOM, ROOM_NEXT_REPLY)).body.report).toBe(
+            'queued',
+        );
+        await server.reports.send();
+        const { raw, body } = server.collector.posts[0]!;
+        expect(raw).not.toContain('PRIVATE-RESULT');
+        expect(raw).not.toContain('payroll');
+        expect(raw).not.toContain('approval was decided');
+        expect(body).toMatchObject({
+            reply: { text: 'The export is ready.' },
+            prompt: { text: 'Who brings the snacks?' },
+            promptByOther: false,
+        });
+    });
+
+    it('never sends the reactor’s own continuation as the prompt either', async () => {
+        const server = await runtime({ continuation: { actor: BOB.id } });
+        const consent = await server.share();
+        expect((await server.report(consent, { shownByOther: true }, BOB, ROOM, ROOM_NEXT_REPLY)).body.report).toBe(
+            'queued',
+        );
+        await server.reports.send();
+        const { raw, body } = server.collector.posts[0]!;
+        expect(raw).not.toContain('PRIVATE-RESULT');
+        expect(raw).not.toContain('approval was decided');
+        expect(body).toMatchObject({ prompt: { text: 'Who brings the snacks?' }, promptByOther: true });
+    });
+
+    it('reports nothing when another person’s message would go and the confirmation didn’t say so', async () => {
+        const server = await runtime();
+        const consent = await server.share();
+        const answer = await server.report(consent, { shownByOther: false }, BOB, ROOM, ROOM_REPLY);
+        expect(answer.body.report).toBe('consent-changed');
+        expect(answer.body.messages[ROOM_REPLY]).toEqual({ counts: { down: 1 }, mine: ['down'] });
+        expect(server.outbox()).toEqual([]);
+        // The other way round, the person agreed to more than goes: it is reported.
+        const own = await server.report(consent, { shownByOther: true }, ADA, ROOM, ROOM_REPLY);
+        expect(own.body.report).toBe('queued');
+        await server.reports.send();
+        expect(server.collector.posts[0]!.body.promptByOther).toBe(false);
+    });
+
     it('finds the answered message in the stored messages the server replays', async () => {
         const messages = await replayMessages(ROOM, turn(ROOM, 'run-room', ADA.id, 'Who?', ROOM_REPLY, 'Bob.'));
         const answered = answeredMessage(messages, ROOM_REPLY, 'room:room-1');
@@ -982,6 +1120,17 @@ describe('in a room', () => {
             { id: 'r', role: 'assistant', content: 'Hello' },
         ];
         expect(answeredMessage(unsigned, 'r', ADA.id)?.author).toBe(ADA.id);
+        // Notes the server wrote are never the answered message: approval notes, receipts, hand-offs.
+        const noted = [
+            { id: 'u', role: 'user', content: 'Hi', metadata: { [SENDER_METADATA]: ADA.id } },
+            { id: NOTE_ID, role: 'user', content: 'Approved.' },
+            { id: 'n2', role: 'user', content: 'Decided.', metadata: { socioSource: approvalNoteSource } },
+            { id: 'socio:voice_receipt:1', role: 'user', content: 'Call ended.' },
+            { id: 'n3', role: 'user', content: 'Handed off.', metadata: { socioSource: 'room_handoff' } },
+            { id: 'r', role: 'assistant', content: 'Hello' },
+        ];
+        expect(answeredMessage(noted, 'r', 'room:room-1')?.message.id).toBe('u');
+        expect(promptByOther(answeredMessage(noted, 'r', 'room:room-1'), BOB.id)).toBe(true);
         expect(answeredMessage(unsigned, 'u', ADA.id)).toBeUndefined();
         expect(promptByOther(undefined, ADA.id)).toBe(false);
     });
