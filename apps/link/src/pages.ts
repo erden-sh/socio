@@ -197,7 +197,7 @@ function body(link: LinkPath): { title: string; html: string } {
             return {
                 title: 'Add a device to Socio',
                 html: `<h1>Add a device</h1>
-<p>If Socio is installed, open it and, on Add a workspace, choose Scan the QR code from Socio on a computer.</p>
+<p>If Socio is installed, open it, go to Add a workspace and tap “Scan the QR code from Socio on a computer.”</p>
 <p>Opening this link from your camera or a message also works. If it keeps opening here, update Socio and scan again.</p>${INVALID}
 ${getTheApp(variant)}`,
             };
