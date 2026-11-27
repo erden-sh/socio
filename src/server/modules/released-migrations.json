@@ -1,5 +1,5 @@
 {
-    "release": "v0.55.0",
+    "release": "v0.56.0",
     "checksums": {
         "actors 1": "9fc7cb2d0be2e471",
         "agent-grants 1": "a35fe99c70199332",
@@ -52,6 +52,7 @@
         "chat-skills 2": "1e58b420f428a0e5",
         "chat-skills 3": "6d62b6a3c0a3741a",
         "classify 1": "41db8dc18febcac7",
+        "cloud 1": "f67f58f1ddebb53e",
         "computers 1": "25f5ebf1787a62fb",
         "computers 2": "fb0df109d22f2ac3",
         "core 1": "9367a96b48fee249",
@@ -149,6 +150,7 @@
         "pages 11": "c598bbebd8f9cbe5",
         "pages 12": "087fb8de1ea81aa5",
         "pages 13": "67baaca76710c98c",
+        "pages 14": "73f9b6fe07acd9e2",
         "plugins 1": "23000b2431102840",
         "plugins 2": "e9e007aaa6ceffb9",
         "plugins 3": "6997c16a695293cc",

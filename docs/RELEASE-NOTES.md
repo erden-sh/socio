@@ -29,6 +29,15 @@ How this file is kept (scripts/release.mjs and the app's build read it):
 
 ## Unreleased
 
+## v0.56.0 (2026-11-26)
+
+A Space's pages can now live in folders, and the Socio app tells you plainly when a workspace needs a newer version. Admins can also share AI reply reports with Ingenio; it stays off until they turn it on.
+
+- Folders in Spaces (CB-426)
+- Update Socio when a workspace needs a newer app (CB-553)
+- AI reply reports, off until an admin turns them on (CB-382)
+- A simpler Add a device dialog on the web (CB-567)
+
 ### New
 
 - **Organize a Space's pages in folders (CB-426).** **New folder**, next to **New page** in the library and inside every folder, asks for a name and makes a folder where you are. A folder shows its name and what it holds, never a body, and opens to its contents even when empty, from **All pages** too. Any page can become a folder with **Turn into folder** in its menu and go back with **Turn into page**: its text is kept, only hidden while it is a folder. Folders keep their place through moves, exports and imports, match search by their title, and socios can make and switch them with the page tools.
