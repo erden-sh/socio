@@ -29,6 +29,22 @@ How this file is kept (scripts/release.mjs and the app's build read it):
 
 ## Unreleased
 
+## v0.57.1 (2026-11-27)
+
+The release v0.57.0 was meant to be, with its coding sandbox image building again. iPhones are now pointed at app 0.2.9.
+
+- Everything in v0.57.0: folder fixes, quote reply on the web, the groundwork for other languages and for Google and Apple sign-in
+- The coding sandbox image builds again
+
+### Changed
+
+- **Socio on iPhone recommends app 0.2.9.** iPhones on an older app see the update banner, which can be dismissed; nobody is refused. Android stays as it was until 0.2.9 can be installed there.
+
+### Fixed
+
+- The coding sandbox image builds again: v0.57.0's failed because the new translations package was missing from its build. A test now checks that every package the build compiles is in it.
+- The Add a device page on link.socio.sh points to the app's own QR scanner again: open Socio, go to Add a workspace and tap Scan the QR code from Socio on a computer (CB-566).
+
 ## v0.57.0 (2026-11-27)
 
 Folders keep their hidden text out of search and out of what a socio is told, and the web gets quote replies, matching the app. Behind the scenes, Socio is ready for other languages and for Google and Apple sign-in in the app, both off until switched on.
