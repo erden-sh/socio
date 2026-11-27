@@ -142,6 +142,7 @@ export const SYMBOLS = {
     quote: { sf: 'text.quote' },
     'redo-2': { sf: 'arrow.uturn.forward' },
     'refresh-cw': { sf: 'arrow.clockwise' },
+    reply: { sf: 'arrowshape.turn.up.left' },
     'rotate-ccw': { sf: 'arrow.counterclockwise' },
     'rotate-cw': { sf: 'arrow.clockwise' },
     'rows-3': { sf: 'rectangle.grid.1x2' },

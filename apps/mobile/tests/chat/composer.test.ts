@@ -36,6 +36,7 @@ import {
     composerInputHeight,
     EMPTY_INPUT_HEIGHT,
 } from '../../src/chat/composer';
+import { quoteOf, splitQuote, withQuote } from '../../src/chat/quote-reply';
 import { deliveredInTurn, transcriptDrawn } from '../../src/chat/transcript';
 import { UPDATE_TO_SEND } from '../../src/data';
 import { CHAT_MESSAGE_KIND, CHAT_MESSAGE_VIEW, CHAT_WAIT, chatMessageWrite } from '../../src/sync/chat-send';
@@ -519,6 +520,52 @@ describe('sending', () => {
             text: 'Hello',
             watermark: { after: null, queued: ['q-1'], running: true, serverAt: 1234 },
         });
+    });
+
+    it('sends a quote-reply’s draft whole: the blockquote, a blank line, then the words (CB-571)', async () => {
+        let built: NewOutboxWrite | null = null;
+        const ids = ['m-1', 'key-1'];
+        const text = withQuote(quoteOf('Archiver', 'Yes! **erden** means “to ground”.'), 'And the name?');
+        await sendChatMessage({
+            drafts: {
+                enqueueFromDraft: async (_scope, build) => {
+                    built = build(text) as NewOutboxWrite;
+                    return row(built);
+                },
+            },
+            outbox: { rows: () => [], unsent: () => [], resolve: resolveNone },
+            history: HISTORY,
+            steering: STEERING,
+            threadId: 'c1',
+            dotId: 'dot-1',
+            newId: () => ids.shift() as string,
+            serverAt: null,
+        });
+        expect(JSON.parse((built as unknown as NewOutboxWrite).payload).text).toBe(
+            '> **Archiver:** Yes! erden means “to ground”.\n\nAnd the name?',
+        );
+    });
+
+    it('waits for words or files: a quote alone doesn’t send', () => {
+        const draft = splitQuote(withQuote(quoteOf('Archiver', 'Yes!'), ''));
+        const view = composerView({
+            text: draft.rest,
+            running: false,
+            locked: false,
+            heldForSignIn: false,
+            busy: false,
+        });
+        expect(view.enabled).toBe(false);
+        expect(
+            composerView({
+                text: draft.rest,
+                running: false,
+                locked: false,
+                heldForSignIn: false,
+                busy: false,
+                files: 1,
+            }).enabled,
+        ).toBe(true);
     });
 
     it('sends the tray’s files with the box, by local id, in the same insert', async () => {

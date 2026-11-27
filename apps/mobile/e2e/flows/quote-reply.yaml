@@ -1,0 +1,104 @@
+# Quote-reply (CB-571), with workspace A up (servers.mjs; run.mjs --credentials):
+# Ada opens A's marker chat, long-presses the socio's reply and picks Reply: the
+# chip over the box says "Replying to …", the box takes the keyboard. She types,
+# leaves for Home and comes back: the quote and her words are still there (the
+# draft). The chip's x takes the quote out and keeps her words; Reply again and
+# Send, and her bubble starts with the quote. Then the seeded room: Reply on Ben's
+# message names Ben, and the sent message quotes him.
+appId: ${APP_ID}
+name: quote-reply
+---
+- runFlow: chat-open.yaml
+- longPressOn:
+    text: '(?s).*That is the end of the long answer.*'
+- tapOn: 'Reply'
+- extendedWaitUntil:
+    visible:
+      id: chat-composer-quote
+    timeout: 10000
+- assertVisible:
+    id: chat-composer-quote-author
+- assertVisible:
+    text: 'Replying to .*'
+- assertVisible:
+    id: chat-composer-quote-remove
+- inputText: 'QR1 kept in the draft'
+- takeScreenshot: quote-reply-chat-chip
+- runFlow: common/back.yaml
+- extendedWaitUntil:
+    visible:
+      text: '.*${CHAT_A}.*'
+    timeout: 20000
+- tapOn:
+    text: '.*${CHAT_A}.*'
+- extendedWaitUntil:
+    visible:
+      id: chat-composer-quote
+    timeout: 20000
+- assertVisible:
+    text: 'QR1 kept in the draft'
+- takeScreenshot: quote-reply-chat-draft-kept
+# The x takes only the quote out.
+- tapOn:
+    id: chat-composer-quote-remove
+- assertNotVisible:
+    id: chat-composer-quote
+- assertVisible:
+    text: 'QR1 kept in the draft'
+- longPressOn:
+    text: '(?s).*That is the end of the long answer.*'
+- tapOn: 'Reply'
+- extendedWaitUntil:
+    visible:
+      id: chat-composer-quote
+    timeout: 10000
+- tapOn:
+    id: chat-composer-send
+- extendedWaitUntil:
+    notVisible:
+      id: chat-composer-quote
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      text: '(?s).*QR1 kept in the draft.*'
+    timeout: 20000
+- takeScreenshot: quote-reply-chat-sent
+- extendedWaitUntil:
+    notVisible:
+      id: chat-composer-stop
+    timeout: 60000
+# The room: Reply on another person's message names them.
+- runFlow: common/back.yaml
+- extendedWaitUntil:
+    visible:
+      text: '.*A: launch room.*'
+    timeout: 20000
+- tapOn:
+    text: '.*A: launch room.*'
+- extendedWaitUntil:
+    visible:
+      id: chat-transcript
+    timeout: 30000
+- scrollUntilVisible:
+    element:
+      text: '.*smoke context 2: one more look, please.*'
+    direction: DOWN
+    timeout: 20000
+- longPressOn:
+    text: '.*smoke context 2: one more look, please.*'
+- tapOn: 'Reply'
+- extendedWaitUntil:
+    visible:
+      text: 'Replying to Ben'
+    timeout: 10000
+- inputText: 'QR2 answering Ben'
+- takeScreenshot: quote-reply-room-chip
+- tapOn:
+    id: room-composer-send
+- extendedWaitUntil:
+    visible:
+      text: '(?s).*QR2 answering Ben.*'
+    timeout: 20000
+- assertNotVisible:
+    id: room-composer-quote
+- takeScreenshot: quote-reply-room-sent

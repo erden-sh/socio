@@ -30,7 +30,7 @@ import type { OutboxRow } from '../sync/outbox';
 import { Text } from '../ui';
 
 import { useTray } from './attachments';
-import { Composer, useDraft } from './chat-composer';
+import { Composer, useDraft, useQuotedDraft } from './chat-composer';
 import { PersonAvatar, SocioMark } from './room-parts';
 
 // The room's composer (src/chat/room-composer.ts has the rules): the
@@ -59,6 +59,8 @@ export function RoomComposer(props: {
     const syncStatus = useSyncStatus();
     const box = chatDraft(id);
     const draft = useDraft(box);
+    // The box shows the words after any quote (CB-571); the length counts the whole message.
+    const quoted = useQuotedDraft(draft);
     const tray = useTray(box);
     const [busy, setBusy] = useState(false);
     const [notice, setNotice] = useState<string | null>(null);
@@ -75,7 +77,7 @@ export function RoomComposer(props: {
         }
     }, [askOnTurn, props.running]);
     const picker = mentionPicker({
-        text: draft.text,
+        text: quoted.text,
         caret,
         dismissed,
         view: context.view,
@@ -109,7 +111,7 @@ export function RoomComposer(props: {
     const canStop = mayStopRoom({ admin: props.admin, me: context.me, ...props.started });
     const long = tooLong(draft.text);
     const base = composerView({
-        text: draft.text,
+        text: quoted.text,
         // Stop shows only for whom the server lets stop.
         running: props.running && canStop,
         locked: draft.locked || !scope.userDb.writable,
@@ -129,10 +131,10 @@ export function RoomComposer(props: {
             return;
         }
         const next = pickMention(
-            { text: draft.text, caret: caret ?? draft.text.length, query: picker.query, picked: [...picked] },
+            { text: quoted.text, caret: caret ?? quoted.text.length, query: picker.query, picked: [...picked] },
             row.candidate,
         );
-        draft.setText(next.text);
+        quoted.setText(next.text);
         setPicked(next.picked);
         setDismissed(next.dismissed);
         setCaret(next.caret);
@@ -191,9 +193,10 @@ export function RoomComposer(props: {
     };
     return (
         <Composer
-            text={draft.text}
+            text={quoted.text}
+            quote={quoted.quote === null ? null : { quote: quoted.quote, onRemove: quoted.removeQuote }}
             onChangeText={(text) => {
-                draft.setText(text);
+                quoted.setText(text);
                 if (notice !== null && notice !== STOP_FAILED) {
                     setNotice(null);
                 }

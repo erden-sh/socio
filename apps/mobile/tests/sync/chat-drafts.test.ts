@@ -2,6 +2,7 @@ import { rmSync } from 'node:fs';
 
 import { afterEach, describe, expect, it } from 'vitest';
 
+import { quoteOf, splitQuote, withQuote } from '../../src/chat/quote-reply';
 import { type SqlConnection, UPDATE_TO_SEND, type UserDb, type UserDbState } from '../../src/data';
 import type { AuthedFetch } from '../../src/net/authed-fetch';
 import {
@@ -344,6 +345,39 @@ describe('enqueueFromDraft', () => {
                 sending: JSON.stringify([{ id: 'web-1', text: 'Earlier' }]),
             },
         ]);
+    });
+});
+
+describe('a quote-reply (CB-571)', () => {
+    it('keeps the quote in the draft across a relaunch, at payload version 1, and sends and clears it whole', async () => {
+        const { drafts, reopen, onDisk } = await setup();
+        const scope = chatDraft('c1');
+        const quote = quoteOf('Archiver', 'Yes! **erden** means “to ground”.');
+        // Reply, nothing typed yet: the quote alone is the draft.
+        drafts.write(scope, withQuote(quote, ''));
+        await drafts.flush();
+        expect((await onDisk()).map((row) => [row.scope, row.payloadVersion])).toEqual([[scope, 1]]);
+        const next = await reopen();
+        const kept = splitQuote(next.drafts.read(scope).text);
+        expect(kept).toEqual({
+            quote: { author: 'Archiver', excerpt: 'Yes! erden means “to ground”.', prefix: quote.prefix },
+            rest: '',
+        });
+        // Typed after it, as the box does (the quote kept in front).
+        next.drafts.write(scope, withQuote(kept.quote, 'What else?'));
+        next.outbox.start();
+        const row = await next.drafts.enqueueFromDraft(scope, sendAs('m-quote'));
+        expect(JSON.parse(row!.payload)).toEqual({ text: `${quote.prefix}\n\nWhat else?` });
+        // Sending clears it: no quote left for the next message.
+        expect(next.drafts.read(scope)).toEqual({ text: '', at: 0 });
+    });
+
+    it('drops only the quote when its x is pressed', async () => {
+        const { drafts } = await setup();
+        const scope = chatDraft('c1');
+        drafts.write(scope, withQuote(quoteOf('Ben', 'Lunch?'), 'Half a thought'));
+        drafts.write(scope, withQuote(null, splitQuote(drafts.read(scope).text).rest));
+        expect(drafts.read(scope).text).toBe('Half a thought');
     });
 });
 

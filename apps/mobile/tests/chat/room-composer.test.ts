@@ -7,6 +7,7 @@ import { STEERING_MAX_CHARS } from '@socio/shared/chat/steering';
 import type { RoomView } from '@socio/shared/rooms/rooms';
 import type { Dot } from '@socio/shared/types';
 
+import { quoteOf, withQuote } from '../../src/chat/quote-reply';
 import {
     leadName,
     lengthNotice,
@@ -210,6 +211,17 @@ describe('sending to the room', () => {
         // survived in user.db, the picks (in memory) did not.
         const write = await send('@Ben please look', []);
         expect(JSON.parse(write.payload).mentions).toEqual([{ userId: BEN, label: 'Ben' }]);
+    });
+
+    it('sends a quote-reply as one text, the quote’s @names mentioning and routing nobody (CB-571)', async () => {
+        const quote = quoteOf('Ben', 'Ask @Manny and @Ben about it');
+        const write = await send(withQuote(quote, 'Will do'), []);
+        const payload = JSON.parse(write.payload);
+        expect(payload.text).toBe(`> **Ben:** Ask @\u2060Manny and @\u2060Ben about it\n\nWill do`);
+        expect(payload).not.toHaveProperty('mentions');
+        // Only the words typed after the quote name people.
+        const typed = await send(withQuote(quote, '@Ben will do'), []);
+        expect(JSON.parse(typed.payload).mentions).toEqual([{ userId: BEN, label: 'Ben' }]);
     });
 
     it('keeps only the picks without the room view', async () => {

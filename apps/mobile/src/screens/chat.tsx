@@ -86,6 +86,7 @@ import {
 } from '../chat/name-suggestion';
 import { createPacedText, type PacedText } from '../chat/paced-text';
 import { type PageReviewCard, reviewCardView, reviewDecision, reviewDraftShown } from '../chat/page-review';
+import { quotedDraft, quoteOf, replyAuthor } from '../chat/quote-reply';
 import { reactionButtons, reactionSaid, reactionsShown } from '../chat/reactions';
 import { ownWaiting, type RoomStarter } from '../chat/room-composer';
 import { roomHeader } from '../chat/room-people';
@@ -139,7 +140,7 @@ import { useHaptics } from '../platform/device-settings';
 import { chatScreen, LAST_SCREEN_KEY } from '../shell/last-screen';
 import { LONG_PRESS_TO_MENU, MENU_TAKES_TAP } from '../shell/native-menu';
 import { shellQuery, shellRows, sociosQuery } from '../shell/queries';
-import { chatDraft } from '../sync/chat-drafts';
+import { chatDraft, DraftError } from '../sync/chat-drafts';
 import { CHAT_MANAGE_VIEWS, react } from '../sync/chat-manage';
 import { CHAT_MESSAGE_VIEW } from '../sync/chat-send';
 import { isLocalChat } from '../sync/local-ids';
@@ -160,7 +161,7 @@ import { ActionMenu, type MenuRequest, NotSavedNotice, TextPrompt } from './acti
 import { ApprovalBar, ApprovalCardItem, type ChatApprovals, useChatApprovals } from './approval-card';
 import { MessageAttachments, useTray } from './attachments';
 import { CardView, MessageActionRow, NameSuggestionCard, ReviewCard } from './chat-cards';
-import { Composer, PendingBubbleView, ReadOnlyLine, StatusPillView, useDraft } from './chat-composer';
+import { Composer, PendingBubbleView, ReadOnlyLine, StatusPillView, useDraft, useQuotedDraft } from './chat-composer';
 import { ChatTitle, useChatMenu, useModelOptions } from './chat-header';
 import { ReplyMarkdown } from './chat-markdown';
 import { MessageText } from './message-text';
@@ -779,10 +780,38 @@ function Transcript({
             Clipboard.setStringAsync(row.text).catch(() => {});
         } else if (name === 'share') {
             Share.share({ message: row.text }).catch(() => {});
+        } else if (name === 'reply') {
+            quoteInBox(row);
+        }
+    };
+    // Reply (CB-571): the box this chat or room sends from, and who a quote names.
+    const replyBox = composerBox(composer);
+    const authorOf = (row: UserRow | ReplyRow) =>
+        replyBox === null
+            ? null
+            : replyAuthor(row, {
+                  socio,
+                  ...(room === undefined ? {} : { room: { view: room.context.view, me: room.context.me } }),
+              });
+    const quoteInBox = (row: UserRow | ReplyRow) => {
+        const author = authorOf(row);
+        if (replyBox === null || author === null) {
+            return;
+        }
+        try {
+            scope.drafts.write(replyBox, quotedDraft(scope.drafts.read(replyBox).text, quoteOf(author, row.text)));
+        } catch (error) {
+            // A newer build's draft, or the scope closing: the box keeps what it holds.
+            if (!(error instanceof DraftError)) {
+                throw error;
+            }
         }
     };
     const messageActions = (row: UserRow | ReplyRow) =>
-        messageMenu(row.kind === 'reply' && row.stored ? reactionButtons(shownReactions, row.id) : null);
+        messageMenu(
+            row.kind === 'reply' && row.stored ? reactionButtons(shownReactions, row.id) : null,
+            authorOf(row) !== null,
+        );
     useFirstFrameWithData('Chat', transcriptDrawn(rows.length, history));
     useRepliedAnnouncement(turn, room === undefined ? socio : roomReplier(turn, room.context));
     useStreamHaptics(turn);
@@ -1266,10 +1295,15 @@ function useStreamHaptics(turn: Parameters<typeof replyFinished>[1]) {
     }, [haptics, on, markId, markLength]);
 }
 
+/** The draft the chat's or room's box writes to, or null where there is no box. */
+function composerBox(composer: ChatComposer): string | null {
+    const target = composer.sendTo ?? (composer.readOnly === null ? composer.roomId : null);
+    return target === null ? null : chatDraft(target);
+}
+
 /** A pending bubble's button, through the outbox (`bubbleAction`). */
 function act(scope: WorkspaceScope, bubble: PendingBubble, action: BubbleAction, composer: ChatComposer) {
-    const target = composer.sendTo ?? (composer.readOnly === null ? composer.roomId : null);
-    const box = target === null ? null : chatDraft(target);
+    const box = composerBox(composer);
     bubbleAction(scope, bubble, action, box, randomId).catch((error: unknown) =>
         console.warn('[chat] the message did not change', error),
     );
@@ -1296,6 +1330,7 @@ function ChatFooter(props: {
     const { bar } = props.approvals;
     const scope = useWorkspaceScope();
     const draft = useDraft(composer.sendTo === null ? null : chatDraft(composer.sendTo));
+    const quoted = useQuotedDraft(draft);
     const tray = useTray(composer.sendTo === null || composer.readOnly !== null ? null : chatDraft(composer.sendTo));
     const [busy, setBusy] = useState(false);
     const [notice, setNotice] = useState<string | null>(null);
@@ -1323,7 +1358,8 @@ function ChatFooter(props: {
         );
     }
     const view = composerView({
-        text: draft.text,
+        // A quote alone isn't a message (CB-571): Send waits for words or files.
+        text: quoted.text,
         running: props.running,
         locked: draft.locked || !scope.userDb.writable || composer.sendTo === null,
         heldForSignIn: props.heldForSignIn,
@@ -1382,8 +1418,9 @@ function ChatFooter(props: {
             {isLocalChat(props.id) ? null : <NameSuggestion id={props.id} />}
             {props.pill === null ? null : <StatusPillView pill={props.pill} onJump={props.onJump} />}
             <Composer
-                text={draft.text}
-                onChangeText={draft.setText}
+                text={quoted.text}
+                onChangeText={quoted.setText}
+                quote={quoted.quote === null ? null : { quote: quoted.quote, onRemove: quoted.removeQuote }}
                 view={view}
                 onSend={send}
                 onStop={stop}

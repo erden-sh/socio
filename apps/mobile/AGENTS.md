@@ -1635,6 +1635,8 @@ scope's `drafts`, under Node (`tests/sync/chat-drafts.test.ts`). The rules are t
 - **`rekey(from, to)`** moves a draft (a new chat's `new:<dotId>` to `chat:<local>` after the send, then
   `chat:<local>` to `chat:<server>`), joined after what `to` holds, in one write; `scopes()` lists them.
   A move from a scope with a send in the queue waits for that send, so the sent text never moves.
+- **A quote-reply's quote** (Chat screen) is the draft text's first line, not a field: a draft stays
+  plain text at payload version 1, and nothing in this file knows of quotes.
 - **`payloadVersion`:** a newer build's draft is shown and never changed, sent or dropped (`DraftError`,
   "Update Socio to send these"); a `sending` entry this build can't read is dropped, as the web drops it,
   and never locks a draft of its own version. A read-only user.db keeps changes in memory only.
@@ -2397,7 +2399,7 @@ Chats) by the chat list's, Home's and Search's rows (`useOpenChat`, `chatAction`
   edits. The lane hold is as before. `tests/sync/page-review.test.ts`, `tests/sync/review-edits.test.ts`,
   `tests/chat/page-review.test.ts`.
 - **Long-press** (`src/chat/long-press.ts`, `screens/action-menu.tsx`): every menu is also
-  accessibility actions. A message: Copy (expo-clipboard), Share (React Native's), and a stored reply's
+  accessibility actions. A message: Reply where it can be quoted (below), Copy (expo-clipboard), Share (React Native's), and a stored reply's
   four reactions as toggles; the messages aren't selectable text, so the gesture is the menu's
   (ChatGPT's). Under every message (owner, 2026-11-18; the web's MessageActions) is its action row
   (`messageRowActions`, `MessageActionRow`): Copy (a check and "Copied" for 2 s), a stored reply's four
@@ -2405,6 +2407,32 @@ Chats) by the chat list's, Home's and Search's rows (`useOpenChat`, `chatAction`
   under a message with no words. No More button: Share is the long-press menu's. A reply is never one
   accessible element (on iOS that hides its links and issue chips from VoiceOver): its menu's actions
   are on its row's Copy button.
+- **Quote-reply** (CB-571, `src/chat/quote-reply.ts` under Node; the web has none yet, so this is v1's
+  format and the web could adopt it): Reply, first in a message's menu (SF Symbol
+  `arrowshape.turn.up.left`; the `reply` symbol, lucide's, for the chip), on a socio's reply in a chat
+  or room, another person's message in a room and the reader's own in a room (named as the room names
+  them, `replyAuthor`; none on a private chat's own message, a reply still streaming, a message with no
+  words, or where the chat has no box). It writes the quote into the box's draft (`quotedDraft`, in
+  place of an earlier quote, the typed words kept) and focuses the box. The message sent is one text, no
+  server field: `> **Author:** excerpt`, a blank line, then the words (`quoteOf`, `withQuote`). The
+  excerpt is plain text (`plainOf`: a quoted message's own quote and Markdown taken out, lines folded),
+  at most about `QUOTE_EXCERPT_MAX` (200) characters cut on a word with "…", then made inert
+  (`inertQuoteText`: CommonMark escapes, and a word joiner after every `@`, so a quoted `@Name` never
+  mentions a person or routes to a socio). The quote lives in the draft's text, so it survives leaving
+  the chat and a relaunch at payload version 1 (an older build shows it as text in its box), an Edit of
+  a waiting message brings it back, and `enqueueFromDraft` sends and clears it with the rest. Both
+  composers split the draft (`useQuotedDraft`, `splitQuote`): the chip over the box ("Replying to
+  <author>" and a line of the excerpt, one element for screen readers; its x "Remove quote" takes only
+  the quote out) and the words after it in the box, so the mention picker's caret, `composerView` (a
+  quote alone doesn't send) and the room's length count work on what the person typed, the length on
+  the whole. In a bubble a message that starts with the quote draws it natively (`MessageText`'s
+  `QuoteBlock`: the bubble's line color as a bar, "Author:" bold, the excerpt in its muted words), the
+  rest as Markdown: on iOS enriched-markdown's blockquote view takes a long-press for a menu of its own
+  (Copy, Copy as Markdown) in place of the bubble's. Screen readers hear "Quoting Ben: …"
+  (`spokenMessage`, `bubbleLabel`). Elsewhere (a reply, the web) it is an ordinary blockquote.
+  No swipe to reply yet: a horizontal pan on a bubble would compete with the list's scroll, the
+  long-press menu and the iOS drawer's edge swipe. `tests/chat/quote-reply.test.ts`, and the round trip
+  in `tests/sync/chat-drafts.test.ts`, `composer.test.ts` and `room-composer.test.ts`.
 - **Message times**: each message row carries its time from the runs'
   `times.messages` (the web's CB-72), worded by `messageTime` as the web's action row ("10:01 AM" today,
   "Oct 15, 3:04 PM" before), last in the action row under every message, as on the web; every message's

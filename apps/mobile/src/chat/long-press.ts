@@ -9,7 +9,8 @@ import type { ReactionButton } from './reactions';
 // The long-press menus, each also the row's
 // accessibility actions, so VoiceOver and TalkBack reach every item without
 // the gesture:
-// - a message: Copy and Share (React Native's), and on a socio's stored
+// - a message: Reply where it can be quoted (CB-571, quote-reply.ts), Copy
+//   and Share (React Native's), and on a socio's stored
 //   reply its four reactions, each a toggle; the row under every message
 //   (`messageRowActions`) shows Copy and the reactions as buttons, as the web;
 // - a private chat's row: Rename, Archive (an undo toast, no confirm, as
@@ -21,7 +22,7 @@ import type { ReactionButton } from './reactions';
 // No React Native here: tests/chat runs it under Node.
 
 export interface MenuAction {
-    /** Its accessibility action's name: `copy`, `share`, `react:up`, `rename`, `archive`, `delete`. */
+    /** Its accessibility action's name: `reply`, `copy`, `share`, `react:up`, `rename`, `archive`, `delete`. */
     readonly name: string;
     readonly label: string;
     readonly destructive?: boolean;
@@ -33,6 +34,8 @@ export interface MenuAction {
     readonly icon?: string;
 }
 
+/** Quote-reply (CB-571, quote-reply.ts): the message quoted above the composer. */
+export const REPLY: MenuAction = { name: 'reply', label: 'Reply' };
 export const COPY: MenuAction = { name: 'copy', label: 'Copy' };
 export const SHARE: MenuAction = { name: 'share', label: 'Share' };
 export const RENAME: MenuAction = { name: 'rename', label: 'Rename' };
@@ -59,9 +62,10 @@ export const deleteSentence = (title: string) => `This will delete â€œ${title}â€
 
 const REACT = 'react:';
 
-/** A message's menu: Copy and Share, and a stored reply's reactions. */
-export function messageMenu(reactions: readonly ReactionButton[] | null): MenuAction[] {
+/** A message's menu: Reply where it can be quoted (CB-571), Copy and Share, and a stored reply's reactions. */
+export function messageMenu(reactions: readonly ReactionButton[] | null, reply = false): MenuAction[] {
     return [
+        ...(reply ? [REPLY] : []),
         COPY,
         SHARE,
         ...(reactions ?? []).map((button) => ({

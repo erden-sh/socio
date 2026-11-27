@@ -29,6 +29,7 @@ export interface NativeMenuItem {
  * never draws an icon language of its own. An action not here has none.
  */
 export const MENU_SYMBOLS: Readonly<Record<string, string>> = {
+    reply: 'arrowshape.turn.up.left',
     copy: 'doc.on.doc',
     share: 'square.and.arrow.up',
     'react:up': 'hand.thumbsup',

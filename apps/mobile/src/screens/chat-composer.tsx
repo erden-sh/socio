@@ -1,7 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { TextInputWrapper } from 'expo-paste-input';
-import { type ReactNode, useCallback, useEffect, useState, useSyncExternalStore } from 'react';
-import { Animated, Platform, Pressable, TextInput, View } from 'react-native';
+import { type ReactNode, useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { Animated, Platform, Pressable, TextInput, type TextInputInstance, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
@@ -13,6 +13,7 @@ import {
     type PendingBubble,
     type StatusPill,
 } from '../chat/composer';
+import { type Quote, REMOVE_QUOTE, replyingTo, splitQuote, withQuote } from '../chat/quote-reply';
 import { useWorkspaceScope } from '../live';
 import { useHaptics } from '../platform/device-settings';
 import { DraftError, type DraftRecord } from '../sync/chat-drafts';
@@ -42,6 +43,8 @@ import { MessageText } from './message-text';
 // - `PendingBubbleView`: a message of the person's that isn't in the
 //   transcript yet, dashed while it waits, with its caption and buttons.
 // - `useDraft`: the box's text from the scope's drafts, memory first.
+// - `useQuotedDraft`: a chat's or room's draft split into its quote (CB-571,
+//   the chip over the box) and the words the box shows.
 
 /** A draft scope's text, and a setter that writes it (a locked draft refuses). */
 export function useDraft(scope: string | null): { text: string; locked: boolean; setText: (text: string) => void } {
@@ -70,6 +73,25 @@ export function useDraft(scope: string | null): { text: string; locked: boolean;
 }
 
 const EMPTY_DRAFT: DraftRecord = { text: '', at: 0 };
+
+/**
+ * A draft whose text may start with a quote (CB-571, quote-reply.ts): the quote for the chip, the
+ * words after it for the box, a setter for those words that keeps the quote, and the chip's x.
+ */
+export function useQuotedDraft(draft: ReturnType<typeof useDraft>): {
+    quote: Quote | null;
+    text: string;
+    setText: (text: string) => void;
+    removeQuote: () => void;
+} {
+    const { quote, rest } = splitQuote(draft.text);
+    return {
+        quote,
+        text: rest,
+        setText: (text) => draft.setText(withQuote(quote, text)),
+        removeQuote: () => draft.setText(rest),
+    };
+}
 
 /** A light selection tick, when the Haptics setting is on. */
 export function useTapHaptic(): () => void {
@@ -139,6 +161,8 @@ export function Composer(props: {
     onCaret?: (caret: number) => void;
     /** Over the box, inside the composer: a room's `@` picker. */
     above?: ReactNode;
+    /** The message being replied to (CB-571): a chip over the box with its x. A new one focuses the box. */
+    quote?: { readonly quote: Quote; readonly onRemove: () => void } | null;
     /**
      * Send's look: the chat module's mint by default; `primary` is the web's
      * teal primary button (an issue's Comment), with its pressed state and words' color.
@@ -170,8 +194,19 @@ export function Composer(props: {
         }
     };
     const id = props.testID ?? 'composer';
+    // Reply focuses the box, so the keyboard comes up under the new quote; a quote kept in the draft doesn't.
+    const inputRef = useRef<TextInputInstance>(null);
+    const quotePrefix = props.quote?.quote.prefix ?? null;
+    const shownQuote = useRef(quotePrefix);
+    useEffect(() => {
+        if (quotePrefix !== null && quotePrefix !== shownQuote.current && view.editable) {
+            inputRef.current?.focus();
+        }
+        shownQuote.current = quotePrefix;
+    }, [quotePrefix, view.editable]);
     const input = (
         <TextInput
+            ref={inputRef}
             testID={`${id}-input`}
             accessibilityLabel={props.inputLabel ?? props.placeholder ?? COMPOSER_PLACEHOLDER}
             value={props.text}
@@ -287,6 +322,9 @@ export function Composer(props: {
                     />
                 ) : null}
                 {tray ? <AttachmentTray tray={tray} /> : null}
+                {props.quote ? (
+                    <QuoteChip quote={props.quote.quote} onRemove={props.quote.onRemove} testID={`${id}-quote`} />
+                ) : null}
                 {stacked ? (
                     <>
                         {box}
@@ -320,6 +358,44 @@ export function Composer(props: {
                     {view.line}
                 </Text>
             )}
+        </View>
+    );
+}
+
+/**
+ * The quote over the box (CB-571), as Messages' and Slack's: the reply arrow, "Replying to <author>"
+ * and a line of the message, and an x that takes it out of the draft. One element for screen readers,
+ * then the x ("Remove quote").
+ */
+function QuoteChip({ quote, onRemove, testID }: { quote: Quote; onRemove: () => void; testID: string }) {
+    return (
+        <View testID={testID} className="flex-row items-center gap-2 rounded-xl bg-muted pl-3">
+            <View
+                accessible
+                accessibilityLabel={`${replyingTo(quote.author)}: ${quote.excerpt}`}
+                className="flex-1 flex-row items-center gap-2 py-2"
+            >
+                <AppSymbol name="reply" size={16} color="muted-foreground" />
+                {/* The author may take two lines (at the largest text sizes); the excerpt one. */}
+                <View className="flex-1">
+                    <Text variant="footnote" weight="semibold" numberOfLines={2} testID={`${testID}-author`}>
+                        {replyingTo(quote.author)}
+                    </Text>
+                    <Text variant="footnote" tone="muted" numberOfLines={1} testID={`${testID}-excerpt`}>
+                        {quote.excerpt}
+                    </Text>
+                </View>
+            </View>
+            <Pressable
+                testID={`${testID}-remove`}
+                accessibilityRole="button"
+                accessibilityLabel={REMOVE_QUOTE}
+                onPress={onRemove}
+                hitSlop={2}
+                className="size-11 items-center justify-center rounded-full active:bg-accent"
+            >
+                <AppSymbol name="x" size={16} color="muted-foreground" />
+            </Pressable>
         </View>
     );
 }

@@ -119,6 +119,7 @@ import QrCode from 'lucide-react-native/icons/qr-code';
 import Quote from 'lucide-react-native/icons/quote';
 import Redo2 from 'lucide-react-native/icons/redo-2';
 import RefreshCw from 'lucide-react-native/icons/refresh-cw';
+import Reply from 'lucide-react-native/icons/reply';
 import RotateCcw from 'lucide-react-native/icons/rotate-ccw';
 import RotateCw from 'lucide-react-native/icons/rotate-cw';
 import Rows3 from 'lucide-react-native/icons/rows-3';
@@ -280,6 +281,7 @@ export const GLYPHS: Readonly<Record<SymbolName, LucideIcon>> = {
     quote: Quote,
     'redo-2': Redo2,
     'refresh-cw': RefreshCw,
+    reply: Reply,
     'rotate-ccw': RotateCcw,
     'rotate-cw': RotateCw,
     'scroll-text': ScrollText,
