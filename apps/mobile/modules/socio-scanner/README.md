@@ -12,8 +12,11 @@ Android only (`expo-module.config.json`'s `platforms`).
 - **The reader** is ZXing's core (`com.google.zxing:core` 3.5.4, Apache-2.0, plain Java with no
   Android or network code; the `com.google` group name is historical). Each frame's Y plane goes to
   `QrDecoder`: a `PlanarYUVLuminanceSource` cropped to the centered 75% of the shorter side (the
-  on-screen frame and a margin), every third frame the whole frame, through a `HybridBinarizer` and a
-  `QRCodeReader` with `QR_CODE` only and `TRY_HARDER`, then once more on the inverted image.
+  on-screen frame and a margin), every third frame the whole frame and then each half of it (with
+  two codes in view the reader can mix their finder patterns and read neither), through a
+  `HybridBinarizer` and a `QRCodeReader` with `QR_CODE` only and `TRY_HARDER`, then once more on the
+  inverted image. Never ZXing's multi-code reader: its time grows past seconds with many codes in
+  view, which would stall the analyzer.
 - **Lifecycle:** bound to the activity's lifecycle, so CameraX stops the camera in the background and
   starts it on return. The view unbinds its own use cases (never another camera user's) when it
   leaves the window, when `active` goes false and when React Native destroys it, which also ends the
