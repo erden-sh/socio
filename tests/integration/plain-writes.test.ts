@@ -65,6 +65,10 @@ const KNOWN = new Map<string, number>([
     // claims, on Better Auth's own connection: each a single statement
     // (made, approved or claimed, polled, tried, ended, used, cleaned up).
     ['src/server/auth/device-sign-in.ts', 24],
+    // CB-570: the app's Google and Apple sign-in, on Better Auth's own
+    // connection like the above: a nonce made and used up, a link made or
+    // replaced and an unlink, each in one SAVEPOINT (social-sign-in.ts `atomically`).
+    ['src/server/auth/social-sign-in.ts', 6],
     ['src/server/telegram/channel-state.ts', 11],
     // CB-292: a suggestion's insert, settle and clear, each a prepared write.
     ['src/server/chat-name-suggestions/repository.ts', 3],

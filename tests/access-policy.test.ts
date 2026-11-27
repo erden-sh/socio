@@ -48,6 +48,8 @@ const CEILING: SignInCeiling = {
     signInLink: false,
     emailLinks: false,
     openSignUp: true,
+    google: true,
+    apple: true,
     providers: [
         { id: 'logto', name: 'Logto' },
         { id: 'google', name: 'Google' },
@@ -64,6 +66,8 @@ it('keeps the environment a ceiling when a policy is read: a saved entry the var
         signInLink: false,
         emailLinks: false,
         openSignUp: true,
+        google: true,
+        apple: true,
         providers: ['logto', 'google'],
         allowedEmails: ['a@example.com', 'b@example.com'],
         allowedDomains: ['example.com'],
@@ -72,6 +76,7 @@ it('keeps the environment a ceiling when a policy is read: a saved entry the var
     const narrowed = signInInForce(CEILING, {
         password: false,
         openSignUp: false,
+        apple: false,
         providers: ['google', 'github'],
         allowedEmails: ['b@example.com', 'mallory@evil.example'],
         allowedDomains: [],
@@ -79,6 +84,8 @@ it('keeps the environment a ceiling when a policy is read: a saved entry the var
     expect(narrowed).toMatchObject({
         password: false,
         openSignUp: false,
+        google: true,
+        apple: false,
         providers: ['google'],
         allowedEmails: ['b@example.com'],
         allowedDomains: [],
@@ -476,6 +483,8 @@ it('gives socios and connected agents no tool for the access policy', () => {
         'src/server/auth/accounts.ts',
         // CB-352: the sign-in sheet checks the approving session's method against it.
         'src/server/auth/device-sign-in.ts',
+        // CB-570: the app's Google and Apple sign-in check their methods against it.
+        'src/server/auth/social-sign-in.ts',
     ]);
     const root = join(import.meta.dirname, '..');
     const touching = ['src/server', 'packages/foundation/src', 'packages/data/src']

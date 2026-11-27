@@ -28,6 +28,7 @@ import {
 } from '@socio/shared/device-sign-in';
 
 import type { DeviceFacts } from './devices.js';
+import type { SocialRefusal, SocialSignIn } from './social-sign-in.js';
 
 /**
  * The system sign-in sheet's one-time code (CB-352): the app opens
@@ -66,6 +67,8 @@ export const DEVICE_SIGN_IN_PATHS: ReadonlySet<string> = new Set([
     '/device/redeem',
     '/device/pair/redeem',
     '/device/code/redeem',
+    // CB-570: native Google and Apple sign-in.
+    '/device/social/redeem',
 ]);
 
 /** Sign-in codes the app asks for: 15 minutes, and 5 tries per request, counted in the database. */
@@ -231,6 +234,8 @@ export interface DeviceSignInDeps {
      * sent to a Telegram since unlinked (perhaps lost) no longer signs in.
      */
     channelReaches: (accountId: string, method: CodeTarget['method'], recipient: string) => Promise<boolean>;
+    /** Native Google and Apple sign-in's nonces, links and verifier (CB-570). */
+    social: SocialSignIn;
     /** After a device signed in (audit, the person's notice). Never throws into the request. */
     signedIn: (event: { accountId: string; deviceId: string; label: string; method: SignInMethodId }) => void;
 }
@@ -240,7 +245,7 @@ type Cookies = typeof import('better-auth/cookies');
 
 /** The plugin, built with Better Auth's own modules (loaded only when it is the provider). */
 export function deviceSignIn(
-    { APIError, createAuthEndpoint, sessionMiddleware }: AuthApi,
+    { APIError, createAuthEndpoint, getSessionFromCtx, sessionMiddleware }: AuthApi,
     { setSessionCookie }: Cookies,
     deps: DeviceSignInDeps,
 ) {
@@ -279,7 +284,7 @@ export function deviceSignIn(
             label: string;
             installId: string;
             platform: DevicePlatform | null;
-            variant: AppVariant;
+            variant: AppVariant | null;
         },
         now: number,
         /**
@@ -356,6 +361,18 @@ export function deviceSignIn(
         code: DeviceErrorCode,
         message: string,
     ) => new APIError(status, { message, code });
+    const SOCIAL_STATUS = {
+        400: 'BAD_REQUEST',
+        401: 'UNAUTHORIZED',
+        403: 'FORBIDDEN',
+        404: 'NOT_FOUND',
+        409: 'CONFLICT',
+        429: 'TOO_MANY_REQUESTS',
+        503: 'SERVICE_UNAVAILABLE',
+    } as const;
+    /** A social sign-in's refusal (CB-570) as Better Auth answers it: `{ error, code }` after the routes' reshaping. */
+    const socialError = ({ status, body }: SocialRefusal) =>
+        new APIError(SOCIAL_STATUS[status], { message: body.error, code: body.code });
 
     return {
         id: 'socio-device',
@@ -890,6 +907,62 @@ export function deviceSignIn(
                 }
                 return ctx.json({ deviceId });
             }),
+            // CB-570: native Google and Apple sign-in. A nonce first: a sign-in's
+            // binds no session, a link's binds the signed-in session asking.
+            deviceSocialStart: createAuthEndpoint('/device/social/start', { method: 'POST' }, async (ctx) => {
+                const found = await getSessionFromCtx(ctx).catch(() => null);
+                const started = await deps.social.start(
+                    ctx.body,
+                    found ? { id: (found.session as { id: string }).id } : null,
+                );
+                if (!started.ok) {
+                    throw socialError(started);
+                }
+                return ctx.json(started.answer);
+            }),
+            deviceSocialRedeem: createAuthEndpoint('/device/social/redeem', { method: 'POST' }, async (ctx) => {
+                const redeemed = await deps.social.redeem(ctx.body);
+                if (!redeemed.ok) {
+                    throw socialError(redeemed);
+                }
+                if (deps.isBanned(redeemed.accountId)) {
+                    throw new APIError('FORBIDDEN', { message: 'This account is deactivated.', code: 'deactivated' });
+                }
+                const now = Date.now();
+                const { deviceId, session, user } = await signInDevice(
+                    ctx,
+                    {
+                        userId: redeemed.accountId,
+                        sessionId: null,
+                        signInMethod: redeemed.provider,
+                        label: redeemed.label,
+                        installId: redeemed.installId,
+                        platform: redeemed.platform,
+                        variant: redeemed.variant,
+                    },
+                    now,
+                    // An unlink (or a relink elsewhere) while the session was being made wins.
+                    () =>
+                        deps.social.linkedAccount(redeemed.provider, redeemed.sub) === redeemed.accountId
+                            ? null
+                            : new APIError('NOT_FOUND', {
+                                  message: 'This account is no longer linked.',
+                                  code: 'not_linked',
+                              }),
+                );
+                await setSessionCookie(ctx, { session, user });
+                try {
+                    deps.signedIn({
+                        accountId: redeemed.accountId,
+                        deviceId,
+                        label: redeemed.label,
+                        method: redeemed.provider,
+                    });
+                } catch {
+                    // The notice and audit never undo a sign-in.
+                }
+                return ctx.json({ deviceId });
+            }),
             deviceRedeem: createAuthEndpoint('/device/redeem', { method: 'POST' }, async (ctx) => {
                 const parsed = deviceRedeemBodySchema.safeParse(ctx.body);
                 if (!parsed.success) {
@@ -947,6 +1020,9 @@ export function deviceSignIn(
             { pathMatcher: (path: string) => path === '/device/pair/redeem', window: 60, max: 600 },
             { pathMatcher: (path: string) => path === '/device/start', window: 60, max: 20 },
             { pathMatcher: (path: string) => path === '/device/redeem', window: 60, max: 10 },
+            // CB-570: as the sheet's start and redeem.
+            { pathMatcher: (path: string) => path === '/device/social/start', window: 60, max: 20 },
+            { pathMatcher: (path: string) => path === '/device/social/redeem', window: 60, max: 10 },
         ],
     } satisfies BetterAuthPlugin;
 }

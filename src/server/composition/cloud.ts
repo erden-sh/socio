@@ -13,8 +13,15 @@ import { Context, Effect, Layer } from 'effect';
 
 import { SecretBox, type DataKeyring } from '@socio/foundation/keys/secret-box';
 
-import { Cloud, CloudConfig, ReplyReports, type CloudConfigShape } from '../cloud/contract.js';
-import { CloudHost, makeCloud, makeReplyReports, type AdminNotice, type CloudHostShape } from '../cloud/layer.js';
+import { Cloud, CloudConfig, ReplyReports, SocialVerification, type CloudConfigShape } from '../cloud/contract.js';
+import {
+    CloudHost,
+    makeCloud,
+    makeReplyReports,
+    socialVerification,
+    type AdminNotice,
+    type CloudHostShape,
+} from '../cloud/layer.js';
 import type { ReplyReportsService } from '../cloud/reply-reports.js';
 import type { CloudService } from '../cloud/service.js';
 import { messageReactions } from '../context/reactions.js';
@@ -69,7 +76,8 @@ const CloudHostLive = Layer.effect(
  * offered as `Cloud` and `CloudConnectionService`, and `ReplyReports` and
  * `ReplyReportsConnectionService` (CB-382), with `CloudConfig`. The
  * reactions' store gets the reports here, so removing a thumbs-down from
- * any path withdraws its report.
+ * any path withdraws its report. `SocialVerification` (CB-570) is the
+ * app's Google and Apple sign-in, verified by the cloud.
  */
 export const cloudLayers = {
     cloud: Layer.effectContext(
@@ -77,7 +85,9 @@ export const cloudLayers = {
             const cloud = yield* makeCloud;
             const reports = yield* Effect.provideService(makeReplyReports, Cloud, cloud);
             messageReactions((yield* CloudHost).db).attachReports(reports);
+            const social = socialVerification({ config: yield* CloudConfig, cloud });
             return Context.make(CloudConnectionService, cloud).pipe(
+                Context.add(SocialVerification, social),
                 Context.add(Cloud, cloud),
                 Context.add(ReplyReportsConnectionService, reports),
                 Context.add(ReplyReports, reports),

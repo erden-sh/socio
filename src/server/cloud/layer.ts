@@ -37,6 +37,7 @@ import {
 import { ReplyReportsService } from './reply-reports.js';
 import { CloudService } from './service.js';
 import { reportsOrigin } from './settings.js';
+import { CloudSocial } from './social.js';
 
 // ── What the composition root provides ───────────────────────────────────
 
@@ -173,6 +174,22 @@ export const makeReplyReports = Effect.gen(function* () {
         host: yield* CloudHost,
     });
 });
+
+/** Google and Apple sign-in's verification through the cloud (CB-570), on the issuer's origin. */
+export function socialVerification(deps: {
+    config: CloudConfigShape;
+    cloud: Pick<CloudShape, 'status' | 'token' | 'issuerKey'>;
+    transport?: typeof fetch;
+    now?: () => number;
+}): CloudSocial {
+    return new CloudSocial({
+        cloud: deps.cloud,
+        issuer: cloudEnvironment(deps.config).issuer,
+        log: (line) => console.log(line),
+        transport: deps.transport,
+        now: deps.now,
+    });
+}
 
 /** `ReplyReports`, built once. */
 export const ReplyReportsLive = Layer.effect(ReplyReports, makeReplyReports);

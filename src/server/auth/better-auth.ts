@@ -53,6 +53,7 @@ import { nonPersonOwnerId } from '@socio/shared/data-types';
 import {
     appLink,
     devicePushBodySchema,
+    socialProviderSchema,
     isLinkHost,
     type AppLinkFields,
     type AppVariant,
@@ -74,6 +75,7 @@ import type { Role, User } from '@socio/shared/types';
 import { AgentGrantError, type GrantsShape } from '../agents/contract.js';
 
 import { readStoredPolicy } from './access-policy-store.js';
+import { hasWayIn } from './access-policy.js';
 import { AccountTurns } from './account-turns.js';
 import { parseTrailBefore } from './accounts.js';
 import {
@@ -95,6 +97,7 @@ import {
     type PeopleAssets,
     type PeopleFacts,
     type PersonPurge,
+    type SocialVerifier,
 } from './contract.js';
 import { appLinkVariant, type CodeTarget, DEVICE_SIGN_IN_PATHS, deviceSignIn } from './device-sign-in.js';
 import {
@@ -121,6 +124,7 @@ import { retireOperatorRows } from './retire-operator.js';
 import { adminByEmail, claimGroups, effectiveRole, oauthAccess, type AccessRules } from './rules.js';
 import { acceptableUrl, type OAuthProviderSettings } from './settings.js';
 import type { BetterAuthSettings } from './settings.js';
+import { NATIVE_PROVIDER_IDS, SocialSignIn, socialRefusal } from './social-sign-in.js';
 import { expiredStepUp, STEP_UP_LOCKED, STEP_UP_SECONDS, StepUpChallenges } from './step-up.js';
 
 /** A Better Auth date column's value (ISO text, or epoch milliseconds) in milliseconds; 0 when unreadable. */
@@ -475,6 +479,11 @@ export class BetterAuthProvider implements AuthProvider {
     private requestDevices = new WeakMap<Request, string>();
     private deviceEnds: DeviceEndHooks | undefined;
     private savedInviteLinks: () => boolean | undefined = () => undefined;
+    /** Who verifies the app's Google and Apple sign-ins (CB-570), once wired. */
+    private socialVerifier?: SocialVerifier;
+    private social?: SocialSignIn;
+    /** Links made per session per minute (CB-570). */
+    private socialLinks = new RateLimits(10, 60_000);
 
     constructor(
         private settings: BetterAuthSettings,
@@ -999,6 +1008,7 @@ export class BetterAuthProvider implements AuthProvider {
                         this.linkRequests.take(`ip:${headers?.get(CLIENT_IP_HEADER) ?? 'unknown'}`),
                     codeTarget: (email) => this.codeTarget(email),
                     channelReaches: (accountId, method, recipient) => this.channelReaches(accountId, method, recipient),
+                    social: this.socialSignIn(),
                 }),
                 // Groups (CB-376): the one workspace organization, its runtime
                 // roles. Its endpoints are never served (`routes`); groups
@@ -1181,6 +1191,10 @@ export class BetterAuthProvider implements AuthProvider {
             // email can carry links and codes once an admin turns them on.
             emailLinks: this.allSenders().some((sender) => sender.via === 'email'),
             openSignUp: settings.rules.openSignUp,
+            // CB-570: no setting gates them; they are offered only while the
+            // cloud connection verifies them (`workspaceManifest`).
+            google: true,
+            apple: true,
             providers: settings.providers.map(({ id, name }) => ({ id, name })),
             allowedEmails: [...settings.rules.allowedEmails],
             allowedDomains: [...settings.rules.allowedDomains],
@@ -1691,8 +1705,9 @@ export class BetterAuthProvider implements AuthProvider {
     }
 
     /** The manifest's sign-in part (CB-352): what the app can offer on this workspace now. */
-    workspaceManifest() {
+    async workspaceManifest() {
         const { settings } = this;
+        const social = await this.socialSignIn().offered();
         const inForce = this.inForce();
         const running = (sender: SignInLinkSender) => sender.available?.() ?? true;
         const email =
@@ -1708,8 +1723,25 @@ export class BetterAuthProvider implements AuthProvider {
                 sheet: true,
                 signInCodes: email ? ('email' as const) : telegram ? ('telegram' as const) : null,
                 addDevice: appLinkVariant(settings.origin, settings) !== null,
+                // CB-570: verified by the cloud now, and on in the access policy.
+                social,
             },
         };
+    }
+
+    useSocialVerifier(verifier: SocialVerifier) {
+        this.socialVerifier = verifier;
+    }
+
+    /** Native Google and Apple sign-in (CB-570): the nonces and links, in the auth database. */
+    socialSignIn() {
+        this.social ??= new SocialSignIn({
+            db: () => this.database(),
+            saved: () => readStoredPolicy(this.database()).saved,
+            verifier: () => this.socialVerifier,
+            log: (line) => console.log(line),
+        });
+        return this.social;
     }
 
     useSavedInviteLinks(read: () => boolean | undefined) {
@@ -2161,7 +2193,14 @@ export class BetterAuthProvider implements AuthProvider {
         app.on(['GET', 'POST'], '/api/auth/*', async (c, next) => {
             const path = c.req.path.slice('/api/auth'.length);
             // The Devices list is an ordinary route behind the session check.
-            if (path === '/devices' || path === '/device/send-link' || path === '/device/app-link') {
+            if (
+                path === '/devices' ||
+                path === '/device/send-link' ||
+                path === '/device/app-link' ||
+                // CB-570: linking Google and Apple, behind the session check.
+                path === '/social/link' ||
+                path === '/social/links'
+            ) {
                 return next();
             }
             // Signing sessions out through Better Auth ends their devices too
@@ -2182,6 +2221,17 @@ export class BetterAuthProvider implements AuthProvider {
                 (path.startsWith('/oauth2/') && !OAUTH_ENDPOINTS.includes(path))
             ) {
                 return c.json({ error: 'Not found.' }, 404);
+            }
+            // CB-570: Google and Apple links are unlinked through /api/auth/social/link
+            // only, which keeps a way in.
+            if (path === '/unlink-account') {
+                const body = (await c.req.raw
+                    .clone()
+                    .json()
+                    .catch(() => null)) as { providerId?: unknown } | null;
+                if (Object.values(NATIVE_PROVIDER_IDS).includes(String(body?.providerId))) {
+                    return c.json({ error: 'Not found.' }, 404);
+                }
             }
             const off = await this.methodOff(c, path);
             if (off) {
@@ -2554,6 +2604,75 @@ export class BetterAuthProvider implements AuthProvider {
         // nobody in. As limited as sign-in links.
         // "Get the app": the same workspace link, to show as a QR code
         // to a colleague. It carries no code and signs nobody in.
+        // CB-570: the person's own Google and Apple links. Only their own
+        // signed-in session: the link's nonce is bound to it.
+        const ownSocial = async (c: Context<AppEnv>) => {
+            if (!ownSession(c)) {
+                return undefined;
+            }
+            const account = accountOf(c);
+            const session = await this.sessionOf(c.req.raw);
+            return account && session?.accountId === account.id ? { account, session } : undefined;
+        };
+        const answer = (c: Context<AppEnv>, refusal: ReturnType<typeof socialRefusal>) =>
+            c.json(refusal.body, refusal.status);
+        app.post('/api/auth/social/link', async (c) => {
+            const own = await ownSocial(c);
+            if (!own) {
+                return answer(c, socialRefusal('not_authorized'));
+            }
+            if (!this.socialLinks.take(own.session.sessionId)) {
+                return answer(c, socialRefusal('too_many'));
+            }
+            const linked = await this.socialSignIn().link(await c.req.json().catch(() => null), own.session);
+            if (!linked.ok) {
+                return answer(c, linked);
+            }
+            if (linked.changed) {
+                console.log(`Auth: user=${own.account.userId} linked ${linked.link.provider} sign-in.`);
+            }
+            return c.json(linked.link);
+        });
+        app.get('/api/auth/social/links', async (c) => {
+            const own = await ownSocial(c);
+            if (!own) {
+                return answer(c, socialRefusal('not_authorized'));
+            }
+            return c.json(this.socialSignIn().links(own.account.id));
+        });
+        app.delete('/api/auth/social/link/:provider', async (c) => {
+            const own = await ownSocial(c);
+            if (!own) {
+                return answer(c, socialRefusal('not_authorized'));
+            }
+            const provider = socialProviderSchema.safeParse(c.req.param('provider'));
+            if (!provider.success) {
+                return answer(c, socialRefusal('not_linked'));
+            }
+            const providerId = NATIVE_PROVIDER_IDS[provider.data];
+            // Read before the unit of work: whether a sign-in link can reach them.
+            const reachable = await this.linkReachable([own.account.userId]);
+            const unlinked = await this.socialSignIn().unlink(own.account.id, provider.data, () => {
+                const now = this.accounts().find((entry) => entry.id === own.account.id);
+                return (
+                    !!now &&
+                    hasWayIn(
+                        {
+                            ...now,
+                            appUserId: now.userId,
+                            providers: now.providers.filter((id) => id !== providerId),
+                            linkReachable: reachable.has(now.userId),
+                        },
+                        this.inForce(),
+                    )
+                );
+            });
+            if (!unlinked.ok) {
+                return answer(c, unlinked);
+            }
+            console.log(`Auth: user=${own.account.userId} unlinked ${provider.data} sign-in.`);
+            return c.json({ ok: true });
+        });
         app.get('/api/auth/device/app-link', (c) => {
             const variant = this.inviteVariant();
             // None is an answer, not an error: most workspaces send no app links.

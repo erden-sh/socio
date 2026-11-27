@@ -5,7 +5,7 @@
  * registered public key, so a test sees the signature, the audience and
  * the lifetime the client really sent.
  */
-import { createPublicKey, randomUUID, verify } from 'node:crypto';
+import { createPublicKey, generateKeyPairSync, randomUUID, sign, verify, type KeyObject } from 'node:crypto';
 
 export const ISSUER = 'https://cloud.socio.test';
 export const PUSH = 'https://push.socio.test';
@@ -54,6 +54,39 @@ export interface FakeIssuer {
     before?: (path: string) => Promise<void> | void;
     /** Answers the metadata with this status instead (a proxy's 401, say). */
     metadataStatus?: number;
+    /** CB-570: the issuer's signing key, published at its `jwks_uri`. */
+    signing: { kid: string; privateKey: KeyObject };
+    /** The keys the JWKS lists (the signing key's by default). */
+    jwks?: Array<Record<string, unknown>>;
+    /** `GET /v1/social/config`'s answer, or a status to fail with. */
+    socialConfig: Record<string, unknown> | number;
+    /**
+     * `POST /v1/social/verify`: the answer, given the request's body and
+     * the caller's deployment id. The default signs a statement for the
+     * subject `sub-<idToken's last segment>`.
+     */
+    socialVerify: (body: { provider: string; idToken: string; nonce: string }, deploymentId: string) => Response;
+    /** Signs a statement (or anything) with the issuer's key, or another. */
+    signStatement(claims: Record<string, unknown>, header?: Record<string, unknown>, key?: KeyObject): string;
+}
+
+/** A statement's claims for a verify request, as the real service makes them. */
+export function statementClaims(
+    body: { provider: string; idToken: string; nonce: string },
+    deploymentId: string,
+    extra: Record<string, unknown> = {},
+) {
+    const iat = Math.floor(Date.now() / 1000);
+    return {
+        iss: ISSUER,
+        aud: deploymentId,
+        provider: body.provider,
+        sub: `sub-${body.idToken.split('.').pop()}`,
+        nonce: body.nonce,
+        iat,
+        exp: iat + 60,
+        ...extra,
+    };
 }
 
 const json = (status: number, body: unknown) =>
@@ -92,8 +125,11 @@ function verifyAssertion(assertion: string, clients: Map<string, Client>, audien
     return client;
 }
 
+const encode = (value: unknown) => Buffer.from(JSON.stringify(value)).toString('base64url');
+
 export function fakeIssuer(): FakeIssuer {
     const pending = new Map<string, string>();
+    const { privateKey } = generateKeyPairSync('ed25519');
     const tokens = new Map<string, { clientId: string; audience: string }>();
     const issuer: FakeIssuer = {
         requests: [],
@@ -105,6 +141,17 @@ export function fakeIssuer(): FakeIssuer {
         down: false,
         tokenSeconds: 3600,
         issued: [],
+        signing: { kid: 'issuer-key-1', privateKey },
+        socialConfig: { google: { serverClientId: 'test-web-client.apps.example.test' }, apple: {} },
+        signStatement(claims, header = {}, key = issuer.signing.privateKey) {
+            const input = `${encode({ alg: 'EdDSA', typ: 'social+jwt', kid: issuer.signing.kid, ...header })}.${encode(claims)}`;
+            return `${input}.${sign(null, Buffer.from(input), key).toString('base64url')}`;
+        },
+        socialVerify: (body, deploymentId) =>
+            new Response(issuer.signStatement(statementClaims(body, deploymentId)), {
+                status: 200,
+                headers: { 'content-type': 'application/jwt' },
+            }),
         provision(deploymentId = `dep_${randomUUID().replaceAll('-', '').slice(0, 26).toUpperCase()}`) {
             const token = `iat_${randomUUID()}${randomUUID()}`;
             pending.set(token, deploymentId);
@@ -200,6 +247,29 @@ export function fakeIssuer(): FakeIssuer {
                 tokens.set(token, { clientId: client.id, audience });
                 issuer.issued.push({ clientId: client.id, audience, token });
                 return json(200, { access_token: token, token_type: 'Bearer', expires_in: issuer.tokenSeconds });
+            }
+            if (url.pathname === '/.well-known/jwks.json') {
+                const x = createPublicKey(issuer.signing.privateKey).export({ format: 'jwk' }).x;
+                return json(200, {
+                    keys: issuer.jwks ?? [
+                        { kty: 'OKP', crv: 'Ed25519', x, kid: issuer.signing.kid, alg: 'EdDSA', use: 'sig' },
+                    ],
+                });
+            }
+            if (url.pathname.startsWith('/v1/social/')) {
+                const token = tokens.get(headers.authorization?.replace(/^Bearer /, '') ?? '');
+                const client = token && issuer.clients.get(token.clientId);
+                if (!token || token.audience !== ISSUER || !client || client.status !== 'active') {
+                    return oauthError(401, 'invalid_token');
+                }
+                if (url.pathname === '/v1/social/config' && (init?.method ?? 'GET') === 'GET') {
+                    return typeof issuer.socialConfig === 'number'
+                        ? json(issuer.socialConfig, { error: 'unavailable' })
+                        : json(200, issuer.socialConfig);
+                }
+                if (url.pathname === '/v1/social/verify' && init?.method === 'POST') {
+                    return issuer.socialVerify(JSON.parse(body), client.id);
+                }
             }
             if (url.pathname === '/v1/sync' && init?.method === 'POST') {
                 const token = tokens.get(headers.authorization?.replace(/^Bearer /, '') ?? '');

@@ -10,6 +10,8 @@
  * issuer's client. The layer (`cloud/layer.ts`) and the composition build
  * them (`composition/cloud.ts`, `index.ts`).
  */
+import type { KeyObject } from 'node:crypto';
+
 import { Context, Data } from 'effect';
 
 import type { SealState } from '@socio/foundation/keys/secret-box';
@@ -72,6 +74,12 @@ export interface CloudShape {
      */
     token(audience: string, options?: { renew?: boolean }): Promise<string | undefined>;
     /**
+     * One of the issuer's signing keys, by `kid` (§2.5), for what the issuer
+     * signs (`issuer-jws.ts`). Undefined for one it doesn't publish; throws
+     * when its keys can't be read.
+     */
+    issuerKey(kid: string): Promise<KeyObject | undefined>;
+    /**
      * What is due now, on the leader only (the module's tick): enrollment
      * with a token not yet tried, and the daily sync. It never throws.
      */
@@ -125,5 +133,50 @@ export interface ReplyReportsShape extends ReactionReportsShape {
     sealStates(): Record<SealState, number>;
     reseal(): Promise<{ resealed: number; unreadable: number }>;
 }
+
+// ── Native Google and Apple sign-in (CB-570) ────────────────────────────
+
+/** The scope the issuer grants a deployment that may have Google and Apple sign-ins verified. */
+export const SOCIAL_VERIFY_SCOPE = 'social:verify';
+
+export type SocialProviderId = 'google' | 'apple';
+
+/** `GET /v1/social/config`: the providers the cloud verifies, and Google's server client id. */
+export interface SocialProviderConfig {
+    google?: { serverClientId: string };
+    apple?: Record<string, never>;
+}
+
+/** Why a verification gave no person: the server's refusal codes. */
+export type SocialRefusal = 'invalid_token' | 'nonce_invalid' | 'too_many' | 'provider_unavailable';
+
+/** Who the cloud vouches for, once its statement checked out. */
+export interface SocialPerson {
+    provider: SocialProviderId;
+    /** The provider's stable subject id. */
+    sub: string;
+    /** For display only: never used to find an account. */
+    email?: string;
+    emailVerified?: boolean;
+    /** The raw nonce the token was made with, as this server issued it. */
+    nonce: string;
+}
+
+export type SocialVerdict = ({ ok: true } & SocialPerson) | { ok: false; code: SocialRefusal };
+
+/**
+ * Sign-in with Google and Apple through Socio's cloud services: the one
+ * adapter between the auth feature and the cloud's verification service.
+ */
+export interface SocialVerificationShape {
+    /** The providers offered now; null while the connection can't verify (not connected, paused, no scope). */
+    config(): Promise<SocialProviderConfig | null>;
+    /** Has the cloud verify an ID token made with `nonce`; never throws. */
+    verify(input: { provider: SocialProviderId; idToken: string; nonce: string }): Promise<SocialVerdict>;
+}
+
+export class SocialVerification extends Context.Service<SocialVerification, SocialVerificationShape>()(
+    'socio/cloud/SocialVerification',
+) {}
 
 export class ReplyReports extends Context.Service<ReplyReports, ReplyReportsShape>()('socio/cloud/ReplyReports') {}

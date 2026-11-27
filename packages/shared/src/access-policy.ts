@@ -11,7 +11,15 @@ import { z } from 'zod';
  */
 
 /** How a session began (`auth_session.signInMethod`). */
-export type SignInMethodId = 'password' | 'passkey' | 'link' | 'link:email' | `provider:${string}`;
+export type SignInMethodId =
+    | 'password'
+    | 'passkey'
+    | 'link'
+    | 'link:email'
+    | `provider:${string}`
+    /** The Socio app's native Google and Apple sign-in, through Socio's cloud services (CB-570). */
+    | 'google'
+    | 'apple';
 
 /**
  * What operators saved. A missing key follows the environment; a boolean
@@ -30,6 +38,10 @@ export interface SavedAccessPolicy {
      */
     emailLinks?: true;
     openSignUp?: false;
+    /** The Socio app's native Google sign-in (CB-570). */
+    google?: false;
+    /** The Socio app's native Sign in with Apple (CB-570). */
+    apple?: false;
     /** OAuth provider ids kept on. */
     providers?: string[];
     allowedEmails?: string[];
@@ -53,6 +65,8 @@ export const savedAccessPolicySchema = z
         signInLink: z.literal(false).optional(),
         emailLinks: z.literal(true).optional(),
         openSignUp: z.literal(false).optional(),
+        google: z.literal(false).optional(),
+        apple: z.literal(false).optional(),
         providers: list.optional(),
         allowedEmails: list.optional(),
         allowedDomains: list.optional(),
@@ -73,6 +87,13 @@ export interface SignInCeiling {
      */
     emailLinks: boolean;
     openSignUp: boolean;
+    /**
+     * The Socio app's native Google and Apple sign-in (CB-570): link-only,
+     * verified by Socio's cloud services, so no setting gates them here.
+     * They are offered only while the cloud connection can verify them.
+     */
+    google: boolean;
+    apple: boolean;
     providers: { id: string; name: string }[];
     allowedEmails: string[];
     allowedDomains: string[];
@@ -86,6 +107,8 @@ export interface SignInInForce {
     /** Sign-in links and codes by email: saved on, with SMTP set up. */
     emailLinks: boolean;
     openSignUp: boolean;
+    google: boolean;
+    apple: boolean;
     providers: string[];
     allowedEmails: string[];
     allowedDomains: string[];
@@ -93,7 +116,7 @@ export interface SignInInForce {
 }
 
 const LIST_KEYS = ['providers', 'allowedEmails', 'allowedDomains', 'adminEmails', 'codeUsers'] as const;
-const FLAG_KEYS = ['password', 'passkey', 'signInLink', 'openSignUp'] as const;
+const FLAG_KEYS = ['password', 'passkey', 'signInLink', 'openSignUp', 'google', 'apple'] as const;
 /** Emails and domains compare lowercased; ids as they are. */
 const LOWERCASE = new Set(['allowedEmails', 'allowedDomains', 'adminEmails']);
 
@@ -143,6 +166,8 @@ export function signInInForce(ceiling: SignInCeiling, saved: SavedAccessPolicy):
         signInLink: ceiling.signInLink && saved.signInLink !== false,
         emailLinks: ceiling.emailLinks && saved.emailLinks === true,
         openSignUp: ceiling.openSignUp && saved.openSignUp !== false,
+        google: ceiling.google && saved.google !== false,
+        apple: ceiling.apple && saved.apple !== false,
         providers: narrowed(
             ceiling.providers.map(({ id }) => id),
             saved.providers,
@@ -182,13 +207,23 @@ export function sessionAllowed(method: string | null | undefined, saved: SavedAc
     if (method === 'link:email') {
         return saved.emailLinks === true;
     }
+    if (method === 'google') {
+        return saved.google !== false;
+    }
+    if (method === 'apple') {
+        return saved.apple !== false;
+    }
     if (method?.startsWith('provider:') && method.length > 'provider:'.length) {
         return !saved.providers || saved.providers.includes(method.slice('provider:'.length));
     }
     return false;
 }
 
-/** Any way to sign in at all is left. */
+/**
+ * Any way to sign in at all is left. The app's Google and Apple sign-in
+ * don't count: they only sign in accounts already linked, and only while
+ * the cloud connection can verify them.
+ */
 export const anyMethod = (inForce: SignInInForce) =>
     inForce.password || inForce.passkey || inForce.signInLink || inForce.emailLinks || inForce.providers.length > 0;
 
@@ -207,6 +242,8 @@ const FLAG_LABELS: Record<(typeof FLAG_KEYS)[number], [string, string]> = {
     passkey: ['Passkeys', 'AUTH_PASSKEY'],
     signInLink: ['Sign-in links by Telegram', 'the Telegram bot'],
     openSignUp: ['Open sign-up', 'AUTH_OPEN_SIGNUP'],
+    google: ['Google in the Socio app', 'the cloud connection'],
+    apple: ['Sign in with Apple in the Socio app', 'the cloud connection'],
 };
 /** The opt-in key's words (CB-352). */
 export const EMAIL_LINKS_LABEL = 'Sign-in links by email';

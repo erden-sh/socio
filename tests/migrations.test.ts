@@ -462,6 +462,8 @@ it('gives a fresh database and a release-1 database the same schema, keeping its
         ['auth_organization_role', 0],
         ['auth_passkey', 0],
         ['auth_session', 0],
+        // CB-570: native Google and Apple sign-in's nonces (auth 17).
+        ['auth_social_nonce', 0],
         ['auth_user', 0],
         ['auth_verification', 0],
         // CB-352: the workspace's id, made once (auth 8).
