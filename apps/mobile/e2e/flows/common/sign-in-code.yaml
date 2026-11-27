@@ -2,7 +2,8 @@
 # ${CHANNEL} (A by email to the SMTP sink, B by Telegram to the fake Bot API, as the manifest says).
 # The address, then "Email me a code" or "Send a code to my Telegram", Ada's email, Send code; the
 # code is read from what the workspace sent (code.js, the control port's /web/outbox) and typed in
-# with its dash; Sign in lands on the workspace's Home.
+# with its dash; the field submits itself on its last symbol (no Sign in button) and lands on the
+# workspace's Home.
 appId: ${APP_ID}
 name: sign-in code
 ---
@@ -56,7 +57,6 @@ name: sign-in code
 - tapOn:
     id: sign-in-code-field
 - inputText: ${output.code}
-- pressKey: Enter
 - extendedWaitUntil:
     visible:
       id: home-screen

@@ -29,8 +29,14 @@ name: add-device
     timeout: 20000
 - assertVisible:
     id: add-device-instruction
-    text: 'Type this code on your computer to sign in'
-- assertVisible: 'Sign in to ${WORKSPACE_A} as Ada.*'
+    text: 'On your computer, type this code'
+- assertVisible:
+    id: add-device-account
+    text: 'Ada · .*'
+- assertVisible:
+    id: add-device-countdown
+- assertVisible:
+    id: add-device-waiting
 - takeScreenshot: add-device-digits
 - copyTextFrom:
     id: add-device-digits

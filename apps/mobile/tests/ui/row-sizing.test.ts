@@ -151,6 +151,8 @@ const FIXED_HEIGHT_CLASSES: Record<string, readonly string[]> = {
     'screens/attachments.tsx': ['h-1', 'h-1'],
     // Media's usage bar and its fill (CB-558, the web's h-2).
     'screens/media.tsx': ['h-2', 'h-2'],
+    // Add a device's countdown bar and its fill (CB-568).
+    'screens/add-device.tsx': ['h-1.5', 'h-full'],
     // An empty spacer between the transcript's rows.
     'screens/chat.tsx': ['h-4'],
 };

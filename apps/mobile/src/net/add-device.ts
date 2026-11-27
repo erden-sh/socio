@@ -258,18 +258,23 @@ function onlyAbort(error: unknown): void {
 // ---------------------------------------------------------------------------
 // The words: "Add a device", never "phone"; nothing about phone numbers.
 
-/** The first step's title, before the claim. */
+/** The title before the claim and over the digits: what this screen does, never a question. */
 export const ADD_DEVICE_TITLE = 'Sign in on this device';
 /** The first step's line: what Continue does. */
 export const ADD_DEVICE_LINE = 'Continue shows a code here. You type it on your computer to sign in.';
-/** Under the digits. */
-export const DIGITS_INSTRUCTION = 'Type this code on your computer to sign in';
-
-/** The digits step's question: who this device would sign in as. */
-export const signInAsQuestion = (workspace: string, account: { readonly name: string; readonly email: string }) =>
-    account.name.trim() === ''
-        ? `Sign in to ${workspace} as ${account.email}?`
-        : `Sign in to ${workspace} as ${account.name} (${account.email})?`;
+/** Over the digits. */
+export const DIGITS_INSTRUCTION = 'On your computer, type this code';
+/** Under the code while polls get an answer and the computer hasn't confirmed. */
+export const WAITING_LINE = 'Waiting for your computer…';
+/** The claim ran out, by this device's clock or the server's answer. */
+export const EXPIRED_TITLE = 'This code expired';
+/** How to start again: a new QR code from the computer (a used one is refused). */
+export const START_AGAIN_LINE =
+    'To try again, choose Add a device on your computer, then scan the new QR code with this device’s camera.';
+/** Any other end: a refusal before or after the claim. Its line says what happened. */
+export const NOT_SIGNED_IN_TITLE = 'Couldn’t sign in';
+/** The countdown's last seconds: the bar and its words turn to the warning color. */
+export const URGENT_SECONDS = 20;
 
 /** Someone else's copy of the workspace is on this device: Cancel is the default. */
 export const otherAccountQuestion = (workspace: string, current: string | null, next: string) =>
@@ -292,6 +297,20 @@ export function otherAccountLine(unsent: number | null): string {
 /** The 6 digits as shown: two groups of three. */
 export const shownDigits = (digits: string) => `${digits.slice(0, 3)} ${digits.slice(3)}`;
 
+/** What a screen reader says for the code: each digit on its own, a pause between the groups. */
+export const digitsLabel = (digits: string) =>
+    `Code: ${digits.slice(0, 3).split('').join(' ')}, ${digits.slice(3).split('').join(' ')}`;
+
+/** Who this device signs in as, on one quiet line: "Ada · ada@example.com", or the email alone. */
+export const accountLine = (account: { readonly name: string; readonly email: string }) =>
+    account.name.trim() === '' ? account.email : `${account.name.trim()} · ${account.email}`;
+
+/** The same, as a screen reader says it. */
+export const accountLabel = (account: { readonly name: string; readonly email: string }) =>
+    account.name.trim() === ''
+        ? `Signing in as ${account.email}`
+        : `Signing in as ${account.name.trim()}, ${account.email}`;
+
 /** Whole seconds left of the claim, 0 once it ended. */
 export function secondsLeft(deadline: number, now: number): number {
     return Math.max(0, Math.ceil((deadline - now) / 1000));
@@ -302,6 +321,95 @@ export function countdownLabel(seconds: number): string {
     const minutes = Math.floor(seconds / 60);
     const rest = seconds % 60;
     return `Expires in ${minutes}:${String(rest).padStart(2, '0')}`;
+}
+
+/** "Expires in 1 minute 42 seconds", as a screen reader says it. */
+export function countdownSpoken(seconds: number): string {
+    const minutes = Math.floor(seconds / 60);
+    const rest = seconds % 60;
+    const parts = [
+        ...(minutes > 0 ? [`${minutes} ${minutes === 1 ? 'minute' : 'minutes'}`] : []),
+        ...(rest > 0 || minutes === 0 ? [`${rest} ${rest === 1 ? 'second' : 'seconds'}`] : []),
+    ];
+    return `Expires in ${parts.join(' ')}`;
+}
+
+/** The claim's time left: the bar's fill, its words, and whether it is nearly out. */
+export interface Countdown {
+    readonly seconds: number;
+    /** What is left of the claim's 2 minutes, from 1 down to 0. */
+    readonly fraction: number;
+    readonly label: string;
+    readonly spoken: string;
+    readonly urgent: boolean;
+}
+
+export function countdown(deadline: number, now: number): Countdown {
+    const seconds = secondsLeft(deadline, now);
+    return {
+        seconds,
+        fraction: Math.min(1, Math.max(0, (deadline - now) / CLAIM_MS)),
+        label: countdownLabel(seconds),
+        spoken: countdownSpoken(seconds),
+        urgent: seconds <= URGENT_SECONDS,
+    };
+}
+
+/**
+ * What the digits step draws at `now`: the code and its countdown while the claim lives, or the
+ * expired state the moment its 2 minutes are up by this device's clock (the poll ends the claim
+ * on its next turn), so the digits leave the screen then. The status says whether polls get an
+ * answer.
+ */
+export type DigitsLook =
+    | {
+          readonly kind: 'code';
+          readonly shown: string;
+          readonly label: string;
+          readonly account: string;
+          readonly accountLabel: string;
+          readonly countdown: Countdown;
+          readonly status:
+              | { readonly kind: 'waiting'; readonly line: string }
+              | { readonly kind: 'offline'; readonly line: string };
+      }
+    | { readonly kind: 'expired'; readonly title: string; readonly line: string };
+
+export function digitsLook(
+    view: {
+        readonly digits: string;
+        readonly deadline: number;
+        readonly reaching: boolean;
+        readonly account: { readonly name: string; readonly email: string };
+    },
+    now: number,
+): DigitsLook {
+    const left = countdown(view.deadline, now);
+    if (left.seconds === 0) {
+        return { kind: 'expired', title: EXPIRED_TITLE, line: START_AGAIN_LINE };
+    }
+    return {
+        kind: 'code',
+        shown: shownDigits(view.digits),
+        label: digitsLabel(view.digits),
+        account: accountLine(view.account),
+        accountLabel: accountLabel(view.account),
+        countdown: left,
+        status: view.reaching ? { kind: 'waiting', line: WAITING_LINE } : { kind: 'offline', line: STILL_TRYING },
+    };
+}
+
+/** An end's look: the expired claim says how to start again; any other end says what happened. */
+export interface EndLook {
+    readonly title: string;
+    readonly line: string;
+    readonly expired: boolean;
+}
+
+export function endLook(line: string): EndLook {
+    return line === CLAIM_EXPIRED
+        ? { title: EXPIRED_TITLE, line: START_AGAIN_LINE, expired: true }
+        : { title: NOT_SIGNED_IN_TITLE, line, expired: false };
 }
 
 export const CODE_USED = 'This code was already used. Make a new one on your computer.';

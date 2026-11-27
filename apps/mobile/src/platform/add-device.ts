@@ -9,6 +9,7 @@ import { probeWorkspace } from '../net/probe';
 import { createPublicFetch } from '../net/public-fetch';
 import { deviceLabel } from '../net/sheet-sign-in';
 import { redeemPairing } from '../net/sign-in';
+import { workspaceLogoPath } from '../shell/workspaces';
 import { gateVerdict } from '../sync/versions';
 
 import { appState } from './app-state';
@@ -71,6 +72,33 @@ export const addDevice: AddDevice = createAddDevice({
         subscribe: (listener) => appState.subscribe(listener),
     },
 });
+
+/**
+ * The logo the device already keeps for the workspace at `host` (a copy of it on the device, anyone's),
+ * or null for the bundled mascot: nothing is fetched or staged for Add a device, whose commit keeps
+ * the mascot. Read-only.
+ */
+export async function keptLogoPath(host: string): Promise<string | null> {
+    const opened = store();
+    for (const row of await opened.registry.list()) {
+        if (row.state === 'pending' || row.state === 'wiping' || hostOf(row.origin) !== host) {
+            continue;
+        }
+        const path = workspaceLogoPath(opened.root, row.id, row.logo);
+        if (path !== null) {
+            return path;
+        }
+    }
+    return null;
+}
+
+const hostOf = (origin: string) => {
+    try {
+        return new URL(origin).host;
+    } catch {
+        return null;
+    }
+};
 
 /** A link waiting for the screen; who listens while it shows. */
 let waiting: DeviceLink | null = null;

@@ -113,6 +113,33 @@ export function readCodeField(text: string): CodeField {
     return { code: null, hint: null };
 }
 
+/**
+ * The owner's rule for code fields (2026-11-26): no Sign in button. The field submits itself the
+ * moment it holds a whole code, typed to its last symbol or pasted (with or without its dash or
+ * spaces, any case), or filled in by the code's link. Returns the code to redeem, or null: nothing
+ * whole yet, or the same code the field already held (a dash added, a space taken out), so one code
+ * is never sent twice in a row.
+ */
+export function codeToSubmit(previous: string, next: string): string | null {
+    const code = readCodeField(next).code;
+    return code !== null && code !== readCodeField(previous).code ? code : null;
+}
+
+/** A request's tries (the server's CODE_TRIES): each redeem counts, right or wrong. */
+export const CODE_TRIES = 5;
+
+/**
+ * A wrong code: the field is cleared and this says so, with the tries this screen knows are left
+ * (counted from the wrong answers it saw for this request; the server's 429 `too_many` ends it).
+ */
+export function codeWrongLine(wrong: number): string {
+    const left = Math.max(0, CODE_TRIES - wrong);
+    if (left === 0) {
+        return 'That code isn’t right, and it was the last try. Ask for a new code.';
+    }
+    return `That code isn’t right. ${left === 1 ? '1 try' : `${left} tries`} left.`;
+}
+
 /** What the screen does with a refused redeem: its line, and whether the request is dead (start over). */
 export interface CodeRefusal {
     readonly line: string;

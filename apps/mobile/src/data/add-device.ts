@@ -36,8 +36,8 @@ import type { Store } from './wipe';
 //    Acme as <email>. Sign in as <other email> instead?" comes first, Cancel the default; going on
 //    agrees to remove exactly those copies, so the commit's own another-person question isn't asked
 //    again for them (it is for anyone else).
-// 4. "Sign in to Acme as <name> (<email>)?", the digits, "Type this code on your computer to sign
-//    in" and the claim's 2-minute countdown, by this device's clock from the claim's answer. The
+// 4. "Sign in on this device" with who signs in, "On your computer, type this code" over the
+//    digits, and the claim's 2-minute countdown, by this device's clock from the claim's answer. The
 //    redeem is polled every POLL_MS (2 s, never faster: the server answers `too_many` past one a
 //    second) inside `signInAndCommit`'s stage, with the claim's email (the workspace keys'
 //    install id for the same person), so the person check, BANNED_USER and the commit are every sign-in's.
