@@ -59,10 +59,14 @@ export const CLIENT_UPDATE_WORDS = 'This version of Socio is out of date. Update
  *
  * 0.2.7: since v0.54.0 the server speaks AG-UI 1.0 only, and 0.2.6 and older
  * can't send attachments or read them.
+ *
+ * Recommended 0.2.9 on iOS: the first app with folders, the in-app QR scanner
+ * and Google and Apple sign-in, on TestFlight. Android stays at 0.2.7 until
+ * 0.2.9 is installable there, so nobody is asked for an update they can't get.
  */
 export const CLIENT_COMPAT: ClientCompat = {
     platforms: {
-        ios: { minimum: '0.2.7', recommended: '0.2.7' },
+        ios: { minimum: '0.2.7', recommended: '0.2.9' },
         android: { minimum: '0.2.7', recommended: '0.2.7' },
     },
 };

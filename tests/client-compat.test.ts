@@ -109,8 +109,8 @@ describe('the versions', () => {
         expect(appVerdict('0.4.0', ios)).toBe('current');
     });
 
-    it('today needs 0.2.7 on both platforms', () => {
-        expect(CLIENT_COMPAT.platforms.ios).toEqual({ minimum: '0.2.7', recommended: '0.2.7' });
+    it('today needs 0.2.7 on both platforms, and recommends 0.2.9 on iOS', () => {
+        expect(CLIENT_COMPAT.platforms.ios).toEqual({ minimum: '0.2.7', recommended: '0.2.9' });
         expect(CLIENT_COMPAT.platforms.android).toEqual({ minimum: '0.2.7', recommended: '0.2.7' });
     });
 
