@@ -43,7 +43,7 @@ export interface PageLoader {
  */
 async function routeI18n(
     services: WebServices,
-    id: 'approvals' | 'approvals:request' | 'spaces:space',
+    id: 'approvals' | 'approvals:request' | 'spaces:space' | 'spaces:page',
 ): Promise<PageI18n> {
     return (
         (await services.i18n?.(ROUTES[id])) ?? {
@@ -126,6 +126,13 @@ export async function pageLoaders(seed: SeededWorkspace): Promise<PageLoader[]> 
                 i18n: await routeI18n(services, 'spaces:space'),
                 library: await services.spaceLibrary(space.id, oldest.id),
             }),
+        },
+        {
+            page: '/spaces/:spaceId/pages/:pageId (the page view’s words)',
+            route: 'spaces:page',
+            kept: true,
+            address: () => `/spaces/${space.id}/pages/${oldest.id}`,
+            load: async (services) => ({ i18n: await routeI18n(services, 'spaces:page') }),
         },
         {
             page: '/approvals',
