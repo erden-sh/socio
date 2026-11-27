@@ -57,7 +57,11 @@ export interface ConflictBanner {
     readonly canCompare: boolean;
 }
 
-export function conflictBanner(conflicts: readonly PageConflict[]): ConflictBanner | null {
+/**
+ * The banner for a page's conflicts, oldest first. On a folder (CB-426) Compare is off: theirs is
+ * the folder's hidden body, which nothing shows.
+ */
+export function conflictBanner(conflicts: readonly PageConflict[], folder = false): ConflictBanner | null {
     const conflict = conflicts[0];
     if (conflict === undefined) {
         return null;
@@ -70,7 +74,7 @@ export function conflictBanner(conflicts: readonly PageConflict[]): ConflictBann
                 ? 'Someone else saved changes while yours were waiting. Your version is safe on this phone.'
                 : `Someone else saved changes while yours were waiting. ${conflicts.length} versions of yours are safe on this phone; this is the oldest.`,
         conflict,
-        canCompare: conflict.theirs !== null,
+        canCompare: conflict.theirs !== null && !folder,
     };
 }
 

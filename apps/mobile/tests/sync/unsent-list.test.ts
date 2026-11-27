@@ -356,7 +356,7 @@ describe('the sheet’s Unsent rows', () => {
         expect(ROUTES.Unsent.tab).toBe('More');
         expect(screen).toContain("navigation.navigate('Unsent' as never)");
         expect(screen).toMatch(
-            /function AllUnsent\(\) \{[\s\S]*?const \{ rows, discard, saveAsNew, picker \} = useUnsentRows\(\);[\s\S]*<UnsentRows\s+rows=\{rows\}/,
+            /function AllUnsent\(\) \{[\s\S]*?const \{ rows, discard, saveAsNew, retry, picker \} = useUnsentRows\(\);[\s\S]*<UnsentRows\s+rows=\{rows\}/,
         );
         // A refused filing's Edit opens FileIssue on it, from the sheet and the page alike.
         expect(screen.match(/navigate\('FileIssue', \{ edit: row\.id \}\)/g)).toHaveLength(2);

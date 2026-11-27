@@ -6,7 +6,16 @@ import { keptPage, LAST_SCREEN_KEY, pageScreen } from '../shell/last-screen';
 
 import type { Drafts } from './chat-drafts';
 import { answeredWithError } from './issue-create';
-import type { CheckOutcome, NewOutboxWrite, Outbox, OutboxContext, OutboxKind, OutboxRow, SendOutcome } from './outbox';
+import type {
+    CheckOutcome,
+    NewOutboxWrite,
+    Outbox,
+    OutboxContext,
+    OutboxKind,
+    OutboxRow,
+    OutboxWrite,
+    SendOutcome,
+} from './outbox';
 import { UNSENT_GONE } from './outbox';
 import { type Answer, type ClassifierAction, classify, readAnswer, type WriteMethod } from './outbox-answers';
 import type { Overlay } from './outbox-overlay';
@@ -17,21 +26,23 @@ import {
     movedSave,
     newLocalPageId,
     PAGE_CREATE_KIND,
+    PAGE_FOLDER_KIND,
     PAGE_IDS,
     PAGE_SAVE_REFUSALS,
     pageLane,
     pageRoute,
+    pageWriteLanes,
     sameText,
 } from './page-save';
 import type { PageMove } from './page-store';
-import { pageBodyKey, pageLocationPath, PAGES } from './pages';
+import { pageBodyKey, pageLocationPath, PAGES, PAGES_SNAPSHOT } from './pages';
 import { serverSince } from './server-clock';
 import type { SnapshotCache } from './snapshot-cache';
 import type { FileUploads } from './upload-file';
 import type { ViewState } from './view-state';
 
-// Creating, moving and deleting pages, and their covers. Four kinds beside
-// page-save.ts's `page-save`:
+// Creating, moving and deleting pages, their covers, and folders. Five kinds
+// beside page-save.ts's `page-save`:
 //
 // - **`page-create`** (`POST /api/spaces/:id/pages`): a page made on the phone
 //   has a local id (`local-page-<uuid>`, the row's id) until the create
@@ -73,6 +84,20 @@ import type { ViewState } from './view-state';
 //   put back by the removal's Undo (`PUT …/cover { embedId: previous }`). A
 //   newer change replaces a queued one in place (a replaced upload is
 //   forgotten), and an Undo of a removal still queued just takes it out.
+// - **`page-folder`** (CB-426: `PATCH …/pages/:id { folder, expectedRevision }`,
+//   the edit route, which takes the mark with the revision it was turned on;
+//   the web's `PUT …/folder` takes no revision), lane `page:<id>`, behind the
+//   page's saves: safe to repeat. A folder keeps its body, hidden, so only the
+//   mark goes. A newer toggle folds into a queued one (back to what the page
+//   is takes it out), and a page whose create is still queued takes the mark
+//   into its create (`folder: true` in the POST). 200 hands the page to the
+//   body and the list, moves an editor on the revision before it, and `amend`s
+//   the lane's queued saves (`movedSave`: the mark changes no words). 409 GETs
+//   the page: already as asked is done (a lost success, or someone else's),
+//   else a `rewrite` on its revision (the mark merges with any edit). 404
+//   reads where the page went (elsewhere a `rewrite` there, gone `UNSENT_GONE`),
+//   410 `page-deleted`, 403 `page-refused`, 400 `page-invalid` (a server from
+//   before folders). Its overlay patches the row's `folder`.
 //
 // Routes follow `pageRoute`: a page made on the phone keeps its local lane while
 // that holds writes. Re-keying (`createLocalPages`, a new chat's rules): once a create
@@ -84,12 +109,94 @@ import type { ViewState } from './view-state';
 export const PAGE_MOVE_KIND = 'page-move';
 export const PAGE_DELETE_KIND = 'page-delete';
 export const PAGE_COVER_KIND = 'page-cover';
+/** A page turned into a folder or back (CB-426); page-save.ts names it, which a save's settle amends. */
+export { PAGE_FOLDER_KIND };
 const VERSION = 1;
 /** A move's retry reason while its new parent, made on the phone, waits for its create. */
 export const PAGE_MOVE_WAITING_PARENT = 'waiting-parent';
 
 /** The web's title for a page made without one (NewPageDialog). */
 export const UNTITLED_PAGE = 'Untitled page';
+
+/**
+ * Whether a page is a folder (CB-426). A server from before folders sends no
+ * `folder`, and a copy cached from one holds none: missing is a page.
+ */
+export const isFolder = (page: object | null | undefined): boolean =>
+    (page as { readonly folder?: unknown } | null | undefined)?.folder === true;
+
+/**
+ * Whether page `pageId` of Space `spaceId` is a folder as the phone holds it:
+ * a toggle of this phone still waiting on it first (`pendingFolder`, given
+ * `outbox`), else the Space's list (cache.db's `pages` rows, memory first);
+ * false when it holds none. A Space's list read from disk only once asked
+ * (`loadHeldFolders`) counts once it is read.
+ */
+export function heldFolder(
+    cache: Pick<SnapshotCache, 'rows'>,
+    spaceId: string,
+    pageId: string,
+    outbox?: Pick<Outbox, 'rows' | 'unsent' | 'resolve'>,
+): boolean {
+    const pending = outbox === undefined ? null : pendingFolder(outbox, pageId);
+    if (pending !== null) {
+        return pending;
+    }
+    const row = cache.rows(PAGES, spaceId).get(pageId);
+    if (row === undefined) {
+        return false;
+    }
+    try {
+        return isFolder(JSON.parse(row.json) as object | null);
+    } catch {
+        return false;
+    }
+}
+
+/**
+ * Whether page `pageId` is a folder by the newest copy the phone holds: its
+ * body (`body`, or null) or its Space's list, whichever has the higher
+ * revision (a refresh of either may be the one that found the toggle).
+ */
+export function heldPageFolder(
+    cache: Pick<SnapshotCache, 'rows'>,
+    spaceId: string,
+    pageId: string,
+    body: (object & { readonly revision?: unknown }) | null | undefined,
+): boolean {
+    const row = cache.rows(PAGES, spaceId).get(pageId);
+    let listed: { readonly revision?: unknown; readonly folder?: unknown } | null = null;
+    try {
+        listed = row === undefined ? null : (JSON.parse(row.json) as typeof listed);
+    } catch {
+        listed = null;
+    }
+    if (body === null || body === undefined) {
+        return isFolder(listed);
+    }
+    const revisionOf = (page: { readonly revision?: unknown } | null) =>
+        typeof page?.revision === 'number' ? page.revision : Number.NEGATIVE_INFINITY;
+    return isFolder(listed !== null && revisionOf(listed) > revisionOf(body) ? listed : body);
+}
+
+/**
+ * Reads from cache.db the lists of the Spaces among `spaceIds` not read yet
+ * this run (a restart onto Search, before any of their screens), so
+ * `heldFolder` knows their folders. Null when all are read already.
+ */
+export function loadHeldFolders(
+    cache: Pick<SnapshotCache, 'load' | 'loaded'>,
+    spaceIds: Iterable<string>,
+): Promise<void> | null {
+    const unread = [...new Set(spaceIds)].filter((spaceId) => !cache.loaded(PAGES_SNAPSHOT, spaceId));
+    return unread.length === 0
+        ? null
+        : Promise.all(unread.map((spaceId) => cache.load([PAGES_SNAPSHOT], spaceId))).then(() => undefined);
+}
+
+/** Whether the server sent the page with its `folder` mark: one from before folders doesn't. */
+export const knowsFolders = (page: object | null | undefined): boolean =>
+    typeof (page as { readonly folder?: unknown } | null | undefined)?.folder === 'boolean';
 
 /** Refusals' codes beside page-save.ts's (`PAGE_SAVE_REFUSALS`), which the Unsent list words. */
 export const PAGE_MANAGE_REFUSALS = {
@@ -129,6 +236,8 @@ export interface PageCreatePayload {
     readonly serverAt: number | null;
     /** The Space's page ids the phone held as the page was made: never this create's. */
     readonly known: readonly string[];
+    /** A folder (CB-426): sent only when true, so a server from before folders still takes a page. */
+    readonly folder?: boolean;
 }
 
 export interface PageMovePayload {
@@ -145,6 +254,16 @@ export interface PageDeletePayload {
     readonly pageId: string;
     /** The subpages the confirm named ("This page has 2 subpages"), ids local or not; empty for none. */
     readonly subpages: readonly string[];
+}
+
+export interface PageFolderPayload {
+    readonly spaceId: string;
+    /** The page's id, or its local id while its create hasn't resolved. */
+    readonly pageId: string;
+    /** What it becomes: a folder, or a page again. */
+    readonly folder: boolean;
+    /** The revision the person turned it on: the PATCH's `expectedRevision`. */
+    readonly revision: number;
 }
 
 export type PageCoverChange =
@@ -182,7 +301,8 @@ function decodeCreate(text: string): PageCreatePayload {
         !(value.parentId === null || isId(value.parentId)) ||
         !isString(value.createdBy) ||
         !(value.serverAt === null || typeof value.serverAt === 'number') ||
-        !isStrings(value.known)
+        !isStrings(value.known) ||
+        !(value.folder === undefined || typeof value.folder === 'boolean')
     ) {
         throw new TypeError('Not a page create.');
     }
@@ -200,6 +320,21 @@ function decodeMove(text: string): PageMovePayload {
         throw new TypeError('Not a page move.');
     }
     return value as unknown as PageMovePayload;
+}
+
+function decodeFolder(text: string): PageFolderPayload {
+    const value = object(text);
+    if (
+        !isId(value.spaceId) ||
+        !isId(value.pageId) ||
+        typeof value.folder !== 'boolean' ||
+        typeof value.revision !== 'number' ||
+        !Number.isInteger(value.revision) ||
+        value.revision < 1
+    ) {
+        throw new TypeError('Not a page folder.');
+    }
+    return value as unknown as PageFolderPayload;
 }
 
 function decodeDelete(text: string): PageDeletePayload {
@@ -261,6 +396,8 @@ export interface CreatePageOptions extends WriteOptions {
     readonly serverAt: number | null;
     /** The ids of the Space's pages the phone holds now (its summaries). */
     readonly known: Iterable<string>;
+    /** A folder (CB-426): the web's New folder, named in its prompt. */
+    readonly folder?: boolean;
 }
 
 /**
@@ -306,6 +443,7 @@ export function pageCreateWrite(
         createdBy,
         serverAt,
         known: [...new Set(options.known)],
+        ...(options.folder === true ? { folder: true } : {}),
     };
     return {
         localId,
@@ -427,6 +565,111 @@ export async function deletePage(options: DeletePageOptions): Promise<OutboxRow 
         idempotencyKey: newId(),
         dependsOn: route.dependsOn,
     });
+}
+
+export interface PageFolderOptions extends WriteOptions {
+    readonly spaceId: string;
+    readonly pageId: string;
+    /** What it becomes: a folder, or a page again. */
+    readonly folder: boolean;
+    /** The revision the screen shows (the summary's): the PATCH's `expectedRevision`. */
+    readonly revision: number;
+}
+
+/** What a folder toggle did: queued a row, changed a queued one (or the create's), or took it out. */
+export type PageFolderResult = 'queued' | 'folded' | 'removed';
+
+/**
+ * Turns a page into a folder or back (CB-426), behind its saves. A page whose
+ * create is still queued takes the mark into the create; a toggle while one is
+ * queued folds into it (back to what the page is takes it out, nothing sent).
+ */
+export async function setPageFolder(options: PageFolderOptions): Promise<PageFolderResult> {
+    const { outbox, newId, spaceId, folder } = options;
+    for (;;) {
+        const route = pageRoute(outbox, options.pageId);
+        const rows = outbox.rows();
+        const create =
+            route.dependsOn === null
+                ? undefined
+                : rows.find((row) => row.id === route.dependsOn && row.kind === PAGE_CREATE_KIND);
+        if (create?.state === 'queued') {
+            let held: PageCreatePayload | null;
+            try {
+                held = decodeCreate(create.payload);
+            } catch {
+                held = null;
+            }
+            if (held !== null) {
+                const { folder: _, ...page } = held;
+                if (
+                    await outbox.update(
+                        create.id,
+                        encode(folder ? { ...page, folder: true } : page),
+                        outbox.revisionOf(create.id),
+                    )
+                ) {
+                    return 'folded';
+                }
+                continue;
+            }
+        }
+        const queued = rows.filter((row) => row.lane === route.lane).at(-1);
+        if (queued?.kind === PAGE_FOLDER_KIND && queued.state === 'queued') {
+            let held: PageFolderPayload | null;
+            try {
+                held = decodeFolder(queued.payload);
+            } catch {
+                held = null;
+            }
+            if (held !== null) {
+                if (held.folder === folder) {
+                    return 'folded';
+                }
+                // Back to what the server has before the queued one went: nothing to send.
+                if ((await outbox.remove(queued.id, outbox.revisionOf(queued.id))) !== null) {
+                    return 'removed';
+                }
+                continue;
+            }
+        }
+        const payload: PageFolderPayload = {
+            spaceId,
+            pageId: route.pageId,
+            folder,
+            revision: Math.max(1, Math.trunc(options.revision)),
+        };
+        await outbox.enqueue({
+            id: newId(),
+            lane: route.lane,
+            kind: PAGE_FOLDER_KIND,
+            ...encode(payload),
+            idempotencyKey: newId(),
+            dependsOn: route.dependsOn,
+        });
+        return 'queued';
+    }
+}
+
+/**
+ * The folder mark page `pageId` waits to take (CB-426): the newest toggle of
+ * this phone still in the outbox, or null with none. A refused one lays nothing:
+ * the page shows what the server has.
+ */
+export function pendingFolder(outbox: Pick<Outbox, 'rows' | 'unsent' | 'resolve'>, pageId: string): boolean | null {
+    const lanes = pageWriteLanes(outbox, pageId);
+    let folder: boolean | null = null;
+    for (const row of outbox.rows()) {
+        if (row.kind !== PAGE_FOLDER_KIND || !lanes.has(row.lane)) {
+            continue;
+        }
+        try {
+            folder = decodeFolder(row.payload).folder;
+        } catch {
+            // A newer build's row: it says nothing here.
+        }
+    }
+    return folder;
 }
 
 export interface PageCoverOptions extends WriteOptions {
@@ -640,7 +883,7 @@ async function request(
 const serverPage = (context: Pick<OutboxContext, 'resolve'>, id: string) =>
     isLocalPage(id) ? context.resolve(PAGE_IDS, id) : id;
 
-/** The four kinds, given to the scope beside page-save.ts's `pageSaveKind`. */
+/** The five kinds, given to the scope beside page-save.ts's `pageSaveKind`. */
 export function pageManageKinds(options: PageManageKindOptions = {}): OutboxKind<unknown>[] {
     const { bodies, cache, uploads, onSaved, onMoved, pull, holdsRow } = options;
     let fallbackKeys = 0;
@@ -717,7 +960,13 @@ export function pageManageKinds(options: PageManageKindOptions = {}): OutboxKind
                 'POST',
                 false,
                 createAnswer,
-                { title: pageTitle(payload.title), content: payload.content, parentId },
+                {
+                    title: pageTitle(payload.title),
+                    content: payload.content,
+                    parentId,
+                    // Only a folder says so: a server from before folders refuses the field.
+                    ...(payload.folder === true ? { folder: true } : {}),
+                },
             );
             return outcome(action, answer.status, {
                 delivered: () => {
@@ -748,7 +997,10 @@ export function pageManageKinds(options: PageManageKindOptions = {}): OutboxKind
                     (since === null || page.createdAt >= since) &&
                     !context.claimed(PAGE_IDS, page.id),
             );
-            // Told apart by content (two "Untitled page" made offline): each candidate's body.
+            // Told apart by content (two "Untitled page" made offline): each candidate's body. And by
+            // the folder mark (CB-426): a folder's create is never a page made the same way, nor the
+            // reverse; missing (a server from before folders) is a page.
+            const folder = payload.folder === true;
             const found: Page[] = [];
             for (const candidate of candidates) {
                 const answer = await readAnswer(
@@ -762,7 +1014,7 @@ export function pageManageKinds(options: PageManageKindOptions = {}): OutboxKind
                 if (page === null) {
                     throw new NetworkError(pagePath(payload.spaceId, candidate.id));
                 }
-                if (page.content === payload.content) {
+                if (page.content === payload.content && isFolder(page) === folder) {
                     found.push(page);
                 }
             }
@@ -793,13 +1045,15 @@ export function pageManageKinds(options: PageManageKindOptions = {}): OutboxKind
                     spaceId: payload.spaceId,
                     parentId,
                     title,
-                    excerpt: pageExcerpt(payload.content, title),
+                    // A folder's body is hidden (CB-426): no excerpt of it, as the server's.
+                    excerpt: payload.folder === true ? '' : pageExcerpt(payload.content, title),
                     revision: 0,
                     createdAt: at,
                     updatedAt: at,
                     sourceThreadId: null,
                     createdBy: payload.createdBy,
                     cover: null,
+                    folder: payload.folder === true,
                 },
             };
         },
@@ -1105,7 +1359,131 @@ export function pageManageKinds(options: PageManageKindOptions = {}): OutboxKind
         },
     };
 
-    return [create, move, remove, cover] as OutboxKind<unknown>[];
+    // ---- page-folder
+
+    const folderAnswer = ({ status }: Answer): ClassifierAction | undefined => {
+        switch (status) {
+            case 409:
+                return { action: 'merge' };
+            case 404:
+                return { action: 'relocate' };
+            case 410:
+                return { action: 'unsent', reason: PAGE_SAVE_REFUSALS.deleted };
+            case 403:
+                return { action: 'unsent', reason: PAGE_SAVE_REFUSALS.refused };
+            case 400:
+                // A server from before folders (its patch takes no `folder`), or a rule this build doesn't know.
+                return { action: 'unsent', reason: PAGE_SAVE_REFUSALS.invalid };
+            default:
+                return undefined;
+        }
+    };
+
+    /** The page the server holds now, or 404/410; a failure throws, to go again. */
+    const readPage = async (context: OutboxContext, spaceId: string, pageId: string): Promise<Page | 404 | 410> => {
+        const path = pagePath(spaceId, pageId);
+        const answer = await readAnswer(await context.fetch(path), context.signal);
+        if (answer.status === 404 || answer.status === 410) {
+            return answer.status;
+        }
+        const page = answer.status === 200 ? pageOf(answer.body) : null;
+        if (page === null) {
+            throw new NetworkError(path);
+        }
+        return page;
+    };
+
+    /** The server's page as the toggle's answer: the body and the list, an editor and the lane's saves on its revision. */
+    const marked = (write: OutboxWrite<PageFolderPayload>, page: Page): SendOutcome => ({
+        action: 'done',
+        handOff: async () => {
+            try {
+                await keep(page);
+            } finally {
+                // The mark changes no words: an editor on the revision before moves to it, under
+                // either id, so its next save isn't a false conflict.
+                for (const id of new Set([write.payload.pageId, page.id])) {
+                    onSaved?.(id, [page.revision - 1], page);
+                }
+            }
+        },
+        amend: (other) => movedSave(other, page),
+    });
+
+    const folderRelocate = async (write: OutboxWrite<PageFolderPayload>, context: OutboxContext, pageId: string) => {
+        const where = await locate(context, pageId);
+        if (where === 'gone') {
+            return { action: 'unsent', reason: UNSENT_GONE } as const;
+        }
+        if (where !== write.payload.spaceId) {
+            return rewrite({ ...write.payload, spaceId: where }, 'relocated');
+        }
+        return { action: 'unsent', reason: PAGE_SAVE_REFUSALS.invalid } as const;
+    };
+
+    const folderMark: OutboxKind<PageFolderPayload> = {
+        kind: PAGE_FOLDER_KIND,
+        payloadVersion: VERSION,
+        repeatable: true,
+        decode: decodeFolder,
+        async send(write, context) {
+            const { payload } = write;
+            const pageId = serverPage(context, payload.pageId);
+            if (pageId === null) {
+                return { action: 'unsent', reason: PAGE_SAVE_REFUSALS.noPage };
+            }
+            const { answer, action } = await request(
+                context,
+                pagePath(payload.spaceId, pageId),
+                'PATCH',
+                write.ambiguous === true,
+                folderAnswer,
+                { folder: payload.folder, expectedRevision: payload.revision },
+            );
+            return outcome(action, answer.status, {
+                delivered: () => {
+                    const page = pageOf(answer.body);
+                    if (page === null) {
+                        pull?.(payload.spaceId);
+                        return { action: 'done' };
+                    }
+                    return marked(write, page);
+                },
+                // Changed since it was turned (an edit, a move, our own save ahead of it): the mark
+                // touches no words, so it goes again on the page's revision, unless it is already so.
+                merge: async () => {
+                    const theirs = await readPage(context, payload.spaceId, pageId);
+                    if (theirs === 404) {
+                        return folderRelocate(write, context, pageId);
+                    }
+                    if (theirs === 410) {
+                        return { action: 'unsent', reason: PAGE_SAVE_REFUSALS.deleted };
+                    }
+                    if (isFolder(theirs) === payload.folder && knowsFolders(theirs)) {
+                        return { action: 'done', handOff: () => keep(theirs) };
+                    }
+                    if (!knowsFolders(theirs)) {
+                        // A server from before folders: it would never take the mark.
+                        return { action: 'unsent', reason: PAGE_SAVE_REFUSALS.invalid };
+                    }
+                    return rewrite({ ...payload, revision: theirs.revision }, 'changed');
+                },
+                relocate: () => folderRelocate(write, context, pageId),
+            });
+        },
+        overlay({ payload }, scope): Overlay {
+            const key = scope.resolve(PAGE_IDS, payload.pageId) ?? payload.pageId;
+            // A folder's excerpt is empty (its body is hidden); a page again shows its own once the server answers.
+            return {
+                collection: PAGES,
+                key,
+                mode: 'patch',
+                value: payload.folder ? { folder: true, excerpt: '' } : { folder: false },
+            };
+        },
+    };
+
+    return [create, move, remove, cover, folderMark] as OutboxKind<unknown>[];
 }
 
 /** How page writes look on screen (`overlaysOf`), without anything that sends. */

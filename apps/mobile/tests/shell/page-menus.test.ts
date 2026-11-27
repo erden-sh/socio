@@ -102,9 +102,23 @@ describe('the delete confirm', () => {
 });
 
 describe('a page row’s menu', () => {
-    it('offers Move, Set cover and Delete where allowed', () => {
-        expect(pageMenu(page('notes'), true).map((action) => action.label)).toEqual(['Move', 'Set cover', 'Delete']);
-        expect(pageMenu(page('notes'), false).map((action) => action.label)).toEqual(['Move', 'Set cover']);
+    it('offers Move, Set cover, Turn into folder (CB-426) and Delete where allowed', () => {
+        expect(pageMenu(page('notes'), true).map((action) => action.label)).toEqual([
+            'Move',
+            'Set cover',
+            'Turn into folder',
+            'Delete',
+        ]);
+        expect(pageMenu(page('notes'), false).map((action) => action.label)).toEqual([
+            'Move',
+            'Set cover',
+            'Turn into folder',
+        ]);
+        expect(pageMenu({ ...page('notes'), folder: true }, false).map((action) => action.label)).toEqual([
+            'Move',
+            'Set cover',
+            'Turn into page',
+        ]);
     });
 
     it('offers Change cover and Remove cover for a page with one, or one uploading', () => {

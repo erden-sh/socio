@@ -5,6 +5,7 @@ import { pageHierarchy } from '@socio/shared/pages/page-hierarchy';
 import type { Page, PageSummary } from '@socio/shared/pages/page-library';
 
 import { markdownParts, type MarkdownPart } from '../chat/markdown';
+import { isFolder, knowsFolders } from '../sync/page-manage';
 
 import { UNTITLED_PAGE } from './space-library';
 
@@ -19,6 +20,8 @@ import { UNTITLED_PAGE } from './space-library';
 // - Links to the workspace's pages and Spaces, in the path form and the old
 //   hash form (`/#/spaces/…`), open in the app (`pageLink`, the web's
 //   `resolveLink` for those paths); other links keep the chat's rules.
+// - A folder (CB-426) is read as what it holds: its pages and folders, and no
+//   body, excerpt or anything else of the text it keeps hidden.
 
 /** What the reader says of a page the phone has no body of, offline. */
 export const OPEN_ONLINE = 'Open it once you’re online';
@@ -298,7 +301,16 @@ export function pageLink(href: string | null | undefined, origin: string): PageL
 export interface PageRef {
     readonly id: string;
     readonly title: string;
+    /** A folder (CB-426): its icon. */
+    readonly folder?: boolean;
 }
+
+/** The folder view's words (the web's `FolderContents`, CB-426). */
+export const IN_THIS_FOLDER = 'In this folder';
+export const FOLDER_EMPTY = 'This folder is empty.';
+export const FOLDER_KEPT_TEXT = 'This folder keeps its page text. Turn it back into a page to see it.';
+/** The editor's line for a folder: it has no editor, its text is kept as it was. */
+export const FOLDER_NO_EDITOR = 'This is a folder: it has no text to edit. Turn it back into a page to edit it.';
 
 /** What the reader shows of a page. */
 export interface PageView {
@@ -311,10 +323,16 @@ export interface PageView {
     readonly ancestors: readonly PageRef[];
     /** The subpages, by the list's order. */
     readonly children: readonly PageRef[];
-    /** The body, or null when the phone holds none. */
+    /** The body, or null when the phone holds none; always null for a folder, whose body is hidden. */
     readonly content: string | null;
-    /** The excerpt, shown with no body. */
+    /** The excerpt, shown with no body; always empty for a folder. */
     readonly excerpt: string;
+    /** A folder (CB-426): the reader lists what it holds, with no editor and no body. */
+    readonly folder: boolean;
+    /** Whether the server knows folders (it sent the mark): only then may the page be turned into one. */
+    readonly foldersKnown: boolean;
+    /** A folder that still keeps text from when it was a page (the web's muted line); never the text. */
+    readonly keptText: boolean;
 }
 
 const titleOf = (page: { readonly title: string }) => page.title.trim() || UNTITLED_PAGE;
@@ -335,6 +353,8 @@ export function pageView(
     pageId: string,
     body: Page | null,
     pending: { readonly title: string; readonly content: string } | null = null,
+    /** A folder toggle of this phone still waiting (page-manage.ts's `pendingFolder`), or null. */
+    pendingFolder: boolean | null = null,
 ): PageView | null {
     const own = pages.filter((page) => page.spaceId === spaceId);
     const summary = own.find((page) => page.id === pageId) ?? null;
@@ -345,15 +365,26 @@ export function pageView(
     }
     const hierarchy = pageHierarchy(own, spaceId);
     const node = summary ?? newest;
+    // A folder hides its body (CB-426): the newer copy says whether it is one, a toggle still
+    // waiting on the phone over both. A copy with no mark (a server before folders) is a page.
+    const folder = pendingFolder ?? isFolder(newest);
+    const text = pending?.content ?? usable?.content ?? null;
     return {
         title: titleOf(pending ?? newest),
         edited: newest.updatedAt > 0 ? `Edited ${editedDate.format(newest.updatedAt)}` : null,
         coverId: newest.cover?.id ?? null,
         ancestors: hierarchy.ancestors(node).map((page) => ({ id: page.id, title: titleOf(page) })),
         children:
-            summary === null ? [] : hierarchy.children(summary).map((page) => ({ id: page.id, title: titleOf(page) })),
-        content: pending?.content ?? usable?.content ?? null,
-        excerpt: summary?.excerpt.trim() ?? '',
+            summary === null
+                ? []
+                : hierarchy
+                      .children(summary)
+                      .map((page) => ({ id: page.id, title: titleOf(page), folder: isFolder(page) })),
+        content: folder ? null : text,
+        excerpt: folder ? '' : (summary?.excerpt.trim() ?? ''),
+        folder,
+        foldersKnown: knowsFolders(newest) || knowsFolders(summary) || knowsFolders(usable),
+        keptText: folder && text !== null && text.trim() !== '',
     };
 }
 

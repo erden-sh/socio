@@ -196,6 +196,31 @@ describe('the Unsent list’s page writes', () => {
         pageId: (localId: string) => (localId === 'local-page-a' ? 'p9' : null),
     };
 
+    it('a save refused because its page is a folder now (CB-426) offers Retry, Copy and Discard', () => {
+        const [folder, gone] = unsentListRows(
+            [
+                write({ id: 'w1', kind: PAGE_SAVE_KIND, payload: save('p1'), reason: PAGE_SAVE_REFUSALS.folder }),
+                write({
+                    id: 'w2',
+                    kind: PAGE_SAVE_KIND,
+                    payload: save('p1'),
+                    reason: PAGE_SAVE_REFUSALS.deleted,
+                    createdAt: 2,
+                }),
+            ],
+            [],
+            context,
+        );
+        expect(folder).toMatchObject({
+            why: 'This page is now a folder, so this change wasn’t saved. Turn it back into a page to save it',
+            retry: true,
+            saveAsNew: null,
+            opens: null,
+        });
+        expect(folder!.text).not.toBeNull();
+        expect(gone!.retry).toBe(false);
+    });
+
     it('says the page and its Space, and Copy takes the title and text', () => {
         const rows = unsentListRows(
             [

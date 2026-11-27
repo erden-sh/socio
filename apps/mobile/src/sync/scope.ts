@@ -53,7 +53,7 @@ import { createOwnTurns, type OwnTurns } from './own-turns';
 import { createPageLandings, type PageLandings } from './page-conflicts';
 import { createPageChats, type PageChats } from './page-conversation';
 import { createPageDrafts, type PageDrafts } from './page-drafts';
-import { createLocalPages, type LocalPages } from './page-manage';
+import { createLocalPages, heldPageFolder, type LocalPages, pendingFolder } from './page-manage';
 import { followStoredReviews, reviewLane } from './page-review';
 import { createPageSaves, type PageLanding, type PageText, type PageTheirs } from './page-save';
 import { createPagesStore, type PageMove, type PagesStore } from './page-store';
@@ -271,6 +271,10 @@ export interface OutboxKindScope {
      * reads the copy held (memory, else disk, no network) to tell whether it changed the text (page-manage.ts).
      */
     readonly pageBodies: Pick<PagesStore['bodies'], 'put'> & { read(key: string): Promise<Page | null> };
+    /** A folder toggle of this phone still waiting on page `pageId` (page-manage.ts's `pendingFolder`), or null. */
+    pendingFolder(pageId: string): boolean | null;
+    /** Whether the phone holds page `pageId` as a folder: the newest of its body (memory, else disk) and its Space's list. */
+    heldFolder(spaceId: string, pageId: string): Promise<boolean>;
     /** Page `pageId` saved by a row based on the revisions `from`, now `page`: its editor's draft rebases (page-drafts.ts). */
     pageSaved(pageId: string, from: readonly number[], page: Page): void;
     /**
@@ -758,6 +762,17 @@ export async function openWorkspaceScope(options: WorkspaceScopeOptions): Promis
                                   }
                               },
                           },
+                          pendingFolder: (pageId) => (outboxRef === null ? null : pendingFolder(outboxRef, pageId)),
+                          heldFolder: async (spaceId, pageId) => {
+                              const key = pageBodyKey(spaceId, pageId);
+                              let body: Page | null = null;
+                              try {
+                                  body = (pages.bodies.peek(key) ?? (await pages.bodies.preload(key))).state.value;
+                              } catch {
+                                  body = null;
+                              }
+                              return heldPageFolder(cache, spaceId, pageId, body);
+                          },
                           pageSaved: (pageId, from, page) => pageDraftsRef?.rebase(pageId, from, page),
                           pageLanded: (pageId, from, sent, to, how) => {
                               pageDraftsRef?.landed(pageId, from, sent, to);
@@ -798,6 +813,10 @@ export async function openWorkspaceScope(options: WorkspaceScopeOptions): Promis
                 return page !== null && page.revision === revision ? page : null;
             },
             newId: options.newId ?? (() => `page-save-${now()}-${(fallbackIds += 1)}`),
+            // A folder's hidden body takes no saves (CB-426): the editor's draft waits on the phone.
+            isFolder: (spaceId, pageId) =>
+                pendingFolder(outbox, pageId) ??
+                heldPageFolder(cache, spaceId, pageId, pages.bodies.peek(pageBodyKey(spaceId, pageId))?.state.value),
         });
         const pageDrafts = createPageDrafts({
             drafts,

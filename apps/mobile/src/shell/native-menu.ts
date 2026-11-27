@@ -46,6 +46,10 @@ export const MENU_SYMBOLS: Readonly<Record<string, string>> = {
     move: 'folder',
     'set-cover': 'photo',
     'remove-cover': 'rectangle.badge.minus',
+    'turn-into-folder': 'folder',
+    'turn-into-page': 'doc.text',
+    'new-page': 'doc.badge.plus',
+    'new-folder': 'folder.badge.plus',
     'keep-draft': 'square.and.arrow.down',
     'discard-draft': 'trash',
 };

@@ -15,8 +15,9 @@ import { appState } from '../platform/app-state';
 import { holdEditorGrace } from '../platform/background-grace';
 import { useAdvanced } from '../platform/device-settings';
 import { editorPictureSource } from '../platform/editor-pictures';
-import { OPEN_ONLINE } from '../shell/page-reader';
+import { FOLDER_NO_EDITOR, OPEN_ONLINE } from '../shell/page-reader';
 import type { EditorDraft, PageEditorDraft } from '../sync/page-drafts';
+import { heldFolder, isFolder, pendingFolder } from '../sync/page-manage';
 import { useColors, useScheme } from '../theme/scheme';
 import { Banner, Text } from '../ui';
 
@@ -70,12 +71,26 @@ function EditorRoute({ spaceId, pageId }: { spaceId: string; pageId: string }) {
     const scope = useWorkspaceScope();
     const body = usePageBody(spaceId, pageId);
     const [start, setStart] = useState<EditorDraft | null>(null);
-    const found = start ?? editorStart(scope.pageDrafts.stored(pageId), scope.outbox, pageId, body.value);
+    // A folder (CB-426) has no editor: its body is kept, hidden, and nothing here may show or save
+    // over it. A toggle waiting on the phone counts, and so does the Space's list. That holds also
+    // when it turns into one with the editor open (another device's toggle, found by a refresh):
+    // the editor closes to the folder's words, and its draft stays on the phone, unsent (the
+    // scope's page saves take none for a folder), for when it is a page again.
+    const shut =
+        pendingFolder(scope.outbox, pageId) ?? (isFolder(body.value) || heldFolder(scope.cache, spaceId, pageId));
+    const found =
+        start ?? (shut ? null : editorStart(scope.pageDrafts.stored(pageId), scope.outbox, pageId, body.value));
     useEffect(() => {
-        if (start === null && found !== null) {
+        if (shut && start !== null) {
+            // Opened again later, it starts from the draft kept on disk.
+            setStart(null);
+        } else if (!shut && start === null && found !== null) {
             setStart(found);
         }
-    }, [start, found]);
+    }, [shut, start, found]);
+    if (shut) {
+        return <Waiting line={FOLDER_NO_EDITOR} />;
+    }
     if (start === null) {
         return <Waiting line={found === null && body.settled ? OPEN_ONLINE : 'Loading page…'} />;
     }

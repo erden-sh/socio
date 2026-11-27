@@ -4,6 +4,7 @@ import type { PageSummary } from '@socio/shared/pages/page-library';
 import { foldText, freshnessLabel } from '@socio/shared/pages/page-search';
 import type { Space } from '@socio/shared/types';
 
+import { isFolder } from '../sync/page-manage';
 import type { ServerSearchState } from '../sync/server-search';
 import { searchEmpty, type SearchEmptyView } from '../ui/search-empty';
 
@@ -15,12 +16,20 @@ import { OFFLINE_LINE, WAITING_LINE } from './search';
 // empty page, ready to write."; "Edited <date>" and the parent pages' trail),
 // with each page's cover, and the same pages as a tree from shared's
 // `pageHierarchy`, which the person expands and collapses; and its page search
-// (`librarySearch`). No React Native, so tests/shell runs it under Node.
+// (`librarySearch`). A folder (CB-426) shows what it holds where a page shows
+// its text, and nothing of its hidden body: no excerpt, no snippet, and its
+// title alone matches a search. No React Native, so tests/shell runs it under Node.
 
 /** The web's line for a page with no text yet. */
 export const EMPTY_PAGE = 'An empty page, ready to write.';
 /** The web's title for a page whose title is blank. */
 export const UNTITLED_PAGE = 'Untitled page';
+
+/** A folder's word (CB-426), said with its title. */
+export const FOLDER = 'Folder';
+
+/** A folder's line where a page shows its text (the web's `FolderLine`): what it holds. */
+export const folderLine = (inside: number) => (inside > 0 ? `Folder · ${inside} inside` : 'Empty folder');
 
 /** The two ways the library shows a Space's pages. */
 export type LibraryView = 'recent' | 'tree';
@@ -85,8 +94,10 @@ const editedDate = dateTimeFormat({ month: 'short', day: 'numeric' });
 export interface RecentPageRow {
     readonly id: string;
     readonly title: string;
-    /** The excerpt, else the web's empty-page line. */
+    /** The excerpt, else the web's empty-page line; a folder's says what it holds (`folderLine`). */
     readonly excerpt: string;
+    /** A folder (CB-426): its icon, and it opens as the list of what it holds. */
+    readonly folder: boolean;
     /** "Edited Nov 8". */
     readonly edited: string;
     /** The parent pages, root first, joined by " › "; null for a top-level page. */
@@ -130,12 +141,19 @@ export function recentPages(
         const parents = hierarchy.ancestors(page).map(titleOf);
         const trail = parents.length > 0 ? parents.join(' › ') : null;
         const edited = `Edited ${editedDate.format(page.updatedAt)}`;
-        const excerpt = page.excerpt.trim() === '' ? EMPTY_PAGE : page.excerpt;
+        const folder = isFolder(page);
+        // A folder's body is hidden (CB-426): never its excerpt, even one an older copy kept.
+        const excerpt = folder
+            ? folderLine(hierarchy.children(page).length)
+            : page.excerpt.trim() === ''
+              ? EMPTY_PAGE
+              : page.excerpt;
         const conflict = conflicted.has(page.id);
         return {
             id: page.id,
             title,
             excerpt,
+            folder,
             edited,
             trail,
             coverId: page.cover?.id ?? null,
@@ -144,6 +162,7 @@ export function recentPages(
             conflict,
             accessibilityLabel: [
                 title,
+                folder ? excerpt : null,
                 conflict ? CHANGED_ELSEWHERE : null,
                 trail === null ? null : `in ${trail}`,
                 edited,
@@ -165,6 +184,8 @@ export interface TreeRow {
     readonly children: number;
     /** Its subpages show (only when it has some). */
     readonly expanded: boolean;
+    /** A folder (CB-426): its icon. */
+    readonly folder: boolean;
     /** A save of it waits as a conflict: the row's badge. */
     readonly conflict: boolean;
     readonly accessibilityLabel: string;
@@ -218,7 +239,12 @@ export function pageTree(
         const children = (hierarchy.children(page) as PageSummary[]).filter((child) => !roots.includes(child));
         const open = children.length > 0 && expanded.has(page.id);
         const title = titleOf(page);
-        const count = children.length === 1 ? '1 subpage' : `${children.length} subpages`;
+        const folder = isFolder(page);
+        const count = folder
+            ? folderLine(children.length)
+            : children.length === 1
+              ? '1 subpage'
+              : `${children.length} subpages`;
         const conflict = conflicted.has(page.id);
         rows.push({
             id: page.id,
@@ -226,8 +252,13 @@ export function pageTree(
             depth,
             children: children.length,
             expanded: open,
+            folder,
             conflict,
-            accessibilityLabel: [title, conflict ? CHANGED_ELSEWHERE : null, children.length > 0 ? count : null]
+            accessibilityLabel: [
+                title,
+                conflict ? CHANGED_ELSEWHERE : null,
+                folder || children.length > 0 ? count : null,
+            ]
                 .filter(Boolean)
                 .join(', '),
         });
@@ -278,6 +309,8 @@ export interface PageTextRow {
     readonly snippet: string;
     /** "Edited Nov 8", or when it was last used: shared's freshness. */
     readonly fresh: string;
+    /** A folder (CB-426): matched by its title, with no snippet of its hidden body. */
+    readonly folder: boolean;
     readonly accessibilityLabel: string;
 }
 
@@ -296,14 +329,21 @@ export interface LibrarySearchView {
     readonly count: string;
 }
 
-/** The pages whose title or excerpt hold `query`, folded as the palette folds (case, accents, spacing). */
-export function pageMatches(
-    pages: readonly Pick<PageSummary, 'id' | 'title' | 'excerpt'>[],
-    query: string,
-): Set<string> {
+/** What a search reads of a page the phone holds: a folder (CB-426) only by its title. */
+export type SearchablePage = Pick<PageSummary, 'id' | 'title' | 'excerpt'> & { readonly folder?: boolean };
+
+/**
+ * The pages whose title or excerpt hold `query`, folded as the palette folds (case, accents,
+ * spacing); a folder's by its title alone, since its body is hidden.
+ */
+export function pageMatches(pages: readonly SearchablePage[], query: string): Set<string> {
     const folded = foldText(query);
     return new Set(
-        pages.filter((page) => foldText(`${page.title} ${page.excerpt ?? ''}`).includes(folded)).map((page) => page.id),
+        pages
+            .filter((page) =>
+                foldText(isFolder(page) ? page.title : `${page.title} ${page.excerpt ?? ''}`).includes(folded),
+            )
+            .map((page) => page.id),
     );
 }
 
@@ -317,7 +357,7 @@ export function librarySearch(input: {
     readonly query: string;
     readonly spaceId: string;
     readonly rows: readonly RecentPageRow[];
-    readonly pages: readonly Pick<PageSummary, 'id' | 'title' | 'excerpt'>[];
+    readonly pages: readonly SearchablePage[];
     readonly server: ServerSearchState;
     readonly now?: number;
 }): LibrarySearchView {
@@ -331,22 +371,37 @@ export function librarySearch(input: {
     const answer = server.status === 'done' && server.answer.query === folded ? server.answer.pages : null;
     const shown = new Set(local.map((row) => row.id));
     const titles = new Map(input.rows.map((row) => [row.id, row.title]));
+    const folders = new Set(input.pages.filter(isFolder).map((page) => page.id));
     const text = (answer?.results ?? [])
-        .filter((hit) => hit.spaceId === input.spaceId && !shown.has(hit.id))
+        // The server's text search still finds a folder by its hidden body (CB-426): one only its
+        // body matched never shows, so a search can't tell what the body says.
+        .filter(
+            (hit) =>
+                hit.spaceId === input.spaceId &&
+                !shown.has(hit.id) &&
+                (!folders.has(hit.id) || foldText(titles.get(hit.id) ?? hit.title).includes(folded)),
+        )
         .map((hit): PageTextRow => {
             const title = titles.get(hit.id) ?? (hit.title.trim() || UNTITLED_PAGE);
-            const snippet = hit.snippet
-                .map((part) => part.text)
-                .join('')
-                .replace(/\s+/g, ' ')
-                .trim();
+            // A folder's body is hidden (CB-426): the server sends it no snippet, and none shows here either.
+            const folder = folders.has(hit.id);
+            const snippet = folder
+                ? ''
+                : hit.snippet
+                      .map((part) => part.text)
+                      .join('')
+                      .replace(/\s+/g, ' ')
+                      .trim();
             const fresh = freshnessLabel(hit.freshness, input.now);
             return {
                 id: hit.id,
                 title,
                 snippet,
                 fresh,
-                accessibilityLabel: [title, fresh, snippet].filter((part) => part !== '').join(', '),
+                folder,
+                accessibilityLabel: [title, folder ? FOLDER : '', fresh, snippet]
+                    .filter((part) => part !== '')
+                    .join(', '),
             };
         });
     const waiting = server.status === 'waiting' && server.query === folded;

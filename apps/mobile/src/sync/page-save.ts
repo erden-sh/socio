@@ -63,6 +63,8 @@ import type { SnapshotCache } from './snapshot-cache';
 export const PAGE_SAVE_KIND = 'page-save';
 /** page-manage.ts's create of a page made on the phone: edits fold into it while it is queued. */
 export const PAGE_CREATE_KIND = 'page-create';
+/** page-manage.ts's folder toggle (CB-426): a save ahead of it in the lane moves its expected revision. */
+export const PAGE_FOLDER_KIND = 'page-folder';
 /** The `ids` map's kind for a page's server id (page-manage.ts's creates). */
 export const PAGE_IDS = 'page';
 const LOCAL_PAGE_PREFIX = 'local-page-';
@@ -147,6 +149,8 @@ export const PAGE_SAVE_REFUSALS = {
     conflict: 'conflict',
     /** Its page was made offline and never created. */
     noPage: 'no-page',
+    /** Its page is a folder now (CB-426): its hidden body takes no save. Retry once it is a page again. */
+    folder: 'page-is-folder',
 } as const;
 
 export { mergePageText, type PageText, sameText } from './page-merge';
@@ -261,6 +265,12 @@ export interface PageSavesOptions {
     readonly baseOf: (spaceId: string, pageId: string, revision: number) => Promise<Page | null>;
     /** A fresh UUID (expo-crypto): a new row's id and key. */
     readonly newId: () => string;
+    /**
+     * Page `pageId` is now a folder (CB-426), as the phone holds it or a toggle
+     * waiting on it says: its hidden body takes no saves. The editor's draft
+     * stays in `drafts`, kept for when it is a page again. None by default.
+     */
+    readonly isFolder?: (spaceId: string, pageId: string) => boolean;
 }
 
 /** The editor draft's sink (page-drafts.ts), and `savePage` for a draft given directly. */
@@ -270,7 +280,7 @@ export interface PageSaves extends PageDraftSink {
 }
 
 /** What a save did. */
-export type PageSaveResult = 'queued' | 'folded' | 'removed' | 'none' | 'invalid';
+export type PageSaveResult = 'queued' | 'folded' | 'removed' | 'none' | 'invalid' | 'folder';
 
 type Plan =
     | { readonly action: 'fold'; readonly row: OutboxRow; readonly payload: PageSavePayload }
@@ -284,6 +294,7 @@ type Plan =
 
 export function createPageSaves(options: PageSavesOptions): PageSaves {
     const { outbox, drafts, baseOf, newId } = options;
+    const folder = (pageId: string, draft: EditorDraft) => options.isFolder?.(draft.spaceId, pageId) === true;
     /** Each page's saves, one at a time: a plan is never made beside another's write. */
     const chains = new Map<string, Promise<unknown>>();
     const inOrder = <T>(pageId: string, task: () => Promise<T>): Promise<T> => {
@@ -406,6 +417,10 @@ export function createPageSaves(options: PageSavesOptions): PageSaves {
         if (pageDraftError({ title: draft.title, content: draft.content, parentId: null }) !== undefined) {
             return 'invalid';
         }
+        if (folder(pageId, draft)) {
+            // Turned into a folder while the editor was open: nothing goes, and the draft stays where it is.
+            return 'folder';
+        }
         const scope = pageDraft(pageId);
         const clear = (text: string) => {
             // The row holds it now; text typed meanwhile stays for the next save.
@@ -459,6 +474,10 @@ export function createPageSaves(options: PageSavesOptions): PageSaves {
                 if (pageDraftError({ title: draft.title, content: draft.content, parentId: null }) !== undefined) {
                     return false;
                 }
+                if (folder(pageId, draft)) {
+                    // Kept in `drafts` instead (page-drafts.ts), not in a row that would send it.
+                    return false;
+                }
                 return (await fold(pageId, draft)) !== null;
             }),
         save: (pageId) =>
@@ -480,6 +499,9 @@ export function createPageSaves(options: PageSavesOptions): PageSaves {
  * first. Null for another kind's row, or one this build can't read.
  */
 export function movedSave(other: Pick<OutboxRow, 'kind' | 'payload'>, page: Page) {
+    if (other.kind === PAGE_FOLDER_KIND) {
+        return folderOn(other, page);
+    }
     if (other.kind !== PAGE_SAVE_KIND) {
         return null;
     }
@@ -499,6 +521,30 @@ export function movedSave(other: Pick<OutboxRow, 'kind' | 'payload'>, page: Page
         ownRevisions: bounded([...next.ownRevisions, page.revision]),
         bases: bounded([...basesOf(next), page.revision]),
     });
+}
+
+/**
+ * A queued folder toggle (page-manage.ts's `page-folder`) behind a write of
+ * this phone that landed as `page`: it goes on `page`'s Space and revision, so
+ * it needs no 409 first. Null for a row this build can't read.
+ */
+export function folderOn(other: Pick<OutboxRow, 'kind' | 'payload'>, page: Page) {
+    if (other.kind !== PAGE_FOLDER_KIND) {
+        return null;
+    }
+    let value: unknown;
+    try {
+        value = JSON.parse(other.payload);
+    } catch {
+        return null;
+    }
+    if (typeof value !== 'object' || value === null || typeof (value as { folder?: unknown }).folder !== 'boolean') {
+        return null;
+    }
+    return {
+        payload: JSON.stringify({ ...(value as object), spaceId: page.spaceId, revision: page.revision }),
+        payloadVersion: 1,
+    };
 }
 
 // ---- The kind ------------------------------------------------------------------
@@ -530,6 +576,10 @@ export interface PageSaveKindOptions {
     ) => void;
     /** A fresh UUID: a rewrite's idempotency key. */
     readonly newId?: () => string;
+    /** A folder toggle of this phone still waiting on page `pageId` (page-manage.ts's `pendingFolder`), or null. */
+    readonly pendingFolder?: (pageId: string) => boolean | null;
+    /** Whether the phone holds page `pageId` as a folder (its body, else its Space's list). */
+    readonly heldFolder?: (spaceId: string, pageId: string) => boolean | Promise<boolean>;
 }
 
 const pagePath = (spaceId: string, pageId: string) =>
@@ -571,6 +621,25 @@ let fallbackKeys = 0;
 
 export function pageSaveKind(options: PageSaveKindOptions = {}): OutboxKind<unknown> {
     const { bodies, cache, onSaved, onLanded } = options;
+    /**
+     * Whether the save must not go because its page is a folder now (CB-426):
+     * `seen` (a copy just read from the server), else what the phone holds. A
+     * toggle of this phone still waiting counts as it says only for Turn into
+     * page (the person will have a page). A waiting Turn into folder sits behind
+     * this save in the page's lane: the save was made on the page before it, so
+     * it goes, unless the server's copy is a folder already.
+     */
+    const folderNow = async (spaceId: string, pageId: string, seen?: Page): Promise<boolean> => {
+        if (options.pendingFolder?.(pageId) === false) {
+            return false;
+        }
+        if (seen !== undefined) {
+            return seen.folder === true;
+        }
+        return (await options.heldFolder?.(spaceId, pageId)) === true;
+    };
+    /** The row goes to `unsent` as it is, so a folder's hidden body is never written over; Retry once it is a page. */
+    const asFolder: SendOutcome = { action: 'unsent', reason: PAGE_SAVE_REFUSALS.folder };
     const newId = options.newId ?? (() => `page-save-key-${Date.now()}-${(fallbackKeys += 1)}`);
 
     /** The page the server has, handed to the list and the body; the next row and the editor rebase on it. */
@@ -598,6 +667,9 @@ export function pageSaveKind(options: PageSaveKindOptions = {}): OutboxKind<unkn
                 }
             },
             amend: (other) => {
+                if (other.kind === PAGE_FOLDER_KIND) {
+                    return folderOn(other, page);
+                }
                 if (other.kind !== PAGE_SAVE_KIND) {
                     return null;
                 }
@@ -699,6 +771,12 @@ export function pageSaveKind(options: PageSaveKindOptions = {}): OutboxKind<unkn
         if (theirs === 410) {
             return { action: 'unsent', reason: PAGE_SAVE_REFUSALS.deleted };
         }
+        if (await folderNow(theirs.spaceId, pageId, theirs)) {
+            // Turned into a folder meanwhile: the phone's copy learns it, and nothing is rebased,
+            // merged or sent over its hidden body.
+            await showTheirs(theirs);
+            return asFolder;
+        }
         if (sameText(payload.draft, theirs)) {
             // A success whose answer was lost, or the same edit made elsewhere.
             return saved(write, theirs);
@@ -784,6 +862,9 @@ export function pageSaveKind(options: PageSaveKindOptions = {}): OutboxKind<unkn
             if (sameText(payload.draft, payload.base)) {
                 // Nothing to change: a no-op is never sent.
                 return { action: 'done' };
+            }
+            if (await folderNow(payload.spaceId, pageId)) {
+                return asFolder;
             }
             const response = await context.fetch(pagePath(payload.spaceId, pageId), {
                 method: 'PATCH',

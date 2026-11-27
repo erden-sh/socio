@@ -25,6 +25,8 @@ import {
     moveLine,
     moveTargets,
     moveTitle,
+    NEW_FOLDER,
+    NEW_FOLDER_LABEL,
     NEW_PAGE,
     NEW_PAGE_LABEL,
     NO_OTHER_SPACE,
@@ -34,6 +36,8 @@ import {
     parentChoices,
     type PageNotSaved,
     type ShownPage,
+    TURN_INTO_FOLDER,
+    TURN_INTO_PAGE,
     withPageWrites,
 } from '../shell/page-menus';
 import { pagesQuery, shellQuery, shellRows } from '../shell/queries';
@@ -47,6 +51,7 @@ import {
     removePageCover,
     restorePageCover,
     setPageCover,
+    setPageFolder,
 } from '../sync/page-manage';
 import { PAGE_IDS, PAGE_SAVE_VIEWS } from '../sync/page-save';
 import { FILE_UPLOAD_COPY, type FileUploads } from '../sync/upload-file';
@@ -64,7 +69,9 @@ import { useRouteSheet } from './route-sheet';
 // after a native confirm in the web's words naming its subpages. Every write
 // goes through the outbox (src/sync/page-manage.ts), laid over the rows at
 // once; one the server refused says so with Retry, Copy (a new page's text)
-// and Discard.
+// and Discard. Folders (CB-426): New folder asks its name and queues a create
+// marked as one; "Turn into folder" and "Turn into page" queue the mark
+// (`setPageFolder`), shown at once.
 
 const PAGE_KINDS = [...PAGE_SAVE_VIEWS, ...PAGE_MANAGE_VIEWS];
 
@@ -110,7 +117,10 @@ export function usePageManage(
     const { data: shell } = useLiveQuery({ query: shellQuery(collections) });
     const role = shellRows(shell).workspace?.user?.role;
     const user = { id: scope.workspace.appUserId, ...(role === undefined ? {} : { role }) };
-    const [creating, setCreating] = useState(false);
+    // New page or New folder's prompt while it shows: where the page goes, and whether it is a folder.
+    const [creating, setCreating] = useState<{ readonly parentId: string | null; readonly folder: boolean } | null>(
+        null,
+    );
     // Save and Return both send; a create that is still being queued drops the second.
     const [createOnce] = useState(oneAtATime);
     const [moving, setMoving] = useState<ShownPage | null>(null);
@@ -181,8 +191,14 @@ export function usePageManage(
         });
     };
 
+    const toggleFolder = (page: ShownPage, folder: boolean) => {
+        setPageFolder({ ...write, spaceId, pageId: page.id, folder, revision: page.revision }).catch(failed);
+    };
+
     const act = (page: ShownPage, name: string) => {
-        if (name === 'move') {
+        if (name === TURN_INTO_FOLDER.name || name === TURN_INTO_PAGE.name) {
+            toggleFolder(page, name === TURN_INTO_FOLDER.name);
+        } else if (name === 'move') {
             setMoving(page);
         } else if (name === 'set-cover') {
             setCover(page).catch(failed);
@@ -220,13 +236,13 @@ export function usePageManage(
     const notice = toast === null ? refused[0] : undefined;
     const element = (
         <>
-            {creating ? (
+            {creating === null ? null : (
                 <TextPrompt
-                    title={NEW_PAGE}
-                    label={NEW_PAGE_LABEL}
+                    title={creating.folder ? NEW_FOLDER : NEW_PAGE}
+                    label={creating.folder ? NEW_FOLDER_LABEL : NEW_PAGE_LABEL}
                     initial=""
                     maxLength={PAGE_TITLE_MAX}
-                    onCancel={() => setCreating(false)}
+                    onCancel={() => setCreating(null)}
                     onSave={(title) =>
                         // A refusal comes back to the prompt, which says it and asks again.
                         createOnce(() =>
@@ -234,28 +250,32 @@ export function usePageManage(
                                 ...write,
                                 spaceId,
                                 title,
+                                parentId: creating.parentId,
                                 createdBy: scope.workspace.appUserId,
                                 serverAt: scope.serverClock.lastDate(),
                                 known: knownPages(synced, spaceId),
+                                ...(creating.folder ? { folder: true } : {}),
                             }).then(
                                 () => {
-                                    setCreating(false);
+                                    setCreating(null);
                                     return undefined;
                                 },
                                 (error: unknown) => {
                                     if (error instanceof PageWriteError) {
                                         return error.message;
                                     }
-                                    setCreating(false);
+                                    setCreating(null);
                                     failed(error);
                                     return undefined;
                                 },
                             ),
                         )
                     }
-                    testID="page-new"
+                    // The web's dialog needs a name (NewFolderDialog's Create is off while it is blank).
+                    {...(creating.folder ? { canSave: (text: string) => text.trim() !== '' } : {})}
+                    testID={creating.folder ? 'page-new-folder' : 'page-new'}
                 />
-            ) : null}
+            )}
             {notice === undefined ? null : (
                 <View pointerEvents="box-none" className="absolute right-0 bottom-0 left-0 p-4">
                     <NotSavedNotice
@@ -314,7 +334,14 @@ export function usePageManage(
             actions: actionsOf(page),
             onAction: (name) => act(page, name),
         }),
-        newPage: () => setCreating(true),
+        /** New page, at the top or inside `parentId` (a folder's, CB-426); a button's press event is the top. */
+        newPage: (parentId?: unknown) =>
+            setCreating({ parentId: typeof parentId === 'string' ? parentId : null, folder: false }),
+        /** New folder (CB-426), at the top or inside `parentId`. */
+        newFolder: (parentId?: unknown) =>
+            setCreating({ parentId: typeof parentId === 'string' ? parentId : null, folder: true }),
+        /** Turns a page into a folder or back (CB-426). */
+        toggleFolder,
     };
 }
 

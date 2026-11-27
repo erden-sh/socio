@@ -1,6 +1,6 @@
 import { rmSync } from 'node:fs';
 
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { AUTOSAVE_DEBOUNCE_MS } from '@socio/shared/pages/page-draft';
 import type { Page } from '@socio/shared/pages/page-library';
@@ -213,6 +213,9 @@ async function phone(
                 },
                 onSaved: (pageId, from, page) => rebase(pageId, from, page),
                 newId,
+                // The scope's: the body the phone holds says whether the page is a folder (CB-426).
+                pendingFolder: () => null,
+                heldFolder: (spaceId, pageId) => bodies.get(pageBodyKey(spaceId, pageId))?.folder === true,
             }),
         ],
         fetch: options.kill ? options.kill.fetch(fetchTo) : fetchTo,
@@ -223,9 +226,12 @@ async function phone(
         outboxes.push(outbox);
     }
     const drafts = await openDrafts({ db, state: file.state, outbox });
+    /** Whether the page is a folder now (CB-426), as the scope's check would say. */
+    let folder = false;
     const saves = createPageSaves({
         outbox,
         drafts,
+        isFolder: (spaceId, pageId) => folder && spaceId === 's1' && pageId === 'p1',
         baseOf: async (spaceId, pageId, revision) => {
             const page = bodies.get(pageBodyKey(spaceId, pageId));
             return page?.revision === revision ? page : null;
@@ -243,6 +249,9 @@ async function phone(
         saves,
         pageDrafts,
         bodies,
+        setFolder(on: boolean) {
+            folder = on;
+        },
         setConnected(on: boolean) {
             connected = on;
             server.offline(!on);
@@ -516,6 +525,106 @@ describe('page saves', () => {
         // Never created: once resolved through `ids` it would go; without, a refused create holds it.
         expect(again.outbox.resolve(PAGE_IDS, local)).toBeNull();
     });
+
+    it('turned into a folder with the editor open: nothing more is saved, and the draft is kept for later', async ({
+        signal,
+    }) => {
+        const time = fakeTime(signal, { toFake: ['setTimeout', 'clearTimeout', 'Date'] });
+        const server = pageServer();
+        const p = await phone(server);
+        p.outbox.start();
+        const editor = p.pageDrafts.open('p1', START);
+        editor.change({ title: 'Roadmap', content: 'Hello, first' });
+        await time.advance(5_000);
+        await p.outbox.idle();
+        expect(patches(server)).toHaveLength(1);
+        // Another device turns it into a folder; a refresh tells the phone while the editor is open.
+        p.setFolder(true);
+        editor.change({ title: 'Roadmap', content: 'Hello, first, then more' });
+        await time.advance(5_000);
+        await p.outbox.idle();
+        // The screen closes the editor: a debounce still pending goes nowhere either.
+        editor.change({ title: 'Roadmap', content: 'Hello, first, then more, and more' });
+        await editor.close();
+        await time.advance(5_000);
+        await p.outbox.idle();
+        expect(patches(server)).toHaveLength(1);
+        expect(p.outbox.rows()).toEqual([]);
+        expect(server.pages.get('p1')).toMatchObject({ content: 'Hello, first' });
+        // Offline, it doesn't go into a queued row either.
+        p.setConnected(false);
+        expect(await p.saves.updateQueued('p1', draft('Offline words'))).toBe(false);
+        expect(await p.saves.savePage('p1', draft('Offline words'))).toBe('folder');
+        expect(p.outbox.rows()).toEqual([]);
+        p.setConnected(true);
+        // The draft is kept on the phone, and saves once it is a page again.
+        const kept = p.pageDrafts.stored('p1');
+        expect(kept).toMatchObject({ content: 'Hello, first, then more, and more', revision: 4 });
+        p.setFolder(false);
+        const again = p.pageDrafts.open('p1', kept!);
+        again.change({ title: 'Roadmap', content: 'Hello, first, then more, and more!' });
+        await time.advance(5_000);
+        await p.outbox.idle();
+        expect(server.pages.get('p1')).toMatchObject({ content: 'Hello, first, then more, and more!', revision: 5 });
+        await again.close();
+    });
+
+    it.each([
+        ['known on the phone when it goes', 'held'],
+        ['learned from the 409’s read', 'reread'],
+    ] as const)(
+        'a save queued before the page became a folder elsewhere, %s, never writes its hidden body; Retry sends it once it is a page',
+        async (_how, learned) => {
+            {
+                const server = pageServer();
+                const p = await phone(server);
+                // Typed offline, on the page at revision 3.
+                p.setConnected(false);
+                expect(await p.saves.savePage('p1', draft('Hello, offline'))).toBe('queued');
+                // Another device turns it into a folder.
+                server.edit('p1', { folder: true });
+                if (learned === 'held') {
+                    // A refresh told the phone before it reconnected.
+                    p.bodies.set(pageBodyKey('s1', 'p1'), { ...server.pages.get('p1')! });
+                }
+                p.outbox.start();
+                p.setConnected(true);
+                await vi.waitFor(() => expect(p.outbox.unsent()).toHaveLength(1), { timeout: 5_000 });
+                const [row] = p.outbox.unsent();
+                expect(row!.reason).toBe(PAGE_SAVE_REFUSALS.folder);
+                expect(unsentWhy(row!.reason)).toBe(
+                    'This page is now a folder, so this change wasn’t saved. Turn it back into a page to save it',
+                );
+                // Moved as it is: its text and base unchanged.
+                expect(JSON.parse(row!.payload)).toMatchObject({
+                    draft: { content: 'Hello, offline' },
+                    base: { revision: 3, content: 'Hello' },
+                });
+                // Held: no request at all. Learned from the 409: the refused PATCH alone, nothing after the read.
+                expect(patches(server)).toHaveLength(learned === 'held' ? 0 : 1);
+                expect(server.patched).toEqual([]);
+                expect(server.pages.get('p1')).toMatchObject({ folder: true, content: 'Hello', revision: 4 });
+                // The read went to the phone's copy: it knows it is a folder now.
+                expect(p.bodies.get(pageBodyKey('s1', 'p1'))).toMatchObject({ folder: true, revision: 4 });
+
+                // Retry while it is still a folder: back to Unsent, nothing written.
+                expect(await p.outbox.retryUnsent(row!.id, newId())).toBe(true);
+                p.outbox.wake();
+                await vi.waitFor(() => expect(p.outbox.unsent()).toHaveLength(1), { timeout: 5_000 });
+                expect(server.patched).toEqual([]);
+
+                // Turned back into a page (elsewhere, and the phone hears of it): Retry saves it.
+                server.edit('p1', { folder: false });
+                p.bodies.set(pageBodyKey('s1', 'p1'), { ...server.pages.get('p1')! });
+                expect(await p.outbox.retryUnsent(row!.id, newId())).toBe(true);
+                p.outbox.wake();
+                await p.outbox.idle();
+                await vi.waitFor(() => expect(p.outbox.rows()).toEqual([]), { timeout: 5_000 });
+                expect(p.outbox.unsent()).toEqual([]);
+                expect(server.pages.get('p1')).toMatchObject({ folder: false, content: 'Hello, offline', revision: 6 });
+            }
+        },
+    );
 
     it('a kill between every two steps saves the last draft once, with no row left', async ({ signal }) => {
         const time = fakeTime(signal, { toFake: ['setTimeout', 'clearTimeout', 'Date'] });

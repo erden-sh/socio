@@ -155,6 +155,9 @@ export const activeScope = createActiveScope({
                     // Merges and conflicts move the editor and tell the screens.
                     onLanded: scope.pageLanded,
                     newId: randomId,
+                    // A folder's hidden body takes no save (CB-426): such a row goes to Unsent as it is.
+                    pendingFolder: scope.pendingFolder,
+                    heldFolder: scope.heldFolder,
                 }),
                 // Creating, moving and deleting pages, and their covers.
                 ...pageManageKinds({

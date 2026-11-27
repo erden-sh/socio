@@ -222,6 +222,14 @@ describe('a bar button with a menu', () => {
         expect(barSignature({ items: [item] })).not.toBe(barSignature({ items: [other] }));
     });
 
+    it('answers a choice with the handler the page gave last, as a button does (CB-426)', () => {
+        // A link to another page keeps the screen and its bar (the same items): a menu set with the
+        // first page's handler would turn that page into a folder.
+        const bar = src('navigation/native-bar.tsx');
+        expect(bar).toContain('item.menu?.onAction(name);');
+        expect(bar).toContain('menu: { ...item.menu, onAction: choose(side, index) }');
+    });
+
     it('is the chat bar’s ⋯, and a Material popup from the icon button on Android', () => {
         const chat = readFileSync(join(import.meta.dirname, '../../src/screens/chat.tsx'), 'utf8');
         expect(chat).toContain('onPress: MENU_TAKES_TAP,\n                          menu,');

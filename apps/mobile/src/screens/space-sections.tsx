@@ -66,14 +66,23 @@ function UpdatedNote({ section, status }: { section: SpaceSectionName; status: S
 }
 
 /** The radar: recent changes, open decisions and stale pages, each row opening its page. */
-export function RadarTab({ spaceId, onOpen }: { spaceId: string; onOpen: (pageId: string) => void }) {
+export function RadarTab({
+    spaceId,
+    onOpen,
+    folders,
+}: {
+    spaceId: string;
+    onOpen: (pageId: string) => void;
+    /** The Space's folders the phone holds (CB-426): no excerpt of their hidden bodies. */
+    folders: ReadonlySet<string>;
+}) {
     const state = useSpaceSection(spaceId, 'radar');
     const status = sectionStatus(state);
     const value = state.value;
     if (value?.section !== 'radar') {
         return <SectionPlaceholder section="radar" status={status} />;
     }
-    const view = radarView(value.radar);
+    const view = radarView(value.radar, folders);
     return (
         <>
             <UpdatedNote section="radar" status={status} />

@@ -27,7 +27,7 @@ import { useEmbedPicture } from '../platform/image-cache';
 import { spaceScreen } from '../shell/last-screen';
 import { moduleEntry } from '../shell/modules';
 import { LONG_PRESS_TO_MENU } from '../shell/native-menu';
-import { NEW_PAGE } from '../shell/page-menus';
+import { NEW_FOLDER, NEW_PAGE, offersFolders } from '../shell/page-menus';
 import { itemsQuery, pagesQuery, shellQuery, shellRows, spacesQuery } from '../shell/queries';
 import {
     canPlaceIn,
@@ -56,6 +56,7 @@ import {
     type TreeRow,
 } from '../shell/space-library';
 import type { SpaceTab } from '../shell/space-sections';
+import { isFolder } from '../sync/page-manage';
 import { isLocalPage } from '../sync/page-save';
 import { createServerSearch } from '../sync/server-search';
 import { spaceSection } from '../sync/space-sections';
@@ -108,7 +109,9 @@ import { MemoryTab, RadarTab, SpaceTabs } from './space-sections';
 // holds by title and excerpt and, from two characters online, adds the
 // server's matches in the Space's page text (`/api/spaces/search?space=`,
 // shared/space-library.ts's `librarySearch`); offline it says that needs a
-// connection.
+// connection. A folder (CB-426) has the folder icon and says what it holds in
+// place of an excerpt; it opens in the page route as the list of its pages. New
+// folder sits beside New page once the server knows folders.
 
 /** The web's empty library (SpaceLibrary's LibraryEmpty): its heading and line, over New page. */
 const NO_PAGES = 'No pages yet';
@@ -205,6 +208,7 @@ function Library(props: { spaceId: string; spaces: readonly Space[]; initialTab:
     const conflicts = useAllPageConflicts();
     const conflicted = new Set(conflicts.map((conflict) => conflict.pageId));
     const recent = recentPages(pages, spaceId, conflicted);
+    const folders = new Set(pages.filter(isFolder).map((page) => page.id));
     useFirstFrameWithData('Space', recent.length > 0);
     const found = librarySearch({ query, spaceId, rows: recent, pages, server: search });
     const byId = new Map(pages.map((page) => [page.id, page]));
@@ -249,6 +253,18 @@ function Library(props: { spaceId: string; spaces: readonly Space[]; initialTab:
             },
             ...(tab === 'pages'
                 ? [
+                      ...(offersFolders(synced)
+                          ? [
+                                {
+                                    id: 'space-new-folder',
+                                    label: NEW_FOLDER,
+                                    symbol: 'folder.badge.plus',
+                                    icon: 'folder-plus' as const,
+                                    iconOnly: true,
+                                    onPress: () => manage.newFolder(),
+                                },
+                            ]
+                          : []),
                       {
                           id: 'space-new-page',
                           label: NEW_PAGE,
@@ -290,7 +306,7 @@ function Library(props: { spaceId: string; spaces: readonly Space[]; initialTab:
                 {tab === 'memory' ? (
                     <MemoryTab spaceId={spaceId} isPrivate={heading?.private === true} />
                 ) : tab === 'radar' ? (
-                    <RadarTab spaceId={spaceId} onOpen={open} />
+                    <RadarTab spaceId={spaceId} onOpen={open} folders={folders} />
                 ) : recent.length === 0 && datasetRows.length === 0 && query === '' ? (
                     <EmptyState
                         tile={{ tone: SPACES.tone, icon: 'file-text' }}
@@ -448,7 +464,13 @@ function SearchResults(props: {
                             first={index === 0}
                             testID={`space-search-hit-${hit.id}`}
                             leadingSize={44}
-                            leading={<ToneTile tone={SPACES.tone} icon="file-text" surface="card" />}
+                            leading={
+                                <ToneTile
+                                    tone={SPACES.tone}
+                                    icon={hit.folder ? 'folder' : 'file-text'}
+                                    surface="card"
+                                />
+                            }
                             title={hit.title}
                             subtitle={hit.snippet === '' ? null : hit.snippet}
                             subtitleLines={2}
@@ -458,7 +480,7 @@ function SearchResults(props: {
                                 </Text>
                             }
                             accessibilityLabel={hit.accessibilityLabel}
-                            accessibilityHint="Opens the page"
+                            accessibilityHint={hit.folder ? OPENS_FOLDER : 'Opens the page'}
                             onPress={() => onOpen(hit.id)}
                         />
                     ))}
@@ -507,7 +529,7 @@ function RecentRow(props: { page: RecentPageRow; first: boolean; onOpen: (id: st
                 first={first}
                 testID={`space-page-${page.id}`}
                 leadingSize={44}
-                leading={<Cover coverId={page.coverId} coverUpload={page.coverUpload} />}
+                leading={<Cover coverId={page.coverId} coverUpload={page.coverUpload} folder={page.folder} />}
                 title={page.title}
                 subtitle={page.excerpt}
                 subtitleLines={2}
@@ -520,7 +542,7 @@ function RecentRow(props: { page: RecentPageRow; first: boolean; onOpen: (id: st
                 }
                 trailing={page.conflict ? <ConflictBadge /> : null}
                 accessibilityLabel={page.accessibilityLabel}
-                accessibilityHint={isLocalPage(page.id) ? WAITING : 'Opens the page'}
+                accessibilityHint={isLocalPage(page.id) ? WAITING : page.folder ? OPENS_FOLDER : 'Opens the page'}
                 onPress={() => onOpen(page.id)}
                 {...(menu.onLongPress === undefined ? {} : { onLongPress: menu.onLongPress })}
                 {...(menu.accessibilityActions === undefined
@@ -555,12 +577,25 @@ function ConflictBadge() {
  * A page's cover as a 44 pt squircle, through the image cache; a new one from the phone's copy while it
  * uploads; the page tile in the Spaces tone without one.
  */
-function Cover({ coverId, coverUpload }: { coverId: string | null; coverUpload: string | null }) {
+function Cover({
+    coverId,
+    coverUpload,
+    folder,
+}: {
+    coverId: string | null;
+    coverUpload: string | null;
+    folder: boolean;
+}) {
     if (coverUpload !== null) {
         return <UploadPicture uploadId={coverUpload} />;
     }
     return coverId === null ? (
-        <ToneTile tone={SPACES.tone} icon="file-text" surface="card" />
+        <ToneTile
+            tone={SPACES.tone}
+            icon={folder ? 'folder' : 'file-text'}
+            surface="card"
+            {...(folder ? { testID: 'space-folder-tile' } : {})}
+        />
     ) : (
         <CoverPicture coverId={coverId} />
     );
@@ -584,6 +619,9 @@ function UploadPicture({ uploadId }: { uploadId: string }) {
         <SquircleImage size={44} source={{ uri: fileUrl(upload.path) }} testID="space-page-cover-upload" />
     );
 }
+
+/** A folder row's hint (CB-426): it opens as the list of what it holds. */
+const OPENS_FOLDER = 'Opens the folder';
 
 /** The step of each level of the tree, in points. */
 const INDENT = 20;
@@ -621,7 +659,7 @@ function TreeRowView(props: {
                     testID={`space-tree-${row.id}`}
                     accessibilityRole="button"
                     accessibilityLabel={row.accessibilityLabel}
-                    accessibilityHint="Opens the page"
+                    accessibilityHint={row.folder ? OPENS_FOLDER : 'Opens the page'}
                     accessibilityState={parent ? { expanded: row.expanded } : undefined}
                     accessibilityActions={[
                         ...(parent
@@ -646,7 +684,7 @@ function TreeRowView(props: {
                     onLongPress={menu.onLongPress}
                     className="min-h-11 min-w-0 flex-1 flex-row items-center gap-3 py-3 pr-3 active:bg-accent"
                 >
-                    <AppSymbol name="file-text" color="muted-foreground" />
+                    <AppSymbol name={row.folder ? 'folder' : 'file-text'} color="muted-foreground" />
                     <Text numberOfLines={1} className="min-w-0 flex-1">
                         {row.title}
                     </Text>

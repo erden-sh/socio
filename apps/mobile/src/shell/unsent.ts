@@ -51,6 +51,7 @@ import { type HoldGroup, UNSENT_GONE, type UnsentWrite } from '../sync/outbox';
 import {
     PAGE_COVER_KIND,
     PAGE_DELETE_KIND,
+    PAGE_FOLDER_KIND,
     PAGE_MANAGE_REFUSALS,
     PAGE_MOVE_KIND,
     type PageCoverPayload,
@@ -131,6 +132,8 @@ export const UNSENT_REASON_COPY: Readonly<Record<string, string>> = {
     [PAGE_SAVE_REFUSALS.refused]: 'You can’t edit this page',
     [PAGE_SAVE_REFUSALS.invalid]: 'It couldn’t be saved as written',
     [PAGE_SAVE_REFUSALS.noPage]: 'Its page was never created',
+    [PAGE_SAVE_REFUSALS.folder]:
+        'This page is now a folder, so this change wasn’t saved. Turn it back into a page to save it',
     // Creating, moving and deleting pages, and covers.
     [PAGE_MANAGE_REFUSALS.noParent]: 'Its parent page was never created',
     [PAGE_MANAGE_REFUSALS.parentDeleted]: 'Its parent page was deleted',
@@ -189,6 +192,7 @@ const PAGE_KINDS: readonly string[] = [
     PAGE_MOVE_KIND,
     PAGE_DELETE_KIND,
     PAGE_COVER_KIND,
+    PAGE_FOLDER_KIND,
 ];
 /** A save refused because its page is gone: the list offers Save as a new page. */
 const PAGE_GONE: readonly string[] = [PAGE_SAVE_REFUSALS.deleted, PAGE_SAVE_REFUSALS.noPage, UNSENT_GONE];
@@ -224,6 +228,8 @@ export interface UnsentListRow {
     readonly editable: boolean;
     /** A page's save whose page is gone: Save as a new page, in this Space by default. */
     readonly saveAsNew: { readonly spaceId: string; readonly mine: PageText } | null;
+    /** Whether it offers Retry: a page's save refused because its page is a folder now, sent once it is a page again. */
+    readonly retry: boolean;
     /** A page's conflict: Open page, where its banner settles it. */
     readonly opens: { readonly spaceId: string; readonly pageId: string } | null;
     readonly accessibilityLabel: string;
@@ -295,7 +301,7 @@ function describePage(
         case PAGE_CREATE_KIND: {
             const create = payload as Partial<PageCreatePayload> | null;
             return {
-                what: `New page ${quoted(typeof create?.title === 'string' ? create.title : '')}`,
+                what: `${create?.folder === true ? 'New folder' : 'New page'} ${quoted(typeof create?.title === 'string' ? create.title : '')}`,
                 text: pageCopy(create),
             };
         }
@@ -303,6 +309,17 @@ function describePage(
             return { what: named('Move', 'Move a page'), text: null };
         case PAGE_DELETE_KIND:
             return { what: named('Delete', 'Delete a page'), text: null };
+        case PAGE_FOLDER_KIND:
+            // CB-426: the web's menu words, with the page's title.
+            return payload?.folder === true
+                ? {
+                      what: held === null ? 'Turn a page into a folder' : `Turn ${quoted(held)} into a folder`,
+                      text: null,
+                  }
+                : {
+                      what: held === null ? 'Turn a folder into a page' : `Turn ${quoted(held)} into a page`,
+                      text: null,
+                  };
         default: {
             const removed = (payload as Partial<PageCoverPayload> | null)?.change?.kind === 'remove';
             return {
@@ -534,6 +551,7 @@ export function unsentListRows(
                 text: written,
                 editable: unsentIssueFields(write) !== null,
                 saveAsNew: savedAsNew(write),
+                retry: write.kind === PAGE_SAVE_KIND && write.reason === PAGE_SAVE_REFUSALS.folder,
                 opens: conflictPage(write, payload, context),
                 accessibilityLabel: [what, where, labelExcerpt(written), why, holding].filter(Boolean).join(', '),
             };
