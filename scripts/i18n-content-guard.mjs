@@ -9,10 +9,12 @@
 //   - phone numbers: seven digits or more, unless the same digits are a number in the source
 //     (`1,000,000` may become `1 000 000`), or it is written with `,`, `.` or `'` as thousands
 //     separators, or it is a decimal or a date;
-//   - markup: only the source's `<Trans>` tags (`<0>`, `<1/>`, `<bold>`), no other tag, HTML
-//     entity or invisible format character (bidi overrides, zero-width spaces).
+//   - markup: exactly the source's `<Trans>` tags, the same names nested the same way (siblings
+//     may move), each holding only its name (`<0>`, `</0>`, `<1/>`, `<bold>`): no attribute, no
+//     other `<` or `>`, no look-alike bracket, HTML entity or invisible format character (bidi
+//     overrides, zero-width spaces). A plural form is held to its own source form.
 //
-// Text is NFKC-normalized first, so full-width characters (`ｅｖｉｌ．ｃｏｍ`, `＠`) count as
+// For content, text is NFKC-normalized first, so full-width characters (`ｅｖｉｌ．ｃｏｍ`, `＠`) count as
 // their ASCII forms; zero-width characters inside a word are dropped; `{{variables}}` and
 // `$t(nesting)` are taken out. A domain's last label must be a top-level domain in IANA's list
 // (scripts/lib/iana-tlds.txt), so abbreviations like `EE.UU.` or `p.ej.` pass.
@@ -181,60 +183,140 @@ export function newContent(source, translation) {
     );
 }
 
-/** `<0>`, `</0>`, `<1/>`, `<bold>`: the tags `<Trans>` maps to components. */
-const TAG = /<(\/?)([A-Za-z0-9_-]+)\s*(\/?)>/gu;
+/**
+ * A `<Trans>` tag, strictly: `<0>`, `</0>`, `<0/>`, `<strong>`. Nothing but the name may stand
+ * between the brackets: no attribute (`<0 href="/logout">` renders as a link), no space.
+ */
+const TAG = /<(\/?)([A-Za-z0-9_-]+)(\/?)>/uy;
 const ENTITY = /&(?:#\d+|#x[0-9a-f]+|[a-z][a-z0-9]*);/giu;
+/** Full-width and small brackets: not markup to `<Trans>`, but they read as markup, so they're held to the source. */
+const LOOKALIKE_BRACKETS = new RegExp('[\\uff1c\\uff1e\\ufe64\\ufe65]', 'gu');
 
-const tagsOf = (text) =>
-    [...text.normalize('NFKC').matchAll(TAG)].map((match) => `<${match[1]}${match[2]}${match[3]}>`);
-
-/** What a text adds of markup over its source: foreign or extra tags, other `<…>` markup, entities, invisible characters. */
-export function newMarkup(source, translation) {
-    const problems = [];
-    const allowed = new Map();
-    for (const tag of tagsOf(source)) {
-        allowed.set(tag, (allowed.get(tag) ?? 0) + 1);
-    }
-    for (const tag of tagsOf(translation)) {
-        const left = allowed.get(tag) ?? 0;
-        if (left === 0) {
-            problems.push(`tag ${tag}`);
-        } else {
-            allowed.set(tag, left - 1);
+/**
+ * A text's tags as a tree, and every `<` or `>` that isn't part of a tag. Only ASCII brackets
+ * are markup to `<Trans>`, so the text is read as written, not NFKC-normalized.
+ *
+ * The tree's canonical form is what translations must match: each tag's name, whether it closes
+ * itself, and what it nests. Siblings are compared in any order, since a sentence's parts move
+ * between languages ("Read <0>the guide</0> and <1/>" may become "<1/> y lee <0>la guía</0>").
+ */
+export function tagStructure(text) {
+    const stray = [];
+    const sequence = [];
+    const root = { children: [] };
+    const stack = [root];
+    let wellFormed = true;
+    for (let at = 0; at < text.length; at++) {
+        const char = text[at];
+        if (char === '>') {
+            stray.push('>');
+            continue;
         }
-    }
-    const rest = translation.normalize('NFKC').replace(TAG, ' ');
-    const sourceRest = source.normalize('NFKC').replace(TAG, ' ');
-    // Anything else that a browser or `<Trans>` could read as markup: <a href>, <!-- -->, <?…>, </ x>.
-    for (const match of rest.matchAll(/<\s*[A-Za-z!/?][^>]*>?/gu)) {
-        if (!sourceRest.includes(match[0])) {
-            problems.push(`markup ${JSON.stringify(match[0].slice(0, 40))}`);
+        if (char !== '<') {
+            continue;
         }
-    }
-    for (const match of rest.matchAll(ENTITY)) {
-        if (!sourceRest.includes(match[0])) {
-            problems.push(`entity ${match[0]}`);
-        }
-    }
-    for (const pattern of [INVISIBLE, CONTROL]) {
-        for (const match of translation.matchAll(pattern)) {
-            if (!source.includes(match[0])) {
-                problems.push(
-                    `invisible character U+${match[0].codePointAt(0).toString(16).toUpperCase().padStart(4, '0')}`,
-                );
+        TAG.lastIndex = at;
+        const match = TAG.exec(text);
+        if (!match || (match[1] && match[3])) {
+            // A bare `<` before a space or a digit run ("a < b") is text; anything else is quoted.
+            const snippet = text.slice(at, at + 40).replace(/>.*$/su, '>');
+            if (/^<[A-Za-z0-9_/!?-]/u.test(snippet)) {
+                stray.push(snippet);
+                // Its own `>` is part of it, not another stray.
+                at += snippet.endsWith('>') ? snippet.length - 1 : 0;
+            } else {
+                stray.push('<');
             }
+            continue;
+        }
+        const [token, closing, name, selfClosing] = match;
+        sequence.push(token);
+        at += token.length - 1;
+        if (selfClosing) {
+            stack.at(-1).children.push({ name, self: true, children: [] });
+        } else if (!closing) {
+            const node = { name, self: false, children: [] };
+            stack.at(-1).children.push(node);
+            stack.push(node);
+        } else if (stack.length > 1 && stack.at(-1).name === name) {
+            stack.pop();
+        } else {
+            wellFormed = false;
         }
     }
-    return [...new Set(problems)];
+    if (stack.length > 1) {
+        wellFormed = false;
+    }
+    const canon = (node) => `${node.name}${node.self ? '/' : `(${node.children.map(canon).sort().join(',')})`}`;
+    return {
+        // A malformed source has no tree; a translation then has to repeat its tags exactly.
+        canonical: wellFormed ? root.children.map(canon).sort().join(',') : `malformed:${sequence.join('')}`,
+        sequence: sequence.join(''),
+        stray,
+    };
 }
 
-/** A translation's problems against its source text: content and markup, as readable lines. */
-export function translationProblems(source, translation) {
+/**
+ * What a text adds of markup over its source form, as readable lines: tags that differ from the
+ * source's (extra, missing, renamed, renested, or self-closing where the source pairs them, and
+ * any attribute), other `<` or `>`, look-alike brackets, entities and invisible characters.
+ */
+export function newMarkup(source, translation) {
+    const problems = [];
+    const want = tagStructure(source);
+    const have = tagStructure(translation);
+    const strays = [...want.stray];
+    for (const item of have.stray) {
+        const at = strays.indexOf(item);
+        if (at === -1) {
+            problems.push(
+                `markup ${JSON.stringify(item)} is not allowed: a tag holds only its name, as in <0> or <0/>`,
+            );
+        } else {
+            strays.splice(at, 1);
+        }
+    }
+    if (have.canonical !== want.canonical) {
+        problems.push(
+            `tags ${JSON.stringify(have.sequence)} don't match the en-US source's ${JSON.stringify(want.sequence)}`,
+        );
+    }
+    const counts = (text, pattern) => {
+        const found = new Map();
+        for (const match of text.matchAll(pattern)) {
+            found.set(match[0], (found.get(match[0]) ?? 0) + 1);
+        }
+        return found;
+    };
+    const extra = (pattern, label, sourceText = source, translationText = translation) => {
+        const allowed = counts(sourceText, pattern);
+        for (const [item, count] of counts(translationText, pattern)) {
+            if (count > (allowed.get(item) ?? 0)) {
+                problems.push(`${label(item)} is not in the en-US source`);
+            }
+        }
+    };
+    extra(LOOKALIKE_BRACKETS, (item) => `look-alike bracket ${JSON.stringify(item)}`);
+    extra(ENTITY, (item) => `entity ${item}`, source.normalize('NFKC'), translation.normalize('NFKC'));
+    for (const pattern of [INVISIBLE, CONTROL]) {
+        extra(
+            pattern,
+            (item) => `invisible character U+${item.codePointAt(0).toString(16).toUpperCase().padStart(4, '0')}`,
+        );
+    }
+    return problems;
+}
+
+/**
+ * A translation's problems against its source: content against all of the key's source text (a
+ * plural's forms together), markup against the source form it answers to.
+ */
+export function translationProblems(source, translation, markupSource = source) {
     return [
         ...newContent(source, translation).map(
             (item) => `${item.kind} ${JSON.stringify(item.text)} is not in the en-US source`,
         ),
-        ...newMarkup(source, translation).map((problem) => `${problem} is not in the en-US source`),
+        ...newMarkup(markupSource, translation),
     ];
 }
 
@@ -257,9 +339,10 @@ function flatten(tree, prefix = '', out = new Map()) {
 const PLURAL = /^(.+?)(_ordinal)?_(zero|one|two|few|many|other)$/u;
 
 /**
- * The source text a translated key answers to. A plural form answers to all of the source's forms
- * of that key (a locale may have forms en-US doesn't, like `_many`); null for an unknown key, which
- * the build reports.
+ * The source text a translated key answers to: `all` holds every form of a plural (a locale may
+ * have forms en-US doesn't, like `_many`), for the content check; `form` is the source form its
+ * tags must match: the same form, or `_other` for one en-US lacks. Null for an unknown key, which
+ * the build reports. A context form (`edited_socio`) is a key of its own in en-US.
  */
 function sourceFor(source, key) {
     const plural = PLURAL.exec(key);
@@ -270,10 +353,11 @@ function sourceFor(source, key) {
             return match && match[1] === base && (match[2] ?? '') === ordinal;
         });
         if (forms.length) {
-            return forms.map(([, text]) => text).join('\n');
+            const form = source.get(key) ?? source.get(`${base}${ordinal}_other`) ?? forms[0][1];
+            return { all: forms.map(([, text]) => text).join('\n'), form };
         }
     }
-    return source.has(key) ? source.get(key) : null;
+    return source.has(key) ? { all: source.get(key), form: source.get(key) } : null;
 }
 
 /** Every translation file's problems against en-US, as `<locale>/<ns>.json: <key>: <problem>`. */
@@ -304,7 +388,7 @@ export function checkLocales(dir) {
                 if (sourceText === null) {
                     continue;
                 }
-                for (const problem of translationProblems(sourceText, text)) {
+                for (const problem of translationProblems(sourceText.all, text, sourceText.form)) {
                     problems.push(`${locale}/${file}: ${key}: ${problem}`);
                 }
             }

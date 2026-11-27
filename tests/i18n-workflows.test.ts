@@ -358,8 +358,12 @@ describe('i18n-export.yml', () => {
             git(bare, 'init', '--quiet', '--bare', '--initial-branch=main');
             const seed = temp('seed');
             git(seed, 'clone', '--quiet', bare, '.');
-            write(join(seed, 'packages/i18n/locales/en-US/common.json'), { car: 'Car', truck: 'Truck' });
-            write(join(seed, 'packages/i18n/locales/es-419/common.json'), { car: 'Auto', truck: 'Camión' });
+            write(join(seed, 'packages/i18n/locales/en-US/common.json'), { car: 'Car', van: 'Van', truck: 'Truck' });
+            write(join(seed, 'packages/i18n/locales/es-419/common.json'), {
+                car: 'Auto',
+                van: 'Furgoneta',
+                truck: 'Camión',
+            });
             write(join(seed, 'scripts/i18n-sync.mjs'), readFileSync(join(root, 'scripts/i18n-sync.mjs'), 'utf8'));
             write(
                 join(seed, 'packages/i18n/src/registry.ts'),
@@ -499,6 +503,7 @@ describe('i18n-export.yml', () => {
             // merging only es-US shows Coche there, and rejecting es-419 loses nothing.
             expect(JSON.parse(readFileSync(join(out, 'es-419/files/common.json'), 'utf8'))).toEqual({
                 car: 'Coche',
+                van: 'Furgoneta',
                 truck: 'Camión',
             });
             expect(JSON.parse(readFileSync(join(out, 'es-US/files/common.json'), 'utf8'))).toEqual({ car: 'Coche' });
@@ -525,6 +530,7 @@ describe('i18n-export.yml', () => {
             expect(result.status, result.stdout + result.stderr).toBe(0);
             expect(JSON.parse(git(bare, 'show', `${BRANCH}:packages/i18n/locales/es-419/common.json`))).toEqual({
                 car: 'Coche',
+                van: 'Furgoneta',
                 truck: 'Camión',
             });
             expect(
@@ -569,6 +575,34 @@ describe('i18n-export.yml', () => {
             expect(tools.calls().some((call) => call.startsWith('gh pr create') || call.startsWith('gh pr edit'))).toBe(
                 false,
             );
+        });
+
+        it('starts a new branch from main as prepare saw it, so a change main took since is never reverted', () => {
+            const bare = origin();
+            const { out } = prepareRun(bare, exportOf({ 'es-419': [candidate('car', 'Coche')] }));
+            const prepared = git(bare, 'rev-parse', 'main');
+            expect(readFileSync(join(out, 'es-419/main'), 'utf8').trim()).toBe(prepared);
+            // main moves on: someone changes truck.
+            const moved = pushTo(bare, 'main', { car: 'Auto', van: 'Furgoneta', truck: 'Camioneta' });
+            const { result } = publishRun(bare, out);
+            expect(result.status, result.stdout + result.stderr).toBe(0);
+            expect(git(bare, 'rev-parse', `${BRANCH}^`)).toBe(prepared);
+            // The pull request's diff, against where it merges into main, touches car only.
+            const base = git(bare, 'merge-base', 'main', BRANCH);
+            const changed = git(bare, 'diff', '--unified=0', base, BRANCH)
+                .split('\n')
+                .filter((line) => /^[+-]\s/.test(line));
+            expect(changed).toEqual(['-    "car": "Auto",', '+    "car": "Coche",']);
+            // Merged, main keeps the newer truck and takes the car.
+            const merge = temp('merge');
+            git(merge, 'clone', '--quiet', bare, '.');
+            git(merge, 'merge', '--quiet', '--no-edit', `origin/${BRANCH}`);
+            expect(JSON.parse(readFileSync(join(merge, 'packages/i18n/locales/es-419/common.json'), 'utf8'))).toEqual({
+                car: 'Coche',
+                van: 'Furgoneta',
+                truck: 'Camioneta',
+            });
+            expect(git(merge, 'rev-parse', 'HEAD^1')).toBe(moved);
         });
 
         it('refuses a branch created since prepare, which found none', () => {

@@ -161,6 +161,9 @@ jobs:
             fi
             mkdir -p "$out/$locale"
             echo "$base" > "$out/$locale/base"
+            # And main's exact commit: a new branch starts there, so a change main took since is
+            # merged or conflicts as usual, and never reverted.
+            git rev-parse HEAD > "$out/$locale/main"
             node scripts/i18n-sync.mjs apply --export "$exported" --locale "$locale" --body "$out/$locale/body.md" --ids "$out/$locale/ids.json"
             if [ "$(jq length "$out/$locale/ids.json")" -eq 0 ]; then
               echo "::warning::$locale: none of its candidates could be written (see above); they stay approved in the app."
@@ -272,7 +275,10 @@ jobs:
                 failed=1
                 continue
               fi
-              git checkout --quiet -B "$branch" origin/main
+              main="$(cat "$out/$locale/main")"
+              [[ "$main" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::$locale: bad main commit"; exit 1; }
+              git cat-file -e "$main^{commit}" 2>/dev/null || git fetch --quiet --no-tags origin "$main"
+              git checkout --quiet -B "$branch" "$main"
             fi
             rm -rf "$dir"
             if [ -d "$files" ]; then

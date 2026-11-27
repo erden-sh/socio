@@ -10,6 +10,7 @@ import {
     contentItems,
     newContent,
     newMarkup,
+    tagStructure,
     translationProblems,
 } from '../scripts/i18n-content-guard.mjs';
 
@@ -113,29 +114,83 @@ describe('content', () => {
 });
 
 describe('markup', () => {
-    it("allows the source's <Trans> tags, in any order", () => {
-        expect(newMarkup('Read <0>the guide</0> and <1/>', 'Lee <1/> y <0>la guía</0>')).toEqual([]);
-        expect(newMarkup('Read <bold>this</bold>', 'Lee <bold>esto</bold>')).toEqual([]);
-        expect(newMarkup('Read <0>the guide</0>', 'Lee la guía')).toEqual([]);
+    const ok = (source: string, translation: string) => expect(newMarkup(source, translation), translation).toEqual([]);
+    const refused = (source: string, translation: string) =>
+        expect(newMarkup(source, translation).length, translation).toBeGreaterThan(0);
+
+    it("allows exactly the source's <Trans> tags, siblings in any order", () => {
+        ok('Read <0>the guide</0> and <1/>', 'Lee <1/> y <0>la guía</0>');
+        ok('Read <bold>this</bold>', 'Lee <bold>esto</bold>');
+        ok('Read <0>the <1>whole</1> guide</0>', 'Lee <0>la guía <1>entera</1></0>');
+        ok('a < b', 'a < b');
     });
 
-    it('refuses any other tag, markup, entity or invisible character', () => {
-        expect(newMarkup('Read <0>the guide</0>', 'Lee <1>la guía</1>')).toEqual(['tag <1>', 'tag </1>']);
-        expect(newMarkup('Read <0>the guide</0>', 'Lee <0>la</0> <0>guía</0>')).toEqual(['tag <0>', 'tag </0>']);
-        expect(newMarkup('Read', 'Lee <a href="https://example.org">aquí</a>')).toContain(
-            'markup "<a href=\\"https://example.org\\">"',
+    it('refuses any attribute, on numeric and named tags alike', () => {
+        for (const translation of [
+            'Lee <0 href="/logout">la guía</0>',
+            "Lee <0 href='/logout'>la guía</0>",
+            'Lee <0 href=/logout>la guía</0>',
+            'Lee <0 onclick="steal()">la guía</0>',
+            'Lee <0 style="display:none">la guía</0>',
+            'Lee <0 >la guía</0>',
+            'Lee <0>la guía</0 >',
+            'Lee < 0>la guía</0>',
+        ]) {
+            refused('Read <0>the guide</0>', translation);
+        }
+        refused('Read <bold>this</bold>', 'Lee <bold class="x">esto</bold>');
+        refused('Read <bold>this</bold>', 'Lee <bold onclick=x>esto</bold>');
+        refused('Read <1/>', 'Lee <1 href="/logout"/>');
+        expect(newMarkup('Read <0>the guide</0>', 'Lee <0 href="/logout">la guía</0>')).toContain(
+            'markup "<0 href=\\"/logout\\">" is not allowed: a tag holds only its name, as in <0> or <0/>',
         );
-        expect(newMarkup('Read', 'Lee <img src=x onerror=alert(1)>')).toHaveLength(1);
-        expect(newMarkup('Read', 'Lee <!-- nota -->')).toHaveLength(1);
-        expect(newMarkup('Read', 'Lee ＜b＞esto＜/b＞')).toEqual(['tag <b>', 'tag </b>']);
-        expect(newMarkup('Read', 'Lee &lt;b&gt;')).toEqual(['entity &lt;', 'entity &gt;']);
-        expect(newMarkup('Read', 'Lee\u202eesto')).toEqual(['invisible character U+202E']);
-        expect(newMarkup('Read', 'Lee\u200besto')).toEqual(['invisible character U+200B']);
     });
 
-    it('lets comparisons and arrows be text', () => {
-        expect(newMarkup('a < b', 'a < b')).toEqual([]);
-        expect(newMarkup('Settings', 'Ajustes > Idioma <3')).toEqual([]);
+    it('refuses extra, missing, renamed and renested tags, and self-closing for paired', () => {
+        refused('Read <0>the guide</0>', 'Lee <1>la guía</1>');
+        refused('Read <0>the guide</0>', 'Lee <0>la</0> <0>guía</0>');
+        refused('Read <0>the guide</0>', 'Lee <0>la guía</0><1/>');
+        refused('Read <0>the guide</0>', 'Lee la guía');
+        refused('Read <0>the guide</0> and <1/>', 'Lee <0>la guía</0>');
+        refused('Read <0>the <1>whole</1> guide</0>', 'Lee <0>la guía</0> <1>entera</1>');
+        refused('Read <0>the guide</0> and <1>more</1>', 'Lee <0>la guía y <1>más</1></0>');
+        refused('Read <0>the guide</0>', 'Lee <0/>la guía');
+        refused('Read <0/>', 'Lee <0></0>');
+        refused('Read <0>the guide</0>', 'Lee <0>la guía');
+        refused('Read <0>the guide</0>', 'Lee </0>la guía<0>');
+        expect(newMarkup('Read <0>the guide</0>', 'Lee <1>la guía</1>')).toEqual([
+            'tags "<1></1>" don\'t match the en-US source\'s "<0></0>"',
+        ]);
+    });
+
+    it('refuses other markup, entities, look-alike brackets and invisible characters', () => {
+        refused('Read', 'Lee <a href="https://example.org">aquí</a>');
+        refused('Read', 'Lee <img src=x onerror=alert(1)>');
+        refused('Read', 'Lee <!-- nota -->');
+        refused('Settings', 'Ajustes > Idioma');
+        expect(newMarkup('Read', 'Lee &lt;b&gt;')).toEqual([
+            'entity &lt; is not in the en-US source',
+            'entity &gt; is not in the en-US source',
+        ]);
+        expect(newMarkup('Read', 'Lee ＜b＞esto＜/b＞')).toEqual([
+            'look-alike bracket "＜" is not in the en-US source',
+            'look-alike bracket "＞" is not in the en-US source',
+        ]);
+        expect(newMarkup('Read', 'Lee ﹤b﹥')).toHaveLength(2);
+        // Look-alikes aren't tags to <Trans>: they can't stand in for the source's.
+        refused('Read <0>the guide</0>', 'Lee ＜0＞la guía＜/0＞');
+        expect(newMarkup('Read', 'Lee\u202eesto')).toEqual(['invisible character U+202E is not in the en-US source']);
+        expect(newMarkup('Read', 'Lee\u200besto')).toEqual(['invisible character U+200B is not in the en-US source']);
+    });
+
+    it('reads the structure of a text', () => {
+        expect(tagStructure('<1/> y <0>la <2>guía</2></0>')).toEqual({
+            canonical: '0(2()),1/',
+            sequence: '<1/><0><2></2></0>',
+            stray: [],
+        });
+        expect(tagStructure('<0 href="x">a</0>').stray).toEqual(['<0 href="x">']);
+        expect(tagStructure('a < b > c').stray).toEqual(['<', '>']);
     });
 });
 
@@ -180,6 +235,29 @@ describe('the locales folder', () => {
             'es-US/common.json: help: phone "555 010 0199" is not in the en-US source',
         ]);
         expect(translationProblems('See socio.sh', 'Mira socio.sh')).toEqual([]);
+    });
+
+    it("holds each plural form's tags to its own source form, and a form en-US lacks to _other", () => {
+        const dir = setup({
+            'en-US/common.json': {
+                files_one: 'One <0>file</0>',
+                files_other: '{{count}} <0>files</0> in <1/>',
+                edited_socio: 'Edited by <0>a socio</0>',
+            },
+            'es-419/common.json': {
+                // The _one form may not borrow _other's <1/>.
+                files_one: 'Un <0>archivo</0> en <1/>',
+                files_many: '{{count}} de <0>archivos</0> en <1/>',
+                files_other: '{{count}} <0>archivos</0>',
+                edited_socio: 'Editado por <0 href="/x">un socio</0>',
+            },
+        });
+        expect(checkLocales(dir)).toEqual([
+            'es-419/common.json: files_one: tags "<0></0><1/>" don\'t match the en-US source\'s "<0></0>"',
+            'es-419/common.json: files_other: tags "<0></0>" don\'t match the en-US source\'s "<0></0><1/>"',
+            'es-419/common.json: edited_socio: markup "<0 href=\\"/x\\">" is not allowed: a tag holds only its name, as in <0> or <0/>',
+            'es-419/common.json: edited_socio: tags "</0>" don\'t match the en-US source\'s "<0></0>"',
+        ]);
     });
 
     it('runs with nothing installed, and fails with the problems', () => {
