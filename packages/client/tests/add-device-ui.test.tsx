@@ -176,7 +176,7 @@ it('asks before signing a claiming device in, naming it', async () => {
     status = claimed;
     await until(() => !!input(), 'confirm');
     expect(code()).toBeNull();
-    expect(title()).toBe('Sign in a new device?');
+    expect(title()).toBe('Sign in on a new device?');
     // A label the device set itself: quoted as given, never vouched for.
     expect(description()).toBe(
         'A device called “Ada’s iPhone” is asking to sign in as you. If it’s yours, type the code it shows.',
@@ -393,7 +393,7 @@ it('names the claiming app, and counts down the claim’s time left', async () =
     expect(description()).toContain('scan this code');
     status = appClaim();
     await until(() => !!input(), 'claim');
-    expect(title()).toBe('Sign in a new device?');
+    expect(title()).toBe('Sign in on a new device?');
     expect(description()).toBe('An iPhone is asking to sign in as you. If it’s yours, type the code it shows.');
     expect(dialog()!.textContent).not.toMatch(/your iPhone/i);
     // One line: the old "wants to sign in as you" is gone.
@@ -412,7 +412,7 @@ it('falls back to “your new device” when the claim carries no name', async (
     await until(() => !!code());
     status = { ...claimed, platform: null, label: null, claimedAt: null };
     await until(() => !!input(), 'claim');
-    expect(title()).toBe('Sign in a new device?');
+    expect(title()).toBe('Sign in on a new device?');
     expect(description()).toMatch(/^A new device is asking to sign in as you\./);
     // No claim time: no countdown, nothing made up.
     expect(dialog()!.querySelector('[data-slot="add-device-claim-countdown"]')).toBeNull();
@@ -550,7 +550,7 @@ it('says it is finishing once the code matched, without the scan instruction', a
     // The poll keeps answering "allowed" from here.
     type('123456');
     await until(() => dialog()!.textContent!.includes('Finishing on'), 'allowed');
-    expect(title()).toBe('Sign in a new device?');
+    expect(title()).toBe('Sign in on a new device?');
     expect(description()).toBe('Finishing sign-in on the new device…');
     expect(dialog()!.textContent).not.toContain(SCAN);
 });
@@ -560,7 +560,7 @@ it('says the device is signed in, without the scan instruction', async () => {
     await until(() => !!code());
     status = { ...appClaim(), state: 'signed_in' };
     await until(() => !!dialog()!.querySelector('[data-slot="add-device-done"]'), 'signed in');
-    expect(title()).toBe('Sign in a new device?');
+    expect(title()).toBe('Sign in on a new device?');
     expect(description()).toBe('The new device is signed in.');
     expect(dialog()!.textContent).not.toContain(SCAN);
 });

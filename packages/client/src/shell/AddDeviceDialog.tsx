@@ -319,7 +319,7 @@ export function AddDeviceDialog({ onClose }: { onClose: () => void }) {
             <DialogContent data-slot="add-device" className="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle>
-                        {view === 'scan' || view === 'ended' ? 'Add a device' : 'Sign in a new device?'}
+                        {view === 'scan' || view === 'ended' ? 'Add a device' : 'Sign in on a new device?'}
                     </DialogTitle>
                     {view === 'waiting' ? (
                         <DialogDescription>
