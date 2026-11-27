@@ -18,6 +18,10 @@ import { SPACES_INTRO } from '../../src/shell/spaces';
 const app = join(import.meta.dirname, '../..');
 const src = (file: string) => readFileSync(join(app, 'src', file), 'utf8');
 const web = (file: string) => readFileSync(join(app, '../../packages/client/src', file), 'utf8');
+/** The Board's en-US words on the web (issues.json). */
+const issuesWords = JSON.parse(readFileSync(join(app, '../../packages/i18n/locales/en-US/issues.json'), 'utf8')) as {
+    toolbar: Record<string, string>;
+};
 
 describe('the big titles (CB-420: the bar’s large title, the web’s words)', () => {
     it('are the system bar’s, with the web’s line under them and the tone where MODULE_TONE_PLACE puts it', () => {
@@ -91,12 +95,13 @@ describe('the search fields', () => {
         expect(field).toContain('<AppSymbol name="search"');
         expect(field).toContain('accessibilityLabel={label}');
         expect(field).not.toMatch(/<Text[\s>]/);
-        expect(web('modules/issues/IssueToolbar.tsx')).toContain('aria-label="Search issues"');
+        expect(web('modules/issues/IssueToolbar.tsx')).toContain("aria-label={t('issues:toolbar.search')}");
+        expect(issuesWords.toolbar.search).toBe('Search issues');
     });
 
     it('are the Board’s, with no "Search issues" over it, and the library’s "Search pages"', () => {
-        expect(ISSUE_SEARCH_LABEL).toBe('Search issues');
-        expect(ISSUE_SEARCH_PLACEHOLDER).toBe('Search');
+        expect(ISSUE_SEARCH_LABEL).toBe(issuesWords.toolbar.search);
+        expect(ISSUE_SEARCH_PLACEHOLDER).toBe(issuesWords.toolbar['search-placeholder']);
         const board = src('screens/board.tsx');
         // Android's drawn field; iOS's is the bar's own (CB-420, `barSearch`).
         expect(board).toMatch(

@@ -1,11 +1,12 @@
 import { ChevronDown, X } from 'lucide-react';
 import type { ReactNode } from 'react';
 
-import { PRIORITY_LABEL, STATUS_LABEL } from '@socio/shared/issues/issue-board';
+import { useTranslation } from '@socio/i18n/react';
 import { ISSUE_LABELS, ISSUE_PRIORITIES, ISSUE_STATUSES, type IssueSummary } from '@socio/shared/issues/issue-types';
 
 import { Slot } from '../context';
 
+import { useIssueTerms } from './issue-words';
 import type { IssueChange } from './use-issues';
 
 import { Button } from '@/components/ui/button';
@@ -48,83 +49,86 @@ export function BatchBar({
     clear: () => void;
     exit: () => void;
 }) {
+    const { t } = useTranslation(['issues']);
+    const terms = useIssueTerms();
     const none = !selected.length || busy;
     return (
         <div
             data-slot="issue-batch-bar"
             role="toolbar"
-            aria-label="Batch actions"
+            aria-label={t('issues:batch.toolbar')}
             className="mx-4 mb-3 flex flex-wrap items-center gap-2 rounded-lg border bg-card px-3 py-2 shadow-xs md:mx-6"
         >
             <span data-slot="issue-batch-count" aria-live="polite" className="text-sm font-medium tabular-nums">
-                {selected.length} selected
+                {t('issues:batch.selected', { count: selected.length })}
             </span>
             <Button variant="ghost" size="sm" className="h-8" disabled={selected.length === shown} onClick={selectAll}>
-                Select all {shown}
+                {t('issues:batch.select-all', { count: shown })}
             </Button>
             {selected.length > 0 && (
                 <Button variant="ghost" size="sm" className="h-8" onClick={clear}>
-                    Clear
+                    {t('issues:batch.clear')}
                 </Button>
             )}
             {admin && (
                 <div className="flex flex-wrap items-center gap-1.5">
-                    <BatchMenu label="Status" disabled={none}>
+                    <BatchMenu label={t('issues:batch.status')} set={t('issues:batch.set-status')} disabled={none}>
                         {ISSUE_STATUSES.map((status) => (
                             <DropdownMenuItem
                                 key={status}
                                 onSelect={() =>
-                                    apply(`Moved to ${STATUS_LABEL[status]}`, (issue) =>
+                                    apply(t('issues:batch.moved', { status: terms.status(status) }), (issue) =>
                                         issue.status === status ? undefined : { status },
                                     )
                                 }
                             >
-                                {STATUS_LABEL[status]}
+                                {terms.status(status)}
                             </DropdownMenuItem>
                         ))}
                     </BatchMenu>
-                    <BatchMenu label="Priority" disabled={none}>
+                    <BatchMenu label={t('issues:batch.priority')} set={t('issues:batch.set-priority')} disabled={none}>
                         {ISSUE_PRIORITIES.map((priority) => (
                             <DropdownMenuItem
                                 key={priority}
                                 onSelect={() =>
-                                    apply(`Priority set to ${PRIORITY_LABEL[priority]}`, (issue) =>
-                                        issue.priority === priority ? undefined : { priority },
+                                    apply(
+                                        t('issues:batch.priority-set', { priority: terms.priority(priority) }),
+                                        (issue) => (issue.priority === priority ? undefined : { priority }),
                                     )
                                 }
                             >
-                                {PRIORITY_LABEL[priority]}
+                                {terms.priority(priority)}
                             </DropdownMenuItem>
                         ))}
                     </BatchMenu>
-                    <BatchMenu label="Labels" disabled={none}>
+                    <BatchMenu label={t('issues:batch.labels')} set={t('issues:batch.set-labels')} disabled={none}>
                         <DropdownMenuSub>
-                            <DropdownMenuSubTrigger>Add label</DropdownMenuSubTrigger>
+                            <DropdownMenuSubTrigger>{t('issues:batch.add-label')}</DropdownMenuSubTrigger>
                             <DropdownMenuSubContent>
                                 {ISSUE_LABELS.map((label) => (
                                     <DropdownMenuItem
                                         key={label}
                                         onSelect={() =>
-                                            apply(`Added ${label}`, (issue) =>
+                                            apply(t('issues:batch.added', { label: terms.label(label) }), (issue) =>
                                                 issue.labels.includes(label)
                                                     ? undefined
                                                     : { labels: [...issue.labels, label] },
                                             )
                                         }
                                     >
-                                        {label}
+                                        {terms.label(label)}
                                     </DropdownMenuItem>
                                 ))}
                             </DropdownMenuSubContent>
                         </DropdownMenuSub>
                         <DropdownMenuSub>
-                            <DropdownMenuSubTrigger>Remove label</DropdownMenuSubTrigger>
+                            <DropdownMenuSubTrigger>{t('issues:batch.remove-label')}</DropdownMenuSubTrigger>
                             <DropdownMenuSubContent>
                                 {ISSUE_LABELS.map((label) => (
                                     <DropdownMenuItem
                                         key={label}
                                         onSelect={() =>
-                                            apply(`Removed ${label}`, (issue) =>
+                                            apply(t('issues:batch.removed', { label: terms.label(label) }), (issue) =>
                                                 issue.labels.includes(label)
                                                     ? {
                                                           labels: issue.labels.filter((value) => value !== label),
@@ -133,7 +137,7 @@ export function BatchBar({
                                             )
                                         }
                                     >
-                                        {label}
+                                        {terms.label(label)}
                                     </DropdownMenuItem>
                                 ))}
                             </DropdownMenuSubContent>
@@ -146,23 +150,28 @@ export function BatchBar({
             </div>
             <Button variant="outline" size="sm" className="ml-auto h-8" onClick={exit}>
                 <X />
-                Done
+                {t('issues:batch.done')}
             </Button>
         </div>
     );
 }
 
-function BatchMenu({ label, disabled, children }: { label: string; disabled: boolean; children: ReactNode }) {
+function BatchMenu({
+    label,
+    set,
+    disabled,
+    children,
+}: {
+    label: string;
+    /** The trigger's accessible name. */
+    set: string;
+    disabled: boolean;
+    children: ReactNode;
+}) {
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button
-                    variant="secondary"
-                    size="sm"
-                    className="h-8"
-                    disabled={disabled}
-                    aria-label={`Set ${label.toLowerCase()} of the selected issues`}
-                >
+                <Button variant="secondary" size="sm" className="h-8" disabled={disabled} aria-label={set}>
                     {label}
                     <ChevronDown className="opacity-50" />
                 </Button>

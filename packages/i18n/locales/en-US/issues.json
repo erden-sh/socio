@@ -1,0 +1,118 @@
+{
+    "crumb": "Issues",
+    "not-found": "Not found",
+    "page": {
+        "title": "Issues",
+        "counts": "{{open, number}} open · {{inProgress, number}} in progress · {{done, number}} done",
+        "tracker": "The team’s issue tracker",
+        "select": "Select",
+        "view": "View",
+        "board-view": "Board view",
+        "list-view": "List view",
+        "new": "New issue"
+    },
+    "move": {
+        "done": "{{key}} moved to {{status}}",
+        "failed": "Could not move {{key}}",
+        "undone": "The change was undone.",
+        "button": "Move {{key}}",
+        "hint": "Move to another status",
+        "menu": "Move {{key}} to"
+    },
+    "batch": {
+        "toolbar": "Batch actions",
+        "selected_one": "{{count, number}} selected",
+        "selected_other": "{{count, number}} selected",
+        "select-all_one": "Select all {{count, number}}",
+        "select-all_other": "Select all {{count, number}}",
+        "clear": "Clear",
+        "status": "Status",
+        "priority": "Priority",
+        "labels": "Labels",
+        "set-status": "Set status of the selected issues",
+        "set-priority": "Set priority of the selected issues",
+        "set-labels": "Set labels of the selected issues",
+        "add-label": "Add label",
+        "remove-label": "Remove label",
+        "done": "Done",
+        "moved": "Moved to {{status}}",
+        "priority-set": "Priority set to {{priority}}",
+        "added": "Added {{label}}",
+        "removed": "Removed {{label}}",
+        "failed_one": "{{what}}: {{count, number}} not changed",
+        "failed_other": "{{what}}: {{count, number}} not changed",
+        "changed_one": "{{what}}: {{count, number}} issue",
+        "changed_other": "{{what}}: {{count, number}} issues",
+        "nothing": "Nothing to change",
+        "refused": "refused",
+        "row-failed": "{{key}}: {{reason}}"
+    },
+    "toolbar": {
+        "search": "Search issues",
+        "search-placeholder": "Search",
+        "dot-requests": "Socio requests",
+        "dot-requests-hint": "Capability requests filed by socios",
+        "wont-fix": "Show won’t fix",
+        "clear": "Clear",
+        "shown": "{{shown, number}} of {{total, number}}",
+        "total_one": "{{count, number}} issue",
+        "total_other": "{{count, number}} issues",
+        "chosen": "{{facet}}: {{values, list(type: unit; style: short)}}",
+        "facet": {
+            "status": "Status",
+            "priority": "Priority",
+            "kind": "Kind",
+            "area": "Area",
+            "label": "Label",
+            "component": "Component"
+        },
+        "filter": {
+            "status": "Filter by status",
+            "priority": "Filter by priority",
+            "kind": "Filter by kind",
+            "area": "Filter by area",
+            "label": "Filter by label",
+            "component": "Filter by component"
+        },
+        "clear-facet": {
+            "status": "Clear status",
+            "priority": "Clear priority",
+            "kind": "Clear kind",
+            "area": "Clear area",
+            "label": "Clear label",
+            "component": "Clear component"
+        }
+    },
+    "board": {
+        "column-count_one": ", {{count, number}} issue",
+        "column-count_other": ", {{count, number}} issues",
+        "drop": "Drop here",
+        "empty": "No issues",
+        "select": "Select {{key}}"
+    },
+    "list": {
+        "empty": "No matching issues."
+    },
+    "votes": {
+        "count_one": "{{count, number}} vote",
+        "count_other": "{{count, number}} votes",
+        "vote": "Vote for {{key}} ({{votes}})",
+        "withdraw": "Withdraw your vote on {{key}} ({{votes}})",
+        "vote-hint": "Vote for this",
+        "withdraw-hint": "You voted. Click to withdraw.",
+        "failed": "Could not save your vote.",
+        "sort": "Most votes",
+        "sort-hint": "Most votes first, in each column"
+    },
+    "badge": {
+        "demand_one": "{{count, number}} ask",
+        "demand_other": "{{count, number}} asks",
+        "demand-hint_one": "Requested by {{count, number}} socio and user pair",
+        "demand-hint_other": "Requested by {{count, number}} socio and user pairs",
+        "blocked_one": "Blocked by {{count, number}}",
+        "blocked_other": "Blocked by {{count, number}}",
+        "blocked-hint_one": "Waiting for {{count, number}} open issue",
+        "blocked-hint_other": "Waiting for {{count, number}} open issues",
+        "assigned": "Assigned to {{name}}"
+    }
+}

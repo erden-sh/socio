@@ -2,16 +2,9 @@ import { ChevronDown, Pencil, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { toast } from 'sonner';
 
+import { useTranslation } from '@socio/i18n/react';
 import { ATTACHMENT_HINT } from '@socio/shared/issues/issue-attachment-files';
-import {
-    areaLabel,
-    canDeleteAttachment,
-    canEditText,
-    canTriage,
-    KIND_LABEL,
-    PRIORITY_LABEL,
-    STATUS_LABEL,
-} from '@socio/shared/issues/issue-board';
+import { canDeleteAttachment, canEditText, canTriage } from '@socio/shared/issues/issue-board';
 import {
     ISSUE_AREAS,
     ISSUE_KINDS,
@@ -19,23 +12,24 @@ import {
     ISSUE_PRIORITIES,
     ISSUE_STATUSES,
     issueKey,
-    type DotFilingTrigger,
     type IssueAssignees,
     type IssueAttachment,
     type IssueDetail,
     type IssueLabel,
     type IssueSummary,
 } from '@socio/shared/issues/issue-types';
+import { listFormat } from '@socio/shared/locale';
 import type { User } from '@socio/shared/types';
 
 import { api } from '../../lib/api';
 import { useLiveTopic } from '../../lib/change-channel';
 import { Slot } from '../context';
 
-import { acceptFiles, pastedFiles, uploadAll } from './attachments';
+import { acceptFiles, pastedFiles, uploadAll, useUploadProblems } from './attachments';
+import { useIssueTerms } from './issue-words';
 import { AttachButton, AttachmentGrid } from './IssueAttachments';
 import { BlockedBadge, DemandBadge, StatusRing, Tag } from './IssueBadges';
-import { formatTime, IssueComments, IssueHistory } from './IssueComments';
+import { IssueComments, IssueHistory } from './IssueComments';
 import { ComponentChip, ComponentPicker, useComponentOptions } from './IssueComponents';
 import { ChoiceField, Field } from './IssueFields';
 import { IssueLinks } from './IssueLinks';
@@ -63,9 +57,6 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-
-/** An open issue deleted in another tab (or by another admin). */
-export const ISSUE_DELETED = 'This issue was deleted.';
 
 const message = (error: unknown, fallback: string) => (error instanceof Error ? error.message : fallback);
 
@@ -155,6 +146,9 @@ function IssueDetailBody({
     onClose: () => void;
     reread?: () => Promise<readonly IssueSummary[] | undefined>;
 }) {
+    const { t } = useTranslation(['issues', 'issues.detail', 'issues.terms']);
+    const terms = useIssueTerms();
+    const uploadProblems = useUploadProblems();
     const [detail, setDetail] = useState<IssueDetail | undefined>(initial);
     const [missing, setMissing] = useState('');
     // Opened from the loader's copy: no second read on mount.
@@ -165,9 +159,9 @@ function IssueDetailBody({
             setDetail(next);
             onChanged(next);
         } catch (error) {
-            setMissing(message(error, 'Could not load the issue.'));
+            setMissing(message(error, t('issues.detail:load-failed')));
         }
-    }, [number, onChanged]);
+    }, [number, onChanged, t]);
     useEffect(() => {
         if (seeded.current) {
             seeded.current = false;
@@ -181,7 +175,8 @@ function IssueDetailBody({
     useLiveTopic(`issue:${number}`, async () => {
         const listed = await reread?.();
         if (listed && !listed.some((issue) => issue.number === number)) {
-            setMissing(ISSUE_DELETED);
+            // An open issue deleted in another tab (or by another admin).
+            setMissing(t('issues.detail:deleted'));
             return;
         }
         await refresh();
@@ -196,14 +191,14 @@ function IssueDetailBody({
             return true;
         } catch (error) {
             setDetail(before);
-            toast.error(message(error, 'Could not save the change.'));
+            toast.error(message(error, t('issues.detail:save-failed')));
             return false;
         }
     };
     const deleteAttachment = (file: IssueAttachment) =>
         void api(`/issue-attachments/${encodeURIComponent(file.id)}`, 'DELETE')
             .then(refresh)
-            .catch((error: unknown) => toast.error(message(error, 'Could not delete the attachment.')));
+            .catch((error: unknown) => toast.error(message(error, t('issues.detail:delete-file-failed'))));
     const [uploading, setUploading] = useState(false);
     const [tab, setTab] = useState('comments');
     const attach = async (picked: File[]) => {
@@ -218,7 +213,7 @@ function IssueDetailBody({
             return;
         }
         setUploading(true);
-        const failed = await uploadAll(number, accepted);
+        const failed = uploadProblems(await uploadAll(number, accepted));
         for (const problem of failed) {
             toast.error(problem);
         }
@@ -235,7 +230,7 @@ function IssueDetailBody({
                 </p>
                 <DialogFooter>
                     <Button variant="outline" onClick={onClose}>
-                        Back to issues
+                        {t('issues.detail:back')}
                     </Button>
                 </DialogFooter>
             </div>
@@ -244,7 +239,7 @@ function IssueDetailBody({
     if (!detail) {
         return (
             <div className="grid gap-4 p-6" aria-busy="true">
-                <DialogTitle className="sr-only">Loading {issueKey(number)}</DialogTitle>
+                <DialogTitle className="sr-only">{t('issues.detail:loading', { key: issueKey(number) })}</DialogTitle>
                 <Skeleton className="h-6 w-2/3" />
                 <Skeleton className="h-24 w-full" />
                 <Skeleton className="h-16 w-full" />
@@ -287,7 +282,7 @@ function IssueDetailBody({
                         className="flex items-center gap-1.5 whitespace-nowrap text-foreground"
                     >
                         <StatusRing status={issue.status} />
-                        {STATUS_LABEL[issue.status]}
+                        {terms.status(issue.status)}
                     </span>
                     <span aria-hidden>·</span>
                     <VoteButton issue={issue} onVoted={() => void refresh()} className="-ml-1.5 font-mono" />
@@ -296,25 +291,35 @@ function IssueDetailBody({
                 </div>
                 <IssueTitle title={issue.title} editable={editable} save={(title) => change({ title })} />
                 <DialogDescription className="text-xs">
-                    Filed by {detail.filedByAgent && `${detail.filedByAgent.label} for `}
-                    {detail.users[issue.reporterId] ?? issue.reporterId}
-                    {detail.filedBy &&
-                        ` for ${detail.users[detail.filedBy.userId] ?? detail.filedBy.userId} (${FILING_TRIGGERS[detail.filedBy.trigger]})`}{' '}
-                    · {formatTime(issue.createdAt)}
-                    {issue.updatedAt !== issue.createdAt && ` · updated ${formatTime(issue.updatedAt)}`}
+                    {t('issues.detail:filed', {
+                        reporter: detail.users[issue.reporterId] ?? issue.reporterId,
+                        agent: detail.filedByAgent?.label ?? '',
+                        person: detail.filedBy ? (detail.users[detail.filedBy.userId] ?? detail.filedBy.userId) : '',
+                        trigger: detail.filedBy ? t(`issues.detail:trigger.${detail.filedBy.trigger}`) : '',
+                        at: new Date(issue.createdAt),
+                        context: detail.filedByAgent
+                            ? detail.filedBy
+                                ? 'both'
+                                : 'agent'
+                            : detail.filedBy
+                              ? 'dot'
+                              : undefined,
+                    })}
+                    {issue.updatedAt !== issue.createdAt &&
+                        t('issues.detail:updated', { at: new Date(issue.updatedAt) })}
                 </DialogDescription>
             </DialogHeader>
             <div className="grid min-h-0 flex-1 grid-cols-1 overflow-y-auto lg:grid-cols-[minmax(0,1fr)_18rem] lg:overflow-hidden 2xl:grid-cols-[minmax(0,1fr)_20rem]">
                 <div className="grid min-w-0 content-start gap-6 p-5 lg:overflow-y-auto 2xl:p-6">
-                    <Section title="Description">
+                    <Section title={t('issues.detail:section.description')}>
                         <IssueBody body={issue.body} editable={editable} save={(body) => change({ body })} />
                     </Section>
                     <Section
-                        title="Attachments"
+                        title={t('issues.detail:section.attachments')}
                         action={
                             <AttachButton
                                 compact
-                                label="Attach files to the issue"
+                                label={t('issues.detail:attach')}
                                 onFiles={(files) => void attach(files)}
                                 disabled={uploading}
                             />
@@ -328,14 +333,18 @@ function IssueDetailBody({
                             />
                         ) : (
                             <p className="text-xs text-muted-foreground">
-                                None yet. Paste a screenshot here or attach a file. {ATTACHMENT_HINT}
+                                {t('issues.detail:no-files', { hint: ATTACHMENT_HINT })}
                             </p>
                         )}
                     </Section>
                     <Tabs value={tab} onValueChange={setTab} className="gap-3">
                         <TabsList>
-                            <TabsTrigger value="comments">Comments ({detail.comments.length})</TabsTrigger>
-                            <TabsTrigger value="history">History ({detail.events.length})</TabsTrigger>
+                            <TabsTrigger value="comments">
+                                {t('issues.detail:tab.comments', { n: detail.comments.length })}
+                            </TabsTrigger>
+                            <TabsTrigger value="history">
+                                {t('issues.detail:tab.history', { n: detail.events.length })}
+                            </TabsTrigger>
                         </TabsList>
                         <TabsContent value="comments">
                             <IssueComments
@@ -351,7 +360,7 @@ function IssueDetailBody({
                     </Tabs>
                 </div>
                 <aside
-                    aria-label="Issue fields"
+                    aria-label={t('issues.detail:fields')}
                     className="grid min-w-0 content-start gap-4 border-t bg-muted/30 p-5 lg:overflow-y-auto lg:border-t-0 lg:border-l 2xl:p-6"
                 >
                     <IssueTriage detail={detail} admin={admin} refresh={refresh} />
@@ -406,6 +415,7 @@ function IssueTitle({
     editable: boolean;
     save: (title: string) => Promise<boolean>;
 }) {
+    const { t } = useTranslation(['issues.detail']);
     const [draft, setDraft] = useState<string>();
     if (draft !== undefined) {
         return (
@@ -422,7 +432,7 @@ function IssueTitle({
             >
                 <DialogTitle className="sr-only">{title}</DialogTitle>
                 <Input
-                    aria-label="Title"
+                    aria-label={t('issues.detail:title.label')}
                     value={draft}
                     maxLength={200}
                     autoFocus
@@ -436,10 +446,10 @@ function IssueTitle({
                     }}
                 />
                 <Button type="submit" size="sm" disabled={draft.trim().length < 3}>
-                    Save
+                    {t('issues.detail:save')}
                 </Button>
                 <Button type="button" size="sm" variant="ghost" onClick={() => setDraft(undefined)}>
-                    Cancel
+                    {t('issues.detail:cancel')}
                 </Button>
             </form>
         );
@@ -452,7 +462,7 @@ function IssueTitle({
                     variant="ghost"
                     size="icon"
                     className="size-7 shrink-0"
-                    aria-label="Edit title"
+                    aria-label={t('issues.detail:title.edit')}
                     onClick={() => setDraft(title)}
                 >
                     <Pencil className="size-3.5" />
@@ -471,6 +481,7 @@ function IssueBody({
     editable: boolean;
     save: (body: string) => Promise<boolean>;
 }) {
+    const { t } = useTranslation(['issues.detail']);
     const [draft, setDraft] = useState<string>();
     if (draft !== undefined) {
         return (
@@ -482,7 +493,7 @@ function IssueBody({
                 }}
             >
                 <Textarea
-                    aria-label="Description"
+                    aria-label={t('issues.detail:body.label')}
                     value={draft}
                     rows={8}
                     maxLength={20_000}
@@ -492,10 +503,10 @@ function IssueBody({
                 />
                 <div className="flex justify-end gap-2">
                     <Button type="button" variant="ghost" size="sm" onClick={() => setDraft(undefined)}>
-                        Cancel
+                        {t('issues.detail:cancel')}
                     </Button>
                     <Button type="submit" size="sm">
-                        Save description
+                        {t('issues.detail:body.save')}
                     </Button>
                 </div>
             </form>
@@ -506,12 +517,12 @@ function IssueBody({
             {body.trim() ? (
                 <IssueMarkdown text={body} issueChips />
             ) : (
-                <p className="text-sm text-muted-foreground">No description.</p>
+                <p className="text-sm text-muted-foreground">{t('issues.detail:body.empty')}</p>
             )}
             {editable && (
                 <Button variant="outline" size="sm" className="w-fit" onClick={() => setDraft(body)}>
                     <Pencil />
-                    Edit description
+                    {t('issues.detail:body.edit')}
                 </Button>
             )}
         </div>
@@ -520,6 +531,8 @@ function IssueBody({
 
 /** Every field, editable: admins only. */
 function AdminFields({ detail, change }: { detail: IssueDetail; change: (patch: IssueChange) => Promise<boolean> }) {
+    const { t } = useTranslation(['issues.detail']);
+    const terms = useIssueTerms();
     const { issue } = detail;
     const [people, setPeople] = useState<IssueAssignees>();
     const options = useComponentOptions();
@@ -535,37 +548,37 @@ function AdminFields({ detail, change }: { detail: IssueDetail; change: (patch: 
     if (issue.assigneeId && !names.has(issue.assigneeId)) {
         const name = detail.users[issue.assigneeId] ?? issue.assigneeId;
         const deactivated = people?.deactivated?.some((person) => person.id === issue.assigneeId);
-        names.set(issue.assigneeId, deactivated ? `${name} (Deactivated)` : name);
+        names.set(issue.assigneeId, deactivated ? t('issues.detail:field.deactivated', { name }) : name);
     }
     return (
         <>
             <ChoiceField
-                label="Status"
+                label={t('issues.detail:field.status')}
                 value={issue.status}
                 options={ISSUE_STATUSES}
-                labelOf={(value) => STATUS_LABEL[value]}
+                labelOf={terms.status}
                 onChange={(status) => status && void change({ status })}
             />
             <ChoiceField
-                label="Priority"
+                label={t('issues.detail:field.priority')}
                 value={issue.priority}
                 options={ISSUE_PRIORITIES}
-                labelOf={(value) => PRIORITY_LABEL[value]}
+                labelOf={terms.priority}
                 onChange={(priority) => priority && void change({ priority })}
             />
             <ChoiceField
-                label="Kind"
+                label={t('issues.detail:field.kind')}
                 value={issue.kind}
                 options={ISSUE_KINDS}
-                labelOf={(value) => KIND_LABEL[value]}
+                labelOf={terms.kind}
                 onChange={(kind) => kind && void change({ kind })}
             />
             <ChoiceField
-                label="Area"
+                label={t('issues.detail:field.area')}
                 value={issue.area}
                 options={ISSUE_AREAS}
-                labelOf={areaLabel}
-                none="No area"
+                labelOf={terms.area}
+                none={t('issues.detail:field.no-area')}
                 onChange={(area) => void change({ area })}
             />
             <LabelsField labels={issue.labels} onChange={(labels) => void change({ labels })} />
@@ -576,11 +589,11 @@ function AdminFields({ detail, change }: { detail: IssueDetail; change: (patch: 
                 onChange={(components) => void change({ components })}
             />
             <ChoiceField
-                label="Assignee"
+                label={t('issues.detail:field.assignee')}
                 value={issue.assigneeId}
                 options={[...names.keys()]}
                 labelOf={(id) => names.get(id) ?? id}
-                none="Unassigned"
+                none={t('issues.detail:field.unassigned')}
                 onChange={(assigneeId) => void change({ assigneeId })}
             />
             <ResolutionField
@@ -599,8 +612,11 @@ function LabelsField({
     labels: readonly IssueLabel[];
     onChange: (labels: IssueLabel[]) => void;
 }) {
+    const { t } = useTranslation(['issues.detail']);
+    const terms = useIssueTerms();
+    const shown = labels.map(terms.label);
     return (
-        <Field label="Labels">
+        <Field label={t('issues.detail:field.labels')}>
             {(id) => (
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -608,14 +624,18 @@ function LabelsField({
                             variant="outline"
                             size="sm"
                             aria-labelledby={id}
-                            aria-description={labels.join(', ') || 'No labels'}
+                            aria-description={
+                                shown.length
+                                    ? listFormat({ type: 'unit', style: 'short' }).format(shown)
+                                    : t('issues.detail:field.no-labels')
+                            }
                             className="h-auto min-h-8 w-full justify-between py-1 font-normal"
                         >
                             <span className="flex flex-wrap gap-1">
                                 {labels.length ? (
-                                    labels.map((label) => <Tag key={label}>{label}</Tag>)
+                                    labels.map((label) => <Tag key={label}>{terms.label(label)}</Tag>)
                                 ) : (
-                                    <span className="text-muted-foreground">No labels</span>
+                                    <span className="text-muted-foreground">{t('issues.detail:field.no-labels')}</span>
                                 )}
                             </span>
                             <ChevronDown className="opacity-50" />
@@ -631,7 +651,7 @@ function LabelsField({
                                     onChange(checked ? [...labels, label] : labels.filter((value) => value !== label))
                                 }
                             >
-                                {label}
+                                {terms.label(label)}
                             </DropdownMenuCheckboxItem>
                         ))}
                     </DropdownMenuContent>
@@ -648,6 +668,7 @@ function ResolutionField({
     resolution: string | null;
     save: (resolution: string | null) => Promise<boolean>;
 }) {
+    const { t } = useTranslation(['issues.detail']);
     const [draft, setDraft] = useState(resolution ?? '');
     const commit = () => {
         const next = draft.trim() || null;
@@ -656,11 +677,11 @@ function ResolutionField({
         }
     };
     return (
-        <Field label="Resolution">
+        <Field label={t('issues.detail:field.resolution')}>
             {(id) => (
                 <Input
                     aria-labelledby={id}
-                    placeholder="e.g. Fixed in 380fb4c"
+                    placeholder={t('issues.detail:field.resolution-example')}
                     value={draft}
                     maxLength={500}
                     className="h-8"
@@ -678,36 +699,36 @@ function ResolutionField({
     );
 }
 
-/** How a Dot's filing started, after the person's name (CB-31). */
-const FILING_TRIGGERS: Record<DotFilingTrigger, string> = {
-    chat: 'asked in chat',
-    telegram: 'asked on Telegram',
-    scheduled: 'from a scheduled task',
-    goal: 'working on a goal they set',
-};
-
 /**
  * A Dot request's askers: each Dot and the user it asked for, by name (the
  * tracker is team-shared, so everyone sees them, as they see authors).
  */
 function DotRequesters({ detail }: { detail: IssueDetail }) {
+    const { t } = useTranslation(['issues.detail']);
     const requesters = detail.requesters ?? [];
     return (
         <section data-slot="issue-requesters" className="grid gap-1.5 text-sm">
-            <h3 className="text-xs font-medium text-muted-foreground">Requested by ({requesters.length})</h3>
+            <h3 className="text-xs font-medium text-muted-foreground">
+                {t('issues.detail:requesters.title', { n: requesters.length })}
+            </h3>
             {requesters.length ? (
                 <ul className="grid gap-1">
                     {requesters.map((row) => (
                         <li key={`${row.dotId}:${row.userId}`} className="[overflow-wrap:anywhere]">
-                            <span className="font-medium">{detail.users[`dot:${row.dotId}`] ?? 'A deleted socio'}</span>{' '}
+                            <span className="font-medium">
+                                {detail.users[`dot:${row.dotId}`] ?? t('issues.detail:requesters.deleted-socio')}
+                            </span>{' '}
                             <span className="text-muted-foreground">
-                                for {detail.users[row.userId] ?? row.userId} · {formatTime(row.createdAt)}
+                                {t('issues.detail:requesters.for', {
+                                    person: detail.users[row.userId] ?? row.userId,
+                                    at: new Date(row.createdAt),
+                                })}
                             </span>
                         </li>
                     ))}
                 </ul>
             ) : (
-                <p className="text-xs text-muted-foreground">Nobody yet.</p>
+                <p className="text-xs text-muted-foreground">{t('issues.detail:requesters.none')}</p>
             )}
         </section>
     );
@@ -715,15 +736,23 @@ function DotRequesters({ detail }: { detail: IssueDetail }) {
 
 /** What members see in the side panel. */
 function ReadOnlyFields({ detail }: { detail: IssueDetail }) {
+    const { t } = useTranslation(['issues.detail']);
+    const terms = useIssueTerms();
     const { issue } = detail;
+    const none = t('issues.detail:none');
     const rows: [string, ReactNode][] = [
-        ['Status', STATUS_LABEL[issue.status]],
-        ['Priority', PRIORITY_LABEL[issue.priority]],
-        ['Kind', KIND_LABEL[issue.kind]],
-        ['Area', issue.area ? areaLabel(issue.area) : 'None'],
-        ['Labels', issue.labels.length ? issue.labels.join(', ') : 'None'],
+        [t('issues.detail:field.status'), terms.status(issue.status)],
+        [t('issues.detail:field.priority'), terms.priority(issue.priority)],
+        [t('issues.detail:field.kind'), terms.kind(issue.kind)],
+        [t('issues.detail:field.area'), issue.area ? terms.area(issue.area) : none],
         [
-            'Components',
+            t('issues.detail:field.labels'),
+            issue.labels.length
+                ? listFormat({ type: 'unit', style: 'short' }).format(issue.labels.map(terms.label))
+                : none,
+        ],
+        [
+            t('issues.detail:field.components'),
             issue.components?.length ? (
                 <span key="components" className="flex flex-wrap gap-1">
                     {issue.components.map((ref) => (
@@ -731,11 +760,18 @@ function ReadOnlyFields({ detail }: { detail: IssueDetail }) {
                     ))}
                 </span>
             ) : (
-                'None'
+                none
             ),
         ],
-        ['Assignee', issue.assigneeId ? (detail.users[issue.assigneeId] ?? issue.assigneeId) : 'Unassigned'],
-        ...(issue.resolution ? ([['Resolution', issue.resolution]] as [string, ReactNode][]) : []),
+        [
+            t('issues.detail:field.assignee'),
+            issue.assigneeId
+                ? (detail.users[issue.assigneeId] ?? issue.assigneeId)
+                : t('issues.detail:field.unassigned'),
+        ],
+        ...(issue.resolution
+            ? ([[t('issues.detail:field.resolution'), issue.resolution]] as [string, ReactNode][])
+            : []),
     ];
     return (
         <dl data-slot="issue-fields" className="grid gap-3 text-sm">
@@ -750,6 +786,7 @@ function ReadOnlyFields({ detail }: { detail: IssueDetail }) {
 }
 
 function DeleteIssue({ number, onDeleted }: { number: number; onDeleted: () => void }) {
+    const { t } = useTranslation(['issues.detail']);
     const [confirming, setConfirming] = useState(false);
     const [busy, setBusy] = useState(false);
     const key = issueKey(number);
@@ -762,19 +799,18 @@ function DeleteIssue({ number, onDeleted }: { number: number; onDeleted: () => v
                 onClick={() => setConfirming(true)}
             >
                 <Trash2 />
-                Delete issue
+                {t('issues.detail:delete.button')}
             </Button>
         );
     }
     return (
         <div
             role="group"
-            aria-label={`Delete ${key}`}
+            aria-label={t('issues.detail:delete.group', { key })}
             className="grid gap-2 rounded-md border border-destructive/40 p-3"
         >
             <p data-slot="issue-delete-warning" className="text-xs">
-                Delete {key} with its comments and attachments? It’s removed from the tracker for everyone, and its
-                number isn’t used again.
+                {t('issues.detail:delete.warning', { key })}
             </p>
             <div className="flex gap-2">
                 <Button
@@ -785,19 +821,19 @@ function DeleteIssue({ number, onDeleted }: { number: number; onDeleted: () => v
                         setBusy(true);
                         void api(`/issues/${number}`, 'DELETE')
                             .then(() => {
-                                toast.success(`Deleted ${key}`);
+                                toast.success(t('issues.detail:delete.done', { key }));
                                 onDeleted();
                             })
                             .catch((error: unknown) => {
                                 setBusy(false);
-                                toast.error(message(error, 'Could not delete the issue.'));
+                                toast.error(message(error, t('issues.detail:delete.failed')));
                             });
                     }}
                 >
-                    Delete {key}
+                    {t('issues.detail:delete.confirm', { key })}
                 </Button>
                 <Button variant="ghost" size="sm" onClick={() => setConfirming(false)}>
-                    Keep
+                    {t('issues.detail:keep')}
                 </Button>
             </div>
         </div>

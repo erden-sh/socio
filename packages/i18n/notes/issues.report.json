@@ -1,0 +1,9 @@
+{
+    "description": "Under the report dialog's title. \"Triage\" is the tracker's first status, where new issues wait to be sorted. The run form adds that the issue is linked to the socio's failed run.",
+    "filing": "The submit button's text while the issue is being filed.",
+    "filed": "Toast after filing; {{key}} is the new issue's key (CB-12).",
+    "filed-partly": "Toast after filing when some attachments failed; {{key}} is the new issue's key.",
+    "open": "Button in the toast that opens the new issue.",
+    "discard.keep": "Button that goes back to the form.",
+    "discard.confirm": "Button that closes the form and loses what was written."
+}

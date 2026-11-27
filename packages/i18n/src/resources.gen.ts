@@ -3,6 +3,183 @@
 // (docs/I18N.md) read it.
 
 export interface EnglishResources {
+    approvals: {
+        title: 'Approvals';
+        description: 'Actions with side effects wait for you: a new dataset, changes to a shared one, access to your data. Approve or deny them here or in the chat, or let auto review decide the routine ones. Reading and querying data a socio may use never needs approval.';
+        'deleted-socio': 'A deleted socio';
+        errors: {
+            load: 'Could not load approvals.';
+            policy: 'Could not save the policy.';
+            'auto-off': 'Could not turn auto approvals off.';
+            guidance: 'Could not save the guidance.';
+            undo: 'Could not undo it.';
+        };
+        toasts: {
+            'auto-off': 'Auto approvals are off for this socio.';
+            guidance: 'Guidance saved.';
+            undone: 'Undone.';
+        };
+        waiting: {
+            title: 'Waiting for you';
+            count_one: '{{count, number}} request. Nothing happens until you decide; requests expire after a week.';
+            count_other: '{{count, number}} requests. Nothing happens until you decide; requests expire after a week.';
+            none: 'Nothing is waiting.';
+        };
+        policies: {
+            title: 'Policies';
+            description: 'Per socio and per capability: Manual asks you every time; Auto lets a decision model on your inference decide in your place, and it passes anything unclear or above the capability’s risk limit to you; Bypass lets the socio go ahead. Quotas and the audit apply either way, and every change of policy is recorded.';
+            socio: 'Socio';
+            'auto-on': 'Auto approvals are on for {{socio}}: {{capabilities, list(type: unit; style: short)}}. A decision model decides these in your place; what it is unsure about still comes to you, and every decision is listed below with its reason.';
+            'turn-off': 'Turn off auto';
+            policy: {
+                manual: 'Manual';
+                auto: 'Auto';
+                bypass: 'Bypass';
+            };
+            'auto-unavailable': 'Auto (not available)';
+            limits: 'Approved automatically up to {{risk}} risk; anything riskier comes to you.';
+            risk: {
+                low: 'low';
+                medium: 'medium';
+            };
+            always: 'Always to you: {{rules}}.';
+            undo: 'You can undo automatic approvals.';
+            'no-undo': 'Automatic approvals can’t be undone here.';
+            select: 'Approval policy for {{capability}}';
+        };
+        guidance: {
+            title: 'Guidance for auto approvals';
+            description: 'Optional. A few lines the decision model reads with every request it decides for you, e.g. “Datasets for my budget are fine; never give a socio write access to shared data.” It applies to all your socios. Leave out passwords and other secrets.';
+            label: 'Guidance for auto approvals';
+            length: '{{length, number}}/{{max, number}}';
+            save: 'Save guidance';
+        };
+        recent: {
+            title: 'Recent decisions';
+            filter: 'Show decisions';
+            filters: {
+                all: 'All decisions';
+                auto: 'Auto reviews';
+                user: 'Decided by you';
+                bypass: 'Bypass';
+            };
+            none: 'None yet.';
+            asked: 'Asked';
+            socio: 'Socio';
+            request: 'Request';
+            status: 'Status';
+            outcome: 'Outcome';
+            undo: 'Undo';
+        };
+        audit: {
+            title: 'Audit';
+            description: 'Every request, decision and policy change.';
+            when: 'When';
+            socio: 'Socio';
+            capability: 'Capability';
+            event: 'Event';
+            detail: 'Detail';
+            events: {
+                requested: 'Asked';
+                approved: 'Approved by you';
+                denied: 'Denied by you';
+                expired: 'Expired';
+                bypassed: 'Approved by bypass';
+                executed: 'Done';
+                failed: 'Failed';
+                policy_changed: 'Policy changed';
+                auto_approved: 'Approved by auto review';
+                auto_denied: 'Denied by auto review';
+                auto_escalated: 'Passed to you by auto review';
+                undone: 'Undone by you';
+                undo_failed: 'Undo failed';
+                guidance_changed: 'Auto guidance changed';
+            };
+        };
+    };
+    'approvals.card': {
+        status: {
+            pending: 'Waiting for you';
+            approved: 'Approved';
+            denied: 'Denied';
+            expired: 'Expired';
+            failed: 'Failed';
+            undone: 'Undone';
+            bypass: 'Approved (bypass)';
+            auto: '{{status}} (auto)';
+        };
+        decided: {
+            auto: 'Decided by auto review in your place.';
+            expired: 'Expired without a decision.';
+            plain: 'Approved.';
+            plain_denied: 'Denied.';
+            waiting_one: 'Approved. The socio carries on once you decide the other request from this turn.';
+            waiting_other: 'Approved. The socio carries on once you decide the other {{count, number}} requests from this turn.';
+            waiting_denied_one: 'Denied. The socio carries on once you decide the other request from this turn.';
+            waiting_denied_other: 'Denied. The socio carries on once you decide the other {{count, number}} requests from this turn.';
+            running: 'Approved. The socio is carrying on…';
+            running_denied: 'Denied. The socio is carrying on…';
+            done: 'Approved. The socio carried on in the conversation.';
+            done_denied: 'Denied. The socio carried on in the conversation.';
+            failed: 'Approved. The socio could not carry on: {{detail}}';
+            failed_denied: 'Denied. The socio could not carry on: {{detail}}';
+            'turn-failed': 'the turn failed.';
+            skipped: 'Approved. {{detail}}';
+            skipped_denied: 'Denied. {{detail}}';
+            'not-carried-on': 'The socio did not carry on.';
+        };
+        auto: {
+            badge: 'Auto';
+            escalated: 'Auto review passed this to you:';
+            approved: 'Approved by auto review:';
+            denied: 'Denied by auto review:';
+            model: 'Model {{model}}.';
+            model_shared: 'Model {{model}} (default backend).';
+            model_own: 'Model {{model}} (your connection).';
+            'model-time': 'Model {{model}}, {{seconds, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}} s.';
+            'model-time_shared': 'Model {{model}} (default backend), {{seconds, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}} s.';
+            'model-time_own': 'Model {{model}} (your connection), {{seconds, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}} s.';
+            undone: 'Undone: {{outcome}}';
+            'undo-failed': 'Undo failed: {{outcome}}';
+        };
+        card: {
+            label: 'Approval request';
+            asks: '{{socio}} asks: {{capability}}';
+            approve: 'Approve';
+            deny: 'Deny';
+            undo: 'Undo';
+            'open-first': 'Show all parameters to allow this.';
+            until: 'Nothing happens until you decide. Expires <expires/>.';
+            loading: 'Loading…';
+            open: 'Open in Approvals';
+            'load-failed': 'Could not load this request.';
+            'save-failed': 'Could not save the decision.';
+        };
+        bar: {
+            label: 'Pending approval';
+            asks: '{{socio}} asks to {{capability}}';
+            position: '1 of {{total, number}}';
+            'on-card': 'Show the request to see what it asks and decide on its card.';
+            'open-first': 'Show the request and open all its parameters to allow it.';
+            show: 'Show request';
+        };
+        panel: {
+            title: 'Waiting for you';
+            failed: 'Could not load approvals.';
+            empty: 'Nothing to approve.';
+            all: 'Approvals';
+            now: 'Just now';
+            minutes: '{{minutes, relativetime(range: minute; style: narrow)}}';
+            hours: '{{hours, relativetime(range: hour; style: narrow)}}';
+            date: '{{at, datetime}}';
+        };
+        request: {
+            crumb: 'Approvals';
+            'crumb-request': 'Request';
+            title: 'A socio is asking';
+            description: 'Approve to let it go ahead, or deny. <all>All approvals</all>';
+        };
+    };
     chat: {
         copy: {
             action: 'Copy';
@@ -559,6 +736,455 @@ export interface EnglishResources {
     };
     common: {
         product: 'Socio';
+    };
+    issues: {
+        crumb: 'Issues';
+        'not-found': 'Not found';
+        page: {
+            title: 'Issues';
+            counts: '{{open, number}} open · {{inProgress, number}} in progress · {{done, number}} done';
+            tracker: 'The team’s issue tracker';
+            select: 'Select';
+            view: 'View';
+            'board-view': 'Board view';
+            'list-view': 'List view';
+            new: 'New issue';
+        };
+        move: {
+            done: '{{key}} moved to {{status}}';
+            failed: 'Could not move {{key}}';
+            undone: 'The change was undone.';
+            button: 'Move {{key}}';
+            hint: 'Move to another status';
+            menu: 'Move {{key}} to';
+        };
+        batch: {
+            toolbar: 'Batch actions';
+            selected_one: '{{count, number}} selected';
+            selected_other: '{{count, number}} selected';
+            'select-all_one': 'Select all {{count, number}}';
+            'select-all_other': 'Select all {{count, number}}';
+            clear: 'Clear';
+            status: 'Status';
+            priority: 'Priority';
+            labels: 'Labels';
+            'set-status': 'Set status of the selected issues';
+            'set-priority': 'Set priority of the selected issues';
+            'set-labels': 'Set labels of the selected issues';
+            'add-label': 'Add label';
+            'remove-label': 'Remove label';
+            done: 'Done';
+            moved: 'Moved to {{status}}';
+            'priority-set': 'Priority set to {{priority}}';
+            added: 'Added {{label}}';
+            removed: 'Removed {{label}}';
+            failed_one: '{{what}}: {{count, number}} not changed';
+            failed_other: '{{what}}: {{count, number}} not changed';
+            changed_one: '{{what}}: {{count, number}} issue';
+            changed_other: '{{what}}: {{count, number}} issues';
+            nothing: 'Nothing to change';
+            refused: 'refused';
+            'row-failed': '{{key}}: {{reason}}';
+        };
+        toolbar: {
+            search: 'Search issues';
+            'search-placeholder': 'Search';
+            'dot-requests': 'Socio requests';
+            'dot-requests-hint': 'Capability requests filed by socios';
+            'wont-fix': 'Show won’t fix';
+            clear: 'Clear';
+            shown: '{{shown, number}} of {{total, number}}';
+            total_one: '{{count, number}} issue';
+            total_other: '{{count, number}} issues';
+            chosen: '{{facet}}: {{values, list(type: unit; style: short)}}';
+            facet: {
+                status: 'Status';
+                priority: 'Priority';
+                kind: 'Kind';
+                area: 'Area';
+                label: 'Label';
+                component: 'Component';
+            };
+            filter: {
+                status: 'Filter by status';
+                priority: 'Filter by priority';
+                kind: 'Filter by kind';
+                area: 'Filter by area';
+                label: 'Filter by label';
+                component: 'Filter by component';
+            };
+            'clear-facet': {
+                status: 'Clear status';
+                priority: 'Clear priority';
+                kind: 'Clear kind';
+                area: 'Clear area';
+                label: 'Clear label';
+                component: 'Clear component';
+            };
+        };
+        board: {
+            'column-count_one': ', {{count, number}} issue';
+            'column-count_other': ', {{count, number}} issues';
+            drop: 'Drop here';
+            empty: 'No issues';
+            select: 'Select {{key}}';
+        };
+        list: {
+            empty: 'No matching issues.';
+        };
+        votes: {
+            count_one: '{{count, number}} vote';
+            count_other: '{{count, number}} votes';
+            vote: 'Vote for {{key}} ({{votes}})';
+            withdraw: 'Withdraw your vote on {{key}} ({{votes}})';
+            'vote-hint': 'Vote for this';
+            'withdraw-hint': 'You voted. Click to withdraw.';
+            failed: 'Could not save your vote.';
+            sort: 'Most votes';
+            'sort-hint': 'Most votes first, in each column';
+        };
+        badge: {
+            demand_one: '{{count, number}} ask';
+            demand_other: '{{count, number}} asks';
+            'demand-hint_one': 'Requested by {{count, number}} socio and user pair';
+            'demand-hint_other': 'Requested by {{count, number}} socio and user pairs';
+            blocked_one: 'Blocked by {{count, number}}';
+            blocked_other: 'Blocked by {{count, number}}';
+            'blocked-hint_one': 'Waiting for {{count, number}} open issue';
+            'blocked-hint_other': 'Waiting for {{count, number}} open issues';
+            assigned: 'Assigned to {{name}}';
+        };
+    };
+    'issues.detail': {
+        deleted: 'This issue was deleted.';
+        'load-failed': 'Could not load the issue.';
+        'save-failed': 'Could not save the change.';
+        back: 'Back to issues';
+        loading: 'Loading {{key}}';
+        filed: 'Filed by {{reporter}} · {{at, datetime(dateStyle: medium; timeStyle: short)}}';
+        filed_agent: 'Filed by {{agent}} for {{reporter}} · {{at, datetime(dateStyle: medium; timeStyle: short)}}';
+        filed_dot: 'Filed by {{reporter}} for {{person}} ({{trigger}}) · {{at, datetime(dateStyle: medium; timeStyle: short)}}';
+        filed_both: 'Filed by {{agent}} for {{reporter}} for {{person}} ({{trigger}}) · {{at, datetime(dateStyle: medium; timeStyle: short)}}';
+        updated: ' · updated {{at, datetime(dateStyle: medium; timeStyle: short)}}';
+        trigger: {
+            chat: 'asked in chat';
+            telegram: 'asked on Telegram';
+            scheduled: 'from a scheduled task';
+            goal: 'working on a goal they set';
+        };
+        section: {
+            description: 'Description';
+            attachments: 'Attachments';
+        };
+        attach: 'Attach files to the issue';
+        'no-files': 'None yet. Paste a screenshot here or attach a file. {{hint}}';
+        'delete-file-failed': 'Could not delete the attachment.';
+        tab: {
+            comments: 'Comments ({{n, number}})';
+            history: 'History ({{n, number}})';
+        };
+        fields: 'Issue fields';
+        title: {
+            label: 'Title';
+            edit: 'Edit title';
+        };
+        body: {
+            label: 'Description';
+            save: 'Save description';
+            empty: 'No description.';
+            edit: 'Edit description';
+        };
+        save: 'Save';
+        cancel: 'Cancel';
+        keep: 'Keep';
+        none: 'None';
+        field: {
+            status: 'Status';
+            priority: 'Priority';
+            kind: 'Kind';
+            area: 'Area';
+            'no-area': 'No area';
+            labels: 'Labels';
+            'no-labels': 'No labels';
+            components: 'Components';
+            assignee: 'Assignee';
+            unassigned: 'Unassigned';
+            deactivated: '{{name}} (Deactivated)';
+            resolution: 'Resolution';
+            'resolution-example': 'e.g. Fixed in 380fb4c';
+        };
+        requesters: {
+            title: 'Requested by ({{n, number}})';
+            'deleted-socio': 'A deleted socio';
+            for: 'for {{person}} · {{at, datetime(dateStyle: medium; timeStyle: short)}}';
+            none: 'Nobody yet.';
+        };
+        delete: {
+            button: 'Delete issue';
+            group: 'Delete {{key}}';
+            warning: 'Delete {{key}} with its comments and attachments? It’s removed from the tracker for everyone, and its number isn’t used again.';
+            confirm: 'Delete {{key}}';
+            done: 'Deleted {{key}}';
+            failed: 'Could not delete the issue.';
+        };
+        comments: {
+            for: '{{name}} for {{person}}';
+            empty: 'No comments yet.';
+            add: 'Add a comment';
+            placeholder: 'Add a comment (markdown; paste a screenshot to attach it)';
+            attach: 'Attach files to the comment';
+            posting: 'Posting…';
+            post: 'Comment';
+            'add-failed': 'Could not add the comment.';
+            edited: '(edited)';
+            edit: 'Edit';
+            'edit-label': 'Edit comment';
+            delete: 'Delete';
+            'delete-confirm': 'Delete comment';
+            'save-failed': 'Could not save the comment.';
+            'delete-failed': 'Could not delete the comment.';
+        };
+        history: {
+            empty: 'No history yet.';
+            for: '{{name}} for {{person}}';
+            none: 'none';
+            'a-file': 'a file';
+            created: 'filed the issue';
+            imported: 'imported the issue';
+            title: 'renamed the issue to “{{title}}”';
+            assigned: 'assigned {{person}}';
+            unassigned: 'removed the assignee';
+            body: 'edited the description';
+            comment_added: 'commented';
+            comment_edited: 'edited a comment';
+            comment_deleted: 'deleted a comment';
+            attachment_added: 'attached {{name}}';
+            attachment_deleted: 'removed {{name}}';
+            deleted: 'deleted the issue';
+            labels: 'changed labels from {{from}} to {{to}}';
+            status: 'changed status from {{from}} to {{to}}';
+            priority: 'changed priority from {{from}} to {{to}}';
+            kind: 'changed kind from {{from}} to {{to}}';
+            area: 'changed area from {{from}} to {{to}}';
+            changed: 'changed {{field}} from {{from}} to {{to}}';
+            resolution: 'set the resolution: {{resolution}}';
+            'resolution-cleared': 'cleared the resolution';
+            blocked_by: 'made it wait for {{key}}';
+            'blocked_by-lifted': 'lifted the wait for {{key}}';
+            blocks: 'made {{key}} wait for it';
+            'blocks-lifted': 'lifted {{key}}’s wait for it';
+            related: 'linked it to {{key}} as related';
+            'related-lifted': 'unlinked {{key}}';
+            'triage-proposed': 'proposed a triage';
+            'triage-applied': 'applied the triage proposal';
+            'triage-ignored': 'ignored the triage proposal';
+            'components-added_one': 'added the component {{names, list}}';
+            'components-added_other': 'added the components {{names, list}}';
+            'components-removed_one': 'removed the component {{names, list}}';
+            'components-removed_other': 'removed the components {{names, list}}';
+            'components-both': '{{added}}; {{removed}}';
+            components: 'changed the components';
+        };
+        triage: {
+            title: 'Triage proposal';
+            applied: 'Triage proposal applied';
+            ignored: 'Proposal ignored';
+            failed: 'Could not save the decision.';
+            decided: 'Applied by {{name}} · {{at, datetime(dateStyle: medium; timeStyle: short)}}';
+            decided_ignored: 'Ignored by {{name}} · {{at, datetime(dateStyle: medium; timeStyle: short)}}';
+            kind: 'Proposed kind';
+            area: 'Proposed area';
+            priority: 'Proposed priority: {{priority}}';
+            label: 'Proposed label';
+            component: 'Proposed component: {{name}}';
+            apply: 'Apply';
+            ignore: 'Ignore';
+            waiting: 'An admin can apply or ignore it. Nothing has changed yet.';
+        };
+        links: {
+            relation: {
+                related: 'Related to';
+                blocks: 'Blocks';
+                blocked_by: 'Blocked by';
+            };
+            group: {
+                blocked_by: 'Blocked by';
+                blocks: 'Blocks';
+                related: 'Related';
+            };
+            'enter-key': 'Enter an issue number such as {{example}}.';
+            'link-failed': 'Could not link the issue.';
+            'change-failed': 'Could not change the link.';
+            'remove-failed': 'Could not remove the link.';
+            'type-of': 'Link to {{key}}';
+            remove: 'Remove link to {{key}}';
+            title: 'Link an issue';
+            empty: 'No linked issues.';
+            type: 'Link type';
+            issue: 'Issue to link';
+            add: 'Add';
+            hint: 'A blocker counts as done once it is Done or Won’t fix. Related links hold nothing up.';
+        };
+    };
+    'issues.form': {
+        attach: 'Attach files';
+        pending: 'Files to attach';
+        'remove-file': 'Remove {{name}}';
+        attachments: 'Attachments';
+        'view-file': 'View {{name}}';
+        'download-file': 'Download {{name}}';
+        'delete-file': 'Delete {{name}}';
+        'download-failed': 'Could not load the attachment.';
+        'upload-failed': '{{name}}: {{reason}}';
+        'upload-failed-plain': '{{name}}: upload failed';
+        components: {
+            label: 'Components';
+            none: 'None';
+            remove: 'Remove {{name}}';
+            add: 'Add component';
+            loading: 'Loading components…';
+            search: 'Search components';
+            'search-placeholder': 'Search plugins and apps';
+            group: {
+                all: 'All';
+                plugins: 'Plugins';
+                apps: 'Apps';
+            };
+            off: 'off';
+            'no-match': 'No matching components.';
+            full_one: 'At most {{count, number}} component. Remove one to add another.';
+            full_other: 'At most {{count, number}} components. Remove one to add another.';
+        };
+    };
+    'issues.report': {
+        title: 'Report an issue';
+        description: 'It goes to the team’s tracker, into triage. Paste a screenshot anywhere in this form to attach it.';
+        description_run: 'It goes to the team’s tracker, into triage. Paste a screenshot anywhere in this form to attach it. It will be linked to the failed run.';
+        field: {
+            title: 'Title';
+            'title-placeholder': 'What went wrong, or what would help?';
+            description: 'Description';
+            'description-placeholder': 'Steps, what you expected, what happened (optional, markdown)';
+            kind: 'Kind';
+            priority: 'Priority';
+            area: 'Area';
+            'no-area': 'No area';
+        };
+        cancel: 'Cancel';
+        filing: 'Filing…';
+        file: 'File issue';
+        filed: 'Filed {{key}}';
+        'filed-partly': 'Filed {{key}}, but some files were not attached';
+        open: 'Open';
+        failed: 'Could not file the issue.';
+        discard: {
+            title: 'Discard issue draft?';
+            body: 'The changes and attachments in this report will be lost.';
+            keep: 'Keep editing';
+            confirm: 'Discard draft';
+        };
+    };
+    'issues.slots': {
+        report: 'Report issue';
+        'file-run': 'File issue';
+        'file-run-label': 'File an issue about the failed run {{run}}';
+        notice: {
+            done: 'Socio request done: {{capability}}';
+            'wont-fix': 'Socio request won’t be built: {{capability}}';
+            'asked-by': '{{key}} (asked by {{socios, list(type: unit; style: short)}})';
+            resolution: '{{text}} · {{resolution}}';
+            view: 'View';
+        };
+        widget: {
+            title: 'Issues';
+            open_one: '{{count, number}} open';
+            open_other: '{{count, number}} open';
+            triage_one: '{{count, number}} in triage';
+            triage_other: '{{count, number}} in triage';
+            tracker: 'The team’s issue tracker';
+        };
+        filings: {
+            title: 'Filed on the board';
+            failed: 'Could not load its filings.';
+            empty: '{{name}} hasn’t filed anything for you.';
+            board: 'Board';
+            item: '{{key}} {{title}}';
+        };
+    };
+    'issues.terms': {
+        status: {
+            triage: 'Triage';
+            open: 'Open';
+            ready: 'Ready';
+            in_progress: 'In progress';
+            in_review: 'In review';
+            blocked: 'Blocked';
+            done: 'Done';
+            wont_fix: 'Won’t fix';
+        };
+        priority: {
+            critical: 'Critical';
+            high: 'High';
+            medium: 'Medium';
+            low: 'Low';
+        };
+        kind: {
+            bug: 'Bug';
+            feature: 'Feature';
+            improvement: 'Improvement';
+            docs: 'Docs';
+            chore: 'Chore';
+            request: 'Socio request';
+        };
+        area: {
+            server: 'Server';
+            client: 'Client';
+            chat: 'Web chat';
+            homepage: 'Homepage';
+            schedules: 'Schedules';
+            telegram: 'Telegram';
+            model: 'Model';
+            runs: 'Runs';
+            spaces: 'Spaces';
+            learning: 'Learning';
+            computers: 'Computers';
+            auth: 'Auth';
+            deploy: 'Deploy';
+            docs: 'Docs';
+            tests: 'Tests';
+        };
+        label: {
+            'owner-lead': 'owner:lead';
+            'owner-user': 'owner:user';
+            'needs-decision': 'needs-decision';
+            regression: 'regression';
+            security: 'security';
+            ux: 'ux';
+            performance: 'performance';
+            'good-first-issue': 'good-first-issue';
+            'dot-request': 'dot-request';
+        };
+        tag: {
+            priority: 'Priority: {{priority}}';
+            kind: 'Kind';
+            area: 'Area';
+            label: 'Label';
+        };
+        ref: '{{key}}: {{title}}';
+        component: {
+            'all-plugins': 'All plugins';
+            'all-apps': 'All apps';
+            title: 'Component: {{name}}';
+            title_owner: 'Component: {{name}}, owned by {{owner}}';
+            title_note: 'Component: {{name}}, {{note}}';
+            'title_owner-note': 'Component: {{name}}, owned by {{owner}}, {{note}}';
+            state: {
+                disabled: 'off';
+                uninstalled: 'uninstalled';
+                deleted: 'deleted';
+            };
+            note: '({{note}})';
+        };
     };
     settings: {
         title: 'Settings';

@@ -7,7 +7,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import type { ApprovalView } from '@socio/shared/approvals';
 import type { Conversation, Dot } from '@socio/shared/types';
 
-import { HIGHLIGHT_MS, asksTo } from '../src/modules/approvals/ApprovalBar';
+import { HIGHLIGHT_MS, useAsksTo } from '../src/modules/approvals/ApprovalBar';
 import { Chat } from '../src/modules/chat/Chat';
 
 declare global {
@@ -269,7 +269,15 @@ function open(connect: () => Promise<unknown>) {
 }
 
 it('words the request from its capability', () => {
+    let asksTo!: ReturnType<typeof useAsksTo>;
+    function Probe() {
+        asksTo = useAsksTo();
+        return null;
+    }
+    const probe = createRoot(document.createElement('div'));
+    act(() => probe.render(<Probe />));
     expect(asksTo(view('ap2'))).toBe('Ada asks to create a schedule');
+    act(() => probe.unmount());
 });
 
 it('shows the oldest pending request on the composer, acts on it, and keeps the draft', async () => {

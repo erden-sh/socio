@@ -1,0 +1,11 @@
+{
+    "pending": "Accessible name of the list of files chosen but not uploaded yet.",
+    "upload-failed": "One line per file that didn't upload: {{name}} is the file's name, {{reason}} the server's reason.",
+    "upload-failed-plain": "The same, when the server gave no reason.",
+    "download-failed": "Toast when an attachment couldn't be downloaded.",
+    "components.label": "The field with the plugins and apps an issue is about.",
+    "components.remove": "Accessible name of the × beside a chosen component; {{name}} is its name.",
+    "components.group.all": "Group of the two choices that stand for every plugin or every app.",
+    "components.off": "After a plugin's name: an admin turned it off.",
+    "components.full": "When the most components are chosen; the count is that limit."
+}

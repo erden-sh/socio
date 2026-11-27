@@ -3,6 +3,7 @@ import { useId, useState } from 'react';
 import { Link } from 'react-router';
 import { toast } from 'sonner';
 
+import { useTranslation } from '@socio/i18n/react';
 import { issueNumber, issuePath } from '@socio/shared/issues/issue-board';
 import {
     isBlockerSatisfied,
@@ -25,22 +26,18 @@ import { cn } from '@/lib/utils';
 
 const message = (error: unknown, fallback: string) => (error instanceof Error ? error.message : fallback);
 
-/** Each relation as the panel names it, from the open issue's side. */
-const RELATION_LABEL: Record<IssueLinkRelation, string> = {
-    related: 'Related to',
-    blocks: 'Blocks',
-    blocked_by: 'Blocked by',
-};
-
-/** The groups, in the panel's order. */
+/**
+ * The groups, in the panel's order. Each relation's name, from the open
+ * issue's side, is `links.relation.<relation>`; its group's title
+ * `links.group.<relation>`.
+ */
 const GROUPS: ReadonlyArray<{
     relation: IssueLinkRelation;
-    title: string;
     slot: string;
 }> = [
-    { relation: 'blocked_by', title: 'Blocked by', slot: 'issue-blockers' },
-    { relation: 'blocks', title: 'Blocks', slot: 'issue-blocks' },
-    { relation: 'related', title: 'Related', slot: 'issue-related' },
+    { relation: 'blocked_by', slot: 'issue-blockers' },
+    { relation: 'blocks', slot: 'issue-blocks' },
+    { relation: 'related', slot: 'issue-related' },
 ];
 
 const relationSelect = cn(nativeSelect, 'h-8 md:text-xs');
@@ -63,6 +60,7 @@ export function IssueLinks({
     admin: boolean;
     refresh: () => Promise<void>;
 }) {
+    const { t } = useTranslation(['issues.detail']);
     const { issue } = detail;
     const links: Record<IssueLinkRelation, IssueLinkRef[]> = {
         blocked_by: detail.blockedBy ?? [],
@@ -106,22 +104,27 @@ export function IssueLinks({
     const add = async () => {
         const other = issueNumber(draft.trim());
         if (!other) {
-            return toast.error('Enter an issue number such as CB-12.');
+            return toast.error(t('issues.detail:links.enter-key', { example: issueKey(12) }));
         }
-        if (await run(() => put(other, relation), 'Could not link the issue.')) {
+        if (await run(() => put(other, relation), t('issues.detail:links.link-failed'))) {
             setDraft('');
         }
     };
     const change = (ref: IssueLinkRef, next: IssueLinkRelation) =>
-        void run(() => put(ref.number, next), 'Could not change the link.');
+        void run(() => put(ref.number, next), t('issues.detail:links.change-failed'));
     const remove = (ref: IssueLinkRef) =>
-        void run(() => api(`/issues/${issue.number}/links/${ref.number}`, 'DELETE'), 'Could not remove the link.');
+        void run(
+            () => api(`/issues/${issue.number}/links/${ref.number}`, 'DELETE'),
+            t('issues.detail:links.remove-failed'),
+        );
     return (
         <section data-slot="issue-links" className="grid gap-3 text-sm">
-            {GROUPS.map(({ relation: group, title, slot }) =>
+            {GROUPS.map(({ relation: group, slot }) =>
                 links[group].length ? (
                     <div key={group} className="grid gap-1.5">
-                        <h3 className="text-xs font-medium text-muted-foreground">{title}</h3>
+                        <h3 className="text-xs font-medium text-muted-foreground">
+                            {t(`issues.detail:links.group.${group}`)}
+                        </h3>
                         <ul data-slot={slot} className="grid gap-1.5">
                             {links[group].map((ref) => (
                                 <LinkRow
@@ -131,7 +134,9 @@ export function IssueLinks({
                                         admin && (
                                             <select
                                                 data-slot="native-select"
-                                                aria-label={`Link to ${issueKey(ref.number)}`}
+                                                aria-label={t('issues.detail:links.type-of', {
+                                                    key: issueKey(ref.number),
+                                                })}
                                                 className={cn(relationSelect, 'h-7 w-fit')}
                                                 value={group}
                                                 disabled={busy}
@@ -141,7 +146,7 @@ export function IssueLinks({
                                             >
                                                 {ISSUE_LINK_RELATIONS.map((option) => (
                                                     <option key={option} value={option}>
-                                                        {RELATION_LABEL[option]}
+                                                        {t(`issues.detail:links.relation.${option}`)}
                                                     </option>
                                                 ))}
                                             </select>
@@ -153,7 +158,9 @@ export function IssueLinks({
                                                 variant="ghost"
                                                 size="icon"
                                                 className="size-6 shrink-0 text-muted-foreground"
-                                                aria-label={`Remove link to ${issueKey(ref.number)}`}
+                                                aria-label={t('issues.detail:links.remove', {
+                                                    key: issueKey(ref.number),
+                                                })}
                                                 disabled={busy}
                                                 onClick={() => remove(ref)}
                                             >
@@ -168,8 +175,8 @@ export function IssueLinks({
                 ) : null,
             )}
             <div className="grid gap-1.5">
-                <h3 className="text-xs font-medium text-muted-foreground">Link an issue</h3>
-                {!total && <p className="text-xs text-muted-foreground">No linked issues.</p>}
+                <h3 className="text-xs font-medium text-muted-foreground">{t('issues.detail:links.title')}</h3>
+                {!total && <p className="text-xs text-muted-foreground">{t('issues.detail:links.empty')}</p>}
                 <form
                     data-slot="issue-link-form"
                     className="flex flex-wrap items-center gap-2"
@@ -180,20 +187,20 @@ export function IssueLinks({
                 >
                     <select
                         data-slot="native-select"
-                        aria-label="Link type"
+                        aria-label={t('issues.detail:links.type')}
                         className={cn(relationSelect, 'w-fit shrink-0')}
                         value={relation}
                         onChange={(event) => setRelation(event.target.value as IssueLinkRelation)}
                     >
                         {relations.map((option) => (
                             <option key={option} value={option}>
-                                {RELATION_LABEL[option]}
+                                {t(`issues.detail:links.relation.${option}`)}
                             </option>
                         ))}
                     </select>
                     <Input
-                        aria-label="Issue to link"
-                        placeholder="CB-12"
+                        aria-label={t('issues.detail:links.issue')}
+                        placeholder={issueKey(12)}
                         list={listId}
                         value={draft}
                         maxLength={16}
@@ -211,14 +218,12 @@ export function IssueLinks({
                             ))}
                     </datalist>
                     <Button type="submit" variant="outline" size="sm" disabled={busy || !draft.trim()}>
-                        Add
+                        {t('issues.detail:links.add')}
                     </Button>
                 </form>
             </div>
             {(admin || links.blocked_by.length > 0) && (
-                <p className="text-xs text-muted-foreground">
-                    A blocker counts as done once it is Done or Won’t fix. Related links hold nothing up.
-                </p>
+                <p className="text-xs text-muted-foreground">{t('issues.detail:links.hint')}</p>
             )}
         </section>
     );

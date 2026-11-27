@@ -225,10 +225,10 @@ it('offers the facet only the label map’s refs on the list, and matches them e
 });
 
 it('groups the options All, Plugins and Apps, and searches names and owners', () => {
-    const titles = (query: string) => groupOptions(options, query).map((group) => group.title);
-    expect(titles('')).toEqual(['All', 'Plugins', 'Apps']);
-    expect(groupOptions(options, 'garden').map((group) => [group.title, group.options.map((o) => o.ref)])).toEqual([
-        ['Apps', ['app:garden']],
+    const ids = (query: string) => groupOptions(options, query).map((group) => group.id);
+    expect(ids('')).toEqual(['all', 'plugins', 'apps']);
+    expect(groupOptions(options, 'garden').map((group) => [group.id, group.options.map((o) => o.ref)])).toEqual([
+        ['apps', ['app:garden']],
     ]);
     // By owner, accents folded.
     expect(groupOptions(options, 'jose').flatMap((group) => group.options.map((o) => o.ref))).toEqual(['app:garden']);

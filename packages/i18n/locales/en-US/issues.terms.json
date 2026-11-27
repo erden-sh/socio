@@ -1,0 +1,75 @@
+{
+    "status": {
+        "triage": "Triage",
+        "open": "Open",
+        "ready": "Ready",
+        "in_progress": "In progress",
+        "in_review": "In review",
+        "blocked": "Blocked",
+        "done": "Done",
+        "wont_fix": "Won’t fix"
+    },
+    "priority": {
+        "critical": "Critical",
+        "high": "High",
+        "medium": "Medium",
+        "low": "Low"
+    },
+    "kind": {
+        "bug": "Bug",
+        "feature": "Feature",
+        "improvement": "Improvement",
+        "docs": "Docs",
+        "chore": "Chore",
+        "request": "Socio request"
+    },
+    "area": {
+        "server": "Server",
+        "client": "Client",
+        "chat": "Web chat",
+        "homepage": "Homepage",
+        "schedules": "Schedules",
+        "telegram": "Telegram",
+        "model": "Model",
+        "runs": "Runs",
+        "spaces": "Spaces",
+        "learning": "Learning",
+        "computers": "Computers",
+        "auth": "Auth",
+        "deploy": "Deploy",
+        "docs": "Docs",
+        "tests": "Tests"
+    },
+    "label": {
+        "owner-lead": "owner:lead",
+        "owner-user": "owner:user",
+        "needs-decision": "needs-decision",
+        "regression": "regression",
+        "security": "security",
+        "ux": "ux",
+        "performance": "performance",
+        "good-first-issue": "good-first-issue",
+        "dot-request": "dot-request"
+    },
+    "tag": {
+        "priority": "Priority: {{priority}}",
+        "kind": "Kind",
+        "area": "Area",
+        "label": "Label"
+    },
+    "ref": "{{key}}: {{title}}",
+    "component": {
+        "all-plugins": "All plugins",
+        "all-apps": "All apps",
+        "title": "Component: {{name}}",
+        "title_owner": "Component: {{name}}, owned by {{owner}}",
+        "title_note": "Component: {{name}}, {{note}}",
+        "title_owner-note": "Component: {{name}}, owned by {{owner}}, {{note}}",
+        "state": {
+            "disabled": "off",
+            "uninstalled": "uninstalled",
+            "deleted": "deleted"
+        },
+        "note": "({{note}})"
+    }
+}

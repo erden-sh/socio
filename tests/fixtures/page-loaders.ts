@@ -1,5 +1,6 @@
+import ROUTES from '@socio/i18n/route-namespaces.json' with { type: 'json' };
 import type { User } from '@socio/shared/types';
-import type { WebServices } from '@socio/shared/web/web';
+import type { PageI18n, WebServices } from '@socio/shared/web/web';
 
 import { dataView } from '../../src/server/dataspace/data-views.js';
 import { issueListView } from '../../src/server/issues/views.js';
@@ -34,6 +35,22 @@ export interface PageLoader {
     /** The page's address for this user, where the route's loader runs. */
     address?: (as: User) => string;
     load(services: WebServices, as: User): Promise<unknown>;
+}
+
+/**
+ * A route's namespaces, as its loader asks for them (`routeI18n`): the
+ * services' dictionaries, or en-US by key when they have none.
+ */
+async function routeI18n(services: WebServices, id: 'approvals' | 'approvals:request'): Promise<PageI18n> {
+    return (
+        (await services.i18n?.(ROUTES[id])) ?? {
+            locale: 'en-US',
+            dir: 'ltr',
+            manifest: { release: '', locales: {} },
+            resources: {},
+            offered: ['en-US'],
+        }
+    );
 }
 
 /** The shell's loader (and the module gates, which reuse its answers). */
@@ -109,14 +126,20 @@ export async function pageLoaders(seed: SeededWorkspace): Promise<PageLoader[]> 
             route: 'approvals',
             kept: true,
             address: () => '/approvals',
-            load: (services) => services.approvals(),
+            load: async (services) => ({
+                i18n: await routeI18n(services, 'approvals'),
+                approvals: await services.approvals(),
+            }),
         },
         {
             page: '/approvals/:approvalId',
             route: 'approvals:request',
             kept: true,
             address: (as) => `/approvals/${approvalOf(as)}`,
-            load: (services, as) => services.approval(approvalOf(as)),
+            load: async (services, as) => ({
+                i18n: await routeI18n(services, 'approvals:request'),
+                approval: await services.approval(approvalOf(as)),
+            }),
         },
         {
             page: '/runs (the poll: 200 runs)',

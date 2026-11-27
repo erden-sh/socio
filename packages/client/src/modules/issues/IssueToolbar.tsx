@@ -1,14 +1,11 @@
 import { Bot, ChevronDown, Search, X } from 'lucide-react';
 import type { ReactNode } from 'react';
 
+import { useTranslation } from '@socio/i18n/react';
 import {
-    areaLabel,
     dotRequestsOnly,
     filtersActive,
-    KIND_LABEL,
     NO_FILTERS,
-    PRIORITY_LABEL,
-    STATUS_LABEL,
     type FacetName,
     toggleDotRequests,
     type IssueFilters,
@@ -19,9 +16,14 @@ import {
     ISSUE_LABELS,
     ISSUE_PRIORITIES,
     ISSUE_STATUSES,
+    type IssueArea,
+    type IssueKind,
+    type IssuePriority,
+    type IssueStatus,
 } from '@socio/shared/issues/issue-types';
 
-import { componentText, type ComponentLabels } from './IssueComponents';
+import { useIssueTerms, type IssueTerms } from './issue-words';
+import { useComponentText, type ComponentLabels } from './IssueComponents';
 import { SortByVotes } from './IssueVotes';
 
 import { Badge } from '@/components/ui/badge';
@@ -37,42 +39,17 @@ import {
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 
+/** The facets, each value in the reader's words (the filters keep the values). */
 const FACETS: {
     name: FacetName;
-    label: string;
     options: readonly string[];
-    labelOf: (value: string) => string;
+    labelOf: (terms: IssueTerms, value: string) => string;
 }[] = [
-    {
-        name: 'status',
-        label: 'Status',
-        options: ISSUE_STATUSES,
-        labelOf: (value) => STATUS_LABEL[value as keyof typeof STATUS_LABEL],
-    },
-    {
-        name: 'priority',
-        label: 'Priority',
-        options: ISSUE_PRIORITIES,
-        labelOf: (value) => PRIORITY_LABEL[value as keyof typeof PRIORITY_LABEL],
-    },
-    {
-        name: 'kind',
-        label: 'Kind',
-        options: ISSUE_KINDS,
-        labelOf: (value) => KIND_LABEL[value as keyof typeof KIND_LABEL],
-    },
-    {
-        name: 'area',
-        label: 'Area',
-        options: ISSUE_AREAS,
-        labelOf: (value) => areaLabel(value as (typeof ISSUE_AREAS)[number]),
-    },
-    {
-        name: 'label',
-        label: 'Label',
-        options: ISSUE_LABELS,
-        labelOf: (value) => value,
-    },
+    { name: 'status', options: ISSUE_STATUSES, labelOf: (terms, value) => terms.status(value as IssueStatus) },
+    { name: 'priority', options: ISSUE_PRIORITIES, labelOf: (terms, value) => terms.priority(value as IssuePriority) },
+    { name: 'kind', options: ISSUE_KINDS, labelOf: (terms, value) => terms.kind(value as IssueKind) },
+    { name: 'area', options: ISSUE_AREAS, labelOf: (terms, value) => terms.area(value as IssueArea) },
+    { name: 'label', options: ISSUE_LABELS, labelOf: (terms, value) => terms.label(value) },
 ];
 
 /** Search and the facet filters (any of the chosen values, per facet). */
@@ -114,6 +91,9 @@ export function IssueToolbar({
         setChosen: (refs: string[]) => void;
     };
 }) {
+    const { t } = useTranslation(['issues']);
+    const terms = useIssueTerms();
+    const componentText = useComponentText();
     const active = filtersActive(filters) || !!components?.chosen.length;
     return (
         <div data-slot="issue-toolbar" className="flex flex-wrap items-center gap-2 px-4 pb-3 md:px-6">
@@ -124,8 +104,8 @@ export function IssueToolbar({
                 />
                 <Input
                     type="search"
-                    aria-label="Search issues"
-                    placeholder="Search"
+                    aria-label={t('issues:toolbar.search')}
+                    placeholder={t('issues:toolbar.search-placeholder')}
                     value={filters.q}
                     // Filled grey and borderless: quieter than the filter buttons.
                     className="h-8 border-transparent bg-muted pl-8 shadow-none dark:bg-muted"
@@ -142,18 +122,20 @@ export function IssueToolbar({
                     className="h-8 gap-1.5 font-normal text-muted-foreground aria-pressed:text-foreground"
                     data-slot="issue-dot-requests"
                     aria-pressed={dotRequestsOnly(filters)}
-                    title="Capability requests filed by socios"
+                    title={t('issues:toolbar.dot-requests-hint')}
                     onClick={() => setFilters(toggleDotRequests)}
                 >
                     <Bot />
-                    Socio requests
+                    {t('issues:toolbar.dot-requests')}
                     {dotRequests > 0 && <span className="font-mono text-xs tabular-nums">{dotRequests}</span>}
                 </Button>
                 {setSortByVotes && <SortByVotes on={!!sortByVotes} setOn={setSortByVotes} />}
                 {FACETS.map((facet) => (
                     <FacetMenu
                         key={facet.name}
-                        {...facet}
+                        name={facet.name}
+                        options={facet.options}
+                        labelOf={(value) => facet.labelOf(terms, value)}
                         chosen={filters[facet.name] as readonly string[]}
                         setChosen={(values) => setFilters((current) => ({ ...current, [facet.name]: values }))}
                         extra={
@@ -166,7 +148,7 @@ export function IssueToolbar({
                                         onSelect={(event) => event.preventDefault()}
                                         onCheckedChange={(checked) => wontFix.setShown(checked)}
                                     >
-                                        Show won’t fix
+                                        {t('issues:toolbar.wont-fix')}
                                         <span className="ml-auto font-mono text-xs text-muted-foreground tabular-nums">
                                             {wontFix.count}
                                         </span>
@@ -178,7 +160,7 @@ export function IssueToolbar({
                 ))}
                 {components && (components.options.length > 0 || components.chosen.length > 0) && (
                     <FacetMenu
-                        label="Component"
+                        name="component"
                         options={components.options}
                         labelOf={(ref) => componentText(ref, components.labels)}
                         chosen={components.chosen}
@@ -196,7 +178,7 @@ export function IssueToolbar({
                         }}
                     >
                         <X />
-                        Clear
+                        {t('issues:toolbar.clear')}
                     </Button>
                 )}
             </div>
@@ -205,21 +187,21 @@ export function IssueToolbar({
                 aria-live="polite"
                 className="ml-auto hidden font-mono text-xs whitespace-nowrap text-muted-foreground tabular-nums sm:inline"
             >
-                {active ? `${shown} of ${total}` : `${total} issues`}
+                {active ? t('issues:toolbar.shown', { shown, total }) : t('issues:toolbar.total', { count: total })}
             </span>
         </div>
     );
 }
 
 function FacetMenu({
-    label,
+    name,
     options,
     labelOf,
     chosen,
     setChosen,
     extra,
 }: {
-    label: string;
+    name: FacetName | 'component';
     options: readonly string[];
     labelOf: (value: string) => string;
     chosen: readonly string[];
@@ -227,6 +209,8 @@ function FacetMenu({
     /** More items at the end of the menu. */
     extra?: ReactNode;
 }) {
+    const { t } = useTranslation(['issues']);
+    const label = t(`issues:toolbar.facet.${name}`);
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -239,8 +223,8 @@ function FacetMenu({
                     )}
                     aria-label={
                         chosen.length
-                            ? `${label}: ${chosen.map(labelOf).join(', ')}`
-                            : `Filter by ${label.toLowerCase()}`
+                            ? t('issues:toolbar.chosen', { facet: label, values: chosen.map(labelOf) })
+                            : t(`issues:toolbar.filter.${name}`)
                     }
                 >
                     {label}
@@ -269,7 +253,9 @@ function FacetMenu({
                 {chosen.length > 0 && (
                     <>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onSelect={() => setChosen([])}>Clear {label.toLowerCase()}</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => setChosen([])}>
+                            {t(`issues:toolbar.clear-facet.${name}`)}
+                        </DropdownMenuItem>
                     </>
                 )}
                 {extra}

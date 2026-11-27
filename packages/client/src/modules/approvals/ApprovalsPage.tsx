@@ -3,12 +3,14 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { toast } from 'sonner';
 
+import { useTranslation } from '@socio/i18n/react';
 import {
     AUTO_GUIDANCE_MAX,
     type ApprovalPolicy,
     type ApprovalView,
     type ApprovalsState,
 } from '@socio/shared/approvals';
+import { dateTimeFormat } from '@socio/shared/locale';
 import { MODULE_IDS } from '@socio/shared/modules';
 
 import { api } from '../../lib/api';
@@ -18,7 +20,7 @@ import { useLoaderSeed } from '../../lib/page-loader';
 import { useShell } from '../../shell/shell-context';
 import { WorkspacePage } from '../../views/WorkspacePage';
 
-import { ApprovalCard, AutoReview, statusLabel } from './ApprovalCard';
+import { ApprovalCard, AutoReview, useStatusLabel } from './ApprovalCard';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -27,38 +29,37 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 
-const EVENT: Record<string, string> = {
-    requested: 'Asked',
-    approved: 'Approved by you',
-    denied: 'Denied by you',
-    expired: 'Expired',
-    bypassed: 'Approved by bypass',
-    executed: 'Done',
-    failed: 'Failed',
-    policy_changed: 'Policy changed',
-    auto_approved: 'Approved by auto review',
-    auto_denied: 'Denied by auto review',
-    auto_escalated: 'Passed to you by auto review',
-    undone: 'Undone by you',
-    undo_failed: 'Undo failed',
-    guidance_changed: 'Auto guidance changed',
-};
+/** The audit's events this client words (`audit.events.<event>`); another reads as stored. */
+const EVENTS = [
+    'requested',
+    'approved',
+    'denied',
+    'expired',
+    'bypassed',
+    'executed',
+    'failed',
+    'policy_changed',
+    'auto_approved',
+    'auto_denied',
+    'auto_escalated',
+    'undone',
+    'undo_failed',
+    'guidance_changed',
+] as const;
+const isEvent = (event: string): event is (typeof EVENTS)[number] => (EVENTS as readonly string[]).includes(event);
 
-const POLICY_LABEL: Record<ApprovalPolicy, string> = {
-    manual: 'Manual',
-    auto: 'Auto',
-    bypass: 'Bypass',
-};
-
-/** The Recent decisions filter. */
+/** The Recent decisions filter (`recent.filters.<filter>`). */
 type DecisionFilter = 'all' | 'auto' | 'user' | 'bypass';
-const FILTERS: Array<[DecisionFilter, string]> = [
-    ['all', 'All decisions'],
-    ['auto', 'Auto reviews'],
-    ['user', 'Decided by you'],
-    ['bypass', 'Bypass'],
-];
-const dateTime = (value: number) => new Date(value).toLocaleString();
+const FILTERS: readonly DecisionFilter[] = ['all', 'auto', 'user', 'bypass'];
+const dateTime = (value: number) =>
+    dateTimeFormat({
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        second: '2-digit',
+    }).format(value);
 const SELECT =
     'h-9 min-w-0 max-w-full shrink-0 rounded-md border border-input bg-transparent px-2 text-sm shadow-xs dark:bg-input/30';
 
@@ -76,6 +77,8 @@ export function ApprovalsPage({
     /** The page's loader data: shown at once, with no second read. */
     initial?: ApprovalsState;
 } = {}) {
+    const { t } = useTranslation(['approvals', 'approvals.card']);
+    const statusLabel = useStatusLabel();
     const shell = useShell();
     const [params, setParams] = useSearchParams();
     const [state, setState] = useState<ApprovalsState | undefined>(initial);
@@ -88,8 +91,8 @@ export function ApprovalsPage({
         () =>
             api<ApprovalsState>(filter === 'auto' ? '/approvals?review=auto' : '/approvals')
                 .then(setState)
-                .catch((e) => toast.error(e instanceof Error ? e.message : 'Could not load approvals.')),
-        [filter],
+                .catch((e) => toast.error(e instanceof Error ? e.message : t('approvals:errors.load'))),
+        [filter, t],
     );
     // Decided, undone or set in another tab.
     useLiveTopic('approvals', load);
@@ -102,7 +105,7 @@ export function ApprovalsPage({
     }, [load]);
     const dots = shell.workspace.dots;
     const dotId = params.get('dot') ?? dots[0]?.id ?? '';
-    const dotName = (id: string) => dots.find((dot) => dot.id === id)?.name ?? 'A deleted socio';
+    const dotName = (id: string) => dots.find((dot) => dot.id === id)?.name ?? t('approvals:deleted-socio');
     const policyOf = (capability: string): ApprovalPolicy =>
         state?.policies.find((entry) => entry.dotId === dotId && entry.capability === capability)?.policy ?? 'manual';
     const setPolicy = async (capability: string, policy: ApprovalPolicy) => {
@@ -110,7 +113,7 @@ export function ApprovalsPage({
             await api('/approvals/policies', 'PUT', { dotId, capability, policy });
             await load();
         } catch (e) {
-            toast.error(e instanceof Error ? e.message : 'Could not save the policy.');
+            toast.error(e instanceof Error ? e.message : t('approvals:errors.policy'));
         }
     };
     const autoOn = state?.capabilities.filter((capability) => policyOf(capability.id) === 'auto') ?? [];
@@ -123,9 +126,9 @@ export function ApprovalsPage({
                     policy: 'manual',
                 });
             }
-            toast.success('Auto approvals are off for this socio.');
+            toast.success(t('approvals:toasts.auto-off'));
         } catch (e) {
-            toast.error(e instanceof Error ? e.message : 'Could not turn auto approvals off.');
+            toast.error(e instanceof Error ? e.message : t('approvals:errors.auto-off'));
         }
         await load();
     };
@@ -137,9 +140,9 @@ export function ApprovalsPage({
             await api('/approvals/guidance', 'PUT', { guidance: guidanceText });
             setGuidance(undefined);
             await load();
-            toast.success('Guidance saved.');
+            toast.success(t('approvals:toasts.guidance'));
         } catch (e) {
-            toast.error(e instanceof Error ? e.message : 'Could not save the guidance.');
+            toast.error(e instanceof Error ? e.message : t('approvals:errors.guidance'));
         } finally {
             setSavingGuidance(false);
         }
@@ -147,9 +150,9 @@ export function ApprovalsPage({
     const undo = async (item: ApprovalView) => {
         try {
             await api(`/approvals/${encodeURIComponent(item.id)}/undo`, 'POST');
-            toast.success('Undone.');
+            toast.success(t('approvals:toasts.undone'));
         } catch (e) {
-            toast.error(e instanceof Error ? e.message : 'Could not undo it.');
+            toast.error(e instanceof Error ? e.message : t('approvals:errors.undo'));
         }
         await load();
     };
@@ -161,8 +164,8 @@ export function ApprovalsPage({
         <WorkspacePage
             slot="approvals-page"
             module={MODULE_IDS.approvals}
-            title="Approvals"
-            description="Actions with side effects wait for you: a new dataset, changes to a shared one, access to your data. Approve or deny them here or in the chat, or let auto review decide the routine ones. Reading and querying data a socio may use never needs approval."
+            title={t('approvals:title')}
+            description={t('approvals:description')}
         >
             {!state ? (
                 <Skeleton className="h-40" />
@@ -172,11 +175,11 @@ export function ApprovalsPage({
                 <div className="grid grid-cols-1 gap-6">
                     <Card data-tour="approval-requests">
                         <CardHeader>
-                            <CardTitle>Waiting for you</CardTitle>
+                            <CardTitle>{t('approvals:waiting.title')}</CardTitle>
                             <CardDescription>
                                 {state.pending.length
-                                    ? `${state.pending.length} request(s). Nothing happens until you decide; requests expire after a week.`
-                                    : 'Nothing is waiting.'}
+                                    ? t('approvals:waiting.count', { count: state.pending.length })
+                                    : t('approvals:waiting.none')}
                             </CardDescription>
                         </CardHeader>
                         {!!state.pending.length && (
@@ -194,17 +197,12 @@ export function ApprovalsPage({
                     </Card>
                     <Card data-slot="approval-policies">
                         <CardHeader>
-                            <CardTitle>Policies</CardTitle>
-                            <CardDescription>
-                                Per socio and per capability: Manual asks you every time; Auto lets a decision model on
-                                your inference decide in your place, and it passes anything unclear or above the
-                                capability’s risk limit to you; Bypass lets the socio go ahead. Quotas and the audit
-                                apply either way, and every change of policy is recorded.
-                            </CardDescription>
+                            <CardTitle>{t('approvals:policies.title')}</CardTitle>
+                            <CardDescription>{t('approvals:policies.description')}</CardDescription>
                         </CardHeader>
                         <CardContent className="grid min-w-0 grid-cols-1 gap-4">
                             <label className="grid min-w-0 w-full max-w-xs grid-cols-1 gap-1 text-sm">
-                                Socio
+                                {t('approvals:policies.socio')}
                                 <select
                                     data-slot="approval-dot"
                                     className={`${SELECT} w-full`}
@@ -227,14 +225,14 @@ export function ApprovalsPage({
                                     <span className="flex items-start gap-2">
                                         <Bot className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" />
                                         <span>
-                                            Auto approvals are on for {dotName(dotId)}:{' '}
-                                            {autoOn.map((capability) => capability.label).join(', ')}. A decision model
-                                            decides these in your place; what it is unsure about still comes to you, and
-                                            every decision is listed below with its reason.
+                                            {t('approvals:policies.auto-on', {
+                                                socio: dotName(dotId),
+                                                capabilities: autoOn.map((capability) => capability.label),
+                                            })}
                                         </span>
                                     </span>
                                     <Button size="sm" variant="outline" onClick={() => void turnOffAuto()}>
-                                        Turn off auto
+                                        {t('approvals:policies.turn-off')}
                                     </Button>
                                 </div>
                             )}
@@ -261,7 +259,7 @@ export function ApprovalsPage({
                                                                   : 'secondary'
                                                         }
                                                     >
-                                                        {POLICY_LABEL[policy]}
+                                                        {t(`approvals:policies.policy.${policy}`)}
                                                     </Badge>
                                                 </span>
                                                 <span className="text-muted-foreground">{capability.description}</span>
@@ -270,20 +268,23 @@ export function ApprovalsPage({
                                                         className="text-xs text-muted-foreground"
                                                         data-slot="auto-limits"
                                                     >
-                                                        Approved automatically up to {auto.maxRisk} risk; anything
-                                                        riskier comes to you.
+                                                        {t('approvals:policies.limits', {
+                                                            risk: t(`approvals:policies.risk.${auto.maxRisk}`),
+                                                        })}
                                                         {auto.rules.length
-                                                            ? ` Always to you: ${auto.rules.join('; ')}.`
-                                                            : ''}
+                                                            ? ` ${t('approvals:policies.always', { rules: auto.rules.join('; ') })}`
+                                                            : ''}{' '}
                                                         {auto.undo
-                                                            ? ' You can undo automatic approvals.'
-                                                            : ' Automatic approvals can’t be undone here.'}
+                                                            ? t('approvals:policies.undo')
+                                                            : t('approvals:policies.no-undo')}
                                                     </span>
                                                 )}
                                             </div>
                                             <select
                                                 data-slot="approval-policy"
-                                                aria-label={`Approval policy for ${capability.label}`}
+                                                aria-label={t('approvals:policies.select', {
+                                                    capability: capability.label,
+                                                })}
                                                 className={SELECT}
                                                 value={policy}
                                                 disabled={!dotId || capability.manualOnly}
@@ -291,13 +292,14 @@ export function ApprovalsPage({
                                                     void setPolicy(capability.id, event.target.value as ApprovalPolicy)
                                                 }
                                             >
-                                                <option value="manual">Manual</option>
+                                                <option value="manual">{t('approvals:policies.policy.manual')}</option>
                                                 <option value="auto" disabled={auto ? !auto.allowed : false}>
-                                                    Auto
-                                                    {auto && !auto.allowed ? ' (not available)' : ''}
+                                                    {auto && !auto.allowed
+                                                        ? t('approvals:policies.auto-unavailable')
+                                                        : t('approvals:policies.policy.auto')}
                                                 </option>
                                                 <option value="bypass" disabled={capability.manualOnly}>
-                                                    Bypass
+                                                    {t('approvals:policies.policy.bypass')}
                                                 </option>
                                             </select>
                                         </div>
@@ -308,16 +310,12 @@ export function ApprovalsPage({
                     </Card>
                     <Card data-slot="auto-guidance">
                         <CardHeader>
-                            <CardTitle>Guidance for auto approvals</CardTitle>
-                            <CardDescription>
-                                Optional. A few lines the decision model reads with every request it decides for you,
-                                e.g. “Datasets for my budget are fine; never give a socio write access to shared data.”
-                                It applies to all your socios. Leave out passwords and other secrets.
-                            </CardDescription>
+                            <CardTitle>{t('approvals:guidance.title')}</CardTitle>
+                            <CardDescription>{t('approvals:guidance.description')}</CardDescription>
                         </CardHeader>
                         <CardContent className="grid gap-2">
                             <Textarea
-                                aria-label="Guidance for auto approvals"
+                                aria-label={t('approvals:guidance.label')}
                                 value={guidanceText}
                                 maxLength={AUTO_GUIDANCE_MAX}
                                 rows={3}
@@ -325,47 +323,50 @@ export function ApprovalsPage({
                             />
                             <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
                                 <span>
-                                    {guidanceText.length}/{AUTO_GUIDANCE_MAX}
+                                    {t('approvals:guidance.length', {
+                                        length: guidanceText.length,
+                                        max: AUTO_GUIDANCE_MAX,
+                                    })}
                                 </span>
                                 <Button
                                     size="sm"
                                     disabled={savingGuidance || guidanceText === savedGuidance}
                                     onClick={() => void saveGuidance()}
                                 >
-                                    Save guidance
+                                    {t('approvals:guidance.save')}
                                 </Button>
                             </div>
                         </CardContent>
                     </Card>
                     <Card data-slot="approval-recent">
                         <CardHeader className="flex flex-wrap items-center justify-between gap-2">
-                            <CardTitle>Recent decisions</CardTitle>
+                            <CardTitle>{t('approvals:recent.title')}</CardTitle>
                             <select
                                 data-slot="approval-filter"
-                                aria-label="Show decisions"
+                                aria-label={t('approvals:recent.filter')}
                                 className={SELECT}
                                 value={filter}
                                 onChange={(event) => setFilter(event.target.value as DecisionFilter)}
                             >
-                                {FILTERS.map(([value, label]) => (
+                                {FILTERS.map((value) => (
                                     <option key={value} value={value}>
-                                        {label}
+                                        {t(`approvals:recent.filters.${value}`)}
                                     </option>
                                 ))}
                             </select>
                         </CardHeader>
                         <CardContent>
                             {!recent.length ? (
-                                <p className="text-sm text-muted-foreground">None yet.</p>
+                                <p className="text-sm text-muted-foreground">{t('approvals:recent.none')}</p>
                             ) : (
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead>Asked</TableHead>
-                                            <TableHead>Socio</TableHead>
-                                            <TableHead>Request</TableHead>
-                                            <TableHead>Status</TableHead>
-                                            <TableHead>Outcome</TableHead>
+                                            <TableHead>{t('approvals:recent.asked')}</TableHead>
+                                            <TableHead>{t('approvals:recent.socio')}</TableHead>
+                                            <TableHead>{t('approvals:recent.request')}</TableHead>
+                                            <TableHead>{t('approvals:recent.status')}</TableHead>
+                                            <TableHead>{t('approvals:recent.outcome')}</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -391,7 +392,7 @@ export function ApprovalsPage({
                                                             className="mt-1"
                                                             onClick={() => void undo(item)}
                                                         >
-                                                            <Undo2 /> Undo
+                                                            <Undo2 /> {t('approvals:recent.undo')}
                                                         </Button>
                                                     )}
                                                 </TableCell>
@@ -404,18 +405,18 @@ export function ApprovalsPage({
                     </Card>
                     <Card>
                         <CardHeader>
-                            <CardTitle>Audit</CardTitle>
-                            <CardDescription>Every request, decision and policy change.</CardDescription>
+                            <CardTitle>{t('approvals:audit.title')}</CardTitle>
+                            <CardDescription>{t('approvals:audit.description')}</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <Table data-slot="approval-audit">
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>When</TableHead>
-                                        <TableHead>Socio</TableHead>
-                                        <TableHead>Capability</TableHead>
-                                        <TableHead>Event</TableHead>
-                                        <TableHead>Detail</TableHead>
+                                        <TableHead>{t('approvals:audit.when')}</TableHead>
+                                        <TableHead>{t('approvals:audit.socio')}</TableHead>
+                                        <TableHead>{t('approvals:audit.capability')}</TableHead>
+                                        <TableHead>{t('approvals:audit.event')}</TableHead>
+                                        <TableHead>{t('approvals:audit.detail')}</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -431,7 +432,11 @@ export function ApprovalsPage({
                                                 )?.label ??
                                                     (entry.capability || '—')}
                                             </TableCell>
-                                            <TableCell>{EVENT[entry.event] ?? entry.event}</TableCell>
+                                            <TableCell>
+                                                {isEvent(entry.event)
+                                                    ? t(`approvals:audit.events.${entry.event}`)
+                                                    : entry.event}
+                                            </TableCell>
                                             <TableCell className="max-w-80 truncate text-muted-foreground">
                                                 {entry.detail}
                                             </TableCell>

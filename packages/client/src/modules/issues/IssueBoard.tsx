@@ -2,9 +2,11 @@ import { ArrowRightLeft } from 'lucide-react';
 import { memo, useRef, useState, type DragEvent } from 'react';
 import { Link } from 'react-router';
 
-import { areaLabel, groupByStatus, issuePath, KIND_LABEL, STATUS_LABEL } from '@socio/shared/issues/issue-board';
+import { useTranslation } from '@socio/i18n/react';
+import { groupByStatus, issuePath } from '@socio/shared/issues/issue-board';
 import { ISSUE_STATUSES, issueKey, type IssueSummary, type IssueStatus } from '@socio/shared/issues/issue-types';
 
+import { useIssueTerms } from './issue-words';
 import { Assignee, BlockedBadge, DemandBadge, IssueKey, PriorityPill, QuietTag, StatusRing } from './IssueBadges';
 import { ComponentChips, type ComponentLabels } from './IssueComponents';
 import { VoteButton } from './IssueVotes';
@@ -114,6 +116,8 @@ function BoardColumn({
     onMove: (issue: IssueSummary, status: IssueStatus) => void;
     selection: IssueSelection;
 }) {
+    const { t } = useTranslation(['issues']);
+    const terms = useIssueTerms();
     const [over, setOver] = useState(false);
     const depth = useRef(0);
     const accepts = (event: DragEvent) => canMove && event.dataTransfer.types.includes(DRAG_TYPE);
@@ -169,8 +173,8 @@ function BoardColumn({
                     className="flex items-center gap-2 text-sm font-medium"
                 >
                     <StatusRing status={status} />
-                    {STATUS_LABEL[status]}
-                    <span className="sr-only">, {issues.length} issues</span>
+                    {terms.status(status)}
+                    <span className="sr-only">{t('issues:board.column-count', { count: issues.length })}</span>
                 </h2>
                 <span
                     aria-hidden
@@ -202,7 +206,7 @@ function BoardColumn({
                             over ? 'border-ring/50' : 'border-transparent',
                         )}
                     >
-                        {over ? 'Drop here' : 'No issues'}
+                        {over ? t('issues:board.drop') : t('issues:board.empty')}
                     </li>
                 )}
             </ul>
@@ -229,6 +233,8 @@ export const IssueCard = memo(function IssueCard({
     onMove: (issue: IssueSummary, status: IssueStatus) => void;
     selection: IssueSelection;
 }) {
+    const { t } = useTranslation(['issues', 'issues.terms']);
+    const terms = useIssueTerms();
     const key = issueKey(issue.number);
     const selected = selection.selected.has(issue.number);
     const assignee = issue.assigneeId ? (users[issue.assigneeId] ?? issue.assigneeId) : undefined;
@@ -236,7 +242,7 @@ export const IssueCard = memo(function IssueCard({
         <article
             data-slot="issue-card"
             data-issue={key}
-            aria-label={`${key}: ${issue.title}`}
+            aria-label={t('issues.terms:ref', { key, title: issue.title })}
             draggable={canMove}
             onDragStart={(event) => {
                 event.dataTransfer.setData(DRAG_TYPE, String(issue.number));
@@ -258,7 +264,7 @@ export const IssueCard = memo(function IssueCard({
                 {selection.active && (
                     <Checkbox
                         checked={selected}
-                        aria-label={`Select ${key}`}
+                        aria-label={t('issues:board.select', { key })}
                         onClick={(event) => event.stopPropagation()}
                         onCheckedChange={() => selection.toggle(issue.number)}
                     />
@@ -291,8 +297,8 @@ export const IssueCard = memo(function IssueCard({
                 className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs leading-4 text-muted-foreground"
             >
                 <span>
-                    {KIND_LABEL[issue.kind]}
-                    {issue.area && ` · ${areaLabel(issue.area)}`}
+                    {terms.kind(issue.kind)}
+                    {issue.area && ` · ${terms.area(issue.area)}`}
                 </span>
                 {issue.labels.map((label) => (
                     <QuietTag key={label} label={label} />
@@ -313,6 +319,8 @@ export function MoveMenu({
     issue: IssueSummary;
     onMove: (issue: IssueSummary, status: IssueStatus) => void;
 }) {
+    const { t } = useTranslation(['issues']);
+    const terms = useIssueTerms();
     const key = issueKey(issue.number);
     return (
         <DropdownMenu>
@@ -321,15 +329,15 @@ export function MoveMenu({
                     variant="ghost"
                     size="icon"
                     className="relative z-10 size-6 text-muted-foreground"
-                    aria-label={`Move ${key}`}
-                    title="Move to another status"
+                    aria-label={t('issues:move.button', { key })}
+                    title={t('issues:move.hint')}
                     onClick={(event) => event.stopPropagation()}
                 >
                     <ArrowRightLeft className="size-3.5" />
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-44">
-                <DropdownMenuLabel className="text-xs">Move {key} to</DropdownMenuLabel>
+                <DropdownMenuLabel className="text-xs">{t('issues:move.menu', { key })}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuRadioGroup
                     value={issue.status}
@@ -341,7 +349,7 @@ export function MoveMenu({
                 >
                     {ISSUE_STATUSES.map((status) => (
                         <DropdownMenuRadioItem key={status} value={status}>
-                            {STATUS_LABEL[status]}
+                            {terms.status(status)}
                         </DropdownMenuRadioItem>
                     ))}
                 </DropdownMenuRadioGroup>

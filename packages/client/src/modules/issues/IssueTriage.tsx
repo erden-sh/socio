@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 
-import { areaLabel, KIND_LABEL, PRIORITY_LABEL } from '@socio/shared/issues/issue-board';
+import { useTranslation } from '@socio/i18n/react';
 import type { IssueDetail } from '@socio/shared/issues/issue-types';
 
 import { api } from '../../lib/api';
 
+import { useIssueTerms } from './issue-words';
 import { PriorityPill, Tag } from './IssueBadges';
-import { formatTime } from './IssueComments';
-import { ComponentChip, componentText } from './IssueComponents';
+import { ComponentChip, useComponentText } from './IssueComponents';
 
 import { Button } from '@/components/ui/button';
 
@@ -30,6 +30,9 @@ export function IssueTriage({
     admin: boolean;
     refresh: () => Promise<void>;
 }) {
+    const { t } = useTranslation(['issues.detail']);
+    const terms = useIssueTerms();
+    const componentText = useComponentText();
     const proposal = detail.triage;
     const [busy, setBusy] = useState(false);
     if (!proposal) {
@@ -39,10 +42,10 @@ export function IssueTriage({
         setBusy(true);
         try {
             await api(`/issues/${detail.issue.number}/triage/${action}`, 'POST');
-            toast.success(action === 'apply' ? 'Triage proposal applied' : 'Proposal ignored');
+            toast.success(action === 'apply' ? t('issues.detail:triage.applied') : t('issues.detail:triage.ignored'));
             await refresh();
         } catch (error) {
-            toast.error(message(error, 'Could not save the decision.'));
+            toast.error(message(error, t('issues.detail:triage.failed')));
             await refresh();
         } finally {
             setBusy(false);
@@ -50,7 +53,11 @@ export function IssueTriage({
     };
     const decided =
         proposal.decidedAt !== null && proposal.decidedBy
-            ? `${proposal.state === 'applied' ? 'Applied' : 'Ignored'} by ${detail.users[proposal.decidedBy] ?? proposal.decidedBy} · ${formatTime(proposal.decidedAt)}`
+            ? t('issues.detail:triage.decided', {
+                  name: detail.users[proposal.decidedBy] ?? proposal.decidedBy,
+                  at: new Date(proposal.decidedAt),
+                  context: proposal.state === 'applied' ? undefined : 'ignored',
+              })
             : undefined;
     return (
         <section
@@ -60,18 +67,18 @@ export function IssueTriage({
             className="grid gap-2 rounded-lg border bg-card p-3 text-sm text-card-foreground"
         >
             <h3 id="issue-triage-title" className="text-sm font-medium text-muted-foreground">
-                Triage proposal
+                {t('issues.detail:triage.title')}
             </h3>
             <div className="flex flex-wrap items-center gap-1">
-                <Tag title="Proposed kind">{KIND_LABEL[proposal.kind]}</Tag>
-                {proposal.area && <Tag title="Proposed area">{areaLabel(proposal.area)}</Tag>}
+                <Tag title={t('issues.detail:triage.kind')}>{terms.kind(proposal.kind)}</Tag>
+                {proposal.area && <Tag title={t('issues.detail:triage.area')}>{terms.area(proposal.area)}</Tag>}
                 <PriorityPill
                     priority={proposal.priority}
-                    title={`Proposed priority: ${PRIORITY_LABEL[proposal.priority]}`}
+                    title={t('issues.detail:triage.priority', { priority: terms.priority(proposal.priority) })}
                 />
                 {proposal.labels.map((label) => (
-                    <Tag key={label} title="Proposed label">
-                        {label}
+                    <Tag key={label} title={t('issues.detail:triage.label')}>
+                        {terms.label(label)}
                     </Tag>
                 ))}
                 {(proposal.components ?? []).map((ref) => (
@@ -79,7 +86,7 @@ export function IssueTriage({
                         key={ref}
                         componentRef={ref}
                         labels={detail.components}
-                        title={`Proposed component: ${componentText(ref, detail.components)}`}
+                        title={t('issues.detail:triage.component', { name: componentText(ref, detail.components) })}
                     />
                 ))}
             </div>
@@ -91,16 +98,14 @@ export function IssueTriage({
             ) : admin ? (
                 <div className="flex gap-2">
                     <Button size="sm" disabled={busy} onClick={() => void decide('apply')}>
-                        Apply
+                        {t('issues.detail:triage.apply')}
                     </Button>
                     <Button variant="ghost" size="sm" disabled={busy} onClick={() => void decide('ignore')}>
-                        Ignore
+                        {t('issues.detail:triage.ignore')}
                     </Button>
                 </div>
             ) : (
-                <p className="text-xs text-muted-foreground">
-                    An admin can apply or ignore it. Nothing has changed yet.
-                </p>
+                <p className="text-xs text-muted-foreground">{t('issues.detail:triage.waiting')}</p>
             )}
         </section>
     );

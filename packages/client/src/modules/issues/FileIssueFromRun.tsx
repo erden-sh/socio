@@ -1,7 +1,9 @@
 import { Bug } from 'lucide-react';
 
+import { useTranslation } from '@socio/i18n/react';
 import type { AgentRunSummary } from '@socio/shared/types';
 
+import { useOnDemand } from '../../i18n/on-demand';
 import type { SlotProps } from '../types';
 
 import { openReport, type ReportDraft } from './report';
@@ -11,7 +13,9 @@ import { Button } from '@/components/ui/button';
 /**
  * The report form's draft for a failed run: its error, and where it ran.
  * The filed item is linked to the run (CB-194), so Operations can say how
- * long failures take to be reported.
+ * long failures take to be reported. It is the issue's own text, written
+ * for the team's tracker, so it stays in the source language (en-US) like
+ * the tracker's other content.
  */
 export function runIssueDraft(run: AgentRunSummary): ReportDraft {
     const what = run.title ?? 'a conversation';
@@ -37,9 +41,11 @@ export function runIssueDraft(run: AgentRunSummary): ReportDraft {
     };
 }
 
-/** "File issue" under a failed run in Runs (the `run.actions` slot). */
+/** "File issue" under a failed run in Runs (the `run.actions` slot), once its words (issues.slots) are in. */
 export function FileIssueFromRun({ run }: SlotProps['run.actions']) {
-    if (run.status !== 'failed') {
+    const worded = useOnDemand(['issues.slots']);
+    const { t } = useTranslation(['issues.slots']);
+    if (run.status !== 'failed' || !worded) {
         return null;
     }
     return (
@@ -47,11 +53,11 @@ export function FileIssueFromRun({ run }: SlotProps['run.actions']) {
             variant="outline"
             size="sm"
             className="h-7 gap-1.5 px-2 text-xs"
-            aria-label={`File an issue about the failed run ${run.title ?? run.runId}`}
+            aria-label={t('issues.slots:file-run-label', { run: run.title ?? run.runId })}
             onClick={() => openReport(runIssueDraft(run))}
         >
             <Bug className="size-3.5" />
-            File issue
+            {t('issues.slots:file-run')}
         </Button>
     );
 }

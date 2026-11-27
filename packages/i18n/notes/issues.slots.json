@@ -1,0 +1,18 @@
+{
+    "report": "Button (a bug icon) in the header, and the item in the account menu, that opens the dialog to report an issue to the team's tracker.",
+    "file-run": "Button under a socio's failed run (a turn that failed) that files an issue about it.",
+    "file-run-label": "Accessible name of that button; {{run}} is the run's chat title or id.",
+    "notice.done": "Toast title: a capability a socio (AI agent) asked for is now built; {{capability}} names it, in the socio's words.",
+    "notice.wont-fix": "Toast title: a capability a socio asked for won't be built.",
+    "notice.asked-by": "Under the toast's title: {{key}} is the issue's key (CB-12), {{socios}} the socios that asked.",
+    "notice.resolution": "Adds the issue's resolution, as written on the tracker, to the line above ({{text}}).",
+    "notice.view": "Button in the toast that opens the issue.",
+    "widget.title": "Home page card for the team's issue tracker.",
+    "widget.open": "The card's number: how many issues are open.",
+    "widget.triage": "Under it: how many wait in triage, the tracker's first status, to be sorted.",
+    "filings.title": "Heading of the panel, on a socio's page, of what it filed on the issue board for you.",
+    "filings.failed": "When the panel couldn't load.",
+    "filings.empty": "{{name}} is the socio's name.",
+    "filings.board": "Link to the issue board.",
+    "filings.item": "One filed issue: {{key}} is its key (CB-12), {{title}} its title."
+}

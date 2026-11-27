@@ -1,6 +1,7 @@
 import { AppWindow, Plus, Puzzle, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
+import { useTranslation } from '@socio/i18n/react';
 import {
     compareComponents,
     ISSUE_COMPONENTS_MAX,
@@ -11,6 +12,7 @@ import {
     type IssueComponentOptions,
 } from '@socio/shared/issues/issue-components';
 import type { IssueEvent, IssueSummary } from '@socio/shared/issues/issue-types';
+import { listFormat } from '@socio/shared/locale';
 import { foldText } from '@socio/shared/pages/page-search';
 import { pluginAddress } from '@socio/shared/plugins/plugins';
 
@@ -72,25 +74,36 @@ export function componentLabel(
 export const componentText = (ref: string, labels?: ComponentLabels, options?: readonly IssueComponentOption[]) =>
     componentLabel(ref, labels, options)?.label ?? ref;
 
-/** What a component's state adds after its name. */
-const STATE_NOTE: Record<IssueComponentLabel['state'], string | undefined> = {
+/**
+ * `componentText` in the reader's words: the two wildcards are this
+ * client's (`issues.terms`), whatever name the server sent; every other
+ * name is the one the server returned.
+ */
+export function useComponentText() {
+    const { t } = useTranslation(['issues.terms']);
+    return (ref: string, labels?: ComponentLabels, options?: readonly IssueComponentOption[]) =>
+        ref === 'plugins:*'
+            ? t('issues.terms:component.all-plugins')
+            : ref === 'apps:*'
+              ? t('issues.terms:component.all-apps')
+              : componentText(ref, labels, options);
+}
+
+/** What a component's state adds after its name: its key in `issues.terms` (`component.state`). */
+const STATE_NOTE: Record<IssueComponentLabel['state'], 'disabled' | 'uninstalled' | 'deleted' | undefined> = {
     live: undefined,
-    disabled: 'off',
+    disabled: 'disabled',
     uninstalled: 'uninstalled',
     deleted: 'deleted',
 };
 
-/** The chip's hover text: the name, its owner (apps) and its state. */
-function chipTitle(text: string, label: IssueComponentLabel | undefined) {
-    const parts = [`Component: ${text}`];
-    if (label?.ownerName) {
-        parts.push(`owned by ${label.ownerName}`);
-    }
-    const note = label && STATE_NOTE[label.state];
-    if (note) {
-        parts.push(note);
-    }
-    return parts.join(', ');
+/** A state's note (`off`, `uninstalled`, `deleted`), none for a live one. */
+function useStateNote() {
+    const { t } = useTranslation(['issues.terms']);
+    return (label: IssueComponentLabel | undefined) => {
+        const note = label && STATE_NOTE[label.state];
+        return note ? t(`issues.terms:component.state.${note}`) : undefined;
+    };
 }
 
 /**
@@ -112,17 +125,26 @@ export function ComponentChip({
     title?: string;
     className?: string;
 }) {
+    const { t } = useTranslation(['issues.terms']);
     const label = componentLabel(componentRef, labels, options);
-    const text = label?.label ?? componentRef;
+    const text = useComponentText()(componentRef, labels, options);
     const gone = label?.state === 'uninstalled' || label?.state === 'deleted';
     const Icon = componentIcon(label?.kind ?? (componentRef.startsWith('plugin') ? 'plugin' : 'app'));
-    const note = label && STATE_NOTE[label.state];
+    const note = useStateNote()(label);
+    // The hover text: the name, its owner (apps) and its state.
+    const owner = label?.ownerName;
+    const hover = t('issues.terms:component.title', {
+        name: text,
+        owner: owner ?? '',
+        note: note ?? '',
+        context: owner ? (note ? 'owner-note' : 'owner') : note ? 'note' : undefined,
+    });
     return (
         <span
             data-slot="issue-component"
             data-ref={componentRef}
             data-state={label?.state ?? 'live'}
-            title={title ?? chipTitle(text, label)}
+            title={title ?? hover}
             className={cn(
                 'inline-flex max-w-48 min-w-0 items-center gap-1 rounded-sm px-1.5 py-px text-xs leading-4 whitespace-nowrap',
                 gone ? 'bg-muted/50 text-muted-foreground/70' : 'bg-muted text-muted-foreground',
@@ -131,7 +153,7 @@ export function ComponentChip({
         >
             <Icon aria-hidden className="size-3 shrink-0" />
             <span className={cn('min-w-0 truncate', gone && 'line-through')}>{text}</span>
-            {note && <span className="shrink-0 opacity-80">({note})</span>}
+            {note && <span className="shrink-0 opacity-80">{t('issues.terms:component.note', { note })}</span>}
         </span>
     );
 }
@@ -149,6 +171,7 @@ export function ComponentChips({
     labels?: ComponentLabels;
     max?: number;
 }) {
+    const text = useComponentText();
     if (!refs.length) {
         return null;
     }
@@ -162,7 +185,7 @@ export function ComponentChips({
             {rest.length > 0 && (
                 <span
                     data-slot="issue-components-more"
-                    title={rest.map((ref) => componentText(ref, labels)).join(', ')}
+                    title={listFormat({ type: 'unit', style: 'short' }).format(rest.map((ref) => text(ref, labels)))}
                     className="rounded-sm bg-muted px-1.5 py-px text-xs leading-4 whitespace-nowrap text-muted-foreground"
                 >
                     +{rest.length}
@@ -216,21 +239,29 @@ export function componentsOf(pathname: string): string[] | undefined {
     return address ? [`plugin:${address.pluginId}`] : undefined;
 }
 
-const GROUPS: { title: string; kinds: readonly ComponentKind[] }[] = [
-    { title: 'All', kinds: ['plugins', 'apps'] },
-    { title: 'Plugins', kinds: ['plugin'] },
-    { title: 'Apps', kinds: ['app'] },
+const GROUPS: { id: 'all' | 'plugins' | 'apps'; kinds: readonly ComponentKind[] }[] = [
+    { id: 'all', kinds: ['plugins', 'apps'] },
+    { id: 'plugins', kinds: ['plugin'] },
+    { id: 'apps', kinds: ['app'] },
 ];
 
-/** The options matching a search (name or owner, case and accents folded), grouped. */
-export function groupOptions(options: readonly IssueComponentOption[], query: string) {
+/**
+ * The options matching a search (name or owner, case and accents folded),
+ * grouped. `nameOf` is how an option reads (the picker's: wildcards in the
+ * reader's words).
+ */
+export function groupOptions(
+    options: readonly IssueComponentOption[],
+    query: string,
+    nameOf: (option: IssueComponentOption) => string = (option) => option.label,
+) {
     const words = foldText(query).split(' ').filter(Boolean);
     const matching = options.filter((option) => {
-        const text = foldText(`${option.label} ${option.ownerName ?? ''}`);
+        const text = foldText(`${nameOf(option)} ${option.ownerName ?? ''}`);
         return words.every((word) => text.includes(word));
     });
     return GROUPS.map((group) => ({
-        title: group.title,
+        id: group.id,
         options: matching.filter((option) => group.kinds.includes(option.kind)),
     })).filter((group) => group.options.length > 0);
 }
@@ -258,16 +289,18 @@ export function ComponentPicker({
     disabled?: boolean;
     className?: string;
 }) {
+    const { t } = useTranslation(['issues.form']);
+    const text = useComponentText();
     const [open, setOpen] = useState(false);
     const [query, setQuery] = useState('');
     const full = value.length >= ISSUE_COMPONENTS_MAX;
-    const groups = groupOptions(options ?? [], query);
+    const groups = groupOptions(options ?? [], query, (option) => text(option.ref, labels, options));
     const toggle = (ref: string, on: boolean) =>
         onChange(
             on ? (value.includes(ref) || full ? [...value] : [...value, ref]) : value.filter((item) => item !== ref),
         );
     return (
-        <Field label="Components" className={className}>
+        <Field label={t('issues.form:components.label')} className={className}>
             {(id) => (
                 <div role="group" aria-labelledby={id} data-slot="issue-components-field" className="grid gap-1.5">
                     {value.length > 0 ? (
@@ -283,7 +316,9 @@ export function ComponentPicker({
                                     {!disabled && (
                                         <button
                                             type="button"
-                                            aria-label={`Remove ${componentText(ref, labels, options)}`}
+                                            aria-label={t('issues.form:components.remove', {
+                                                name: text(ref, labels, options),
+                                            })}
                                             className="flex h-[18px] items-center rounded-r-sm bg-muted px-0.5 text-muted-foreground hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
                                             onClick={() => toggle(ref, false)}
                                         >
@@ -294,7 +329,9 @@ export function ComponentPicker({
                             ))}
                         </ul>
                     ) : (
-                        disabled && <span className="text-sm text-muted-foreground">None</span>
+                        disabled && (
+                            <span className="text-sm text-muted-foreground">{t('issues.form:components.none')}</span>
+                        )
                     )}
                     {!disabled && (
                         <Popover
@@ -316,15 +353,15 @@ export function ComponentPicker({
                                     disabled={!options?.length}
                                 >
                                     <Plus />
-                                    {options ? 'Add component' : 'Loading components…'}
+                                    {options ? t('issues.form:components.add') : t('issues.form:components.loading')}
                                 </Button>
                             </PopoverTrigger>
                             <PopoverContent align="start" className="w-72 p-0" data-slot="issue-components-picker">
                                 <div className="border-b p-2">
                                     <Input
                                         type="search"
-                                        aria-label="Search components"
-                                        placeholder="Search plugins and apps"
+                                        aria-label={t('issues.form:components.search')}
+                                        placeholder={t('issues.form:components.search-placeholder')}
                                         value={query}
                                         autoFocus
                                         className="h-8"
@@ -335,9 +372,9 @@ export function ComponentPicker({
                                     {groups.length ? (
                                         groups.map((group) => (
                                             <div
-                                                key={group.title}
+                                                key={group.id}
                                                 role="group"
-                                                aria-label={group.title}
+                                                aria-label={t(`issues.form:components.group.${group.id}`)}
                                                 data-slot="issue-components-group"
                                                 className="grid py-1"
                                             >
@@ -345,7 +382,7 @@ export function ComponentPicker({
                                                     aria-hidden
                                                     className="px-2 py-1 text-xs font-medium text-muted-foreground"
                                                 >
-                                                    {group.title}
+                                                    {t(`issues.form:components.group.${group.id}`)}
                                                 </span>
                                                 {group.options.map((option) => {
                                                     const checked = value.includes(option.ref);
@@ -374,11 +411,11 @@ export function ComponentPicker({
                                                                 className="size-3.5 text-muted-foreground"
                                                             />
                                                             <span className="min-w-0 flex-1 truncate">
-                                                                {option.label}
+                                                                {text(option.ref, labels, options)}
                                                             </span>
                                                             {option.state === 'disabled' && (
                                                                 <span className="text-xs text-muted-foreground">
-                                                                    off
+                                                                    {t('issues.form:components.off')}
                                                                 </span>
                                                             )}
                                                             {option.ownerName && (
@@ -393,7 +430,7 @@ export function ComponentPicker({
                                         ))
                                     ) : (
                                         <p className="px-2 py-3 text-sm text-muted-foreground">
-                                            No matching components.
+                                            {t('issues.form:components.no-match')}
                                         </p>
                                     )}
                                 </div>
@@ -402,7 +439,7 @@ export function ComponentPicker({
                                         data-slot="issue-components-full"
                                         className="border-t px-3 py-2 text-xs text-muted-foreground"
                                     >
-                                        At most {ISSUE_COMPONENTS_MAX} components. Remove one to add another.
+                                        {t('issues.form:components.full', { count: ISSUE_COMPONENTS_MAX })}
                                     </p>
                                 )}
                             </PopoverContent>
@@ -457,23 +494,28 @@ const refsOf = (raw: string | null): string[] => {
     }
 };
 
-const listed = (names: string[]) =>
-    names.length <= 1 ? (names[0] ?? '') : `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`;
-
 /**
  * A components event in words, by the label map's names: "added the
  * component Forms", "removed the components CRM and All apps", or both,
  * after a semicolon.
  */
-export function componentEventText(event: Pick<IssueEvent, 'fromValue' | 'toValue'>, labels?: ComponentLabels) {
-    const before = refsOf(event.fromValue);
-    const after = refsOf(event.toValue);
-    const added = after.filter((ref) => !before.includes(ref)).map((ref) => componentText(ref, labels));
-    const removed = before.filter((ref) => !after.includes(ref)).map((ref) => componentText(ref, labels));
-    const part = (verb: string, names: string[]) =>
-        `${verb} the ${names.length === 1 ? 'component' : 'components'} ${listed(names)}`;
-    const parts = [added.length ? part('added', added) : '', removed.length ? part('removed', removed) : ''].filter(
-        Boolean,
-    );
-    return parts.length ? parts.join('; ') : 'changed the components';
+export function useComponentEventText() {
+    const { t } = useTranslation(['issues.detail']);
+    const text = useComponentText();
+    return (event: Pick<IssueEvent, 'fromValue' | 'toValue'>, labels?: ComponentLabels) => {
+        const before = refsOf(event.fromValue);
+        const after = refsOf(event.toValue);
+        const added = after.filter((ref) => !before.includes(ref)).map((ref) => text(ref, labels));
+        const removed = before.filter((ref) => !after.includes(ref)).map((ref) => text(ref, labels));
+        const addedText = added.length
+            ? t('issues.detail:history.components-added', { count: added.length, names: added })
+            : '';
+        const removedText = removed.length
+            ? t('issues.detail:history.components-removed', { count: removed.length, names: removed })
+            : '';
+        if (addedText && removedText) {
+            return t('issues.detail:history.components-both', { added: addedText, removed: removedText });
+        }
+        return addedText || removedText || t('issues.detail:history.components');
+    };
 }
