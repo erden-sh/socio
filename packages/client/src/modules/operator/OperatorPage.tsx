@@ -18,6 +18,7 @@ import { CloudConnectionCard } from './CloudConnectionCard';
 import { ContinuousCopyCard } from './ContinuousCopyCard';
 import { DomainsCard } from './DomainsCard';
 import { PageSearchCard } from './PageSearchCard';
+import { ReplyReportsCard } from './ReplyReportsCard';
 import { UpdatesCard } from './UpdatesCard';
 
 import { Badge } from '@/components/ui/badge';
@@ -370,6 +371,7 @@ export function OperatorPage({
             </div>
             <UpdatesCard />
             <CloudConnectionCard />
+            <ReplyReportsCard />
             <DomainsCard />
             <PageSearchCard />
             <ContinuousCopyCard />

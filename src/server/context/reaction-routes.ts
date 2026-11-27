@@ -216,10 +216,16 @@ export function reactionRoutes(platform: ReactionRouteSources, replay: Pick<Even
         }
         const state = platform.reports?.state() ?? null;
         const messages = await readerMessages(platform, thread, userId);
+        const answered = answeredMessage(messages, messageId, thread.ownerId);
+        const byOther = promptByOther(answered, userId);
         const preview: ReportPreview = {
             sharing: !!state,
             ...(state ? { consent: state.consent } : {}),
-            promptByOther: promptByOther(answeredMessage(messages, messageId, thread.ownerId), userId),
+            promptByOther: byOther,
+            // The other person's display name, as a room's history names its
+            // members: their name now, else "Team member" (a room's own id,
+            // or someone no longer listed).
+            ...(byOther && answered?.author ? { author: authorName(platform, answered.author) } : {}),
         };
         return c.json(preview);
     });
@@ -227,6 +233,10 @@ export function reactionRoutes(platform: ReactionRouteSources, replay: Pick<Even
     app.delete('/conversations/:id/messages/:messageId/reactions/:kind', react(false));
     return app;
 }
+
+/** A person's display name for the confirmation's `{author}`, as room history names members. */
+const authorName = (platform: ReactionRouteSources, id: string) =>
+    platform.workspace.users().find((user) => user.id === id)?.name ?? 'Team member';
 
 /** The view, with what became of the report when there is something to say. */
 const withReport = (view: ReactionsView, report: ReportOutcome | ReportRemoval | undefined) =>

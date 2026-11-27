@@ -24,7 +24,24 @@ const AUTHORIZATION =
 const URL_CREDENTIALS = /(?<![a-z0-9+.-])([a-z][a-z0-9+.-]{0,30}:\/\/)[^\s/@:]{1,256}:[^\s/@]{1,256}@/gi;
 /** The names a credential goes by, as a key: `password`, `apiKey`, `client_secret`, `refresh-token`… */
 const CREDENTIAL_KEYS =
-    'api[_-]?key|access[_-]?token|refresh[_-]?token|auth[_-]?token|id[_-]?token|session[_-]?token|token|client[_-]?secret|secret[_-]?key|secret|password|passwd|passphrase|private[_-]?key';
+    'api[_-]?key|access[_-]?token|refresh[_-]?token|auth[_-]?token|id[_-]?token|session[_-]?token|token|client[_-]?secret|secret[_-]?access[_-]?key|secret[_-]?key|secret|password|passwd|passphrase|private[_-]?key';
+/**
+ * The last word of a camelCase or PascalCase credential key, capitalized:
+ * `userPassword`, `githubToken`, `stripeSecretKey`, `awsSecretAccessKey`,
+ * `myApiKey`, `UserPassword`. Matched case-sensitively, so only a capital
+ * after a letter or digit starts one: words in prose (`tokenize`,
+ * `secretary`, `Passwordless`) never do.
+ */
+const CAMEL_CREDENTIAL_KEYS =
+    'Secret(?:Access)?[_-]?[Kk]ey|Secret|Password|Passwd|Passphrase|Token|A(?:pi|PI)[_-]?[Kk]ey|Private[_-]?[Kk]ey';
+/**
+ * Where a credential key starts: at a word start, in any case, or at a
+ * capitalized last word inside a camelCase or PascalCase name. Either way
+ * a match starts at a fixed word, so each attempt ends within a few
+ * characters unless the key is there.
+ */
+const keyAt = (keys: string, camelKeys: string) =>
+    `(?:(?<![A-Za-z0-9])(?:${keys})|(?-i:(?<=[A-Za-z0-9])(?:${camelKeys})))`;
 /**
  * A credential key's quoted value, whole (`"password": "two words"`,
  * `token='a b'`, `secret: "with \"quotes\""`), in JSON, `key=value` and
@@ -34,12 +51,12 @@ const CREDENTIAL_KEYS =
  * end, at most 4,096 characters, so a line costs time in proportion to it.
  */
 const QUOTED = new RegExp(
-    `(?<![A-Za-z0-9])((?:${CREDENTIAL_KEYS}|authorization)["']?[ \t]{0,8}[:=][ \t]{0,8})(?:"(?:[^"\\\\\n]|\\\\.){0,4096}"|'(?:[^'\\\\\n]|\\\\.){0,4096}'|(["'])[^\n]{0,4096})`,
+    `(${keyAt(`${CREDENTIAL_KEYS}|authorization`, `${CAMEL_CREDENTIAL_KEYS}|Authorization`)}["']?[ \t]{0,8}[:=][ \t]{0,8})(?:"(?:[^"\\\\\n]|\\\\.){0,4096}"|'(?:[^'\\\\\n]|\\\\.){0,4096}'|(["'])[^\n]{0,4096})`,
     'gi',
 );
 /** `password=…`, `"apiKey": "…"`, `token: …` and the like, unquoted: to the end of the value's token. */
 const ASSIGNED = new RegExp(
-    `(?<![A-Za-z0-9])((?:${CREDENTIAL_KEYS})["']?[ \t]{0,8}[:=][ \t]{0,8}["']?)[^\\s"',;&]{1,4096}`,
+    `(${keyAt(CREDENTIAL_KEYS, CAMEL_CREDENTIAL_KEYS)}["']?[ \t]{0,8}[:=][ \t]{0,8}["']?)[^\\s"',;&]{1,4096}`,
     'gi',
 );
 

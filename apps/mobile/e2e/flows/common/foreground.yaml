@@ -1,0 +1,13 @@
+# Sends the app to the background and back, its process kept: the scope reads the server's app
+# versions again on the return (CB-553).
+appId: ${APP_ID}
+name: foreground
+---
+- pressKey: home
+- runFlow:
+    file: pause.yaml
+    env:
+      MS: '12000'
+- launchApp:
+    appId: ${APP_ID}
+    stopApp: false

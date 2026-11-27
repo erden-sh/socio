@@ -277,6 +277,44 @@ describe('authedFetch', () => {
         ]);
     });
 
+    it('sends an anonymous request with no cookie or install id, and lets its answer change nothing (CB-553)', async () => {
+        const clock = { now: T0 };
+        const jar = await openCookieJar({ origin: ORIGIN, store: memoryJarStore(), now: () => clock.now });
+        await jar.apply(new URL(`${ORIGIN}/api/state`), [sessionSetCookie('t1.c2ln%3D')], httpDate(T0));
+        const answers = [
+            answer(200, { date: httpDate(T0 + DAY), setCookie: [sessionSetCookie('other', 0)], body: {} }),
+            answer(401, { date: httpDate(T0 + DAY), body: { code: 'session_ended' } }),
+        ];
+        const fetch = fakeFetch(() => answers.shift() ?? answer(500));
+        const seen: Array<string | null> = [];
+        const ends: SessionEnd[] = [];
+        const request = createAuthedFetch({
+            origin: ORIGIN,
+            jar,
+            fetch,
+            userAgent: USER_AGENT,
+            signal: new AbortController().signal,
+            installId: 'a'.repeat(43),
+            onUnauthorized: (end) => {
+                ends.push(end);
+            },
+            onAnswer: ({ sent }) => {
+                seen.push(sent.cookie);
+            },
+        });
+        await request('/api/client/compat', { anonymous: true });
+        await request('/api/client/compat', { anonymous: true });
+        for (const call of fetch.calls) {
+            expect(sentHeaders(call).cookie ?? null).toBeNull();
+            expect(sentHeaders(call)['x-socio-install'] ?? null).toBeNull();
+            expect(sentHeaders(call)['user-agent']).toBe(USER_AGENT);
+        }
+        // Reported as carrying nothing, the jar and the session untouched, and no session end.
+        expect(seen).toEqual([null, null]);
+        expect(sessionOf(jar)).toBe('t1.c2ln%3D');
+        expect(ends).toEqual([]);
+    });
+
     it('still applies the 401’s Set-Cookie when the callback throws', async () => {
         const jar = await openCookieJar({ origin: ORIGIN, store: memoryJarStore(), now: () => T0 });
         await jar.apply(new URL(`${ORIGIN}/api/state`), [sessionSetCookie('t1')], httpDate(T0));

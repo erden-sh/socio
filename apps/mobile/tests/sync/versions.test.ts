@@ -79,19 +79,19 @@ function tracked(options: { variant?: string; initial?: ServerVersionState | nul
 }
 
 describe('the minimum-version gate’s verdict', () => {
-    it('passes 0.32.0 and later, by SemVer', () => {
-        expect(MINIMUM_SERVER_VERSION).toBe('0.32.0');
-        for (const version of ['0.32.0', '0.32.1', '0.33.0', '1.0.0', '0.32.0+build.5', '0.33.0-rc.1']) {
+    it('passes 0.54.0 and later, by SemVer', () => {
+        expect(MINIMUM_SERVER_VERSION).toBe('0.54.0');
+        for (const version of ['0.54.0', '0.54.1', '0.55.0', '1.0.0', '0.54.0+build.5', '0.55.0-rc.1']) {
             expect(gateVerdict(version, 'production'), version).toBe('open');
         }
-        for (const version of ['0.31.9', '0.32.0-rc.1', '0.1.0']) {
+        for (const version of ['0.53.9', '0.54.0-rc.1', '0.1.0']) {
             expect(gateVerdict(version, 'production'), version).toBe('closed');
         }
     });
 
     it('doesn’t pass a missing or unreadable version, in any build', () => {
         for (const variant of ['development', 'preview', 'production']) {
-            for (const version of [null, '', 'dev', 'v0.32.0', '0.32', '0.32.0.1', ' 0.32.0']) {
+            for (const version of [null, '', 'dev', 'v0.54.0', '0.54', '0.54.0.1', ' 0.54.0']) {
                 expect(gateVerdict(version, variant), `${variant} ${String(version)}`).toBe('closed');
             }
         }
@@ -108,7 +108,7 @@ describe('the minimum-version gate’s verdict', () => {
         }
         // Only 0.0.0 itself: the test builds hold every other version to the minimum.
         expect(gateVerdict('0.0.1', 'development')).toBe('closed');
-        expect(gateVerdict('0.31.0', 'preview')).toBe('closed');
+        expect(gateVerdict('0.53.0', 'preview')).toBe('closed');
     });
 
     it('opens on two 0.0.0 answers in development and preview, and closes on them in production', () => {
@@ -130,13 +130,13 @@ describe('the server version rules', () => {
     it('takes the first version, then a higher one at once, and asks for fresh pulls once each', async () => {
         const t = tracked({ initial: GATE_OPEN });
         expect(t.versions.highest()).toBeNull();
-        expect(t.answer('0.32.0', 0).fresh).toBe(true);
-        expect(t.answer('0.32.0', 0.25).fresh).toBe(false);
-        expect(t.versions.highest()).toBe('0.32.0');
-        expect(t.answer('0.33.0', 1).fresh).toBe(true);
-        expect(t.versions.highest()).toBe('0.33.0');
+        expect(t.answer('0.54.0', 0).fresh).toBe(true);
+        expect(t.answer('0.54.0', 0.25).fresh).toBe(false);
+        expect(t.versions.highest()).toBe('0.54.0');
+        expect(t.answer('0.55.0', 1).fresh).toBe(true);
+        expect(t.versions.highest()).toBe('0.55.0');
         for (let at = 1.25; at < 10; at += 0.25) {
-            expect(t.answer('0.33.0', at).fresh).toBe(false);
+            expect(t.answer('0.55.0', at).fresh).toBe(false);
         }
         // Listeners hear after the answer, never during it.
         expect(t.heard.filter((change) => change.fresh)).toHaveLength(0);
@@ -146,48 +146,48 @@ describe('the server version rules', () => {
 
     it('ignores a lower version for 6 minutes, then takes it as a rollback, once', () => {
         const t = tracked({ initial: GATE_OPEN });
-        t.answer('0.33.0', 0);
-        expect(t.answer('0.32.0', 1)).toEqual({ fresh: false, gateMoved: false });
+        t.answer('0.55.0', 0);
+        expect(t.answer('0.54.0', 1)).toEqual({ fresh: false, gateMoved: false });
         expect(t.versions.state()).toMatchObject({
-            serverVersion: '0.33.0',
-            lowerVersion: '0.32.0',
+            serverVersion: '0.55.0',
+            lowerVersion: '0.54.0',
             lowerSince: T0 + MINUTE,
         });
         for (let at = 1.25; at <= 7; at += 0.25) {
-            expect(t.answer('0.32.0', at).fresh, `at ${at} min`).toBe(false);
-            expect(t.versions.highest()).toBe('0.33.0');
+            expect(t.answer('0.54.0', at).fresh, `at ${at} min`).toBe(false);
+            expect(t.versions.highest()).toBe('0.55.0');
         }
         // Exactly 6 minutes isn't more than 6.
         expect(T0 + 7 * MINUTE - (T0 + MINUTE)).toBe(ROLLBACK_MS);
         t.clock.now = T0 + 7 * MINUTE + 1;
-        expect(t.versions.observe('0.32.0').fresh).toBe(true);
-        expect(t.versions.state()).toMatchObject({ serverVersion: '0.32.0', lowerVersion: null, lowerSince: null });
-        expect(t.answer('0.32.0', 8).fresh).toBe(false);
+        expect(t.versions.observe('0.54.0').fresh).toBe(true);
+        expect(t.versions.state()).toMatchObject({ serverVersion: '0.54.0', lowerVersion: null, lowerSince: null });
+        expect(t.answer('0.54.0', 8).fresh).toBe(false);
         // The fixed build coming back is a higher version again.
-        expect(t.answer('0.33.0', 30).fresh).toBe(true);
+        expect(t.answer('0.55.0', 30).fresh).toBe(true);
     });
 
     it('rides out a start-first deploy: one fresh pull for the new build, and the old one never taken', async () => {
         const t = tracked({ initial: GATE_OPEN });
-        t.answer('0.32.0', 0);
+        t.answer('0.54.0', 0);
         await settle();
         t.heard.length = 0;
         // Both builds answer for 5.5 minutes, every 15 s, the old one in runs of up to 5 minutes 15 s.
         const start = 10;
         const answers: [number, string][] = [];
         for (let at = start; at < start + 1; at += 0.25) {
-            answers.push([at, at % 0.5 === 0 ? '0.33.0' : '0.32.0']);
+            answers.push([at, at % 0.5 === 0 ? '0.55.0' : '0.54.0']);
         }
-        answers.push([start + 1, '0.33.0']);
+        answers.push([start + 1, '0.55.0']);
         for (let at = start + 1.25; at < start + 5.5; at += 0.25) {
-            answers.push([at, '0.32.0']);
+            answers.push([at, '0.54.0']);
         }
         for (let at = start + 5.5; at < start + 12; at += 0.25) {
-            answers.push([at, '0.33.0']);
+            answers.push([at, '0.55.0']);
         }
         const fresh = answers.filter(([at, version]) => t.answer(version, at).fresh).map(([at]) => at);
         expect(fresh).toEqual([start]);
-        expect(t.versions.highest()).toBe('0.33.0');
+        expect(t.versions.highest()).toBe('0.55.0');
         expect(t.versions.state()).toMatchObject({ lowerVersion: null, lowerSince: null });
         await settle();
         expect(t.heard).toEqual([{ fresh: true, gateMoved: false }]);
@@ -195,51 +195,51 @@ describe('the server version rules', () => {
 
     it('starts the 6 minutes again after an answer at the highest version', () => {
         const t = tracked();
-        t.answer('0.33.0', 0);
-        t.answer('0.32.0', 1);
-        t.answer('0.33.0', 5);
+        t.answer('0.55.0', 0);
+        t.answer('0.54.0', 1);
+        t.answer('0.55.0', 5);
         expect(t.versions.state()).toMatchObject({ lowerVersion: null, lowerSince: null });
-        t.answer('0.32.0', 8);
-        expect(t.answer('0.32.0', 13).fresh).toBe(false);
-        expect(t.answer('0.32.0', 14).fresh).toBe(false);
-        expect(t.answer('0.32.0', 14.25).fresh).toBe(true);
-        expect(t.versions.highest()).toBe('0.32.0');
+        t.answer('0.54.0', 8);
+        expect(t.answer('0.54.0', 13).fresh).toBe(false);
+        expect(t.answer('0.54.0', 14).fresh).toBe(false);
+        expect(t.answer('0.54.0', 14.25).fresh).toBe(true);
+        expect(t.versions.highest()).toBe('0.54.0');
     });
 
     it('takes the latest of the lower versions when they have lasted', () => {
         const t = tracked();
-        t.answer('0.34.0', 0);
-        t.answer('0.33.0', 1);
-        t.answer('0.32.0', 4);
-        expect(t.versions.state()).toMatchObject({ lowerVersion: '0.32.0', lowerSince: T0 + MINUTE });
-        expect(t.answer('0.32.0', 7.25).fresh).toBe(true);
-        expect(t.versions.highest()).toBe('0.32.0');
+        t.answer('0.56.0', 0);
+        t.answer('0.55.0', 1);
+        t.answer('0.54.0', 4);
+        expect(t.versions.state()).toMatchObject({ lowerVersion: '0.54.0', lowerSince: T0 + MINUTE });
+        expect(t.answer('0.54.0', 7.25).fresh).toBe(true);
+        expect(t.versions.highest()).toBe('0.54.0');
     });
 
     it('leaves the rules alone for an answer with no readable version', () => {
         const t = tracked();
-        t.answer('0.33.0', 0);
-        t.answer('0.32.0', 1);
+        t.answer('0.55.0', 0);
+        t.answer('0.54.0', 1);
         for (const version of [null, 'dev', '']) {
             expect(t.answer(version, 2).fresh).toBe(false);
         }
         expect(t.versions.state()).toMatchObject({
-            serverVersion: '0.33.0',
-            lowerVersion: '0.32.0',
+            serverVersion: '0.55.0',
+            lowerVersion: '0.54.0',
             lowerSince: T0 + MINUTE,
             lastVersion: null,
         });
-        expect(t.answer('0.32.0', 7.25).fresh).toBe(true);
+        expect(t.answer('0.54.0', 7.25).fresh).toBe(true);
     });
 
     it('starts the window again when the device clock goes back', () => {
         const t = tracked();
-        t.answer('0.33.0', 0);
-        t.answer('0.32.0', 60);
-        t.answer('0.32.0', 30);
+        t.answer('0.55.0', 0);
+        t.answer('0.54.0', 60);
+        t.answer('0.54.0', 30);
         expect(t.versions.state()).toMatchObject({ lowerSince: T0 + 30 * MINUTE });
-        expect(t.answer('0.32.0', 36).fresh).toBe(false);
-        expect(t.answer('0.32.0', 36.25).fresh).toBe(true);
+        expect(t.answer('0.54.0', 36).fresh).toBe(false);
+        expect(t.answer('0.54.0', 36.25).fresh).toBe(true);
     });
 
     it('measures the rollback window on the server’s clock, so a jump of the device clock counts for nothing', async () => {
@@ -248,27 +248,27 @@ describe('the server version rules', () => {
             t.clock.now = device;
             return t.versions.observe(version, httpDate(server));
         };
-        answer('0.33.0', T0, T0);
+        answer('0.55.0', T0, T0);
         await settle();
         t.heard.length = 0;
         // The old build answers 15 s later, then the device clock jumps 10 minutes ahead (a manual change, or
         // NTP after a dead battery). The server's answers are still 15 s apart.
-        expect(answer('0.32.0', T0 + 15 * SECOND, T0 + 15 * SECOND).fresh).toBe(false);
-        expect(answer('0.32.0', T0 + 10 * MINUTE + 30 * SECOND, T0 + 30 * SECOND).fresh).toBe(false);
-        expect(t.versions.state()).toMatchObject({ serverVersion: '0.33.0', lowerSince: T0 + 15 * SECOND });
-        expect(answer('0.33.0', T0 + 10 * MINUTE + 45 * SECOND, T0 + 45 * SECOND).fresh).toBe(false);
+        expect(answer('0.54.0', T0 + 15 * SECOND, T0 + 15 * SECOND).fresh).toBe(false);
+        expect(answer('0.54.0', T0 + 10 * MINUTE + 30 * SECOND, T0 + 30 * SECOND).fresh).toBe(false);
+        expect(t.versions.state()).toMatchObject({ serverVersion: '0.55.0', lowerSince: T0 + 15 * SECOND });
+        expect(answer('0.55.0', T0 + 10 * MINUTE + 45 * SECOND, T0 + 45 * SECOND).fresh).toBe(false);
         await settle();
         expect(t.heard).toEqual([]);
     });
 
     it('takes a lower version that still answers after a long gap: the deploy’s old build is long gone', () => {
         const t = tracked({ initial: GATE_OPEN });
-        t.versions.observe('0.33.0', httpDate(T0));
-        t.versions.observe('0.32.0', httpDate(T0 + MINUTE));
+        t.versions.observe('0.55.0', httpDate(T0));
+        t.versions.observe('0.54.0', httpDate(T0 + MINUTE));
         // The app slept, or was killed and opened again, for an hour (the device clock agrees or not).
         t.clock.now = T0 - 3 * MINUTE;
-        expect(t.versions.observe('0.32.0', httpDate(T0 + 61 * MINUTE)).fresh).toBe(true);
-        expect(t.versions.highest()).toBe('0.32.0');
+        expect(t.versions.observe('0.54.0', httpDate(T0 + 61 * MINUTE)).fresh).toBe(true);
+        expect(t.versions.highest()).toBe('0.54.0');
     });
 
     it('times an answer without a Date by the device clock and the offset the last Date gave', () => {
@@ -276,19 +276,19 @@ describe('the server version rules', () => {
         const behind = 60 * MINUTE;
         const t = tracked({ initial: GATE_OPEN });
         t.clock.now = T0 - behind;
-        t.versions.observe('0.33.0', httpDate(T0));
+        t.versions.observe('0.55.0', httpDate(T0));
         t.clock.now = T0 + MINUTE - behind;
-        t.versions.observe('0.32.0', httpDate(T0 + MINUTE));
+        t.versions.observe('0.54.0', httpDate(T0 + MINUTE));
         t.clock.now = T0 + 7 * MINUTE - behind;
-        expect(t.versions.observe('0.32.0', null).fresh).toBe(false);
+        expect(t.versions.observe('0.54.0', null).fresh).toBe(false);
         t.clock.now = T0 + 7 * MINUTE + SECOND - behind;
-        expect(t.versions.observe('0.32.0').fresh).toBe(true);
+        expect(t.versions.observe('0.54.0').fresh).toBe(true);
     });
 
     it('takes a version over a stored highest it can’t read', () => {
         const t = tracked({ initial: { ...NO_SERVER_VERSIONS, serverVersion: 'garbage' } });
-        expect(t.answer('0.32.0', 0).fresh).toBe(true);
-        expect(t.versions.highest()).toBe('0.32.0');
+        expect(t.answer('0.54.0', 0).fresh).toBe(true);
+        expect(t.versions.highest()).toBe('0.54.0');
     });
 });
 
@@ -296,41 +296,41 @@ describe('the minimum-version gate', () => {
     it('stays undecided until two verdicts in a row agree, each the highest version’s', () => {
         const t = tracked();
         expect(t.versions.gate()).toBeNull();
-        expect(t.answer('0.31.0', 0).gateMoved).toBe(false);
+        expect(t.answer('0.53.0', 0).gateMoved).toBe(false);
         expect(t.versions.state()).toMatchObject({ versionGate: null, versionGateVote: 'closed' });
-        expect(t.answer('0.32.0', 0.25).gateMoved).toBe(false);
+        expect(t.answer('0.54.0', 0.25).gateMoved).toBe(false);
         expect(t.versions.state()).toMatchObject({ versionGate: null, versionGateVote: 'open' });
-        // 0.31.0 again, but 0.32.0 is the highest: its verdict is the second 'open' in a row.
-        expect(t.answer('0.31.0', 0.5).gateMoved).toBe(true);
+        // 0.53.0 again, but 0.54.0 is the highest: its verdict is the second 'open' in a row.
+        expect(t.answer('0.53.0', 0.5).gateMoved).toBe(true);
         expect(t.versions.state()).toMatchObject({ versionGate: 'open', versionGateVote: null });
     });
 
     it('doesn’t flap while a too-old build and a new one answer in turn', async () => {
         const t = tracked();
-        t.answer('0.32.0', 0);
-        t.answer('0.32.0', 0.25);
+        t.answer('0.54.0', 0);
+        t.answer('0.54.0', 0.25);
         expect(t.versions.gate()).toBe('open');
         await settle();
         t.heard.length = 0;
         // A rollback to a build below the minimum, start-first: both answer in turn, for 5.5 minutes.
         let at = 1;
         for (let index = 0; index < 22; index += 1, at += 0.25) {
-            expect(t.answer(index % 2 === 0 ? '0.31.0' : '0.32.0', at).gateMoved).toBe(false);
+            expect(t.answer(index % 2 === 0 ? '0.53.0' : '0.54.0', at).gateMoved).toBe(false);
             expect(t.versions.gate()).toBe('open');
         }
-        // Then only the old build. 0.32.0 last answered at 6.25: 0.31.0 lasts from 6.5, so it is taken at 12.75
+        // Then only the old build. 0.54.0 last answered at 6.25: 0.53.0 lasts from 6.5, so it is taken at 12.75
         // and the next answer closes the gate.
         for (; at < 12.75; at += 0.25) {
-            expect(t.answer('0.31.0', at).gateMoved, `at ${at}`).toBe(false);
+            expect(t.answer('0.53.0', at).gateMoved, `at ${at}`).toBe(false);
         }
-        expect(t.answer('0.31.0', at)).toEqual({ fresh: true, gateMoved: false });
-        expect(t.answer('0.31.0', at + 0.25).gateMoved).toBe(true);
+        expect(t.answer('0.53.0', at)).toEqual({ fresh: true, gateMoved: false });
+        expect(t.answer('0.53.0', at + 0.25).gateMoved).toBe(true);
         expect(t.versions.gate()).toBe('closed');
         // An update, start-first as well: the second answer after its first opens the gate, whichever build gives
         // it, and the old build's later answers leave it open.
         at += 5;
         const gates = Array.from({ length: 22 }, (_, index) => {
-            t.answer(index % 2 === 0 ? '0.32.1' : '0.31.0', at + index / 4);
+            t.answer(index % 2 === 0 ? '0.54.1' : '0.53.0', at + index / 4);
             return t.versions.gate();
         });
         expect(gates).toEqual(['closed', ...Array<string>(21).fill('open')]);
@@ -339,9 +339,9 @@ describe('the minimum-version gate', () => {
     });
 
     it('moves once in a start-first deploy across the minimum, however the two builds take turns', async () => {
-        // A workspace on 0.31.0, below the minimum, updates to 0.32.0.
-        const t = tracked({ initial: { ...NO_SERVER_VERSIONS, serverVersion: '0.31.0', versionGate: 'closed' } });
-        const builds = { old: '0.31.0', next: '0.32.0' };
+        // A workspace on 0.53.0, below the minimum, updates to 0.54.0.
+        const t = tracked({ initial: { ...NO_SERVER_VERSIONS, serverVersion: '0.53.0', versionGate: 'closed' } });
+        const builds = { old: '0.53.0', next: '0.54.0' };
         const gates = ROUTING.map((build, index) => {
             t.answer(builds[build], (index + 1) / 4);
             return t.versions.gate();
@@ -350,7 +350,7 @@ describe('the minimum-version gate', () => {
         expect(gates).toEqual(['closed', ...Array<string>(ROUTING.length - 1).fill('open')]);
         // The old build drains for the rest of the 5.5 minutes.
         for (let at = 3.25; at < 5.5; at += 0.25) {
-            t.answer(at % 0.5 === 0 ? '0.31.0' : '0.32.0', at);
+            t.answer(at % 0.5 === 0 ? '0.53.0' : '0.54.0', at);
             expect(t.versions.gate()).toBe('open');
         }
         await settle();
@@ -359,13 +359,13 @@ describe('the minimum-version gate', () => {
     });
 
     it('closes once on a rollback below the minimum, after the lower version has lasted', async () => {
-        const t = tracked({ initial: { ...NO_SERVER_VERSIONS, serverVersion: '0.32.0', versionGate: 'open' } });
-        // The rollback is start-first too: 0.31.0 starts and 0.32.0 drains, answering in runs for 5.5 minutes.
-        const builds = { next: '0.31.0', old: '0.32.0' };
+        const t = tracked({ initial: { ...NO_SERVER_VERSIONS, serverVersion: '0.54.0', versionGate: 'open' } });
+        // The rollback is start-first too: 0.53.0 starts and 0.54.0 drains, answering in runs for 5.5 minutes.
+        const builds = { next: '0.53.0', old: '0.54.0' };
         const answers = [...ROUTING, ...ROUTING].map((build) => builds[build]);
-        // Then only 0.31.0 answers.
+        // Then only 0.53.0 answers.
         while (answers.length < 60) {
-            answers.push('0.31.0');
+            answers.push('0.53.0');
         }
         const closedAt: number[] = [];
         for (const [index, version] of answers.entries()) {
@@ -375,10 +375,10 @@ describe('the minimum-version gate', () => {
                 closedAt.push(at);
             }
         }
-        // 0.32.0 last answered at 5.25 minutes, so 0.31.0 has lasted from 5.5: taken at 11.75, closed at 12.
+        // 0.54.0 last answered at 5.25 minutes, so 0.53.0 has lasted from 5.5: taken at 11.75, closed at 12.
         expect(closedAt[0]).toBe(12);
         expect(closedAt).toHaveLength(answers.length - 12 * 4 + 1);
-        expect(t.versions.highest()).toBe('0.31.0');
+        expect(t.versions.highest()).toBe('0.53.0');
         await settle();
         expect(t.heard).toEqual([
             { fresh: true, gateMoved: false },
@@ -387,23 +387,23 @@ describe('the minimum-version gate', () => {
     });
 
     it('still closes on two answers in a row with no readable version', () => {
-        const t = tracked({ initial: { ...NO_SERVER_VERSIONS, serverVersion: '0.32.0', versionGate: 'open' } });
+        const t = tracked({ initial: { ...NO_SERVER_VERSIONS, serverVersion: '0.54.0', versionGate: 'open' } });
         expect(t.answer(null, 0).gateMoved).toBe(false);
-        expect(t.answer('0.32.0', 0.25).gateMoved).toBe(false);
+        expect(t.answer('0.54.0', 0.25).gateMoved).toBe(false);
         expect(t.answer('dev', 0.5).gateMoved).toBe(false);
         expect(t.answer(null, 0.75).gateMoved).toBe(true);
         expect(t.versions.gate()).toBe('closed');
-        expect(t.versions.highest()).toBe('0.32.0');
+        expect(t.versions.highest()).toBe('0.54.0');
     });
 
     it('lets a listener go', async () => {
         const t = tracked();
         const calls: VersionChange[] = [];
         const stop = t.versions.subscribe((change) => calls.push(change));
-        t.answer('0.32.0', 0);
+        t.answer('0.54.0', 0);
         await settle();
         stop();
-        t.answer('0.33.0', 1);
+        t.answer('0.55.0', 1);
         await settle();
         expect(calls).toEqual([{ fresh: true, gateMoved: false }]);
         expect(t.heard).toHaveLength(2);
@@ -413,27 +413,27 @@ describe('the minimum-version gate', () => {
 describe('the server versions’ state', () => {
     it('is written when it changes, never for a repeat', async () => {
         const t = tracked();
-        t.answer('0.32.0', 0);
+        t.answer('0.54.0', 0);
         // 304s every 15 s report the same version: nothing more to write.
         for (let at = 0.25; at < 30; at += 0.25) {
-            t.answer('0.32.0', at);
+            t.answer('0.54.0', at);
         }
         await t.versions.flush();
         expect(t.writes).toEqual([
-            { ...NO_SERVER_VERSIONS, serverVersion: '0.32.0', lastVersion: '0.32.0', versionGateVote: 'open' },
-            { ...NO_SERVER_VERSIONS, serverVersion: '0.32.0', lastVersion: '0.32.0', versionGate: 'open' },
+            { ...NO_SERVER_VERSIONS, serverVersion: '0.54.0', lastVersion: '0.54.0', versionGateVote: 'open' },
+            { ...NO_SERVER_VERSIONS, serverVersion: '0.54.0', lastVersion: '0.54.0', versionGate: 'open' },
         ]);
     });
 
     it('keeps as the last version only a release version: an unreadable or oversized one is kept as null', async () => {
         const t = tracked({ initial: GATE_OPEN });
-        t.answer('0.32.0', 0);
+        t.answer('0.54.0', 0);
         await t.versions.flush();
-        expect(t.writes.at(-1)?.lastVersion).toBe('0.32.0');
+        expect(t.writes.at(-1)?.lastVersion).toBe('0.54.0');
         const huge = 'x'.repeat(1 << 20);
         for (const [at, version] of [
             [0.25, huge],
-            [0.5, `0.32.0-${'a'.repeat(MAX_RELEASE_VERSION)}`],
+            [0.5, `0.54.0-${'a'.repeat(MAX_RELEASE_VERSION)}`],
             [0.75, 'dev'],
             [1, '<b>Update now</b>'],
         ] as const) {
@@ -452,7 +452,7 @@ describe('the server versions’ state', () => {
 
     it('writes again after a failed write, with the next change or on flush', async () => {
         const t = tracked({ failWrites: true });
-        t.answer('0.32.0', 0);
+        t.answer('0.54.0', 0);
         await settle();
         expect(t.errors).toHaveLength(1);
         expect(t.writes).toEqual([]);
@@ -481,10 +481,10 @@ describe('the server versions’ state', () => {
                 persist: (state) => registry.setServerVersions(id, state),
             });
             const answers: [number, string][] = [
-                [0, '0.33.0'],
-                [0.25, '0.33.0'],
+                [0, '0.55.0'],
+                [0.25, '0.55.0'],
                 // A rollback below the minimum starts: its first answer, then the app is killed.
-                [1, '0.31.0'],
+                [1, '0.53.0'],
             ];
             for (const [at, version] of answers) {
                 clock.now = T0 + at * MINUTE;
@@ -493,10 +493,10 @@ describe('the server versions’ state', () => {
             await before.flush();
             const kept = before.state();
             expect(kept).toEqual({
-                serverVersion: '0.33.0',
-                lowerVersion: '0.31.0',
+                serverVersion: '0.55.0',
+                lowerVersion: '0.53.0',
                 lowerSince: T0 + MINUTE,
-                lastVersion: '0.31.0',
+                lastVersion: '0.53.0',
                 versionGate: 'open',
                 versionGateVote: null,
             });
@@ -519,8 +519,8 @@ describe('the server versions’ state', () => {
             const first = await relaunch(11);
             expect(await first.reopened.serverVersions(id)).toEqual(kept);
             expect(first.versions.gate()).toBe('open');
-            expect(first.versions.observe('0.31.0')).toEqual({ fresh: true, gateMoved: false });
-            expect(first.versions.state()).toMatchObject({ serverVersion: '0.31.0', versionGateVote: 'closed' });
+            expect(first.versions.observe('0.53.0')).toEqual({ fresh: true, gateMoved: false });
+            expect(first.versions.state()).toMatchObject({ serverVersion: '0.53.0', versionGateVote: 'closed' });
             await first.versions.flush();
             const voted = first.versions.state();
             await first.reopened.close();
@@ -528,7 +528,7 @@ describe('the server versions’ state', () => {
             // Killed again: the pending vote kept, so the next launch's first answer is the second in a row.
             const second = await relaunch(30);
             expect(await second.reopened.serverVersions(id)).toEqual(voted);
-            expect(second.versions.observe('0.31.0')).toEqual({ fresh: false, gateMoved: true });
+            expect(second.versions.observe('0.53.0')).toEqual({ fresh: false, gateMoved: true });
             expect(second.versions.gate()).toBe('closed');
             await second.versions.flush();
             expect(await second.reopened.serverVersions(id)).toEqual(second.versions.state());
@@ -571,19 +571,19 @@ describe('server versions through the shell’s sources', () => {
         const { s, t } = await setup('production', undefined, false, GATE_OPEN);
         await s.state.pull('', s.state.cursor());
         await s.workspace.pull('', s.workspace.cursor());
-        expect(t.versions.highest()).toBe('0.32.0');
+        expect(t.versions.highest()).toBe('0.54.0');
         expect([s.state.stale(), s.workspace.stale()]).toEqual([false, false]);
         await settle();
         t.heard.length = 0;
 
         // A deploy. /api/workspace carries no version: its pull shows nothing.
-        s.server.deploy('0.33.0');
+        s.server.deploy('0.55.0');
         await s.workspace.pull('', s.workspace.cursor());
-        expect(t.versions.highest()).toBe('0.32.0');
+        expect(t.versions.highest()).toBe('0.54.0');
         // The state's body holds the version, so it changes and comes back whole.
         const shown = await s.state.pull('', s.state.cursor());
         expect(shown.outcome).toBe('changed');
-        expect(t.versions.highest()).toBe('0.33.0');
+        expect(t.versions.highest()).toBe('0.55.0');
         expect([s.state.stale(), s.workspace.stale()]).toEqual([false, true]);
         await settle();
         expect(t.heard).toEqual([{ fresh: true, gateMoved: false }]);
@@ -604,18 +604,18 @@ describe('server versions through the shell’s sources', () => {
 
         // The stamps reach cache.db with their meta rows.
         await s.cache.flush();
-        expect(await stampOnDisk(s.db, 'state')).toBe('0.33.0');
-        expect(await stampOnDisk(s.db, 'workspace')).toBe('0.33.0');
+        expect(await stampOnDisk(s.db, 'state')).toBe('0.55.0');
+        expect(await stampOnDisk(s.db, 'workspace')).toBe('0.55.0');
     });
 
     it('counts a 304 as an answer with the version of the state the device holds', async () => {
-        const { s, t } = await setup('production', '0.31.0');
+        const { s, t } = await setup('production', '0.53.0');
         await s.state.pull('', s.state.cursor());
         expect(t.versions.state()).toMatchObject({ versionGate: null, versionGateVote: 'closed' });
         await s.state.pull('', s.state.cursor());
         expect(s.server.requests.at(-1)?.status).toBe(304);
         expect(t.versions.gate()).toBe('closed');
-        expect(t.versions.state().lastVersion).toBe('0.31.0');
+        expect(t.versions.state().lastVersion).toBe('0.53.0');
     });
 
     it('opens the gate on a development server’s 0.0.0 only in the test builds', async () => {
@@ -638,7 +638,7 @@ describe('server versions through the shell’s sources', () => {
         await settle();
         t.heard.length = 0;
         const old = s.server.build;
-        const next = s.server.deploy('0.33.0');
+        const next = s.server.deploy('0.55.0');
         const answers: string[] = [];
         // The two builds answer in turn for 5 minutes; the old one twice in a row now and then.
         const order = [next, old, old, next, old, next, next, old, old, old, next];
@@ -649,8 +649,8 @@ describe('server versions through the shell’s sources', () => {
             await s.state.pull('', s.state.cursor());
             answers.push(`${s.server.requests.at(-1)?.status} ${build.version}`);
         }
-        expect(answers).toContain('304 0.32.0');
-        expect(t.versions.highest()).toBe('0.33.0');
+        expect(answers).toContain('304 0.54.0');
+        expect(t.versions.highest()).toBe('0.55.0');
         expect(t.versions.gate()).toBe('open');
         await settle();
         expect(t.heard).toEqual([{ fresh: true, gateMoved: false }]);
@@ -658,13 +658,13 @@ describe('server versions through the shell’s sources', () => {
     });
 
     it('opens the gate once on a deploy across the minimum, however the two builds take turns, 304s included', async () => {
-        const { s, t } = await setup('production', '0.31.0');
+        const { s, t } = await setup('production', '0.53.0');
         await s.state.pull('', null);
         await s.state.pull('', s.state.cursor());
         expect(t.versions.gate()).toBe('closed');
         await settle();
         t.heard.length = 0;
-        const builds = { old: s.server.build, next: s.server.deploy('0.32.0') };
+        const builds = { old: s.server.build, next: s.server.deploy('0.54.0') };
         const answers: string[] = [];
         for (const [index, build] of ROUTING.entries()) {
             s.clock.server += 15 * SECOND;
@@ -673,7 +673,7 @@ describe('server versions through the shell’s sources', () => {
             await s.state.pull('', s.state.cursor());
             answers.push(`${s.server.requests.at(-1)?.status} ${builds[build].version} ${t.versions.gate()}`);
         }
-        expect(answers).toContain('304 0.31.0 open');
+        expect(answers).toContain('304 0.53.0 open');
         expect(t.versions.gate()).toBe('open');
         await settle();
         expect(t.heard.filter((change) => change.gateMoved)).toHaveLength(1);
@@ -683,10 +683,10 @@ describe('server versions through the shell’s sources', () => {
         const { s, t } = await setup('production', undefined, false, GATE_OPEN);
         await s.state.pull('', null);
         const old = s.server.build;
-        const next = s.server.deploy('0.33.0');
+        const next = s.server.deploy('0.55.0');
         s.clock.server += 15 * SECOND;
         await s.state.pull('', s.state.cursor());
-        expect(t.versions.highest()).toBe('0.33.0');
+        expect(t.versions.highest()).toBe('0.55.0');
         s.server.answerAs(old);
         s.clock.server += 15 * SECOND;
         t.clock.now = s.clock.server;
@@ -697,14 +697,14 @@ describe('server versions through the shell’s sources', () => {
         t.clock.now = s.clock.device();
         await s.state.pull('', s.state.cursor());
         expect(s.server.requests.at(-1)?.status).toBe(304);
-        expect(t.versions.highest()).toBe('0.33.0');
+        expect(t.versions.highest()).toBe('0.55.0');
         s.server.answerAs(next);
         s.clock.server += 15 * SECOND;
         t.clock.now = s.clock.device();
         await s.state.pull('', s.state.cursor());
         await settle();
         expect(t.heard.filter((change) => change.fresh)).toHaveLength(2);
-        expect(t.versions.highest()).toBe('0.33.0');
+        expect(t.versions.highest()).toBe('0.55.0');
     });
 
     it('leaves a scope stale when its pull began before the higher version was taken', async () => {
@@ -720,7 +720,7 @@ describe('server versions through the shell’s sources', () => {
         expect(s.workspace.stale()).toBe(false);
 
         // The workspace pull goes out first; the state's answer, with the new version, lands before it.
-        s.server.deploy('0.33.0');
+        s.server.deploy('0.55.0');
         const workspace = s.workspace.pull('', s.workspace.cursor());
         await settle();
         const state = s.state.pull('', s.state.cursor());
@@ -728,7 +728,7 @@ describe('server versions through the shell’s sources', () => {
         expect(s.heldAnswers).toBe(2);
         s.release(1);
         await state;
-        expect(t.versions.highest()).toBe('0.33.0');
+        expect(t.versions.highest()).toBe('0.55.0');
         s.release(0);
         await workspace;
         // Asked before the new version was known: still due its one pull.
@@ -744,7 +744,7 @@ describe('server versions through the shell’s sources', () => {
         const { s, t } = await setup();
         await s.state.pull('', null);
         await s.workspace.pull('', null);
-        s.server.deploy('0.33.0');
+        s.server.deploy('0.55.0');
         await s.state.pull('', s.state.cursor());
         await s.cache.flush();
         await t.versions.flush();

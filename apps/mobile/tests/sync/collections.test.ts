@@ -55,7 +55,7 @@ describe('the scope’s collections', () => {
         expect(ids(c.dots.toArray)).toEqual(['sebas']);
         expect(ids(c.shell.toArray)).toEqual([STATE_KEY, WORKSPACE_KEY]);
         expect(c.shell.get(WORKSPACE_KEY)?.value).toMatchObject({ user: { id: 'u-ada' } });
-        expect(c.shell.get(STATE_KEY)?.value).toMatchObject({ settings: { name: 'Acme' }, version: '0.32.0' });
+        expect(c.shell.get(STATE_KEY)?.value).toMatchObject({ settings: { name: 'Acme' }, version: '0.54.0' });
         expect(c.notices.size).toBe(0);
         expect(c.pending.size).toBe(0);
         expect(Object.values(c).map((collection) => collection.id)).toEqual([

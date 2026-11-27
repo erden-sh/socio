@@ -104,6 +104,11 @@ export interface ReportPreview {
     sharing: boolean;
     consent?: string;
     promptByOther: boolean;
+    /**
+     * The answered message's author's display name, for `{author}`: there
+     * exactly when `promptByOther` is true.
+     */
+    author?: string;
 }
 
 /** `GET /api/cloud/reply-reports` (admins). */

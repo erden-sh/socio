@@ -20,6 +20,12 @@
 // again: only the first start seeds), `POST
 // /restart?ahead=<days>` with the servers' clock that many days ahead
 // (clock-ahead.mjs: a session past its expiry), `?ahead=0` back to the real one.
+// A restart also takes the app versions the servers serve (CB-553): `minimum=<version>`
+// and `recommended=<version>` (APP_MINIMUM_VERSION, APP_RECOMMENDED_VERSION: Update
+// Socio, the banner), for every workspace or, as `minimum=<letter>:<version>`, for one;
+// and `version=<letter>:<version>` the server version one workspace reports
+// (server-version.mjs: "needs a server update" there alone). Each is repeatable, and each
+// restart starts from what it names: a plain `POST /restart` is back to the defaults.
 // With --codes each workspace also sends sign-in codes to an SMTP sink
 // and a fake Telegram of its own (web-side.mjs), and the control port plays Ada
 // on the web: the codes sent, Add a device's QR code and 6 digits, and Sign out
@@ -75,6 +81,7 @@ const OPAL = 'opal@example.test';
 /** The bundled logo the branding keeps (packages/shared's DEFAULT_BRANDING): the app shows its mascot. */
 export const BRANDING_LOGO = '/favicon.svg';
 const CLOCK_AHEAD = './apps/mobile/e2e/clock-ahead.mjs';
+const SERVER_VERSION = './apps/mobile/e2e/server-version.mjs';
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 const LETTERS = ['A', 'B', 'C'];
@@ -87,7 +94,8 @@ const USAGE = `Usage: node apps/mobile/e2e/servers.mjs [options]
   --count <1-3>        how many workspaces, on the first of ${DEFAULT_PORTS.join(', ')} (default 1)
   --ports <list>       the workspaces' ports instead, comma-separated, one to three
   --model-port <port>  the fake model's port (default ${DEFAULT_MODEL_PORT})
-  --control <port>     the loopback control port: POST /restart[?ahead=<days>] (default ${DEFAULT_CONTROL_PORT})
+  --control <port>     the loopback control port: POST /restart[?ahead=<days>&minimum=[<letter>:]<v>&recommended=…&version=<letter>:<v>]
+                       (default ${DEFAULT_CONTROL_PORT})
   --device <serial>    the Android device for adb reverse (default: ANDROID_SERIAL, or the only one)
   --no-adb             skip adb reverse (an iOS simulator over an SSH tunnel)
   --once               seed, print the credentials file, and tear down
@@ -1046,27 +1054,119 @@ export function aheadDays(value) {
     return /^\d+(\.\d+)?$/.test(value) && days <= 400 ? days : null;
 }
 
+const VERSION = /^\d{1,4}(?:\.\d{1,4}){0,3}$/;
+const SERVER_VERSION_VALUE = /^\d+\.\d+\.\d+$/;
+
 /**
- * A workspace server's command and environment, with its clock `days` ahead when not 0.
+ * Per workspace letter, or `*` for every workspace.
+ * @typedef {{ days: number, minimum: Record<string, string>, recommended: Record<string, string>, versions: Record<string, string> }} RestartOptions
+ */
+
+/**
+ * `<value>` (every workspace, `*`) or `<letter>:<value>` into `into`; false when it doesn't read.
+ * @param {string} value @param {RegExp} pattern @param {Record<string, string>} into @param {boolean} scoped
+ */
+function scopedValue(value, pattern, into, scoped) {
+    const parts = value.split(':');
+    const [letter, version] = parts.length === 2 ? parts : ['*', parts[0]];
+    if (parts.length > 2 || (letter === '*' && scoped) || (letter !== '*' && !LETTERS.includes(letter ?? ''))) {
+        return false;
+    }
+    if (!pattern.test(version ?? '')) {
+        return false;
+    }
+    into[/** @type {string} */ (letter)] = /** @type {string} */ (version);
+    return true;
+}
+
+/**
+ * A restart's options from its query: `ahead` (aheadDays), the `minimum` and `recommended` app versions
+ * (`0.2.8` for every workspace, `B:0.2.8` for one), and each `version=<letter>:<x.y.z>`, a workspace's
+ * server version. Null for anything else.
+ * @param {URLSearchParams} query
+ * @returns {RestartOptions | null}
+ */
+export function restartOptions(query) {
+    const days = aheadDays(query.get('ahead'));
+    if (days === null) {
+        return null;
+    }
+    /** @type {RestartOptions} */
+    const options = { days, minimum: {}, recommended: {}, versions: {} };
+    for (const name of /** @type {const} */ (['minimum', 'recommended'])) {
+        for (const value of query.getAll(name)) {
+            if (!scopedValue(value, VERSION, options[name], false)) {
+                return null;
+            }
+        }
+    }
+    for (const value of query.getAll('version')) {
+        if (!scopedValue(value, SERVER_VERSION_VALUE, options.versions, true)) {
+            return null;
+        }
+    }
+    return options;
+}
+
+/**
+ * What a restart gives workspace `letter`: its app minimum and recommendation, its server version.
+ * @param {RestartOptions} options @param {string} letter
+ */
+export function restartFor({ minimum, recommended, versions }, letter) {
+    return {
+        minimum: minimum[letter] ?? minimum['*'],
+        recommended: recommended[letter] ?? recommended['*'],
+        version: versions[letter],
+    };
+}
+
+/**
+ * A workspace server's command and environment: its clock `days` ahead when not 0, the app versions
+ * it serves, and the server version it reports (`version`) when given.
  * @param {Record<string, string>} env
  * @param {number} days
+ * @param {{ minimum?: string, recommended?: string, version?: string }} [more]
  */
-export function serverStart(env, days) {
-    return days === 0
-        ? { args: ['--import', EGRESS_LOG, SERVER_ENTRY], env }
-        : {
-              args: ['--import', EGRESS_LOG, '--import', CLOCK_AHEAD, SERVER_ENTRY],
-              env: { ...env, SOCIO_E2E_CLOCK_AHEAD_MS: String(Math.round(days * DAY_MS)) },
-          };
+export function serverStart(env, days, more = {}) {
+    const args = ['--import', EGRESS_LOG];
+    /** @type {Record<string, string>} */
+    const extra = {};
+    if (days !== 0) {
+        args.push('--import', CLOCK_AHEAD);
+        extra.SOCIO_E2E_CLOCK_AHEAD_MS = String(Math.round(days * DAY_MS));
+    }
+    if (more.version !== undefined) {
+        args.push('--import', SERVER_VERSION);
+        extra.SOCIO_E2E_SERVER_VERSION = more.version;
+    }
+    if (more.minimum !== undefined) {
+        extra.APP_MINIMUM_VERSION = more.minimum;
+    }
+    if (more.recommended !== undefined) {
+        extra.APP_RECOMMENDED_VERSION = more.recommended;
+    }
+    args.push(SERVER_ENTRY);
+    return { args, env: Object.keys(extra).length === 0 ? env : { ...env, ...extra } };
+}
+
+/** @param {RestartOptions} options */
+function restartLine({ days, minimum, recommended, versions }) {
+    const where = (/** @type {string} */ letter) => (letter === '*' ? '' : ` on ${letter}`);
+    return [
+        days ? `, the clock ${days} days ahead` : '',
+        ...Object.entries(minimum).map(([letter, version]) => `, app minimum ${version}${where(letter)}`),
+        ...Object.entries(recommended).map(([letter, version]) => `, app recommended ${version}${where(letter)}`),
+        ...Object.entries(versions).map(([letter, version]) => `, ${letter} at ${version}`),
+    ].join('');
 }
 
 /**
  * Stops each workspace server and starts it again on its own database (a new process, as after a
- * deploy), its clock `days` ahead.
+ * deploy), with `options`: its clock ahead, the app versions, a workspace's server version.
  * @param {{ server: ReturnType<typeof seedPlan>[number], child: import('node:child_process').ChildProcess }[]} running
- * @param {number} days
+ * @param {RestartOptions} options
  */
-async function restart(running, days) {
+async function restart(running, options) {
     for (const entry of running) {
         const { child } = entry;
         state.restarting.add(child);
@@ -1077,15 +1177,13 @@ async function restart(running, days) {
             // Gone already.
         }
         await exited;
-        const { args, env } = serverStart(entry.server.env, days);
+        const { args, env } = serverStart(entry.server.env, options.days, restartFor(options, entry.server.letter));
         entry.child = start(args, env, entry.server.log, { append: true });
     }
     for (const entry of running) {
         await listening(entry.server.port);
     }
-    say(
-        `restarted ${running.map(({ server }) => server.port).join(', ')}${days ? `, the clock ${days} days ahead` : ''}`,
-    );
+    say(`restarted ${running.map(({ server }) => server.port).join(', ')}${restartLine(options)}`);
 }
 
 /** Waits until something accepts connections on the port. */
@@ -1318,13 +1416,15 @@ async function main() {
             );
             return;
         }
-        const days = aheadDays(url.searchParams.get('ahead'));
-        if (request.method !== 'POST' || url.pathname !== '/restart' || days === null) {
-            response.writeHead(404).end('POST /restart[?ahead=<days>]\n');
+        const options = restartOptions(url.searchParams);
+        if (request.method !== 'POST' || url.pathname !== '/restart' || options === null) {
+            response
+                .writeHead(404)
+                .end('POST /restart[?ahead=<days>&minimum=<v>&recommended=<v>&version=<letter>:<x.y.z>]\n');
             return;
         }
         restarting = restarting
-            .then(() => restart(running, days))
+            .then(() => restart(running, options))
             .then(
                 () => response.writeHead(200).end('restarted\n'),
                 (error) => response.writeHead(500).end(`${error instanceof Error ? error.message : String(error)}\n`),
@@ -1332,7 +1432,9 @@ async function main() {
     });
     control.unref();
     control.listen(options.control, '127.0.0.1');
-    say(`ready; control on 127.0.0.1:${options.control} (POST /restart[?ahead=<days>]); Ctrl-C stops everything`);
+    say(
+        `ready; control on 127.0.0.1:${options.control} (POST /restart[?ahead=…&minimum=…&recommended=…&version=…]); Ctrl-C stops everything`,
+    );
 }
 
 /**

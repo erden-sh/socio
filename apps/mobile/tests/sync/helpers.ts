@@ -259,7 +259,7 @@ export interface Build {
     readonly version: string;
 }
 
-export function fakeWorkspaceServer(clock: { server: number }, { gzip = true, version = '0.32.0' } = {}) {
+export function fakeWorkspaceServer(clock: { server: number }, { gzip = true, version = '0.54.0' } = {}) {
     let boot = randomBytes(9).toString('base64url');
     let release = version;
     const data = seed();

@@ -5,7 +5,8 @@ import type { WorkspaceRow } from '../data/registry';
 // The session states' words and the sign-in they lead to. No React Native, so
 // tests/shell runs it under Node:
 // - the Expired banner, over the shell's screens: readable, writes held;
-// - the update banner, while the minimum-version gate is closed;
+// - the update banner ("This workspace needs a server update"), while the
+//   minimum-version gate is closed: the server is older than this build needs;
 // - the lock screen's words: Ended, or the lease's "Sign in by <date> or this
 //   phone's copy is erased" (the wipe's date, contact + 60 days);
 // - Sign in again: the SignIn screen's params for a workspace already on the
@@ -15,7 +16,7 @@ import type { WorkspaceRow } from '../data/registry';
 
 export const EXPIRED_BANNER = 'Sign in again to send and get new messages.';
 export const UPDATE_BANNER =
-    'This workspace needs an update before you can send from the app. You can still read everything.';
+    'This workspace needs a server update before you can send from the app. You can still read everything.';
 export const SIGN_IN_AGAIN = 'Sign in';
 
 type Row = Pick<WorkspaceRow, 'origin' | 'name'>;

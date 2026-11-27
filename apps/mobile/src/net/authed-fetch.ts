@@ -144,7 +144,16 @@ export interface AuthedRequestInit {
      * the device's zone isn't one.
      */
     timeZone?: boolean;
+    /**
+     * A public endpoint (the app versions it serves, CB-553): no cookie and no install id go with it,
+     * its Set-Cookie and a 401 change nothing in the jar or the session, and its answer reports
+     * that nothing was carried, so it can never count as contact with the session.
+     */
+    anonymous?: boolean;
 }
+
+/** What an anonymous request took from the jar: nothing. */
+const CARRIED_NOTHING: Outgoing = { cookie: null, sessionExpiresAt: null, sessionWithheld: false };
 
 /**
  * A request to the workspace: `input` is a path (`/api/state`) or a URL on its
@@ -256,8 +265,9 @@ export function createAuthedFetch({
             }
             return { code: await unauthorizedCode(answer, signal), cookies };
         };
+        const anonymous = init.anonymous === true;
         const send = async (again: boolean): Promise<Response> => {
-            const sent = jar.outgoing(url);
+            const sent = anonymous ? CARRIED_NOTHING : jar.outgoing(url);
             const headers = mergeHeaders(
                 { accept: 'application/json', ...init.headers },
                 {
@@ -269,7 +279,7 @@ export function createAuthedFetch({
                     'x-file-name': upload ? encodeURIComponent(upload.name) : null,
                     'x-file-type': upload?.type || null,
                     [TIME_ZONE_HEADER.toLowerCase()]: zone ?? null,
-                    [INSTALL_HEADER.toLowerCase()]: installId,
+                    [INSTALL_HEADER.toLowerCase()]: anonymous ? null : installId,
                 },
                 RESERVED,
             );
@@ -313,7 +323,9 @@ export function createAuthedFetch({
 
             const setCookies = setCookieHeaders(response.headers);
             const date = response.headers.get('date');
-            if (response.status !== 401) {
+            if (anonymous) {
+                // Neither its cookies nor a 401 say anything about this workspace's session.
+            } else if (response.status !== 401) {
                 await jar.apply(url, setCookies, date);
             } else {
                 const serverNow = jar.serverNow(date);

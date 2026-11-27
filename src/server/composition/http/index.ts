@@ -3,8 +3,8 @@
  * order app.ts mounted them. Hono runs them in the order they are added, so
  * this order is the security boundary: the computers guard, then the apps
  * proxy, the public routes, the body limit, data tokens, plugin identities,
- * service keys, plugin services, the browser checks, sign-in, the session
- * check, draining, then the features' routes. tests/http-order.test.ts pins it.
+ * service keys, plugin services, the browser checks, the app's version
+ * check, sign-in, the session check, draining, then the features' routes. tests/http-order.test.ts pins it.
  *
  * Each step lives in its feature's `composition/http/<x>.ts`, or in
  * `edge.ts` when no feature owns it. This file only orders them.
@@ -15,6 +15,7 @@ import type { Hono } from 'hono';
 
 import type { AppEnv } from '@socio/foundation/http/app-env';
 import type { NetworkTrust } from '@socio/foundation/http/network-trust';
+import { CLIENT_COMPAT, type ClientCompat } from '@socio/shared/client-compat';
 
 import type { AuthSetup } from '../../auth/contract.js';
 import type { I18nCatalogShape } from '../../i18n/contract.js';
@@ -71,13 +72,27 @@ export interface AppOptions {
      * Bound only when given here, not taken from `edge`.
      */
     runtime?: AppRuntime;
+    /** Which app versions this server works with (CB-553): shared's `CLIENT_COMPAT` unless the environment says otherwise. */
+    clientCompat?: ClientCompat;
     /** The dictionaries; the process's (composition/i18n.ts) by default. */
     i18n?: I18nCatalogShape;
 }
 
 /** Every middleware and route of the app, in order (createApp in app.ts). */
 export function mountApp(app: Hono<AppEnv>, options: AppOptions) {
-    const { store, runner, config, origin, edge, auth, releases, network = { proxies: [] }, runtime, i18n } = options;
+    const {
+        store,
+        runner,
+        config,
+        origin,
+        edge,
+        auth,
+        releases,
+        network = { proxies: [] },
+        runtime,
+        i18n,
+        clientCompat = CLIENT_COMPAT,
+    } = options;
     if (runtime) {
         bindAppRuntime(app, runtime);
     }
@@ -105,6 +120,7 @@ export function mountApp(app: Hono<AppEnv>, options: AppOptions) {
     pluginsRoutes.serviceCalls(app, edge);
     pluginsRoutes.actorCalls(app, edge);
     edgeRoutes.requestChecks(app, { auth, origin, navigationPaths, tokenPaths });
+    updatesRoutes.clientCompat(app, clientCompat);
     authRoutes.signIn(app, auth, store);
     if (edge) {
         mcpRoutes.oauth(app, edge);

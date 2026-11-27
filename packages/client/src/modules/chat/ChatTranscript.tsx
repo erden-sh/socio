@@ -17,7 +17,7 @@ import { recordRender } from '../settings/performance/recorder';
 import { MessageAttachments, type AttachmentPart } from './attachments/MessageAttachments';
 import { Markdown } from './ChatMarkdown';
 import { MessageActions } from './MessageActions';
-import { MessageReactions, hasReactions } from './MessageReactions';
+import { MessageReactions, ReportTranscript, hasReactions } from './MessageReactions';
 import { SkillChip, useSkillSplit } from './SkillMenu';
 import { TurnTrace } from './trace/TurnTrace';
 import type { ReactionsApi } from './use-reactions';
@@ -247,7 +247,7 @@ export function ChatTranscript({
     }
     const turns = splitTurns(messages);
     return (
-        <>
+        <ReportTranscript.Provider value={{ messages }}>
             {calls
                 .filter((call) => !call.anchorMessageId || !ids.has(call.anchorMessageId))
                 .map((call) => (
@@ -300,7 +300,7 @@ export function ChatTranscript({
                     </Fragment>
                 ));
             })}
-        </>
+        </ReportTranscript.Provider>
     );
 }
 
