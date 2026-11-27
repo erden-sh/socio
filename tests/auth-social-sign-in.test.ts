@@ -698,9 +698,112 @@ describe('links', () => {
                 })
             ).status,
         ).toBe(404);
-        // Better Auth's own unlink is closed to these.
-        const direct = await b.call(web, '/api/auth/unlink-account', { body: { providerId: 'google-native' } });
+    });
+
+    it('keeps Better Auth’s own unlink closed to these links, by the account row’s id as it takes it', async () => {
+        const b = await brain();
+        const { ada, web } = await adaLinked(b);
+        const row = b.db
+            .prepare("SELECT id FROM auth_account WHERE userId = ? AND providerId = 'google-native'")
+            .get(ada.id) as { id: string };
+        const direct = await b.call(web, '/api/auth/unlink-account', { body: { accountId: row.id } });
         expect(direct.status).toBe(404);
+        expect(await b.call(web, '/api/auth/unlink-account', { body: { providerId: 'google-native' } })).toHaveProperty(
+            'status',
+            404,
+        );
+        expect(b.db.prepare('SELECT count(*) AS n FROM auth_account WHERE id = ?').get(row.id)).toEqual({ n: 1 });
+    });
+
+    it('ends the sessions an unlinked provider made, and only those', async () => {
+        const b = await brain();
+        const { ada, web } = await adaLinked(b);
+        const { body: started } = await b.start('google', 'signin');
+        expect(
+            (await b.redeem({ provider: 'google', idToken: idToken('google-sub-ada'), nonce: started.nonce })).response
+                .status,
+        ).toBe(200);
+        const methods = () =>
+            (
+                b.db
+                    .prepare('SELECT signInMethod FROM auth_session WHERE userId = ? ORDER BY signInMethod')
+                    .all(ada.id) as { signInMethod: string }[]
+            ).map((row) => row.signInMethod);
+        expect(methods()).toEqual(['google', 'password']);
+        const gone = await b.call(web, '/api/auth/social/link/google', {
+            method: 'DELETE',
+            headers: { 'content-type': 'application/json' },
+        });
+        expect(gone.status).toBe(200);
+        expect(methods()).toEqual(['password']);
+    });
+
+    it('replaces a link with a new account’s, ending the sessions the old one made', async () => {
+        const b = await brain();
+        const { ada, web } = await adaLinked(b);
+        const { body: started } = await b.start('google', 'signin');
+        expect(
+            (await b.redeem({ provider: 'google', idToken: idToken('google-sub-ada'), nonce: started.nonce })).response
+                .status,
+        ).toBe(200);
+        await b.linked(web, 'google', 'google-sub-ada-new');
+        expect(b.db.prepare("SELECT accountId FROM auth_account WHERE providerId = 'google-native'").all()).toEqual([
+            { accountId: 'google-sub-ada-new' },
+        ]);
+        expect(
+            b.db
+                .prepare("SELECT count(*) AS n FROM auth_session WHERE userId = ? AND signInMethod = 'google'")
+                .get(ada.id),
+        ).toEqual({ n: 0 });
+        // The old subject signs in no more.
+        const { body: again } = await b.start('google', 'signin');
+        expect(
+            (await b.redeem({ provider: 'google', idToken: idToken('google-sub-ada'), nonce: again.nonce })).response
+                .status,
+        ).toBe(404);
+    });
+
+    it('links nothing when the session ends while the cloud verifies', async () => {
+        const b = await brain();
+        const ada = await b.account('ada@example.com', 'Ada');
+        const web = await b.signIn('ada@example.com');
+        const { body: started } = await b.start('google', 'link', web);
+        b.verifier.answer = (input) => {
+            // Revoked meanwhile (a sign-out everywhere, an admin's revoke).
+            b.db.prepare('DELETE FROM auth_session WHERE userId = ?').run(ada.id);
+            return { ok: true, provider: input.provider, sub: 'google-sub-mallory', nonce: input.nonce };
+        };
+        const refused = await b.link(web, {
+            provider: 'google',
+            idToken: idToken('google-sub-mallory'),
+            nonce: started.nonce,
+        });
+        expect(refused.response.status).toBe(401);
+        expect(refused.body).toMatchObject({ code: 'not_authorized' });
+        expect(b.db.prepare("SELECT count(*) AS n FROM auth_account WHERE providerId = 'google-native'").get()).toEqual(
+            { n: 0 },
+        );
+    });
+
+    it('links nothing when the method is turned off while the cloud verifies', async () => {
+        const b = await brain();
+        await b.account('ada@example.com', 'Ada');
+        const web = await b.signIn('ada@example.com');
+        const { body: started } = await b.start('google', 'link', web);
+        b.verifier.answer = (input) => {
+            b.savePolicy({ google: false });
+            return { ok: true, provider: input.provider, sub: 'google-sub-ada', nonce: input.nonce };
+        };
+        const refused = await b.link(web, {
+            provider: 'google',
+            idToken: idToken('google-sub-ada'),
+            nonce: started.nonce,
+        });
+        expect(refused.response.status).toBe(403);
+        expect(refused.body).toMatchObject({ code: 'method_off' });
+        expect(b.db.prepare("SELECT count(*) AS n FROM auth_account WHERE providerId = 'google-native'").get()).toEqual(
+            { n: 0 },
+        );
     });
 });
 

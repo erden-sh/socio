@@ -91,6 +91,15 @@ export const socialRefusal = (code: SocialRefusalCode): SocialRefusal => ({
     body: { error: WORDS[code], code },
 });
 
+const toMs = (value: unknown) => {
+    if (typeof value === 'number') {
+        return value;
+    }
+    const text = String(value);
+    const ms = /^\d+$/.test(text) ? Number(text) : Date.parse(text);
+    return Number.isFinite(ms) ? ms : 0;
+};
+
 const toIso = (value: unknown) => {
     const ms =
         typeof value === 'number' ? value : typeof value === 'string' && /^\d+$/.test(value) ? Number(value) : NaN;
@@ -328,7 +337,7 @@ export class SocialSignIn {
     async link(
         body: unknown,
         session: { sessionId: string; accountId: string },
-    ): Promise<{ ok: true; changed: boolean; link: SocialLink } | SocialRefusal> {
+    ): Promise<{ ok: true; changed: boolean; link: SocialLink; sessionsEnded: number } | SocialRefusal> {
         const parsed = socialLinkBodySchema.safeParse(body);
         if (!parsed.success) {
             return socialRefusal(nonceOf(body) ? 'code_invalid' : 'nonce_invalid');
@@ -343,6 +352,17 @@ export class SocialSignIn {
         }
         const providerId = NATIVE_PROVIDER_IDS[provider];
         return atomically(this.db, () => {
+            // The verification awaited the cloud: what it vouched for links only
+            // if the session that asked still stands, for this account, and the
+            // account and the method still may sign in.
+            const standing = this.sessionStanding(session);
+            if (standing) {
+                this.deps.log(`Social sign-in: link refused (${standing}).`);
+                return socialRefusal(standing);
+            }
+            if (!sessionAllowed(provider, this.deps.saved())) {
+                return socialRefusal('method_off');
+            }
             if (!this.claim(nonce, provider, 'link', session.sessionId)) {
                 return socialRefusal('nonce_invalid');
             }
@@ -358,6 +378,7 @@ export class SocialSignIn {
                 return {
                     ok: true as const,
                     changed: false,
+                    sessionsEnded: 0,
                     link: {
                         provider,
                         linkedAt: toIso(existing.createdAt),
@@ -365,10 +386,12 @@ export class SocialSignIn {
                     },
                 };
             }
-            // One link per provider and account: a new one replaces the old.
-            this.db
+            // One link per provider and account: a new one replaces the old,
+            // and the sessions the old one made end with it.
+            const replaced = this.db
                 .prepare('DELETE FROM auth_account WHERE userId = ? AND providerId = ?')
                 .run(session.accountId, providerId);
+            const sessionsEnded = replaced.changes ? this.endSessions(session.accountId, provider) : 0;
             const now = new Date().toISOString();
             this.db
                 .prepare(
@@ -378,9 +401,36 @@ export class SocialSignIn {
             return {
                 ok: true as const,
                 changed: true,
+                sessionsEnded,
                 link: { provider, linkedAt: now, ...(checked.email ? { email: checked.email } : {}) },
             };
         });
+    }
+
+    /**
+     * Why the linking session no longer stands, if it doesn't: gone or
+     * expired (signed out, revoked), another account's, or the account
+     * deactivated. Read inside the link's unit of work.
+     */
+    private sessionStanding(session: { sessionId: string; accountId: string }): SocialRefusalCode | null {
+        const row = this.db
+            .prepare('SELECT userId, expiresAt FROM auth_session WHERE id = ?')
+            .get(session.sessionId) as { userId: string; expiresAt: unknown } | undefined;
+        if (!row || row.userId !== session.accountId || toMs(row.expiresAt) <= Date.now()) {
+            return 'not_authorized';
+        }
+        const person = this.db.prepare('SELECT banned FROM auth_user WHERE id = ?').get(session.accountId) as
+            | { banned: unknown }
+            | undefined;
+        return !person || person.banned ? 'deactivated' : null;
+    }
+
+    /** Ends the account's sessions this provider made (an unlink, a replaced link); how many. */
+    private endSessions(accountId: string, provider: SocialProvider): number {
+        return Number(
+            this.db.prepare('DELETE FROM auth_session WHERE userId = ? AND signInMethod = ?').run(accountId, provider)
+                .changes,
+        );
     }
 
     /** The account's links, for the person. */
@@ -400,13 +450,14 @@ export class SocialSignIn {
 
     /**
      * Unlinks the provider from the account, unless that leaves it no way
-     * to sign in (`otherWayIn`, read in the same unit of work).
+     * to sign in (`otherWayIn`, read in the same unit of work), and ends the
+     * sessions it made, as turning the method off does.
      */
     async unlink(
         accountId: string,
         provider: SocialProvider,
         otherWayIn: () => boolean,
-    ): Promise<{ ok: true } | SocialRefusal> {
+    ): Promise<{ ok: true; sessionsEnded: number } | SocialRefusal> {
         const providerId = NATIVE_PROVIDER_IDS[provider];
         return atomically(this.db, () => {
             const row = this.db
@@ -419,7 +470,8 @@ export class SocialSignIn {
                 return socialRefusal('last_method');
             }
             this.db.prepare('DELETE FROM auth_account WHERE id = ?').run(row.id);
-            return { ok: true as const };
+            // A lost or taken Google or Apple account stops working here at once.
+            return { ok: true as const, sessionsEnded: this.endSessions(accountId, provider) };
         });
     }
 }

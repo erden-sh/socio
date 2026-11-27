@@ -150,16 +150,23 @@ describe('a verification', () => {
         expect(logs.join('\n')).not.toMatch(/eyJ|sub-ada/);
     });
 
-    it('reads the issuer’s keys again, once, for a key it doesn’t know yet', async () => {
-        const { verify, issuer, calls } = await connected();
+    it('reads the issuer’s keys again, once, for a key it doesn’t know yet, at most once a minute', async () => {
+        let now = Date.now();
+        const { verify, issuer, calls } = await connected({ now: () => now });
         expect((await verify()).ok).toBe(true);
         expect(calls('/.well-known/jwks.json')).toBe(1);
         // The issuer rotates: a new key, published, signing.
-        const next = generateKeyPairSync('ed25519').privateKey;
-        issuer.signing = { kid: 'issuer-key-2', privateKey: next };
-        // Within the minute: not read again, so the new key is unknown.
+        issuer.signing = { kid: 'issuer-key-2', privateKey: generateKeyPairSync('ed25519').privateKey };
+        // Within the minute of the last read: not read again, so the new key is unknown.
         expect(await verify()).toEqual({ ok: false, code: 'invalid_token' });
         expect(calls('/.well-known/jwks.json')).toBe(1);
+        // Past it: read once more, and the rotated key's statement checks out.
+        now += 61_000;
+        expect(await verify()).toMatchObject({ ok: true, sub: 'sub-ada' });
+        expect(calls('/.well-known/jwks.json')).toBe(2);
+        // The key is known now: no further read.
+        expect((await verify()).ok).toBe(true);
+        expect(calls('/.well-known/jwks.json')).toBe(2);
     });
 
     it.each([

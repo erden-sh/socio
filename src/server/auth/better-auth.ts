@@ -1729,6 +1729,17 @@ export class BetterAuthProvider implements AuthProvider {
         };
     }
 
+    /**
+     * After an unlink or a replaced link ended sessions (CB-570): their
+     * devices keep no push subscription, as after an access policy change.
+     */
+    private socialSessionsEnded(count: number) {
+        console.log(`Auth: ${count} session(s) made by an unlinked sign-in ended.`);
+        void this.sweepDevicePush().catch((error) => {
+            reportFailure('Push subscription cleanup failed', [safeFailure(error)]);
+        });
+    }
+
     useSocialVerifier(verifier: SocialVerifier) {
         this.socialVerifier = verifier;
     }
@@ -2228,8 +2239,16 @@ export class BetterAuthProvider implements AuthProvider {
                 const body = (await c.req.raw
                     .clone()
                     .json()
-                    .catch(() => null)) as { providerId?: unknown } | null;
-                if (Object.values(NATIVE_PROVIDER_IDS).includes(String(body?.providerId))) {
+                    .catch(() => null)) as { accountId?: unknown; providerId?: unknown } | null;
+                // Better Auth takes the account row's id (`accountId`); `providerId` is checked too.
+                const row =
+                    typeof body?.accountId === 'string'
+                        ? (this.database()
+                              .prepare('SELECT providerId FROM auth_account WHERE id = ?')
+                              .get(body.accountId) as { providerId: string } | undefined)
+                        : undefined;
+                const natives: readonly string[] = Object.values(NATIVE_PROVIDER_IDS);
+                if (natives.includes(String(row?.providerId)) || natives.includes(String(body?.providerId))) {
                     return c.json({ error: 'Not found.' }, 404);
                 }
             }
@@ -2631,6 +2650,9 @@ export class BetterAuthProvider implements AuthProvider {
             if (linked.changed) {
                 console.log(`Auth: user=${own.account.userId} linked ${linked.link.provider} sign-in.`);
             }
+            if (linked.sessionsEnded) {
+                this.socialSessionsEnded(linked.sessionsEnded);
+            }
             return c.json(linked.link);
         });
         app.get('/api/auth/social/links', async (c) => {
@@ -2671,6 +2693,9 @@ export class BetterAuthProvider implements AuthProvider {
                 return answer(c, unlinked);
             }
             console.log(`Auth: user=${own.account.userId} unlinked ${provider.data} sign-in.`);
+            if (unlinked.sessionsEnded) {
+                this.socialSessionsEnded(unlinked.sessionsEnded);
+            }
             return c.json({ ok: true });
         });
         app.get('/api/auth/device/app-link', (c) => {
