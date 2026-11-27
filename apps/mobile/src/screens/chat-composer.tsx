@@ -5,6 +5,16 @@ import { Animated, Platform, Pressable, TextInput, type TextInputInstance, View 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
+    type Quote,
+    QUOTED_COMMAND_NOTE,
+    quotedCommand,
+    REMOVE_QUOTE,
+    replyingTo,
+    splitQuote,
+    withQuote,
+} from '@socio/shared/chat/quote-reply';
+
+import {
     type BubbleAction,
     COMPOSER_PLACEHOLDER,
     composerInputHeight,
@@ -13,15 +23,6 @@ import {
     type PendingBubble,
     type StatusPill,
 } from '../chat/composer';
-import {
-    type Quote,
-    QUOTED_COMMAND_NOTE,
-    quotedCommand,
-    REMOVE_QUOTE,
-    replyingTo,
-    splitQuote,
-    withQuote,
-} from '../chat/quote-reply';
 import { useWorkspaceScope } from '../live';
 import { useHaptics } from '../platform/device-settings';
 import { DraftError, type DraftRecord } from '../sync/chat-drafts';
@@ -84,7 +85,7 @@ export function useDraft(scope: string | null): { text: string; locked: boolean;
 const EMPTY_DRAFT: DraftRecord = { text: '', at: 0 };
 
 /**
- * A draft whose text may start with a quote (CB-571, quote-reply.ts): the quote for the chip, the
+ * A draft whose text may start with a quote (CB-571, @socio/shared/chat/quote-reply): the quote for the chip, the
  * words after it for the box, a setter for those words that keeps the quote, and the chip's x.
  */
 export function useQuotedDraft(draft: ReturnType<typeof useDraft>): {

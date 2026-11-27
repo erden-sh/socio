@@ -2432,8 +2432,9 @@ Chats) by the chat list's, Home's and Search's rows (`useOpenChat`, `chatAction`
   under a message with no words. No More button: Share is the long-press menu's. A reply is never one
   accessible element (on iOS that hides its links and issue chips from VoiceOver): its menu's actions
   are on its row's Copy button.
-- **Quote-reply** (CB-571, `src/chat/quote-reply.ts` under Node; the web has none yet, so this is v1's
-  format and the web could adopt it): Reply, first in a message's menu (SF Symbol
+- **Quote-reply** (CB-571; the format, its escaping and `replyAuthor` are `@socio/shared/chat/quote-reply`,
+  which the web uses too, so a message written on either looks the same on both; `src/chat/quote-reply.ts`
+  re-exports them and adds `replyBox`): Reply, first in a message's menu (SF Symbol
   `arrowshape.turn.up.left`; the `reply` symbol, lucide's, for the chip), on a socio's reply in a chat
   or room, another person's message in a room and the reader's own in a room (named as the room names
   them, `replyAuthor`; none on a private chat's own message, a reply still streaming, a message with no
