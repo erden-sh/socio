@@ -13,7 +13,15 @@ import {
     type PendingBubble,
     type StatusPill,
 } from '../chat/composer';
-import { type Quote, REMOVE_QUOTE, replyingTo, splitQuote, withQuote } from '../chat/quote-reply';
+import {
+    type Quote,
+    QUOTED_COMMAND_NOTE,
+    quotedCommand,
+    REMOVE_QUOTE,
+    replyingTo,
+    splitQuote,
+    withQuote,
+} from '../chat/quote-reply';
 import { useWorkspaceScope } from '../live';
 import { useHaptics } from '../platform/device-settings';
 import { DraftError, type DraftRecord } from '../sync/chat-drafts';
@@ -23,6 +31,7 @@ import { GlassSurface, AppSymbol, Text } from '../ui';
 import { cx } from '../ui/cx';
 import { hasLiquidGlass } from '../ui/glass';
 import type { SymbolName } from '../ui/symbols';
+import { useAnnouncement } from '../ui/use-announcement';
 
 import { AttachButton, AttachMenu, AttachmentTray, MessageAttachments, type Tray } from './attachments';
 import { MessageText } from './message-text';
@@ -197,6 +206,9 @@ export function Composer(props: {
     // Reply focuses the box, so the keyboard comes up under the new quote; a quote kept in the draft doesn't.
     const inputRef = useRef<TextInputInstance>(null);
     const quotePrefix = props.quote?.quote.prefix ?? null;
+    // A `/command` typed after a quote goes as words (the server reads commands only at the start).
+    const commandNote = quotedCommand(props.quote?.quote ?? null, props.text) ? QUOTED_COMMAND_NOTE : undefined;
+    useAnnouncement(commandNote, { onAppear: true });
     const shownQuote = useRef(quotePrefix);
     useEffect(() => {
         if (quotePrefix !== null && quotePrefix !== shownQuote.current && view.editable) {
@@ -325,6 +337,17 @@ export function Composer(props: {
                 {props.quote ? (
                     <QuoteChip quote={props.quote.quote} onRemove={props.quote.onRemove} testID={`${id}-quote`} />
                 ) : null}
+                {commandNote === undefined ? null : (
+                    <Text
+                        variant="footnote"
+                        tone="muted"
+                        className="px-2"
+                        accessibilityLiveRegion="polite"
+                        testID={`${id}-quote-command`}
+                    >
+                        {commandNote}
+                    </Text>
+                )}
                 {stacked ? (
                     <>
                         {box}

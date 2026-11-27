@@ -55,8 +55,10 @@ export function MessageText({
     const skills = useChatSkills();
     const known = useSyncExternalStore(skills.subscribe, skills.known);
     const { quote, rest } = splitQuote(text);
-    const skill = messageSkill(rest, known);
-    const unknown = namesUnknownSkill(rest, known);
+    // The whole message, as the server reads it: one that starts with a quote is never a
+    // command, so a `/done` after the quote is its words, not a skill chip (Sol's review of #57).
+    const skill = messageSkill(text, known);
+    const unknown = namesUnknownSkill(text, known);
     useEffect(() => {
         if (unknown) {
             skills.load();

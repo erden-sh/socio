@@ -1,5 +1,7 @@
 import type { RoomView } from '@socio/shared/rooms/rooms';
 
+import { chatDraft } from '../sync/chat-drafts';
+
 // Quote-reply (CB-571): Reply on a message puts a quote of it above the
 // composer, and the message sent carries it as a Markdown blockquote naming
 // the author, then a blank line, then what the person typed:
@@ -27,6 +29,33 @@ export const REMOVE_QUOTE = 'Remove quote';
 export const replyingTo = (author: string) => `Replying to ${author}`;
 /** A sent quote, as a screen reader says it. */
 export const quoting = (author: string) => `Quoting ${author}`;
+
+/**
+ * Under the chip while the words typed start with `/` (Sol's review of #57): the server reads a
+ * command only at the very start of a message, and a quote-reply starts with its quote, so the
+ * command goes as ordinary text. The quote stays; Send still sends.
+ */
+export const QUOTED_COMMAND_NOTE = 'Commands don’t run in a reply. Remove the quote to run it.';
+
+/** Whether the box's words look like a command while a quote is set: the note shows. */
+export const quotedCommand = (quote: Quote | null, rest: string) => quote !== null && /^\s*\//.test(rest);
+
+/**
+ * The draft a Reply writes to, or null where the chat has no box: a Telegram chat's or a team
+ * topic's has a read-only line instead (though `sendableChatId` still names it), as does a
+ * read-only room.
+ */
+export function replyBox(composer: {
+    readonly sendTo: string | null;
+    readonly roomId: string | null;
+    readonly readOnly: string | null;
+}): string | null {
+    if (composer.readOnly !== null) {
+        return null;
+    }
+    const target = composer.sendTo ?? composer.roomId;
+    return target === null ? null : chatDraft(target);
+}
 
 /** About how many characters of the quoted message the excerpt keeps. */
 export const QUOTE_EXCERPT_MAX = 200;

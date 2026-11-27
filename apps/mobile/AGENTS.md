@@ -2412,7 +2412,8 @@ Chats) by the chat list's, Home's and Search's rows (`useOpenChat`, `chatAction`
   `arrowshape.turn.up.left`; the `reply` symbol, lucide's, for the chip), on a socio's reply in a chat
   or room, another person's message in a room and the reader's own in a room (named as the room names
   them, `replyAuthor`; none on a private chat's own message, a reply still streaming, a message with no
-  words, or where the chat has no box). It writes the quote into the box's draft (`quotedDraft`, in
+  words, or where the chat shows a read-only line in place of its box: `replyBox`, since
+  `sendableChatId` still names a Telegram chat or team topic). It writes the quote into the box's draft (`quotedDraft`, in
   place of an earlier quote, the typed words kept) and focuses the box. The message sent is one text, no
   server field: `> **Author:** excerpt`, a blank line, then the words (`quoteOf`, `withQuote`). The
   excerpt is plain text (`plainOf`: a quoted message's own quote and Markdown taken out, lines folded),
@@ -2430,6 +2431,12 @@ Chats) by the chat list's, Home's and Search's rows (`useOpenChat`, `chatAction`
   rest as Markdown: on iOS enriched-markdown's blockquote view takes a long-press for a menu of its own
   (Copy, Copy as Markdown) in place of the bubble's. Screen readers hear "Quoting Ben: …"
   (`spokenMessage`, `bubbleLabel`). Elsewhere (a reply, the web) it is an ordinary blockquote.
+  A quote-reply is never a command: the server reads a `/skill` only at the start of the message,
+  which is the quote, so the bubble reads skills from the whole message too (`messageSkill(text)`,
+  no chip for a `/done` after a quote), and while the chip is set and the words start with `/` the
+  composer says "Commands don’t run in a reply. Remove the quote to run it." (`quotedCommand`;
+  Send still sends it, quote and all). `composer.test.ts` runs shared's `invokedSkill` on that
+  payload.
   No swipe to reply yet: a horizontal pan on a bubble would compete with the list's scroll, the
   long-press menu and the iOS drawer's edge swipe. `tests/chat/quote-reply.test.ts`, and the round trip
   in `tests/sync/chat-drafts.test.ts`, `composer.test.ts` and `room-composer.test.ts`.

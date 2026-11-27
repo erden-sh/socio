@@ -86,7 +86,7 @@ import {
 } from '../chat/name-suggestion';
 import { createPacedText, type PacedText } from '../chat/paced-text';
 import { type PageReviewCard, reviewCardView, reviewDecision, reviewDraftShown } from '../chat/page-review';
-import { quotedDraft, quoteOf, replyAuthor } from '../chat/quote-reply';
+import { quotedDraft, quoteOf, replyAuthor, replyBox as replyDraft } from '../chat/quote-reply';
 import { reactionButtons, reactionSaid, reactionsShown } from '../chat/reactions';
 import { ownWaiting, type RoomStarter } from '../chat/room-composer';
 import { roomHeader } from '../chat/room-people';
@@ -785,7 +785,8 @@ function Transcript({
         }
     };
     // Reply (CB-571): the box this chat or room sends from, and who a quote names.
-    const replyBox = composerBox(composer);
+    // None where the chat shows a read-only line (Telegram, a team topic, a read-only room).
+    const replyBox = replyDraft(composer);
     const authorOf = (row: UserRow | ReplyRow) =>
         replyBox === null
             ? null

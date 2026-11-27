@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
+import { BUILT_IN_SKILLS, invokedSkill } from '@socio/shared/chat/chat-skills';
 import type { QueuedMessage } from '@socio/shared/chat/steering';
 import { type LiveTurn, NO_LIVE_TURN } from '@socio/shared/rooms/live-turn';
 import type { Conversation, Dot } from '@socio/shared/types';
 
 import type { MessageFile } from '../../src/chat/attachment-tray';
+import { messageSkill, namesUnknownSkill } from '../../src/chat/chat-skills';
 import { chatSource } from '../../src/chat/chat-source';
 import { chatView, NEW_CHAT_TITLE, sendableChatId } from '../../src/chat/chat-view';
 import {
@@ -36,7 +38,7 @@ import {
     composerInputHeight,
     EMPTY_INPUT_HEIGHT,
 } from '../../src/chat/composer';
-import { quoteOf, splitQuote, withQuote } from '../../src/chat/quote-reply';
+import { quoteOf, quotedCommand, splitQuote, withQuote } from '../../src/chat/quote-reply';
 import { deliveredInTurn, transcriptDrawn } from '../../src/chat/transcript';
 import { UPDATE_TO_SEND } from '../../src/data';
 import { CHAT_MESSAGE_KIND, CHAT_MESSAGE_VIEW, CHAT_WAIT, chatMessageWrite } from '../../src/sync/chat-send';
@@ -544,6 +546,43 @@ describe('sending', () => {
         expect(JSON.parse((built as unknown as NewOutboxWrite).payload).text).toBe(
             '> **Archiver:** Yes! erden means “to ground”.\n\nAnd the name?',
         );
+    });
+
+    it('sends a /command after a quote as words: neither the server nor the bubble reads it as a skill', async () => {
+        let built: NewOutboxWrite | null = null;
+        const ids = ['m-1', 'key-1'];
+        const quote = quoteOf('Sebas', 'All done here.');
+        await sendChatMessage({
+            drafts: {
+                enqueueFromDraft: async (_scope, build) => {
+                    built = build(withQuote(quote, '/done')) as NewOutboxWrite;
+                    return row(built);
+                },
+            },
+            outbox: { rows: () => [], unsent: () => [], resolve: resolveNone },
+            history: HISTORY,
+            steering: STEERING,
+            threadId: 'c1',
+            dotId: 'dot-1',
+            newId: () => ids.shift() as string,
+            serverAt: null,
+        });
+        const { text } = JSON.parse((built as unknown as NewOutboxWrite).payload) as { text: string };
+        expect(text).toBe(`${quote.prefix}\n\n/done`);
+        // The server's parser (shared's invokedSkill, behind invokedSkill/skillCommand on the server)
+        // runs no skill for the whole message, though `/done` alone is one.
+        expect(invokedSkill('/done', BUILT_IN_SKILLS)?.skill.name).toBe('done');
+        expect(invokedSkill(text, BUILT_IN_SKILLS)).toBeUndefined();
+        // The bubble (MessageText) reads the same whole message: no skill chip, nothing to look up.
+        expect(messageSkill(text, BUILT_IN_SKILLS)).toBeNull();
+        expect(namesUnknownSkill(text, BUILT_IN_SKILLS)).toBe(false);
+        // The words after the quote are the bubble's text, `/done` included.
+        expect(splitQuote(text).rest).toBe('/done');
+        // While typing it, the composer says so under the chip.
+        expect(quotedCommand(quote, '/done')).toBe(true);
+        expect(quotedCommand(quote, '  /done')).toBe(true);
+        expect(quotedCommand(quote, 'done /later')).toBe(false);
+        expect(quotedCommand(null, '/done')).toBe(false);
     });
 
     it('waits for words or files: a quote alone doesn’t send', () => {

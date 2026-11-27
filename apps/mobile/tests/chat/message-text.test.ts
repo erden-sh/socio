@@ -28,6 +28,12 @@ const answer = (status: number, body: unknown) =>
     new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
 describe('the skill a message invoked', () => {
+    it('is read from the whole message, as the server reads it: never after a quote-reply’s quote', () => {
+        // Sol's review of #57: reading the words after the quote showed a chip for a skill that never ran.
+        expect(read('screens/message-text.tsx')).toMatch(/messageSkill\(text, known\)/);
+        expect(read('screens/message-text.tsx')).not.toMatch(/messageSkill\(rest/);
+    });
+
     it('is a built-in or workspace skill the message starts with, and the words after it', () => {
         expect(messageSkill('/grill-me the onboarding plan', BUILT_IN_SKILLS)).toEqual({
             name: 'grill-me',

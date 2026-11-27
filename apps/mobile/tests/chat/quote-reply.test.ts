@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { parseRoomMentions } from '@socio/shared/rooms/room-mentions';
 import type { RoomView } from '@socio/shared/rooms/rooms';
 
+import { readOnlyLine } from '../../src/chat/composer';
 import { messageMenu, REPLY } from '../../src/chat/long-press';
 import { safeMarkdown } from '../../src/chat/markdown';
 import {
@@ -12,7 +13,9 @@ import {
     QUOTE_EXCERPT_MAX,
     quotedDraft,
     quoteOf,
+    QUOTED_COMMAND_NOTE,
     REMOVE_QUOTE,
+    replyBox,
     replyAuthor,
     replyingTo,
     spokenMessage,
@@ -184,5 +187,22 @@ describe('the menu and who a quote names', () => {
         expect(replyAuthor({ kind: 'user', text: 'Mine' }, { socio: 'Archiver' })).toBeNull();
         expect(replyAuthor({ kind: 'reply', text: 'Hal', streaming: true }, { socio: 'Archiver' })).toBeNull();
         expect(replyAuthor({ kind: 'reply', text: '  ', streaming: false }, { socio: 'Archiver' })).toBeNull();
+    });
+});
+
+describe('where Reply writes (Sol’s review of #57)', () => {
+    it('is the chat’s or room’s box, and none where a read-only line stands in its place', () => {
+        expect(replyBox({ sendTo: 'c1', roomId: null, readOnly: null })).toBe('chat:c1');
+        expect(replyBox({ sendTo: null, roomId: 'r1', readOnly: null })).toBe('chat:r1');
+        // sendableChatId still names a Telegram chat and a team topic: their line wins.
+        const telegram = readOnlyLine({ source: 'telegram' });
+        const team = readOnlyLine({ team: { id: 't1' } as never });
+        expect(telegram).not.toBeNull();
+        expect(team).not.toBeNull();
+        expect(replyBox({ sendTo: 'c1', roomId: null, readOnly: telegram })).toBeNull();
+        expect(replyBox({ sendTo: 'c1', roomId: null, readOnly: team })).toBeNull();
+        // A read-only room.
+        expect(replyBox({ sendTo: null, roomId: 'r1', readOnly: 'Rooms are off' })).toBeNull();
+        expect(QUOTED_COMMAND_NOTE).toBe('Commands don’t run in a reply. Remove the quote to run it.');
     });
 });
