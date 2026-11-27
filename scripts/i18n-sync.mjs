@@ -8,7 +8,8 @@
 //       the state of the i18n/ pull requests) and prints its content hash, which leaves the
 //       commit out: an import whose hash is unchanged has nothing new to send.
 //   node scripts/i18n-sync.mjs locales --export <file>
-//       Prints the locales the export has candidates for, one per line.
+//       Prints the locales the export has candidates for, one per line, and how many candidates
+//       the app withheld (its `withheld` ids: candidates that failed its own re-validation).
 //   node scripts/i18n-sync.mjs apply --export <file> --locale <locale> --body <file> --ids <file>
 //       Writes the locale's approved candidates into packages/i18n/locales/<locale>/, the pull
 //       request body's section for them (contributors by alias only) and the ids written, for
@@ -285,6 +286,22 @@ export function checkCandidate(candidate) {
     return null;
 }
 
+/**
+ * The ids the app withheld from the export (approved candidates that failed its re-validation,
+ * left out of `locales[*].candidates`). Only an array of candidate ids counts; anything else is
+ * ignored, as an empty list.
+ */
+export function withheldIds(exported) {
+    const withheld = exported?.withheld;
+    if (!Array.isArray(withheld) || !withheld.every((id) => typeof id === 'string' && CANDIDATE_ID.test(id))) {
+        return [];
+    }
+    return [...new Set(withheld)];
+}
+
+const withheldLine = (count) =>
+    `${count} candidate${count === 1 ? '' : 's'} withheld by the app's validation (they stay in the app, and aren't acknowledged).`;
+
 /** An alias for the pull request body: one line, no backticks, in a code span so it can't mention or link. */
 export function aliasForBody(alias) {
     const text = String(alias ?? '')
@@ -323,10 +340,11 @@ export function applyLocale({ exported, locale, localesDir }) {
         }
         return files.get(ns);
     };
+    const withheld = new Set(withheldIds(exported));
     const written = [];
     const skipped = [];
     for (const candidate of candidates) {
-        const problem = checkCandidate(candidate);
+        const problem = withheld.has(candidate?.id) ? "withheld by the app's validation" : checkCandidate(candidate);
         if (problem) {
             skipped.push({ id: typeof candidate?.id === 'string' ? candidate.id.slice(0, 40) : '?', why: problem });
             continue;
@@ -411,6 +429,10 @@ export function bodySection(exported, locale, written, skipped = []) {
             ...self.map((candidate) => `- ${label(candidate)} (self-approved)`),
         );
     }
+    const withheld = withheldIds(exported).length;
+    if (withheld) {
+        lines.push('', withheldLine(withheld));
+    }
     if (skipped.length) {
         lines.push(
             '',
@@ -467,6 +489,8 @@ function main(argv) {
                 console.log(locale);
             }
         }
+        // stderr: the job's log, not the list of locales.
+        console.error(withheldLine(withheldIds(exported).length));
         return;
     }
     if (command === 'apply') {

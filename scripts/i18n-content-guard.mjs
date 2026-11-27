@@ -11,8 +11,9 @@
 //     separators, or it is a decimal or a date;
 //   - markup: exactly the source's `<Trans>` tags, the same names nested the same way (siblings
 //     may move), each holding only its name (`<0>`, `</0>`, `<1/>`, `<bold>`): no attribute, no
-//     other `<` or `>`, no look-alike bracket, HTML entity or invisible format character (bidi
-//     overrides, zero-width spaces). A plural form is held to its own source form.
+//     spaced pseudo-tag (`< 0 href="/x"/>`) or other `<` or `>`, no look-alike bracket, HTML
+//     entity or invisible format character (bidi overrides, zero-width spaces). A plural form is
+//     held to its own source form.
 //
 // For content, text is NFKC-normalized first, so full-width characters (`ｅｖｉｌ．ｃｏｍ`, `＠`) count as
 // their ASCII forms; zero-width characters inside a word are dropped; `{{variables}}` and
@@ -189,8 +190,12 @@ export function newContent(source, translation) {
  */
 const TAG = /<(\/?)([A-Za-z0-9_-]+)(\/?)>/uy;
 const ENTITY = /&(?:#\d+|#x[0-9a-f]+|[a-z][a-z0-9]*);/giu;
-/** Full-width and small brackets: not markup to `<Trans>`, but they read as markup, so they're held to the source. */
-const LOOKALIKE_BRACKETS = new RegExp('[\\uff1c\\uff1e\\ufe64\\ufe65]', 'gu');
+/**
+ * Full-width and small brackets: not markup to `<Trans>`, but they read as markup, so they're held
+ * to the source. Exactly the characters NFKC maps to `<` or `>` (U+FF1C, U+FF1E, U+FE64, U+FE65);
+ * the tests scan U+0000 to U+FFFF to keep it so.
+ */
+export const LOOKALIKE_BRACKETS = new RegExp('[\\uff1c\\uff1e\\ufe64\\ufe65]', 'gu');
 
 /**
  * A text's tags as a tree, and every `<` or `>` that isn't part of a tag. Only ASCII brackets
@@ -218,12 +223,20 @@ export function tagStructure(text) {
         TAG.lastIndex = at;
         const match = TAG.exec(text);
         if (!match || (match[1] && match[3])) {
-            // A bare `<` before a space or a digit run ("a < b") is text; anything else is quoted.
-            const snippet = text.slice(at, at + 40).replace(/>.*$/su, '>');
-            if (/^<[A-Za-z0-9_/!?-]/u.test(snippet)) {
-                stray.push(snippet);
+            // A `<`, any whitespace (newlines too), then a tag-name character, `/`, `!` or `?`, with
+            // a `>` before the next `<`, is markup however it's spaced (`< 0 href="/x"/>`, `<\n0>`):
+            // it's quoted whole, so only the same snippet in the source lets it through. A `<` with
+            // no `>` after it before the next `<` ("x < 5", "a < b") is text.
+            const close = text.indexOf('>', at + 1);
+            const open = text.indexOf('<', at + 1);
+            const closed = close !== -1 && (open === -1 || close < open);
+            if (closed && /^<\s*[A-Za-z0-9_/!?-]/u.test(text.slice(at, close + 1))) {
+                stray.push(text.slice(at, close + 1));
                 // Its own `>` is part of it, not another stray.
-                at += snippet.endsWith('>') ? snippet.length - 1 : 0;
+                at = close;
+            } else if (/^<[A-Za-z0-9_/!?-]/u.test(text.slice(at, at + 2))) {
+                // An unclosed tag-like start (`<0 href`): quoted up to the next `<`.
+                stray.push(text.slice(at, Math.min(open === -1 ? text.length : open, at + 40)));
             } else {
                 stray.push('<');
             }

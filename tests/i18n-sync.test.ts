@@ -14,6 +14,7 @@ import {
     removeKey,
     pullRequestStates,
     sparseParent,
+    withheldIds,
     type ExportBody,
     type ExportCandidate,
 } from '../scripts/i18n-sync.mjs';
@@ -412,6 +413,51 @@ describe('the export', () => {
         );
     });
 
+    it("tolerates the app's withheld ids: the same files, only the written ids acked, and their count noted", () => {
+        const files = { 'en-US/common.json': { a: 'A', b: 'B' } };
+        const candidates = [
+            candidate({ ns: 'common', key: 'a', values: { a: 'Á' } }),
+            candidate({ ns: 'common', key: 'b', values: { b: 'Bé' } }),
+        ];
+        const plain = setup(files);
+        const without = applyLocale({ exported: exportOf('pt-BR', candidates), locale: 'pt-BR', localesDir: plain });
+        const withheld = [id(), id()];
+        const dir = setup(files);
+        const result = applyLocale({
+            exported: { ...exportOf('pt-BR', candidates), withheld },
+            locale: 'pt-BR',
+            localesDir: dir,
+        });
+        expect(readFileSync(join(dir, 'pt-BR/common.json'), 'utf8')).toBe(
+            readFileSync(join(plain, 'pt-BR/common.json'), 'utf8'),
+        );
+        expect(result.ids).toEqual(without.ids);
+        expect(result.ids).toEqual(candidates.map((item) => item.id));
+        for (const item of withheld) {
+            expect(result.ids).not.toContain(item);
+        }
+        expect(result.body).toContain("2 candidates withheld by the app's validation");
+        expect(without.body).not.toContain('withheld');
+
+        // A withheld id the app also listed as a candidate is still never written or acked.
+        const both = setup(files);
+        const listed = applyLocale({
+            exported: { ...exportOf('pt-BR', candidates), withheld: [candidates[1].id] },
+            locale: 'pt-BR',
+            localesDir: both,
+        });
+        expect(listed.ids).toEqual([candidates[0].id]);
+        expect(listed.skipped).toEqual([{ id: candidates[1].id, why: "withheld by the app's validation" }]);
+        expect(readJson(join(both, 'pt-BR/common.json'))).toEqual({ a: 'Á' });
+
+        // Anything but an array of candidate ids is ignored.
+        for (const bad of ['k_x', [1], ['not-an-id'], [withheld[0], 'x'], { id: withheld[0] }, null]) {
+            expect(withheldIds({ withheld: bad })).toEqual([]);
+        }
+        expect(withheldIds({ withheld: [withheld[0], withheld[0]] })).toEqual([withheld[0]]);
+        expect(withheldIds({})).toEqual([]);
+    });
+
     it('checks values and credits by alias only, with nothing that mentions or links', () => {
         expect(checkCandidate(candidate({ ns: 'common', key: 'a', values: { a: '   ' } }))).toBe('bad value for a');
         expect(checkCandidate(candidate({ ns: 'common', key: 'a', values: {} }))).toBe('no values');
@@ -429,6 +475,7 @@ describe('the export', () => {
             'export.json': {
                 commit: 'abcdef1',
                 generatedAt: 0,
+                withheld: [id()],
                 locales: {
                     'es-419': {
                         parent: null,
@@ -453,6 +500,7 @@ describe('the export', () => {
         expect(listed.status, listed.stderr).toBe(0);
         expect(listed.stdout).toBe('es-419\n');
         expect(listed.stderr).toContain('skipping "zz-ZZ"');
+        expect(listed.stderr).toContain("1 candidate withheld by the app's validation");
         const applied = run(
             'apply',
             '--export',

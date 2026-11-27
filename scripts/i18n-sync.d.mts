@@ -17,6 +17,8 @@ export interface ExportBody {
     commit: string | null;
     generatedAt: number;
     locales: Record<string, { parent: string | null; candidates: ExportCandidate[]; contributors: string[] }>;
+    /** Approved candidates that failed the app's re-validation, left out of `locales`. */
+    withheld?: string[];
 }
 export interface PullRequestState {
     number: number;
@@ -34,6 +36,7 @@ export function importPayload(options: {
 }): { body: Record<string, unknown> & { commit: string }; hash: string };
 export function removeKey(tree: Record<string, unknown>, key: string): void;
 export function keyPath(english: Record<string, unknown>, key: string): string[];
+export function withheldIds(exported: unknown): string[];
 export function checkCandidate(candidate: unknown): string | null;
 export function aliasForBody(alias: unknown): string;
 export function applyLocale(options: { exported: ExportBody; locale: string; localesDir: string }): {
