@@ -2672,8 +2672,12 @@ export class BetterAuthProvider implements AuthProvider {
                 return answer(c, socialRefusal('not_linked'));
             }
             const providerId = NATIVE_PROVIDER_IDS[provider.data];
-            // Read before the unit of work: whether a sign-in link can reach them.
+            // Read before the unit of work: whether a sign-in link can reach them,
+            // and which app sign-ins work now, as the manifest says. A Google or
+            // Apple link counts only while its provider is offered; when that
+            // can't be told (no config from the cloud), it doesn't.
             const reachable = await this.linkReachable([own.account.userId]);
+            const offered = await this.socialSignIn().offered();
             const unlinked = await this.socialSignIn().unlink(own.account.id, provider.data, () => {
                 const now = this.accounts().find((entry) => entry.id === own.account.id);
                 return (
@@ -2685,7 +2689,11 @@ export class BetterAuthProvider implements AuthProvider {
                             providers: now.providers.filter((id) => id !== providerId),
                             linkReachable: reachable.has(now.userId),
                         },
-                        this.inForce(),
+                        {
+                            ...this.inForce(),
+                            google: offered.includes('google'),
+                            apple: offered.includes('apple'),
+                        },
                     )
                 );
             });

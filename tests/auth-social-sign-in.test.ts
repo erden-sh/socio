@@ -700,6 +700,58 @@ describe('links', () => {
         ).toBe(404);
     });
 
+    describe('a link counts as a way in only while its provider is offered', () => {
+        const del = (b: Brain, jar: Jar, provider: string) =>
+            b.call(jar, `/api/auth/social/link/${provider}`, {
+                method: 'DELETE',
+                headers: { 'content-type': 'application/json' },
+            });
+        /** Ada with Google and Apple links and nothing else. */
+        const linksOnly = async (b: Brain) => {
+            const { ada, web } = await adaLinked(b, 'google');
+            await b.linked(web, 'apple', 'apple-sub-ada');
+            b.db.prepare("DELETE FROM auth_account WHERE userId = ? AND providerId = 'credential'").run(ada.id);
+            return web;
+        };
+
+        it('refuses to unlink Google when Apple, the only other way, isn’t offered now', async () => {
+            const b = await brain();
+            const web = await linksOnly(b);
+            b.verifier.offer = { google: { serverClientId: WEB_CLIENT } };
+            const refused = await del(b, web, 'google');
+            expect(refused.status).toBe(409);
+            expect(await refused.json()).toMatchObject({ code: 'last_method' });
+            // While Apple is offered, Google can go.
+            b.verifier.offer = { google: { serverClientId: WEB_CLIENT }, apple: {} };
+            expect((await del(b, web, 'google')).status).toBe(200);
+        });
+
+        it('refuses to unlink either when the cloud can’t say what it offers', async () => {
+            const b = await brain();
+            const web = await linksOnly(b);
+            b.verifier.offer = null;
+            for (const provider of ['google', 'apple']) {
+                const refused = await del(b, web, provider);
+                expect(refused.status).toBe(409);
+                expect(await refused.json()).toMatchObject({ code: 'last_method' });
+            }
+        });
+
+        it('refuses when the access policy turned the other one off', async () => {
+            const b = await brain();
+            const web = await linksOnly(b);
+            b.savePolicy({ apple: false });
+            expect((await del(b, web, 'google')).status).toBe(409);
+        });
+
+        it('lets a person with a password unlink Google while the cloud is down', async () => {
+            const b = await brain();
+            const { web } = await adaLinked(b);
+            b.verifier.offer = null;
+            expect((await del(b, web, 'google')).status).toBe(200);
+        });
+    });
+
     it('keeps Better Auth’s own unlink closed to these links, by the account row’s id as it takes it', async () => {
         const b = await brain();
         const { ada, web } = await adaLinked(b);

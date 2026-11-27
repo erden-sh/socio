@@ -159,7 +159,11 @@ export class SocialSignIn {
         }
     }
 
-    /** The providers the app may offer: verified now, and on in the access policy. */
+    /**
+     * The providers the app may offer: verified now, and on in the access
+     * policy. The manifest's `social` list and an unlink's remaining ways in
+     * both read this, so they never disagree.
+     */
     async offered(): Promise<SocialProvider[]> {
         const config = await this.config();
         const saved = this.deps.saved();
