@@ -1577,7 +1577,9 @@ ported (no Effect), its test's cases as specs:
   Edit, Ask about this page or Compare, and the editor doesn't open on one. One that becomes a
   folder with the editor open closes it to the folder's words; the scope's page saves
   (`isFolder`) take nothing for a folder, so its draft stays on the phone, unsent, for when it is a
-  page again. `tests/shell/folders.test.ts` checks each place.
+  page again. A save already queued checks too, before its PATCH (the held body or list, the newer;
+  a waiting Turn into page counts as a page) and after a 409's read, before any rebase or merge: a
+  folder sends it to Unsent as it is, `page-is-folder`, whose row offers Retry, Copy and Discard. `tests/shell/folders.test.ts` checks each place.
 - **Exactly once.** A run's check, and the busy-thread rule before it moves a
   row to steering, ask shared's `recoverTurn` through `turn-recovery.ts`'s `recoverRun`: `connect`
   replays the runs after the newest one held and stops at the first run's start; the row's id in a

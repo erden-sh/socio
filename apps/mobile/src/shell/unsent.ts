@@ -132,6 +132,8 @@ export const UNSENT_REASON_COPY: Readonly<Record<string, string>> = {
     [PAGE_SAVE_REFUSALS.refused]: 'You can’t edit this page',
     [PAGE_SAVE_REFUSALS.invalid]: 'It couldn’t be saved as written',
     [PAGE_SAVE_REFUSALS.noPage]: 'Its page was never created',
+    [PAGE_SAVE_REFUSALS.folder]:
+        'This page is now a folder, so this change wasn’t saved. Turn it back into a page to save it',
     // Creating, moving and deleting pages, and covers.
     [PAGE_MANAGE_REFUSALS.noParent]: 'Its parent page was never created',
     [PAGE_MANAGE_REFUSALS.parentDeleted]: 'Its parent page was deleted',
@@ -226,6 +228,8 @@ export interface UnsentListRow {
     readonly editable: boolean;
     /** A page's save whose page is gone: Save as a new page, in this Space by default. */
     readonly saveAsNew: { readonly spaceId: string; readonly mine: PageText } | null;
+    /** Whether it offers Retry: a page's save refused because its page is a folder now, sent once it is a page again. */
+    readonly retry: boolean;
     /** A page's conflict: Open page, where its banner settles it. */
     readonly opens: { readonly spaceId: string; readonly pageId: string } | null;
     readonly accessibilityLabel: string;
@@ -547,6 +551,7 @@ export function unsentListRows(
                 text: written,
                 editable: unsentIssueFields(write) !== null,
                 saveAsNew: savedAsNew(write),
+                retry: write.kind === PAGE_SAVE_KIND && write.reason === PAGE_SAVE_REFUSALS.folder,
                 opens: conflictPage(write, payload, context),
                 accessibilityLabel: [what, where, labelExcerpt(written), why, holding].filter(Boolean).join(', '),
             };

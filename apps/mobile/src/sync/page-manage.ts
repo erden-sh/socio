@@ -154,6 +154,32 @@ export function heldFolder(
 }
 
 /**
+ * Whether page `pageId` is a folder by the newest copy the phone holds: its
+ * body (`body`, or null) or its Space's list, whichever has the higher
+ * revision (a refresh of either may be the one that found the toggle).
+ */
+export function heldPageFolder(
+    cache: Pick<SnapshotCache, 'rows'>,
+    spaceId: string,
+    pageId: string,
+    body: (object & { readonly revision?: unknown }) | null | undefined,
+): boolean {
+    const row = cache.rows(PAGES, spaceId).get(pageId);
+    let listed: { readonly revision?: unknown; readonly folder?: unknown } | null = null;
+    try {
+        listed = row === undefined ? null : (JSON.parse(row.json) as typeof listed);
+    } catch {
+        listed = null;
+    }
+    if (body === null || body === undefined) {
+        return isFolder(listed);
+    }
+    const revisionOf = (page: { readonly revision?: unknown } | null) =>
+        typeof page?.revision === 'number' ? page.revision : Number.NEGATIVE_INFINITY;
+    return isFolder(listed !== null && revisionOf(listed) > revisionOf(body) ? listed : body);
+}
+
+/**
  * Reads from cache.db the lists of the Spaces among `spaceIds` not read yet
  * this run (a restart onto Search, before any of their screens), so
  * `heldFolder` knows their folders. Null when all are read already.

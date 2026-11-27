@@ -193,7 +193,7 @@ describe("the page editor's folder guard", () => {
 
     it("gives the scope's page saves the same folder check", () => {
         expect(scope).toMatch(
-            /isFolder: \(spaceId, pageId\) =>\s+pendingFolder\(outbox, pageId\) \?\?\s+\(isFolder\(pages\.bodies\.peek\(pageBodyKey\(spaceId, pageId\)\)\?\.state\.value\) \|\|\s+heldFolder\(cache, spaceId, pageId\)\)/,
+            /isFolder: \(spaceId, pageId\) =>\s+pendingFolder\(outbox, pageId\) \?\?\s+heldPageFolder\(cache, spaceId, pageId, pages\.bodies\.peek\(pageBodyKey\(spaceId, pageId\)\)\?\.state\.value\)/,
         );
     });
 });

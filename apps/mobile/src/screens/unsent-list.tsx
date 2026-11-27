@@ -5,6 +5,7 @@ import { AccessibilityInfo, Alert, View } from 'react-native';
 
 import { useCollections, useHasWorkspaceScope, useLiveQuery, useUnsent, useWorkspaceScope } from '../live';
 import { pageAction } from '../navigation/tabs';
+import { randomId } from '../platform/crypto';
 import { SAVED_AS_NEW } from '../shell/page-conflict';
 import { chatsQuery, spacesQuery } from '../shell/queries';
 import {
@@ -37,6 +38,8 @@ interface UnsentRows {
     readonly rows: UnsentListRow[];
     readonly discard: (row: UnsentListRow) => void;
     readonly saveAsNew: (row: UnsentListRow) => void;
+    /** Retry: the row goes again, in its place in its lane. */
+    readonly retry: (row: UnsentListRow) => void;
     /** The Space picker, drawn by the list. */
     readonly picker: ReactNode;
 }
@@ -98,13 +101,18 @@ function useUnsentRows(): UnsentRows {
             { cancelable: true },
         );
     };
-    return { rows, discard, saveAsNew, picker };
+    const retry = (row: UnsentListRow) => {
+        scope.outbox
+            .retryUnsent(row.id, randomId())
+            .catch((error: unknown) => console.warn('[unsent] not sent again', error));
+    };
+    return { rows, discard, saveAsNew, retry, picker };
 }
 
 /** The Account sheet's: the oldest `UNSENT_SHOWN`, then "See all N unsent" to the Unsent page. */
 export function UnsentList() {
     const navigation = useNavigation();
-    const { rows, discard, saveAsNew, picker } = useUnsentRows();
+    const { rows, discard, saveAsNew, retry, picker } = useUnsentRows();
     if (rows.length === 0) {
         return null;
     }
@@ -123,6 +131,7 @@ export function UnsentList() {
                 rows={list.shown}
                 onDiscard={discard}
                 onSaveAsNew={saveAsNew}
+                onRetry={retry}
                 onOpen={(row) => {
                     // The sheet closes first: the page opens over the tabs, not inside the sheet.
                     navigation.goBack();
@@ -163,7 +172,7 @@ export function UnsentScreen() {
 
 function AllUnsent() {
     const navigation = useNavigation();
-    const { rows, discard, saveAsNew, picker } = useUnsentRows();
+    const { rows, discard, saveAsNew, retry, picker } = useUnsentRows();
     return rows.length === 0 ? (
         <Text variant="subheadline" tone="muted">
             Nothing is waiting: every change was sent or discarded.
@@ -174,6 +183,7 @@ function AllUnsent() {
                 rows={rows}
                 onDiscard={discard}
                 onSaveAsNew={saveAsNew}
+                onRetry={retry}
                 onOpen={(row) => openPage((action) => navigation.dispatch(action), row)}
                 onEdit={(row) => navigation.navigate('FileIssue', { edit: row.id })}
             />
@@ -192,6 +202,7 @@ function openPage(dispatch: (action: ReturnType<typeof pageAction>) => void, row
 interface RowActions {
     readonly onDiscard: (row: UnsentListRow) => void;
     readonly onSaveAsNew: (row: UnsentListRow) => void;
+    readonly onRetry: (row: UnsentListRow) => void;
     readonly onOpen: (row: UnsentListRow) => void;
     /** A refused filing's Edit: FileIssue on what was written. */
     readonly onEdit: (row: UnsentListRow) => void;
@@ -212,6 +223,7 @@ function UnsentItem({
     first,
     onDiscard,
     onSaveAsNew,
+    onRetry,
     onOpen,
     onEdit,
 }: RowActions & { row: UnsentListRow; first: boolean }) {
@@ -244,6 +256,15 @@ function UnsentItem({
                         icon="pencil"
                         onPress={() => onEdit(row)}
                         testID={`unsent-edit-${row.id}`}
+                    />
+                ) : null}
+                {row.retry ? (
+                    <Button
+                        variant="ghost"
+                        label="Retry"
+                        icon="refresh-cw"
+                        onPress={() => onRetry(row)}
+                        testID={`unsent-retry-${row.id}`}
                     />
                 ) : null}
                 {row.saveAsNew === null ? null : (
