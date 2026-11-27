@@ -32,7 +32,7 @@ export const quoting = (author: string) => `Quoting ${author}`;
 export const QUOTE_EXCERPT_MAX = 200;
 
 /** Keeps `@` from starting a mention (shared's parseRoomMentions) and `!` or `<` from what follows. */
-const WORD_JOINER = '⁠';
+const WORD_JOINER = '\u2060';
 
 /** CommonMark's backslash escapes the excerpt needs: emphasis, code, links, HTML, entities, tables. */
 const ESCAPED = /[\\`*_[\]<>~|&]/g;
