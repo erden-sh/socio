@@ -191,13 +191,14 @@ function body(link: LinkPath): { title: string; html: string } {
         case 'd':
             // Add a device: the pairing code stays in the fragment and is never shown here. People
             // land here mostly when the installed app hasn't picked up the link association yet.
-            // There is no in-app scanner yet, so the "scan the code in the app" wording comes back
-            // when it ships (CB-566).
+            // The app's scanner (CB-566, Socio 0.2.9) is on its Add a workspace screen, under "Scan the
+            // QR code from Socio on a computer" (apps/mobile/src/net/first-screen.ts); older versions
+            // have none, so they update and scan again.
             return {
                 title: 'Add a device to Socio',
                 html: `<h1>Add a device</h1>
-<p>If Socio is installed, open this link from your camera or a message so it opens in the app.</p>
-<p>If it still opens here, update Socio (or reinstall it), then scan the code again.</p>${INVALID}
+<p>If Socio is installed, open it, go to Add a workspace and tap “Scan the QR code from Socio on a computer.”</p>
+<p>Opening this link from your camera or a message also works. If it keeps opening here, update Socio and scan again.</p>${INVALID}
 ${getTheApp(variant)}`,
             };
         case 'i':
