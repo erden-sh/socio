@@ -6,7 +6,7 @@ import { negotiateLocale } from '@socio/i18n/negotiate';
 import { useTranslation } from '@socio/i18n/react';
 import { languageName } from '@socio/shared/locale';
 
-import { usePageLocale } from '../../../i18n/I18nRoot';
+import { usePageInstance, usePageLocale } from '../../../i18n/I18nRoot';
 import { applyLocale } from '../../../i18n/page-instance';
 import { useShell } from '../../../shell/shell-context';
 import { SettingsCard } from '../AccountSettings';
@@ -36,6 +36,7 @@ export function LanguageSection() {
 
 function LanguagePicker({ offered }: { offered: readonly string[] }) {
     const { t, i18n } = useTranslation(['settings.language']);
+    const page = usePageInstance();
     const { workspace, mutate } = useShell();
     const saved = workspace.preferences?.locale ?? null;
     const [value, setValue] = useState<string | null>(saved);
@@ -51,7 +52,7 @@ function LanguagePicker({ offered }: { offered: readonly string[] }) {
             return;
         }
         const locale = next ?? negotiateLocale(browserLanguages(), offered);
-        await applyLocale(i18n, locale, next);
+        await applyLocale(page, locale, next);
         toast.success(
             next
                 ? t('settings.language:saved', { language: languageName(next, next) })

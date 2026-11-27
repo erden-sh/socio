@@ -139,15 +139,18 @@ describe('GET /i18n/manifest.json', () => {
 describe('the manifest’s cache', () => {
     it('keeps no entry for tags that aren’t registered', () => {
         const loaded = catalog();
-        const bodies = new Set<string>();
+        // One cached entry: the same object every time, whatever unknown tags come with it.
+        const entries = new Set<object>();
         for (let i = 0; i < 50; i++) {
-            bodies.add(loaded.manifestBody([`xx-${i}`, 'es-US']).body);
+            entries.add(loaded.manifestBody([`xx-${i}`, 'es-US']));
+            entries.add(loaded.manifestBody([`yy-${i}`]));
         }
-        expect(bodies.size).toBe(1);
+        expect(entries.size).toBe(2);
+        expect(loaded.manifestBody(['zz-ZZ'])).toBe(loaded.manifestBody([]));
         // Unknown tags alone: en-US, the end of every chain.
         expect(Object.keys(JSON.parse(loaded.manifestBody(['zz-ZZ']).body).locales)).toEqual(['en-US']);
         // The same set, however it is asked for, is one body.
-        expect(loaded.manifestBody(['es-US']).etag).toBe(loaded.manifestBody(['es-419', 'es-US', 'es-US']).etag);
+        expect(loaded.manifestBody(['es-US'])).toBe(loaded.manifestBody(['es-419', 'es-US', 'es-US']));
     });
 });
 

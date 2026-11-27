@@ -75,7 +75,10 @@ function setLocaleCookie(locale: string | null) {
  */
 export async function applyLocale(instance: I18n, locale: string, chosen?: string | null) {
     const state = manifests.get(instance);
-    if (state && !state.manifest.locales[locale]) {
+    if (!state) {
+        throw new Error('applyLocale takes the page’s own instance (usePageInstance), not a proxy of it.');
+    }
+    if (!state.manifest.locales[locale]) {
         const response = await fetch(`${MANIFEST_PATH}?locales=${encodeURIComponent(locale)}`, {
             credentials: 'omit',
         });

@@ -79,25 +79,51 @@ it('doesn’t render with en-US alone', async () => {
 });
 
 it('offers each locale in its own language, and applies a choice without a reload', async () => {
+    const requests: string[] = [];
     vi.stubGlobal(
         'fetch',
-        vi.fn(async (url: string) => {
-            expect(url).toBe('/i18n/manifest.json?locales=es-419');
-            return new Response(JSON.stringify({ release: '1.0.0', locales: { 'es-419': { coverage: 1, ns: {} } } }));
+        vi.fn(async (input: string | URL | Request) => {
+            const url = String(input instanceof Request ? input.url : input);
+            requests.push(url);
+            if (url === '/i18n/manifest.json?locales=es-419') {
+                return new Response(
+                    JSON.stringify({
+                        release: '1.0.0',
+                        locales: {
+                            'es-419': {
+                                coverage: 1,
+                                ns: { 'settings.language': { hash: 'aaaaaaaaaaaa', sourceHash: 'bbbbbbbbbbbb' } },
+                            },
+                        },
+                    }),
+                );
+            }
+            if (url === '/i18n/es-419/settings.language.aaaaaaaaaaaa.json') {
+                return new Response(JSON.stringify({ title: 'Idioma', savedDevice: 'Idioma: el del dispositivo' }));
+            }
+            return new Response('{}', { status: 404 });
         }),
     );
     const mutate = await open(page(['en-US', 'es-419']));
-    const section = host.querySelector('[data-slot="language-preference"]')!;
-    expect(section.querySelector('legend')!.textContent).toBe('Language');
-    expect(section.textContent).toContain('The language Socio shows you');
-    const labels = [...section.querySelectorAll('label')].map((label) => label.textContent);
+    const section = () => host.querySelector('[data-slot="language-preference"]')!;
+    expect(section().querySelector('legend')!.textContent).toBe('Language');
+    expect(section().textContent).toContain('The language Socio shows you');
+    const labels = [...section().querySelectorAll('label')].map((label) => label.textContent);
     expect(labels[0]).toMatch(/^Match my device \(currently .+\)$/);
     expect(labels.slice(1)).toEqual(['American English', 'español latinoamericano']);
-    expect(section.querySelector('[lang="es-419"]')).not.toBeNull();
-    const radios = section.querySelectorAll<HTMLInputElement>('input[type="radio"]');
+    expect(section().querySelector('[lang="es-419"]')).not.toBeNull();
+    const radios = section().querySelectorAll<HTMLInputElement>('input[type="radio"]');
     expect(radios[0]!.checked).toBe(true);
     await act(async () => radios[2]!.click());
     expect(mutate).toHaveBeenCalledWith('/preferences', 'PATCH', { locale: 'es-419' });
+    // The manifest for the new locale, then its file: no reload.
+    expect(requests).toEqual([
+        '/i18n/manifest.json?locales=es-419',
+        '/i18n/es-419/settings.language.aaaaaaaaaaaa.json',
+    ]);
+    expect(section().querySelector('legend')!.textContent).toBe('Idioma');
+    // What es-419 lacks falls back to en-US, key by key.
+    expect(section().textContent).toContain('The language Socio shows you');
     expect(document.documentElement.lang).toBe('es-419');
     expect(document.cookie).toContain('socio_locale=es-419');
 });
