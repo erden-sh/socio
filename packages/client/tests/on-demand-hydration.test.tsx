@@ -7,8 +7,8 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { createReactI18n, I18nextProvider, useTranslation } from '@socio/i18n/react';
 import type { PageI18n } from '@socio/shared/web/web';
 
+import { onDemand } from '../src/i18n/on-demand';
 import { pageInstance } from '../src/i18n/page-instance';
-import { onDemand } from '../src/modules/settings/on-demand';
 
 declare global {
     var IS_REACT_ACT_ENVIRONMENT: boolean;

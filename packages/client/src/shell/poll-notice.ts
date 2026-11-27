@@ -5,12 +5,22 @@ import { UNREADABLE_RESPONSE } from '../lib/api';
  * a deploy (CB-108), instead of the browser's or the proxy's error. It
  * goes once a poll is answered again.
  */
-export const UPDATING_NOTICE = 'Socio is updating. Reconnecting…';
+export const UPDATING_NOTICE = 'shell:notices.updating';
 /**
  * The connection notice while the browser says it is offline: the server
  * isn't updating, this device has no network. It reconnects the same way.
  */
-export const OFFLINE_NOTICE = 'You’re offline. Reconnecting when you’re back online.';
+export const OFFLINE_NOTICE = 'shell:notices.offline';
+
+/**
+ * The two connection notices are their keys (in the root's `shell`
+ * namespace): a notice is a string, the server's words or one of these,
+ * and whoever shows it translates these (`useNoticeText`).
+ */
+export const CONNECTION_NOTICES = [UPDATING_NOTICE, OFFLINE_NOTICE] as const;
+export type ConnectionNotice = (typeof CONNECTION_NOTICES)[number];
+export const isConnectionNotice = (message: string): message is ConnectionNotice =>
+    (CONNECTION_NOTICES as readonly string[]).includes(message);
 
 export interface Notices {
     refresh: string;

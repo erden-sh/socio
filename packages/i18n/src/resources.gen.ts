@@ -3,6 +3,17 @@
 // (docs/I18N.md) read it.
 
 export interface EnglishResources {
+    chat: {};
+    'chat.composer': {};
+    'chat.dot-home': {};
+    'chat.drafts': {};
+    'chat.menu': {};
+    'chat.model': {};
+    'chat.nav': {};
+    'chat.report': {};
+    'chat.result': {};
+    'chat.soul': {};
+    'chat.trace': {};
     common: {
         product: 'Socio';
     };
@@ -2477,4 +2488,17 @@ export interface EnglishResources {
             checking: 'Checking…';
         };
     };
+    shell: {
+        notices: {
+            updating: 'Socio is updating. Reconnecting…';
+            offline: 'You’re offline. Reconnecting when you’re back online.';
+            'connect-failed': 'Could not connect to the server.';
+        };
+    };
+    'shell.add-device': {};
+    'shell.help': {};
+    'shell.home': {};
+    'shell.palette': {};
+    'shell.sign-in': {};
+    'shell.status': {};
 }

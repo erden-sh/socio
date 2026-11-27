@@ -1,8 +1,9 @@
 import { useTranslation } from '@socio/i18n/react';
 
+import { onDemand } from '../../i18n/on-demand';
+
 import { SettingsCard } from './AccountSettings';
 import { AutosaveHeader, SaveError, useAutosave } from './autosave';
-import { onDemand } from './on-demand';
 
 import { PermissionRow } from '@/components/form-fields';
 

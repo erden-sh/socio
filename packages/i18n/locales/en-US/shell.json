@@ -1,0 +1,7 @@
+{
+    "notices": {
+        "updating": "Socio is updating. Reconnecting…",
+        "offline": "You’re offline. Reconnecting when you’re back online.",
+        "connect-failed": "Could not connect to the server."
+    }
+}

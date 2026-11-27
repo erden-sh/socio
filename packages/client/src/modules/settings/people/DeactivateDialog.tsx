@@ -5,8 +5,8 @@ import { toast } from 'sonner';
 import { useTranslation } from '@socio/i18n/react';
 import type { AssetTransfer, DeactivationImpact } from '@socio/shared/auth';
 
+import { onDemand } from '../../../i18n/on-demand';
 import { ApiError, api } from '../../../lib/api';
-import { onDemand } from '../on-demand';
 
 import {
     ACTIVE_NOW_MS,

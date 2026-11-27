@@ -5,8 +5,8 @@ import type { AssetKind, AssetTransfer, OwnedKind, PersonAssets, Roster, RosterP
 import { compareText } from '@socio/shared/locale';
 
 import { dialogSelect } from '../../../components/form-fields';
+import { onDemand } from '../../../i18n/on-demand';
 import { ApiError, api } from '../../../lib/api';
-import { onDemand } from '../on-demand';
 
 import { firstName, movedParts, useAssetWords } from './people-format';
 

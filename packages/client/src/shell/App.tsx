@@ -21,6 +21,7 @@ import { authSession } from './auth-client';
 import { afterPoll, navigateOrLoad } from './build-skew';
 import { pollHeartbeat } from './connection-status';
 import { CurrentUser, SignInSetup } from './current-user';
+import { oneTimeLink } from './one-time-link';
 import { applyRefreshResult, OFFLINE_NOTICE, visibleNotice, type Notices } from './poll-notice';
 import { presenceHeaders } from './presence';
 import { serverAway } from './reconnect';
@@ -395,10 +396,7 @@ export function App() {
     };
     // A password link (invite or reset) or a sign-in link works signed in or
     // out.
-    const oneTimeLink =
-        ['/reset-password', '/sign-in-link'].includes(location.pathname) &&
-        new URLSearchParams(location.search).has('token');
-    if (gate === 'sign-in' || oneTimeLink) {
+    if (gate === 'sign-in' || oneTimeLink(location)) {
         return (
             <SignIn
                 session={data?.session === 'signed-out' ? data.signIn : undefined}

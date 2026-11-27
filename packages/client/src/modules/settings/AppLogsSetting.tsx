@@ -9,8 +9,9 @@ import {
     type AppLogRetention,
 } from '@socio/shared/apps/app-log-retention';
 
+import { onDemand } from '../../i18n/on-demand';
+
 import { SettingsCard } from './AccountSettings';
-import { onDemand } from './on-demand';
 
 import { Input } from '@/components/ui/input';
 

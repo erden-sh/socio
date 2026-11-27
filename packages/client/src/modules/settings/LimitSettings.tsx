@@ -3,9 +3,10 @@ import type { EnglishResources } from '@socio/i18n/resources.gen';
 import { LIMIT_GROUPS, LIMIT_SPECS, validLimit, type LimitKey, type LimitValues } from '@socio/shared/limits';
 import type { State } from '@socio/shared/types';
 
+import { onDemand } from '../../i18n/on-demand';
+
 import { SettingsCard } from './AccountSettings';
 import { AutosaveHeader, SaveError, useAutosave } from './autosave';
-import { onDemand } from './on-demand';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
