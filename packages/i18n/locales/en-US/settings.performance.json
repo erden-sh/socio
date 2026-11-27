@@ -1,0 +1,13 @@
+{
+    "title": "Performance recording",
+    "intro": "Start recording, repeat the slow action, then return here to stop and download the report. Recording follows you between pages and can resume after a reload. A reload starts a new sample.",
+    "privacy": "The report stays in this tab until you download it. It contains timings and sizes, with no page or message text, credentials, or URL parameters. Recording stops automatically after ten minutes and keeps at most 500 entries. Signing out clears it.",
+    "status_one": "Stopped · {{count}} entry",
+    "status_other": "Stopped · {{count}} entries",
+    "status_recording_one": "Recording · {{count}} entry",
+    "status_recording_other": "Recording · {{count}} entries",
+    "start": "Start recording",
+    "stop": "Stop recording",
+    "download": "Download report",
+    "clear": "Clear"
+}

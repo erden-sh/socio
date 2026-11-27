@@ -55,5 +55,9 @@
     },
     "crumbs": {
         "person": "Person"
+    },
+    "providers": {
+        "google-native": "Google (app)",
+        "apple-native": "Apple (app)"
     }
 }

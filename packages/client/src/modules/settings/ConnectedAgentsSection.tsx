@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
+import { Trans, useTranslation } from '@socio/i18n/react';
 import type { AgentGrantView } from '@socio/shared/agent-grants';
 
 import { ConfirmDelete } from '../../components/confirm-delete';
@@ -11,20 +12,14 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
 const failed = (e: unknown, fallback: string) => toast.error(e instanceof Error ? e.message : fallback);
-const when = (at: number | null) =>
-    at
-        ? new Date(at).toLocaleString(undefined, {
-              dateStyle: 'medium',
-              timeStyle: 'short',
-          })
-        : 'never';
 
 /** Where an agent comes from: its domain, or that it is unverified. */
 export function AgentOrigin({ grant }: { grant: AgentGrantView }) {
+    const { t } = useTranslation(['settings.shared']);
     return grant.clientDomain ? (
         <span className="font-medium">{grant.clientDomain}</span>
     ) : (
-        <Badge variant="secondary">Unverified local app</Badge>
+        <Badge variant="secondary">{t('settings.shared:agents.unverified')}</Badge>
     );
 }
 
@@ -47,28 +42,34 @@ export function AgentScopes({ scopes }: { scopes: readonly string[] }) {
  * ends an agent's access at once.
  */
 export function ConnectedAgentsSection() {
+    const { t } = useTranslation(['settings', 'settings.connected-agents']);
+    const when = (at: number | null) =>
+        at ? t('settings.connected-agents:when', { when: new Date(at) }) : t('settings.connected-agents:never');
     const [grants, setGrants] = useState<AgentGrantView[]>();
     const [revoking, setRevoking] = useState<AgentGrantView>();
     const load = useCallback(
         () =>
             api<{ grants: AgentGrantView[] }>('/agent-grants')
                 .then((answer) => setGrants(answer.grants))
-                .catch((e) => failed(e, 'Could not load connected agents.')),
-        [],
+                .catch((e) => failed(e, t('settings.connected-agents:loadFailed'))),
+        [t],
     );
     useEffect(() => void load(), [load]);
     return (
         <section className="grid gap-2" data-slot="connected-agents">
-            <h3 className="font-medium">Connected agents</h3>
+            <h3 className="font-medium">{t('settings:sections.connected-agents')}</h3>
             <p className="text-muted-foreground">
-                Agents you run elsewhere, such as Claude Code, that act here for you. They can do only what you
-                approved, and never more than you can. To connect Claude Code, run{' '}
-                <code className="text-xs">
-                    claude mcp add --transport http socio {globalThis.location?.origin ?? ''}/mcp
-                </code>{' '}
-                and approve it in the browser.
+                <Trans
+                    t={t}
+                    i18nKey="settings.connected-agents:intro"
+                    values={{
+                        // A command to copy, not words.
+                        command: `claude mcp add --transport http socio ${globalThis.location?.origin ?? ''}/mcp`,
+                    }}
+                    components={{ command: <code className="text-xs" /> }}
+                />
             </p>
-            <ul className="grid gap-2" aria-label="Your connected agents">
+            <ul className="grid gap-2" aria-label={t('settings.connected-agents:listLabel')}>
                 {grants?.map((grant) => (
                     <li key={grant.grantId} className="grid gap-1 rounded-md border p-3" data-grant={grant.grantId}>
                         <span className="flex flex-wrap items-center gap-2">
@@ -77,35 +78,40 @@ export function ConnectedAgentsSection() {
                             <AgentOrigin grant={grant} />
                             <span className="flex-1" />
                             <Button variant="ghost" size="sm" onClick={() => setRevoking(grant)}>
-                                Disconnect
+                                {t('settings.connected-agents:disconnect')}
                             </Button>
                         </span>
                         <AgentScopes scopes={grant.scopes} />
                         <span className="text-muted-foreground text-xs">
-                            Connected {when(grant.createdAt)} · last used {when(grant.lastUsedAt)}
+                            {t('settings.connected-agents:used', {
+                                connected: when(grant.createdAt),
+                                used: when(grant.lastUsedAt),
+                            })}
                         </span>
                     </li>
                 ))}
-                {grants?.length === 0 && <li className="text-muted-foreground">No connected agents.</li>}
+                {grants?.length === 0 && (
+                    <li className="text-muted-foreground">{t('settings.connected-agents:none')}</li>
+                )}
             </ul>
             {revoking && (
                 <ConfirmDelete
-                    title={`Disconnect ${revoking.label}?`}
-                    action="Disconnect"
+                    title={t('settings.connected-agents:confirmTitle', { agent: revoking.label })}
+                    action={t('settings.connected-agents:disconnect')}
                     slot="confirm-disconnect-agent"
                     onClose={() => setRevoking(undefined)}
                     onConfirm={async () => {
                         try {
                             await api(`/agent-grants/${encodeURIComponent(revoking.grantId)}`, 'DELETE');
-                            toast.success(`${revoking.label} disconnected`);
+                            toast.success(t('settings.connected-agents:disconnected', { agent: revoking.label }));
                             await load();
                         } catch (e) {
-                            failed(e, 'Could not disconnect the agent.');
+                            failed(e, t('settings.connected-agents:disconnectFailed'));
                         }
                         setRevoking(undefined);
                     }}
                 >
-                    It can&apos;t act for you any more, from now on. Connect it again to use it.
+                    {t('settings.connected-agents:confirmBody')}
                 </ConfirmDelete>
             )}
         </section>

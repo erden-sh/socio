@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 
+import { Trans, useTranslation } from '@socio/i18n/react';
 import type { StepUpChallenge, StepUpMethod, StepUpProof } from '@socio/shared/access-policy';
 import type { Account } from '@socio/shared/auth';
 
 import { api } from '../../../lib/api';
 import { importOrReload } from '../../../shell/chunk-reload';
+import { onDemand } from '../on-demand';
 
 import { firstName } from './people-format';
 
@@ -27,7 +29,7 @@ const ownerPath = (id: string, rest = '') => `/accounts/${encodeURIComponent(id)
  * (as Remove permanently); the previous owner stays an admin, and every
  * admin is told.
  */
-export function MakeOwnerDialog({
+function MakeOwnerDialogBody({
     person,
     onClose,
     onDone,
@@ -37,6 +39,7 @@ export function MakeOwnerDialog({
     /** Done: the page loads again. */
     onDone: () => void;
 }) {
+    const { t } = useTranslation(['settings.person-dialogs', 'settings.person']);
     const [typed, setTyped] = useState('');
     const [challenge, setChallenge] = useState<StepUpChallenge>();
     // The proofs the last challenge offered: kept, disabled, while a new one comes.
@@ -55,8 +58,10 @@ export function MakeOwnerDialog({
                     setError(next.reason);
                 }
             })
-            .catch((e: unknown) => setError(e instanceof Error ? e.message : 'Could not start the confirmation.'));
-    }, [person.id]);
+            .catch((e: unknown) =>
+                setError(e instanceof Error ? e.message : t('settings.person-dialogs:confirm.startFailed')),
+            );
+    }, [person.id, t]);
     useEffect(() => {
         void challengeAgain();
     }, [challengeAgain]);
@@ -74,7 +79,7 @@ export function MakeOwnerDialog({
             });
             onDone();
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Could not make them the owner.');
+            setError(e instanceof Error ? e.message : t('settings.person-dialogs:makeOwner.failed'));
             // The server spends a challenge before it applies: every retry needs a new one.
             void challengeAgain();
         } finally {
@@ -97,19 +102,23 @@ export function MakeOwnerDialog({
         <Dialog open onOpenChange={(open) => !open && !busy && onClose()}>
             <DialogContent data-slot="make-owner-dialog" className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
                 <DialogHeader>
-                    <DialogTitle>Make {person.name} the workspace owner?</DialogTitle>
+                    <DialogTitle>{t('settings.person-dialogs:makeOwner.title', { name: person.name })}</DialogTitle>
                     <DialogDescription>
-                        The owner is the one admin other admins can’t demote, deactivate or remove. You stay an admin;{' '}
-                        {first} can hand ownership on the same way. Every admin is told.
+                        {t('settings.person-dialogs:makeOwner.description', { first })}
                     </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 text-sm" data-slot="make-owner-confirm">
                     <label className="grid gap-1">
                         <span>
-                            Type <strong className="select-all">{person.name}</strong> to confirm
+                            <Trans
+                                t={t}
+                                i18nKey="settings.person-dialogs:confirm.typeName"
+                                values={{ name: person.name }}
+                                components={{ strong: <strong className="select-all" /> }}
+                            />
                         </span>
                         <Input
-                            aria-label="Their name"
+                            aria-label={t('settings.person-dialogs:confirm.nameField')}
                             value={typed}
                             onChange={(e) => setTyped(e.target.value)}
                             autoComplete="off"
@@ -118,20 +127,24 @@ export function MakeOwnerDialog({
                         />
                         {typed && !matches && (
                             <span className="text-xs text-muted-foreground" data-slot="make-owner-name-mismatch">
-                                Type it exactly as shown.
+                                {t('settings.person-dialogs:confirm.mismatch')}
                             </span>
                         )}
                     </label>
                     {waiting && !error && (
                         <p className="text-xs text-muted-foreground" data-slot="make-owner-step-up-waiting">
-                            Getting a fresh confirmation…
+                            {t('settings.person-dialogs:confirm.waiting')}
                         </p>
                     )}
-                    <p className="text-xs text-muted-foreground">Then confirm it’s you.</p>
+                    <p className="text-xs text-muted-foreground">{t('settings.person-dialogs:makeOwner.stepUp')}</p>
                     {methods.includes('password') && (
-                        <form className="grid gap-2" onSubmit={withPassword} aria-label="Confirm with password">
+                        <form
+                            className="grid gap-2"
+                            onSubmit={withPassword}
+                            aria-label={t('settings.person-dialogs:confirm.passwordForm')}
+                        >
                             <label className="grid gap-1">
-                                Your password
+                                {t('settings.person-dialogs:confirm.password')}
                                 <Input
                                     type="password"
                                     autoComplete="current-password"
@@ -141,7 +154,7 @@ export function MakeOwnerDialog({
                             </label>
                             <div>
                                 <Button type="submit" disabled={busy || waiting || !matches || !password}>
-                                    Make {first} the owner
+                                    {t('settings.person-dialogs:makeOwner.withPassword', { first })}
                                 </Button>
                             </div>
                         </form>
@@ -153,7 +166,7 @@ export function MakeOwnerDialog({
                                 disabled={busy || waiting || !matches}
                                 onClick={withPasskey}
                             >
-                                Make {first} the owner with a passkey
+                                {t('settings.person-dialogs:makeOwner.withPasskey', { first })}
                             </Button>
                         </div>
                     )}
@@ -163,7 +176,7 @@ export function MakeOwnerDialog({
                                 disabled={busy || waiting || !matches}
                                 onClick={() => void transfer(async (id) => ({ id, confirm: true }))}
                             >
-                                Make {first} the owner (development sign-in)
+                                {t('settings.person-dialogs:makeOwner.withConfirm', { first })}
                             </Button>
                         </div>
                     )}
@@ -175,10 +188,13 @@ export function MakeOwnerDialog({
                 )}
                 <DialogFooter>
                     <Button variant="ghost" disabled={busy} onClick={onClose}>
-                        Cancel
+                        {t('settings.person:cancel')}
                     </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
     );
 }
+
+/** Its words load when it opens (`settings.person-dialogs`, in no route's entry). */
+export const MakeOwnerDialog = onDemand(['settings.person-dialogs', 'settings.person'], MakeOwnerDialogBody);

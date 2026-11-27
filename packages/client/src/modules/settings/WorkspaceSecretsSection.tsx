@@ -13,9 +13,9 @@ import {
 import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { toast } from 'sonner';
 
+import { Trans, useTranslation } from '@socio/i18n/react';
 import {
     SECRET_NAME,
-    SECRET_NAME_HINT,
     type AppSecretNeeds,
     type SecretFlagRule,
     type SecretHistory,
@@ -35,26 +35,33 @@ import { Input } from '@/components/ui/input';
 const failed = (error: unknown, fallback: string) => toast.error(error instanceof Error ? error.message : fallback);
 // 16 px below md, so iOS doesn't zoom in on focus (CB-96).
 const field = 'h-9 rounded-md border border-input bg-transparent px-2 text-base shadow-xs md:text-sm dark:bg-input/30';
-const when = (value: number) => new Date(value).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+/** How long the old value stays readable after a replace: its key and count. */
 const OVERLAPS = [
-    { minutes: 0, label: 'Retire the old value now' },
-    { minutes: 15, label: 'Keep the old value 15 minutes' },
-    { minutes: 60, label: 'Keep the old value 1 hour' },
-    { minutes: 24 * 60, label: 'Keep the old value 1 day' },
-];
+    { minutes: 0, label: 'settings.secrets:overlap.now', count: 0 },
+    { minutes: 15, label: 'settings.secrets:overlap.minutes', count: 15 },
+    { minutes: 60, label: 'settings.secrets:overlap.hours', count: 1 },
+    { minutes: 24 * 60, label: 'settings.secrets:overlap.days', count: 1 },
+] as const;
+
+/** "Oct 12, 2026, 3:04 PM": the page's times, in the reader's words once hydrated. */
+function useWhen() {
+    const { t } = useTranslation(['settings.secrets']);
+    return (at: number) => t('settings.secrets:when', { at: new Date(at) });
+}
 
 /**
  * A value field: a password input that the browser never fills or keeps,
  * cleared by its form after each save. Nothing ever shows a value again.
  */
 function ValueInput({ value, onChange, label }: { value: string; onChange: (v: string) => void; label: string }) {
+    const { t } = useTranslation(['settings.secrets']);
     return (
         <Input
             type="password"
             autoComplete="new-password"
             spellCheck={false}
             aria-label={label}
-            placeholder="Value (write-only)"
+            placeholder={t('settings.secrets:value.placeholder')}
             required
             className="min-w-48 flex-1"
             value={value}
@@ -75,6 +82,7 @@ function NewSecret({
     onSaved: () => void;
     onCancel?: () => void;
 }) {
+    const { t } = useTranslation(['settings', 'settings.secrets']);
     const [name, setName] = useState(preset?.name ?? '');
     const [owner, setOwner] = useState(preset?.appId ?? '');
     const [description, setDescription] = useState('');
@@ -92,13 +100,13 @@ function NewSecret({
             ...(owner ? { scope: 'workload', appId: owner } : { scope: 'workspace' }),
         })
             .then(() => {
-                toast.success(`Saved ${name}`);
+                toast.success(t('settings.secrets:new.saved', { name }));
                 setName(preset?.name ?? '');
                 setDescription('');
                 setValue('');
                 onSaved();
             })
-            .catch((error) => failed(error, 'Could not save the secret.'))
+            .catch((error) => failed(error, t('settings.secrets:errors.save')))
             .finally(() => {
                 setValue('');
                 setSaving(false);
@@ -107,14 +115,14 @@ function NewSecret({
     return (
         <form
             className="grid gap-2 rounded-md border border-dashed p-3"
-            aria-label={preset ? `Set ${preset.name}` : 'New secret'}
+            aria-label={preset ? t('settings.secrets:new.set', { name: preset.name }) : t('settings.secrets:new.title')}
             onSubmit={submit}
             autoComplete="off"
         >
             <span className="flex flex-wrap items-center gap-2">
                 <Input
-                    aria-label="Secret name"
-                    placeholder="NAME, e.g. STRIPE_API_KEY"
+                    aria-label={t('settings.secrets:new.name')}
+                    placeholder={t('settings.secrets:new.namePlaceholder')}
                     required
                     maxLength={64}
                     className="max-w-64 font-mono"
@@ -125,36 +133,40 @@ function NewSecret({
                 />
                 <select
                     data-slot="native-select"
-                    aria-label="Who it belongs to"
+                    aria-label={t('settings.secrets:new.owner')}
                     className={`${field} max-w-64`}
                     value={owner}
                     disabled={!!preset}
                     onChange={(event) => setOwner(event.target.value)}
                 >
-                    <option value="">The workspace (grant it to apps and plugins)</option>
+                    <option value="">{t('settings.secrets:new.ownerWorkspace')}</option>
                     {(preset ? apps : appsDeclaring).map((app) => (
                         <option key={app.appId} value={app.appId}>
-                            Only {app.name}
+                            {t('settings.secrets:new.only', { name: app.name })}
                         </option>
                     ))}
                 </select>
             </span>
-            {name && !validName && <small className="text-destructive">Name: {SECRET_NAME_HINT}.</small>}
+            {name && !validName && <small className="text-destructive">{t('settings.secrets:new.nameHint')}</small>}
             <Input
-                aria-label="Description"
-                placeholder="What it is for (optional)"
+                aria-label={t('settings.secrets:new.description')}
+                placeholder={t('settings.secrets:new.descriptionPlaceholder')}
                 maxLength={300}
                 value={description}
                 onChange={(event) => setDescription(event.target.value)}
             />
             <span className="flex flex-wrap items-center gap-2">
-                <ValueInput value={value} onChange={setValue} label={`Value of ${name || 'the secret'}`} />
+                <ValueInput
+                    value={value}
+                    onChange={setValue}
+                    label={t('settings.secrets:value.label', { name, context: name ? undefined : 'unnamed' })}
+                />
                 <Button size="sm" disabled={saving || !validName || !value}>
-                    {saving ? 'Saving…' : 'Save'}
+                    {saving ? t('settings:save.saving') : t('settings.secrets:new.save')}
                 </Button>
                 {onCancel && (
                     <Button type="button" size="sm" variant="ghost" onClick={onCancel}>
-                        Cancel
+                        {t('settings.secrets:cancel')}
                     </Button>
                 )}
             </span>
@@ -174,6 +186,7 @@ function ReplaceValue({
     onSaved: () => void;
     onCancel: () => void;
 }) {
+    const { t } = useTranslation(['settings', 'settings.secrets']);
     const [value, setValue] = useState('');
     const [overlap, setOverlap] = useState(overlapDefault);
     const [saving, setSaving] = useState(false);
@@ -185,10 +198,10 @@ function ReplaceValue({
             overlapMinutes: overlap,
         })
             .then(() => {
-                toast.success(`Replaced ${secret.name}`);
+                toast.success(t('settings.secrets:replace.done', { name: secret.name }));
                 onSaved();
             })
-            .catch((error) => failed(error, 'Could not replace the value.'))
+            .catch((error) => failed(error, t('settings.secrets:errors.replace')))
             .finally(() => {
                 setValue('');
                 setSaving(false);
@@ -197,65 +210,71 @@ function ReplaceValue({
     return (
         <form
             className="flex flex-wrap items-center gap-2"
-            aria-label={`Replace ${secret.name}`}
+            aria-label={t('settings.secrets:replace.label', { name: secret.name })}
             onSubmit={submit}
             autoComplete="off"
         >
-            <ValueInput value={value} onChange={setValue} label={`New value of ${secret.name}`} />
+            <ValueInput
+                value={value}
+                onChange={setValue}
+                label={t('settings.secrets:replace.value', { name: secret.name })}
+            />
             <select
                 data-slot="native-select"
-                aria-label="Old value"
+                aria-label={t('settings.secrets:replace.old')}
                 className={`${field} w-56`}
                 value={overlap}
                 onChange={(event) => setOverlap(Number(event.target.value))}
             >
                 {OVERLAPS.map((option) => (
                     <option key={option.minutes} value={option.minutes}>
-                        {option.label}
+                        {t(option.label, { count: option.count })}
                     </option>
                 ))}
             </select>
             <Button size="sm" disabled={saving || !value}>
-                {saving ? 'Saving…' : 'Replace'}
+                {saving ? t('settings:save.saving') : t('settings.secrets:replace.action')}
             </Button>
             <Button type="button" size="sm" variant="ghost" onClick={onCancel}>
-                Cancel
+                {t('settings.secrets:cancel')}
             </Button>
         </form>
     );
 }
 
-const RULES: Record<SecretFlagRule, string> = {
-    'read-spike': 'Unusual read rate',
-    'read-after-revoke': 'Reads after a revoke',
-    'stale-identity': 'Stale plugin identity',
-};
-const EVENTS: Record<SecretHistoryEvent['kind'], string> = {
-    created: 'Created',
-    replaced: 'Replaced',
-    described: 'Description changed',
-    deleted: 'Deleted',
-    granted: 'Granted',
-    revoked: 'Revoked',
-    'first-read': 'First read by a new workload',
-};
+const RULES = {
+    'read-spike': 'settings.secrets:flags.rule.read-spike',
+    'read-after-revoke': 'settings.secrets:flags.rule.read-after-revoke',
+    'stale-identity': 'settings.secrets:flags.rule.stale-identity',
+} as const satisfies Record<SecretFlagRule, string>;
+const EVENTS = {
+    created: 'settings.secrets:events.created',
+    replaced: 'settings.secrets:events.replaced',
+    described: 'settings.secrets:events.described',
+    deleted: 'settings.secrets:events.deleted',
+    granted: 'settings.secrets:events.granted',
+    revoked: 'settings.secrets:events.revoked',
+    'first-read': 'settings.secrets:events.first-read',
+} as const satisfies Record<SecretHistoryEvent['kind'], string>;
 
 /** Read flags: why each fired, with its numbers; never a value. Dismissing keeps the record. */
 function ReadFlags({
     flags,
     onDismissed,
-    label = 'Read flags',
+    label,
 }: {
     flags: SecretReadFlagView[];
     onDismissed: () => void;
     label?: string;
 }) {
+    const { t } = useTranslation(['settings.secrets']);
+    const when = useWhen();
     const [busy, setBusy] = useState(false);
     if (!flags.length) {
         return null;
     }
     return (
-        <ul className="grid gap-2" aria-label={label}>
+        <ul className="grid gap-2" aria-label={label ?? t('settings.secrets:flags.label')}>
             {flags.map((flag) => (
                 <li
                     key={flag.id}
@@ -264,16 +283,19 @@ function ReadFlags({
                 >
                     <div className="flex flex-wrap items-center gap-2">
                         <ShieldAlert className="size-4 text-amber-600 dark:text-amber-400" aria-hidden />
-                        <span className="font-medium">{RULES[flag.rule]}</span>
+                        <span className="font-medium">{t(RULES[flag.rule])}</span>
                         <Badge variant="outline">
-                            {flag.workloadName}
-                            {flag.kind === 'plugin' ? ' (plugin)' : ''}
+                            {t('settings.secrets:workload', { name: flag.workloadName, context: flag.kind })}
                         </Badge>
                         {flag.secretName && <code>{flag.secretName}</code>}
                         {flag.dismissedAt ? (
                             <span className="ml-auto text-xs text-muted-foreground">
-                                Dismissed by {flag.dismissedByName ?? 'an admin'}{' '}
-                                <LocalTime value={flag.dismissedAt} format={when} />
+                                <Trans
+                                    t={t}
+                                    i18nKey="settings.secrets:flags.dismissed"
+                                    values={{ name: flag.dismissedByName ?? t('settings.secrets:flags.anAdmin') }}
+                                    components={{ when: <LocalTime value={flag.dismissedAt} format={when} /> }}
+                                />
                             </span>
                         ) : (
                             <Button
@@ -281,23 +303,29 @@ function ReadFlags({
                                 variant="ghost"
                                 className="ml-auto"
                                 disabled={busy}
-                                aria-label={`Dismiss the flag on ${flag.workloadName}`}
+                                aria-label={t('settings.secrets:flags.dismissLabel', { name: flag.workloadName })}
                                 onClick={() => {
                                     setBusy(true);
                                     void api(`/workspace-secrets/flags/${encodeURIComponent(flag.id)}/dismiss`, 'POST')
                                         .then(onDismissed)
-                                        .catch((error) => failed(error, 'Could not dismiss the flag.'))
+                                        .catch((error) => failed(error, t('settings.secrets:errors.dismiss')))
                                         .finally(() => setBusy(false));
                                 }}
                             >
-                                Dismiss
+                                {t('settings.secrets:flags.dismiss')}
                             </Button>
                         )}
                     </div>
                     <p className="text-muted-foreground">{flag.explanation}</p>
                     <small className="text-xs text-muted-foreground">
-                        First seen <LocalTime value={flag.firstSeenAt} format={when} /> · last seen{' '}
-                        <LocalTime value={flag.lastSeenAt} format={when} />
+                        <Trans
+                            t={t}
+                            i18nKey="settings.secrets:flags.seen"
+                            components={{
+                                first: <LocalTime value={flag.firstSeenAt} format={when} />,
+                                last: <LocalTime value={flag.lastSeenAt} format={when} />,
+                            }}
+                        />
                     </small>
                 </li>
             ))}
@@ -310,6 +338,8 @@ function ReadFlags({
  * of events, newest first, from the audit lines; names only, never a value.
  */
 function SecretHistoryPanel({ secret }: { secret: WorkspaceSecretView }) {
+    const { t } = useTranslation(['settings.secrets']);
+    const when = useWhen();
     const [history, setHistory] = useState<SecretHistory>();
     const [older, setOlder] = useState<SecretHistoryEvent[]>([]);
     const [next, setNext] = useState<number | null>(null);
@@ -322,56 +352,77 @@ function SecretHistoryPanel({ secret }: { secret: WorkspaceSecretView }) {
             setOlder([]);
             setNext(found.nextBefore);
         } catch (error) {
-            failed(error, 'Could not load the history.');
+            failed(error, t('settings.secrets:errors.history'));
         }
-    }, [path]);
+    }, [path, t]);
     useEffect(() => {
         void load();
     }, [load]);
     if (!history) {
-        return <p className="text-xs text-muted-foreground">Loading the history…</p>;
+        return <p className="text-xs text-muted-foreground">{t('settings.secrets:history.loading')}</p>;
     }
     const events = [...history.events, ...older];
     return (
-        <div className="grid gap-3 rounded-md border bg-muted/30 p-3" aria-label={`History of ${secret.name}`}>
-            <ReadFlags flags={history.flags} onDismissed={() => void load()} label={`Read flags on ${secret.name}`} />
+        <div
+            className="grid gap-3 rounded-md border bg-muted/30 p-3"
+            aria-label={t('settings.secrets:history.label', { name: secret.name })}
+        >
+            <ReadFlags
+                flags={history.flags}
+                onDismissed={() => void load()}
+                label={t('settings.secrets:flags.labelOn', { name: secret.name })}
+            />
             <div className="grid gap-1">
-                <h5 className="text-sm font-medium">Versions</h5>
+                <h5 className="text-sm font-medium">{t('settings.secrets:history.versions')}</h5>
                 <ul className="grid gap-0.5 text-xs text-muted-foreground">
                     {history.versions.map((version) => (
                         <li key={version.version}>
-                            Version {version.version} ({version.state}), set by {version.setByName}{' '}
-                            <LocalTime value={version.setAt} format={when} />
-                            {version.state === 'previous' && version.retireAt && (
-                                <>
-                                    , readable until <LocalTime value={version.retireAt} format={when} />
-                                </>
-                            )}
+                            <Trans
+                                t={t}
+                                i18nKey="settings.secrets:history.version"
+                                values={{ version: version.version, state: version.state, name: version.setByName }}
+                                context={
+                                    version.state === 'previous' && version.retireAt ? 'previousUntil' : version.state
+                                }
+                                components={{
+                                    when: <LocalTime value={version.setAt} format={when} />,
+                                    until: version.retireAt ? (
+                                        <LocalTime value={version.retireAt} format={when} />
+                                    ) : (
+                                        <></>
+                                    ),
+                                }}
+                            />
                         </li>
                     ))}
                 </ul>
             </div>
             <div className="grid gap-1">
-                <h5 className="text-sm font-medium">Reads</h5>
+                <h5 className="text-sm font-medium">{t('settings.secrets:history.reads')}</h5>
                 {history.reads.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">No app or plugin has read it or tried to.</p>
+                    <p className="text-xs text-muted-foreground">{t('settings.secrets:history.noReads')}</p>
                 ) : (
-                    <table className="w-full text-left text-xs" aria-label={`Reads of ${secret.name}`}>
+                    <table
+                        className="w-full text-left text-xs"
+                        aria-label={t('settings.secrets:history.readsLabel', { name: secret.name })}
+                    >
                         <thead className="text-muted-foreground">
                             <tr>
-                                <th className="font-normal">Workload</th>
-                                <th className="font-normal">Reads</th>
-                                <th className="font-normal">First read</th>
-                                <th className="font-normal">Last read</th>
-                                <th className="font-normal">Refused</th>
+                                <th className="font-normal">{t('settings.secrets:history.workload')}</th>
+                                <th className="font-normal">{t('settings.secrets:history.reads')}</th>
+                                <th className="font-normal">{t('settings.secrets:history.firstRead')}</th>
+                                <th className="font-normal">{t('settings.secrets:history.lastRead')}</th>
+                                <th className="font-normal">{t('settings.secrets:history.refused')}</th>
                             </tr>
                         </thead>
                         <tbody>
                             {history.reads.map((read) => (
                                 <tr key={read.workload}>
                                     <td>
-                                        {read.workloadName}
-                                        {read.kind === 'plugin' ? ' (plugin)' : ''}
+                                        {t('settings.secrets:workload', {
+                                            name: read.workloadName,
+                                            context: read.kind,
+                                        })}
                                     </td>
                                     <td>{read.reads}</td>
                                     <td>
@@ -381,12 +432,17 @@ function SecretHistoryPanel({ secret }: { secret: WorkspaceSecretView }) {
                                         {read.lastReadAt ? <LocalTime value={read.lastReadAt} format={when} /> : '—'}
                                     </td>
                                     <td>
-                                        {read.refused}
-                                        {read.lastRefusedAt && (
-                                            <>
-                                                {' '}
-                                                (last <LocalTime value={read.lastRefusedAt} format={when} />)
-                                            </>
+                                        {read.lastRefusedAt ? (
+                                            <Trans
+                                                t={t}
+                                                i18nKey="settings.secrets:history.refusedLast"
+                                                values={{ count: read.refused }}
+                                                components={{
+                                                    when: <LocalTime value={read.lastRefusedAt} format={when} />,
+                                                }}
+                                            />
+                                        ) : (
+                                            read.refused
                                         )}
                                     </td>
                                 </tr>
@@ -396,16 +452,19 @@ function SecretHistoryPanel({ secret }: { secret: WorkspaceSecretView }) {
                 )}
             </div>
             <div className="grid gap-1">
-                <h5 className="text-sm font-medium">Events</h5>
-                <ul className="grid gap-1 text-xs" aria-label={`Events of ${secret.name}`}>
+                <h5 className="text-sm font-medium">{t('settings.secrets:history.events')}</h5>
+                <ul
+                    className="grid gap-1 text-xs"
+                    aria-label={t('settings.secrets:history.eventsLabel', { name: secret.name })}
+                >
                     {events.map((event) => (
                         <li key={event.id} className="flex flex-wrap gap-x-2" data-slot="workspace-secret-event">
                             <LocalTime value={event.at} format={when} />
                             <Badge variant={event.kind === 'first-read' ? 'default' : 'outline'}>
-                                {EVENTS[event.kind]}
+                                {t(EVENTS[event.kind])}
                             </Badge>
                             <span className="text-muted-foreground">
-                                {event.actorName}: {event.detail}
+                                {t('settings.secrets:history.event', { actor: event.actorName, detail: event.detail })}
                             </span>
                         </li>
                     ))}
@@ -423,11 +482,11 @@ function SecretHistoryPanel({ secret }: { secret: WorkspaceSecretView }) {
                                     setOlder((list) => [...list, ...page.events]);
                                     setNext(page.nextBefore);
                                 })
-                                .catch((error) => failed(error, 'Could not load older events.'))
+                                .catch((error) => failed(error, t('settings.secrets:errors.older')))
                                 .finally(() => setLoading(false));
                         }}
                     >
-                        Show older
+                        {t('settings.secrets:history.older')}
                     </Button>
                 )}
             </div>
@@ -446,6 +505,8 @@ function SecretRow({
     overlapDefault: number;
     reload: () => Promise<void>;
 }) {
+    const { t } = useTranslation(['settings.secrets']);
+    const when = useWhen();
     const [replacing, setReplacing] = useState(false);
     const [showHistory, setShowHistory] = useState(false);
     const [busy, setBusy] = useState(false);
@@ -471,7 +532,9 @@ function SecretRow({
                         <KeyRound className="size-4 shrink-0 text-muted-foreground" aria-hidden />
                         <code className="min-w-0 font-mono text-sm font-medium break-all">{secret.name}</code>
                         <Badge variant={secret.scope === 'workspace' ? 'secondary' : 'outline'}>
-                            {secret.scope === 'workspace' ? 'Workspace' : `Only ${secret.appName}`}
+                            {secret.scope === 'workspace'
+                                ? t('settings.secrets:row.workspace')
+                                : t('settings.secrets:new.only', { name: secret.appName ?? '' })}
                         </Badge>
                     </div>
                     {secret.description && (
@@ -481,28 +544,36 @@ function SecretRow({
                     )}
                     <small className="text-xs text-muted-foreground">
                         {current ? (
-                            <>
-                                Version {current.version}, set by {current.setByName}{' '}
-                                <LocalTime value={current.setAt} format={when} />
-                            </>
+                            <Trans
+                                t={t}
+                                i18nKey="settings.secrets:row.current"
+                                values={{ version: current.version, name: current.setByName }}
+                                components={{ when: <LocalTime value={current.setAt} format={when} /> }}
+                            />
                         ) : (
-                            'No current value'
+                            t('settings.secrets:row.noCurrent')
                         )}
                         {previous?.retireAt && (
                             <>
-                                {' '}
-                                · version {previous.version} readable until{' '}
-                                <LocalTime value={previous.retireAt} format={when} />
+                                {' · '}
+                                <Trans
+                                    t={t}
+                                    i18nKey="settings.secrets:row.previous"
+                                    values={{ version: previous.version }}
+                                    components={{ when: <LocalTime value={previous.retireAt} format={when} /> }}
+                                />
                             </>
-                        )}{' '}
-                        ·{' '}
+                        )}
+                        {' · '}
                         {secret.lastReadAt ? (
-                            <>
-                                last read by {secret.lastReadByName ?? 'an app'}{' '}
-                                <LocalTime value={secret.lastReadAt} format={when} />
-                            </>
+                            <Trans
+                                t={t}
+                                i18nKey="settings.secrets:row.lastRead"
+                                values={{ name: secret.lastReadByName ?? t('settings.secrets:row.anApp') }}
+                                components={{ when: <LocalTime value={secret.lastReadAt} format={when} /> }}
+                            />
                         ) : (
-                            'never read'
+                            t('settings.secrets:row.neverRead')
                         )}
                     </small>
                 </div>
@@ -511,30 +582,26 @@ function SecretRow({
                         size="sm"
                         variant="ghost"
                         aria-expanded={showHistory}
-                        aria-label={`History of ${secret.name}`}
+                        aria-label={t('settings.secrets:history.label', { name: secret.name })}
                         onClick={() => setShowHistory((open) => !open)}
                     >
-                        <History className="size-4" aria-hidden /> History
+                        <History className="size-4" aria-hidden /> {t('settings.secrets:history.open')}
                     </Button>
                     <Button size="sm" variant="ghost" disabled={busy} onClick={() => setReplacing(true)}>
-                        <RefreshCw className="size-4" aria-hidden /> Replace…
+                        <RefreshCw className="size-4" aria-hidden /> {t('settings.secrets:replace.open')}
                     </Button>
                     <Button
                         size="sm"
                         variant="ghost"
                         disabled={busy}
-                        aria-label={`Delete ${secret.name}`}
+                        aria-label={t('settings.secrets:row.deleteLabel', { name: secret.name })}
                         onClick={() => {
-                            if (
-                                globalThis.confirm(
-                                    `Delete ${secret.name}? Apps and plugins can no longer read it, and its grants end now. Its versions are kept sealed for the record.`,
-                                )
-                            ) {
-                                run(() => api(path, 'DELETE'), 'Could not delete the secret.');
+                            if (globalThis.confirm(t('settings.secrets:row.deleteConfirm', { name: secret.name }))) {
+                                run(() => api(path, 'DELETE'), t('settings.secrets:errors.delete'));
                             }
                         }}
                     >
-                        <Trash2 className="size-4" aria-hidden /> Delete
+                        <Trash2 className="size-4" aria-hidden /> {t('settings.secrets:row.delete')}
                     </Button>
                 </span>
             </div>
@@ -553,23 +620,30 @@ function SecretRow({
             {secret.scope === 'workspace' && (
                 <div
                     className="flex flex-wrap items-center gap-2"
-                    aria-label={`Apps and plugins that may read ${secret.name}`}
+                    aria-label={t('settings.secrets:row.readersLabel', { name: secret.name })}
                 >
-                    <span className="text-muted-foreground">Read by:</span>
-                    {secret.grants.length === 0 && <span className="text-muted-foreground">none yet</span>}
+                    <span className="text-muted-foreground">{t('settings.secrets:row.readBy')}</span>
+                    {secret.grants.length === 0 && (
+                        <span className="text-muted-foreground">{t('settings.secrets:row.noReaders')}</span>
+                    )}
                     {secret.grants.map((grant) => (
                         <Badge key={grant.appId} variant="outline" className="gap-1">
                             {grant.appName}
-                            {grant.kind === 'plugin' && <span className="text-muted-foreground">(plugin)</span>}
+                            {grant.kind === 'plugin' && (
+                                <span className="text-muted-foreground">{t('settings.secrets:plugin')}</span>
+                            )}
                             <button
                                 type="button"
                                 className="rounded-full hover:text-destructive"
-                                aria-label={`Revoke ${secret.name} from ${grant.appName}`}
+                                aria-label={t('settings.secrets:row.revokeLabel', {
+                                    secret: secret.name,
+                                    app: grant.appName,
+                                })}
                                 disabled={busy}
                                 onClick={() =>
                                     run(
                                         () => api(`${path}/grants/${encodeURIComponent(grant.appId)}`, 'DELETE'),
-                                        'Could not revoke it.',
+                                        t('settings.secrets:errors.revoke'),
                                     )
                                 }
                             >
@@ -580,7 +654,7 @@ function SecretRow({
                     {grantable.length > 0 && (
                         <select
                             data-slot="native-select"
-                            aria-label={`Grant ${secret.name} to an app or plugin`}
+                            aria-label={t('settings.secrets:row.grantLabel', { name: secret.name })}
                             className={`${field} w-48`}
                             value=""
                             disabled={busy}
@@ -589,15 +663,15 @@ function SecretRow({
                                 if (appId) {
                                     run(
                                         () => api(`${path}/grants/${encodeURIComponent(appId)}`, 'PUT'),
-                                        'Could not grant it.',
+                                        t('settings.secrets:errors.grant'),
                                     );
                                 }
                             }}
                         >
-                            <option value="">Grant to…</option>
+                            <option value="">{t('settings.secrets:row.grantTo')}</option>
                             {grantable.map((app) => (
                                 <option key={app.appId} value={app.appId}>
-                                    {app.kind === 'plugin' ? `${app.name} (plugin)` : app.name}
+                                    {t('settings.secrets:workload', { name: app.name, context: app.kind })}
                                 </option>
                             ))}
                         </select>
@@ -615,6 +689,7 @@ function SecretRow({
  * It sits in the plugin's footer, apart from secret setup (CB-377).
  */
 function RotateIdentity({ plugin }: { plugin: AppSecretNeeds }) {
+    const { t } = useTranslation(['settings.secrets']);
     const [busy, setBusy] = useState(false);
     const id = plugin.appId.replace(/^plugin:/, '');
     return (
@@ -623,60 +698,62 @@ function RotateIdentity({ plugin }: { plugin: AppSecretNeeds }) {
             data-slot="workspace-secret-identity"
         >
             <p className="min-w-0 flex-1 basis-56 text-xs text-muted-foreground">
-                Service identity: the token {plugin.name} signs in to Socio with. Rotate it if it may have leaked.
+                {t('settings.secrets:identity.about', { name: plugin.name })}
             </p>
             <Button
                 size="sm"
                 variant="ghost"
                 className="max-sm:w-full"
                 disabled={busy}
-                aria-label={`Rotate ${plugin.name}’s identity`}
+                aria-label={t('settings.secrets:identity.rotateLabel', { name: plugin.name })}
                 onClick={() => {
-                    if (
-                        !globalThis.confirm(
-                            `Give ${plugin.name} a new identity token? Its service is updated now; the old token keeps working for 15 minutes while old tasks finish.`,
-                        )
-                    ) {
+                    if (!globalThis.confirm(t('settings.secrets:identity.confirm', { name: plugin.name }))) {
                         return;
                     }
                     setBusy(true);
                     void api<{ version?: number }>(`/plugins/${encodeURIComponent(id)}/identity`, 'POST')
                         .then((result) =>
                             toast.success(
-                                `Rotated ${plugin.name}’s identity${result.version ? ` (version ${result.version})` : ''}`,
+                                result.version
+                                    ? t('settings.secrets:identity.rotated', {
+                                          name: plugin.name,
+                                          version: result.version,
+                                          context: 'version',
+                                      })
+                                    : t('settings.secrets:identity.rotated', { name: plugin.name }),
                             ),
                         )
-                        .catch((error) => failed(error, 'Could not rotate the identity.'))
+                        .catch((error) => failed(error, t('settings.secrets:errors.rotate')))
                         .finally(() => setBusy(false));
                 }}
             >
-                <RotateCw className="size-4" aria-hidden /> Rotate identity
+                <RotateCw className="size-4" aria-hidden /> {t('settings.secrets:identity.rotate')}
             </Button>
         </div>
     );
 }
 
 /** "Just now", "25 min ago", "3 h ago", "yesterday", "3 days ago", "on Oct 2". */
-export function setAgo(at: number, now = Date.now()) {
-    const ms = Math.max(0, now - at);
-    if (ms < 60_000) {
-        return 'just now';
-    }
-    if (ms < 3_600_000) {
-        return `${Math.floor(ms / 60_000)} min ago`;
-    }
-    if (ms < 86_400_000) {
-        return `${Math.floor(ms / 3_600_000)} h ago`;
-    }
-    const days = Math.floor(ms / 86_400_000);
-    if (days === 1) {
-        return 'yesterday';
-    }
-    if (days < 30) {
-        return `${days} days ago`;
-    }
-    const sameYear = new Date(at).getFullYear() === new Date(now).getFullYear();
-    return `on ${new Date(at).toLocaleDateString(undefined, sameYear ? { month: 'short', day: 'numeric' } : { dateStyle: 'medium' })}`;
+export function useSetAgo() {
+    const { t } = useTranslation(['settings.secrets']);
+    return (at: number, now = Date.now()) => {
+        const ms = Math.max(0, now - at);
+        if (ms < 60_000) {
+            return t('settings.secrets:ago.justNow');
+        }
+        if (ms < 3_600_000) {
+            return t('settings.secrets:ago.minutes', { count: Math.floor(ms / 60_000) });
+        }
+        if (ms < 86_400_000) {
+            return t('settings.secrets:ago.hours', { count: Math.floor(ms / 3_600_000) });
+        }
+        const days = Math.floor(ms / 86_400_000);
+        if (days < 30) {
+            return t('settings.secrets:ago.days', { days: -days });
+        }
+        const sameYear = new Date(at).getFullYear() === new Date(now).getFullYear();
+        return t('settings.secrets:ago.on', { at: new Date(at), context: sameYear ? undefined : 'otherYear' });
+    };
 }
 
 type Declared = AppSecretNeeds['declared'][number];
@@ -705,6 +782,9 @@ function DeclaredRow({
     onGrant: (secret: WorkspaceSecretView) => void;
     children?: ReactNode;
 }) {
+    const { t } = useTranslation(['settings.secrets']);
+    const when = useWhen();
+    const setAgo = useSetAgo();
     const served = declared.servedBy && secrets.find((secret) => secret.id === declared.servedBy!.id);
     const current = served ? served.versions.find((version) => version.state === 'current') : undefined;
     const shared = declared.servedBy
@@ -721,7 +801,9 @@ function DeclaredRow({
                             variant={declared.required ? 'secondary' : 'outline'}
                             className={declared.required ? undefined : 'text-muted-foreground'}
                         >
-                            {declared.required ? 'Required' : 'Optional'}
+                            {declared.required
+                                ? t('settings.secrets:declared.required')
+                                : t('settings.secrets:declared.optional')}
                         </Badge>
                     </div>
                     {declared.description && (
@@ -738,7 +820,7 @@ function DeclaredRow({
                                 aria-hidden
                             />
                             <span className="min-w-0">
-                                <span className="font-medium">Set</span>
+                                <span className="font-medium">{t('settings.secrets:declared.set')}</span>
                                 {current && (
                                     <>
                                         {' '}
@@ -751,7 +833,9 @@ function DeclaredRow({
                                     </>
                                 )}
                                 {declared.servedBy.scope === 'workspace' && (
-                                    <span className="block text-muted-foreground">Workspace secret</span>
+                                    <span className="block text-muted-foreground">
+                                        {t('settings.secrets:declared.workspaceSecret')}
+                                    </span>
                                 )}
                             </span>
                         </>
@@ -762,7 +846,7 @@ function DeclaredRow({
                                 aria-hidden
                             />
                             <span className={missing ? 'font-medium text-destructive' : 'text-muted-foreground'}>
-                                Not set
+                                {t('settings.secrets:declared.notSet')}
                             </span>
                         </>
                     )}
@@ -774,10 +858,10 @@ function DeclaredRow({
                             variant="outline"
                             className="w-full"
                             disabled={busy || open}
-                            aria-label={`Replace ${declared.name}`}
+                            aria-label={t('settings.secrets:replace.label', { name: declared.name })}
                             onClick={onAction}
                         >
-                            Replace…
+                            {t('settings.secrets:replace.open')}
                         </Button>
                     ) : shared ? (
                         <Button
@@ -787,7 +871,7 @@ function DeclaredRow({
                             disabled={busy}
                             onClick={() => onGrant(shared)}
                         >
-                            Grant the workspace’s
+                            {t('settings.secrets:declared.grantShared')}
                         </Button>
                     ) : declared.servedBy ? null : (
                         <Button
@@ -795,10 +879,10 @@ function DeclaredRow({
                             variant="outline"
                             className="w-full"
                             disabled={busy || open}
-                            aria-label={`Set a value for ${declared.name}`}
+                            aria-label={t('settings.secrets:declared.setValueLabel', { name: declared.name })}
                             onClick={onAction}
                         >
-                            Set a value…
+                            {t('settings.secrets:declared.setValue')}
                         </Button>
                     )}
                 </div>
@@ -824,6 +908,7 @@ function AppNeeds({
     overlapDefault: number;
     reload: () => Promise<void>;
 }) {
+    const { t } = useTranslation(['settings.secrets']);
     const [editing, setEditing] = useState<string>();
     const [busy, setBusy] = useState(false);
     // Required first; each group keeps the manifest's order.
@@ -837,7 +922,7 @@ function AppNeeds({
         setBusy(true);
         void api(`/workspace-secrets/${encodeURIComponent(shared.id)}/grants/${encodeURIComponent(app.appId)}`, 'PUT')
             .then(reload)
-            .catch((error) => failed(error, 'Could not grant it.'))
+            .catch((error) => failed(error, t('settings.secrets:errors.grant')))
             .finally(() => setBusy(false));
     };
     const close = () => setEditing(undefined);
@@ -849,23 +934,23 @@ function AppNeeds({
         <li className="grid gap-1 rounded-lg border px-4 py-3" data-slot="workspace-secret-app">
             <div className="flex flex-wrap items-center gap-2">
                 <span className="font-medium">{app.name}</span>
-                {app.kind === 'plugin' && <Badge variant="outline">Plugin</Badge>}
+                {app.kind === 'plugin' && <Badge variant="outline">{t('settings.secrets:app.plugin')}</Badge>}
                 {app.declared.length > 0 &&
                     (app.needsSetup.length > 0 ? (
-                        <Badge variant="destructive">Needs setup</Badge>
+                        <Badge variant="destructive">{t('settings.secrets:app.needsSetup')}</Badge>
                     ) : (
-                        <Badge variant="secondary">Ready</Badge>
+                        <Badge variant="secondary">{t('settings.secrets:app.ready')}</Badge>
                     ))}
                 {required.length > 0 && (
                     <span className="text-xs text-muted-foreground sm:ml-auto" data-slot="workspace-secret-progress">
-                        {requiredSet} of {required.length} required set
+                        {t('settings.secrets:app.progress', { set: requiredSet, count: required.length })}
                     </span>
                 )}
             </div>
             {app.declared.length === 0 ? (
-                <p className="py-2 text-xs text-muted-foreground">Declares no secrets.</p>
+                <p className="py-2 text-xs text-muted-foreground">{t('settings.secrets:app.none')}</p>
             ) : (
-                <ul className="divide-y" aria-label={`Secrets ${app.name} declares`}>
+                <ul className="divide-y" aria-label={t('settings.secrets:app.declaresLabel', { name: app.name })}>
                     {declared.map((secret) => {
                         const served =
                             secret.servedBy && secrets.find((candidate) => candidate.id === secret.servedBy!.id);
@@ -912,15 +997,16 @@ function AppNeeds({
  * action, not autosave, and each one is audited.
  */
 export function WorkspaceSecretsSection() {
+    const { t } = useTranslation(['settings.secrets']);
     const [state, setState] = useState<WorkspaceSecretsState>();
     const [adding, setAdding] = useState(false);
     const load = useCallback(async () => {
         try {
             setState(await api<WorkspaceSecretsState>('/workspace-secrets'));
         } catch (error) {
-            failed(error, 'Could not load the secrets.');
+            failed(error, t('settings.secrets:errors.load'));
         }
-    }, []);
+    }, [t]);
     useEffect(() => {
         void load();
     }, [load]);
@@ -930,32 +1016,24 @@ export function WorkspaceSecretsSection() {
     return (
         <section className="grid gap-4" data-slot="workspace-secrets">
             <div className="grid gap-1">
-                <h3 className="font-medium">Secrets</h3>
-                <p className="text-muted-foreground">
-                    API keys and other secrets your workspace apps and plugins read at runtime, sealed with the data
-                    key. Values are write-only: once saved, nobody can see them again, here or anywhere; replace a value
-                    to change it. An app or plugin reads only the secrets its manifest declares and you grant it. Every
-                    change and every read is recorded in the audit log, without the value.
-                </p>
+                <h3 className="font-medium">{t('settings.secrets:title')}</h3>
+                <p className="text-muted-foreground">{t('settings.secrets:intro')}</p>
             </div>
             {!state ? (
-                <p className="text-xs text-muted-foreground">Loading…</p>
+                <p className="text-xs text-muted-foreground">{t('settings.secrets:loading')}</p>
             ) : (
                 <>
                     {state.flags.length > 0 && (
                         <div className="grid gap-2">
-                            <h4 className="font-medium">Unusual reads</h4>
-                            <p className="text-xs text-muted-foreground">
-                                Patterns in the audit log worth a look. Each says why it was flagged; dismissing one
-                                keeps it on record, and only new evidence flags it again.
-                            </p>
+                            <h4 className="font-medium">{t('settings.secrets:flags.title')}</h4>
+                            <p className="text-xs text-muted-foreground">{t('settings.secrets:flags.explanation')}</p>
                             <ReadFlags flags={state.flags} onDismissed={() => void load()} />
                         </div>
                     )}
                     {apps.length > 0 && (
                         <div className="grid gap-2">
-                            <h4 className="font-medium">Apps</h4>
-                            <ul className="grid gap-2" aria-label="Apps and the secrets they declare">
+                            <h4 className="font-medium">{t('settings.secrets:apps.title')}</h4>
+                            <ul className="grid gap-2" aria-label={t('settings.secrets:apps.label')}>
                                 {apps.map((app) => (
                                     <AppNeeds
                                         key={app.appId}
@@ -970,8 +1048,8 @@ export function WorkspaceSecretsSection() {
                     )}
                     {plugins.length > 0 && (
                         <div className="grid gap-2">
-                            <h4 className="font-medium">Plugins</h4>
-                            <ul className="grid gap-2" aria-label="Plugins and the secrets they declare">
+                            <h4 className="font-medium">{t('settings.secrets:plugins.title')}</h4>
+                            <ul className="grid gap-2" aria-label={t('settings.secrets:plugins.label')}>
                                 {plugins.map((plugin) => (
                                     <AppNeeds
                                         key={plugin.appId}
@@ -986,10 +1064,10 @@ export function WorkspaceSecretsSection() {
                     )}
                     <div className="grid gap-2">
                         <div className="flex items-center gap-2">
-                            <h4 className="font-medium">All secrets</h4>
+                            <h4 className="font-medium">{t('settings.secrets:all.title')}</h4>
                             {!adding && (
                                 <Button size="sm" variant="outline" className="ml-auto" onClick={() => setAdding(true)}>
-                                    <Plus className="size-4" aria-hidden /> New secret
+                                    <Plus className="size-4" aria-hidden /> {t('settings.secrets:new.title')}
                                 </Button>
                             )}
                         </div>
@@ -1005,10 +1083,10 @@ export function WorkspaceSecretsSection() {
                         )}
                         {state.secrets.length === 0 ? (
                             <p className="text-muted-foreground" data-slot="workspace-secrets-empty">
-                                No secrets yet.
+                                {t('settings.secrets:all.empty')}
                             </p>
                         ) : (
-                            <ul className="grid gap-2" aria-label="Secrets">
+                            <ul className="grid gap-2" aria-label={t('settings.secrets:title')}>
                                 {state.secrets.map((secret) => (
                                     <SecretRow
                                         key={secret.id}

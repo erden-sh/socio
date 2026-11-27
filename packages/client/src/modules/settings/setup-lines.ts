@@ -1,3 +1,4 @@
+import { useTranslation } from '@socio/i18n/react';
 import type { PluginBackupStatus } from '@socio/shared/plugins/plugin-backup';
 import type {
     BackupStatus,
@@ -11,72 +12,50 @@ import type {
 
 import { formatBytes } from '../dataspace/format';
 
-const localWhen = (ms: number) => new Date(ms).toLocaleString();
+/**
+ * Service setup's lines for admins (CB-62, CB-63, CB-109, CB-111, CB-112,
+ * CB-322, CB-458). Each `use…` hook returns the functions that build them,
+ * in the page's language. `when` formats a time: the reader's local time
+ * by default, UTC until hydration (and anything fixed in tests).
+ */
+type When = (ms: number) => string;
+
+const localWhen: When = (ms) => new Date(ms).toLocaleString();
 /** Errors end in a full stop; the line adds its own. */
 const reason = (text: string) => text.replace(/\.$/, '');
 
-/** The Settings dialog's "Data key: …" line for admins (CB-62). */
-export function dataKeyLine(key: DataKeyStatus) {
-    if (!key.configured) {
-        return key.unknown
-            ? `not set, but ${key.unknown} item(s) are sealed under a data key; set it again as DATA_ENCRYPTION_KEY`
-            : 'not set; files and stored credentials use a key from SESSION_SECRET. Set DATA_ENCRYPTION_KEY';
-    }
-    if (key.unknown) {
-        return `${key.unknown} item(s) are sealed under a key this server doesn’t have; set it as DATA_ENCRYPTION_KEY_PREVIOUS`;
-    }
-    const left = key.legacy + key.previous;
-    return left ? `set; re-sealing ${left} item(s) sealed under an older key` : 'set';
-}
-
-/** The Settings dialog's "Backups: …" line for admins (CB-63). */
-export function backupLine(backup: BackupStatus, when = localWhen) {
-    const parts = [
-        backup.intervalHours ? `every ${backup.intervalHours} hour(s)` : 'scheduled backups off',
-        backup.running
-            ? 'one is running now'
-            : backup.lastSuccessAt
-              ? `last at ${when(backup.lastSuccessAt)}${backup.lastSizeBytes !== undefined ? ` (${formatBytes(backup.lastSizeBytes)})` : ''}`
-              : 'none yet',
-        backup.lastError &&
-            `the last one failed${backup.lastErrorAt ? ` at ${when(backup.lastErrorAt)}` : ''}: ${reason(backup.lastError)}`,
-        backup.offsite &&
-            (backup.offsiteError
-                ? `the off-site copy failed: ${reason(backup.offsiteError)}`
-                : backup.offsiteSuccessAt
-                  ? `copied off-site at ${when(backup.offsiteSuccessAt)}`
-                  : 'not copied off-site yet'),
-    ].filter(Boolean);
-    return parts.join('; ');
+/** Bytes as whole MB, or KB under one MB. */
+export function megabytes(bytes: number) {
+    return bytes < 1024 * 1024 ? `${Math.round(bytes / 1024)} KB` : `${Math.round(bytes / (1024 * 1024))} MB`;
 }
 
 /**
- * The "Plugin data: …" line (CB-458): each plugin with its own storage
- * whose backups need an admin's eye (not backed up, failing, out of date,
- * disabled), or that all are backed up.
+ * The "Continuous copy: …" line (CB-109): Litestream's copy of the
+ * database, the write-ahead log's size and its alert level other than ok
+ * (CB-315). Its words are `settings.backups`, which every page has: the
+ * Platform page shows the line too.
  */
-export function pluginBackupsLine(plugins: readonly PluginBackupStatus[], when = localWhen) {
-    const last = (plugin: PluginBackupStatus) =>
-        plugin.lastSuccessAt !== undefined ? `last backed up ${when(plugin.lastSuccessAt)}` : 'no good backup yet';
-    const parts = plugins
-        .map((plugin) => {
-            switch (plugin.state) {
-                case 'not_backed_up':
-                    return plugin.declared
-                        ? `${plugin.name} is not backed up yet: its first backup comes with the next scheduled backup`
-                        : `${plugin.name} is not backed up: the installed version declares no backup${plugin.since ? ` (flagged ${when(plugin.since)})` : ''}`;
-                case 'failing':
-                    return `${plugin.name}’s backup is failing${plugin.since ? ` since ${when(plugin.since)}` : ''}: ${plugin.lastError ?? 'no reason given'} (${last(plugin)})`;
-                case 'stale':
-                    return `${plugin.name}’s backup is out of date (${last(plugin)})`;
-                case 'disabled':
-                    return `${plugin.name} is disabled${plugin.since ? ` since ${when(plugin.since)}` : ''}, so it isn’t backed up (${last(plugin)})`;
-                default:
-                    return undefined;
-            }
-        })
-        .filter((part): part is string => part !== undefined);
-    return parts.length ? parts.join('; ') : 'every plugin with its own storage is backed up';
+export function useContinuousLine() {
+    const { t } = useTranslation(['settings.backups']);
+    return (copy: ContinuousCopyStatus, when: When = localWhen) => {
+        const line = copy.behind
+            ? copy.lastCopiedAt
+                ? t('settings.backups:continuous.behind', {
+                      changed: when(copy.lastWriteAt ?? copy.lastCopiedAt),
+                      copied: when(copy.lastCopiedAt),
+                  })
+                : t('settings.backups:continuous.noCopy')
+            : copy.lastCopiedAt
+              ? t('settings.backups:continuous.upToDate', { at: when(copy.lastCopiedAt) })
+              : t('settings.backups:continuous.waiting');
+        const alerts = [
+            copy.walBytes !== undefined && t('settings.backups:continuous.wal', { size: megabytes(copy.walBytes) }),
+            copy.level &&
+                copy.level !== 'ok' &&
+                t('settings.backups:continuous.level', { context: copy.level === 'critical' ? 'critical' : undefined }),
+        ].filter(Boolean);
+        return alerts.length ? `${line}; ${alerts.join(', ')}` : line;
+    };
 }
 
 /** Whether Service setup shows the plugin line in red: a plugin without a declared backup, or one failing or out of date (CB-458). */
@@ -88,150 +67,279 @@ export const pluginBackupsAlarm = (plugins: readonly PluginBackupStatus[]) =>
             plugin.state === 'stale',
     );
 
-/** The "Continuous copy: …" line (CB-109): Litestream's copy of the database, and its alert level (CB-315). */
-export function continuousLine(copy: ContinuousCopyStatus, when = localWhen) {
-    const line = copy.behind
-        ? copy.lastCopiedAt
-            ? `behind: the database changed at ${when(copy.lastWriteAt ?? copy.lastCopiedAt)}, the newest copy is from ${when(copy.lastCopiedAt)}; check the litestream service`
-            : 'no copy yet; check the litestream service'
-        : copy.lastCopiedAt
-          ? `up to date; newest copy at ${when(copy.lastCopiedAt)}`
-          : 'waiting for the first copy';
-    return `${line}${copyAlertSuffix(copy)}`;
-}
+/** Service setup's other lines, in `settings.workspace-setup`. */
+export function useSetupLines() {
+    const { t } = useTranslation(['settings.workspace-setup']);
+    const continuousLine = useContinuousLine();
 
-/** "; write-ahead log 12 MB (warning)": the log's size and a level other than ok (CB-315). */
-export function copyAlertSuffix(copy: ContinuousCopyStatus) {
-    const parts = [
-        copy.walBytes !== undefined && `write-ahead log ${megabytes(copy.walBytes)}`,
-        copy.level && copy.level !== 'ok' && copy.level,
-    ].filter(Boolean);
-    return parts.length ? `; ${parts.join(', ')}` : '';
-}
+    /** A wait in seconds, minutes or hours. */
+    const waited = (ms: number) => {
+        const seconds = Math.round(ms / 1000);
+        if (seconds < 90) {
+            return t('settings.workspace-setup:wait.seconds', { n: seconds });
+        }
+        const minutes = Math.round(seconds / 60);
+        return minutes < 90
+            ? t('settings.workspace-setup:wait.minutes', { n: minutes })
+            : t('settings.workspace-setup:wait.hours', { n: Math.round(minutes / 60) });
+    };
 
-/** Bytes as whole MB, or KB under one MB. */
-export function megabytes(bytes: number) {
-    return bytes < 1024 * 1024 ? `${Math.round(bytes / 1024)} KB` : `${Math.round(bytes / (1024 * 1024))} MB`;
-}
+    /** A seal purpose as Service setup names it (CB-322). */
+    const purpose = (name: SealPurposeName) => t(`settings.workspace-setup:purposes.${name}`);
 
-/** A wait in seconds, minutes or hours. */
-function waited(ms: number) {
-    const seconds = Math.round(ms / 1000);
-    if (seconds < 90) {
-        return `${seconds} s`;
-    }
-    const minutes = Math.round(seconds / 60);
-    return minutes < 90 ? `${minutes} min` : `${Math.round(minutes / 60)} h`;
-}
+    /** The "Data key: …" line (CB-62). */
+    const dataKeyLine = (key: DataKeyStatus) => {
+        if (!key.configured) {
+            return key.unknown
+                ? t('settings.workspace-setup:dataKey.unsetSealed', { count: key.unknown })
+                : t('settings.workspace-setup:dataKey.unset');
+        }
+        if (key.unknown) {
+            return t('settings.workspace-setup:dataKey.unknown', { count: key.unknown });
+        }
+        const left = key.legacy + key.previous;
+        return left
+            ? t('settings.workspace-setup:dataKey.resealing', { count: left })
+            : t('settings.workspace-setup:dataKey.set');
+    };
 
-/** The "Continuous copy off-site: …" line (CB-112): its files sent off-site. */
-export function continuousOffsiteLine(copy: ContinuousOffsiteStatus, when = localWhen) {
-    if (!copy.intervalSeconds) {
-        return 'off; set how often in Backup schedule';
-    }
-    const parts = [
-        `every ${copy.intervalSeconds} seconds`,
-        copy.failures &&
-            `the last send failed${copy.lastErrorAt ? ` at ${when(copy.lastErrorAt)}` : ''}${copy.failures > 1 ? ` (${copy.failures} in a row)` : ''}${copy.lastError ? `: ${reason(copy.lastError)}` : ''}; it tries again later`,
-        copy.behind && copy.lagMs && `behind: the newest copy has waited ${waited(copy.lagMs)}`,
-        copy.lastSentAt ? `everything up to ${when(copy.lastSentAt)} is off-site` : 'nothing sent yet',
-        copy.waiting > 0 && `${copy.waiting} file(s) waiting; nothing off-site is removed until they go`,
-    ].filter(Boolean);
-    return parts.join('; ');
-}
+    /** The "Backups: …" line (CB-63). */
+    const backupLine = (backup: BackupStatus, when: When = localWhen) => {
+        const parts = [
+            backup.intervalHours
+                ? t('settings.workspace-setup:backup.every', { count: backup.intervalHours })
+                : t('settings.workspace-setup:backup.off'),
+            backup.running
+                ? t('settings.workspace-setup:runningOne')
+                : backup.lastSuccessAt
+                  ? backup.lastSizeBytes !== undefined
+                      ? t('settings.workspace-setup:backup.lastSize', {
+                            at: when(backup.lastSuccessAt),
+                            size: formatBytes(backup.lastSizeBytes),
+                        })
+                      : t('settings.workspace-setup:backup.last', { at: when(backup.lastSuccessAt) })
+                  : t('settings.workspace-setup:noneYet'),
+            backup.lastError &&
+                (backup.lastErrorAt
+                    ? t('settings.workspace-setup:failedAt', {
+                          at: when(backup.lastErrorAt),
+                          reason: reason(backup.lastError),
+                      })
+                    : t('settings.workspace-setup:failed', { reason: reason(backup.lastError) })),
+            backup.offsite &&
+                (backup.offsiteError
+                    ? t('settings.workspace-setup:backup.offsiteFailed', { reason: reason(backup.offsiteError) })
+                    : backup.offsiteSuccessAt
+                      ? t('settings.workspace-setup:backup.offsiteAt', { at: when(backup.offsiteSuccessAt) })
+                      : t('settings.workspace-setup:backup.offsiteNone')),
+        ].filter(Boolean);
+        return parts.join('; ');
+    };
 
-/** The "Restore drill: …" line (CB-111): the continuous copy, restored on a schedule. */
-export function restoreDrillLine(drill: RestoreDrillStatus, when = localWhen) {
-    const { last } = drill;
-    const restores = last?.restores
-        .map(
-            (restore) =>
-                `${restore.source === 'offsite' ? 'off-site' : restore.pointAt ? `as of ${when(restore.pointAt)}` : 'latest'} ${waited(restore.durationMs)}`,
-        )
-        .join(', ');
-    const parts = [
-        drill.intervalDays ? `every ${drill.intervalDays} day(s)` : 'only when an admin runs it',
-        drill.running && 'one is running now',
-        !last
-            ? !drill.running && 'none yet'
-            : last.ok
-              ? `the last one passed at ${when(last.startedAt)} in ${waited(last.durationMs)} (${restores}); ${last.differences?.length ? `${last.differences.length} table(s) differ from live by writes since the copy` : 'rows match live'}`
-              : `the last one failed at ${when(last.startedAt)}: ${reason(last.error ?? 'unknown error')}`,
-    ].filter(Boolean);
-    return parts.join('; ');
-}
+    /**
+     * The "Plugin data: …" line (CB-458): each plugin with its own storage
+     * whose backups need an admin's eye (not backed up, failing, out of
+     * date, disabled), or that all are backed up.
+     */
+    const pluginBackupsLine = (plugins: readonly PluginBackupStatus[], when: When = localWhen) => {
+        const last = (plugin: PluginBackupStatus) =>
+            plugin.lastSuccessAt !== undefined
+                ? t('settings.workspace-setup:plugins.lastAt', { at: when(plugin.lastSuccessAt) })
+                : t('settings.workspace-setup:plugins.lastNone');
+        const parts = plugins
+            .map((plugin) => {
+                const name = plugin.name;
+                const since = plugin.since !== undefined ? when(plugin.since) : '';
+                switch (plugin.state) {
+                    case 'not_backed_up':
+                        return plugin.declared
+                            ? t('settings.workspace-setup:plugins.notYet', { name })
+                            : plugin.since
+                              ? t('settings.workspace-setup:plugins.undeclaredSince', { name, since })
+                              : t('settings.workspace-setup:plugins.undeclared', { name });
+                    case 'failing': {
+                        const why = plugin.lastError ?? t('settings.workspace-setup:plugins.noReason');
+                        return plugin.since
+                            ? t('settings.workspace-setup:plugins.failingSince', {
+                                  name,
+                                  since,
+                                  reason: why,
+                                  last: last(plugin),
+                              })
+                            : t('settings.workspace-setup:plugins.failing', { name, reason: why, last: last(plugin) });
+                    }
+                    case 'stale':
+                        return t('settings.workspace-setup:plugins.stale', { name, last: last(plugin) });
+                    case 'disabled':
+                        return plugin.since
+                            ? t('settings.workspace-setup:plugins.disabledSince', { name, since, last: last(plugin) })
+                            : t('settings.workspace-setup:plugins.disabled', { name, last: last(plugin) });
+                    default:
+                        return undefined;
+                }
+            })
+            .filter((part) => part !== undefined);
+        return parts.length ? parts.join('; ') : t('settings.workspace-setup:plugins.allBackedUp');
+    };
 
-/** A seal purpose as Service setup names it (CB-322). */
-export const PURPOSE_LABELS: Record<SealPurposeName, string> = {
-    'inference-credentials': 'inference credentials',
-    'data-files': 'files',
-    backups: 'backups',
-    'push-keys': 'push keys',
-    'dispatch-credentials': 'GitHub App key',
-    'settings-secrets': 'settings secrets',
-    'mcp-credentials': 'MCP credentials',
-    'workspace-secrets': 'workspace secrets',
-    'gateway-log': 'gateway exchange log',
-};
+    /** The "Continuous copy off-site: …" line (CB-112): its files sent off-site. */
+    const continuousOffsiteLine = (copy: ContinuousOffsiteStatus, when: When = localWhen) => {
+        if (!copy.intervalSeconds) {
+            return t('settings.workspace-setup:offsite.off');
+        }
+        const failed = () => {
+            const row = copy.failures > 1 ? t('settings.workspace-setup:offsite.inRow', { count: copy.failures }) : '';
+            const at = copy.lastErrorAt ? when(copy.lastErrorAt) : '';
+            if (copy.lastError) {
+                const why = reason(copy.lastError);
+                return at
+                    ? t('settings.workspace-setup:offsite.failedAtReason', { at, row, reason: why })
+                    : t('settings.workspace-setup:offsite.failedReason', { row, reason: why });
+            }
+            return at
+                ? t('settings.workspace-setup:offsite.failedAt', { at, row })
+                : t('settings.workspace-setup:offsite.failed', { row });
+        };
+        const parts = [
+            t('settings.workspace-setup:offsite.every', { count: copy.intervalSeconds }),
+            copy.failures && failed(),
+            copy.behind && copy.lagMs && t('settings.workspace-setup:offsite.behind', { waited: waited(copy.lagMs) }),
+            copy.lastSentAt
+                ? t('settings.workspace-setup:offsite.sentUpTo', { at: when(copy.lastSentAt) })
+                : t('settings.workspace-setup:offsite.nothingSent'),
+            copy.waiting > 0 && t('settings.workspace-setup:offsite.waiting', { count: copy.waiting }),
+        ].filter(Boolean);
+        return parts.join('; ');
+    };
 
-/** The "Key ids: …" line (CB-322): the data keys' fingerprints, to check escrow against. */
-export function keyIdsLine(key: DataKeyStatus) {
-    if (!key.keyId) {
-        return 'none; no data key is set';
-    }
-    return `current ${key.keyId}${key.previousKeyId ? `, previous ${key.previousKeyId}` : ''}`;
-}
+    /** The "Restore drill: …" line (CB-111): the continuous copy, restored on a schedule. */
+    const restoreDrillLine = (drill: RestoreDrillStatus, when: When = localWhen) => {
+        const { last } = drill;
+        const restores = last?.restores
+            .map((restore) =>
+                restore.source === 'offsite'
+                    ? t('settings.workspace-setup:drill.restoreOffsite', { took: waited(restore.durationMs) })
+                    : restore.pointAt
+                      ? t('settings.workspace-setup:drill.restorePoint', {
+                            at: when(restore.pointAt),
+                            took: waited(restore.durationMs),
+                        })
+                      : t('settings.workspace-setup:drill.restoreLatest', { took: waited(restore.durationMs) }),
+            )
+            .join(', ');
+        const passed = () => {
+            const values = { at: when(last!.startedAt), took: waited(last!.durationMs), restores: restores ?? '' };
+            return last!.differences?.length
+                ? t('settings.workspace-setup:drill.passedDiffer', { ...values, count: last!.differences.length })
+                : t('settings.workspace-setup:drill.passed', values);
+        };
+        const parts = [
+            drill.intervalDays
+                ? t('settings.workspace-setup:drill.every', { count: drill.intervalDays })
+                : t('settings.workspace-setup:drill.manual'),
+            drill.running && t('settings.workspace-setup:runningOne'),
+            !last
+                ? !drill.running && t('settings.workspace-setup:noneYet')
+                : last.ok
+                  ? passed()
+                  : t('settings.workspace-setup:failedAt', {
+                        at: when(last.startedAt),
+                        reason: reason(last.error ?? t('settings.workspace-setup:drill.unknownError')),
+                    }),
+        ].filter(Boolean);
+        return parts.join('; ');
+    };
 
-/** The "Legacy-sealed: …" line (CB-322): what still needs SESSION_SECRET to be read. */
-export function legacySealedLine(key: DataKeyStatus) {
-    if (!key.legacy) {
-        return 'none; SESSION_SECRET is no longer needed to read stored data';
-    }
-    const by = Object.entries(key.legacyByPurpose ?? {})
-        .map(([purpose, n]) => `${PURPOSE_LABELS[purpose as SealPurposeName]} ${n}`)
-        .join(', ');
-    return `${key.legacy} item(s)${by ? ` (${by})` : ''} still need SESSION_SECRET; keep it in the recovery kit until this is zero`;
-}
+    /** The "Key ids: …" line (CB-322): the data keys' fingerprints, to check escrow against. */
+    const keyIdsLine = (key: DataKeyStatus) => {
+        if (!key.keyId) {
+            return t('settings.workspace-setup:keyIds.none');
+        }
+        return key.previousKeyId
+            ? t('settings.workspace-setup:keyIds.currentPrevious', { current: key.keyId, previous: key.previousKeyId })
+            : t('settings.workspace-setup:keyIds.current', { current: key.keyId });
+    };
 
-/** The re-seal's state (CB-322), when an admin ran one since start. */
-export function resealLine(key: DataKeyStatus, when = localWhen) {
-    const reseal = key.reseal;
-    if (reseal?.running) {
-        return 'running now';
-    }
-    const last = reseal?.last;
-    if (!last) {
-        return undefined;
-    }
-    if (last.error) {
-        return `the last one failed at ${when(last.finishedAt)}: ${reason(last.error)}`;
-    }
-    const parts = [
-        `the last one finished at ${when(last.finishedAt)}: ${last.resealed} re-sealed`,
-        last.unreadable && `${last.unreadable} under a key this server doesn’t have`,
-        last.left && `${last.left} left for the next run`,
-    ].filter(Boolean);
-    return parts.join(', ');
-}
+    /** The "Legacy-sealed: …" line (CB-322): what still needs SESSION_SECRET to be read. */
+    const legacySealedLine = (key: DataKeyStatus) => {
+        if (!key.legacy) {
+            return t('settings.workspace-setup:legacy.none');
+        }
+        const by = Object.entries(key.legacyByPurpose ?? {})
+            .map(([name, n]) =>
+                t('settings.workspace-setup:legacy.byPurpose', { purpose: purpose(name as SealPurposeName), n }),
+            )
+            .join(', ');
+        return by
+            ? t('settings.workspace-setup:legacy.itemsBy', { count: key.legacy, by })
+            : t('settings.workspace-setup:legacy.items', { count: key.legacy });
+    };
 
-/** The "Recovery key check: …" line (CB-322). */
-export function keyCheckLine(check: { running: boolean; last?: RecoveryKeyCheck }, when = localWhen) {
-    if (check.running) {
-        return 'running now';
-    }
-    const last = check.last;
-    if (!last) {
-        return 'none yet';
-    }
-    const which = last.matches === 'neither' ? 'not a key this server uses' : `the server’s ${last.matches} key`;
-    if (last.error) {
-        return `key ${last.keyId} (${which}) couldn’t be checked at ${when(last.startedAt)}: ${reason(last.error)}`;
-    }
-    const purposes = last.purposes
-        .map(
-            (p) =>
-                `${PURPOSE_LABELS[p.purpose]} ${p.ok === null ? 'nothing to try' : `${p.opened} of ${p.sampled} opened`}`,
-        )
-        .join(', ');
-    return `key ${last.keyId} (${which}) ${last.ok ? 'passed' : 'failed'} at ${when(last.startedAt)}: ${purposes}`;
+    /** The re-seal's state (CB-322), when an admin ran one since start. */
+    const resealLine = (key: DataKeyStatus, when: When = localWhen) => {
+        const reseal = key.reseal;
+        if (reseal?.running) {
+            return t('settings.workspace-setup:runningNow');
+        }
+        const last = reseal?.last;
+        if (!last) {
+            return undefined;
+        }
+        if (last.error) {
+            return t('settings.workspace-setup:failedAt', { at: when(last.finishedAt), reason: reason(last.error) });
+        }
+        const parts = [
+            t('settings.workspace-setup:reseal.finished', { at: when(last.finishedAt), count: last.resealed }),
+            last.unreadable && t('settings.workspace-setup:reseal.unreadable', { count: last.unreadable }),
+            last.left && t('settings.workspace-setup:reseal.left', { count: last.left }),
+        ].filter(Boolean);
+        return parts.join(', ');
+    };
+
+    /** The "Recovery key check: …" line (CB-322). */
+    const keyCheckLine = (check: { running: boolean; last?: RecoveryKeyCheck }, when: When = localWhen) => {
+        if (check.running) {
+            return t('settings.workspace-setup:runningNow');
+        }
+        const last = check.last;
+        if (!last) {
+            return t('settings.workspace-setup:noneYet');
+        }
+        const which = t('settings.workspace-setup:keyCheck.which', {
+            context: last.matches === 'current' ? undefined : last.matches,
+        });
+        const values = { keyId: last.keyId, which, at: when(last.startedAt) };
+        if (last.error) {
+            return t('settings.workspace-setup:keyCheck.error', { ...values, reason: reason(last.error) });
+        }
+        const purposes = last.purposes
+            .map((p) =>
+                p.ok === null
+                    ? t('settings.workspace-setup:keyCheck.nothingToTry', { purpose: purpose(p.purpose) })
+                    : t('settings.workspace-setup:keyCheck.opened', {
+                          purpose: purpose(p.purpose),
+                          opened: p.opened,
+                          sampled: p.sampled,
+                      }),
+            )
+            .join(', ');
+        return t('settings.workspace-setup:keyCheck.result', {
+            ...values,
+            purposes,
+            context: last.ok ? undefined : 'failed',
+        });
+    };
+
+    return {
+        dataKeyLine,
+        backupLine,
+        pluginBackupsLine,
+        continuousLine,
+        continuousOffsiteLine,
+        restoreDrillLine,
+        keyIdsLine,
+        legacySealedLine,
+        resealLine,
+        keyCheckLine,
+    };
 }

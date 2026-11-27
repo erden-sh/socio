@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useId, useState } from 'react';
 import { toast } from 'sonner';
 
+import { Trans, useTranslation } from '@socio/i18n/react';
 import type { ApprovalPolicy, ApprovalsState } from '@socio/shared/approvals';
 import { SOCIO_ACCESS_CAPABILITIES, type SocioGrantView, type SocioGrantsState } from '@socio/shared/socio-access';
 import { inertText } from '@socio/shared/text/inert-text';
@@ -15,29 +16,25 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
 const failed = (e: unknown, fallback: string) => toast.error(e instanceof Error ? e.message : fallback);
-const when = (value: number) =>
-    new Date(value).toLocaleString(undefined, {
-        dateStyle: 'medium',
-        timeStyle: 'short',
-    });
-const ACCESS_WORDS: Record<SocioGrantView['access'], string> = {
-    read: 'Read',
-    write: 'Read and change',
-    act: 'Change and ask to act',
-    other: 'Other',
-};
 
 /** Where a grant was made, in words. */
-export function grantPlace(grant: SocioGrantView) {
-    const title = grant.conversation.title;
-    switch (grant.conversation.kind) {
-        case 'room':
-            return title ? `the room ${title}` : 'a room';
-        case 'schedule':
-            return 'a scheduled task';
-        default:
-            return title ? `the chat ${title}` : 'a private chat';
-    }
+export function useGrantPlace() {
+    const { t } = useTranslation(['settings.shared']);
+    return (grant: SocioGrantView) => {
+        const title = grant.conversation.title;
+        switch (grant.conversation.kind) {
+            case 'room':
+                return title
+                    ? t('settings.shared:grant.place.room', { title })
+                    : t('settings.shared:grant.place.roomUntitled');
+            case 'schedule':
+                return t('settings.shared:grant.place.schedule');
+            default:
+                return title
+                    ? t('settings.shared:grant.place.chat', { title })
+                    : t('settings.shared:grant.place.chatUntitled');
+        }
+    };
 }
 
 /** One grant: the app by its own address, the socio, what and until when. */
@@ -50,7 +47,11 @@ export function GrantItem({
     onEnd?: (grant: SocioGrantView) => void;
     admin?: boolean;
 }) {
-    const label = grant.app?.label ?? 'A removed app';
+    const { t } = useTranslation(['settings.shared']);
+    const grantPlace = useGrantPlace();
+    const when = (value: number) => t('settings.shared:grant.when', { when: new Date(value) });
+    const label = grant.app?.label ?? t('settings.shared:grant.removedApp');
+    const person = admin && grant.personName ? grant.personName : undefined;
     return (
         <li
             className="grid min-w-0 gap-1 rounded-md border p-3 [overflow-wrap:anywhere]"
@@ -62,39 +63,69 @@ export function GrantItem({
                 {grant.app?.origin && (
                     <span className="font-mono text-xs text-muted-foreground">{grant.app.origin}</span>
                 )}
-                <Badge variant={grant.access === 'read' ? 'secondary' : 'default'}>{ACCESS_WORDS[grant.access]}</Badge>
+                <Badge variant={grant.access === 'read' ? 'secondary' : 'default'}>
+                    {t(`settings.shared:grant.access.${grant.access}`)}
+                </Badge>
                 <span className="flex-1" />
                 {onEnd && grant.state === 'live' && (
                     <Button
                         variant="outline"
                         size="sm"
                         onClick={() => onEnd(grant)}
-                        aria-label={`End ${grant.socioName}’s access to ${label}${admin && grant.personName ? ` for ${grant.personName}` : ''}`}
+                        aria-label={t('settings.shared:grant.endLabel', {
+                            socio: grant.socioName,
+                            app: label,
+                            person,
+                            context: person ? 'person' : undefined,
+                        })}
                     >
-                        End access
+                        {t('settings.shared:grant.end')}
                     </Button>
                 )}
             </span>
             <span className="text-muted-foreground">
-                {admin && grant.personName ? `${grant.personName} · ` : ''}
-                {grant.socioName}, from {grantPlace(grant)}
+                {t('settings.shared:grant.from', {
+                    socio: grant.socioName,
+                    place: grantPlace(grant),
+                    person,
+                    context: person ? 'person' : undefined,
+                })}
             </span>
-            {grant.task && <span className="whitespace-pre-wrap">“{inertText(grant.task, { max: 500 })}”</span>}
+            {grant.task && (
+                <span className="whitespace-pre-wrap">
+                    {t('settings.shared:grant.task', { task: inertText(grant.task, { max: 500 }) })}
+                </span>
+            )}
             <span className="text-xs text-muted-foreground">
-                Since <LocalTime value={grant.createdAt} format={when} />
                 {grant.state === 'live' ? (
-                    <>
-                        {' '}
-                        · until <LocalTime value={grant.expiresAt} format={when} /> · last used{' '}
-                        <LocalTime value={grant.lastUsedAt} format={when} />
-                        {` (ends after ${grant.idleMinutes} idle minutes)`}
-                    </>
+                    <Trans
+                        t={t}
+                        i18nKey="settings.shared:grant.live"
+                        count={grant.idleMinutes}
+                        values={{ count: grant.idleMinutes }}
+                        components={{
+                            since: <LocalTime value={grant.createdAt} format={when} />,
+                            until: <LocalTime value={grant.expiresAt} format={when} />,
+                            used: <LocalTime value={grant.lastUsedAt} format={when} />,
+                        }}
+                    />
                 ) : grant.ended ? (
-                    <>
-                        {' '}
-                        · ended <LocalTime value={grant.ended.at} format={when} />: {grant.ended.reason}
-                    </>
-                ) : null}
+                    <Trans
+                        t={t}
+                        i18nKey="settings.shared:grant.ended"
+                        values={{ reason: grant.ended.reason }}
+                        components={{
+                            since: <LocalTime value={grant.createdAt} format={when} />,
+                            ended: <LocalTime value={grant.ended.at} format={when} />,
+                        }}
+                    />
+                ) : (
+                    <Trans
+                        t={t}
+                        i18nKey="settings.shared:grant.since"
+                        components={{ since: <LocalTime value={grant.createdAt} format={when} /> }}
+                    />
+                )}
             </span>
         </li>
     );
@@ -110,16 +141,19 @@ export function EndGrantDialog({
     onClose: () => void;
     onConfirm: () => Promise<void>;
 }) {
+    const { t } = useTranslation(['settings.shared']);
     return (
         <ConfirmDelete
-            title={`End ${grant.socioName}’s access to ${grant.app?.label ?? 'this app'}?`}
-            action="End access"
+            title={t('settings.shared:grant.endTitle', {
+                socio: grant.socioName,
+                app: grant.app?.label ?? t('settings.shared:grant.thisApp'),
+            })}
+            action={t('settings.shared:grant.end')}
             slot="confirm-end-socio-access"
             onClose={onClose}
             onConfirm={onConfirm}
         >
-            It stops at once, everywhere: its open pages close and it can’t use the app for this task again. It can ask
-            again, on a new card.
+            {t('settings.shared:grant.endBody')}
         </ConfirmDelete>
     );
 }
@@ -131,6 +165,7 @@ export function EndGrantDialog({
  * and the access they granted, with End access.
  */
 export function SocioAccessSection() {
+    const { t } = useTranslation(['settings', 'settings.socio-access']);
     const shell = useShell();
     const [grants, setGrants] = useState<SocioGrantView[]>();
     const [approvals, setApprovals] = useState<ApprovalsState>();
@@ -141,8 +176,8 @@ export function SocioAccessSection() {
             Promise.all([
                 api<SocioGrantsState>('/actors/grants').then((answer) => setGrants(answer.grants)),
                 api<ApprovalsState>('/approvals').then(setApprovals),
-            ]).catch((e) => failed(e, 'Could not load socio access.')),
-        [],
+            ]).catch((e) => failed(e, t('settings.socio-access:loadFailed'))),
+        [t],
     );
     useEffect(() => void load(), [load]);
     const read = SOCIO_ACCESS_CAPABILITIES.read;
@@ -158,7 +193,7 @@ export function SocioAccessSection() {
             });
             await load();
         } catch (e) {
-            failed(e, 'Could not save the choice.');
+            failed(e, t('settings.socio-access:saveFailed'));
         }
     };
     const live = grants?.filter((grant) => grant.state === 'live') ?? [];
@@ -166,19 +201,15 @@ export function SocioAccessSection() {
     return (
         <section className="grid min-w-0 gap-4" data-slot="socio-access">
             <div className="grid gap-1">
-                <h3 className="font-medium">Socio access</h3>
-                <p className="text-muted-foreground">
-                    Socios can ask to use your mini apps for you, one task at a time, and only apps you can open
-                    yourself. You decide on a card in the chat. Changing data and taking actions always wait for you.
-                </p>
+                <h3 className="font-medium">{t('settings:sections.socio-access')}</h3>
+                <p className="text-muted-foreground">{t('settings.socio-access:intro')}</p>
             </div>
             <div className="grid min-w-0 gap-2">
-                <h4 className="font-medium">Reading without asking</h4>
+                <h4 className="font-medium">{t('settings.socio-access:reading.title')}</h4>
                 <p id={policyHelp} className="text-muted-foreground">
-                    For each socio, whether it may read apps for you without a card. Only you can choose this. Apps that
-                    ask every time still ask.
+                    {t('settings.socio-access:reading.help')}
                 </p>
-                <ul className="grid min-w-0 gap-2" aria-label="Reading without asking">
+                <ul className="grid min-w-0 gap-2" aria-label={t('settings.socio-access:reading.title')}>
                     {shell.workspace.dots.map((dot) => {
                         const policy = policyOf(dot.id);
                         return (
@@ -191,16 +222,16 @@ export function SocioAccessSection() {
                                 <span className="min-w-0 font-medium">{dot.name}</span>
                                 <select
                                     className={`${nativeSelect} w-full sm:w-auto`}
-                                    aria-label={`Whether ${dot.name} may read apps for you without asking`}
+                                    aria-label={t('settings.socio-access:reading.label', { socio: dot.name })}
                                     aria-describedby={policyHelp}
                                     value={policy}
                                     disabled={!approvals}
                                     onChange={(event) => void setPolicy(dot.id, event.target.value as ApprovalPolicy)}
                                 >
-                                    <option value="manual">Ask me every time</option>
-                                    <option value="bypass">Let it read without asking</option>
+                                    <option value="manual">{t('settings.socio-access:reading.manual')}</option>
+                                    <option value="bypass">{t('settings.socio-access:reading.bypass')}</option>
                                     <option value="auto" disabled={!autoAllowed}>
-                                        Let auto review decide
+                                        {t('settings.socio-access:reading.auto')}
                                     </option>
                                 </select>
                             </li>
@@ -209,19 +240,24 @@ export function SocioAccessSection() {
                 </ul>
             </div>
             <div className="grid min-w-0 gap-2">
-                <h4 className="font-medium">Access you granted</h4>
-                <ul className="grid min-w-0 gap-2" aria-label="Access you granted">
+                <h4 className="font-medium">{t('settings.socio-access:granted.title')}</h4>
+                <ul className="grid min-w-0 gap-2" aria-label={t('settings.socio-access:granted.title')}>
                     {live.map((grant) => (
                         <GrantItem key={grant.id} grant={grant} onEnd={setEnding} />
                     ))}
                     {grants && !live.length && (
-                        <li className="text-muted-foreground">No socio can use an app for you now.</li>
+                        <li className="text-muted-foreground">{t('settings.socio-access:granted.none')}</li>
                     )}
                 </ul>
                 {ended.length > 0 && (
                     <details className="grid gap-2" data-slot="ended-grants">
-                        <summary className="cursor-pointer text-muted-foreground">Ended ({ended.length})</summary>
-                        <ul className="mt-2 grid min-w-0 gap-2" aria-label="Ended access">
+                        <summary className="cursor-pointer text-muted-foreground">
+                            {t('settings.socio-access:granted.ended', { n: ended.length })}
+                        </summary>
+                        <ul
+                            className="mt-2 grid min-w-0 gap-2"
+                            aria-label={t('settings.socio-access:granted.endedLabel')}
+                        >
                             {ended.map((grant) => (
                                 <GrantItem key={grant.id} grant={grant} />
                             ))}
@@ -236,10 +272,10 @@ export function SocioAccessSection() {
                     onConfirm={async () => {
                         try {
                             await api(`/actors/grants/${encodeURIComponent(ending.id)}`, 'DELETE');
-                            toast.success('Access ended');
+                            toast.success(t('settings.socio-access:endedToast'));
                             await load();
                         } catch (e) {
-                            failed(e, 'Could not end the access.');
+                            failed(e, t('settings.socio-access:endFailed'));
                         }
                         setEnding(undefined);
                     }}

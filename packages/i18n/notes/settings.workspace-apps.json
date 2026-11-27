@@ -1,0 +1,16 @@
+{
+    "inviteLinks.title": "Card about the product's mobile app.",
+    "inviteLinks.description": "“Send me a link for the app” quotes a button on the sign-in page: keep it matching. https is a protocol name.",
+    "policy.title": "Card: rules for the mobile app's offline copy of the workspace.",
+    "policy.leaseDays.label": "Field label, followed by a number field and then policy.leaseDays.unit, reading as one sentence: \"Lock the app after [30] days without reaching the workspace\".",
+    "policy.leaseDays.unit": "Follows the number field after policy.leaseDays.label.",
+    "policy.wipeDays.label": "Field label, followed by a number field and then policy.wipeDays.unit: \"Then erase its copy after [30] more days\".",
+    "policy.wipeDays.unit": "Follows the number field after policy.wipeDays.label.",
+    "policy.invalidDays": "{{min}} and {{max}} are the allowed range of days.",
+    "policy.appLock.description": "Face ID is Apple's product name: keep it.",
+    "policy.appLock.saved": "Toast after the switch saved.",
+    "logs.title": "Card: how long the logs of mini apps (small apps people build in the workspace) are kept.",
+    "logs.days.label": "Field label, followed by a number field and logs.days.unit: \"Keep for [14] days\".",
+    "logs.attempts.label": "Field label, followed by a number field and logs.attempts.unit: \"Or keep the last [5] attempts per app\".",
+    "logs.invalid": "Toast when a field holds a number out of range: {{min}} to {{max}}."
+}

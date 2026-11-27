@@ -1,0 +1,17 @@
+{
+    "title": "Archived chats",
+    "empty": "Chats you archive leave your sidebar and wait here.",
+    "summary_one": "{{count, number}} archived chat, out of your sidebar.",
+    "summary_other": "{{count, number}} archived chats, out of your sidebar.",
+    "manage": "Manage",
+    "description": "Out of your sidebar and the ⌘K palette; their links still open them, and their scheduled tasks keep running.",
+    "none": "You have no archived chats.",
+    "list": "Archived chats",
+    "row": "{{socio}} · Archived <date></date>",
+    "row_noSocio": "Archived <date></date>",
+    "date": "{{at, datetime(dateStyle: medium)}}",
+    "unarchive": "Unarchive",
+    "unarchiveLabel": "Unarchive {{title}}",
+    "delete": "Delete",
+    "deleteLabel": "Delete {{title}}"
+}

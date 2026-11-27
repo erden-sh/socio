@@ -1,0 +1,227 @@
+{
+    "section": {
+        "title": "People",
+        "description": "Who signs in, their role, and what they can reach. Open a person for everything about them.",
+        "invite": "Invite people",
+        "tabs": {
+            "people": "People",
+            "groups": "Groups",
+            "serviceAccounts": "Service accounts",
+            "withCount": "{{tab}} · {{count, number}}"
+        },
+        "groupsNeedSignIn": "Groups need real accounts (Better Auth). With the local picker, admins may run code and nobody else.",
+        "loadFailed": "Could not load people."
+    },
+    "roles": {
+        "admin": "Admin",
+        "member": "Member"
+    },
+    "state": {
+        "active": "Active",
+        "invited": "Invited",
+        "invite-expired": "Invite expired",
+        "deactivated": "Deactivated"
+    },
+    "lastActive": {
+        "never": "Never",
+        "now": "Now",
+        "now_inline": "now",
+        "minutes_one": "{{count}} min ago",
+        "minutes_other": "{{count}} min ago",
+        "hours_one": "{{count}} h ago",
+        "hours_other": "{{count}} h ago",
+        "yesterday": "Yesterday",
+        "yesterday_inline": "yesterday",
+        "days_one": "{{count}} day ago",
+        "days_other": "{{count}} days ago",
+        "weeks_one": "{{count}} week ago",
+        "weeks_other": "{{count}} weeks ago",
+        "date": "{{at, datetime(month: short; day: numeric)}}",
+        "dateYear": "{{at, datetime(month: short; day: numeric; year: numeric)}}",
+        "exact": "{{at, datetime(year: numeric; month: numeric; day: numeric; hour: numeric; minute: 2-digit; second: 2-digit)}}"
+    },
+    "devices_one": "{{count}} device",
+    "devices_other": "{{count}} devices",
+    "unknownDevice": "Unknown device",
+    "signIn": {
+        "cantSignIn": "Can’t sign in",
+        "passkey_one": "Passkey",
+        "passkey_other": "Passkey ×{{count}}",
+        "password": "Password",
+        "passwordOnly": "Password only",
+        "nothing": "Nothing set up yet",
+        "telegram": "Telegram",
+        "method": {
+            "link": "Sign-in link",
+            "linkEmail": "Emailed sign-in link"
+        }
+    },
+    "signInLink": {
+        "action_email": "Send sign-in link by email",
+        "action_telegram": "Send sign-in link via Telegram",
+        "sent_email": "Sign-in link sent to {{name}} by email",
+        "sent_telegram": "Sign-in link sent to {{name}} on Telegram",
+        "failed": "Could not send the link."
+    },
+    "reach": {
+        "ownsApps_one": "Owns {{count}} app",
+        "ownsApps_other": "Owns {{count}} apps",
+        "nothing": "Nothing",
+        "nothingYet": "Nothing yet",
+        "spaces_one": "{{count}} Space",
+        "spaces_other": "{{count}} Spaces",
+        "socios_one": "{{count}} socio",
+        "socios_other": "{{count}} socios",
+        "agents_one": "{{count}} agent",
+        "agents_other": "{{count}} agents",
+        "apps_one": "{{count}} app",
+        "apps_other": "{{count}} apps",
+        "keysMade_one": "{{count}} key made",
+        "keysMade_other": "{{count}} keys made",
+        "code": "code"
+    },
+    "ownerLock": {
+        "others": "The workspace owner’s account: only the owner can change it",
+        "self": "You own this workspace: make another admin the owner first"
+    },
+    "owner": {
+        "badge": "Owner",
+        "title": "The workspace owner: other admins can't remove them"
+    },
+    "role": {
+        "label": "Role of {{name}}",
+        "reactivateFirst": "Reactivate them to change their role",
+        "byRule": "Admin by AUTH_ADMIN_EMAILS",
+        "changeFailed": "Could not change the role."
+    },
+    "demote": {
+        "title_admin": "Make {{name}} an admin?",
+        "title_member": "Make {{name}} a member?",
+        "loses": "{{first}} loses the admin pages (People, Features, Secrets and the rest of the workspace’s settings) and what only admins may do; and their plugin sessions, which end now.",
+        "confirm_admin": "Make admin",
+        "confirm_member": "Make member",
+        "cancel": "Cancel"
+    },
+    "releases": {
+        "action": "Releases seen",
+        "title": "Releases {{name}} has seen"
+    },
+    "actions": {
+        "open": "Open",
+        "reactivate": "Reactivate…",
+        "passwordLink": "Password link",
+        "signOutEverywhere": "Sign out everywhere",
+        "deactivate": "Deactivate…",
+        "passwordLinkFailed": "Could not make a link.",
+        "signedOut": "{{name}} is signed out everywhere",
+        "signOutFailed": "Could not sign the account out.",
+        "deactivated": "{{name}} deactivated",
+        "deactivateFailed": "Could not deactivate the account.",
+        "reactivated": "{{name}} can sign in again",
+        "reactivateFailed": "Could not reactivate the account."
+    },
+    "list": {
+        "toolbar": "Find people",
+        "search": "Search name or email",
+        "roleFilter": "Role filter",
+        "roleAny": "Role: any",
+        "statusFilter": "Status filter",
+        "statusAny": "Status: any",
+        "expired_one": "{{count}} invite expired without being used. Make a new password link to send:",
+        "expired_other": "{{count}} invites expired without being used. Make a new password link to send:",
+        "loading": "Loading…",
+        "noMatch": "Nobody matches.",
+        "empty": "Nobody yet.",
+        "label": "People",
+        "columns": {
+            "person": "Person",
+            "role": "Role",
+            "status": "Status",
+            "lastActive": "Last active",
+            "signIn": "Signs in with",
+            "reach": "Can reach"
+        }
+    },
+    "passwordLink": {
+        "title": "Password link",
+        "description": "It sets or resets their password. A newer link replaces it.",
+        "for": "Password link for {{email}} (one use, until {{until, datetime(year: numeric; month: numeric; day: numeric; hour: numeric; minute: 2-digit; second: 2-digit)}}). Send it to them privately:",
+        "for_emailed": "Password link for {{email}} (one use, until {{until, datetime(year: numeric; month: numeric; day: numeric; hour: numeric; minute: 2-digit; second: 2-digit)}}), also emailed. Send it to them privately:",
+        "field": "Password link",
+        "copy": "Copy",
+        "copied": "Link copied",
+        "done": "Done"
+    },
+    "invite": {
+        "title": "Invite people",
+        "description": "Add a person with a role. You get a password link to send them; they set a password and sign in.",
+        "form": "Add a person",
+        "name": "New person's name",
+        "namePlaceholder": "Name",
+        "email": "New person's email",
+        "emailPlaceholder": "Email",
+        "role": "New person's role",
+        "link": "Existing user to link",
+        "newUser": "New user",
+        "existing": "Existing: {{name}} ({{id}})",
+        "cancel": "Cancel",
+        "done": "Done",
+        "submit": "Add and make a password link",
+        "added": "{{name}} added",
+        "failed": "Could not add the account."
+    },
+    "groups": {
+        "intro": "Groups give people permissions beyond their role. Admins have every permission already.",
+        "new": "New group",
+        "empty": "No groups yet. Make one to let people who aren't admins run code.",
+        "loadFailed": "Could not load groups.",
+        "noPermissions": "No permissions",
+        "permissions": {
+            "code-run": {
+                "label": "Run code",
+                "detail": "Start coding sessions, and use the coding gateways for models and Git."
+            }
+        },
+        "dialog": {
+            "editTitle": "Edit {{name}}",
+            "newTitle": "New group",
+            "description": "Everyone in the group gets its permissions. Admins have them all without a group.",
+            "editForm": "Edit group",
+            "newForm": "New group",
+            "name": "Group name",
+            "namePlaceholder": "Name",
+            "permissions": "Permissions",
+            "cancel": "Cancel",
+            "save": "Save",
+            "create": "Create group",
+            "saved": "Group saved",
+            "created": "{{name}} created",
+            "saveFailed": "Could not save the group."
+        },
+        "card": {
+            "label": "Group {{name}}",
+            "edit": "Edit",
+            "delete": "Delete",
+            "members": "People in {{name}}",
+            "deactivated": " · deactivated",
+            "remove": "Remove",
+            "nobody": "Nobody in this group yet.",
+            "addForm": "Add someone to {{name}}",
+            "addSelect": "Person to add to {{name}}",
+            "choose": "Choose a person",
+            "option": "{{name}} ({{email}})",
+            "option_admin": "{{name}} ({{email}}) · admin",
+            "add": "Add",
+            "addFailed": "Could not add them.",
+            "removeFailed": "Could not remove them."
+        },
+        "delete": {
+            "title": "Delete {{name}}?",
+            "loses_one": "{{count}} person loses what it gives at once.",
+            "loses_other": "{{count}} people lose what it gives at once.",
+            "nobody": "Nobody is in it.",
+            "deleted": "{{name}} deleted",
+            "failed": "Could not delete the group."
+        }
+    }
+}

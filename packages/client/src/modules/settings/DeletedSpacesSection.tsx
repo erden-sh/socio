@@ -2,7 +2,7 @@ import { ArchiveRestore } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
-import { formatNumber } from '@socio/shared/locale';
+import { Trans, useTranslation } from '@socio/i18n/react';
 import type { DeletedSpace } from '@socio/shared/types';
 
 import { api } from '../../lib/api';
@@ -12,13 +12,6 @@ import { useShell } from '../../shell/shell-context';
 import { PrivateSpaceIcon } from '@/components/private-space';
 import { Button } from '@/components/ui/button';
 
-/** "Oct 12, 2026, 3:04 PM", in the reader's words once hydrated. */
-const when = (value: number) =>
-    new Date(value).toLocaleString(undefined, {
-        dateStyle: 'medium',
-        timeStyle: 'short',
-    });
-
 /**
  * Settings → Deleted Spaces (CB-277, admins): each deleted Space, who
  * deleted it and when, and Restore, which brings it back with everything
@@ -26,6 +19,9 @@ const when = (value: number) =>
  * an admin restores them; nothing purges them.
  */
 export function DeletedSpacesSection() {
+    const { t } = useTranslation(['settings.deleted-spaces']);
+    /** "Oct 12, 2026, 3:04 PM", in the reader's words once hydrated. */
+    const when = (at: number) => t('settings.deleted-spaces:item.when', { at: new Date(at) });
     const shell = useShell();
     const [spaces, setSpaces] = useState<DeletedSpace[]>();
     const [restoring, setRestoring] = useState<string>();
@@ -33,9 +29,9 @@ export function DeletedSpacesSection() {
         try {
             setSpaces((await api<{ spaces: DeletedSpace[] }>('/admin/spaces/deleted')).spaces);
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Could not load the deleted Spaces.');
+            toast.error(error instanceof Error ? error.message : t('settings.deleted-spaces:errors.load'));
         }
-    }, []);
+    }, [t]);
     useEffect(() => {
         void load();
     }, [load]);
@@ -43,30 +39,27 @@ export function DeletedSpacesSection() {
         setRestoring(space.id);
         try {
             await api(`/admin/spaces/${encodeURIComponent(space.id)}/restore`, 'POST');
-            toast.success(`Restored “${space.name}”`);
+            toast.success(t('settings.deleted-spaces:restore.done', { name: space.name }));
             setSpaces((list) => list?.filter((item) => item.id !== space.id));
             await shell.refresh();
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Could not restore it.');
+            toast.error(error instanceof Error ? error.message : t('settings.deleted-spaces:errors.restore'));
         } finally {
             setRestoring(undefined);
         }
     };
     return (
         <section className="grid gap-2" data-slot="deleted-spaces">
-            <h3 className="font-medium">Deleted Spaces</h3>
-            <p className="text-muted-foreground">
-                A deleted Space is gone for everyone, with its pages, chats, memory, shares and socios’ access, and kept
-                here until you restore it. Restoring brings it all back, for the people who could see it.
-            </p>
+            <h3 className="font-medium">{t('settings.deleted-spaces:title')}</h3>
+            <p className="text-muted-foreground">{t('settings.deleted-spaces:description')}</p>
             {!spaces ? (
-                <p className="text-xs text-muted-foreground">Loading…</p>
+                <p className="text-xs text-muted-foreground">{t('settings.deleted-spaces:loading')}</p>
             ) : spaces.length === 0 ? (
                 <p className="text-muted-foreground" data-slot="deleted-spaces-empty">
-                    No deleted Spaces.
+                    {t('settings.deleted-spaces:empty')}
                 </p>
             ) : (
-                <ul className="grid gap-2" aria-label="Deleted Spaces">
+                <ul className="grid gap-2" aria-label={t('settings.deleted-spaces:title')}>
                     {spaces.map((space) => (
                         <li
                             key={space.id}
@@ -78,9 +71,15 @@ export function DeletedSpacesSection() {
                                     {space.private && <PrivateSpaceIcon className="size-3.5 flex-none" />}
                                 </span>
                                 <small className="text-xs text-muted-foreground">
-                                    Deleted by {space.deletedByName ?? 'a former member'},{' '}
-                                    <LocalTime value={space.deletedAt} format={when} /> ·{' '}
-                                    {space.pages === 1 ? '1 page' : `${formatNumber(space.pages)} pages`}
+                                    <Trans
+                                        t={t}
+                                        i18nKey="settings.deleted-spaces:item.deleted"
+                                        count={space.pages}
+                                        values={{
+                                            name: space.deletedByName ?? t('settings.deleted-spaces:item.formerMember'),
+                                        }}
+                                        components={{ when: <LocalTime value={space.deletedAt} format={when} /> }}
+                                    />
                                 </small>
                             </div>
                             <Button
@@ -88,11 +87,13 @@ export function DeletedSpacesSection() {
                                 variant="outline"
                                 size="sm"
                                 disabled={restoring !== undefined}
-                                aria-label={`Restore ${space.name}`}
+                                aria-label={t('settings.deleted-spaces:restore.label', { name: space.name })}
                                 onClick={() => void restore(space)}
                             >
                                 <ArchiveRestore className="size-4" aria-hidden />
-                                {restoring === space.id ? 'Restoring…' : 'Restore'}
+                                {restoring === space.id
+                                    ? t('settings.deleted-spaces:restore.busy')
+                                    : t('settings.deleted-spaces:restore.action')}
                             </Button>
                         </li>
                     ))}

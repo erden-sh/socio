@@ -9,13 +9,7 @@ import type { Group } from '@socio/shared/groups';
 import type { ServiceAccountView } from '@socio/shared/service-accounts';
 import type { User } from '@socio/shared/types';
 
-import {
-    initials,
-    lastActive,
-    reachSummary,
-    signInChips,
-    signInLinkWords,
-} from '../src/modules/settings/people/people-format';
+import { initials, usePeopleFormat } from '../src/modules/settings/people/people-format';
 import { PeopleSection } from '../src/modules/settings/people/PeopleSection';
 import { CurrentUser } from '../src/shell/current-user';
 
@@ -659,7 +653,22 @@ it('says groups need real accounts with the local sign-in picker', async () => {
     expect(requests.some((r) => r.path === '/api/groups')).toBe(false);
 });
 
+/** The People wording, from its hook, rendered once outside a page. */
+function peopleFormat() {
+    let format: ReturnType<typeof usePeopleFormat> | undefined;
+    function Probe() {
+        format = usePeopleFormat();
+        return null;
+    }
+    const host = document.createElement('div');
+    const probe = createRoot(host);
+    act(() => probe.render(<Probe />));
+    act(() => probe.unmount());
+    return format!;
+}
+
 it('words last active, sign-in methods and reach', () => {
+    const { lastActive, signInChips, reachSummary } = peopleFormat();
     const now = Date.UTC(2026, 10, 8, 12);
     expect(
         [5 * 60_000, 25 * 60_000, 3 * 3_600_000, 30 * 3_600_000, 3 * 86_400_000, 16 * 86_400_000].map((ago) =>
@@ -673,7 +682,10 @@ it('words last active, sign-in methods and reach', () => {
 });
 
 it('words the admin’s sign-in link by the channel it goes by (CB-352)', () => {
-    expect(signInLinkWords('email')).toEqual({ action: 'Send sign-in link by email', sent: 'by email' });
-    expect(signInLinkWords('telegram')).toEqual({ action: 'Send sign-in link via Telegram', sent: 'on Telegram' });
+    const { signInLinkWords } = peopleFormat();
+    expect(signInLinkWords('email')?.action).toBe('Send sign-in link by email');
+    expect(signInLinkWords('email')?.sent('Ada')).toBe('Sign-in link sent to Ada by email');
+    expect(signInLinkWords('telegram')?.action).toBe('Send sign-in link via Telegram');
+    expect(signInLinkWords('telegram')?.sent('Ada')).toBe('Sign-in link sent to Ada on Telegram');
     expect(signInLinkWords(null)).toBeNull();
 });

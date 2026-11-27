@@ -1,0 +1,91 @@
+{
+    "title": {
+        "space": "A space for something.",
+        "dotEdit": "Make this socio yours.",
+        "dotNew": "Meet your next specialist.",
+        "memory": "Something to remember.",
+        "schedule": "Let your socio keep time."
+    },
+    "close": "Close dialog",
+    "name": "Name",
+    "text": {
+        "dot": "Role instructions",
+        "space": "What belongs here?",
+        "memory": "Preference or context",
+        "schedule": "Task to revisit"
+    },
+    "dotPlaceholder": "You are a thoughtful research partner. Compare evidence and be clear about uncertainty.",
+    "spaces": {
+        "legend": "Space access",
+        "note": "Choose where this socio can read and edit pages.",
+        "default": "Default destination for saved pages",
+        "choose": "Choose a Space"
+    },
+    "research": {
+        "title": "Public-page research",
+        "body": "Allow the server-side read-only browser tool. Global settings always take precedence."
+    },
+    "memories": {
+        "title": "Use saved memories",
+        "body": "Include your preferences in new turns. Changing permission stops active work."
+    },
+    "share": {
+        "title": "Share with the workspace",
+        "body": "Let everyone see and use this socio, including its shared computer files. Leave off to create a socio of your own."
+    },
+    "visibility": "Personal socio: only its owner sees it in their sidebar and chats with it. Admins can manage its settings.",
+    "visibility_workspace": "Workspace socio: everyone can see and use it. Conversations belong to each person; its shared computer files are available to everyone who uses it.",
+    "issues": {
+        "title": "File to the Improvements board",
+        "body": "When someone asks, this socio can search the board and file an item in triage, recorded with the socio and that person."
+    },
+    "model": {
+        "label": "Default model",
+        "inherit": "Automatic: each person’s own subscription, else the workspace’s",
+        "note": "New chats with this socio start on this model; people can pick another when they start a chat. Subscription models run on each person’s own connection; anyone not connected gets the automatic model."
+    },
+    "learning": {
+        "legend": "Automatic Learning",
+        "container": "Learning container ID",
+        "placeholder": "research-workflow",
+        "help": "New conversations with this socio are assigned to this container and become Learning evidence once they finish. Admins review proposed skills under Learning before anything is published. Leave blank to keep new conversations out of Learning.",
+        "skillsTitle": "Use published skills",
+        "skillsBody": "Let this socio load the container’s published skills. Turning this off stops skill loading; it does not stop evidence collection."
+    },
+    "dataLinks": "Approvals and data access are each person’s own: your <approvals>approval policies</approvals> and <grants>data grants</grants> for this socio.",
+    "schedule": {
+        "label": "Repeat after each successful run",
+        "minute": "Every minute (testing)",
+        "hour": "Every hour",
+        "day": "Every day",
+        "week": "Every week",
+        "note": "Runs on the server in this same conversation, even with the tab closed. Failed or interrupted runs wait for manual retry. Review completed work before retrying an interrupted run."
+    },
+    "memoryNote": "Memories are explicit preferences, not automatic learning. Avoid secrets; enabled memories go to your model provider.",
+    "save": "Save",
+    "webSaveFailed": "Could not save the web identity.",
+    "character": {
+        "legend": "Character",
+        "label": "{{name}}, the {{kind}}",
+        "note": "How this socio looks everywhere it appears, including notifications. Other socios can have the same character."
+    },
+    "archive": {
+        "title": "Archive this socio",
+        "title_archived": "Archived",
+        "body": "It leaves every list and stops working; its chats, filings and history are kept. Nothing is deleted.",
+        "body_archived": "Bring it back to the lists; its paused schedules stay paused until resumed.",
+        "archive": "Archive…",
+        "confirm": "Archive now",
+        "unarchive": "Unarchive"
+    },
+    "web": {
+        "legend": "Web identity",
+        "label": "How this socio reads websites",
+        "default_agent": "Workspace default (declared agent)",
+        "default": "Workspace default (browser)",
+        "agent": "Declared agent (http_get, http_json)",
+        "browser": "Browser (the socio’s computer)",
+        "help_one": "As a declared agent it says so in its User-Agent (<ua>{{userAgent}}</ua>), which links the public /agents page. As a browser it uses its computer’s browser tools. Neither identifies the user. At most {{count}} read a minute per site; a site that refuses is left alone for a while.",
+        "help_other": "As a declared agent it says so in its User-Agent (<ua>{{userAgent}}</ua>), which links the public /agents page. As a browser it uses its computer’s browser tools. Neither identifies the user. At most {{count}} reads a minute per site; a site that refuses is left alone for a while."
+    }
+}

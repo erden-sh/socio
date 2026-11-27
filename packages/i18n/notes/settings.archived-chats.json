@@ -1,0 +1,14 @@
+{
+    "title": "Heading of the Settings section, and title of the dialog listing the person's archived chats (chats hidden from the sidebar, not deleted).",
+    "empty": "Shown when the person has no archived chats.",
+    "summary": "How many archived chats the person has.",
+    "manage": "Button that opens the dialog listing the archived chats.",
+    "description": "\"⌘K palette\" is the quick search opened with Command-K (Ctrl-K); keep \"⌘K\". Scheduled tasks are tasks socios (AI agents) run on a schedule in those chats.",
+    "list": "Accessible name of the list of archived chats (read by screen readers).",
+    "row": "Under an archived chat's title: {{socio}} is the name of the socio (AI agent) the chat is with, and <date></date> is replaced by the date it was archived (see date). The _noSocio form is for chats without one. Keep the <date></date> tag; move it where your language puts the date.",
+    "date": "The date a chat was archived, medium length (\"Oct 12, 2026\").",
+    "unarchive": "Tooltip of the button that puts the chat back in the sidebar.",
+    "unarchiveLabel": "Accessible name of the Unarchive button; {{title}} is the chat's title.",
+    "delete": "Tooltip of the button that deletes the chat for good (after a confirmation).",
+    "deleteLabel": "Accessible name of the Delete button; {{title}} is the chat's title."
+}

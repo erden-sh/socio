@@ -1,0 +1,11 @@
+{
+    "continuous": {
+        "behind": "behind: the database changed at {{changed}}, the newest copy is from {{copied}}; check the litestream service",
+        "noCopy": "no copy yet; check the litestream service",
+        "upToDate": "up to date; newest copy at {{at}}",
+        "waiting": "waiting for the first copy",
+        "wal": "write-ahead log {{size}}",
+        "level": "warning",
+        "level_critical": "critical"
+    }
+}

@@ -1,0 +1,21 @@
+{
+    "intro": "Socios can ask to use your mini apps for you, one task at a time, and only apps you can open yourself. You decide on a card in the chat. Changing data and taking actions always wait for you.",
+    "reading": {
+        "title": "Reading without asking",
+        "help": "For each socio, whether it may read apps for you without a card. Only you can choose this. Apps that ask every time still ask.",
+        "label": "Whether {{socio}} may read apps for you without asking",
+        "manual": "Ask me every time",
+        "bypass": "Let it read without asking",
+        "auto": "Let auto review decide"
+    },
+    "granted": {
+        "title": "Access you granted",
+        "none": "No socio can use an app for you now.",
+        "ended": "Ended ({{n, number}})",
+        "endedLabel": "Ended access"
+    },
+    "loadFailed": "Could not load socio access.",
+    "saveFailed": "Could not save the choice.",
+    "endedToast": "Access ended",
+    "endFailed": "Could not end the access."
+}

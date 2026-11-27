@@ -1,0 +1,58 @@
+{
+    "intro": "Tokens for your own scripts, such as an import from another tool, to create and fill the company’s datasets through the data API. Each one is shown once.",
+    "list": {
+        "label": "Data API tokens",
+        "token": "Token",
+        "madeBy": "Made by",
+        "lastUsed": "Last used",
+        "expiry": "Expiry",
+        "actions": "Actions",
+        "empty": "No data API tokens yet."
+    },
+    "token": {
+        "usage": "{{scopes}}; {{perMinute, number}} a minute",
+        "unknownMaker": "Unknown",
+        "madeAt": "{{at, datetime}}",
+        "used_one": "{{at, datetime(year: numeric; month: numeric; day: numeric; hour: numeric; minute: numeric; second: numeric)}} ({{count, number}} request)",
+        "used_other": "{{at, datetime(year: numeric; month: numeric; day: numeric; hour: numeric; minute: numeric; second: numeric)}} ({{count, number}} requests)",
+        "neverUsed": "never used",
+        "revoked": "revoked {{at, datetime}}",
+        "revoked_system": "revoked {{at, datetime}} (its maker is no longer an admin)",
+        "expires": "expires {{at, datetime}}",
+        "expired": "expired {{at, datetime}}"
+    },
+    "revoke": {
+        "action": "Revoke",
+        "label": "Revoke {{name}}",
+        "done": "Revoked “{{name}}”"
+    },
+    "new": {
+        "open": "New token",
+        "title": "New data API token",
+        "description": "For a script of yours, such as an import. It reaches the company’s datasets only, never a person’s, a socio’s or a plugin’s.",
+        "copyNow": "Copy it now: it isn’t shown again.",
+        "created": "Token “{{name}}”. $t(settings.data-api:new.copyNow)",
+        "copy": "Copy",
+        "copied": "Token copied",
+        "done": "Done",
+        "name": "Token name",
+        "namePlaceholder": "Token name, e.g. what runs it",
+        "lifetime": "Token lifetime",
+        "days_one": "{{count, number}} day",
+        "days_other": "{{count, number}} days",
+        "budget": "Operations a minute (at most {{max, number}})",
+        "budgetLabel": "Operations a minute",
+        "cancel": "Cancel",
+        "submit": "Make token"
+    },
+    "scopes": {
+        "read": "List and read the company’s datasets: tables, queries, field settings",
+        "write": "Add, change and remove rows, in single writes or batches",
+        "admin": "Create company datasets, declare tables and columns, set field settings and place datasets in a Space"
+    },
+    "errors": {
+        "load": "Could not load the data API tokens.",
+        "make": "Could not make the token.",
+        "revoke": "Could not revoke the token."
+    }
+}

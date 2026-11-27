@@ -1,0 +1,35 @@
+{
+    "title": "Rooms",
+    "intro": "Rooms let several people share one conversation with a company socio. Each message runs as the person who sent it, and nobody’s private memories or data are shared. With this on, everyone sees Rooms in the sidebar: they create rooms, share a chat as one and invite people. Rooms are a preview.",
+    "enable": {
+        "title": "Let members create shared rooms",
+        "description": "Off by default. Turned off later, rooms and invitations leave the app; a room’s link still opens it read-only, and nothing new runs in it.",
+        "saved": "Rooms turned on. Everyone sees them in the sidebar.",
+        "saved_off": "Rooms turned off. Existing rooms are read-only."
+    },
+    "budget": {
+        "title": "Members see their room’s use and limits",
+        "description": "Off by default: only room admins see them. On, everyone in a room sees its limits, its current message’s time and tokens, and the day’s total once at least three people have sent messages. Spend on someone’s own model subscription stays theirs.",
+        "saved": "Members now see their room’s use and limits",
+        "saved_off": "Only room admins see a room’s use and limits now"
+    },
+    "readiness": {
+        "allPrivate_one": "{{count, number}} chat, all private. Turning Rooms on changes none of them.",
+        "allPrivate_other": "{{count, number}} chats, all private. Turning Rooms on changes none of them.",
+        "mixed": "{{chats}} private, {{rooms}}. Private chats keep their readers either way.",
+        "chats_one": "{{count, number}} chat",
+        "chats_other": "{{count, number}} chats",
+        "rooms_one": "{{count, number}} room",
+        "rooms_other": "{{count, number}} rooms"
+    },
+    "requests": {
+        "title": "Socios rooms asked for",
+        "request": "<socio>{{socio}}</socio> in “{{room}}”",
+        "askedBy": "Asked by {{name}}",
+        "askedByAdmin": "Asked by a room admin",
+        "letIn": "Let in",
+        "letInLabel": "Let {{socio}} into {{room}}",
+        "letInDone": "{{socio}} can answer in “{{room}}”.",
+        "letInFailed": "Could not let it in."
+    }
+}

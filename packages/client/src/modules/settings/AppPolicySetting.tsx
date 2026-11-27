@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
+import { useTranslation } from '@socio/i18n/react';
 import {
     APP_LEASE_DAYS_RANGE,
     APP_POLICY_DEFAULTS,
@@ -10,21 +11,18 @@ import {
 import type { Settings } from '@socio/shared/types';
 
 import { SettingsCard } from './AccountSettings';
-import { AutosaveHeader, SAVE_FAILED, SaveError, type SaveStatus } from './autosave';
+import { AutosaveHeader, SaveError, type SaveStatus } from './autosave';
+import { onDemand } from './on-demand';
 
 import { PermissionRow } from '@/components/form-fields';
 import { Input } from '@/components/ui/input';
 
 type Days = 'leaseDays' | 'wipeDays';
 
-const DAYS: readonly { key: Days; label: string; unit: string; range: { min: number; max: number } }[] = [
-    {
-        key: 'leaseDays',
-        label: 'Lock the app after',
-        unit: 'days without reaching the workspace',
-        range: APP_LEASE_DAYS_RANGE,
-    },
-    { key: 'wipeDays', label: 'Then erase its copy after', unit: 'more days', range: APP_WIPE_DAYS_RANGE },
+/** The two periods; their words are `settings.workspace-apps:policy.<key>`. */
+const DAYS: readonly { key: Days; range: { min: number; max: number } }[] = [
+    { key: 'leaseDays', range: APP_LEASE_DAYS_RANGE },
+    { key: 'wipeDays', range: APP_WIPE_DAYS_RANGE },
 ];
 
 /**
@@ -35,7 +33,7 @@ const DAYS: readonly { key: Days; label: string; unit: string; range: { min: num
  * variable, else the app's defaults (30, 30, off, on). Members read it;
  * only admins change it. The app reads it when it signs in.
  */
-export function AppPolicySetting({
+function AppPolicySettingBody({
     policy,
     readOnly,
     mutate,
@@ -50,6 +48,7 @@ export function AppPolicySetting({
     // which the server merges into the saved policy; one that fails puts back
     // only that field, to what the server has. Nothing is queued, so no save
     // carries another's value.
+    const { t } = useTranslation(['settings.workspace-apps', 'settings.workspace', 'settings']);
     const server: AppPolicy = { ...APP_POLICY_DEFAULTS, ...policy };
     const [mine, setMine] = useState<Partial<AppPolicy>>({});
     const [typed, setTyped] = useState<Partial<Record<Days, string>>>({});
@@ -110,7 +109,7 @@ export function AppPolicySetting({
                 // Back to what the server has for this field alone.
                 setMine(({ [key]: _gone, ...rest }) => rest as Partial<AppPolicy>);
             }
-            setError(SAVE_FAILED);
+            setError(t('settings:save.failed'));
             setStatus('idle');
             return;
         }
@@ -125,12 +124,12 @@ export function AppPolicySetting({
         }
         const number = Number(text);
         if (!Number.isInteger(number) || number < range.min || number > range.max) {
-            setError(`Use a whole number of days from ${range.min} to ${range.max}.`);
+            setError(t('settings.workspace-apps:policy.invalidDays', { min: range.min, max: range.max }));
             return;
         }
         setTyped(({ [key]: _done, ...rest }) => rest);
         if (number !== shown[key]) {
-            void save(key, number, 'Socio app policy saved');
+            void save(key, number, t('settings.workspace-apps:policy.saved'));
         } else {
             setError('');
         }
@@ -139,16 +138,15 @@ export function AppPolicySetting({
         <SettingsCard>
             <section className="grid gap-4" data-slot="app-policy-settings">
                 <AutosaveHeader
-                    title="The Socio app on phones"
+                    title={t('settings.workspace-apps:policy.title')}
                     status={!readOnly ? (pending ? 'saving' : status) : undefined}
                 >
-                    A phone keeps a copy of this workspace for the Socio app. These rules reach each phone the next time
-                    it signs in.
+                    {t('settings.workspace-apps:policy.intro')}
                 </AutosaveHeader>
-                {DAYS.map(({ key, label, unit, range }) => (
+                {DAYS.map(({ key, range }) => (
                     <div className="grid gap-2" key={key}>
                         <label htmlFor={`app-policy-${key}`} className="font-medium">
-                            {label}
+                            {t(`settings.workspace-apps:policy.${key}.label`)}
                         </label>
                         <div className="flex items-center gap-2">
                             <Input
@@ -164,39 +162,50 @@ export function AppPolicySetting({
                                 onChange={(event) => setTyped((current) => ({ ...current, [key]: event.target.value }))}
                                 onBlur={() => commitDays(key, range)}
                             />
-                            <span className="text-muted-foreground">{unit}</span>
+                            <span className="text-muted-foreground">
+                                {t(`settings.workspace-apps:policy.${key}.unit`)}
+                            </span>
                         </div>
                     </div>
                 ))}
-                <p className="text-muted-foreground">
-                    A phone that hasn’t reached the workspace for the first period locks its copy until the person signs
-                    in again, and erases it after the second, unsent work included.
-                </p>
+                <p className="text-muted-foreground">{t('settings.workspace-apps:policy.periods')}</p>
                 <PermissionRow
-                    title="Require the app lock"
+                    title={t('settings.workspace-apps:policy.appLock.title')}
                     checked={shown.appLock}
                     disabled={readOnly}
-                    onCheckedChange={(on) => void save('appLock', on, `App lock ${on ? 'required' : 'not required'}`)}
+                    onCheckedChange={(on) =>
+                        void save(
+                            'appLock',
+                            on,
+                            t('settings.workspace-apps:policy.appLock.saved', { context: on ? undefined : 'off' }),
+                        )
+                    }
                 >
-                    Off by default. When on, the app asks for Face ID or a fingerprint to open this workspace.
+                    {t('settings.workspace-apps:policy.appLock.description')}
                 </PermissionRow>
                 <PermissionRow
-                    title="Show message text in notifications"
+                    title={t('settings.workspace-apps:policy.notificationText.title')}
                     checked={shown.notificationText}
                     disabled={readOnly}
                     onCheckedChange={(on) =>
-                        void save('notificationText', on, `Message text in notifications turned ${on ? 'on' : 'off'}`)
+                        void save(
+                            'notificationText',
+                            on,
+                            t('settings.workspace-apps:policy.notificationText.saved', {
+                                context: on ? undefined : 'off',
+                            }),
+                        )
                     }
                 >
-                    On by default. When off, notifications on phones say only that something new came, not what.
+                    {t('settings.workspace-apps:policy.notificationText.description')}
                 </PermissionRow>
-                <p className="text-muted-foreground">
-                    The app follows the lock and erase periods now; it follows the app lock and the notification text
-                    from the version that supports them.
-                </p>
+                <p className="text-muted-foreground">{t('settings.workspace-apps:policy.versions')}</p>
                 <SaveError error={error} />
-                {readOnly && <p className="text-muted-foreground">Only an admin can change these settings.</p>}
+                {readOnly && <p className="text-muted-foreground">{t('settings.workspace:readOnly.settings')}</p>}
             </section>
         </SettingsCard>
     );
 }
+
+/** Below the fold: its words load when it mounts (settings.workspace-apps, in no route's entry). */
+export const AppPolicySetting = onDemand(['settings.workspace-apps'], AppPolicySettingBody);

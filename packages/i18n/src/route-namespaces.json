@@ -1,5 +1,24 @@
 {
-    "$comment": "The namespaces each page route inlines into its HTML, by route id (routes.ts). The root's go with every page; a route's only with its own. scripts/i18n-build.mjs reports each route's size against the budget.",
-    "root": ["common"],
-    "settings:section": ["settings.language"]
+    "$comment": "The namespaces each page route inlines into its HTML, by route id (routes.ts); /settings/:section has one entry per section (settings:section:<section>). The root's go with every page, so they hold only what any page may show (settings: the Settings nav, autosave status and home widget other modules render too); a route's only with its own. Namespaces only a dialog opened by a click or a card below the fold needs (settings.dialogs, settings.person-dialogs, settings.workspace-limits, -apps, -github, -rooms) are in no entry: they load on demand (modules/settings/on-demand.tsx). scripts/i18n-build.mjs reports each route's size against the budget.",
+    "root": ["common", "settings", "settings.shared", "settings.backups"],
+    "settings:section:workspace": ["settings.workspace", "settings.workspace-setup"],
+    "settings:section:people": ["settings.people", "settings.service-accounts"],
+    "settings:section:access": ["settings.access"],
+    "settings:section:secrets": ["settings.secrets"],
+    "settings:section:data-api": ["settings.data-api"],
+    "settings:section:chat-skills": ["settings.chat-skills"],
+    "settings:section:deleted-spaces": ["settings.deleted-spaces"],
+    "settings:section:features": ["settings.features"],
+    "settings:section:coding": [],
+    "settings:section:account": ["settings.account", "settings.devices", "settings.language", "settings.mcp"],
+    "settings:section:notifications": ["settings.notifications"],
+    "settings:section:inference": ["settings.inference"],
+    "settings:section:archived-chats": ["settings.archived-chats"],
+    "settings:section:connected-agents": ["settings.connected-agents"],
+    "settings:section:telegram": [],
+    "settings:section:socio-access": ["settings.socio-access"],
+    "settings:section:early-access": ["settings.features"],
+    "settings:section:features-dev": ["settings.features"],
+    "settings:section:performance": ["settings.performance"],
+    "settings:person": ["settings.people", "settings.person", "settings.devices"]
 }

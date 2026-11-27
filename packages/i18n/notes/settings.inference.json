@@ -1,0 +1,14 @@
+{
+    "title": "Heading of Settings › Inference: which AI model the person's chats run on, and the AI subscriptions (such as a ChatGPT plan) they can connect. \"Inference\" is the technical term for running an AI model.",
+    "active": "{{model}} is the model's or subscription's name. The base form: the model the workspace's operator set up; _byo (bring your own): a subscription the person connected themselves.",
+    "noKinds": "Shown when the server offers no subscriptions to connect. _noModel: and the person's chats have no model at all; an operator is the person who runs this server.",
+    "list": "Accessible name of the list of subscriptions (read by screen readers).",
+    "state.pending": "Status badge while a sign-in to the subscription is in progress.",
+    "state.error": "Status badge when the connection has a problem; short.",
+    "cancel": "Button: stop a sign-in in progress.",
+    "code": "Before a one-time code the person types on the provider's sign-in page (device sign-in).",
+    "openSignIn": "Link to the provider's sign-in page, where the person enters the code.",
+    "connected": "Toast after a subscription connected.",
+    "disconnected": "Toast after a subscription was disconnected.",
+    "state.connected": "A subscription's status badge: signed in and usable."
+}

@@ -1,3 +1,4 @@
+import { useTranslation } from '@socio/i18n/react';
 import type { AutoTriageSettings } from '@socio/shared/types';
 
 import { SettingsCard } from './AccountSettings';
@@ -23,6 +24,7 @@ export function AutoTriageSetting({
     readOnly: boolean;
     mutate: (path: string, method: string, body?: unknown) => Promise<boolean>;
 }) {
+    const { t } = useTranslation(['settings.workspace']);
     const cap = (text: string) => (/^\d+$/.test(text.trim()) ? Number(text) : NaN);
     const auto = useAutosave(
         {
@@ -35,9 +37,11 @@ export function AutoTriageSetting({
             }),
     );
     const commit = () =>
-        void auto.commit('Automatic triage saved', (value) => {
+        void auto.commit(t('settings.workspace:autoTriage.saved'), (value) => {
             const perDay = cap(value.perDay);
-            return perDay >= 0 && perDay <= PER_DAY_MAX ? undefined : `Use a whole number from 0 to ${PER_DAY_MAX}.`;
+            return perDay >= 0 && perDay <= PER_DAY_MAX
+                ? undefined
+                : t('settings.workspace:autoTriage.invalid', { max: PER_DAY_MAX });
         });
     return (
         <SettingsCard>
@@ -50,25 +54,28 @@ export function AutoTriageSetting({
                     commit();
                 }}
             >
-                <AutosaveHeader title="Automatic triage" status={!readOnly ? auto.status : undefined}>
-                    When a new issue lands in triage, the workspace’s model suggests its kind, area, priority and
-                    labels, and posts them as a comment. Nothing changes until an admin applies the suggestion from the
-                    issue.
+                <AutosaveHeader
+                    title={t('settings.workspace:autoTriage.title')}
+                    status={!readOnly ? auto.status : undefined}
+                >
+                    {t('settings.workspace:autoTriage.intro')}
                 </AutosaveHeader>
                 <PermissionRow
-                    title="Propose triage for new issues"
+                    title={t('settings.workspace:autoTriage.toggle')}
                     checked={auto.value.enabled}
                     disabled={readOnly}
                     onCheckedChange={(on) =>
-                        void auto.change({ enabled: on }, `Automatic triage turned ${on ? 'on' : 'off'}`)
+                        void auto.change(
+                            { enabled: on },
+                            t('settings.workspace:autoTriage.toggled', { context: on ? undefined : 'off' }),
+                        )
                     }
                 >
-                    Off by default. Issues are sent to the model as data, once each; a failed or invalid answer is not
-                    retried.
+                    {t('settings.workspace:autoTriage.description')}
                 </PermissionRow>
                 <div className="grid gap-1.5">
                     <label htmlFor="auto-triage-per-day" className="font-medium">
-                        Most a day
+                        {t('settings.workspace:autoTriage.perDay')}
                     </label>
                     <Input
                         id="auto-triage-per-day"
@@ -83,12 +90,10 @@ export function AutoTriageSetting({
                         onChange={(event) => auto.edit({ perDay: event.target.value })}
                         onBlur={commit}
                     />
-                    <p className="text-muted-foreground">
-                        Issues asked about in 24 hours, failures included. 0 asks about none.
-                    </p>
+                    <p className="text-muted-foreground">{t('settings.workspace:autoTriage.perDayHint')}</p>
                 </div>
                 <SaveError error={auto.error} />
-                {readOnly && <p className="text-muted-foreground">Only an admin can change this setting.</p>}
+                {readOnly && <p className="text-muted-foreground">{t('settings.workspace:readOnly.setting')}</p>}
             </form>
         </SettingsCard>
     );

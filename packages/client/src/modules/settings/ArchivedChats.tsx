@@ -2,7 +2,7 @@ import { ArchiveRestore, Trash2 } from 'lucide-react';
 import { useContext, useState } from 'react';
 import { Link } from 'react-router';
 
-import { formatNumber } from '@socio/shared/locale';
+import { Trans, useTranslation } from '@socio/i18n/react';
 import { isRoom, roomAdmin, roomsOn, shownChats } from '@socio/shared/rooms/room-view';
 import type { Conversation } from '@socio/shared/types';
 
@@ -16,9 +16,6 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
-/** "Oct 12, 2026", in the reader's words once hydrated. */
-const day = (value: number) => new Date(value).toLocaleDateString(undefined, { dateStyle: 'medium' });
-
 /**
  * Account → Archived chats, where ChatGPT keeps them (Settings → Data
  * controls → Archived chats → Manage): how many there are, and Manage,
@@ -30,6 +27,7 @@ export function ArchivedChatsSection({
     /** A chat opened from the list (its dialog has closed). */
     onOpenChat: () => void;
 }) {
+    const { t } = useTranslation(['settings.archived-chats']);
     // Settings pages are in the shell; alone (tests), it has no chats.
     const shell = useContext(ShellContext);
     const [open, setOpen] = useState(false);
@@ -39,17 +37,13 @@ export function ArchivedChatsSection({
     const count = shell.workspace.archived?.length ?? 0;
     return (
         <section className="grid gap-2" data-slot="archived-chats-section">
-            <h3 className="font-medium">Archived chats</h3>
+            <h3 className="font-medium">{t('settings.archived-chats:title')}</h3>
             <div className="flex flex-wrap items-center gap-2">
                 <p className="min-w-0 flex-1 text-muted-foreground">
-                    {count === 0
-                        ? 'Chats you archive leave your sidebar and wait here.'
-                        : count === 1
-                          ? '1 archived chat, out of your sidebar.'
-                          : `${formatNumber(count)} archived chats, out of your sidebar.`}
+                    {count === 0 ? t('settings.archived-chats:empty') : t('settings.archived-chats:summary', { count })}
                 </p>
                 <Button variant="outline" onClick={() => setOpen(true)}>
-                    Manage
+                    {t('settings.archived-chats:manage')}
                 </Button>
             </div>
             <ArchivedChatsDialog
@@ -74,6 +68,7 @@ function ArchivedChatsDialog({
     onOpenChange: (open: boolean) => void;
     onOpenChat: () => void;
 }) {
+    const { t } = useTranslation(['settings.archived-chats']);
     const { workspace, state } = useShell();
     // Archived rooms (CB-212) too, while Rooms are on.
     const chats = shownChats(workspace.archived ?? [], state);
@@ -91,18 +86,15 @@ function ArchivedChatsDialog({
                 }}
             >
                 <DialogHeader>
-                    <DialogTitle>Archived chats</DialogTitle>
-                    <DialogDescription>
-                        Out of your sidebar and the ⌘K palette; their links still open them, and their scheduled tasks
-                        keep running.
-                    </DialogDescription>
+                    <DialogTitle>{t('settings.archived-chats:title')}</DialogTitle>
+                    <DialogDescription>{t('settings.archived-chats:description')}</DialogDescription>
                 </DialogHeader>
                 {chats.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">You have no archived chats.</p>
+                    <p className="text-sm text-muted-foreground">{t('settings.archived-chats:none')}</p>
                 ) : (
                     // The dialog is outside the sidebar's tooltip provider.
                     <TooltipProvider>
-                        <ul className="grid gap-1 text-sm" aria-label="Archived chats">
+                        <ul className="grid gap-1 text-sm" aria-label={t('settings.archived-chats:list')}>
                             {chats.map((thread) => (
                                 <ArchivedRow
                                     key={thread.id}
@@ -134,6 +126,7 @@ function ArchivedRow({
     onOpen: () => void;
     onDelete: () => void;
 }) {
+    const { t } = useTranslation(['settings.archived-chats']);
     const chat = useArchiveChat();
     const room = useArchiveRoom();
     const { state } = useShell();
@@ -155,8 +148,20 @@ function ArchivedRow({
                     {thread.title}
                 </Link>
                 <span className="truncate text-xs text-muted-foreground">
-                    {dotName ? `${dotName} · ` : ''}Archived{' '}
-                    <LocalTime value={thread.archivedAt ?? thread.createdAt} format={day} />
+                    <Trans
+                        t={t}
+                        i18nKey="settings.archived-chats:row"
+                        context={dotName ? undefined : 'noSocio'}
+                        values={{ socio: dotName ?? '' }}
+                        components={{
+                            date: (
+                                <LocalTime
+                                    value={thread.archivedAt ?? thread.createdAt}
+                                    format={(value) => t('settings.archived-chats:date', { at: new Date(value) })}
+                                />
+                            ),
+                        }}
+                    />
                 </span>
             </div>
             {unarchivable && (
@@ -166,7 +171,7 @@ function ArchivedRow({
                             variant="ghost"
                             size="icon"
                             className="size-8 shrink-0"
-                            aria-label={`Unarchive ${thread.title}`}
+                            aria-label={t('settings.archived-chats:unarchiveLabel', { title: thread.title })}
                             disabled={busy}
                             onClick={async () => {
                                 setBusy(true);
@@ -180,7 +185,7 @@ function ArchivedRow({
                             <ArchiveRestore />
                         </Button>
                     </TooltipTrigger>
-                    <TooltipContent>Unarchive</TooltipContent>
+                    <TooltipContent>{t('settings.archived-chats:unarchive')}</TooltipContent>
                 </Tooltip>
             )}
             {!shared && (
@@ -190,13 +195,13 @@ function ArchivedRow({
                             variant="ghost"
                             size="icon"
                             className="size-8 shrink-0 text-destructive hover:text-destructive"
-                            aria-label={`Delete ${thread.title}`}
+                            aria-label={t('settings.archived-chats:deleteLabel', { title: thread.title })}
                             onClick={onDelete}
                         >
                             <Trash2 />
                         </Button>
                     </TooltipTrigger>
-                    <TooltipContent>Delete</TooltipContent>
+                    <TooltipContent>{t('settings.archived-chats:delete')}</TooltipContent>
                 </Tooltip>
             )}
         </li>

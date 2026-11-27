@@ -1,0 +1,207 @@
+{
+    "cancel": "Cancel",
+    "done": "Done",
+    "page": {
+        "tryAgain": "Try again",
+        "needsSignIn": "This needs real accounts.",
+        "loading": "Loading…",
+        "notFound": "Nobody here has this account.",
+        "loadFailed": "Could not load this person.",
+        "joined": "· joined {{date}}",
+        "more": "More for {{name}}",
+        "makeOwner": "Make owner…",
+        "removePermanently": "Remove permanently…",
+        "nowOwner": "{{name}} is now the workspace owner"
+    },
+    "tiles": {
+        "lastActive": "Last active",
+        "signedInOn": "Signed in on",
+        "deactivated": "deactivated",
+        "nowhere": "nowhere now",
+        "canReach": "Can reach",
+        "asEditor": "{{count}} as editor",
+        "actsForThem": "Acts for them",
+        "actsForThemValue": "{{socios}} · {{agents}}",
+        "delegated": "delegated access"
+    },
+    "tabs": {
+        "access": "Access",
+        "sign-in": "Sign-in & devices",
+        "owns": "Owns",
+        "activity": "Activity"
+    },
+    "footer": {
+        "title": "Deactivate {{first}}",
+        "title_deactivated": "Reactivate {{first}}",
+        "description": "They can’t sign in; their chats, pages and files stay. You see everything it ends before you confirm.",
+        "description_deactivated": "They can sign in again. Keys, grants and sessions that ended stay ended."
+    },
+    "access": {
+        "unknown": "What {{first}} can reach isn’t known here: the account has no workspace user yet.",
+        "levelFailed": "Could not change their role there.",
+        "spaces": "Spaces",
+        "addForm": "Add to a Space",
+        "addSelect": "Space to add them to",
+        "addPlaceholder": "Add to a Space…",
+        "addRole": "Role in the Space",
+        "add": "Add",
+        "roleIn": "Role in {{space}}",
+        "removeFrom": "Remove from {{space}}",
+        "levels": {
+            "editor": "Editor",
+            "member": "Member",
+            "everyone": "Everyone"
+        },
+        "private": "private",
+        "everyone": "everyone",
+        "noSpaces": "No Spaces.",
+        "adminEverywhere": "As an admin, {{first}} edits every Space.",
+        "actors": "Socios, agents and code",
+        "removedSocio": "A removed socio",
+        "grantName": "{{socio}}’s access",
+        "revoke": "Revoke",
+        "grant": "{{socio}} may use {{audiences}} for {{first}}",
+        "grantAnything": "what it was granted",
+        "grantMeta": "socio access · until {{date}}",
+        "audiences": {
+            "models": "models",
+            "git": "git",
+            "app": "an app",
+            "plugin": "a plugin"
+        },
+        "disconnect": "Disconnect",
+        "agentKind": "connected agent",
+        "agentKind_domain": "connected agent ({{domain}})",
+        "codeAccess": "Code access",
+        "codeAccessVia": "from a group that gives “Run code”",
+        "codeAccessVia_admin": "as an admin",
+        "yes": "Yes",
+        "no": "No",
+        "groupsLink": "Groups",
+        "telegram": "Telegram",
+        "telegramLinked": "Linked",
+        "telegramNotLinked": "Not linked",
+        "telegramSince": "(linked {{date}})",
+        "groups": "Groups",
+        "manageGroups": "Manage groups",
+        "remove": "Remove",
+        "leaveFailed": "Could not take them out of the group.",
+        "left": "{{first}} is no longer in {{group}}",
+        "noGroups": "In no group.",
+        "removeTitle": "Remove {{first}} from {{space}}?",
+        "removeBody": "If it is private, {{first}} stops seeing it at once. What they added there stays.",
+        "removeFailed": "Could not remove them.",
+        "revokeTitle": "Revoke {{name}}?",
+        "disconnectTitle": "Disconnect {{name}}?",
+        "revokeBody": "It stops working for {{first}} at once. {{first}} can grant it again.",
+        "revokeFailed": "Could not revoke the access.",
+        "disconnectFailed": "Could not disconnect the agent."
+    },
+    "signIn": {
+        "sessions": "Devices signed in",
+        "signOutDevice": "Sign out {{device}}",
+        "signOut": "Sign out",
+        "signOutFailed": "Could not sign the device out.",
+        "signedOut": "Signed out on that device",
+        "by": "by {{method}}",
+        "lastUsed": "last used {{ago}}",
+        "since": "since {{date}}",
+        "nowhere": "Not signed in anywhere now.",
+        "nowhere_deactivated": "Deactivated: signed in nowhere.",
+        "app": "The $t(common:product) app",
+        "methods": "How they sign in",
+        "none": "None",
+        "passkeys": "Passkeys",
+        "passkey": "Passkey",
+        "passkeyAdded": ", added {{date}}",
+        "password": "Password",
+        "set": "Set",
+        "notSet": "Not set",
+        "providers": "Sign-in providers",
+        "newLink": "New password link",
+        "newestLink": "Newest password link",
+        "noLink": "none made"
+    },
+    "dates": {
+        "revoked": "revoked {{date}}",
+        "expires": "expires {{date}}",
+        "expired": "expired {{date}}"
+    },
+    "owns": {
+        "unknown": "What {{first}} owns isn’t known here: the account has no workspace user yet.",
+        "loadFailed": "Could not load what they own.",
+        "loading": "Loading what {{first}} owns…",
+        "owns": "{{first}} owns {{list}}.",
+        "companyOwns": "The company owns it: hand it to another active person at any time.",
+        "nothing": "{{first}} owns nothing that can be transferred.",
+        "transferAll": "Transfer everything…",
+        "transferKind": "Transfer {{kind}}",
+        "transfer": "Transfer…",
+        "deletedKept": "{{type}} · deleted, kept",
+        "more": "and {{count}} more",
+        "keys": "Service keys {{first}} made",
+        "keysNote": "revoked if {{first}} is deactivated",
+        "keysList": "Service keys",
+        "neverUsed": "never used",
+        "used": "used {{ago}}",
+        "noKeys": "{{first}} made no service keys."
+    },
+    "activity": {
+        "title": "Activity",
+        "at": "{{at, datetime(month: short; day: numeric; year: numeric; hour: numeric; minute: 2-digit)}}",
+        "loading": "Loading…",
+        "loadFailed": "Could not load the activity.",
+        "empty": "Nothing recorded yet.",
+        "more": "Load more",
+        "sources": {
+            "workspace": "Workspace",
+            "access_policy": "Access",
+            "socio_access": "Socio access",
+            "room": "Room"
+        }
+    },
+    "assets": {
+        "apps": {
+            "title": "Apps",
+            "count_one": "{{count}} app",
+            "count_other": "{{count}} apps",
+            "what": "Mini apps they own. Their data space moves with them: an app’s bundles and datasets are its owner’s."
+        },
+        "schedules": {
+            "title": "Schedules",
+            "count_one": "{{count}} schedule",
+            "count_other": "{{count}} schedules",
+            "what": "Scheduled tasks, saved jobs and goals, with the conversations they run in."
+        },
+        "socios": {
+            "title": "Personal socios",
+            "count_one": "{{count}} socio",
+            "count_other": "{{count}} socios",
+            "what": "Socios they made for themselves."
+        },
+        "spaces": {
+            "title": "Spaces",
+            "count_one": "{{count}} Space membership",
+            "count_other": "{{count}} Space memberships",
+            "what": "Their place in each Space, as member or editor."
+        },
+        "data": {
+            "title": "Data space",
+            "count_one": "{{count}} item",
+            "count_other": "{{count}} items",
+            "what": "Datasets (private scratch areas too), files and media, folders, embeds and the grants they gave."
+        },
+        "conversations": {
+            "title": "Conversations",
+            "count_one": "{{count}} conversation",
+            "count_other": "{{count}} conversations",
+            "what": "Their own chats (not rooms)."
+        },
+        "memories": {
+            "title": "Memories",
+            "count_one": "{{count}} memory",
+            "count_other": "{{count}} memories",
+            "what": "What socios remember about their work: the new owner gets them as proposals to keep or discard."
+        }
+    }
+}

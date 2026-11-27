@@ -6,15 +6,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import type { PluginBackupStatus } from '@socio/shared/plugins/plugin-backup';
 import type { RestoreDrillStatus, SetupStatus, State, User, WorkspaceState } from '@socio/shared/types';
 
-import {
-    backupLine,
-    continuousLine,
-    continuousOffsiteLine,
-    dataKeyLine,
-    pluginBackupsAlarm,
-    pluginBackupsLine,
-    restoreDrillLine,
-} from '../src/modules/settings/setup-lines';
+import { pluginBackupsAlarm, useSetupLines } from '../src/modules/settings/setup-lines';
 import { WorkspaceSettings } from '../src/modules/settings/WorkspaceSettings';
 
 // Radix checkboxes measure themselves.
@@ -41,6 +33,22 @@ afterEach(() => {
     host.remove();
     vi.unstubAllGlobals();
 });
+
+/** What a hook returns, from a component rendered once on its own root. */
+function hook<T>(use: () => T): T {
+    let value: T | undefined;
+    function Probe() {
+        value = use();
+        return null;
+    }
+    const probe = createRoot(document.createElement('div'));
+    act(() => probe.render(<Probe />));
+    act(() => probe.unmount());
+    return value as T;
+}
+
+/** Service setup's line builders, in en-US. */
+const lines = () => hook(useSetupLines);
 
 async function settingsPage(user: User, setup: Partial<SetupStatus>) {
     vi.stubGlobal('fetch', async () => Response.json({}));
@@ -85,15 +93,16 @@ it('shows admins the data key and the last backup in Service setup', async () =>
         },
     );
     expect(host.querySelector('[data-slot="setup-data-key"]')?.textContent).toBe(
-        'Data key: set; re-sealing 3 item(s) sealed under an older key.',
+        'Data key: set; re-sealing 3 items sealed under an older key.',
     );
     const backup = host.querySelector('[data-slot="setup-backup"]')?.textContent;
-    expect(backup).toContain('Backups: every 24 hour(s); last at ');
+    expect(backup).toContain('Backups: every 24 hours; last at ');
     expect(backup).toContain('(5 MB)');
     expect(backup).toContain('the off-site copy failed: Object storage PUT failed: HTTP 403.');
 });
 
 it('shows admins each plugin whose own storage isn’t backed up, in red when its entry declares no backup (CB-458)', async () => {
+    const { pluginBackupsLine } = lines();
     const since = Date.UTC(2026, 10, 21, 9);
     const when = (ms: number) => new Date(ms).toISOString();
     const notes: PluginBackupStatus = {
@@ -143,6 +152,7 @@ it('shows admins each plugin whose own storage isn’t backed up, in red when it
 });
 
 it('shows admins a plugin whose backups fail, are out of date or paused, and says when all are backed up (CB-458 step 5)', async () => {
+    const { pluginBackupsLine } = lines();
     const when = (ms: number) => new Date(ms).toISOString();
     const at = Date.UTC(2026, 10, 22, 9);
     const base = { declared: true, volumes: ['data'] };
@@ -193,14 +203,15 @@ it('lets admins edit the workspace’s branding, and not members (CB-390)', asyn
 });
 
 it('says what to do in each data key and backup state', () => {
+    const { dataKeyLine, backupLine, continuousLine } = lines();
     expect(dataKeyLine({ configured: false, legacy: 0, previous: 0, unknown: 0 })).toMatch(
         /^not set; .* Set DATA_ENCRYPTION_KEY$/,
     );
     expect(dataKeyLine({ configured: false, legacy: 0, previous: 0, unknown: 3 })).toBe(
-        'not set, but 3 item(s) are sealed under a data key; set it again as DATA_ENCRYPTION_KEY',
+        'not set, but 3 items are sealed under a data key; set it again as DATA_ENCRYPTION_KEY',
     );
     expect(dataKeyLine({ configured: true, legacy: 0, previous: 0, unknown: 2 })).toMatch(
-        /^2 item\(s\) are sealed under a key this server doesn’t have/,
+        /^2 items are sealed under a key this server doesn’t have/,
     );
     expect(dataKeyLine({ configured: true, legacy: 0, previous: 0, unknown: 0 })).toBe('set');
     expect(backupLine({ intervalHours: 0, offsite: false, running: false })).toBe('scheduled backups off; none yet');
@@ -212,7 +223,7 @@ it('says what to do in each data key and backup state', () => {
             lastError: 'File system error (ENOSPC).',
         }),
     ).toBe(
-        'every 24 hour(s); one is running now; the last one failed: File system error (ENOSPC); not copied off-site yet',
+        'every 24 hours; one is running now; the last one failed: File system error (ENOSPC); not copied off-site yet',
     );
     const at = Date.UTC(2026, 9, 19, 12);
     const time = new Date(at).toLocaleString();
@@ -367,6 +378,7 @@ it('shows admins the continuous copy off-site next to the continuous copy (CB-11
 });
 
 it('says how the continuous copy off-site is doing in each state', () => {
+    const { continuousOffsiteLine } = lines();
     const at = Date.UTC(2026, 9, 20, 9, 30);
     const time = new Date(at).toLocaleString();
     const base = { intervalSeconds: 60, lagMs: 0, waiting: 0, failures: 0 };
@@ -391,15 +403,16 @@ it('says how the continuous copy off-site is doing in each state', () => {
             behind: true,
         }),
     ).toBe(
-        `every 60 seconds; behind: the newest copy has waited 3 h; everything up to ${time} is off-site; 2 file(s) waiting; nothing off-site is removed until they go`,
+        `every 60 seconds; behind: the newest copy has waited 3 h; everything up to ${time} is off-site; 2 files waiting; nothing off-site is removed until they go`,
     );
 });
 
 it('says how the restore drill went, with each restore’s time (CB-111)', () => {
+    const { restoreDrillLine } = lines();
     const at = Date.UTC(2026, 9, 21, 3, 0);
     const point = Date.UTC(2026, 9, 14, 9, 30, 5);
     const time = (ms: number) => new Date(ms).toLocaleString();
-    expect(restoreDrillLine({ intervalDays: 30, running: false })).toBe('every 30 day(s); none yet');
+    expect(restoreDrillLine({ intervalDays: 30, running: false })).toBe('every 30 days; none yet');
     expect(restoreDrillLine({ intervalDays: 0, running: true })).toBe('only when an admin runs it; one is running now');
     const restores = [
         { source: 'local' as const, ok: true, durationMs: 3_000 },
@@ -420,7 +433,7 @@ it('says how the restore drill went, with each restore’s time (CB-111)', () =>
             },
         }),
     ).toBe(
-        `every 30 day(s); the last one passed at ${time(at)} in 2 min (latest 3 s, as of ${time(point)} 4 s, off-site 2 min); rows match live`,
+        `every 30 days; the last one passed at ${time(at)} in 2 min (latest 3 s, as of ${time(point)} 4 s, off-site 2 min); rows match live`,
     );
     expect(
         restoreDrillLine({
@@ -435,7 +448,7 @@ it('says how the restore drill went, with each restore’s time (CB-111)', () =>
             },
         }),
     ).toBe(
-        `every 30 day(s); the last one passed at ${time(at)} in 7 s (latest 3 s, as of ${time(point)} 4 s); 1 table(s) differ from live by writes since the copy`,
+        `every 30 days; the last one passed at ${time(at)} in 7 s (latest 3 s, as of ${time(point)} 4 s); 1 table differs from live by writes since the copy`,
     );
     expect(
         restoreDrillLine({
@@ -450,7 +463,7 @@ it('says how the restore drill went, with each restore’s time (CB-111)', () =>
             },
         }),
     ).toBe(
-        `every 30 day(s); the last one failed at ${time(at)}: The point-in-time restore: litestream restore failed: timestamp does not exist`,
+        `every 30 days; the last one failed at ${time(at)}: The point-in-time restore: litestream restore failed: timestamp does not exist`,
     );
 });
 
@@ -501,7 +514,7 @@ it('shows admins the restore drill under the continuous copy, in red when it fai
     // Right after the continuous copy's line.
     expect(host.querySelector('[data-slot="setup-continuous-copy"]')!.nextElementSibling).toBe(line.parentElement);
     expect(line.textContent).toMatch(
-        /^Restore drill: every 30 day\(s\); the last one failed at .+: The latest restore lacks table\(s\) issues\.$/,
+        /^Restore drill: every 30 days; the last one failed at .+: The latest restore lacks table\(s\) issues\.$/,
     );
     expect(line.className).toContain('text-destructive');
     const button = () => [...host.querySelectorAll('button')].find((b) => /drill/i.test(b.textContent ?? ''));

@@ -1,0 +1,139 @@
+{
+    "readOnly": {
+        "setting": "Only an admin can change this setting.",
+        "settings": "Only an admin can change these settings.",
+        "limits": "Only an admin can change these limits.",
+        "backupSchedule": "Only an admin can change the backup schedule."
+    },
+    "permissions": {
+        "title": "Permissions",
+        "autosave": "Changes save as you make them.",
+        "research": {
+            "title": "Public-page research",
+            "description": "Allow web search and reading public pages, cited by URL. Global settings always take precedence.",
+            "saved": "Public-page research turned on",
+            "saved_off": "Public-page research turned off. Turns running now were stopped."
+        },
+        "memory": {
+            "title": "Use saved memories",
+            "description": "Include your preferences in new turns. Changing permission stops active work.",
+            "saved": "Saved memories turned on. Turns running now were stopped.",
+            "saved_off": "Saved memories turned off. Turns running now were stopped."
+        }
+    },
+    "dailyLimits": {
+        "perDot": "Per socio",
+        "perUser": "Per person",
+        "invalid": "Use whole numbers from 0 to {{max}}.",
+        "dot": {
+            "title": "Socio filing limits",
+            "intro": "How much socios may file a day: capability requests, board items, comments and votes each count on their own. 0 turns filing off.",
+            "perDotHint": "For all its people, in 24 hours.",
+            "perUserHint": "By all their socios, in 24 hours.",
+            "saved": "Socio filing limits saved"
+        },
+        "notification": {
+            "title": "Notification limits",
+            "intro": "How often socios may notify people a day (notify_user): one shown in the app instead, or held back while they look at the chat, counts too. Tests don’t. 0 turns socios’ notifications off.",
+            "perDotHint": "From one socio to one person, in 24 hours.",
+            "perUserHint": "To one person from all their socios, in 24 hours.",
+            "saved": "Notification limits saved"
+        }
+    },
+    "backupSchedule": {
+        "title": "Backup schedule",
+        "intro": "How often the server backs up, and how long permanent removals’ backups stay. 0 turns an interval off. Changes apply within minutes, without a restart.",
+        "saved": "Backup schedule saved",
+        "invalid": "Use 0 to {{hours}} hours, 0 or {{secondsMin}} to {{secondsMax}} whole seconds, 0 to {{drillDays}} whole days for the drill, and 1 to {{purgeDays}} for removal backups.",
+        "hours": {
+            "label": "Backups, every (hours)",
+            "hint": "The database and data spaces, counted from the last backup, with the off-site copy when it is set up."
+        },
+        "seconds": {
+            "label": "Continuous copy off-site, every (seconds)",
+            "hint": "Litestream’s newest changes, sealed, to the off-site copy; at least {{min}}. Needs the off-site copy and the continuous copy set up."
+        },
+        "days": {
+            "label": "Restore drill, every (days)",
+            "hint": "Restores the continuous copy into scratch files and checks them, off-site too when it is set up. 0: only with Run drill now."
+        },
+        "purgeDays": {
+            "label": "Permanent removal backups, kept (days)",
+            "hint": "What each permanent removal backed up goes with the first scheduled backup after this many days. Never sent off-site."
+        }
+    },
+    "branding": {
+        "title": "Workspace branding",
+        "intro": "The name and logo shown in navigation and on sign-in.",
+        "name": "Display name",
+        "namePlaceholder": "Client Company Brain",
+        "nameSaved": "Workspace name saved",
+        "nameRequired": "Name the workspace: it shows in navigation and on sign-in.",
+        "logoPreview": "Logo preview",
+        "logo": "Client logo",
+        "logoInvalid": "Choose a PNG, JPEG or WebP image up to 256 KB.",
+        "logoUnreadable": "Could not read logo. Please retry.",
+        "logoSaved": "Logo saved",
+        "logoHint": "PNG, JPEG or WebP, up to 256 KB. Stored in this workspace. A logo saves as soon as you pick it.",
+        "useProductLogo": "Use $t(common:product) logo",
+        "productLogoSaved": "$t(common:product) logo in use",
+        "useDefaults": "Use deployment defaults",
+        "defaultsSaved": "Back to the deployment’s branding"
+    },
+    "spaces": {
+        "title": "Spaces",
+        "intro": "Who can create Spaces. Workspace admins always can.",
+        "toggle": "Members can create Spaces",
+        "description": "On by default. A member’s Space is private to them and the people they add; only admins make one for the whole workspace.",
+        "saved": "Members can create Spaces",
+        "saved_off": "Only admins can create Spaces"
+    },
+    "modelFallback": {
+        "title": "Busy models",
+        "intro": "When a model turns a reply away for a moment, the socio waits and tries again within the turn time limit. If it still can’t go on, it ends with what it did and what is left, so the person can ask it to carry on.",
+        "toggle": "Fall back to the shared model when a person’s own model is busy",
+        "description": "On by default. A reply on someone’s own ChatGPT plan finishes on the workspace’s shared model, and says so. Never when they chose their own model for that conversation.",
+        "saved": "Fallback to the shared model turned on",
+        "saved_off": "Fallback to the shared model turned off"
+    },
+    "tracing": {
+        "title": "Tracing",
+        "intro": "Every turn keeps a trace in Runs: its model rounds, tool calls, tokens and why it ended, without content.",
+        "exporting": "Traces also go to the OpenTelemetry collector the server is set up with.",
+        "notExporting": "To send traces to an OpenTelemetry collector, the operator sets OTEL_EXPORTER_OTLP_ENDPOINT.",
+        "toggle": "Include content in traces",
+        "description": "Off by default. When on, exported traces carry what people sent, the socio’s answer and each tool’s input and output, cut to 4,000 characters each. Whoever can read the collector can read them.",
+        "saved": "Content in traces turned on, for turns from now",
+        "saved_off": "Content in traces turned off"
+    },
+    "autoTriage": {
+        "title": "Automatic triage",
+        "intro": "When a new issue lands in triage, the workspace’s model suggests its kind, area, priority and labels, and posts them as a comment. Nothing changes until an admin applies the suggestion from the issue.",
+        "toggle": "Propose triage for new issues",
+        "description": "Off by default. Issues are sent to the model as data, once each; a failed or invalid answer is not retried.",
+        "toggled": "Automatic triage turned on",
+        "toggled_off": "Automatic triage turned off",
+        "saved": "Automatic triage saved",
+        "invalid": "Use a whole number from 0 to {{max}}.",
+        "perDay": "Most a day",
+        "perDayHint": "Issues asked about in 24 hours, failures included. 0 asks about none."
+    },
+    "context": {
+        "title": "Long chats",
+        "intro": "When a chat outgrows its model, its oldest turns are kept as notes: a summary and pinned facts, such as decisions and ids. Nothing is deleted; socios can read any of it again.",
+        "saved": "Long chats saved",
+        "summaryModel": "Notes are written by",
+        "summaryModelHint": "The shared model is the workspace’s default backend, without reasoning: notes come in seconds and cost the chat’s model nothing. The chat’s own model can write fuller notes, but with reasoning it may take minutes.",
+        "models": {
+            "shared": "The shared model",
+            "chat": "The chat’s own model"
+        },
+        "selection": "Each reply sees",
+        "selectionHint": "Which pinned facts go with each message once there are too many to send them all; the others stay stored either way. Matching each request answered the most questions in testing. A short core makes the socio search its notes, which takes more rounds.",
+        "selections": {
+            "age": "The newest facts",
+            "relevance": "The facts that match each request",
+            "pointer": "A short core, the rest on search"
+        }
+    }
+}

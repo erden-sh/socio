@@ -141,7 +141,7 @@ it('narrows only what the environment allows, previews it, and confirms with the
     expect(button('Review and confirm').disabled).toBe(true);
     act(() => checkbox('Passkeys').click());
     await until(() => !!host!.querySelector('[data-slot=access-impact]'), 'the preview');
-    expect(host!.textContent).toContain('1 session(s) will end.');
+    expect(host!.textContent).toContain('1 session will end.');
     expect(calls.find((call) => call.path === '/api/access-policy/preview')?.body).toEqual({
         policy: { passkey: false },
         version: 3,

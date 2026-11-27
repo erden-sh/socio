@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { toast } from 'sonner';
 
+import { useTranslation } from '@socio/i18n/react';
 import {
-    DATA_API_SCOPE_LABELS,
     DATA_API_TOKENS_PATH,
     type CreatedDataApiToken,
     type DataApiScope,
@@ -30,7 +30,12 @@ import { cn } from '@/lib/utils';
 /** `/api/data/api-tokens` as `api()` takes it (under `/api` already). */
 const PATH = DATA_API_TOKENS_PATH.replace(/^\/api/, '');
 const failed = (e: unknown, fallback: string) => toast.error(e instanceof Error ? e.message : fallback);
-const when = (at: number) => new Date(at).toLocaleDateString();
+/** Each scope's description (the scope itself is an identifier, shown as is). */
+const SCOPE_KEYS = {
+    'data:read': 'settings.data-api:scopes.read',
+    'data:write': 'settings.data-api:scopes.write',
+    'data:admin': 'settings.data-api:scopes.admin',
+} as const satisfies Record<DataApiScope, string>;
 /** Lifetimes on offer, within the server's limit. */
 const dayChoices = (list: DataApiTokenList) =>
     [...new Set([1, list.daysDefault, 14, list.daysMax])].filter((d) => d <= list.daysMax).sort((a, b) => a - b);
@@ -45,6 +50,7 @@ function NewTokenDialog({
     onClose: () => void;
     onCreated: () => void;
 }) {
+    const { t } = useTranslation(['settings.data-api']);
     const [name, setName] = useState('');
     const [scopes, setScopes] = useState<DataApiScope[]>(['data:read']);
     const [days, setDays] = useState(list.daysDefault);
@@ -59,25 +65,23 @@ function NewTokenDialog({
                 setCreated(made);
                 onCreated();
             })
-            .catch((error) => failed(error, 'Could not make the token.'))
+            .catch((error) => failed(error, t('settings.data-api:errors.make')))
             .finally(() => setBusy(false));
     };
     return (
         <Dialog open onOpenChange={(open) => !open && !busy && onClose()}>
             <DialogContent data-slot="new-data-api-token">
                 <DialogHeader>
-                    <DialogTitle>New data API token</DialogTitle>
+                    <DialogTitle>{t('settings.data-api:new.title')}</DialogTitle>
                     <DialogDescription>
-                        {created
-                            ? 'Copy it now: it isn’t shown again.'
-                            : 'For a script of yours, such as an import. It reaches the company’s datasets only, never a person’s, a socio’s or a plugin’s.'}
+                        {created ? t('settings.data-api:new.copyNow') : t('settings.data-api:new.description')}
                     </DialogDescription>
                 </DialogHeader>
                 {created ? (
                     <div className="grid gap-2 text-sm" data-slot="data-api-token-value">
-                        <span>Token “{created.apiToken.name}”. Copy it now: it isn’t shown again.</span>
+                        <span>{t('settings.data-api:new.created', { name: created.apiToken.name })}</span>
                         <Input
-                            aria-label="New data API token"
+                            aria-label={t('settings.data-api:new.title')}
                             readOnly
                             value={created.token}
                             onFocus={(e) => e.target.select()}
@@ -88,20 +92,20 @@ function NewTokenDialog({
                                 onClick={() => {
                                     void navigator.clipboard
                                         ?.writeText(created.token)
-                                        .then(() => toast.success('Token copied'));
+                                        .then(() => toast.success(t('settings.data-api:new.copied')));
                                 }}
                             >
-                                Copy
+                                {t('settings.data-api:new.copy')}
                             </Button>
-                            <Button onClick={onClose}>Done</Button>
+                            <Button onClick={onClose}>{t('settings.data-api:new.done')}</Button>
                         </DialogFooter>
                     </div>
                 ) : (
-                    <form className="grid gap-3" aria-label="New data API token" onSubmit={submit}>
+                    <form className="grid gap-3" aria-label={t('settings.data-api:new.title')} onSubmit={submit}>
                         <span className="grid gap-2 sm:grid-cols-[1fr_auto]">
                             <Input
-                                aria-label="Token name"
-                                placeholder="Token name, e.g. what runs it"
+                                aria-label={t('settings.data-api:new.name')}
+                                placeholder={t('settings.data-api:new.namePlaceholder')}
                                 required
                                 maxLength={60}
                                 value={name}
@@ -109,14 +113,14 @@ function NewTokenDialog({
                             />
                             <select
                                 data-slot="native-select"
-                                aria-label="Token lifetime"
+                                aria-label={t('settings.data-api:new.lifetime')}
                                 className={cn(nativeSelect, 'w-32')}
                                 value={days}
                                 onChange={(e) => setDays(Number(e.target.value))}
                             >
                                 {dayChoices(list).map((value) => (
                                     <option key={value} value={value}>
-                                        {value} {value === 1 ? 'day' : 'days'}
+                                        {t('settings.data-api:new.days', { count: value })}
                                     </option>
                                 ))}
                             </select>
@@ -135,14 +139,14 @@ function NewTokenDialog({
                                         }
                                     />
                                     <code className="text-xs">{scope}</code>
-                                    <span className="text-muted-foreground">{DATA_API_SCOPE_LABELS[scope]}</span>
+                                    <span className="text-muted-foreground">{t(SCOPE_KEYS[scope])}</span>
                                 </label>
                             ))}
                         </span>
                         <label className="grid gap-1 text-sm">
-                            <span>Operations a minute (at most {list.statementsPerMinuteMax.toLocaleString()})</span>
+                            <span>{t('settings.data-api:new.budget', { max: list.statementsPerMinuteMax })}</span>
                             <Input
-                                aria-label="Operations a minute"
+                                aria-label={t('settings.data-api:new.budgetLabel')}
                                 type="number"
                                 min={1}
                                 max={list.statementsPerMinuteMax}
@@ -153,10 +157,10 @@ function NewTokenDialog({
                         </label>
                         <DialogFooter>
                             <Button type="button" variant="outline" disabled={busy} onClick={onClose}>
-                                Cancel
+                                {t('settings.data-api:new.cancel')}
                             </Button>
                             <Button type="submit" disabled={busy || !name.trim() || !scopes.length}>
-                                Make token
+                                {t('settings.data-api:new.submit')}
                             </Button>
                         </DialogFooter>
                     </form>
@@ -166,54 +170,56 @@ function NewTokenDialog({
     );
 }
 
-/** Where a token stands: live until it expires or is revoked. */
-function tokenState(token: DataApiTokenView, now: number) {
-    if (token.revokedAt) {
-        return `revoked ${when(token.revokedAt)}${token.revokedBy === 'system' ? ' (its maker is no longer an admin)' : ''}`;
-    }
-    return token.expiresAt > now ? `expires ${when(token.expiresAt)}` : `expired ${when(token.expiresAt)}`;
-}
-
 /**
  * Settings → Data API: admins' tokens for the data API, on the company's
  * datasets. Each is shown once, has scopes, an expiry and a budget, and
  * may be revoked; what it writes is recorded as the token, for its maker.
  */
 export function DataApiTokensSection() {
+    const { t } = useTranslation(['settings.data-api']);
+    /** Where a token stands: live until it expires or is revoked. */
+    const tokenState = (token: DataApiTokenView, now: number) => {
+        if (token.revokedAt) {
+            return t('settings.data-api:token.revoked', {
+                at: new Date(token.revokedAt),
+                context: token.revokedBy === 'system' ? 'system' : undefined,
+            });
+        }
+        return token.expiresAt > now
+            ? t('settings.data-api:token.expires', { at: new Date(token.expiresAt) })
+            : t('settings.data-api:token.expired', { at: new Date(token.expiresAt) });
+    };
     const [list, setList] = useState<DataApiTokenList>();
     const [making, setMaking] = useState(false);
     const load = useCallback(
         () =>
             api<DataApiTokenList>(PATH)
                 .then(setList)
-                .catch((error) => failed(error, 'Could not load the data API tokens.')),
-        [],
+                .catch((error) => failed(error, t('settings.data-api:errors.load'))),
+        [t],
     );
     useEffect(() => void load(), [load]);
     const revoke = (token: DataApiTokenView) =>
         void api(`${PATH}/${encodeURIComponent(token.id)}`, 'DELETE')
             .then(() => {
-                toast.success(`Revoked “${token.name}”`);
+                toast.success(t('settings.data-api:revoke.done', { name: token.name }));
                 return load();
             })
-            .catch((error) => failed(error, 'Could not revoke the token.'));
+            .catch((error) => failed(error, t('settings.data-api:errors.revoke')));
     const now = Date.now();
     return (
         <div className="grid gap-3" data-slot="data-api-tokens">
-            <p className="text-sm text-muted-foreground">
-                Tokens for your own scripts, such as an import from another tool, to create and fill the company’s
-                datasets through the data API. Each one is shown once.
-            </p>
+            <p className="text-sm text-muted-foreground">{t('settings.data-api:intro')}</p>
             {list && list.tokens.length ? (
-                <Table aria-label="Data API tokens">
+                <Table aria-label={t('settings.data-api:list.label')}>
                     <TableHeader>
                         <TableRow>
-                            <TableHead>Token</TableHead>
-                            <TableHead>Made by</TableHead>
-                            <TableHead>Last used</TableHead>
-                            <TableHead>Expiry</TableHead>
+                            <TableHead>{t('settings.data-api:list.token')}</TableHead>
+                            <TableHead>{t('settings.data-api:list.madeBy')}</TableHead>
+                            <TableHead>{t('settings.data-api:list.lastUsed')}</TableHead>
+                            <TableHead>{t('settings.data-api:list.expiry')}</TableHead>
                             <TableHead>
-                                <span className="sr-only">Actions</span>
+                                <span className="sr-only">{t('settings.data-api:list.actions')}</span>
                             </TableHead>
                         </TableRow>
                     </TableHeader>
@@ -228,22 +234,32 @@ export function DataApiTokensSection() {
                                 >
                                     <TableCell className="whitespace-normal">
                                         <span className={cn('block', !live && 'line-through')}>
-                                            {token.name} <code className="text-xs">cbdt_api_{token.hint}…</code>
+                                            {token.name}{' '}
+                                            <code className="text-xs">
+                                                {/* oxlint-disable-next-line socio/no-literal-text -- the token's prefix, an identifier */}
+                                                cbdt_api_{token.hint}…
+                                            </code>
                                         </span>
                                         <span className="text-xs text-muted-foreground">
-                                            {token.scopes.join(', ')}; {token.statementsPerMinute} a minute
+                                            {t('settings.data-api:token.usage', {
+                                                scopes: token.scopes.join(', '),
+                                                perMinute: token.statementsPerMinute,
+                                            })}
                                         </span>
                                     </TableCell>
                                     <TableCell className="whitespace-normal">
-                                        {token.createdByName ?? 'Unknown'}
+                                        {token.createdByName ?? t('settings.data-api:token.unknownMaker')}
                                         <span className="block text-xs text-muted-foreground">
-                                            {when(token.createdAt)}
+                                            {t('settings.data-api:token.madeAt', { at: new Date(token.createdAt) })}
                                         </span>
                                     </TableCell>
                                     <TableCell className="whitespace-normal">
                                         {token.lastUsedAt
-                                            ? `${new Date(token.lastUsedAt).toLocaleString()} (${token.uses} request${token.uses === 1 ? '' : 's'})`
-                                            : 'never used'}
+                                            ? t('settings.data-api:token.used', {
+                                                  at: new Date(token.lastUsedAt),
+                                                  count: token.uses,
+                                              })
+                                            : t('settings.data-api:token.neverUsed')}
                                     </TableCell>
                                     <TableCell>{tokenState(token, now)}</TableCell>
                                     <TableCell className="text-right">
@@ -251,10 +267,10 @@ export function DataApiTokensSection() {
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
-                                                aria-label={`Revoke ${token.name}`}
+                                                aria-label={t('settings.data-api:revoke.label', { name: token.name })}
                                                 onClick={() => revoke(token)}
                                             >
-                                                Revoke
+                                                {t('settings.data-api:revoke.action')}
                                             </Button>
                                         )}
                                     </TableCell>
@@ -264,11 +280,11 @@ export function DataApiTokensSection() {
                     </TableBody>
                 </Table>
             ) : (
-                list && <span className="text-sm text-muted-foreground">No data API tokens yet.</span>
+                list && <span className="text-sm text-muted-foreground">{t('settings.data-api:list.empty')}</span>
             )}
             <span>
                 <Button disabled={!list} onClick={() => setMaking(true)}>
-                    New token
+                    {t('settings.data-api:new.open')}
                 </Button>
             </span>
             {making && list && (

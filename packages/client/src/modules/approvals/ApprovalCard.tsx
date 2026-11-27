@@ -9,7 +9,7 @@ import { useLiveTopic } from '../../lib/change-channel';
 import { LocalTime } from '../../lib/local-time';
 import { useLoaderSeed } from '../../lib/page-loader';
 import { openAppPath } from '../pages/page-navigation';
-import { SocioAccessCardBody, allowLabel } from '../settings/SocioAccessCard';
+import { SocioAccessCardBody, useAllowLabel } from '../settings/SocioAccessCard';
 
 import { useReportApproval, type ApprovalRegistry } from './ApprovalBar';
 
@@ -195,6 +195,7 @@ export function ApprovalCard({
     /** The chat's requests, for the composer's approval bar (CB-66). */
     registry?: ApprovalRegistry;
 }) {
+    const allowLabel = useAllowLabel();
     const { view, error, busy, decide, undo, reload } = useApproval(id, initial);
     const waitHint = useId();
     // In a chat, the composer's approval bar decides through this card (CB-66).

@@ -1,3 +1,5 @@
+import { useTranslation } from '@socio/i18n/react';
+
 import { SettingsCard } from './AccountSettings';
 import { AutosaveHeader, SaveError, useAutosave } from './autosave';
 
@@ -17,31 +19,32 @@ export function ModelFallbackSetting({
     readOnly: boolean;
     mutate: (path: string, method: string, body?: unknown) => Promise<boolean>;
 }) {
+    const { t } = useTranslation(['settings.workspace']);
     const auto = useAutosave({ modelFallback: enabled ?? true }, (value) => mutate('/settings', 'PATCH', value));
     return (
         <SettingsCard>
             <section className="grid gap-4" data-slot="model-fallback">
-                <AutosaveHeader title="Busy models" status={!readOnly ? auto.status : undefined}>
-                    When a model turns a reply away for a moment, the socio waits and tries again within the turn time
-                    limit. If it still can’t go on, it ends with what it did and what is left, so the person can ask it
-                    to carry on.
+                <AutosaveHeader
+                    title={t('settings.workspace:modelFallback.title')}
+                    status={!readOnly ? auto.status : undefined}
+                >
+                    {t('settings.workspace:modelFallback.intro')}
                 </AutosaveHeader>
                 <PermissionRow
-                    title="Fall back to the shared model when a person’s own model is busy"
+                    title={t('settings.workspace:modelFallback.toggle')}
                     checked={auto.value.modelFallback}
                     disabled={readOnly}
                     onCheckedChange={(on) =>
                         void auto.change(
                             { modelFallback: on },
-                            `Fallback to the shared model turned ${on ? 'on' : 'off'}`,
+                            t('settings.workspace:modelFallback.saved', { context: on ? undefined : 'off' }),
                         )
                     }
                 >
-                    On by default. A reply on someone’s own ChatGPT plan finishes on the workspace’s shared model, and
-                    says so. Never when they chose their own model for that conversation.
+                    {t('settings.workspace:modelFallback.description')}
                 </PermissionRow>
                 <SaveError error={auto.error} />
-                {readOnly && <p className="text-muted-foreground">Only an admin can change this setting.</p>}
+                {readOnly && <p className="text-muted-foreground">{t('settings.workspace:readOnly.setting')}</p>}
             </section>
         </SettingsCard>
     );

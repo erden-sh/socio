@@ -1,6 +1,7 @@
 import { useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import { toast } from 'sonner';
 
+import { useTranslation } from '@socio/i18n/react';
 import type { SignInMethods } from '@socio/shared/auth';
 import type { LeaveWorkspaceCheck } from '@socio/shared/leave-workspace';
 import { roleLabel } from '@socio/shared/roles';
@@ -44,16 +45,17 @@ export function AccountSections({
     methods?: SignInMethods;
     onSignedOut: () => void;
 }) {
+    const { t } = useTranslation(['settings.account']);
     const user = useContext(CurrentUser);
     if (!methods) {
         return (
             <SettingsCard>
                 <section className="grid gap-2" data-slot="account-mock">
-                    <h3 className="font-medium">Account</h3>
+                    <h3 className="font-medium">{t('settings.account:mock.title')}</h3>
                     <p className="text-muted-foreground">
-                        Signed in as {user?.name}
-                        {user ? ` (${roleLabel(user.role)})` : ''} with this machine’s sign-in picker: there is no
-                        password or passkey to manage. Switch user from the account menu.
+                        {user
+                            ? t('settings.account:mock.signedIn', { name: user.name, role: roleLabel(user.role) })
+                            : t('settings.account:mock.signedIn', { context: 'nobody', name: '', role: '' })}
                     </p>
                 </section>
             </SettingsCard>
@@ -79,8 +81,8 @@ export function AccountSections({
             </SettingsCard>
             <SettingsCard>
                 <section className="grid gap-2">
-                    <h3 className="font-medium">Sessions</h3>
-                    <p className="text-muted-foreground">Signs this account out on every device, this one included.</p>
+                    <h3 className="font-medium">{t('settings.account:sessions.title')}</h3>
+                    <p className="text-muted-foreground">{t('settings.account:sessions.description')}</p>
                     <div>
                         <Button
                             variant="outline"
@@ -89,11 +91,11 @@ export function AccountSections({
                                     await signOutEverywhere();
                                     onSignedOut();
                                 } catch (e) {
-                                    failed(e, 'Could not sign out everywhere.');
+                                    failed(e, t('settings.account:sessions.failed'));
                                 }
                             }}
                         >
-                            Sign out everywhere
+                            {t('settings.account:sessions.signOutEverywhere')}
                         </Button>
                     </div>
                 </section>
@@ -112,6 +114,7 @@ export function AccountSections({
  * owner can't.
  */
 function LeaveWorkspace({ onLeft }: { onLeft: () => void }) {
+    const { t } = useTranslation(['settings.account']);
     const [check, setCheck] = useState<LeaveWorkspaceCheck>();
     const [confirming, setConfirming] = useState(false);
     useEffect(() => {
@@ -121,39 +124,35 @@ function LeaveWorkspace({ onLeft }: { onLeft: () => void }) {
     }, []);
     return (
         <section className="grid gap-2" data-slot="leave-workspace">
-            <h3 className="font-medium">Leave workspace</h3>
-            <p className="text-muted-foreground">
-                Ends your membership: you are signed out on every device and can&apos;t sign in again unless an admin
-                brings you back. What you made stays with the workspace, where admins can hand it to someone else.
-            </p>
+            <h3 className="font-medium">{t('settings.account:leave.title')}</h3>
+            <p className="text-muted-foreground">{t('settings.account:leave.description')}</p>
             {check?.refusal && <p className="text-muted-foreground">{check.refusal.message}</p>}
             <div>
                 <Button variant="destructive" disabled={!check?.allowed} onClick={() => setConfirming(true)}>
-                    Leave workspace
+                    {t('settings.account:leave.button')}
                 </Button>
             </div>
             {confirming && (
                 <ConfirmDelete
-                    title="Leave this workspace?"
+                    title={t('settings.account:leave.confirmTitle')}
                     slot="confirm-leave-workspace"
-                    action="Leave"
+                    action={t('settings.account:leave.confirmAction')}
                     onClose={() => setConfirming(false)}
                     onConfirm={async () => {
                         try {
                             await leaveWorkspace();
                             setConfirming(false);
-                            toast.success('You left the workspace');
+                            toast.success(t('settings.account:leave.left'));
                             onLeft();
                         } catch (e) {
-                            failed(e, 'Could not leave the workspace.');
+                            failed(e, t('settings.account:leave.failed'));
                             await leaveWorkspaceCheck()
                                 .then(setCheck)
                                 .catch(() => undefined);
                         }
                     }}
                 >
-                    You will be signed out everywhere, including the Socio app on your phone, which erases its copy.
-                    Your chats, pages and other work stay with the workspace. Only an admin can let you back in.
+                    {t('settings.account:leave.confirmBody')}
                 </ConfirmDelete>
             )}
         </section>
@@ -166,29 +165,28 @@ export function SettingsCard({ children }: { children: ReactNode }) {
 }
 
 function Passkeys() {
+    const { t } = useTranslation(['settings.account']);
     const [passkeys, setPasskeys] = useState<Passkey[]>();
     const [name, setName] = useState('');
     const load = useCallback(
         () =>
             listPasskeys()
                 .then(setPasskeys)
-                .catch((e) => failed(e, 'Could not load passkeys.')),
-        [],
+                .catch((e) => failed(e, t('settings.account:passkeys.loadFailed'))),
+        [t],
     );
     useEffect(() => void load(), [load]);
     return (
         <section className="grid gap-2">
-            <h3 className="font-medium">Passkeys</h3>
-            <p className="text-muted-foreground">
-                Sign in with your device&apos;s fingerprint, face or PIN instead of a password.
-            </p>
-            <ul className="grid gap-1" aria-label="Your passkeys">
+            <h3 className="font-medium">{t('settings.account:passkeys.title')}</h3>
+            <p className="text-muted-foreground">{t('settings.account:passkeys.description')}</p>
+            <ul className="grid gap-1" aria-label={t('settings.account:passkeys.list')}>
                 {passkeys?.map((passkey) => (
                     <li key={passkey.id} className="flex items-center gap-2">
-                        <span className="flex-1">{passkey.name || 'Passkey'}</span>
+                        <span className="flex-1">{passkey.name || t('settings.account:passkeys.unnamed')}</span>
                         {passkey.createdAt && (
                             <span className="text-muted-foreground">
-                                {new Date(passkey.createdAt).toLocaleDateString()}
+                                {t('settings.account:passkeys.created', { at: new Date(passkey.createdAt) })}
                             </span>
                         )}
                         <Button
@@ -199,38 +197,40 @@ function Passkeys() {
                                     await deletePasskey(passkey.id);
                                     await load();
                                 } catch (e) {
-                                    failed(e, 'Could not remove the passkey.');
+                                    failed(e, t('settings.account:passkeys.removeFailed'));
                                 }
                             }}
                         >
-                            Remove
+                            {t('settings.account:passkeys.remove')}
                         </Button>
                     </li>
                 ))}
-                {passkeys?.length === 0 && <li className="text-muted-foreground">No passkeys yet.</li>}
+                {passkeys?.length === 0 && (
+                    <li className="text-muted-foreground">{t('settings.account:passkeys.empty')}</li>
+                )}
             </ul>
             <form
                 className="flex gap-2"
                 onSubmit={async (e) => {
                     e.preventDefault();
                     try {
-                        await addPasskey(name.trim() || 'Passkey');
+                        await addPasskey(name.trim() || t('settings.account:passkeys.unnamed'));
                         setName('');
                         await load();
-                        toast.success('Passkey added');
+                        toast.success(t('settings.account:passkeys.added'));
                     } catch (e) {
-                        failed(e, 'Could not add the passkey.');
+                        failed(e, t('settings.account:passkeys.addFailed'));
                     }
                 }}
             >
                 <Input
-                    aria-label="Passkey name"
-                    placeholder="Name, e.g. Laptop"
+                    aria-label={t('settings.account:passkeys.nameLabel')}
+                    placeholder={t('settings.account:passkeys.namePlaceholder')}
                     value={name}
                     maxLength={60}
                     onChange={(e) => setName(e.target.value)}
                 />
-                <Button type="submit">Add a passkey</Button>
+                <Button type="submit">{t('settings.account:passkeys.add')}</Button>
             </form>
         </section>
     );
@@ -238,26 +238,27 @@ function Passkeys() {
 
 /** The name others see on conversations, issues and comments. */
 function Profile() {
+    const { t } = useTranslation(['settings.account']);
     const user = useContext(CurrentUser);
     const [name, setName] = useState(user?.name ?? '');
     const trimmed = name.trim();
     return (
         <section className="grid gap-2">
-            <h3 className="font-medium">Name</h3>
+            <h3 className="font-medium">{t('settings.account:name.title')}</h3>
             <form
                 className="grid gap-2 sm:grid-cols-[1fr_auto]"
                 onSubmit={async (e) => {
                     e.preventDefault();
                     try {
                         await updateName(trimmed);
-                        toast.success('Name saved');
+                        toast.success(t('settings.account:name.saved'));
                     } catch (e) {
-                        failed(e, 'Could not save the name.');
+                        failed(e, t('settings.account:name.failed'));
                     }
                 }}
             >
                 <Input
-                    aria-label="Your name"
+                    aria-label={t('settings.account:name.label')}
                     autoComplete="name"
                     required
                     maxLength={80}
@@ -265,7 +266,7 @@ function Profile() {
                     onChange={(e) => setName(e.target.value)}
                 />
                 <Button type="submit" disabled={!trimmed || trimmed === user?.name}>
-                    Save
+                    {t('settings.account:name.save')}
                 </Button>
             </form>
         </section>
@@ -273,11 +274,12 @@ function Profile() {
 }
 
 function PasswordChange() {
+    const { t } = useTranslation(['settings.account']);
     const [current, setCurrent] = useState('');
     const [next, setNext] = useState('');
     return (
         <section className="grid gap-2">
-            <h3 className="font-medium">Password</h3>
+            <h3 className="font-medium">{t('settings.account:password.title')}</h3>
             <form
                 className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]"
                 onSubmit={async (e) => {
@@ -286,16 +288,16 @@ function PasswordChange() {
                         await changePassword(current, next);
                         setCurrent('');
                         setNext('');
-                        toast.success('Password changed; other sessions signed out');
+                        toast.success(t('settings.account:password.changed'));
                     } catch (e) {
-                        failed(e, 'Could not change the password.');
+                        failed(e, t('settings.account:password.failed'));
                     }
                 }}
             >
                 <Input
                     type="password"
-                    aria-label="Current password"
-                    placeholder="Current password"
+                    aria-label={t('settings.account:password.current')}
+                    placeholder={t('settings.account:password.current')}
                     autoComplete="current-password"
                     required
                     value={current}
@@ -303,15 +305,15 @@ function PasswordChange() {
                 />
                 <Input
                     type="password"
-                    aria-label="New password"
-                    placeholder="New password (10+)"
+                    aria-label={t('settings.account:password.new')}
+                    placeholder={t('settings.account:password.newPlaceholder')}
                     autoComplete="new-password"
                     minLength={10}
                     required
                     value={next}
                     onChange={(e) => setNext(e.target.value)}
                 />
-                <Button type="submit">Change</Button>
+                <Button type="submit">{t('settings.account:password.change')}</Button>
             </form>
         </section>
     );

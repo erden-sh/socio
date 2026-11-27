@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { toast } from 'sonner';
 
+import { useTranslation } from '@socio/i18n/react';
 import type {
     ChannelPreference,
     NotificationChannelView,
@@ -38,31 +39,28 @@ interface TestAnswer {
  */
 export const PUSH_TARGET_KEY = 'socio:push-target';
 
-const CONTENT_CHOICES: {
-    value: NotificationContent;
-    label: string;
-    note: string;
-}[] = [
+const CONTENT_CHOICES = [
     {
         value: 'message',
-        label: 'Show the message',
-        note: 'The socio’s name, its message and, where the device shows one, its image.',
+        label: 'settings.notifications:content.message',
+        note: 'settings.notifications:content.messageNote',
     },
     {
         value: 'private',
-        label: 'Private (“<socio> needs you”)',
-        note: 'Only which socio needs you: the message stays in Socio until you open it.',
+        label: 'settings.notifications:content.private',
+        note: 'settings.notifications:content.privateNote',
     },
-];
+] as const satisfies readonly { value: NotificationContent; label: string; note: string }[];
 
 /** Where push can't be turned on here, and why; `ready` where it can. */
 export type PushSupport = 'ready' | 'ios' | 'unsupported' | 'denied';
 
-export const PUSH_MESSAGES: Record<Exclude<PushSupport, 'ready'>, string> = {
-    ios: 'Add Socio to your Home Screen first, then turn notifications on in the app. On iPhone and iPad, only the installed app gets notifications.',
-    unsupported: 'This browser can’t get push notifications. Try another browser, or Telegram.',
-    denied: 'Notifications are blocked for this site in your browser’s settings. Allow them there, then reload this page.',
-};
+/** Why push can't be turned on here, by reason: keys of `settings.notifications`. */
+export const PUSH_MESSAGES = {
+    ios: 'settings.notifications:push.ios',
+    unsupported: 'settings.notifications:push.unsupported',
+    denied: 'settings.notifications:push.denied',
+} as const satisfies Record<Exclude<PushSupport, 'ready'>, string>;
 
 /** The page runs as the installed app (Home Screen, or installed from the browser). */
 export const installedApp = () =>
@@ -152,14 +150,10 @@ async function currentSubscription() {
  * server's key (again, if the browser's subscription was made for an
  * older one), and adds it to the person's devices. Returns the device.
  */
-async function subscribeHere(pushKey: string) {
+async function subscribeHere(pushKey: string, refusals: { denied: string; notAllowed: string }) {
     const permission = await Notification.requestPermission();
     if (permission !== 'granted') {
-        throw new Error(
-            permission === 'denied'
-                ? PUSH_MESSAGES.denied
-                : 'Notifications weren’t allowed. Try again and choose Allow.',
-        );
+        throw new Error(permission === 'denied' ? refusals.denied : refusals.notAllowed);
     }
     const worker = await registration();
     const key = keyBytes(pushKey);
@@ -180,10 +174,6 @@ async function subscribeHere(pushKey: string) {
     return device;
 }
 
-/** "Push notifications (2 sent)", "Telegram (1 failed)". */
-const reportLine = (label: string, sent: number, failed: number) =>
-    `${label} (${[sent && `${sent} sent`, failed && `${failed} failed`].filter(Boolean).join(', ')})`;
-
 /**
  * Settings → Account → Notifications (CB-114): where Dots' notifications
  * reach this person. Each channel is on or off and shows the message or
@@ -195,6 +185,7 @@ const reportLine = (label: string, sent: number, failed: number) =>
  * notification shows here as a toast instead (in-app-notices.ts).
  */
 export function NotificationsSection({ telegram }: { telegram: boolean }) {
+    const { t } = useTranslation(['settings.notifications']);
     const { workspace, mutate } = useShell();
     const [answer, setAnswer] = useState<ChannelsAnswer>();
     const [error, setError] = useState('');
@@ -212,8 +203,8 @@ export function NotificationsSection({ telegram }: { telegram: boolean }) {
                     setAnswer(next);
                     setError('');
                 })
-                .catch((e) => setError(e instanceof Error ? e.message : 'Could not load notifications.')),
-        [],
+                .catch((e) => setError(e instanceof Error ? e.message : t('settings.notifications:loadFailed'))),
+        [t],
     );
     const readBrowser = useCallback(async () => {
         const next = pushSupport();
@@ -249,7 +240,7 @@ export function NotificationsSection({ telegram }: { telegram: boolean }) {
         });
         setBusy(`save:${channel}`);
         if (await mutate('/preferences', 'PATCH', { notifications: all })) {
-            toast.success('Notifications saved');
+            toast.success(t('settings.notifications:saved'));
         } else {
             setAnswer(previous);
         }
@@ -263,13 +254,16 @@ export function NotificationsSection({ telegram }: { telegram: boolean }) {
         setBusy('push:on');
         setPushError('');
         try {
-            await subscribeHere(answer.pushKey);
-            toast.success('Notifications on in this browser');
+            await subscribeHere(answer.pushKey, {
+                denied: t(PUSH_MESSAGES.denied),
+                notAllowed: t('settings.notifications:push.notAllowed'),
+            });
+            toast.success(t('settings.notifications:push.turnedOn'));
         } catch (e) {
             // The browser's errors are DOMExceptions ("Registration failed …").
             const message = (e as { message?: unknown } | null)?.message;
             setPushError(
-                typeof message === 'string' && message ? message : 'Could not turn notifications on in this browser.',
+                typeof message === 'string' && message ? message : t('settings.notifications:push.turnOnFailed'),
             );
         }
         await readBrowser();
@@ -288,9 +282,9 @@ export function NotificationsSection({ telegram }: { telegram: boolean }) {
                 await subscription?.unsubscribe().catch(() => undefined);
                 setEndpoint(null);
             }
-            toast.success('Device removed');
+            toast.success(t('settings.notifications:push.removed'));
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Could not remove it.');
+            setError(e instanceof Error ? e.message : t('settings.notifications:push.removeFailed'));
         }
         await load();
         setBusy('');
@@ -303,15 +297,22 @@ export function NotificationsSection({ telegram }: { telegram: boolean }) {
             const result = await api<TestAnswer>('/notifications/test', 'POST', {});
             const label = (id: string) => answer?.channels.find((item) => item.id === id)?.label ?? id;
             const reached = result.channels.filter((report) => report.sent || report.failed);
+            // "Push notifications (2 sent)", "Telegram (1 sent, 1 failed)".
+            const line = (report: TestAnswer['channels'][number]) =>
+                t('settings.notifications:test.channel', {
+                    channel: label(report.channel),
+                    counts: [
+                        report.sent ? t('settings.notifications:test.sentCount', { count: report.sent }) : '',
+                        report.failed ? t('settings.notifications:test.failedCount', { count: report.failed }) : '',
+                    ].filter(Boolean),
+                });
             setTested(
                 reached.length
-                    ? `Sent to ${reached
-                          .map((report) => reportLine(label(report.channel), report.sent, report.failed))
-                          .join(' and ')}.`
-                    : 'No channel is on, so nothing was sent. Turn one on above.',
+                    ? t('settings.notifications:test.sent', { channels: reached.map(line) })
+                    : t('settings.notifications:test.none'),
             );
         } catch (e) {
-            setTested(e instanceof Error ? e.message : 'Could not send the test notification.');
+            setTested(e instanceof Error ? e.message : t('settings.notifications:test.failed'));
         }
         setBusy('');
     };
@@ -320,13 +321,13 @@ export function NotificationsSection({ telegram }: { telegram: boolean }) {
         return (
             <SettingsCard>
                 <section className="grid gap-2" data-slot="notifications">
-                    <h3 className="font-medium">Notifications</h3>
+                    <h3 className="font-medium">{t('settings.notifications:title')}</h3>
                     {error ? (
                         <p className="rounded-lg bg-destructive/10 p-3 text-destructive" role="alert">
                             {error}
                         </p>
                     ) : (
-                        <p className="text-muted-foreground">Loading…</p>
+                        <p className="text-muted-foreground">{t('settings.notifications:loading')}</p>
                     )}
                 </section>
             </SettingsCard>
@@ -341,12 +342,8 @@ export function NotificationsSection({ telegram }: { telegram: boolean }) {
         <>
             <SettingsCard>
                 <section className="grid gap-2" data-slot="notifications-intro">
-                    <h3 className="font-medium">Notifications</h3>
-                    <p className="text-muted-foreground">
-                        A socio can notify you when something needs you: unattended work that finished, a problem, a
-                        decision only you can make. It goes to the channels you turn on here, and only while you aren’t
-                        using Socio. While you are, it shows in the app instead.
-                    </p>
+                    <h3 className="font-medium">{t('settings.notifications:title')}</h3>
+                    <p className="text-muted-foreground">{t('settings.notifications:intro')}</p>
                     {error && (
                         <p className="rounded-lg bg-destructive/10 p-3 text-destructive" role="alert">
                             {error}
@@ -360,9 +357,11 @@ export function NotificationsSection({ telegram }: { telegram: boolean }) {
                         <div className="flex items-center gap-3">
                             <h3 className="font-medium">{channel.label}</h3>
                             <label className="ml-auto flex items-center gap-2 text-muted-foreground">
-                                {channel.enabled ? 'On' : 'Off'}
+                                {channel.enabled
+                                    ? t('settings.notifications:channel.on')
+                                    : t('settings.notifications:channel.off')}
                                 <Switch
-                                    aria-label={`${channel.label} on`}
+                                    aria-label={t('settings.notifications:channel.switch', { channel: channel.label })}
                                     checked={channel.enabled}
                                     disabled={!!busy}
                                     onCheckedChange={(enabled) => void save(channel.id, { enabled })}
@@ -370,7 +369,9 @@ export function NotificationsSection({ telegram }: { telegram: boolean }) {
                             </label>
                         </div>
                         <fieldset className="grid gap-2">
-                            <legend className="mb-1 text-muted-foreground">What it shows</legend>
+                            <legend className="mb-1 text-muted-foreground">
+                                {t('settings.notifications:channel.shows')}
+                            </legend>
                             {CONTENT_CHOICES.map((choice) => (
                                 <label key={choice.value} className="flex items-start gap-2">
                                     <input
@@ -384,8 +385,8 @@ export function NotificationsSection({ telegram }: { telegram: boolean }) {
                                         onChange={() => void save(channel.id, { content: choice.value })}
                                     />
                                     <span>
-                                        <span className="font-medium">{choice.label}</span>
-                                        <span className="block text-muted-foreground">{choice.note}</span>
+                                        <span className="font-medium">{t(choice.label)}</span>
+                                        <span className="block text-muted-foreground">{t(choice.note)}</span>
                                     </span>
                                 </label>
                             ))}
@@ -408,13 +409,13 @@ export function NotificationsSection({ telegram }: { telegram: boolean }) {
             ))}
             <SettingsCard>
                 <section className="grid gap-2" data-slot="notification-test">
-                    <h3 className="font-medium">Test</h3>
-                    <p className="text-muted-foreground">
-                        Sends a test now to every channel that’s on, even while you’re here.
-                    </p>
+                    <h3 className="font-medium">{t('settings.notifications:test.title')}</h3>
+                    <p className="text-muted-foreground">{t('settings.notifications:test.description')}</p>
                     <div>
                         <Button variant="outline" disabled={!!busy} onClick={() => void test()}>
-                            {busy === 'test' ? 'Sending…' : 'Send a test notification'}
+                            {busy === 'test'
+                                ? t('settings.notifications:test.sending')
+                                : t('settings.notifications:test.send')}
                         </Button>
                     </div>
                     {tested && (
@@ -448,9 +449,10 @@ function PushDevices({
     onTurnOn: () => void;
     onRemove: (id: string) => void;
 }) {
+    const { t } = useTranslation(['settings.notifications']);
     return (
         <div className="grid gap-2" data-slot="push-devices">
-            <h4 className="font-medium">Devices</h4>
+            <h4 className="font-medium">{t('settings.notifications:push.devices')}</h4>
             {channel.targets.length ? (
                 <ul className="grid gap-2">
                     {channel.targets.map((target) => (
@@ -459,11 +461,11 @@ function PushDevices({
                             <Button
                                 variant="outline"
                                 size="sm"
-                                aria-label={`Remove ${target.label}`}
+                                aria-label={t('settings.notifications:push.removeLabel', { device: target.label })}
                                 disabled={!!busy}
                                 onClick={() => onRemove(target.id)}
                             >
-                                Remove
+                                {t('settings.notifications:push.remove')}
                             </Button>
                         </li>
                     ))}
@@ -477,16 +479,18 @@ function PushDevices({
                     data-slot="push-unavailable"
                     data-reason={support}
                 >
-                    {PUSH_MESSAGES[support]}
+                    {t(PUSH_MESSAGES[support])}
                 </p>
             ) : onHere ? (
                 <p className="text-muted-foreground" data-slot="push-here">
-                    On in this browser.
+                    {t('settings.notifications:push.here')}
                 </p>
             ) : (
                 <div>
                     <Button disabled={!!busy} onClick={onTurnOn}>
-                        {busy === 'push:on' ? 'Turning on…' : 'Turn on for this browser'}
+                        {busy === 'push:on'
+                            ? t('settings.notifications:push.turningOn')
+                            : t('settings.notifications:push.turnOn')}
                     </Button>
                 </div>
             )}
@@ -501,19 +505,22 @@ function PushDevices({
 
 /** Another channel's targets, or why it reaches nowhere yet. */
 function Targets({ channel, telegram }: { channel: NotificationChannelView; telegram: boolean }) {
+    const { t } = useTranslation(['settings.notifications']);
     if (channel.targets.length) {
         return (
-            <p className="text-muted-foreground">Goes to {channel.targets.map((target) => target.label).join(', ')}.</p>
+            <p className="text-muted-foreground">
+                {t('settings.notifications:channel.goesTo', { targets: channel.targets.map((target) => target.label) })}
+            </p>
         );
     }
     return (
         <p className="text-muted-foreground" data-slot="channel-note">
-            {channel.note ?? 'It reaches nowhere yet.'}
+            {channel.note ?? t('settings.notifications:channel.nowhere')}
             {channel.id === 'telegram' && telegram && (
                 <>
                     {' '}
                     <Link to={settingsPath('telegram')} className="text-foreground underline underline-offset-4">
-                        Telegram settings
+                        {t('settings.notifications:channel.telegramSettings')}
                     </Link>
                 </>
             )}

@@ -1,5 +1,8 @@
+import { useTranslation } from '@socio/i18n/react';
+
 import { SettingsCard } from './AccountSettings';
 import { AutosaveHeader, SaveError, useAutosave } from './autosave';
+import { onDemand } from './on-demand';
 
 import { PermissionRow } from '@/components/form-fields';
 
@@ -9,7 +12,7 @@ import { PermissionRow } from '@/components/form-fields';
  * link domain, over the server's `AUTH_APP_INVITE_LINKS`. Members read it;
  * only admins change it.
  */
-export function AppInviteLinksSetting({
+function AppInviteLinksSettingBody({
     enabled,
     readOnly,
     mutate,
@@ -18,32 +21,36 @@ export function AppInviteLinksSetting({
     readOnly: boolean;
     mutate: (path: string, method: string, body?: unknown) => Promise<boolean>;
 }) {
+    const { t } = useTranslation(['settings.workspace-apps', 'settings.workspace']);
     const auto = useAutosave({ appInviteLinks: enabled ?? false }, (value) => mutate('/settings', 'PATCH', value));
     return (
         <SettingsCard>
             <section className="grid gap-4" data-slot="app-invite-links">
-                <AutosaveHeader title="The Socio app" status={!readOnly ? auto.status : undefined}>
-                    Invites can open the Socio app on people’s phones, where they set their password and start, or the
-                    web when they don’t have the app.
+                <AutosaveHeader
+                    title={t('settings.workspace-apps:inviteLinks.title')}
+                    status={!readOnly ? auto.status : undefined}
+                >
+                    {t('settings.workspace-apps:inviteLinks.intro')}
                 </AutosaveHeader>
                 <PermissionRow
-                    title="Invites open the Socio app"
+                    title={t('settings.workspace-apps:inviteLinks.toggle')}
                     checked={auto.value.appInviteLinks}
                     disabled={readOnly}
                     onCheckedChange={(on) =>
                         void auto.change(
                             { appInviteLinks: on },
-                            `Invites that open the app turned ${on ? 'on' : 'off'}`,
+                            t('settings.workspace-apps:inviteLinks.saved', { context: on ? undefined : 'off' }),
                         )
                     }
                 >
-                    Off by default. Invite links and “Send me a link for the app” go through Socio’s link page, which
-                    shows this workspace’s address before it opens anything. Only where the app can reach this workspace
-                    (https, on its usual port); elsewhere invites stay as they are.
+                    {t('settings.workspace-apps:inviteLinks.description')}
                 </PermissionRow>
                 <SaveError error={auto.error} />
-                {readOnly && <p className="text-muted-foreground">Only an admin can change this setting.</p>}
+                {readOnly && <p className="text-muted-foreground">{t('settings.workspace:readOnly.setting')}</p>}
             </section>
         </SettingsCard>
     );
 }
+
+/** Below the fold: its words load when it mounts (settings.workspace-apps, in no route's entry). */
+export const AppInviteLinksSetting = onDemand(['settings.workspace-apps'], AppInviteLinksSettingBody);

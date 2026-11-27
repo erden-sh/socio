@@ -1,0 +1,60 @@
+{
+    "title": "The $t(common:product) app",
+    "intro": "Your phones with the $t(common:product) app. Signing a device out ends its sessions; erasing also removes this workspace’s copy from it the next time it connects.",
+    "intro_admin": "Their phones with the $t(common:product) app. Signing a device out ends its sessions; erasing also removes this workspace’s copy from it the next time it connects.",
+    "empty": "You haven’t signed in on the app.",
+    "empty_admin": "They haven’t signed in on the app.",
+    "list": "Devices with the $t(common:product) app",
+    "current": "(this device)",
+    "loadFailed": "Could not load the devices.",
+    "platforms": {
+        "ios": "iPhone or iPad",
+        "android": "Android"
+    },
+    "details": {
+        "by": "by {{method}}",
+        "signedOut": "Signed out",
+        "eraseRequested": "Signed out; erase requested",
+        "since": "since {{at, datetime(month: short; day: numeric)}}",
+        "since_otherYear": "since {{at, datetime(month: short; day: numeric; year: numeric)}}"
+    },
+    "methods": {
+        "link": "Sign-in link",
+        "linkEmail": "Emailed sign-in link",
+        "passkey": "Passkey",
+        "password": "Password"
+    },
+    "lastSeen": {
+        "now": "last seen now",
+        "minutes_one": "last seen {{count}} min ago",
+        "minutes_other": "last seen {{count}} min ago",
+        "hours_one": "last seen {{count}} h ago",
+        "hours_other": "last seen {{count}} h ago",
+        "yesterday": "last seen yesterday",
+        "days_one": "last seen {{count}} day ago",
+        "days_other": "last seen {{count}} days ago",
+        "weeks_one": "last seen {{count}} week ago",
+        "weeks_other": "last seen {{count}} weeks ago",
+        "date": "last seen {{at, datetime(month: short; day: numeric)}}",
+        "date_otherYear": "last seen {{at, datetime(month: short; day: numeric; year: numeric)}}"
+    },
+    "signOut": {
+        "button": "Sign out this device",
+        "label": "Sign out {{device}}",
+        "title": "Sign out {{device}}?",
+        "action": "Sign out",
+        "body": "{{device}} is signed out; what it keeps from this workspace stays on it until you sign in again or remove the app.",
+        "body_admin": "{{device}} is signed out; what it keeps from this workspace stays on it until they sign in again or remove the app.",
+        "done": "{{device}} signed out"
+    },
+    "erase": {
+        "button": "Sign out and erase",
+        "label": "Sign out and erase {{device}}",
+        "title": "Sign out and erase {{device}}?",
+        "action": "Sign out and erase",
+        "body": "{{device}} is signed out, and the next time it connects it deletes everything it keeps from this workspace, including anything not sent yet. You can sign in on it again.",
+        "body_admin": "{{device}} is signed out, and the next time it connects it deletes everything it keeps from this workspace, including anything not sent yet. They can sign in on it again.",
+        "done": "{{device}} signed out; it erases its copy"
+    },
+    "signOutFailed": "Could not sign the device out."
+}

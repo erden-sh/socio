@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
-import { formatNumber } from '@socio/shared/locale';
+import { Trans, useTranslation } from '@socio/i18n/react';
 import type { RoomSocioRequest, RoomsReadiness, RoomsSettings } from '@socio/shared/rooms/rooms';
 
 import { api } from '../../lib/api';
@@ -9,20 +9,24 @@ import { failure, roomsApi } from '../rooms/api';
 
 import { SettingsCard } from './AccountSettings';
 import { AutosaveHeader, SaveError, useAutosave } from './autosave';
+import { onDemand } from './on-demand';
 
 import { PermissionRow } from '@/components/form-fields';
 import { Button } from '@/components/ui/button';
 
-const chats = (count: number) => `${formatNumber(count)} ${count === 1 ? 'chat' : 'chats'}`;
-const rooms = (count: number) => `${formatNumber(count)} ${count === 1 ? 'room' : 'rooms'}`;
-
 /** The reconcile line before Rooms is turned on. */
-export function readinessLine(readiness: RoomsReadiness) {
-    const { private: own, room } = readiness.conversations;
-    if (readiness.allPrivate) {
-        return `${chats(own)}, all private. Turning Rooms on changes none of them.`;
-    }
-    return `${chats(own)} private, ${rooms(room)}. Private chats keep their readers either way.`;
+export function useReadinessLine() {
+    const { t } = useTranslation(['settings.workspace-rooms']);
+    return (readiness: RoomsReadiness) => {
+        const { private: own, room } = readiness.conversations;
+        if (readiness.allPrivate) {
+            return t('settings.workspace-rooms:readiness.allPrivate', { count: own });
+        }
+        return t('settings.workspace-rooms:readiness.mixed', {
+            chats: t('settings.workspace-rooms:readiness.chats', { count: own }),
+            rooms: t('settings.workspace-rooms:readiness.rooms', { count: room }),
+        });
+    };
 }
 
 /**
@@ -32,7 +36,7 @@ export function readinessLine(readiness: RoomsReadiness) {
  * And whether members see their room's use and limits (CB-218), off by
  * default, over `ROOMS_BUDGET_VISIBLE`.
  */
-export function RoomsSetting({
+function RoomsSettingBody({
     settings,
     readOnly,
     mutate,
@@ -41,6 +45,8 @@ export function RoomsSetting({
     readOnly: boolean;
     mutate: (path: string, method: string, body?: unknown) => Promise<boolean>;
 }) {
+    const { t } = useTranslation(['settings.workspace-rooms', 'settings.workspace']);
+    const readinessLine = useReadinessLine();
     const auto = useAutosave(
         {
             enabled: settings?.enabled ?? false,
@@ -63,43 +69,37 @@ export function RoomsSetting({
     return (
         <SettingsCard>
             <section className="grid gap-4" data-slot="rooms">
-                <AutosaveHeader title="Rooms" status={!readOnly ? auto.status : undefined}>
-                    Rooms let several people share one conversation with a company socio. Each message runs as the
-                    person who sent it, and nobody’s private memories or data are shared. With this on, everyone sees
-                    Rooms in the sidebar: they create rooms, share a chat as one and invite people. Rooms are a preview.
+                <AutosaveHeader
+                    title={t('settings.workspace-rooms:title')}
+                    status={!readOnly ? auto.status : undefined}
+                >
+                    {t('settings.workspace-rooms:intro')}
                 </AutosaveHeader>
                 <PermissionRow
-                    title="Let members create shared rooms"
+                    title={t('settings.workspace-rooms:enable.title')}
                     checked={auto.value.enabled}
                     disabled={readOnly}
                     onCheckedChange={(on) =>
                         void auto.change(
                             { enabled: on },
-                            on
-                                ? 'Rooms turned on. Everyone sees them in the sidebar.'
-                                : 'Rooms turned off. Existing rooms are read-only.',
+                            t('settings.workspace-rooms:enable.saved', { context: on ? undefined : 'off' }),
                         )
                     }
                 >
-                    Off by default. Turned off later, rooms and invitations leave the app; a room’s link still opens it
-                    read-only, and nothing new runs in it.
+                    {t('settings.workspace-rooms:enable.description')}
                 </PermissionRow>
                 <PermissionRow
-                    title="Members see their room’s use and limits"
+                    title={t('settings.workspace-rooms:budget.title')}
                     checked={auto.value.budgetVisible}
                     disabled={readOnly}
                     onCheckedChange={(on) =>
                         void auto.change(
                             { budgetVisible: on },
-                            on
-                                ? 'Members now see their room’s use and limits'
-                                : 'Only room admins see a room’s use and limits now',
+                            t('settings.workspace-rooms:budget.saved', { context: on ? undefined : 'off' }),
                         )
                     }
                 >
-                    Off by default: only room admins see them. On, everyone in a room sees its limits, its current
-                    message’s time and tokens, and the day’s total once at least three people have sent messages. Spend
-                    on someone’s own model subscription stays theirs.
+                    {t('settings.workspace-rooms:budget.description')}
                 </PermissionRow>
                 {readiness && (
                     <p className="text-muted-foreground" data-slot="rooms-readiness">
@@ -108,7 +108,7 @@ export function RoomsSetting({
                 )}
                 {!readOnly && settings?.enabled && <SocioRequests />}
                 <SaveError error={auto.error} />
-                {readOnly && <p className="text-muted-foreground">Only an admin can change this setting.</p>}
+                {readOnly && <p className="text-muted-foreground">{t('settings.workspace:readOnly.setting')}</p>}
             </section>
         </SettingsCard>
     );
@@ -120,6 +120,7 @@ export function RoomsSetting({
  * of the room's conversation is shown here.
  */
 function SocioRequests() {
+    const { t } = useTranslation(['settings.workspace-rooms']);
     const [requests, setRequests] = useState<RoomSocioRequest[]>();
     const [busy, setBusy] = useState('');
     const load = useCallback((signal?: AbortSignal) => {
@@ -135,37 +136,54 @@ function SocioRequests() {
     }
     return (
         <section className="grid gap-2" data-slot="room-socio-requests">
-            <h4 className="font-medium">Socios rooms asked for</h4>
+            <h4 className="font-medium">{t('settings.workspace-rooms:requests.title')}</h4>
             <ul className="grid gap-2">
                 {requests.map((request) => {
                     const key = `${request.roomId}:${request.dotId}`;
                     return (
                         <li key={key} className="flex flex-wrap items-center gap-2 rounded-md border p-2.5">
                             <span className="min-w-0 flex-1">
-                                <strong className="font-medium">{request.dotName}</strong> in “{request.roomTitle}”
+                                <Trans
+                                    t={t}
+                                    i18nKey="settings.workspace-rooms:requests.request"
+                                    values={{ socio: request.dotName, room: request.roomTitle }}
+                                    components={{ socio: <strong className="font-medium" /> }}
+                                />
                                 <span className="block text-xs text-muted-foreground">
-                                    Asked by {request.requestedByName ?? 'a room admin'}
+                                    {request.requestedByName
+                                        ? t('settings.workspace-rooms:requests.askedBy', {
+                                              name: request.requestedByName,
+                                          })
+                                        : t('settings.workspace-rooms:requests.askedByAdmin')}
                                 </span>
                             </span>
                             <Button
                                 type="button"
                                 size="sm"
                                 disabled={!!busy}
-                                aria-label={`Let ${request.dotName} into ${request.roomTitle}`}
+                                aria-label={t('settings.workspace-rooms:requests.letInLabel', {
+                                    socio: request.dotName,
+                                    room: request.roomTitle,
+                                })}
                                 onClick={async () => {
                                     setBusy(key);
                                     try {
                                         await roomsApi.authorizeSocio(request.roomId, request.dotId);
-                                        toast.success(`${request.dotName} can answer in “${request.roomTitle}”.`);
+                                        toast.success(
+                                            t('settings.workspace-rooms:requests.letInDone', {
+                                                socio: request.dotName,
+                                                room: request.roomTitle,
+                                            }),
+                                        );
                                     } catch (error) {
-                                        toast.error(failure(error, 'Could not let it in.'));
+                                        toast.error(failure(error, t('settings.workspace-rooms:requests.letInFailed')));
                                     } finally {
                                         setBusy('');
                                         load();
                                     }
                                 }}
                             >
-                                Let in
+                                {t('settings.workspace-rooms:requests.letIn')}
                             </Button>
                         </li>
                     );
@@ -174,3 +192,6 @@ function SocioRequests() {
         </section>
     );
 }
+
+/** Below the fold: its words load when it mounts (settings.workspace-rooms, in no route's entry). */
+export const RoomsSetting = onDemand(['settings.workspace-rooms'], RoomsSettingBody);

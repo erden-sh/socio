@@ -1,3 +1,4 @@
+import { useTranslation } from '@socio/i18n/react';
 import { BRAND_LOGO_MAX_BYTES, DEFAULT_BRANDING, type Branding } from '@socio/shared/branding';
 
 import { SettingsCard } from './AccountSettings';
@@ -30,6 +31,7 @@ export function BrandingSetting({
     branding?: Branding | null;
     mutate: (path: string, method: string, body?: unknown) => Promise<boolean>;
 }) {
+    const { t } = useTranslation(['settings.workspace']);
     const auto = useAutosave(
         {
             name: branding?.name ?? DEFAULT_BRANDING.name,
@@ -47,8 +49,8 @@ export function BrandingSetting({
         // Typed back to what is saved: nothing to save.
         const unchanged = name === saved.name && auto.value.logo === saved.logo;
         auto.edit({ name, custom: unchanged ? saved.custom : true });
-        void auto.commit('Workspace name saved', (value) =>
-            value.name ? undefined : 'Name the workspace: it shows in navigation and on sign-in.',
+        void auto.commit(t('settings.workspace:branding.nameSaved'), (value) =>
+            value.name ? undefined : t('settings.workspace:branding.nameRequired'),
         );
     };
     return (
@@ -62,23 +64,27 @@ export function BrandingSetting({
                     commitName();
                 }}
             >
-                <AutosaveHeader title="Workspace branding" status={auto.status}>
-                    The name and logo shown in navigation and on sign-in.
+                <AutosaveHeader title={t('settings.workspace:branding.title')} status={auto.status}>
+                    {t('settings.workspace:branding.intro')}
                 </AutosaveHeader>
                 <label className="grid gap-2">
-                    Display name
+                    {t('settings.workspace:branding.name')}
                     <Input
                         id="branding-name"
                         value={auto.value.name}
                         onChange={(event) => auto.edit({ name: event.target.value })}
                         onBlur={commitName}
                         maxLength={100}
-                        placeholder="Client Company Brain"
+                        placeholder={t('settings.workspace:branding.namePlaceholder')}
                     />
                 </label>
-                <img src={auto.value.logo} alt="Logo preview" className="size-16 object-contain" />
+                <img
+                    src={auto.value.logo}
+                    alt={t('settings.workspace:branding.logoPreview')}
+                    className="size-16 object-contain"
+                />
                 <label className="grid gap-2">
-                    Client logo
+                    {t('settings.workspace:branding.logo')}
                     <Input
                         id="branding-logo"
                         type="file"
@@ -92,23 +98,21 @@ export function BrandingSetting({
                             // The same file can be picked again after an Undo.
                             input.value = '';
                             if (!LOGO_TYPES.includes(file.type) || file.size > BRAND_LOGO_MAX_BYTES) {
-                                auto.setError('Choose a PNG, JPEG or WebP image up to 256 KB.');
+                                auto.setError(t('settings.workspace:branding.logoInvalid'));
                                 return;
                             }
                             let logo: string;
                             try {
                                 logo = await readLogo(file);
                             } catch {
-                                auto.setError('Could not read logo. Please retry.');
+                                auto.setError(t('settings.workspace:branding.logoUnreadable'));
                                 return;
                             }
-                            void auto.change({ logo, custom: true }, 'Logo saved');
+                            void auto.change({ logo, custom: true }, t('settings.workspace:branding.logoSaved'));
                         }}
                     />
                 </label>
-                <p className="text-sm text-muted-foreground">
-                    PNG, JPEG or WebP, up to 256 KB. Stored in this workspace. A logo saves as soon as you pick it.
-                </p>
+                <p className="text-sm text-muted-foreground">{t('settings.workspace:branding.logoHint')}</p>
                 <SaveError error={auto.error} />
                 <div className="flex flex-wrap gap-2">
                     <Button
@@ -116,10 +120,13 @@ export function BrandingSetting({
                         variant="outline"
                         disabled={auto.value.logo === DEFAULT_BRANDING.logo}
                         onClick={() =>
-                            void auto.change({ logo: DEFAULT_BRANDING.logo, custom: true }, 'Socio logo in use')
+                            void auto.change(
+                                { logo: DEFAULT_BRANDING.logo, custom: true },
+                                t('settings.workspace:branding.productLogoSaved'),
+                            )
                         }
                     >
-                        Use Socio logo
+                        {t('settings.workspace:branding.useProductLogo')}
                     </Button>
                     <Button
                         type="button"
@@ -128,11 +135,11 @@ export function BrandingSetting({
                         onClick={() =>
                             void auto.change(
                                 { ...DEFAULT_BRANDING, custom: false },
-                                'Back to the deployment’s branding',
+                                t('settings.workspace:branding.defaultsSaved'),
                             )
                         }
                     >
-                        Use deployment defaults
+                        {t('settings.workspace:branding.useDefaults')}
                     </Button>
                 </div>
             </form>

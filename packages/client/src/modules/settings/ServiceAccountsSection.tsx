@@ -2,11 +2,11 @@ import { MoreHorizontal } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { toast } from 'sonner';
 
+import { Trans, useTranslation } from '@socio/i18n/react';
 import { roleLabel } from '@socio/shared/roles';
 import {
     SERVICE_KEY_DAYS,
     SERVICE_ROLES,
-    SERVICE_SCOPE_LABELS,
     SERVICE_SCOPES,
     type CreatedServiceKey,
     type ServiceAccountView,
@@ -41,7 +41,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { cn } from '@/lib/utils';
 
 const failed = (e: unknown, fallback: string) => toast.error(e instanceof Error ? e.message : fallback);
-const when = (at: number) => new Date(at).toLocaleDateString();
+/** Each scope's description (the scope itself is an identifier, shown as is). */
+const SCOPE_KEYS = {
+    'issues:read': 'settings.service-accounts:scopes.issuesRead',
+    'issues:write': 'settings.service-accounts:scopes.issuesWrite',
+    'pages:read': 'settings.service-accounts:scopes.pagesRead',
+} as const satisfies Record<ServiceScope, string>;
+/** How a key's value starts (`cbk_…`): an identifier, not copy. */
+const KEY_PREFIX = 'cbk_';
 const accountPath = (id: string, rest = '') => `/service-accounts/${encodeURIComponent(id)}${rest}`;
 
 /** A new key for one account: name, scopes, lifetime; then the key, shown once. */
@@ -54,6 +61,7 @@ function NewKeyDialog({
     onClose: () => void;
     onCreated: () => void;
 }) {
+    const { t } = useTranslation(['settings.service-accounts']);
     const [name, setName] = useState('');
     const [scopes, setScopes] = useState<ServiceScope[]>(['issues:read']);
     const [days, setDays] = useState<number>(90);
@@ -68,27 +76,30 @@ function NewKeyDialog({
                 setCreated(made);
                 onCreated();
             })
-            .catch((error) => failed(error, 'Could not make the key.'))
+            .catch((error) => failed(error, t('settings.service-accounts:errors.make')))
             .finally(() => setBusy(false));
     };
     return (
         <Dialog open onOpenChange={(open) => !open && !busy && onClose()}>
             <DialogContent data-slot="new-service-key">
                 <DialogHeader>
-                    <DialogTitle>New key for {account.name}</DialogTitle>
+                    <DialogTitle>{t('settings.service-accounts:newKey.title', { name: account.name })}</DialogTitle>
                     <DialogDescription>
                         {created
-                            ? 'Copy it now: it isn’t shown again.'
-                            : 'Name it after where it runs. It reaches only what its scopes allow.'}
+                            ? t('settings.service-accounts:newKey.copyNow')
+                            : t('settings.service-accounts:newKey.description')}
                     </DialogDescription>
                 </DialogHeader>
                 {created ? (
                     <div className="grid gap-2 text-sm" data-slot="service-key-token">
                         <span>
-                            Key “{created.key.name}” for {account.name}. Copy it now: it isn’t shown again.
+                            {t('settings.service-accounts:newKey.created', {
+                                key: created.key.name,
+                                account: account.name,
+                            })}
                         </span>
                         <Input
-                            aria-label="New API key"
+                            aria-label={t('settings.service-accounts:newKey.token')}
                             readOnly
                             value={created.token}
                             onFocus={(e) => e.target.select()}
@@ -99,20 +110,24 @@ function NewKeyDialog({
                                 onClick={() => {
                                     void navigator.clipboard
                                         ?.writeText(created.token)
-                                        .then(() => toast.success('Key copied'));
+                                        .then(() => toast.success(t('settings.service-accounts:newKey.copied')));
                                 }}
                             >
-                                Copy
+                                {t('settings.service-accounts:newKey.copy')}
                             </Button>
-                            <Button onClick={onClose}>Done</Button>
+                            <Button onClick={onClose}>{t('settings.service-accounts:newKey.done')}</Button>
                         </DialogFooter>
                     </div>
                 ) : (
-                    <form className="grid gap-3" aria-label={`New key for ${account.name}`} onSubmit={submit}>
+                    <form
+                        className="grid gap-3"
+                        aria-label={t('settings.service-accounts:newKey.title', { name: account.name })}
+                        onSubmit={submit}
+                    >
                         <span className="grid gap-2 sm:grid-cols-[1fr_auto]">
                             <Input
-                                aria-label="Key name"
-                                placeholder="Key name, e.g. where it runs"
+                                aria-label={t('settings.service-accounts:newKey.name')}
+                                placeholder={t('settings.service-accounts:newKey.namePlaceholder')}
                                 required
                                 maxLength={60}
                                 value={name}
@@ -120,14 +135,14 @@ function NewKeyDialog({
                             />
                             <select
                                 data-slot="native-select"
-                                aria-label="Key lifetime"
+                                aria-label={t('settings.service-accounts:newKey.lifetime')}
                                 className={cn(nativeSelect, 'w-32')}
                                 value={days}
                                 onChange={(e) => setDays(Number(e.target.value))}
                             >
                                 {SERVICE_KEY_DAYS.map((value) => (
                                     <option key={value} value={value}>
-                                        {value} days
+                                        {t('settings.service-accounts:newKey.days', { count: value })}
                                     </option>
                                 ))}
                             </select>
@@ -146,16 +161,16 @@ function NewKeyDialog({
                                         }
                                     />
                                     <code className="text-xs">{scope}</code>
-                                    <span className="text-muted-foreground">{SERVICE_SCOPE_LABELS[scope]}</span>
+                                    <span className="text-muted-foreground">{t(SCOPE_KEYS[scope])}</span>
                                 </label>
                             ))}
                         </span>
                         <DialogFooter>
                             <Button type="button" variant="outline" disabled={busy} onClick={onClose}>
-                                Cancel
+                                {t('settings.service-accounts:newKey.cancel')}
                             </Button>
                             <Button type="submit" disabled={busy || !name.trim() || !scopes.length}>
-                                Make key
+                                {t('settings.service-accounts:newKey.submit')}
                             </Button>
                         </DialogFooter>
                     </form>
@@ -163,14 +178,6 @@ function NewKeyDialog({
             </DialogContent>
         </Dialog>
     );
-}
-
-/** Where a key stands: live until it expires or is revoked. */
-function keyState(key: ServiceKeyView, now: number) {
-    if (key.revokedAt) {
-        return `revoked ${when(key.revokedAt)}`;
-    }
-    return key.expiresAt > now ? `expires ${when(key.expiresAt)}` : `expired ${when(key.expiresAt)}`;
 }
 
 /** An account's keys: creator, created, last used and from where, expiry. */
@@ -186,18 +193,28 @@ function KeyTable({
     /** A revoked key, removed for good after a confirmation (CB-360). */
     onDelete: (key: ServiceKeyView) => void;
 }) {
+    const { t } = useTranslation(['settings.service-accounts']);
+    /** Where a key stands: live until it expires or is revoked. */
+    const keyState = (key: ServiceKeyView, now: number) => {
+        if (key.revokedAt) {
+            return t('settings.service-accounts:keys.revoked', { at: new Date(key.revokedAt) });
+        }
+        return key.expiresAt > now
+            ? t('settings.service-accounts:keys.expires', { at: new Date(key.expiresAt) })
+            : t('settings.service-accounts:keys.expired', { at: new Date(key.expiresAt) });
+    };
     const now = Date.now();
     return (
-        <Table aria-label={`Keys of ${account.name}`} data-slot="service-keys">
+        <Table aria-label={t('settings.service-accounts:keys.label', { name: account.name })} data-slot="service-keys">
             <TableHeader>
                 <TableRow>
-                    <TableHead>Key</TableHead>
-                    <TableHead>Made by</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead>Last used</TableHead>
-                    <TableHead>Expiry</TableHead>
+                    <TableHead>{t('settings.service-accounts:keys.key')}</TableHead>
+                    <TableHead>{t('settings.service-accounts:keys.madeBy')}</TableHead>
+                    <TableHead>{t('settings.service-accounts:keys.created')}</TableHead>
+                    <TableHead>{t('settings.service-accounts:keys.lastUsed')}</TableHead>
+                    <TableHead>{t('settings.service-accounts:keys.expiry')}</TableHead>
                     <TableHead>
-                        <span className="sr-only">Actions</span>
+                        <span className="sr-only">{t('settings.service-accounts:keys.actions')}</span>
                     </TableHead>
                 </TableRow>
             </TableHeader>
@@ -209,52 +226,65 @@ function KeyTable({
                         <TableRow key={key.id} data-key={key.name} className={cn(!live && 'text-muted-foreground')}>
                             <TableCell className="whitespace-normal">
                                 <span className={cn('block', !live && 'line-through')}>
-                                    {key.name} <code className="text-xs">cbk_{key.hint}…</code>
+                                    {key.name}{' '}
+                                    <code className="text-xs">
+                                        {KEY_PREFIX}
+                                        {key.hint}…
+                                    </code>
                                 </span>
                                 <span className="text-xs text-muted-foreground">{key.scopes.join(', ')}</span>
                             </TableCell>
                             <TableCell data-slot="key-creator" className="whitespace-normal">
-                                {key.createdByName ?? (key.createdBy ? 'Unknown' : '—')}
+                                {key.createdByName ??
+                                    (key.createdBy ? t('settings.service-accounts:keys.unknownMaker') : '—')}
                                 {creatorGone && (
                                     <Badge
                                         variant="outline"
                                         className="ml-1 border-paused-banner-border bg-paused-banner font-normal text-paused-banner-foreground"
-                                        title="Whoever made it is deactivated or gone; it still works"
+                                        title={t('settings.service-accounts:keys.creatorGoneHint')}
                                     >
-                                        creator gone
+                                        {t('settings.service-accounts:keys.creatorGone')}
                                     </Badge>
                                 )}
                             </TableCell>
-                            <TableCell>{when(key.createdAt)}</TableCell>
+                            <TableCell>
+                                {t('settings.service-accounts:keys.date', { at: new Date(key.createdAt) })}
+                            </TableCell>
                             <TableCell className="whitespace-normal">
                                 {key.lastUsedAt ? (
-                                    <span title={new Date(key.lastUsedAt).toLocaleString()}>
-                                        {new Date(key.lastUsedAt).toLocaleString()}
+                                    <span
+                                        title={t('settings.service-accounts:keys.usedAt', {
+                                            at: new Date(key.lastUsedAt),
+                                        })}
+                                    >
+                                        {t('settings.service-accounts:keys.usedAt', { at: new Date(key.lastUsedAt) })}
                                         {key.lastUsedIp && (
                                             <span className="block text-xs text-muted-foreground">
-                                                from {key.lastUsedIp}
+                                                {t('settings.service-accounts:keys.usedFrom', { ip: key.lastUsedIp })}
                                             </span>
                                         )}
                                     </span>
                                 ) : (
-                                    'never used'
+                                    t('settings.service-accounts:keys.neverUsed')
                                 )}
                             </TableCell>
                             <TableCell>{keyState(key, now)}</TableCell>
                             <TableCell className="text-right">
                                 {live ? (
                                     <Button variant="ghost" size="sm" onClick={() => onRevoke(key)}>
-                                        Revoke
+                                        {t('settings.service-accounts:keys.revoke')}
                                     </Button>
                                 ) : (
                                     key.revokedAt && (
                                         <Button
                                             variant="ghost"
                                             size="sm"
-                                            aria-label={`Delete ${key.name}`}
+                                            aria-label={t('settings.service-accounts:keys.deleteLabel', {
+                                                name: key.name,
+                                            })}
                                             onClick={() => onDelete(key)}
                                         >
-                                            Delete
+                                            {t('settings.service-accounts:keys.delete')}
                                         </Button>
                                     )
                                 )}
@@ -287,6 +317,7 @@ export function ServiceAccountsSection({
     /** How many accounts there are, after each load (the tab's count). */
     onCount?: (count: number) => void;
 } = {}) {
+    const { t } = useTranslation(['settings.service-accounts']);
     const [accounts, setAccounts] = useState<ServiceAccountView[]>();
     const [keyFor, setKeyFor] = useState<ServiceAccountView>();
     const [disabling, setDisabling] = useState<ServiceAccountView>();
@@ -304,8 +335,8 @@ export function ServiceAccountsSection({
                     setAccounts(all);
                     counted.current?.(all.length);
                 })
-                .catch((e) => failed(e, 'Could not load service accounts.')),
-        [],
+                .catch((e) => failed(e, t('settings.service-accounts:errors.load'))),
+        [t],
     );
     useEffect(() => void load(), [load]);
     // The deactivate preview's "Open <account>": into view, once it's there.
@@ -335,16 +366,19 @@ export function ServiceAccountsSection({
             });
             setName('');
             setDescription('');
-        }, 'Could not add the service account.');
+        }, t('settings.service-accounts:errors.add'));
     };
     return (
         <section className="grid gap-3" data-slot="service-accounts">
             <p className="text-sm text-muted-foreground">
-                For external agents and scripts: they use an API key (
-                <code className="text-xs">Authorization: Bearer cbk_…</code>), reach only what its scopes allow, and
-                never sign in or chat with socios.
+                <Trans
+                    t={t}
+                    i18nKey="settings.service-accounts:intro"
+                    values={{ header: `Authorization: Bearer ${KEY_PREFIX}…` }}
+                    components={{ code: <code className="text-xs" /> }}
+                />
             </p>
-            <ul className="grid gap-3" aria-label="Service accounts">
+            <ul className="grid gap-3" aria-label={t('settings.service-accounts:list.label')}>
                 {accounts?.map((account) => (
                     <li
                         key={account.id}
@@ -360,7 +394,11 @@ export function ServiceAccountsSection({
                             <span className="min-w-0 flex-1">
                                 <span className="font-medium">{account.name}</span>{' '}
                                 <span className="text-muted-foreground">
-                                    {account.disabledAt ? `disabled ${when(account.disabledAt)}` : 'service account'}
+                                    {account.disabledAt
+                                        ? t('settings.service-accounts:list.disabled', {
+                                              at: new Date(account.disabledAt),
+                                          })
+                                        : t('settings.service-accounts:list.kind')}
                                     {account.description ? ` · ${account.description}` : ''}
                                 </span>
                             </span>
@@ -370,13 +408,13 @@ export function ServiceAccountsSection({
                                 <>
                                     <select
                                         data-slot="native-select"
-                                        aria-label={`Role of ${account.name}`}
+                                        aria-label={t('settings.service-accounts:list.role', { name: account.name })}
                                         className={cn(nativeSelect, 'h-8 w-28')}
                                         value={account.role}
                                         onChange={(e) =>
                                             void act(
                                                 () => api(accountPath(account.id), 'PATCH', { role: e.target.value }),
-                                                'Could not change the role.',
+                                                t('settings.service-accounts:errors.role'),
                                             )
                                         }
                                     >
@@ -387,14 +425,16 @@ export function ServiceAccountsSection({
                                         ))}
                                     </select>
                                     <Button variant="outline" size="sm" onClick={() => setKeyFor(account)}>
-                                        New key
+                                        {t('settings.service-accounts:list.newKey')}
                                     </Button>
                                     <DropdownMenu modal={false}>
                                         <DropdownMenuTrigger asChild>
                                             <Button
                                                 variant="ghost"
                                                 size="icon-sm"
-                                                aria-label={`Actions for ${account.name}`}
+                                                aria-label={t('settings.service-accounts:list.actions', {
+                                                    name: account.name,
+                                                })}
                                             >
                                                 <MoreHorizontal />
                                             </Button>
@@ -404,7 +444,7 @@ export function ServiceAccountsSection({
                                                 variant="destructive"
                                                 onSelect={() => setDisabling(account)}
                                             >
-                                                Disable…
+                                                {t('settings.service-accounts:list.disable')}
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
@@ -422,21 +462,27 @@ export function ServiceAccountsSection({
                                                 accountPath(account.id, `/keys/${encodeURIComponent(key.id)}`),
                                                 'DELETE',
                                             ),
-                                        'Could not revoke the key.',
+                                        t('settings.service-accounts:errors.revoke'),
                                     )
                                 }
                                 onDelete={(key) => setDeleting({ account, key })}
                             />
                         ) : (
-                            <span className="text-sm text-muted-foreground">No keys yet.</span>
+                            <span className="text-sm text-muted-foreground">
+                                {t('settings.service-accounts:list.noKeys')}
+                            </span>
                         )}
                     </li>
                 ))}
             </ul>
-            <form className="grid gap-2 sm:grid-cols-2" onSubmit={add} aria-label="Add a service account">
+            <form
+                className="grid gap-2 sm:grid-cols-2"
+                onSubmit={add}
+                aria-label={t('settings.service-accounts:add.label')}
+            >
                 <Input
-                    aria-label="Service account name"
-                    placeholder="Name, e.g. Claude (lead)"
+                    aria-label={t('settings.service-accounts:add.name')}
+                    placeholder={t('settings.service-accounts:add.namePlaceholder')}
                     required
                     maxLength={60}
                     value={name}
@@ -444,7 +490,7 @@ export function ServiceAccountsSection({
                 />
                 <select
                     data-slot="native-select"
-                    aria-label="Service account role"
+                    aria-label={t('settings.service-accounts:add.role')}
                     className={nativeSelect}
                     value={role}
                     onChange={(e) => setRole(e.target.value as ServiceRole)}
@@ -456,15 +502,15 @@ export function ServiceAccountsSection({
                     ))}
                 </select>
                 <Input
-                    aria-label="What it is for"
-                    placeholder="What it is for (optional)"
+                    aria-label={t('settings.service-accounts:add.purpose')}
+                    placeholder={t('settings.service-accounts:add.purposePlaceholder')}
                     maxLength={300}
                     className="sm:col-span-2"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                 />
                 <Button className="sm:col-span-2" disabled={!name.trim()}>
-                    Add service account
+                    {t('settings.service-accounts:add.submit')}
                 </Button>
             </form>
             {keyFor && (
@@ -472,35 +518,43 @@ export function ServiceAccountsSection({
             )}
             {disabling && (
                 <ConfirmDelete
-                    title={`Disable ${disabling.name}?`}
-                    action="Disable"
+                    title={t('settings.service-accounts:disable.title', { name: disabling.name })}
+                    action={t('settings.service-accounts:disable.action')}
                     slot="confirm-disable-service-account"
                     onClose={() => setDisabling(undefined)}
                     onConfirm={async () => {
                         const { id } = disabling;
-                        await act(() => api(accountPath(id), 'DELETE'), 'Could not disable the account.');
+                        await act(() => api(accountPath(id), 'DELETE'), t('settings.service-accounts:errors.disable'));
                         setDisabling(undefined);
                     }}
                 >
-                    Its keys stop working at once; what it filed stays.
+                    {t('settings.service-accounts:disable.body')}
                 </ConfirmDelete>
             )}
             {deleting && (
                 <ConfirmDelete
-                    title="Delete this revoked key for good?"
+                    title={t('settings.service-accounts:deleteKey.title')}
                     slot="confirm-delete-service-key"
                     onClose={() => setDeleting(undefined)}
                     onConfirm={async () => {
                         const { account, key } = deleting;
                         await act(
                             () => api(accountPath(account.id, `/keys/${encodeURIComponent(key.id)}/record`), 'DELETE'),
-                            'Could not delete the key.',
+                            t('settings.service-accounts:errors.delete'),
                         );
                         setDeleting(undefined);
                     }}
                 >
-                    {deleting.key.name} (<code className="text-xs">cbk_{deleting.key.hint}…</code>) of{' '}
-                    {deleting.account.name}. Its record and last-use history go; the audit keeps who deleted it.
+                    <Trans
+                        t={t}
+                        i18nKey="settings.service-accounts:deleteKey.body"
+                        values={{
+                            key: deleting.key.name,
+                            prefix: `${KEY_PREFIX}${deleting.key.hint}…`,
+                            account: deleting.account.name,
+                        }}
+                        components={{ code: <code className="text-xs" /> }}
+                    />
                 </ConfirmDelete>
             )}
         </section>

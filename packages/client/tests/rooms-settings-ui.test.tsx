@@ -5,7 +5,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
 vi.mock('../src/lib/api', () => ({ api: vi.fn() }));
 import { api } from '../src/lib/api';
-import { RoomsSetting, readinessLine } from '../src/modules/settings/RoomsSetting';
+import { RoomsSetting, useReadinessLine } from '../src/modules/settings/RoomsSetting';
 
 // Settings → General → Rooms (CB-207): off by default, admins switch it.
 
@@ -89,7 +89,21 @@ it('lets an admin show members their room’s use and limits (CB-218)', async ()
     });
 });
 
+/** What a hook returns, from a component rendered once on its own root. */
+function hook<T>(use: () => T): T {
+    let value: T | undefined;
+    function Probe() {
+        value = use();
+        return null;
+    }
+    const probe = createRoot(document.createElement('div'));
+    act(() => probe.render(<Probe />));
+    act(() => probe.unmount());
+    return value as T;
+}
+
 it('counts rooms once there are some', () => {
+    const readinessLine = hook(useReadinessLine);
     expect(
         readinessLine({
             enabled: true,

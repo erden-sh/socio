@@ -2,6 +2,7 @@ import { useCallback, useContext, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { toast } from 'sonner';
 
+import { useTranslation } from '@socio/i18n/react';
 import type { Roster, RosterPerson } from '@socio/shared/auth';
 import { ROLES } from '@socio/shared/roles';
 
@@ -32,6 +33,7 @@ const failed = (e: unknown, fallback: string) => toast.error(e instanceof Error 
  * redirects there), `&account=` at one account.
  */
 export function PeopleSection({ signIn }: { signIn: boolean }) {
+    const { t } = useTranslation(['settings.people', 'settings']);
     const me = useContext(CurrentUser)?.id;
     const [params, setParams] = useSearchParams();
     const asked = params.get('tab');
@@ -44,9 +46,9 @@ export function PeopleSection({ signIn }: { signIn: boolean }) {
         try {
             setPeople((await api<Roster>('/accounts/roster')).people);
         } catch (e) {
-            failed(e, 'Could not load people.');
+            failed(e, t('settings.people:section.loadFailed'));
         }
-    }, []);
+    }, [t]);
     useEffect(() => {
         if (signIn) {
             void load();
@@ -71,16 +73,19 @@ export function PeopleSection({ signIn }: { signIn: boolean }) {
         },
         [people],
     );
+    /** "People · 3": a tab's name, with its count once known. */
+    const tabLabel = (tab: string, count: number | undefined) =>
+        count === undefined ? tab : t('settings.people:section.tabs.withCount', { tab, count });
     return (
         <Card className="gap-4 px-4 text-sm sm:px-6" data-slot="people-section">
             <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="grid gap-1">
-                    <h3 className="font-medium">People</h3>
-                    <p className="text-muted-foreground">
-                        Who signs in, their role, and what they can reach. Open a person for everything about them.
-                    </p>
+                    <h3 className="font-medium">{t('settings.people:section.title')}</h3>
+                    <p className="text-muted-foreground">{t('settings.people:section.description')}</p>
                 </div>
-                {signIn && tab === 'people' && <Button onClick={() => setInviting(true)}>Invite people</Button>}
+                {signIn && tab === 'people' && (
+                    <Button onClick={() => setInviting(true)}>{t('settings.people:section.invite')}</Button>
+                )}
             </div>
             <Tabs
                 value={tab}
@@ -89,10 +94,14 @@ export function PeopleSection({ signIn }: { signIn: boolean }) {
                 }
             >
                 <TabsList>
-                    <TabsTrigger value="people">People{people ? ` · ${people.length}` : ''}</TabsTrigger>
-                    <TabsTrigger value="groups">Groups{groupCount === undefined ? '' : ` · ${groupCount}`}</TabsTrigger>
+                    <TabsTrigger value="people">
+                        {tabLabel(t('settings.people:section.tabs.people'), people?.length)}
+                    </TabsTrigger>
+                    <TabsTrigger value="groups">
+                        {tabLabel(t('settings.people:section.tabs.groups'), groupCount)}
+                    </TabsTrigger>
                     <TabsTrigger value="service-accounts">
-                        Service accounts{serviceCount === undefined ? '' : ` · ${serviceCount}`}
+                        {tabLabel(t('settings.people:section.tabs.serviceAccounts'), serviceCount)}
                     </TabsTrigger>
                 </TabsList>
                 <TabsContent value="people" className="pt-2">
@@ -100,7 +109,7 @@ export function PeopleSection({ signIn }: { signIn: boolean }) {
                         <PeopleList people={people} me={me} reload={load} />
                     ) : (
                         <p className="text-muted-foreground" data-slot="needs-sign-in">
-                            This needs real accounts (Better Auth); this server signs in with the local picker.
+                            {t('settings:needsSignIn')}
                         </p>
                     )}
                 </TabsContent>
@@ -109,8 +118,7 @@ export function PeopleSection({ signIn }: { signIn: boolean }) {
                         <GroupsPanel people={people} onCount={setGroupCount} />
                     ) : (
                         <p className="text-muted-foreground" data-slot="needs-sign-in">
-                            Groups need real accounts (Better Auth). With the local picker, admins may run code and
-                            nobody else.
+                            {t('settings.people:section.groupsNeedSignIn')}
                         </p>
                     )}
                 </TabsContent>

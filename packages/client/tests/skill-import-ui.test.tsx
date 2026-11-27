@@ -107,5 +107,5 @@ it('shows changed lines with bounded surrounding context instead of an unbounded
     expect(skillImportDiff('same\nkeep\nold\nend\nlast', 'same\nkeep\nnew\nend\nlast')).toBe(
         ' same\n keep\n- old\n+ new\n end\n last',
     );
-    expect(skillImportDiff('same', 'same')).toBe('No instruction changes.');
+    expect(skillImportDiff('same', 'same')).toBe('');
 });

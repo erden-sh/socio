@@ -1,0 +1,52 @@
+{
+    "inviteLinks": {
+        "title": "The $t(common:product) app",
+        "intro": "Invites can open the $t(common:product) app on people’s phones, where they set their password and start, or the web when they don’t have the app.",
+        "toggle": "Invites open the $t(common:product) app",
+        "description": "Off by default. Invite links and “Send me a link for the app” go through $t(common:product)’s link page, which shows this workspace’s address before it opens anything. Only where the app can reach this workspace (https, on its usual port); elsewhere invites stay as they are.",
+        "saved": "Invites that open the app turned on",
+        "saved_off": "Invites that open the app turned off"
+    },
+    "policy": {
+        "title": "The $t(common:product) app on phones",
+        "intro": "A phone keeps a copy of this workspace for the $t(common:product) app. These rules reach each phone the next time it signs in.",
+        "leaseDays": {
+            "label": "Lock the app after",
+            "unit": "days without reaching the workspace"
+        },
+        "wipeDays": {
+            "label": "Then erase its copy after",
+            "unit": "more days"
+        },
+        "periods": "A phone that hasn’t reached the workspace for the first period locks its copy until the person signs in again, and erases it after the second, unsent work included.",
+        "invalidDays": "Use a whole number of days from {{min}} to {{max}}.",
+        "saved": "$t(common:product) app policy saved",
+        "appLock": {
+            "title": "Require the app lock",
+            "description": "Off by default. When on, the app asks for Face ID or a fingerprint to open this workspace.",
+            "saved": "App lock required",
+            "saved_off": "App lock not required"
+        },
+        "notificationText": {
+            "title": "Show message text in notifications",
+            "description": "On by default. When off, notifications on phones say only that something new came, not what.",
+            "saved": "Message text in notifications turned on",
+            "saved_off": "Message text in notifications turned off"
+        },
+        "versions": "The app follows the lock and erase periods now; it follows the app lock and the notification text from the version that supports them."
+    },
+    "logs": {
+        "title": "Mini app logs",
+        "intro": "Each build and start of a mini app keeps its log. An attempt is kept for the days below or while it is one of the app’s last attempts, whichever keeps more; older ones are removed in the background, and the one running now never is. Only the app’s owner and admins can read them.",
+        "days": {
+            "label": "Keep for",
+            "unit": "days"
+        },
+        "attempts": {
+            "label": "Or keep the last",
+            "unit": "attempts per app"
+        },
+        "invalid": "Use a whole number from {{min}} to {{max}}.",
+        "saved": "Mini app logs saved"
+    }
+}

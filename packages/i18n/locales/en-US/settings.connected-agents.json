@@ -1,0 +1,14 @@
+{
+    "intro": "Agents you run elsewhere, such as Claude Code, that act here for you. They can do only what you approved, and never more than you can. To connect Claude Code, run <command>{{command}}</command> and approve it in the browser.",
+    "listLabel": "Your connected agents",
+    "disconnect": "Disconnect",
+    "used": "Connected {{connected}} · last used {{used}}",
+    "when": "{{when, datetime(dateStyle: medium; timeStyle: short)}}",
+    "never": "never",
+    "none": "No connected agents.",
+    "confirmTitle": "Disconnect {{agent}}?",
+    "confirmBody": "It can't act for you any more, from now on. Connect it again to use it.",
+    "disconnected": "{{agent}} disconnected",
+    "loadFailed": "Could not load connected agents.",
+    "disconnectFailed": "Could not disconnect the agent."
+}

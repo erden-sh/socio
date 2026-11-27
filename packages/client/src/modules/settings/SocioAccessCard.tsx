@@ -1,11 +1,10 @@
 import { Eye } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 
+import { Trans, useTranslation } from '@socio/i18n/react';
 import type { ApprovalView } from '@socio/shared/approvals';
 import {
-    ACCESS_VERB,
     ACTION_PARAMS,
-    minutesText,
     type AppAccessCard,
     type AppActionCard,
     type CardAppFacts,
@@ -32,25 +31,43 @@ import { Button } from '@/components/ui/button';
 /** Text from a socio or an app, shown as plain text whatever it holds. */
 const inert = (value: string, max = ACTION_PARAMS.maxBytes + 1) => inertText(value, { max });
 
-/** What Approve says for this card: "Allow", or "Allow for this task". */
-export function allowLabel(card: SocioAccessCard | null | undefined) {
-    if (!card) {
-        return undefined;
-    }
-    return card.kind === 'app_access' && card.access !== 'read' ? 'Allow for this task' : 'Allow';
+/**
+ * What Approve says for a card: "Allow", or "Allow for this task";
+ * undefined without a card (the caller's own word).
+ */
+export function useAllowLabel() {
+    const { t } = useTranslation(['settings.shared']);
+    return (card: SocioAccessCard | null | undefined) => {
+        if (!card) {
+            return undefined;
+        }
+        return card.kind === 'app_access' && card.access !== 'read'
+            ? t('settings.shared:access.allowForTask')
+            : t('settings.shared:access.allow');
+    };
+}
+
+/** A size in words: bytes below 1 KB, else KB with one decimal. */
+function useSize() {
+    const { t } = useTranslation(['settings.shared']);
+    return (bytes: number) =>
+        bytes < 1024
+            ? t('settings.shared:size.bytes', { count: bytes })
+            : t('settings.shared:size.kb', { kb: bytes / 1024 });
 }
 
 function AppFacts({ app }: { app: CardAppFacts }) {
+    const { t } = useTranslation(['settings.shared']);
     return (
         <dl
             className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-0.5 text-xs"
             data-slot="socio-access-app"
         >
-            <dt className="text-muted-foreground">App</dt>
+            <dt className="text-muted-foreground">{t('settings.shared:access.facts.app')}</dt>
             <dd className="m-0 font-medium">{inert(app.label, 200)}</dd>
-            <dt className="text-muted-foreground">Address</dt>
+            <dt className="text-muted-foreground">{t('settings.shared:access.facts.address')}</dt>
             <dd className="m-0 font-mono [overflow-wrap:anywhere]">{app.origin}</dd>
-            <dt className="text-muted-foreground">Owner</dt>
+            <dt className="text-muted-foreground">{t('settings.shared:access.facts.owner')}</dt>
             {/* An owner names themselves: inert too. */}
             <dd className="m-0">{inert(app.owner, 200)}</dd>
         </dl>
@@ -59,9 +76,12 @@ function AppFacts({ app }: { app: CardAppFacts }) {
 
 /** The socio's or the app's words, quoted as theirs. */
 function Quoted({ who, text }: { who: string; text: string }) {
+    const { t } = useTranslation(['settings.shared']);
     return (
         <figure className="m-0 grid gap-0.5" data-slot="socio-access-quote">
-            <figcaption className="text-xs text-muted-foreground">{who} says:</figcaption>
+            <figcaption className="text-xs text-muted-foreground">
+                {t('settings.shared:access.says', { who })}
+            </figcaption>
             <blockquote className="m-0 border-l-2 pl-2 whitespace-pre-wrap [overflow-wrap:anywhere]">
                 {inert(text, 600)}
             </blockquote>
@@ -70,6 +90,11 @@ function Quoted({ who, text }: { who: string; text: string }) {
 }
 
 function AccessBody({ card }: { card: AppAccessCard }) {
+    const { t } = useTranslation(['settings.shared']);
+    const duration =
+        card.minutes % 60 === 0
+            ? t('settings.shared:access.hours', { count: card.minutes / 60 })
+            : t('settings.shared:access.minutes', { count: card.minutes });
     return (
         <div
             className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-2 text-sm"
@@ -77,12 +102,21 @@ function AccessBody({ card }: { card: AppAccessCard }) {
             data-access={card.access}
         >
             <p className="m-0">
-                <strong>{card.socioName}</strong> wants to <strong>{ACCESS_VERB[card.access]}</strong>{' '}
-                <em>{inert(card.app.label, 200)}</em> for you for <strong>{minutesText(card.minutes)}</strong>.
+                <Trans
+                    t={t}
+                    i18nKey="settings.shared:access.wants"
+                    values={{
+                        socio: card.socioName,
+                        verb: t(`settings.shared:access.verb.${card.access}`),
+                        app: inert(card.app.label, 200),
+                        duration,
+                    }}
+                    components={{ socio: <strong />, verb: <strong />, app: <em />, time: <strong /> }}
+                />
             </p>
             <AppFacts app={card.app} />
             <div className="grid gap-0.5">
-                <span className="text-xs font-medium">This lets it</span>
+                <span className="text-xs font-medium">{t('settings.shared:access.letsIt')}</span>
                 <ul className="m-0 list-disc pl-5">
                     {card.allows.map((line) => (
                         <li key={line}>{line}</li>
@@ -92,21 +126,17 @@ function AccessBody({ card }: { card: AppAccessCard }) {
             <p className="m-0 text-muted-foreground">{card.never}</p>
             {card.visibleTo && (
                 <p className="m-0 font-medium" data-slot="socio-access-visible">
-                    {card.socioName}’s answers here are visible to everyone in {inert(card.visibleTo, 200)}.
+                    {t('settings.shared:access.visibleTo', {
+                        socio: card.socioName,
+                        place: inert(card.visibleTo, 200),
+                    })}
                 </p>
             )}
             {card.app.development && (
-                <p className="m-0 text-amber-700 dark:text-amber-400">
-                    This is a development app on your own socio’s computer: that socio can change its code, so these
-                    limits rely on your trust in it.
-                </p>
+                <p className="m-0 text-amber-700 dark:text-amber-400">{t('settings.shared:access.development')}</p>
             )}
-            {card.widens && (
-                <p className="m-0 text-muted-foreground">
-                    Allowing replaces the narrower access it has in this conversation.
-                </p>
-            )}
-            {card.alwaysAsk && <p className="m-0 text-muted-foreground">This app asks for your decision every time.</p>}
+            {card.widens && <p className="m-0 text-muted-foreground">{t('settings.shared:access.widens')}</p>}
+            {card.alwaysAsk && <p className="m-0 text-muted-foreground">{t('settings.shared:access.alwaysAsk')}</p>}
             <Quoted who={card.socioName} text={card.task} />
         </div>
     );
@@ -121,8 +151,6 @@ function readable(text: string) {
     }
 }
 
-const kb = (bytes: number) => (bytes < 1024 ? `${bytes} bytes` : `${(bytes / 1024).toFixed(1)} KB`);
-
 function ActionBody({
     id,
     card,
@@ -134,6 +162,8 @@ function ActionBody({
     view: ApprovalView;
     onOpened?: () => void;
 }) {
+    const { t } = useTranslation(['settings.shared']);
+    const kb = useSize();
     const [full, setFull] = useState<string>();
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
@@ -153,7 +183,7 @@ function ActionBody({
             setFull(answer.full);
             onOpened?.();
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Could not open the parameters.');
+            setError(e instanceof Error ? e.message : t('settings.shared:action.openFailed'));
         } finally {
             setBusy(false);
         }
@@ -165,29 +195,58 @@ function ActionBody({
             {card.operation ? (
                 // A Socio data operation: the platform's words, not the app's.
                 <p className="m-0" data-slot="data-operation">
-                    <strong>{card.socioName}</strong> asks to {inert(card.operation.words, 200)} through{' '}
-                    <em>{inert(card.app.label, 200)}</em> for you (Socio data operation{' '}
-                    <code className="rounded bg-muted px-1 text-xs">{inert(card.operation.op, 100)}</code>
-                    ). <Badge variant="outline">Consequential</Badge>
+                    <Trans
+                        t={t}
+                        i18nKey="settings.shared:action.operation"
+                        values={{
+                            socio: card.socioName,
+                            words: inert(card.operation.words, 200),
+                            app: inert(card.app.label, 200),
+                            op: inert(card.operation.op, 100),
+                        }}
+                        components={{
+                            socio: <strong />,
+                            app: <em />,
+                            op: <code className="rounded bg-muted px-1 text-xs" />,
+                            badge: <Badge variant="outline" />,
+                        }}
+                    />
                 </p>
             ) : (
                 <p className="m-0">
-                    <strong>{card.socioName}</strong> asks to run{' '}
-                    <code className="rounded bg-muted px-1 text-xs">{inert(card.action, 200)}</code> in{' '}
-                    <em>{inert(card.app.label, 200)}</em> for you. <Badge variant="outline">Consequential</Badge>
+                    <Trans
+                        t={t}
+                        i18nKey="settings.shared:action.run"
+                        values={{
+                            socio: card.socioName,
+                            action: inert(card.action, 200),
+                            app: inert(card.app.label, 200),
+                        }}
+                        components={{
+                            socio: <strong />,
+                            action: <code className="rounded bg-muted px-1 text-xs" />,
+                            app: <em />,
+                            badge: <Badge variant="outline" />,
+                        }}
+                    />
                 </p>
             )}
             <AppFacts app={card.app} />
             <section className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-1" aria-labelledby={paramsId}>
                 <h4 id={paramsId} className="m-0 text-xs font-medium">
-                    What will run: its parameters, as Socio received them ({kb(card.params.bytes)})
+                    {t('settings.shared:action.paramsHeading', { size: kb(card.params.bytes) })}
                 </h4>
                 {card.params.counts.length > 0 && (
                     <ul className="m-0 list-none p-0 text-xs" data-slot="param-counts">
                         {card.params.counts.map((item) => (
                             <li key={item.path}>
-                                <strong>{item.count}</strong> {item.count === 1 ? 'item' : 'items'} in{' '}
-                                <code>{inert(item.path, 200)}</code>
+                                <Trans
+                                    t={t}
+                                    i18nKey="settings.shared:action.items"
+                                    count={item.count}
+                                    values={{ count: item.count, path: inert(item.path, 200) }}
+                                    components={{ n: <strong />, path: <code /> }}
+                                />
                             </li>
                         ))}
                     </ul>
@@ -196,7 +255,7 @@ function ActionBody({
                     ref={params}
                     // Focusable, so a keyboard can scroll long parameters.
                     tabIndex={0}
-                    aria-label="Parameters"
+                    aria-label={t('settings.shared:action.params')}
                     className="m-0 max-h-72 overflow-auto rounded-md border bg-muted/40 p-2 font-mono text-xs whitespace-pre-wrap [overflow-wrap:anywhere]"
                     data-slot="action-params"
                     data-complete={complete}
@@ -206,11 +265,14 @@ function ActionBody({
                 {!complete && (
                     <div className="flex flex-wrap items-center gap-2">
                         <span className="text-xs text-muted-foreground">
-                            Showing the first {kb(ACTION_PARAMS.inlineBytes)} of {kb(card.params.bytes)}.
-                            {view.status === 'pending' ? ' Open them all before you allow this.' : ''}
+                            {t('settings.shared:action.showing', {
+                                shown: kb(ACTION_PARAMS.inlineBytes),
+                                total: kb(card.params.bytes),
+                                context: view.status === 'pending' ? 'pending' : undefined,
+                            })}
                         </span>
                         <Button size="sm" variant="outline" disabled={busy} onClick={() => void open()}>
-                            <Eye /> Show all parameters
+                            <Eye /> {t('settings.shared:action.showAll')}
                         </Button>
                     </div>
                 )}
@@ -221,8 +283,12 @@ function ActionBody({
                 )}
             </section>
             {card.display.length > 0 && (
-                <section className="grid gap-0.5" aria-label="As described by the app" data-slot="app-display">
-                    <span className="text-xs text-muted-foreground">As described by the app (its own words):</span>
+                <section
+                    className="grid gap-0.5"
+                    aria-label={t('settings.shared:action.described')}
+                    data-slot="app-display"
+                >
+                    <span className="text-xs text-muted-foreground">{t('settings.shared:action.describedLead')}</span>
                     <dl className="m-0 grid min-w-0 grid-cols-[auto_minmax(0,1fr)] gap-x-3 text-xs">
                         {card.display.map((line, index) => (
                             <div key={index} className="contents">

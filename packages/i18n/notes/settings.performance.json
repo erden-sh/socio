@@ -1,0 +1,8 @@
+{
+    "title": "Heading of Settings › Performance: a tool that records how fast the app responds in this browser tab, for a bug report. Technical, plain tone.",
+    "intro": "\"The slow action\" is whatever felt slow to the person. \"A sample\" is one recording.",
+    "privacy": "What the downloaded report contains and doesn't. \"URL parameters\" are the parts of web addresses after \"?\".",
+    "status": "The recorder's status and how many measurements (entries) it holds. Base form: stopped; _recording: recording now.",
+    "download": "Button: save the recording as a JSON file.",
+    "clear": "Button: delete the recording."
+}

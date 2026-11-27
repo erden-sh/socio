@@ -4,7 +4,7 @@ import { useEffect, useRef, useSyncExternalStore } from 'react';
 import type { ApprovalView } from '@socio/shared/approvals';
 import { approvalAsk, decidedOnCard, mustOpenFirst } from '@socio/shared/approvals-view';
 
-import { allowLabel } from '../settings/SocioAccessCard';
+import { useAllowLabel } from '../settings/SocioAccessCard';
 
 import { Button } from '@/components/ui/button';
 
@@ -104,6 +104,7 @@ export function ApprovalBar({
     pending: readonly ReportedApproval[];
     onShow: (id: string) => void;
 }) {
+    const allowLabel = useAllowLabel();
     const first = pending[0];
     if (!first) {
         return null;

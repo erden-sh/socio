@@ -1,0 +1,12 @@
+{
+    "title": "\"GitHub App\" is GitHub's product name for an app installed on repositories: keep it.",
+    "intro": "Coding sessions are AI coding agents' sessions. \"Coding → Repositories\" names a settings page: keep it matching the Settings nav.",
+    "repositoryPlaceholder": "Format hint in an empty field: a GitHub repository as owner/name. Keep the slash; you may translate the two words.",
+    "repositoryInvalid": "\"owner/name\" and \"acme/app\" show the format: keep the slash.",
+    "ownerFrom": "Toast after saving: {{repository}} is the repository, such as acme/app.",
+    "useDefault": "Button: use the repository the server's environment sets instead.",
+    "status.unreadable": "{{name}} is the GitHub App's short name or number; {{account}} the GitHub account or organization it is installed on. The _env forms add that the App comes from the server's environment (GITHUB_APP_ID, an environment variable). \"Disconnect\" and \"Connect GitHub\" are this card's buttons: keep them matching.",
+    "explain": "\"Create\" and \"Install\" are buttons on GitHub's own pages, in English. Coding agents are AI agents that write code.",
+    "needsOrigin": "APP_ORIGIN is an environment variable name: keep it.",
+    "disconnectNote": "\"Developer settings → GitHub Apps\" names GitHub's own settings pages, in English."
+}

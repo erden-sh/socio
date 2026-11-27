@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router';
 
+import { useTranslation } from '@socio/i18n/react';
 import { STATUS_LABEL } from '@socio/shared/issues/issue-board';
 import type { IssueWatchList, IssueWatchView } from '@socio/shared/issues/issue-subscriptions';
 import { ISSUE_STATUSES, type IssueStatus } from '@socio/shared/issues/issue-types';
@@ -12,8 +13,16 @@ import { SettingsCard } from './AccountSettings';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
+const STATE_KEYS = {
+    watching: 'settings.notifications:issues.states.watching',
+    ready: 'settings.notifications:issues.states.ready',
+    triggered: 'settings.notifications:issues.states.triggered',
+    cancelled: 'settings.notifications:issues.states.cancelled',
+} as const satisfies Record<IssueWatchView['state'], string>;
+
 /** Explicit, owner-managed one-shot subscriptions; creating one never sends a historical notice. */
 export function IssueSubscriptionsSection() {
+    const { t } = useTranslation(['settings.notifications']);
     const [answer, setAnswer] = useState<IssueWatchList>();
     const [keys, setKeys] = useState('');
     const [status, setStatus] = useState<IssueStatus>('done');
@@ -24,8 +33,10 @@ export function IssueSubscriptionsSection() {
         setAnswer(await api<IssueWatchList>('/issues/subscriptions'));
     }, []);
     useEffect(() => {
-        void load().catch((e) => setError(e instanceof Error ? e.message : 'Could not load subscriptions.'));
-    }, [load]);
+        void load().catch((e) =>
+            setError(e instanceof Error ? e.message : t('settings.notifications:issues.loadFailed')),
+        );
+    }, [load, t]);
     const create = async () => {
         setBusy(true);
         setError('');
@@ -38,15 +49,15 @@ export function IssueSubscriptionsSection() {
             });
             setNote(
                 result.alreadyMatched
-                    ? 'These issues already match. No historical notice was sent; this waits for a later transition.'
+                    ? t('settings.notifications:issues.alreadyMatched')
                     : result.outcome === 'already_watching'
-                      ? 'You already have this subscription.'
-                      : 'Subscribed. You will be notified once when all these issues match.',
+                      ? t('settings.notifications:issues.alreadyWatching')
+                      : t('settings.notifications:issues.subscribed'),
             );
             setKeys('');
             await load();
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Could not subscribe.');
+            setError(e instanceof Error ? e.message : t('settings.notifications:issues.subscribeFailed'));
         } finally {
             setBusy(false);
         }
@@ -58,7 +69,7 @@ export function IssueSubscriptionsSection() {
             await api('/issues/subscriptions/' + encodeURIComponent(id), 'DELETE');
             await load();
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Could not unsubscribe.');
+            setError(e instanceof Error ? e.message : t('settings.notifications:issues.unsubscribeFailed'));
         } finally {
             setBusy(false);
         }
@@ -72,7 +83,7 @@ export function IssueSubscriptionsSection() {
             const next = await api<IssueWatchList>('/issues/subscriptions?offset=' + answer.next);
             setAnswer({ items: [...answer.items, ...next.items], next: next.next });
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Could not load more.');
+            setError(e instanceof Error ? e.message : t('settings.notifications:issues.moreFailed'));
         } finally {
             setBusy(false);
         }
@@ -80,11 +91,8 @@ export function IssueSubscriptionsSection() {
     return (
         <SettingsCard>
             <section className="grid gap-3" data-slot="issue-subscriptions">
-                <h3 className="font-medium">Issue subscriptions</h3>
-                <p className="text-muted-foreground">
-                    Get one notice when all chosen issues reach a status after a future change. Existing matches are not
-                    announced. Device delivery uses your notification channels above; a notice also appears in Socio.
-                </p>
+                <h3 className="font-medium">{t('settings.notifications:issues.title')}</h3>
+                <p className="text-muted-foreground">{t('settings.notifications:issues.intro')}</p>
                 <form
                     className="grid gap-2"
                     onSubmit={(e) => {
@@ -93,20 +101,21 @@ export function IssueSubscriptionsSection() {
                     }}
                 >
                     <label className="grid gap-1">
-                        Issue keys
+                        {t('settings.notifications:issues.keys')}
                         <Input
-                            aria-label="Subscribed issue keys"
+                            aria-label={t('settings.notifications:issues.keysLabel')}
                             value={keys}
                             onChange={(e) => setKeys(e.target.value)}
+                            // oxlint-disable-next-line socio/no-literal-text -- sample issue keys, not copy
                             placeholder="CB-12, CB-34"
                             disabled={busy}
                             maxLength={300}
                         />
                     </label>
                     <label className="grid gap-1">
-                        When all reach
+                        {t('settings.notifications:issues.status')}
                         <select
-                            aria-label="Subscription target status"
+                            aria-label={t('settings.notifications:issues.statusLabel')}
                             value={status}
                             onChange={(e) => setStatus(e.target.value as IssueStatus)}
                             disabled={busy}
@@ -121,7 +130,7 @@ export function IssueSubscriptionsSection() {
                     </label>
                     <div>
                         <Button type="submit" disabled={busy || !keys.trim()}>
-                            Subscribe once
+                            {t('settings.notifications:issues.subscribe')}
                         </Button>
                     </div>
                 </form>
@@ -138,11 +147,13 @@ export function IssueSubscriptionsSection() {
                         ))}
                     </ul>
                 )}
-                {answer?.items.length === 0 && <p className="text-muted-foreground">No issue subscriptions.</p>}
+                {answer?.items.length === 0 && (
+                    <p className="text-muted-foreground">{t('settings.notifications:issues.empty')}</p>
+                )}
                 {answer?.next != null && (
                     <div>
                         <Button variant="outline" disabled={busy} onClick={() => void more()}>
-                            Load more subscriptions
+                            {t('settings.notifications:issues.more')}
                         </Button>
                     </div>
                 )}
@@ -151,6 +162,7 @@ export function IssueSubscriptionsSection() {
     );
 }
 function Watch({ watch, busy, cancel }: { watch: IssueWatchView; busy: boolean; cancel: () => void }) {
+    const { t } = useTranslation(['settings.notifications']);
     return (
         <li className="flex flex-wrap items-center gap-2 rounded-md border p-2">
             <div className="min-w-0 flex-1">
@@ -163,26 +175,20 @@ function Watch({ watch, busy, cancel }: { watch: IssueWatchView; busy: boolean; 
                             </Link>
                         </span>
                     ))}{' '}
-                    → {STATUS_LABEL[watch.targetStatus]}
+                    {t('settings.notifications:issues.target', { status: STATUS_LABEL[watch.targetStatus] })}
                 </p>
-                <p className="text-muted-foreground">
-                    {watch.state === 'triggered'
-                        ? 'Matched; notification recorded'
-                        : watch.state === 'cancelled'
-                          ? 'Canceled'
-                          : watch.state === 'ready'
-                            ? 'Matched; notice pending'
-                            : 'Watching future changes'}
-                </p>
+                <p className="text-muted-foreground">{t(STATE_KEYS[watch.state])}</p>
             </div>
             {['watching', 'ready'].includes(watch.state) && (
                 <Button
                     variant="outline"
                     disabled={busy}
                     onClick={cancel}
-                    aria-label={'Unsubscribe ' + watch.issues.join(', ')}
+                    aria-label={t('settings.notifications:issues.unsubscribeLabel', {
+                        issues: watch.issues.join(', '),
+                    })}
                 >
-                    Unsubscribe
+                    {t('settings.notifications:issues.unsubscribe')}
                 </Button>
             )}
         </li>

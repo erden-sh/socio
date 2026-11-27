@@ -20,8 +20,9 @@ export const handle: RouteHandle = {
 /**
  * `/settings/:section`: an unknown section, or one this person may not
  * open (People is admins'), goes to the first page; an old section's
- * address (Service accounts) to where it moved. Its namespaces
- * (route-namespaces.json) come inlined with it.
+ * address (Service accounts) to where it moved. Its page's namespaces
+ * (route-namespaces.json, `settings:section:<section>`) come inlined
+ * with it.
  */
 export async function loader({ params, context }: LoaderFunctionArgs) {
     const moved = movedSection(params.section);
@@ -30,7 +31,8 @@ export async function loader({ params, context }: LoaderFunctionArgs) {
         throw redirect(SETTINGS_HOME);
     }
     const { services } = web(context);
-    const i18n = await routeI18n(context, 'settings:section');
+    // Each page inlines its own namespaces (route-namespaces.json).
+    const i18n = await routeI18n(context, `settings:section:${found.item.id}`);
     if (!(await services.user())) {
         return { i18n };
     }

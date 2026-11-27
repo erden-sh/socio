@@ -17,5 +17,7 @@
     "paused.resume": "Button: lets every socio (AI agent) work again.",
     "paused.pause": "Button: stops every socio (AI agent) until resumed.",
     "paused.scheduled": "How many scheduled tasks are waiting to run.",
-    "crumbs.person": "Breadcrumb for one person's page under Settings › People."
+    "crumbs.person": "Breadcrumb for one person's page under Settings › People.",
+    "providers.google-native": "A sign-in method on People and Devices: a Google account linked in the Socio mobile app (not on the web). \"(app)\" means the mobile app.",
+    "providers.apple-native": "A sign-in method on People and Devices: an Apple account linked in the Socio mobile app (Sign in with Apple). \"(app)\" means the mobile app."
 }

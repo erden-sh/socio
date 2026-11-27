@@ -27,10 +27,13 @@ const english = new Map(
     ]),
 );
 
-/** A key i18next resolves: as written, or a plural's base. */
+/** A key i18next resolves: as written, a plural's base, or a context's (`title` for `title_admin`). */
 const known = (ns: string, key: string) => {
     const keys = english.get(ns);
-    return !!keys && (keys.has(key) || [...keys.keys()].some((name) => pluralForm(name)?.base === key));
+    return (
+        !!keys &&
+        (keys.has(key) || [...keys.keys()].some((name) => pluralForm(name)?.base === key || name.startsWith(`${key}_`)))
+    );
 };
 
 it('names only en-US keys in t() calls', () => {

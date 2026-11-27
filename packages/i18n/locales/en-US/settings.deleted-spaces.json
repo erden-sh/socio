@@ -1,0 +1,22 @@
+{
+    "title": "Deleted Spaces",
+    "description": "A deleted Space is gone for everyone, with its pages, chats, memory, shares and socios’ access, and kept here until you restore it. Restoring brings it all back, for the people who could see it.",
+    "loading": "Loading…",
+    "empty": "No deleted Spaces.",
+    "item": {
+        "deleted_one": "Deleted by {{name}}, <when></when> · {{count, number}} page",
+        "deleted_other": "Deleted by {{name}}, <when></when> · {{count, number}} pages",
+        "formerMember": "a former member",
+        "when": "{{at, datetime(dateStyle: medium; timeStyle: short)}}"
+    },
+    "restore": {
+        "action": "Restore",
+        "busy": "Restoring…",
+        "label": "Restore {{name}}",
+        "done": "Restored “{{name}}”"
+    },
+    "errors": {
+        "load": "Could not load the deleted Spaces.",
+        "restore": "Could not restore it."
+    }
+}
