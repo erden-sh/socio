@@ -4,7 +4,6 @@ import { createContext, useContext, useEffect, useRef, useState } from 'react';
 
 import { REACTIONS, REACTION_LABELS, type ReactionKind } from '@socio/shared/chat/reactions';
 import { REPORT_CONFIRMATION, type ReportPreview } from '@socio/shared/chat/reply-reports';
-import { messageAuthor } from '@socio/shared/runs/socio-fields';
 
 import { api } from '../../lib/api';
 import { ShellContext } from '../../shell/shell-context';
@@ -25,8 +24,8 @@ const ICONS: Record<ReactionKind, LucideIcon> = {
 
 /**
  * The transcript the reactions are in (CB-382): the confirmation names the
- * socio and, when the server says the answered message is another
- * person's, that person.
+ * socio whose reply it is. Whose message the reply answered is the
+ * server's to say (`GET …/report`), never read from here.
  */
 export const ReportTranscript = createContext<{ messages: readonly Message[]; dotName?: string } | undefined>(
     undefined,
@@ -35,25 +34,8 @@ export const ReportTranscript = createContext<{ messages: readonly Message[]; do
 /** Said when the server couldn't say what a report would include. */
 export const PREVIEW_FAILED = 'Couldn’t check what this report would include. Try again.';
 
-/**
- * Whose message a reply answered, for the confirmation's line: the nearest
- * earlier message by someone other than the reader. Only the name; whether
- * the line shows is the server's answer (`promptByOther`).
- */
-function otherAuthor(messages: readonly Message[], replyId: string) {
-    const at = messages.findIndex((message) => message.id === replyId);
-    for (let index = at - 1; index >= 0; index--) {
-        const message = messages[index]!;
-        if (message.role !== 'user') {
-            continue;
-        }
-        const author = messageAuthor(message);
-        if (author && !author.you && author.name) {
-            return author.name;
-        }
-    }
-    return 'Another person';
-}
+/** `{author}` when the server's answer names nobody (an older server): it opens the sentence. */
+export const OTHER_AUTHOR = 'Another person';
 
 type Step =
     | { kind: 'checking' }
@@ -118,7 +100,7 @@ export function MessageReactions({ messageId, reactions }: { messageId: string; 
         setStep({
             kind: 'report',
             consent: preview.consent ?? consent,
-            ...(preview.promptByOther ? { byOther: otherAuthor(transcript?.messages ?? [], messageId) } : {}),
+            ...(preview.promptByOther ? { byOther: preview.author || OTHER_AUTHOR } : {}),
         });
     };
     const press = (kind: ReactionKind) => {

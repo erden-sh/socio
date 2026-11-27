@@ -20,7 +20,7 @@ import type { User } from '@socio/shared/types';
 
 import { closeChangeChannel } from '../src/lib/change-channel';
 import { ChatTranscript } from '../src/modules/chat/ChatTranscript';
-import { PREVIEW_FAILED } from '../src/modules/chat/MessageReactions';
+import { OTHER_AUTHOR, PREVIEW_FAILED } from '../src/modules/chat/MessageReactions';
 import { REPORT_NOTICE, useReactions, withReaction } from '../src/modules/chat/use-reactions';
 import { CloudConnectionCard } from '../src/modules/operator/CloudConnectionCard';
 import { ReplyReportsCard } from '../src/modules/operator/ReplyReportsCard';
@@ -106,6 +106,7 @@ afterEach(() => {
 });
 
 const messages: Message[] = [
+    // The transcript names someone else: the dialog never reads it for `{author}`.
     { id: 'u1', role: 'user', content: 'Plan the offsite', metadata: { author: { name: 'Bob', you: false } } },
     { id: 'a1', role: 'assistant', content: 'Talks, then lunch.' },
 ];
@@ -270,20 +271,30 @@ it('sends nothing on Cancel', async () => {
     expect(down().getAttribute('aria-pressed')).toBe('false');
 });
 
-it('shows the other person’s line exactly when the server says so, and says it showed it', async () => {
+it('shows the other person’s line exactly when the server says so, named by the server', async () => {
     await chat();
     await pressDown();
     expect(dialog()!.querySelector('[data-slot="report-by-other"]')).toBeNull();
     await click(buttonNamed(REPORT_CONFIRMATION.cancel));
     await until(() => !dialog(), 'the dialog to close');
-    preview = { sharing: true, consent: 'consent-1', promptByOther: true };
+    preview = { sharing: true, consent: 'consent-1', promptByOther: true, author: 'Ada' };
     await pressDown();
     expect(dialog()!.querySelector('[data-slot="report-by-other"]')!.textContent).toBe(
-        fillReportText(REPORT_CONFIRMATION.byOther, { author: 'Bob' }),
+        fillReportText(REPORT_CONFIRMATION.byOther, { author: 'Ada' }),
     );
     await click(radio('Offensive'));
     await click(reportConfirm());
     expect(writes()[0]!.body).toEqual({ report: { reason: 'offensive', consent: 'consent-1', shownByOther: true } });
+});
+
+it('says “Another person” when the server’s answer names nobody, never the transcript’s guess', async () => {
+    preview = { sharing: true, consent: 'consent-1', promptByOther: true };
+    await chat();
+    await pressDown();
+    expect(dialog()!.querySelector('[data-slot="report-by-other"]')!.textContent).toBe(
+        fillReportText(REPORT_CONFIRMATION.byOther, { author: OTHER_AUTHOR }),
+    );
+    expect(dialog()!.textContent).not.toContain('Bob');
 });
 
 it('sends the consent the server answered with when it is newer', async () => {

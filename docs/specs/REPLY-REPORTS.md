@@ -58,7 +58,12 @@ never a person). `promptByOther` is true exactly when that author isn't the pers
 **Clients take `promptByOther` from the server, and don't compute it themselves**:
 
 `GET /api/conversations/:id/messages/:messageId/report` → `{ sharing: boolean, consent?: string,
-promptByOther: boolean }` (404 as for reactions).
+promptByOther: boolean, author?: string }` (404 as for reactions).
+
+`author` is there exactly when `promptByOther` is true: the display name of the answered message's
+author, as a room's history names its members (their name now, else `Team member`), from the same
+reactor's view. Clients fill `{author}` with it; one without it (an older server) says "another
+person".
 
 A client's transcript can't always tell a note the server wrote from a person's message, so this
 answer is the source of truth. `answeredMessage()`, `isServerNote()` and `promptByOther()` in
