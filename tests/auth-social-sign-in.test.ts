@@ -293,10 +293,12 @@ describe('redeem', () => {
             .prepare('SELECT signInMethod, deviceId FROM auth_session WHERE userId = ? AND deviceId IS NOT NULL')
             .get(ada.id) as { signInMethod: string; deviceId: string };
         expect(session).toEqual({ signInMethod: 'google', deviceId: body.deviceId });
-        expect(b.db.prepare('SELECT label, platform FROM auth_device WHERE id = ?').get(body.deviceId)).toEqual({
-            label: 'Ada’s iPhone',
-            platform: 'ios',
-        });
+        expect(b.db.prepare('SELECT label, platform FROM auth_device WHERE id = ?').get(String(body.deviceId))).toEqual(
+            {
+                label: 'Ada’s iPhone',
+                platform: 'ios',
+            },
+        );
         // The session works for the app.
         const user = await b.provider.resolve(
             new Request(`${ORIGIN}/api/rooms`, { headers: { cookie: jar.header, [INSTALL_HEADER]: installId } }),

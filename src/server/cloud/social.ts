@@ -12,10 +12,11 @@
  * - `GET /v1/social/config` → `{google?: {serverClientId}, apple?: {}}`.
  *   Kept 10 minutes; a failure keeps the last good answer up to an hour.
  * - `POST /v1/social/verify` `{provider, idToken, nonce}` (the raw nonce)
- *   → 200 with a compact JWS: header `alg: EdDSA`, `typ: social+jwt`,
+ *   → 200 `{statement}`, a compact JWS: header `alg: EdDSA`, `typ: social+jwt`,
  *   `kid`; claims `iss` (the issuer), `aud` (this deployment's id),
- *   `provider`, `sub`, `nonce`, `iat`, `exp`, and `email`, `emailVerified`
- *   when the token had them.
+ *   `provider`, `sub`, `nonce`, `iat`, `exp` (`iat` + 60 s), and `email`,
+ *   `emailVerified` when the token had them. A 403 (`insufficient_scope`)
+ *   means the deployment lacks `social:verify`.
  *
  * Only while the connection is connected (not paused) with the
  * `social:verify` scope. The ID token, its email and the statement are
@@ -43,7 +44,7 @@ const CONFIG_RETRY_MS = 30_000;
 const VERIFY_TIMEOUT_MS = 10_000;
 /** Clock slack for `iat` and `exp`, and the longest a statement may live. */
 const SKEW_S = 60;
-const MAX_LIFE_S = 300;
+const MAX_LIFE_S = 120;
 /** The service's `Retry-After`, kept within these bounds (a short backoff). */
 const RETRY_AFTER_MIN = 1_000;
 const RETRY_AFTER_MAX = 5 * MINUTE;
@@ -251,7 +252,17 @@ export class CloudSocial implements SocialVerificationShape {
         }
         const status = response.status;
         if (status === 200) {
-            return this.statement(body.trim(), input, deploymentId);
+            let statement: string | undefined;
+            try {
+                const json = JSON.parse(body) as { statement?: unknown } | null;
+                statement = text(json?.statement, 16 * 1024);
+            } catch {
+                statement = undefined;
+            }
+            if (!statement) {
+                return refuse('provider_unavailable', 'an answer with no statement');
+            }
+            return this.statement(statement, input, deploymentId);
         }
         let code: string | undefined;
         try {

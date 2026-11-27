@@ -76,7 +76,11 @@ async function connected(options: { issuer?: FakeIssuer; scopes?: string; enroll
 const answering =
     (issuer: FakeIssuer, extra: Record<string, unknown>, header: Record<string, unknown> = {}) =>
     (body: { provider: string; idToken: string; nonce: string }, deploymentId: string) =>
-        new Response(issuer.signStatement(statementClaims(body, deploymentId, extra), header), { status: 200 });
+        statementAnswer(issuer.signStatement(statementClaims(body, deploymentId, extra), header));
+
+/** The service's 200: `{statement}`. */
+const statementAnswer = (statement: string) =>
+    new Response(JSON.stringify({ statement }), { status: 200, headers: { 'content-type': 'application/json' } });
 
 const status = (code: number, body: unknown = {}, headers: Record<string, string> = {}) =>
     new Response(JSON.stringify(body), { status: code, headers: { 'content-type': 'application/json', ...headers } });
@@ -134,13 +138,12 @@ describe('a verification', () => {
         const { verify, issuer, logs } = await connected();
         const stranger = generateKeyPairSync('ed25519').privateKey;
         issuer.socialVerify = (body, deploymentId) =>
-            new Response(
+            statementAnswer(
                 issuer.signStatement(
                     statementClaims(body, deploymentId, claims),
                     header,
                     otherKey ? stranger : undefined,
                 ),
-                { status: 200 },
             );
         expect(await verify()).toEqual({ ok: false, code: 'invalid_token' });
         expect(logs.some((line) => /Social sign-in: the cloud's statement failed its \w+ check/.test(line))).toBe(true);
@@ -174,6 +177,22 @@ describe('a verification', () => {
         const { verify, issuer } = await connected();
         issuer.socialVerify = () => status(code, body);
         expect(await verify()).toEqual({ ok: false, code: expected });
+    });
+
+    it('takes the statement only inside `{statement}`: a bare one or none is no answer', async () => {
+        const { verify, issuer } = await connected();
+        for (const answer of [
+            () =>
+                new Response(
+                    issuer.signStatement(statementClaims({ provider: 'google', idToken: ID_TOKEN, nonce: NONCE }, 'x')),
+                    { status: 200 },
+                ),
+            () => status(200, {}),
+            () => status(200, { statement: 42 }),
+        ]) {
+            issuer.socialVerify = answer;
+            expect(await verify()).toEqual({ ok: false, code: 'provider_unavailable' });
+        }
     });
 
     it('waits out a 503’s Retry-After before asking again', async () => {

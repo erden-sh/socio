@@ -148,9 +148,9 @@ export function fakeIssuer(): FakeIssuer {
             return `${input}.${sign(null, Buffer.from(input), key).toString('base64url')}`;
         },
         socialVerify: (body, deploymentId) =>
-            new Response(issuer.signStatement(statementClaims(body, deploymentId)), {
+            new Response(JSON.stringify({ statement: issuer.signStatement(statementClaims(body, deploymentId)) }), {
                 status: 200,
-                headers: { 'content-type': 'application/jwt' },
+                headers: { 'content-type': 'application/json' },
             }),
         provision(deploymentId = `dep_${randomUUID().replaceAll('-', '').slice(0, 26).toUpperCase()}`) {
             const token = `iat_${randomUUID()}${randomUUID()}`;
