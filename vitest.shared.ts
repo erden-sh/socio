@@ -17,6 +17,8 @@ export default defineConfig({
             '@': at('./packages/client/src'),
             // The same as vite.config.ts: tests need no build of the packages.
             '@socio/shared': at('./packages/shared/src'),
+            '@socio/i18n/locales': at('./packages/i18n/locales'),
+            '@socio/i18n': at('./packages/i18n/src'),
             '@socio/foundation': at('./packages/foundation/src'),
             '@socio/data': at('./packages/data/src'),
             // The same stub as vite.config.ts.

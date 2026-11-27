@@ -11,6 +11,7 @@ import { turnProblems } from '@socio/foundation/rooms/turn-problems';
 import { SpaceAccessError } from '@socio/foundation/spaces/access-error';
 import { messageText } from '@socio/foundation/turns/media-parts';
 import { UPGRADE_ENV, type UpgradeEnv, type VoiceShape } from '@socio/foundation/voice/voice-shape';
+import { isSupportedLocale } from '@socio/i18n/registry';
 import type { ModelChoice } from '@socio/shared/inference';
 import { modelChoiceInput } from '@socio/shared/inference/model-choice-input';
 import { learningContainerIdSchema, validateLearningSettings } from '@socio/shared/learning';
@@ -809,13 +810,15 @@ export function workspaceRoutes(platform: WorkspaceRoutesDeps, voice: VoiceShape
                     .optional(),
                 // Whether rooms show when they are looking (CB-216).
                 roomPresence: z.enum(['shown', 'hidden']).optional(),
+                // The UI's language: a registered locale, or null to match the device.
+                locale: z.custom<string>(isSupportedLocale).nullable().optional(),
             })
             .strict()
             .safeParse(await c.req.json().catch(() => null));
         if (!data.success) {
             return c.json(
                 {
-                    error: 'Use supported dictation, notification and versioned guide preferences.',
+                    error: 'Use supported dictation, notification, language and versioned guide preferences.',
                 },
                 400,
             );

@@ -1,0 +1,5 @@
+{
+    "$comment": "The namespaces each page route inlines into its HTML, by route id (routes.ts). The root's go with every page; a route's only with its own. scripts/i18n-build.mjs reports each route's size against the budget.",
+    "root": ["common"],
+    "settings:section": ["settings.language"]
+}

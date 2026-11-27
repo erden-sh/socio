@@ -14,6 +14,7 @@ import { MockAuthProvider } from '../../src/server/auth/mock.js';
 import { requestUserResolver } from '../../src/server/auth/request-user.js';
 import { createSessionValue, SESSION_COOKIE } from '../../src/server/auth/session.js';
 import { buildDocsCatalog } from '../../src/server/docs/catalog.js';
+import { loadI18nCatalog } from '../../src/server/i18n/catalog.js';
 import { developmentWeb } from '../../src/server/web/dev.js';
 import { mountWeb } from '../../src/server/web/mount.js';
 import { webServices } from '../../src/server/web/services.js';
@@ -227,7 +228,23 @@ beforeAll(async () => {
     mountWeb(app, {
         ...web,
         services: webServices(
-            { store, config, platform, views: testPageViews(platform), auth, docs },
+            {
+                store,
+                config,
+                platform,
+                views: testPageViews(platform),
+                auth,
+                docs,
+                // The dictionaries from source, as the server builds them without dist/i18n.
+                i18n: {
+                    catalog: loadI18nCatalog({
+                        buildDir: 'node_modules/.no-i18n-build',
+                        sourceDir: 'packages/i18n/locales',
+                        release: 'test',
+                    }),
+                    preference: (userId) => workspace.preferences(userId).locale,
+                },
+            },
             requestUserResolver(auth, platform),
         ),
     });
@@ -247,9 +264,9 @@ const cookie = (userId: string) => `${SESSION_COOKIE}=${createSessionValue(SESSI
  * A page's HTML (without the empty comments React puts between text
  * parts), its nonce (from the CSP header) and its scripts.
  */
-async function document(path: string, as?: 'alice' | 'bob' | 'olga') {
+async function document(path: string, as?: 'alice' | 'bob' | 'olga', headers: Record<string, string> = {}) {
     const response = await fetch(`${base}${path}`, {
-        headers: as ? { cookie: cookie(as) } : {},
+        headers: { ...headers, ...(as ? { cookie: [cookie(as), headers.cookie].filter(Boolean).join('; ') } : {}) },
         redirect: 'manual',
     });
     const csp = response.headers.get('content-security-policy') ?? '';
@@ -279,7 +296,7 @@ it('renders the signed-in shell on the server, uncached', async () => {
     expect(response.headers.get('content-type')).toMatch(/^text\/html/);
     expect(response.headers.get('cache-control')).toBe('no-store');
     expect(csp).toBe(pageContentSecurityPolicy(nonce));
-    expect(html).toMatch(/^<!DOCTYPE html><html lang="en"/);
+    expect(html).toMatch(/^<!DOCTYPE html><html lang="en-US" dir="ltr"/);
     expect(html).toContain('<title>Socio</title>');
     expect(html).toContain('<div id="root">');
     // The sidebar, the header and the launcher, for alice.
@@ -698,3 +715,24 @@ it('tells a tab on an older build to load the page again', async () => {
     expect(response.headers.get('x-remix-reload-document')).toBe('true');
     expect(response.headers.get('cache-control')).toBe('no-store');
 }, 60_000);
+
+it('renders in the page’s locale, with only its route’s dictionaries inlined', { timeout: 60_000 }, async () => {
+    // en-XA (the pseudo-locale) through the cookie: the page's own words, no flash of English.
+    const pseudo = await document('/settings/account', 'alice', { cookie: 'socio_locale=en-XA' });
+    expect(pseudo.html).toMatch(/^<!DOCTYPE html><html lang="en-XA" dir="ltr"/);
+    expect(pseudo.html).toContain('[Šöçîö ~~]');
+    expect(pseudo.html).toContain('[Ļáñĝûáĝé ~~~]');
+    // en-US alone passes the coverage gate: Settings › Language isn't shown.
+    expect(pseudo.html).not.toContain('data-slot="language-preference"');
+    // Accept-Language with nothing to match: en-US, and a page without the settings namespace.
+    const home = await document('/', 'alice', { 'accept-language': 'fr-FR, de;q=0.5' });
+    expect(home.html).toMatch(/^<!DOCTYPE html><html lang="en-US" dir="ltr"/);
+    expect(home.html).not.toContain('Match my device');
+    // Signed out: the cookie still decides.
+    const signedOut = await document('/', undefined, { cookie: 'socio_locale=en-XA' });
+    expect(signedOut.html).toMatch(/^<!DOCTYPE html><html lang="en-XA"/);
+    // The preference wins over the cookie.
+    workspace.setPreferences('bob', { locale: 'en-US' });
+    const preferred = await document('/', 'bob', { cookie: 'socio_locale=en-XA' });
+    expect(preferred.html).toMatch(/^<!DOCTYPE html><html lang="en-US"/);
+});

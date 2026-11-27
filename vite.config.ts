@@ -28,6 +28,9 @@ export default defineConfig({
             // The packages' source: tsc and Node read their builds instead
             // (packages/shared/README.md).
             '@socio/shared': fileURLToPath(new URL('./packages/shared/src', import.meta.url)),
+            // The dictionaries' source files, before the package's source.
+            '@socio/i18n/locales': fileURLToPath(new URL('./packages/i18n/locales', import.meta.url)),
+            '@socio/i18n': fileURLToPath(new URL('./packages/i18n/src', import.meta.url)),
             '@socio/foundation': fileURLToPath(new URL('./packages/foundation/src', import.meta.url)),
             '@socio/data': fileURLToPath(new URL('./packages/data/src', import.meta.url)),
             // CopilotKit's web inspector reports to telemetry.copilotkit.ai. It is

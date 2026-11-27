@@ -10,11 +10,16 @@
         "noEmit": true,
         "skipLibCheck": true,
         "esModuleInterop": true,
+        "resolveJsonModule": true,
         "types": ["node", "vite/client"],
         "paths": {
             "@/*": ["./packages/client/src/*"],
             "@socio/plugin-ui": ["./packages/plugin-ui/src/index.ts"],
             "@socio/shared/*": ["./packages/shared/src/*.ts"],
+            "@socio/i18n": ["./packages/i18n/src/index.ts"],
+            "@socio/i18n/route-namespaces.json": ["./packages/i18n/src/route-namespaces.json"],
+            "@socio/i18n/locales/*": ["./packages/i18n/locales/*"],
+            "@socio/i18n/*": ["./packages/i18n/src/*.ts"],
             "@socio/foundation/*": ["./packages/foundation/src/*.ts"],
             "@socio/data/*": ["./packages/data/src/*.ts"]
         }
@@ -23,6 +28,8 @@
         "src",
         "packages/app-sdk",
         "packages/shared/src",
+        "packages/i18n/src",
+        "packages/i18n/tests",
         "packages/foundation/src",
         "packages/foundation/tests",
         "packages/data/src",

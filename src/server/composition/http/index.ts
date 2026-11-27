@@ -18,6 +18,7 @@ import type { NetworkTrust } from '@socio/foundation/http/network-trust';
 import { CLIENT_COMPAT, type ClientCompat } from '@socio/shared/client-compat';
 
 import type { AuthSetup } from '../../auth/contract.js';
+import type { I18nCatalogShape } from '../../i18n/contract.js';
 import type { AppEdge, AppRuntime } from '../../main.js';
 import type { LeaderLease } from '../../runtime/background.js';
 import type { Runner } from '../../turns/runner.js';
@@ -33,6 +34,7 @@ import { computersRoutes } from './computers.js';
 import { dataspaceRoutes } from './dataspace.js';
 import { edgeRoutes } from './edge.js';
 import { bindAppRuntime } from './handle.js';
+import { i18nHttpRoutes } from './i18n.js';
 import { inferenceRoutes } from './inference.js';
 import { liveRoutes } from './live.js';
 import { mcpRoutes } from './mcp.js';
@@ -72,6 +74,8 @@ export interface AppOptions {
     runtime?: AppRuntime;
     /** Which app versions this server works with (CB-553): shared's `CLIENT_COMPAT` unless the environment says otherwise. */
     clientCompat?: ClientCompat;
+    /** The dictionaries; the process's (composition/i18n.ts) by default. */
+    i18n?: I18nCatalogShape;
 }
 
 /** Every middleware and route of the app, in order (createApp in app.ts). */
@@ -86,6 +90,7 @@ export function mountApp(app: Hono<AppEnv>, options: AppOptions) {
         releases,
         network = { proxies: [] },
         runtime,
+        i18n,
         clientCompat = CLIENT_COMPAT,
     } = options;
     if (runtime) {
@@ -103,6 +108,7 @@ export function mountApp(app: Hono<AppEnv>, options: AppOptions) {
         pluginsRoutes.feeds(app, edge, origin);
     }
     webRoutes.agentsPage(app, edge);
+    i18nHttpRoutes.routes(app, i18n);
     if (edge) {
         agentsRoutes.mcp(app, edge, origin);
     }

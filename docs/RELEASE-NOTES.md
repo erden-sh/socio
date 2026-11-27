@@ -29,6 +29,10 @@ How this file is kept (scripts/release.mjs and the app's build read it):
 
 ## Unreleased
 
+### New
+
+- **The groundwork for Socio in other languages.** A new `@socio/i18n` package holds the strings and the shared i18next setup; the server serves the dictionaries from its own build at `/i18n/manifest.json` and `/i18n/<locale>/<ns>.<hash>.json` (public, cached for good, never fetched from anywhere), and pages render in the person's locale: their saved preference, then a `socio_locale` cookie, then the browser's languages. `PATCH /api/preferences` takes `locale` (a supported locale, or null to match the device). Everything is still English: Settings › Language appears once a second language is translated. See docs/I18N.md.
+
 ## v0.56.0 (2026-11-26)
 
 A Space's pages can now live in folders, and the Socio app tells you plainly when a workspace needs a newer version. Admins can also share AI reply reports with Ingenio; it stays off until they turn it on.

@@ -46,6 +46,12 @@ export interface UserPreferences {
      * unset: shown.
      */
     roomPresence?: RoomPresencePreference;
+    /**
+     * The language Socio shows this person on this server: a registered
+     * locale (`@socio/i18n`'s `LOCALES`, such as `es-US`); null or unset:
+     * match the device or browser.
+     */
+    locale?: string | null;
 }
 export const DEFAULT_PREFERENCES: UserPreferences = { dictation: null };
 

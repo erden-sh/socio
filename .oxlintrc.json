@@ -104,15 +104,32 @@
             }
         },
         {
-            "files": ["packages/client/src/**/*.ts", "packages/client/src/**/*.tsx", "packages/shared/src/**/*.ts"],
+            "files": [
+                "packages/client/src/**/*.ts",
+                "packages/client/src/**/*.tsx",
+                "packages/shared/src/**/*.ts",
+                "packages/i18n/src/**/*.ts"
+            ],
             "rules": {
                 "socio/locale": "error"
             }
         },
         {
-            "files": ["apps/mobile/**", "packages/shared/src/**"],
+            "files": ["apps/mobile/**", "packages/shared/src/**", "packages/i18n/src/**"],
             "rules": {
                 "socio/hermes": "error"
+            }
+        },
+        {
+            "files": ["packages/client/src/**/*.ts", "packages/client/src/**/*.tsx"],
+            "rules": {
+                "socio/translate-in-components": "error"
+            }
+        },
+        {
+            "files": ["packages/client/src/modules/settings/language/**"],
+            "rules": {
+                "socio/no-literal-text": "error"
             }
         },
         {

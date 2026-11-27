@@ -9,6 +9,7 @@
 //   mixed       tests/integration, and the client files they reach through `@/`
 //   client      packages/client: source and tests (Bundler resolution)
 //   shared      packages/shared (NodeNext)
+//   i18n        packages/i18n (NodeNext), its source and tests
 //   foundation  packages/foundation (NodeNext)
 //   data        packages/data (NodeNext)
 //   plugin-ui   packages/plugin-ui, and the client components it imports
@@ -32,6 +33,7 @@ const PARTS = {
     root: ['--noEmit', ...cached('tsconfig')],
     client: ['-p', 'packages/client/tsconfig.json', '--noEmit', ...cached('client')],
     shared: ['-p', 'packages/shared/tsconfig.json', '--noEmit'],
+    i18n: ['-p', 'packages/i18n/tsconfig.json', '--noEmit'],
     foundation: ['-p', 'packages/foundation/tsconfig.json', '--noEmit', ...cached('foundation')],
     data: ['-p', 'packages/data/tsconfig.json', '--noEmit', ...cached('data')],
     mixed: ['-p', 'tests/integration/tsconfig.json', '--noEmit', ...cached('mixed')],

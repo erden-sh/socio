@@ -1,29 +1,35 @@
-import { dateTimeFormat, formatNumber, numberFormat } from '@socio/shared/locale';
+import { activeLocale, dateTimeFormat, formatNumber, numberFormat } from '@socio/shared/locale';
 import type { OpsStatus, OpsBucket, OpsTileId } from '@socio/shared/operations/operations';
 
 // Dates are written in the reporting time zone, the same on the server
-// and in every browser: one formatter per zone and shape.
+// and in every browser: one formatter per locale, zone and shape. The
+// locale is the request's (`activeLocale`), so a page rendered for one
+// person never reuses another's.
 const formats = new Map<string, Intl.DateTimeFormat>();
 const format = (timeZone: string, shape: 'hour' | 'day' | 'month' | 'time') => {
-    const key = `${timeZone} ${shape}`;
+    const locale = activeLocale();
+    const key = `${locale} ${timeZone} ${shape}`;
     let found = formats.get(key);
     if (!found) {
-        found = dateTimeFormat({
-            timeZone,
-            hourCycle: 'h23',
-            ...(shape === 'month'
-                ? { month: 'short', year: 'numeric' }
-                : shape === 'day'
-                  ? { month: 'short', day: 'numeric' }
-                  : shape === 'hour'
-                    ? {
-                          month: 'short',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                      }
-                    : { hour: '2-digit', minute: '2-digit' }),
-        });
+        found = dateTimeFormat(
+            {
+                timeZone,
+                hourCycle: 'h23',
+                ...(shape === 'month'
+                    ? { month: 'short', year: 'numeric' }
+                    : shape === 'day'
+                      ? { month: 'short', day: 'numeric' }
+                      : shape === 'hour'
+                        ? {
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                          }
+                        : { hour: '2-digit', minute: '2-digit' }),
+            },
+            locale,
+        );
         formats.set(key, found);
     }
     return found;

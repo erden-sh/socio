@@ -85,6 +85,34 @@ export interface WebServices {
     inference(): Promise<OperatorInferenceState | null>;
     /** `GET /api/memories`: the user's own profile, memories and proposals. */
     memories(): Promise<MemoriesState>;
+    /**
+     * The page's locale and the dictionaries of `namespaces` in it (and the
+     * locales it falls back to), signed in or out: the preference, then the
+     * `socio_locale` cookie, then Accept-Language. Undefined on a server
+     * without dictionaries (some tests): the page renders en-US.
+     */
+    i18n?(namespaces: readonly string[]): Promise<PageI18n>;
+}
+
+/**
+ * A page's locale, as the server inlines it into the HTML (root and route
+ * loaders), so the browser hydrates with the same strings. Its manifest is
+ * `@socio/i18n`'s `I18nManifest`, narrowed to the page's locale and its
+ * fallbacks.
+ */
+export interface PageI18n {
+    /** The resolved locale: `<html lang>`. */
+    locale: string;
+    /** `<html dir>`. */
+    dir: 'ltr' | 'rtl';
+    manifest: {
+        release: string;
+        locales: Record<string, { coverage: number; ns: Record<string, { hash: string; sourceHash: string }> }>;
+    };
+    /** `resources[locale][ns]`: the namespaces asked for, in the locale and its fallbacks. */
+    resources: Record<string, Record<string, unknown>>;
+    /** The locales Settings › Language offers (the coverage gate); one means no choice. */
+    offered: string[];
 }
 
 /** What the Media page lists: a folder, a search under it, a kind. */

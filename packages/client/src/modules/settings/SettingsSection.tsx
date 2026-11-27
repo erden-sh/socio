@@ -15,6 +15,7 @@ import { DataApiTokensSection } from './DataApiTokensSection';
 import { DeletedSpacesSection } from './DeletedSpacesSection';
 import { FeaturesSection } from './FeaturesSection';
 import { InferenceSection } from './InferenceSection';
+import { LanguageSection } from './language/LanguageSection';
 import { McpConnectionsSection } from './McpConnectionsSection';
 import { NotificationsSection } from './NotificationsSection';
 import { PeopleSection } from './people/PeopleSection';
@@ -88,6 +89,7 @@ export function SettingsSection({ id, access }: { id: SettingsSectionId; access:
                         methods={methods}
                         onSignedOut={() => (shell.sessionEnded ?? shell.switchUser)?.()}
                     />
+                    <LanguageSection />
                     <DictationPreference />
                     <SettingsCard>
                         <McpConnectionsSection key={shell.workspace.user.id} />

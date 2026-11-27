@@ -1,0 +1,15 @@
+{
+    "$schema": "../../node_modules/turbo/schema.json",
+    "extends": ["//"],
+    "tasks": {
+        "typecheck": {
+            "description": "tsc, and the dictionaries' checks (scripts/i18n-build.mjs --check: the files, and that the typed keys in src/resources.gen.ts are current).",
+            "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/packages/shared/src/**", "$TURBO_ROOT$/scripts/i18n-build.mjs"],
+            "outputs": []
+        },
+        "lint": {
+            "inputs": ["$TURBO_DEFAULT$"],
+            "outputs": []
+        }
+    }
+}

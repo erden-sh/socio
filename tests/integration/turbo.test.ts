@@ -186,7 +186,7 @@ const CLIENT_TEST = '@socio/client#test';
 const CLIENT_BUILD = '@socio/client#build';
 const PLUGIN_TYPECHECK = '@socio/plugin-ui#typecheck';
 const PLUGIN_LINT = '@socio/plugin-ui#lint';
-const PACKAGE_CHECKS = ['shared', 'foundation', 'data'].flatMap((name) => [
+const PACKAGE_CHECKS = ['shared', 'i18n', 'foundation', 'data'].flatMap((name) => [
     `@socio/${name}#lint`,
     `@socio/${name}#typecheck`,
 ]);

@@ -1,5 +1,6 @@
 import { Navigate, redirect, useParams, type LoaderFunctionArgs } from 'react-router';
 
+import { routeI18n } from '../../i18n/page-i18n';
 import { revalidateOn } from '../../lib/page-loader';
 import { web } from '../../lib/web-context';
 import type { RouteHandle } from '../../shell/shell-context';
@@ -18,7 +19,8 @@ export const handle: RouteHandle = {
 /**
  * `/settings/:section`: an unknown section, or one this person may not
  * open (People is admins'), goes to the first page; an old section's
- * address (Service accounts) to where it moved.
+ * address (Service accounts) to where it moved. Its namespaces
+ * (route-namespaces.json) come inlined with it.
  */
 export async function loader({ params, context }: LoaderFunctionArgs) {
     const moved = movedSection(params.section);
@@ -27,8 +29,9 @@ export async function loader({ params, context }: LoaderFunctionArgs) {
         throw redirect(SETTINGS_HOME);
     }
     const { services } = web(context);
+    const i18n = await routeI18n(context, 'settings:section');
     if (!(await services.user())) {
-        return null;
+        return { i18n };
     }
     const workspace = await services.workspace();
     if (workspace && !allowed(found.item, settingsAccess(workspace, false))) {
@@ -37,7 +40,7 @@ export async function loader({ params, context }: LoaderFunctionArgs) {
     if (moved) {
         throw redirect(moved.to);
     }
-    return null;
+    return { i18n };
 }
 export const shouldRevalidate = revalidateOn({ params: ['section'] });
 

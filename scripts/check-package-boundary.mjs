@@ -241,7 +241,7 @@ export function packageDependencyProblems(pkg, rootManifest) {
 }
 
 /** The packages built to dist, lowest first. One may depend only on those before it. */
-export const LAYERS = ['@socio/shared', '@socio/foundation', '@socio/data'];
+export const LAYERS = ['@socio/shared', '@socio/i18n', '@socio/foundation', '@socio/data'];
 
 /** A dependency between workspace packages that runs both ways, to the app, or not down the layers. */
 export function packageGraphProblems(root) {

@@ -49,6 +49,7 @@ import { WorkspaceViews } from '../../workspace/contract.js';
 import { AppStatus } from '../app/status.js';
 import { LegacyConfig, LegacyWorkspace } from '../base.js';
 import { stateStoreOf, type CoreStore } from '../core-store.js';
+import { processI18nCatalog } from '../i18n.js';
 import { LegacyInference } from '../inference.js';
 import { LegacyPlugins } from '../plugins.js';
 import { Ports } from '../ports.js';
@@ -157,6 +158,10 @@ export async function mountPages(
                 views,
                 auth,
                 docs,
+                i18n: {
+                    catalog: processI18nCatalog(),
+                    preference: (userId) => Context.get(services, LegacyWorkspace).preferences(userId).locale,
+                },
             },
             // Its own resolver, with its own record of whom it wrote (the API's is another).
             requestUserResolver(auth, { workspace: Context.get(services, LegacyWorkspace) }),
