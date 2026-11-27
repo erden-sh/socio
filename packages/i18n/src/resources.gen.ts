@@ -1648,7 +1648,7 @@ export interface EnglishResources {
         readings: {
             title: '{{name}}: meter readings';
             description: 'Each reading is what was used since the one before (or since the pool started), spread evenly over that time.';
-            reading: '{{quantity, number}} {{unit}} at {{price}}';
+            reading: '{{quantity, number}} {{measure}} at {{price}}';
             removed: 'Reading removed';
             added: 'Reading added';
             'read-on': 'Read on (UTC)';

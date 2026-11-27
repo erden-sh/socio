@@ -492,7 +492,7 @@ function Readings({ view, pool, reload }: { view: PricingView; pool: CostPool | 
                             <span>
                                 {t('operations.cost-admin:readings.reading', {
                                     quantity: reading.quantity,
-                                    unit: reading.unit,
+                                    measure: reading.unit,
                                     price: formatUsd(reading.unitPrice ?? pool.amount),
                                 })}
                             </span>

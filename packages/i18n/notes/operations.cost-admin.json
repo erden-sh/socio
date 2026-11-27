@@ -28,7 +28,7 @@
     "pool-form.saved": "Toast after a cost pool was changed.",
     "pool-form.added": "Toast after a cost pool was added.",
     "readings.title": "Heading; {{name}} is the cost pool's name.",
-    "readings.reading": "One meter reading: {{quantity}} used, {{unit}} as the admin typed it (kWh), {{price}} in US dollars per unit.",
+    "readings.reading": "One meter reading: {{quantity}} used, {{measure}} the unit as the admin typed it (kWh), {{price}} in US dollars per unit.",
     "readings.removed": "Toast after a meter reading was removed.",
     "readings.added": "Toast after a meter reading was added.",
     "readings.read-on": "Label of the date field of a new meter reading.",
