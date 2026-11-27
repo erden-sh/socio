@@ -1,0 +1,17 @@
+{
+    "heading": "Heading of the cover picker (a cover is a wide picture above a page's title).",
+    "upload": "Big button in the picker that opens the file chooser.",
+    "hint": "Under that button: files can also be dropped on it. {{size}} is the largest size in megabytes (MB).",
+    "uploading-progress": "On the upload button while the picture uploads. {{progress}} is a percentage.",
+    "setting": "On the upload button while the chosen picture becomes the cover.",
+    "from-space": "Heading of the pictures already in this Space (product noun) to choose from.",
+    "loading": "Shown while those pictures load.",
+    "use": "Accessible name of a picture to choose. {{name}} is its file name.",
+    "none": "When the Space has no pictures yet. Link cards are page blocks that show a web link.",
+    "advice": "Tip at the bottom of the picker.",
+    "problems.type": "Error for a file that isn't one of these picture formats.",
+    "problems.size": "Error for a picture over the size limit. {{size}} is the limit in megabytes (MB).",
+    "errors.list": "Error when the Space's pictures couldn't load.",
+    "errors.upload": "Error when the upload failed.",
+    "errors.set": "Error when the chosen picture couldn't become the cover."
+}

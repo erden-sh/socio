@@ -1,0 +1,153 @@
+{
+    "content-label": "Page content",
+    "placeholder": "Start writing, or type / for blocks…",
+    "paste-refused": "Images and embedded content are not supported here. Use Markdown source to keep their original markup.",
+    "link-prompt": "Link URL (https:// or an internal page link)",
+    "link-invalid": "Use a public http(s) URL or an internal page link.",
+    "hint": "Type <kbd>/</kbd> for blocks · ⌘/Ctrl + S to save",
+    "toolbar": {
+        "label": "Text formatting",
+        "bold": "Bold",
+        "bold-hint": "Bold (⌘/Ctrl B)",
+        "italic": "Italic",
+        "italic-hint": "Italic (⌘/Ctrl I)",
+        "bullet-list": "Bullet list",
+        "numbered-list": "Numbered list",
+        "quote": "Quote",
+        "code-block": "Code block",
+        "link": "Add link",
+        "undo": "Undo",
+        "redo": "Redo"
+    },
+    "slash": {
+        "heading": "Insert block",
+        "label": "Insert block",
+        "empty": "No matching blocks"
+    },
+    "blocks": {
+        "text": {
+            "title": "Text",
+            "description": "Start with a plain paragraph"
+        },
+        "heading-1": {
+            "title": "Heading 1",
+            "description": "A large section heading"
+        },
+        "heading-2": {
+            "title": "Heading 2",
+            "description": "A medium section heading"
+        },
+        "heading-3": {
+            "title": "Heading 3",
+            "description": "A small section heading"
+        },
+        "bullet-list": {
+            "title": "Bullet list",
+            "description": "A simple unordered list"
+        },
+        "numbered-list": {
+            "title": "Numbered list",
+            "description": "An ordered sequence"
+        },
+        "checklist": {
+            "title": "Checklist",
+            "description": "Track things to do"
+        },
+        "quote": {
+            "title": "Quote",
+            "description": "Highlight a passage"
+        },
+        "code": {
+            "title": "Code",
+            "description": "A code block"
+        },
+        "divider": {
+            "title": "Divider",
+            "description": "Separate sections"
+        },
+        "table": {
+            "title": "Table",
+            "description": "Three columns with a header"
+        },
+        "dataset-view": {
+            "title": "Dataset view",
+            "description": "A live table or chart of a dataset"
+        }
+    },
+    "view": {
+        "title": "Dataset view",
+        "rows_one": "{{count, number}} row",
+        "rows_other": "{{count, number}} rows",
+        "rows-more_one": "{{count, number}}+ row",
+        "rows-more_other": "{{count, number}}+ rows",
+        "as-of": "as of {{at, datetime(hour: 2-digit; minute: 2-digit; second: 2-digit)}}",
+        "show-chart": "Show the chart",
+        "show-table": "Show as a table",
+        "refresh": "Refresh view",
+        "refresh-hint": "Refresh",
+        "edit": "Edit view",
+        "incomplete-editable": "Choose a dataset and write a query, then run it.",
+        "incomplete": "This view isn’t set up yet.",
+        "loading": "Loading view…",
+        "private": "Only you can see this data. Others see a placeholder until you <link>share the dataset with this Space</link>.",
+        "displays": {
+            "table": "Table",
+            "bar": "Bar chart",
+            "line": "Line chart"
+        },
+        "refresh-every": {
+            "off": "Off",
+            "seconds_one": "Every second",
+            "seconds_other": "Every {{count, number}} seconds",
+            "minutes_one": "Every minute",
+            "minutes_other": "Every {{count, number}} minutes",
+            "hours_one": "Every hour",
+            "hours_other": "Every {{count, number}} hours"
+        },
+        "form": {
+            "label": "Edit dataset view",
+            "dataset": "Dataset",
+            "choose": "Choose a dataset",
+            "loading": "Loading datasets…",
+            "shared-here": "{{name}} (shared with this Space)",
+            "shared-by": "{{name}} (shared by {{owner}})",
+            "another-user": "another user",
+            "unknown": "A dataset you can’t open",
+            "display": "Display",
+            "x": "X axis",
+            "values": "Values",
+            "first-column": "First column",
+            "first-numbers": "First numbers",
+            "title": "Title",
+            "title-label": "View title",
+            "title-placeholder": "The dataset’s name",
+            "auto-refresh": "Auto-refresh",
+            "query": "Query",
+            "query-label": "View query",
+            "query-placeholder": "SELECT month, total FROM \"sales\" ORDER BY month",
+            "rule": "One read-only SELECT. Everyone sees the result only if they own the dataset or it is shared with this Space.",
+            "run": "Run",
+            "run-hint": "Run (⌘/Ctrl Enter)",
+            "save": "Save view",
+            "cancel": "Cancel",
+            "remove": "Remove",
+            "list-failed": "Could not list datasets."
+        }
+    },
+    "embed": {
+        "broken": "This link card can’t be shown.",
+        "label": "{{site}} card",
+        "label-titled": "{{site}} card: {{title}}",
+        "image-missing": "Image not available here",
+        "image-missing-alt": "Image not available here: {{alt}}",
+        "video-missing": "Video not available here",
+        "video-missing-alt": "Video not available here: {{alt}}",
+        "play": "Play on {{site}} (opens in a new tab)",
+        "open": "Open on {{host}}",
+        "new-tab": "(opens in a new tab)"
+    },
+    "image": {
+        "missing": "Image not available here",
+        "missing-alt": "Image not available here: {{alt}}"
+    }
+}
