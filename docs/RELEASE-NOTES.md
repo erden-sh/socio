@@ -29,6 +29,15 @@ How this file is kept (scripts/release.mjs and the app's build read it):
 
 ## Unreleased
 
+## v0.57.0 (2026-11-27)
+
+Folders keep their hidden text out of search and out of what a socio is told, and the web gets quote replies, matching the app. Behind the scenes, Socio is ready for other languages and for Google and Apple sign-in in the app, both off until switched on.
+
+- Folders: search by title only, and no Ask about this page (CB-426)
+- Quote reply on the web (CB-571)
+- Groundwork for Socio in other languages
+- Server side of Google and Apple sign-in for the app (CB-570)
+
 ### New
 
 - **The groundwork for Socio in other languages.** A new `@socio/i18n` package holds the strings and the shared i18next setup; the server serves the dictionaries from its own build at `/i18n/manifest.json` and `/i18n/<locale>/<ns>.<hash>.json` (public, cached for good, never fetched from anywhere), and pages render in the person's locale: their saved preference, then a `socio_locale` cookie, then the browser's languages. `PATCH /api/preferences` takes `locale` (a supported locale, or null to match the device). Everything is still English: Settings › Language appears once a second language is translated. See docs/I18N.md.
