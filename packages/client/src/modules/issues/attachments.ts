@@ -1,3 +1,4 @@
+import { useTranslation } from '@socio/i18n/react';
 import { acceptFiles as acceptAttachments, ATTACHMENT_EXTENSIONS } from '@socio/shared/issues/issue-attachment-files';
 import type { IssueAttachment } from '@socio/shared/issues/issue-types';
 
@@ -31,7 +32,7 @@ const readAsDataUrl = (blob: Blob) =>
     new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => resolve(String(reader.result));
-        reader.onerror = () => reject(reader.error ?? new Error('Unreadable file'));
+        reader.onerror = () => reject(reader.error ?? new Error());
         reader.readAsDataURL(blob);
     });
 
@@ -49,17 +50,37 @@ export async function uploadAttachment(number: number, file: File, commentId?: s
     });
 }
 
-/** Uploads files one by one; returns the error of each that failed. */
+/** A file that didn't upload: its name, and the server's reason when it gave one. */
+export interface UploadFailure {
+    name: string;
+    reason?: string;
+}
+
+/** Uploads files one by one; returns each that failed (`useUploadProblems` words them). */
 export async function uploadAll(number: number, files: readonly File[], commentId?: string) {
-    const failed: string[] = [];
+    const failed: UploadFailure[] = [];
     for (const file of files) {
         try {
             await uploadAttachment(number, file, commentId);
         } catch (error) {
-            failed.push(`${file.name}: ${error instanceof Error ? error.message : 'upload failed'}`);
+            failed.push({
+                name: file.name,
+                ...(error instanceof Error && error.message ? { reason: error.message } : {}),
+            });
         }
     }
     return failed;
+}
+
+/** Each failed upload as a line: "photo.png: <the reason>". */
+export function useUploadProblems() {
+    const { t } = useTranslation(['issues.form']);
+    return (failed: readonly UploadFailure[]) =>
+        failed.map((file) =>
+            file.reason
+                ? t('issues.form:upload-failed', { name: file.name, reason: file.reason })
+                : t('issues.form:upload-failed-plain', { name: file.name }),
+        );
 }
 
 /**
@@ -73,7 +94,7 @@ export function attachmentBlob(id: string) {
     if (!blob) {
         blob = fetch(`/api/issue-attachments/${encodeURIComponent(id)}`).then((response) => {
             if (!response.ok) {
-                throw new Error('Could not load the attachment.');
+                throw new Error(`HTTP ${response.status}`);
             }
             return response.blob();
         });

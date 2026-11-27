@@ -167,10 +167,10 @@ describe('the issue page’s order', () => {
             return index;
         };
         const order = [
-            at('<Section title="Description">'),
+            at("<Section title={t('issues.detail:section.description')}>"),
             at('<AttachmentGrid'),
-            at('Comments ({detail.comments.length})'),
-            at('History ({detail.events.length})'),
+            at("t('issues.detail:tab.comments'"),
+            at("t('issues.detail:tab.history'"),
             at('<IssueTriage detail={detail}'),
             at('<AdminFields detail={detail}'),
             at('<IssueLinks detail={detail}'),

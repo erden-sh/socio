@@ -2,6 +2,7 @@ import { Download, FileText, Paperclip, Trash2, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
+import { useTranslation } from '@socio/i18n/react';
 import type { IssueAttachment } from '@socio/shared/issues/issue-types';
 import { formatSize } from '@socio/shared/text/format-size';
 
@@ -15,7 +16,7 @@ import { cn } from '@/lib/utils';
 export function AttachButton({
     onFiles,
     disabled,
-    label = 'Attach files',
+    label,
     compact = false,
 }: {
     onFiles: (files: File[]) => void;
@@ -23,7 +24,9 @@ export function AttachButton({
     label?: string;
     compact?: boolean;
 }) {
+    const { t } = useTranslation(['issues.form']);
     const input = useRef<HTMLInputElement>(null);
+    const text = label ?? t('issues.form:attach');
     return (
         <>
             <input
@@ -48,12 +51,12 @@ export function AttachButton({
                 variant="outline"
                 size={compact ? 'icon' : 'sm'}
                 disabled={disabled}
-                aria-label={compact ? label : undefined}
-                title={compact ? label : undefined}
+                aria-label={compact ? text : undefined}
+                title={compact ? text : undefined}
                 onClick={() => input.current?.click()}
             >
                 <Paperclip />
-                {!compact && label}
+                {!compact && text}
             </Button>
         </>
     );
@@ -61,11 +64,12 @@ export function AttachButton({
 
 /** Files chosen but not uploaded yet, with a remove button each. */
 export function PendingFiles({ files, onRemove }: { files: readonly File[]; onRemove: (index: number) => void }) {
+    const { t } = useTranslation(['issues.form']);
     if (!files.length) {
         return null;
     }
     return (
-        <ul data-slot="pending-files" aria-label="Files to attach" className="flex flex-wrap gap-2">
+        <ul data-slot="pending-files" aria-label={t('issues.form:pending')} className="flex flex-wrap gap-2">
             {files.map((file, index) => (
                 <li
                     key={`${file.name}:${index}`}
@@ -79,7 +83,7 @@ export function PendingFiles({ files, onRemove }: { files: readonly File[]; onRe
                         variant="ghost"
                         size="icon"
                         className="size-6"
-                        aria-label={`Remove ${file.name}`}
+                        aria-label={t('issues.form:remove-file', { name: file.name })}
                         onClick={() => onRemove(index)}
                     >
                         <X className="size-3.5" />
@@ -137,13 +141,18 @@ export function AttachmentGrid({
     onDelete: (file: IssueAttachment) => void;
     className?: string;
 }) {
+    const { t } = useTranslation(['issues.form']);
     const [shown, setShown] = useState<IssueAttachment>();
     if (!files.length) {
         return null;
     }
     return (
         <>
-            <ul data-slot="attachments" aria-label="Attachments" className={cn('flex flex-wrap gap-2', className)}>
+            <ul
+                data-slot="attachments"
+                aria-label={t('issues.form:attachments')}
+                className={cn('flex flex-wrap gap-2', className)}
+            >
                 {files.map((file) => (
                     <AttachmentTile
                         key={file.id}
@@ -181,11 +190,9 @@ function AttachmentTile({
     onOpen: () => void;
     onDelete?: () => void;
 }) {
+    const { t } = useTranslation(['issues.form']);
     const url = useAttachmentUrl(file);
-    const download = () =>
-        void downloadAttachment(file).catch((error: unknown) =>
-            toast.error(error instanceof Error ? error.message : String(error)),
-        );
+    const download = () => void downloadAttachment(file).catch(() => toast.error(t('issues.form:download-failed')));
     return (
         <li
             data-slot="attachment"
@@ -196,7 +203,7 @@ function AttachmentTile({
                     type="button"
                     data-slot="attachment-open"
                     className="block size-20 cursor-zoom-in bg-muted outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                    aria-label={`View ${file.name}`}
+                    aria-label={t('issues.form:view-file', { name: file.name })}
                     onClick={onOpen}
                 >
                     {url && <img src={url} alt="" className="size-full object-cover" />}
@@ -206,7 +213,7 @@ function AttachmentTile({
                     type="button"
                     data-slot="attachment-download"
                     className="flex h-12 max-w-56 items-center gap-2 px-3 text-left text-xs outline-none hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                    aria-label={`Download ${file.name}`}
+                    aria-label={t('issues.form:download-file', { name: file.name })}
                     onClick={download}
                 >
                     <FileText className="size-4 shrink-0 text-muted-foreground" />
@@ -223,7 +230,7 @@ function AttachmentTile({
                     variant="secondary"
                     size="icon"
                     className="absolute top-1 right-1 size-6 opacity-80 hover:opacity-100 focus-visible:opacity-100"
-                    aria-label={`Delete ${file.name}`}
+                    aria-label={t('issues.form:delete-file', { name: file.name })}
                     onClick={onDelete}
                 >
                     <Trash2 className="size-3" />

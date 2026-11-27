@@ -7,12 +7,18 @@ import { revalidateOn } from '../../lib/page-loader';
 import { web } from '../../lib/web-context';
 import type { RouteHandle } from '../../shell/shell-context';
 
-// `/issues/CB-12`: Issues › CB-12 in the header. The board (the parent
-// route) stays mounted and opens the issue from the URL.
+// `/issues/CB-12`: Issues › CB-12 in the header (issues, which the board,
+// the parent route, inlines). The board stays mounted and opens the issue
+// from the URL.
 export const handle: RouteHandle = {
-    crumb: ({ params }) => {
+    crumb: ({ params, t }) => {
         const number = issueNumber(params.issueKey);
-        return [{ label: 'Issues', to: '/issues' }, { label: number ? issueKey(number) : 'Not found' }];
+        return [
+            // oxlint-disable-next-line socio/translate-in-components -- the header's t, passed at each render (CrumbContext)
+            { label: t('issues:crumb'), to: '/issues' },
+            // oxlint-disable-next-line socio/translate-in-components -- the header's t, passed at each render (CrumbContext)
+            { label: number ? issueKey(number) : t('issues:not-found') },
+        ];
     },
 };
 

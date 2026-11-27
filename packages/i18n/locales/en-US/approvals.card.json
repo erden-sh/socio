@@ -1,0 +1,83 @@
+{
+    "status": {
+        "pending": "Waiting for you",
+        "approved": "Approved",
+        "denied": "Denied",
+        "expired": "Expired",
+        "failed": "Failed",
+        "undone": "Undone",
+        "bypass": "Approved (bypass)",
+        "auto": "{{status}} (auto)"
+    },
+    "decided": {
+        "auto": "Decided by auto review in your place.",
+        "expired": "Expired without a decision.",
+        "plain": "Approved.",
+        "plain_denied": "Denied.",
+        "waiting_one": "Approved. The socio carries on once you decide the other request from this turn.",
+        "waiting_other": "Approved. The socio carries on once you decide the other {{count, number}} requests from this turn.",
+        "waiting_denied_one": "Denied. The socio carries on once you decide the other request from this turn.",
+        "waiting_denied_other": "Denied. The socio carries on once you decide the other {{count, number}} requests from this turn.",
+        "running": "Approved. The socio is carrying on…",
+        "running_denied": "Denied. The socio is carrying on…",
+        "done": "Approved. The socio carried on in the conversation.",
+        "done_denied": "Denied. The socio carried on in the conversation.",
+        "failed": "Approved. The socio could not carry on: {{detail}}",
+        "failed_denied": "Denied. The socio could not carry on: {{detail}}",
+        "turn-failed": "the turn failed.",
+        "skipped": "Approved. {{detail}}",
+        "skipped_denied": "Denied. {{detail}}",
+        "not-carried-on": "The socio did not carry on."
+    },
+    "auto": {
+        "badge": "Auto",
+        "escalated": "Auto review passed this to you:",
+        "approved": "Approved by auto review:",
+        "denied": "Denied by auto review:",
+        "model": "Model {{model}}.",
+        "model_shared": "Model {{model}} (default backend).",
+        "model_own": "Model {{model}} (your connection).",
+        "model-time": "Model {{model}}, {{seconds, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}} s.",
+        "model-time_shared": "Model {{model}} (default backend), {{seconds, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}} s.",
+        "model-time_own": "Model {{model}} (your connection), {{seconds, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}} s.",
+        "undone": "Undone: {{outcome}}",
+        "undo-failed": "Undo failed: {{outcome}}"
+    },
+    "card": {
+        "label": "Approval request",
+        "asks": "{{socio}} asks: {{capability}}",
+        "approve": "Approve",
+        "deny": "Deny",
+        "undo": "Undo",
+        "open-first": "Show all parameters to allow this.",
+        "until": "Nothing happens until you decide. Expires <expires/>.",
+        "loading": "Loading…",
+        "open": "Open in Approvals",
+        "load-failed": "Could not load this request.",
+        "save-failed": "Could not save the decision."
+    },
+    "bar": {
+        "label": "Pending approval",
+        "asks": "{{socio}} asks to {{capability}}",
+        "position": "1 of {{total, number}}",
+        "on-card": "Show the request to see what it asks and decide on its card.",
+        "open-first": "Show the request and open all its parameters to allow it.",
+        "show": "Show request"
+    },
+    "panel": {
+        "title": "Waiting for you",
+        "failed": "Could not load approvals.",
+        "empty": "Nothing to approve.",
+        "all": "Approvals",
+        "now": "Just now",
+        "minutes": "{{minutes, relativetime(range: minute; style: narrow)}}",
+        "hours": "{{hours, relativetime(range: hour; style: narrow)}}",
+        "date": "{{at, datetime}}"
+    },
+    "request": {
+        "crumb": "Approvals",
+        "crumb-request": "Request",
+        "title": "A socio is asking",
+        "description": "Approve to let it go ahead, or deny. <all>All approvals</all>"
+    }
+}

@@ -1,0 +1,28 @@
+{
+    "title": "Report an issue",
+    "description": "It goes to the team’s tracker, into triage. Paste a screenshot anywhere in this form to attach it.",
+    "description_run": "It goes to the team’s tracker, into triage. Paste a screenshot anywhere in this form to attach it. It will be linked to the failed run.",
+    "field": {
+        "title": "Title",
+        "title-placeholder": "What went wrong, or what would help?",
+        "description": "Description",
+        "description-placeholder": "Steps, what you expected, what happened (optional, markdown)",
+        "kind": "Kind",
+        "priority": "Priority",
+        "area": "Area",
+        "no-area": "No area"
+    },
+    "cancel": "Cancel",
+    "filing": "Filing…",
+    "file": "File issue",
+    "filed": "Filed {{key}}",
+    "filed-partly": "Filed {{key}}, but some files were not attached",
+    "open": "Open",
+    "failed": "Could not file the issue.",
+    "discard": {
+        "title": "Discard issue draft?",
+        "body": "The changes and attachments in this report will be lost.",
+        "keep": "Keep editing",
+        "confirm": "Discard draft"
+    }
+}

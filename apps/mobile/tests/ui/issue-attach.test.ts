@@ -3,6 +3,7 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
+import { ATTACH_TO_ISSUE } from '../../src/shell/issue-detail';
 import { isIssueFileScope } from '../../src/sync/attachments';
 import { issueAttachTray } from '../../src/sync/issue-attachments';
 
@@ -15,6 +16,10 @@ import { issueAttachTray } from '../../src/sync/issue-attachments';
 
 const read = (file: string) => readFileSync(join(import.meta.dirname, '../../src', file), 'utf8');
 const web = (file: string) => readFileSync(join(import.meta.dirname, '../../../../packages/client/src', file), 'utf8');
+/** The issue page's en-US words on the web (issues.detail.json). */
+const words = JSON.parse(
+    readFileSync(join(import.meta.dirname, '../../../../packages/i18n/locales/en-US/issues.detail.json'), 'utf8'),
+) as { section: Record<string, string>; attach: string; 'no-files': string };
 
 /** A function's source, from its declaration to the next top-level declaration. */
 function body(source: string, start: string): string {
@@ -30,9 +35,12 @@ describe('the issue’s Attachments section', () => {
 
     it('is the web’s: titled Attachments, with Attach beside the title, shown even with no files', () => {
         const client = web('modules/issues/IssueDetail.tsx');
-        expect(client).toContain('title="Attachments"');
-        expect(client).toContain('label="Attach files to the issue"');
-        expect(client).toContain('None yet.');
+        expect(client).toContain("title={t('issues.detail:section.attachments')}");
+        expect(client).toContain("label={t('issues.detail:attach')}");
+        expect(client).toContain("t('issues.detail:no-files'");
+        expect(words.section.attachments).toBe('Attachments');
+        expect(words.attach).toBe(ATTACH_TO_ISSUE);
+        expect(words['no-files']).toMatch(/^None yet\. /);
         expect(body(issue, 'function Detail')).toContain('<IssueAttachments key={section}');
         expect(section).toContain('<SectionTitle>Attachments</SectionTitle>');
         expect(section).toContain('testID="issue-attach"');

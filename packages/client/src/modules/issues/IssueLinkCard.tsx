@@ -1,13 +1,16 @@
 import { Children, createContext, isValidElement, use, type ReactNode } from 'react';
 import type { ExtraProps } from 'react-markdown';
 
-import { areaLabel, issuePath, KIND_LABEL } from '@socio/shared/issues/issue-board';
+import { useTranslation } from '@socio/i18n/react';
+import { issuePath } from '@socio/shared/issues/issue-board';
 import { issueKey } from '@socio/shared/issues/issue-types';
 
+import { useOnDemand } from '../../i18n/on-demand';
 import { AppLink } from '../../shell/AppLink';
 
 import { issueLinkNumber, useIssueCard } from './issue-cards';
 import { OPENED_FROM_CHAT } from './issue-meta';
+import { useIssueTerms } from './issue-words';
 import { IssueKey, PriorityBadge, StatusBadge, Tag } from './IssueBadges';
 
 type MarkdownNode = NonNullable<ExtraProps['node']>;
@@ -28,8 +31,12 @@ const StandsAlone = createContext(false);
 export function IssueLinkCard({ number, children }: { number: number; children?: ReactNode }) {
     const card = useIssueCard(number);
     const alone = use(StandsAlone);
+    // The card's words (issues.terms) load on demand: the plain link until they're in.
+    const worded = useOnDemand(['issues.terms']);
+    const { t } = useTranslation(['issues.terms']);
+    const terms = useIssueTerms();
     const path = issuePath(number);
-    if (!card) {
+    if (!card || !worded) {
         return (
             <AppLink href={path} state={OPENED_FROM_CHAT}>
                 {children}
@@ -44,7 +51,7 @@ export function IssueLinkCard({ number, children }: { number: number; children?:
                 href={path}
                 state={OPENED_FROM_CHAT}
                 slot="issue-chip"
-                title={`${issueKey(card.number)}: ${card.title}`}
+                title={t('issues.terms:ref', { key: issueKey(card.number), title: card.title })}
             >
                 {children}
                 <StatusBadge status={card.status} className="ml-1 h-auto align-[1px] leading-4 no-underline" />
@@ -70,8 +77,8 @@ export function IssueLinkCard({ number, children }: { number: number; children?:
             <span className="flex flex-wrap items-center gap-1">
                 <StatusBadge status={card.status} />
                 <PriorityBadge priority={card.priority} />
-                <Tag title="Kind">{KIND_LABEL[card.kind]}</Tag>
-                {card.area && <Tag title="Area">{areaLabel(card.area)}</Tag>}
+                <Tag title={t('issues.terms:tag.kind')}>{terms.kind(card.kind)}</Tag>
+                {card.area && <Tag title={t('issues.terms:tag.area')}>{terms.area(card.area)}</Tag>}
             </span>
         </AppLink>
     );

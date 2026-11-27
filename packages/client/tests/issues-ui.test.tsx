@@ -30,12 +30,12 @@ import type { AgentRunSummary, State, User, WorkspaceState } from '@socio/shared
 import { CHANGES_CHANNEL, closeChangeChannel } from '../src/lib/change-channel';
 import { ChatTranscript } from '../src/modules/chat/ChatTranscript';
 import { acceptFiles } from '../src/modules/issues/attachments';
-import { DotRequestNotices, noticeText } from '../src/modules/issues/DotRequestNotices';
+import { DotRequestNotices, useNoticeText } from '../src/modules/issues/DotRequestNotices';
 import { FileIssueFromRun, runIssueDraft } from '../src/modules/issues/FileIssueFromRun';
 import { excerpt, issueCloseTarget, OPENED_FROM_CHAT, readView, writeView } from '../src/modules/issues/issue-meta';
 import { IssueBoard } from '../src/modules/issues/IssueBoard';
 import { IssueHistory } from '../src/modules/issues/IssueComments';
-import { ISSUE_DELETED, IssueDetailDialog } from '../src/modules/issues/IssueDetail';
+import { IssueDetailDialog } from '../src/modules/issues/IssueDetail';
 import { IssueList } from '../src/modules/issues/IssueList';
 import { IssuesPage } from '../src/modules/issues/IssuesPage';
 import { IssueToolbar } from '../src/modules/issues/IssueToolbar';
@@ -869,7 +869,15 @@ it('shows the user’s socio request notices once, then marks them seen', async 
         expect.objectContaining({ description: 'CB-5' }),
     );
     expect(calls.find((call) => call.path === '/api/dot-requests/notices/seen')?.body).toEqual({ ids: ['n1', 'n2'] });
+    let noticeText!: ReturnType<typeof useNoticeText>;
+    function Probe() {
+        noticeText = useNoticeText();
+        return null;
+    }
+    const probe = createRoot(document.createElement('div'));
+    act(() => probe.render(<Probe />));
     expect(noticeText(notices[0]!).title).toBe('Socio request done: send email');
+    act(() => probe.unmount());
 });
 
 it('an open issue deleted in another tab says so, never asked for (no 404)', async () => {
@@ -914,7 +922,7 @@ it('an open issue deleted in another tab says so, never asked for (no 404)', asy
         calls = [];
         other.postMessage([{ topic: 'issue', id: '9' }]);
         await until(
-            () => document.body.querySelector('[data-slot="issue-missing"]')?.textContent === ISSUE_DELETED,
+            () => document.body.querySelector('[data-slot="issue-missing"]')?.textContent === 'This issue was deleted.',
             'the deleted state',
         );
         await act(() => new Promise((resolve) => setTimeout(resolve, 150)));

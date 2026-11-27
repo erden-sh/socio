@@ -3,8 +3,9 @@ import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { toast } from 'sonner';
 
+import { useTranslation } from '@socio/i18n/react';
 import { ATTACHMENT_HINT } from '@socio/shared/issues/issue-attachment-files';
-import { areaLabel, issuePath, KIND_LABEL, PRIORITY_LABEL } from '@socio/shared/issues/issue-board';
+import { issuePath } from '@socio/shared/issues/issue-board';
 import {
     ISSUE_AREAS,
     ISSUE_KINDS,
@@ -17,11 +18,13 @@ import {
 } from '@socio/shared/issues/issue-types';
 import { MODULE_IDS } from '@socio/shared/modules';
 
+import { onDemand, useOnDemand } from '../../i18n/on-demand';
 import { api } from '../../lib/api';
 import { HeaderMenuItem } from '../../shell/header-menu';
 import type { SlotProps } from '../types';
 
-import { acceptFiles, pastedFiles, uploadAll } from './attachments';
+import { acceptFiles, pastedFiles, uploadAll, useUploadProblems } from './attachments';
+import { useIssueTerms } from './issue-words';
 import { AttachButton, PendingFiles } from './IssueAttachments';
 import { ComponentPicker, componentsOf, draftedComponents, useComponentOptions } from './IssueComponents';
 import { ChoiceField, Field } from './IssueFields';
@@ -79,9 +82,13 @@ const pageDraft = (moduleId: string | undefined, pathname: string): ReportDraft 
  * "New issue"), and the one report dialog: the title, a description, kind,
  * priority, area, components and attachments, filed into triage. The area
  * defaults to the page's module where one matches, the components to the
- * plugin whose page it is. Others open it with `openReport`.
+ * plugin whose page it is. Others open it with `openReport`. The button's
+ * words (issues.slots) and the dialog's (issues.report, issues.form,
+ * issues.terms) load on demand: each shows once its words are in.
  */
 export function ReportIssue({ moduleId }: SlotProps['header.actions']) {
+    const worded = useOnDemand(['issues.slots']);
+    const { t } = useTranslation(['issues.slots']);
     const request = useReportRequest();
     const { pathname } = useLocation();
     // Kept past the request (which goes as the dialog closes), for the focus.
@@ -93,20 +100,20 @@ export function ReportIssue({ moduleId }: SlotProps['header.actions']) {
     }, [request]);
     return (
         <DialogReturnFocus value={back}>
-            {moduleId !== MODULE_IDS.issues && (
+            {moduleId !== MODULE_IDS.issues && worded && (
                 <Button
                     variant="ghost"
                     size="icon"
                     // On phones it is in the account menu (ReportIssueItem).
                     className="max-md:hidden"
-                    aria-label="Report issue"
-                    title="Report issue"
+                    aria-label={t('issues.slots:report')}
+                    title={t('issues.slots:report')}
                     onClick={() => openReport(pageDraft(moduleId, pathname))}
                 >
                     <Bug className="size-4.5" />
                 </Button>
             )}
-            {request && <ReportDialog key={request.at} draft={request.draft} />}
+            {request && <WordedReportDialog key={request.at} draft={request.draft} />}
         </DialogReturnFocus>
     );
 }
@@ -116,7 +123,12 @@ export function ReportIssue({ moduleId }: SlotProps['header.actions']) {
  * one: the header has no room). The dialog is the header's (ReportIssue).
  */
 export function ReportIssueItem({ moduleId, close }: SlotProps['account.items']) {
+    const worded = useOnDemand(['issues.slots']);
+    const { t } = useTranslation(['issues.slots']);
     const { pathname } = useLocation();
+    if (!worded) {
+        return null;
+    }
     return (
         <DropdownMenuItem
             onSelect={() => {
@@ -125,7 +137,7 @@ export function ReportIssueItem({ moduleId, close }: SlotProps['account.items'])
             }}
         >
             <Bug />
-            Report issue
+            {t('issues.slots:report')}
         </DropdownMenuItem>
     );
 }
@@ -135,19 +147,24 @@ export function ReportIssueItem({ moduleId, close }: SlotProps['account.items'])
  * own, as in the header. The dialog is the header's (ReportIssue).
  */
 export function ReportIssueMenuItem({ moduleId }: SlotProps['header.menu']) {
+    const worded = useOnDemand(['issues.slots']);
+    const { t } = useTranslation(['issues.slots']);
     const { pathname } = useLocation();
-    if (moduleId === MODULE_IDS.issues) {
+    if (moduleId === MODULE_IDS.issues || !worded) {
         return null;
     }
     return (
         <HeaderMenuItem open={(from) => openReport(pageDraft(moduleId, pathname), { returnFocus: from })}>
             <Bug />
-            Report issue
+            {t('issues.slots:report')}
         </HeaderMenuItem>
     );
 }
 
 function ReportDialog({ draft }: { draft: ReportDraft }) {
+    const { t } = useTranslation(['issues.report']);
+    const terms = useIssueTerms();
+    const uploadProblems = useUploadProblems();
     const navigate = useNavigate();
     const [title, setTitle] = useState(draft.title ?? '');
     const [body, setBody] = useState(draft.body ?? '');
@@ -209,26 +226,26 @@ function ReportDialog({ draft }: { draft: ReportDraft }) {
                 ...(draft.runId ? { runId: draft.runId } : {}),
             });
             const key = issueKey(issue.number);
-            const failed = await uploadAll(issue.number, files);
+            const failed = uploadProblems(await uploadAll(issue.number, files));
             closeReport();
             notifyIssuesChanged();
             const open = {
-                label: 'Open',
+                label: t('issues.report:open'),
                 onClick: () => void navigate(issuePath(issue.number)),
             };
             if (failed.length) {
-                toast.warning(`Filed ${key}, but some files were not attached`, {
+                toast.warning(t('issues.report:filed-partly', { key }), {
                     description: failed.join('\n'),
                     action: open,
                 });
             } else {
-                toast.success(`Filed ${key}`, {
+                toast.success(t('issues.report:filed', { key }), {
                     description: issue.title,
                     action: open,
                 });
             }
         } catch (e) {
-            toast.error(e instanceof Error ? e.message : 'Could not file the issue.');
+            toast.error(e instanceof Error ? e.message : t('issues.report:failed'));
         } finally {
             setBusy(false);
         }
@@ -258,18 +275,16 @@ function ReportDialog({ draft }: { draft: ReportDraft }) {
             }}
         >
             <DialogHeader>
-                <DialogTitle>Report an issue</DialogTitle>
+                <DialogTitle>{t('issues.report:title')}</DialogTitle>
                 <DialogDescription>
-                    It goes to the team&apos;s tracker, into triage. Paste a screenshot anywhere in this form to attach
-                    it.
-                    {draft.runId && ' It will be linked to the failed run.'}
+                    {t('issues.report:description', { context: draft.runId ? 'run' : undefined })}
                 </DialogDescription>
             </DialogHeader>
-            <Field label="Title">
+            <Field label={t('issues.report:field.title')}>
                 {(id) => (
                     <Input
                         aria-labelledby={id}
-                        placeholder="What went wrong, or what would help?"
+                        placeholder={t('issues.report:field.title-placeholder')}
                         value={title}
                         maxLength={200}
                         required
@@ -278,11 +293,11 @@ function ReportDialog({ draft }: { draft: ReportDraft }) {
                     />
                 )}
             </Field>
-            <Field label="Description">
+            <Field label={t('issues.report:field.description')}>
                 {(id) => (
                     <Textarea
                         aria-labelledby={id}
-                        placeholder="Steps, what you expected, what happened (optional, markdown)"
+                        placeholder={t('issues.report:field.description-placeholder')}
                         value={body}
                         rows={5}
                         maxLength={20_000}
@@ -293,25 +308,25 @@ function ReportDialog({ draft }: { draft: ReportDraft }) {
             </Field>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <ChoiceField
-                    label="Kind"
+                    label={t('issues.report:field.kind')}
                     value={kind}
                     options={ISSUE_KINDS}
-                    labelOf={(value) => KIND_LABEL[value]}
+                    labelOf={terms.kind}
                     onChange={(value) => value && setKind(value)}
                 />
                 <ChoiceField
-                    label="Priority"
+                    label={t('issues.report:field.priority')}
                     value={priority}
                     options={ISSUE_PRIORITIES}
-                    labelOf={(value) => PRIORITY_LABEL[value]}
+                    labelOf={terms.priority}
                     onChange={(value) => value && setPriority(value)}
                 />
                 <ChoiceField
-                    label="Area"
+                    label={t('issues.report:field.area')}
                     value={area}
                     options={ISSUE_AREAS}
-                    labelOf={areaLabel}
-                    none="No area"
+                    labelOf={terms.area}
+                    none={t('issues.report:field.no-area')}
                     onChange={setArea}
                 />
             </div>
@@ -329,11 +344,11 @@ function ReportDialog({ draft }: { draft: ReportDraft }) {
             <DialogFooter>
                 <DialogClose asChild>
                     <Button type="button" variant="outline" disabled={busy}>
-                        Cancel
+                        {t('issues.report:cancel')}
                     </Button>
                 </DialogClose>
                 <Button type="submit" disabled={busy || title.trim().length < 3}>
-                    {busy ? 'Filing…' : 'File issue'}
+                    {busy ? t('issues.report:filing') : t('issues.report:file')}
                 </Button>
             </DialogFooter>
         </form>
@@ -357,15 +372,13 @@ function ReportDialog({ draft }: { draft: ReportDraft }) {
                     }}
                 >
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Discard issue draft?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            The changes and attachments in this report will be lost.
-                        </AlertDialogDescription>
+                        <AlertDialogTitle>{t('issues.report:discard.title')}</AlertDialogTitle>
+                        <AlertDialogDescription>{t('issues.report:discard.body')}</AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Keep editing</AlertDialogCancel>
+                        <AlertDialogCancel>{t('issues.report:discard.keep')}</AlertDialogCancel>
                         <Button type="button" variant="destructive" onClick={closeReport}>
-                            Discard draft
+                            {t('issues.report:discard.confirm')}
                         </Button>
                     </AlertDialogFooter>
                 </AlertDialogContent>
@@ -373,3 +386,6 @@ function ReportDialog({ draft }: { draft: ReportDraft }) {
         </Dialog>
     );
 }
+
+/** The dialog, once its words are in (on demand: a click opens it). */
+const WordedReportDialog = onDemand(['issues.report', 'issues.form', 'issues.terms'], ReportDialog);

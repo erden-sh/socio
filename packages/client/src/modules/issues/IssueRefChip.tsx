@@ -1,8 +1,10 @@
 import type { ReactNode } from 'react';
 
+import { useTranslation } from '@socio/i18n/react';
 import { issuePath } from '@socio/shared/issues/issue-board';
 import { CLOSED_ISSUE_STATUSES, issueKey } from '@socio/shared/issues/issue-types';
 
+import { useOnDemand } from '../../i18n/on-demand';
 import { AppLink } from '../../shell/AppLink';
 
 import { useIssueCard } from './issue-cards';
@@ -26,7 +28,10 @@ const chipTitle = (title: string) =>
  */
 export function IssueRefChip({ number, children }: { number: number; children?: ReactNode }) {
     const card = useIssueCard(number);
-    if (!card) {
+    // Its tooltip's words (issues.terms) load on demand: the words as written until they're in.
+    const worded = useOnDemand(['issues.terms']);
+    const { t } = useTranslation(['issues.terms']);
+    if (!card || !worded) {
         return <>{children}</>;
     }
     const done = CLOSED_ISSUE_STATUSES.includes(card.status);
@@ -38,7 +43,7 @@ export function IssueRefChip({ number, children }: { number: number; children?: 
             href={issuePath(card.number)}
             state={{ fromIssues: true }}
             slot="issue-ref"
-            title={`${issueKey(card.number)}: ${card.title}`}
+            title={t('issues.terms:ref', { key: issueKey(card.number), title: card.title })}
             className="mx-px rounded-md border bg-muted/40 px-1 py-px text-foreground no-underline transition-colors [box-decoration-break:clone] [overflow-wrap:anywhere] hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
         >
             <IssueKey number={card.number} />{' '}

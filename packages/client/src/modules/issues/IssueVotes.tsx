@@ -2,6 +2,7 @@ import { ThumbsUp } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
+import { useTranslation } from '@socio/i18n/react';
 import { issueKey, type Issue, type IssueDetail } from '@socio/shared/issues/issue-types';
 
 import { api } from '../../lib/api';
@@ -10,8 +11,6 @@ import { notifyIssuesChanged } from './report';
 
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-
-const votesText = (votes: number) => `${votes} ${votes === 1 ? 'vote' : 'votes'}`;
 
 /**
  * An item's upvotes (CB-83), on its card, row and detail: the count, and a
@@ -28,6 +27,7 @@ export function VoteButton({
     onVoted?: (detail: IssueDetail) => void;
     className?: string;
 }) {
+    const { t } = useTranslation(['issues']);
     const current = { votes: issue.votes ?? 0, voted: !!issue.voted };
     const from = `${current.votes}|${current.voted}`;
     // What a click showed, until the issue itself changes.
@@ -45,7 +45,7 @@ export function VoteButton({
             notifyIssuesChanged();
         } catch (error) {
             setPending(undefined);
-            toast.error(error instanceof Error ? error.message : 'Could not save your vote.');
+            toast.error(error instanceof Error ? error.message : t('issues:votes.failed'));
         } finally {
             setBusy(false);
         }
@@ -57,8 +57,11 @@ export function VoteButton({
             size="xs"
             data-slot="issue-vote"
             aria-pressed={shown.voted}
-            aria-label={`${shown.voted ? 'Withdraw your vote on' : 'Vote for'} ${key} (${votesText(shown.votes)})`}
-            title={shown.voted ? 'You voted. Click to withdraw.' : 'Vote for this'}
+            aria-label={t(shown.voted ? 'issues:votes.withdraw' : 'issues:votes.vote', {
+                key,
+                votes: t('issues:votes.count', { count: shown.votes }),
+            })}
+            title={shown.voted ? t('issues:votes.withdraw-hint') : t('issues:votes.vote-hint')}
             disabled={busy}
             className={cn('relative z-10 tabular-nums', shown.voted && 'text-primary', className)}
             onClick={(event) => {
@@ -75,6 +78,7 @@ export function VoteButton({
 
 /** The toolbar's "Most votes" order: on, the board sorts by votes first. */
 export function SortByVotes({ on, setOn }: { on: boolean; setOn: (on: boolean) => void }) {
+    const { t } = useTranslation(['issues']);
     return (
         <Button
             variant={on ? 'secondary' : 'outline'}
@@ -82,11 +86,11 @@ export function SortByVotes({ on, setOn }: { on: boolean; setOn: (on: boolean) =
             className="h-8 gap-1.5 font-normal text-muted-foreground aria-pressed:text-foreground"
             data-slot="issue-sort-votes"
             aria-pressed={on}
-            title="Most votes first, in each column"
+            title={t('issues:votes.sort-hint')}
             onClick={() => setOn(!on)}
         >
             <ThumbsUp />
-            Most votes
+            {t('issues:votes.sort')}
         </Button>
     );
 }

@@ -1,0 +1,27 @@
+{
+    "report": "Report issue",
+    "file-run": "File issue",
+    "file-run-label": "File an issue about the failed run {{run}}",
+    "notice": {
+        "done": "Socio request done: {{capability}}",
+        "wont-fix": "Socio request won’t be built: {{capability}}",
+        "asked-by": "{{key}} (asked by {{dots, list(type: unit; style: short)}})",
+        "resolution": "{{text}} · {{resolution}}",
+        "view": "View"
+    },
+    "widget": {
+        "title": "Issues",
+        "open_one": "{{count, number}} open",
+        "open_other": "{{count, number}} open",
+        "triage_one": "{{count, number}} in triage",
+        "triage_other": "{{count, number}} in triage",
+        "tracker": "The team’s issue tracker"
+    },
+    "filings": {
+        "title": "Filed on the board",
+        "failed": "Could not load its filings.",
+        "empty": "{{name}} hasn’t filed anything for you.",
+        "board": "Board",
+        "item": "{{key}} {{title}}"
+    }
+}

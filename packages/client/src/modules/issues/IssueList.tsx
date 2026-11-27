@@ -2,6 +2,7 @@ import { ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router';
 
+import { useTranslation } from '@socio/i18n/react';
 import { groupByStatus, issuePath } from '@socio/shared/issues/issue-board';
 import { ISSUE_STATUSES, issueKey, type IssueSummary, type IssueStatus } from '@socio/shared/issues/issue-types';
 
@@ -43,13 +44,14 @@ export function IssueList({
     onMove: (issue: IssueSummary, status: IssueStatus) => void;
     selection: IssueSelection;
 }) {
+    const { t } = useTranslation(['issues']);
     const groups = groupByStatus(issues);
     const [closed, setClosed] = useState<ReadonlySet<IssueStatus>>(() => new Set(COLLAPSED_BY_DEFAULT));
     const shown = statuses.filter((status) => groups[status].length);
     if (!shown.length) {
         return (
             <p data-slot="issue-list-empty" className="px-6 py-12 text-center text-sm text-muted-foreground">
-                No matching issues.
+                {t('issues:list.empty')}
             </p>
         );
     }
@@ -124,6 +126,7 @@ function IssueRow({
     onMove: (issue: IssueSummary, status: IssueStatus) => void;
     selection: IssueSelection;
 }) {
+    const { t } = useTranslation(['issues']);
     const key = issueKey(issue.number);
     const selected = selection.selected.has(issue.number);
     const summary = issue.excerpt;
@@ -148,7 +151,7 @@ function IssueRow({
                     <Checkbox
                         className="mt-0.5"
                         checked={selected}
-                        aria-label={`Select ${key}`}
+                        aria-label={t('issues:board.select', { key })}
                         onClick={(event) => event.stopPropagation()}
                         onCheckedChange={() => selection.toggle(issue.number)}
                     />

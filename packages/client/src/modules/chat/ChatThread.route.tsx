@@ -16,10 +16,13 @@ export async function loader({ context }: LoaderFunctionArgs) {
 
 /**
  * What the page loads on demand that the route doesn't inline: the live
- * chat's namespaces (chat.composer, chat.model) and the reactions' report
- * outcomes (chat.report).
+ * chat's namespaces (chat.composer, chat.model), the reactions' report
+ * outcomes (chat.report) and the approval cards' and bar's words
+ * (approvals.card).
  */
-const ON_DEMAND = [...CHAT_NAMESPACES, 'chat.report'].filter((ns) => !ROUTE_NAMESPACES['chat:thread']!.includes(ns));
+const ON_DEMAND = [...CHAT_NAMESPACES, 'chat.report', 'approvals.card'].filter(
+    (ns) => !ROUTE_NAMESPACES['chat:thread']!.includes(ns),
+);
 
 /**
  * A navigation in the browser: the route's data, and at the same time what

@@ -1,0 +1,30 @@
+{
+    "attach": "Attach files",
+    "pending": "Files to attach",
+    "remove-file": "Remove {{name}}",
+    "attachments": "Attachments",
+    "view-file": "View {{name}}",
+    "download-file": "Download {{name}}",
+    "delete-file": "Delete {{name}}",
+    "download-failed": "Could not load the attachment.",
+    "upload-failed": "{{name}}: {{reason}}",
+    "upload-failed-plain": "{{name}}: upload failed",
+    "components": {
+        "label": "Components",
+        "none": "None",
+        "remove": "Remove {{name}}",
+        "add": "Add component",
+        "loading": "Loading components…",
+        "search": "Search components",
+        "search-placeholder": "Search plugins and apps",
+        "group": {
+            "all": "All",
+            "plugins": "Plugins",
+            "apps": "Apps"
+        },
+        "off": "off",
+        "no-match": "No matching components.",
+        "full_one": "At most {{count, number}} component. Remove one to add another.",
+        "full_other": "At most {{count, number}} components. Remove one to add another."
+    }
+}

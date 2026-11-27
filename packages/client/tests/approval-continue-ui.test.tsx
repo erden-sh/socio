@@ -7,7 +7,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { approvalNoteMessagePrefix, type ApprovalView } from '@socio/shared/approvals';
 import type { Conversation, Dot } from '@socio/shared/types';
 
-import { decidedLine } from '../src/modules/approvals/ApprovalCard';
+import { useDecidedLine } from '../src/modules/approvals/ApprovalCard';
 import { Chat } from '../src/modules/chat/Chat';
 
 declare global {
@@ -257,6 +257,13 @@ const click = (within: HTMLElement, name: string) =>
     });
 
 it('words each state of carrying on after a decision', () => {
+    let decidedLine!: ReturnType<typeof useDecidedLine>;
+    function Probe() {
+        decidedLine = useDecidedLine();
+        return null;
+    }
+    const probe = createRoot(document.createElement('div'));
+    act(() => probe.render(<Probe />));
     const decided = (extra: Partial<ApprovalView>) =>
         decidedLine(view('ap1', { status: 'approved', decidedVia: 'user', ...extra }));
     expect(decided({})).toBe('Approved.');
@@ -306,6 +313,7 @@ it('words each state of carrying on after a decision', () => {
     for (const line of [decided({}), decided({ status: 'denied' })]) {
         expect(line).not.toMatch(/Tell the socio/);
     }
+    act(() => probe.unmount());
 });
 
 it('carries on in the open chat after the last decision: one turn, followed live, its note hidden', async () => {

@@ -54,12 +54,15 @@ const list = (options: IssueComponentOption[] | null, more: Partial<{ failed: bo
 
 describe('a component as a chip (the web’s ComponentChip)', () => {
     it('says its state as the web words it, and mutes one that is gone', () => {
-        const web = readFileSync(
-            join(import.meta.dirname, '../../../../packages/client/src/modules/issues/IssueComponents.tsx'),
-            'utf8',
-        );
+        // The web's notes are its en-US words (issues.terms, component.state); a live one has none.
+        const web = JSON.parse(
+            readFileSync(
+                join(import.meta.dirname, '../../../../packages/i18n/locales/en-US/issues.terms.json'),
+                'utf8',
+            ),
+        ) as { component: { state: Record<string, string> } };
         for (const [state, note] of Object.entries(STATE_NOTE)) {
-            expect(web).toContain(note === null ? `${state}: undefined` : `${state}: '${note}'`);
+            expect(web.component.state[state] ?? null).toBe(note);
         }
         expect(componentChip('plugin:old', LABELS)).toMatchObject({
             label: 'Old sync',

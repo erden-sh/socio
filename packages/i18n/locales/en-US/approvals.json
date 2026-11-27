@@ -1,0 +1,94 @@
+{
+    "title": "Approvals",
+    "description": "Actions with side effects wait for you: a new dataset, changes to a shared one, access to your data. Approve or deny them here or in the chat, or let auto review decide the routine ones. Reading and querying data a socio may use never needs approval.",
+    "deleted-socio": "A deleted socio",
+    "errors": {
+        "load": "Could not load approvals.",
+        "policy": "Could not save the policy.",
+        "auto-off": "Could not turn auto approvals off.",
+        "guidance": "Could not save the guidance.",
+        "undo": "Could not undo it."
+    },
+    "toasts": {
+        "auto-off": "Auto approvals are off for this socio.",
+        "guidance": "Guidance saved.",
+        "undone": "Undone."
+    },
+    "waiting": {
+        "title": "Waiting for you",
+        "count_one": "{{count, number}} request. Nothing happens until you decide; requests expire after a week.",
+        "count_other": "{{count, number}} requests. Nothing happens until you decide; requests expire after a week.",
+        "none": "Nothing is waiting."
+    },
+    "policies": {
+        "title": "Policies",
+        "description": "Per socio and per capability: Manual asks you every time; Auto lets a decision model on your inference decide in your place, and it passes anything unclear or above the capability’s risk limit to you; Bypass lets the socio go ahead. Quotas and the audit apply either way, and every change of policy is recorded.",
+        "socio": "Socio",
+        "auto-on": "Auto approvals are on for {{socio}}: {{capabilities, list(type: unit; style: short)}}. A decision model decides these in your place; what it is unsure about still comes to you, and every decision is listed below with its reason.",
+        "turn-off": "Turn off auto",
+        "policy": {
+            "manual": "Manual",
+            "auto": "Auto",
+            "bypass": "Bypass"
+        },
+        "auto-unavailable": "Auto (not available)",
+        "limits": "Approved automatically up to {{risk}} risk; anything riskier comes to you.",
+        "risk": {
+            "low": "low",
+            "medium": "medium"
+        },
+        "always": "Always to you: {{rules}}.",
+        "undo": "You can undo automatic approvals.",
+        "no-undo": "Automatic approvals can’t be undone here.",
+        "select": "Approval policy for {{capability}}"
+    },
+    "guidance": {
+        "title": "Guidance for auto approvals",
+        "description": "Optional. A few lines the decision model reads with every request it decides for you, e.g. “Datasets for my budget are fine; never give a socio write access to shared data.” It applies to all your socios. Leave out passwords and other secrets.",
+        "label": "Guidance for auto approvals",
+        "length": "{{length, number}}/{{max, number}}",
+        "save": "Save guidance"
+    },
+    "recent": {
+        "title": "Recent decisions",
+        "filter": "Show decisions",
+        "filters": {
+            "all": "All decisions",
+            "auto": "Auto reviews",
+            "user": "Decided by you",
+            "bypass": "Bypass"
+        },
+        "none": "None yet.",
+        "asked": "Asked",
+        "socio": "Socio",
+        "request": "Request",
+        "status": "Status",
+        "outcome": "Outcome",
+        "undo": "Undo"
+    },
+    "audit": {
+        "title": "Audit",
+        "description": "Every request, decision and policy change.",
+        "when": "When",
+        "socio": "Socio",
+        "capability": "Capability",
+        "event": "Event",
+        "detail": "Detail",
+        "events": {
+            "requested": "Asked",
+            "approved": "Approved by you",
+            "denied": "Denied by you",
+            "expired": "Expired",
+            "bypassed": "Approved by bypass",
+            "executed": "Done",
+            "failed": "Failed",
+            "policy_changed": "Policy changed",
+            "auto_approved": "Approved by auto review",
+            "auto_denied": "Denied by auto review",
+            "auto_escalated": "Passed to you by auto review",
+            "undone": "Undone by you",
+            "undo_failed": "Undo failed",
+            "guidance_changed": "Auto guidance changed"
+        }
+    }
+}

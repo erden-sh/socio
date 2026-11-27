@@ -1,9 +1,11 @@
 import { ShieldCheck } from 'lucide-react';
 import { useEffect, useRef, useSyncExternalStore } from 'react';
 
+import { useTranslation } from '@socio/i18n/react';
 import type { ApprovalView } from '@socio/shared/approvals';
 import { approvalAsk, decidedOnCard, mustOpenFirst } from '@socio/shared/approvals-view';
 
+import { onDemand } from '../../i18n/on-demand';
 import { useAllowLabel } from '../settings/SocioAccessCard';
 
 import { Button } from '@/components/ui/button';
@@ -85,9 +87,12 @@ export function usePendingApprovals(registry: ApprovalRegistry) {
 }
 
 /** "Ada asks to create datasets", from the capability's label. */
-export function asksTo(view: Pick<ApprovalView, 'dotName' | 'capabilityLabel'>) {
-    const { socio, capability } = approvalAsk(view);
-    return `${socio} asks to ${capability}`;
+export function useAsksTo() {
+    const { t } = useTranslation(['approvals.card']);
+    return (view: Pick<ApprovalView, 'dotName' | 'capabilityLabel'>) => {
+        const { socio, capability } = approvalAsk(view);
+        return t('approvals.card:bar.asks', { socio, capability });
+    };
 }
 
 /**
@@ -97,13 +102,17 @@ export function asksTo(view: Pick<ApprovalView, 'dotName' | 'capabilityLabel'>) 
  * scrolls to its card. A request decided on its card only has no
  * Approve here. The text box below stays usable throughout.
  */
-export function ApprovalBar({
+export const ApprovalBar = onDemand(['approvals.card'], WordedApprovalBar);
+
+function WordedApprovalBar({
     pending,
     onShow,
 }: {
     pending: readonly ReportedApproval[];
     onShow: (id: string) => void;
 }) {
+    const { t } = useTranslation(['approvals.card']);
+    const asksTo = useAsksTo();
     const allowLabel = useAllowLabel();
     const first = pending[0];
     if (!first) {
@@ -117,7 +126,7 @@ export function ApprovalBar({
         <div
             className="mb-1 flex flex-wrap items-center gap-x-2.5 gap-y-1.5 border-b pt-1.5 pr-0.5 pb-2 pl-1 text-[13px]/[1.4] text-foreground"
             role="region"
-            aria-label="Pending approval"
+            aria-label={t('approvals.card:bar.label')}
             data-slot="approval-bar"
             data-approval={view.id}
         >
@@ -133,7 +142,7 @@ export function ApprovalBar({
                             className="rounded-full bg-muted px-[7px] text-[12px] text-muted-foreground tabular-nums"
                             data-slot="approval-count"
                         >
-                            1 of {pending.length}
+                            {t('approvals.card:bar.position', { total: pending.length })}
                         </span>
                     )}
                 </p>
@@ -145,7 +154,7 @@ export function ApprovalBar({
                         className="m-0 text-[12px]/[1.7] text-amber-700 dark:text-amber-400"
                         data-slot="approval-on-card"
                     >
-                        Show the request to see what it asks and decide on its card.
+                        {t('approvals.card:bar.on-card')}
                     </p>
                 ) : (
                     mustOpenFirst(view) && (
@@ -153,17 +162,17 @@ export function ApprovalBar({
                             className="m-0 text-[12px]/[1.7] text-amber-700 dark:text-amber-400"
                             data-slot="approval-open-first"
                         >
-                            Show the request and open all its parameters to allow it.
+                            {t('approvals.card:bar.open-first')}
                         </p>
                     )
                 )}
             </div>
             <div className="ml-auto flex items-center gap-1.5">
                 <Button type="button" variant="link" size="sm" className="px-1" onClick={() => onShow(view.id)}>
-                    Show request
+                    {t('approvals.card:bar.show')}
                 </Button>
                 <Button type="button" variant="outline" size="sm" disabled={busy} onClick={() => void decide('deny')}>
-                    Deny
+                    {t('approvals.card:card.deny')}
                 </Button>
                 {!onCard && (
                     <Button
@@ -173,7 +182,7 @@ export function ApprovalBar({
                         disabled={busy || mustOpenFirst(view)}
                         onClick={() => void decide('approve')}
                     >
-                        {allowLabel(view.card) ?? 'Approve'}
+                        {allowLabel(view.card) ?? t('approvals.card:card.approve')}
                     </Button>
                 )}
             </div>

@@ -129,6 +129,8 @@
         {
             "files": [
                 "packages/client/src/modules/settings/**",
+                "packages/client/src/modules/approvals/**",
+                "packages/client/src/modules/issues/**",
                 "packages/client/src/modules/chat/**",
                 "packages/client/src/shell/**",
                 "packages/client/src/root.tsx",

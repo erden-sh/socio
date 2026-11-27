@@ -3,6 +3,7 @@ import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { toast } from 'sonner';
 
+import { useTranslation } from '@socio/i18n/react';
 import {
     BOARD_STATUSES,
     byVotes,
@@ -11,7 +12,6 @@ import {
     issueCounts,
     issueNumber,
     NO_FILTERS,
-    STATUS_LABEL,
     type IssueFilters,
 } from '@socio/shared/issues/issue-board';
 import {
@@ -58,6 +58,7 @@ export function IssuesPage({
     /** The open issue from its route's loader (`/issues/CB-12`). */
     openIssue?: IssueDetail;
 } = {}) {
+    const { t } = useTranslation(['issues', 'issues.terms']);
     const { workspace, admin } = useShell();
     const user = workspace.user;
     const navigate = useNavigate();
@@ -112,14 +113,14 @@ export function IssuesPage({
         (issue: IssueSummary, status: IssueStatus) => {
             const key = issueKey(issue.number);
             updateIssue(issue.number, { status }).then(
-                () => toast.success(`${key} moved to ${STATUS_LABEL[status]}`),
+                () => toast.success(t('issues:move.done', { key, status: t(`issues.terms:status.${status}`) })),
                 (error: unknown) =>
-                    toast.error(`Could not move ${key}`, {
-                        description: message(error, 'The change was undone.'),
+                    toast.error(t('issues:move.failed', { key }), {
+                        description: message(error, t('issues:move.undone')),
                     }),
             );
         },
-        [updateIssue],
+        [updateIssue, t],
     );
     const toggle = useCallback((number: number) => {
         setSelected((current) => {
@@ -147,16 +148,21 @@ export function IssuesPage({
                 await data.update(issue.number, change);
                 changed += 1;
             } catch (error) {
-                failed.push(`${issueKey(issue.number)}: ${message(error, 'refused')}`);
+                failed.push(
+                    t('issues:batch.row-failed', {
+                        key: issueKey(issue.number),
+                        reason: message(error, t('issues:batch.refused')),
+                    }),
+                );
             }
         }
         setBatchBusy(false);
         if (failed.length) {
-            toast.error(`${what}: ${failed.length} not changed`, {
+            toast.error(t('issues:batch.failed', { what, count: failed.length }), {
                 description: failed.join('\n'),
             });
         } else {
-            toast.success(changed ? `${what}: ${changed} issue${changed === 1 ? '' : 's'}` : 'Nothing to change');
+            toast.success(changed ? t('issues:batch.changed', { what, count: changed }) : t('issues:batch.nothing'));
         }
     };
     const exitSelect = () => {
@@ -178,7 +184,7 @@ export function IssuesPage({
         <main data-slot="issues-page" data-tour="issues" className="flex min-h-0 w-full flex-1 flex-col">
             <PageHeader
                 module={MODULE_IDS.issues}
-                title="Issues"
+                title={t('issues:page.title')}
                 titleSlot="issues-title"
                 subtitleSlot="issues-counts"
                 actions={
@@ -191,32 +197,38 @@ export function IssuesPage({
                                 onClick={() => (selecting ? exitSelect() : setSelecting(true))}
                             >
                                 <SquareCheck />
-                                Select
+                                {t('issues:page.select')}
                             </Button>
                         )}
                         <div
                             role="group"
-                            aria-label="View"
+                            aria-label={t('issues:page.view')}
                             data-tour="issue-views"
                             className="flex rounded-md border p-0.5"
                         >
-                            <ViewButton label="Board view" active={view === 'board'} onClick={() => setView('board')}>
+                            <ViewButton
+                                label={t('issues:page.board-view')}
+                                active={view === 'board'}
+                                onClick={() => setView('board')}
+                            >
                                 <Columns3 />
                             </ViewButton>
-                            <ViewButton label="List view" active={view === 'list'} onClick={() => setView('list')}>
+                            <ViewButton
+                                label={t('issues:page.list-view')}
+                                active={view === 'list'}
+                                onClick={() => setView('list')}
+                            >
                                 <LayoutList />
                             </ViewButton>
                         </div>
                         <Button size="sm" onClick={() => openReport()} data-tour="issue-create">
                             <Plus />
-                            New issue
+                            {t('issues:page.new')}
                         </Button>
                     </>
                 }
             >
-                {data.issues
-                    ? `${counts.open} open · ${counts.inProgress} in progress · ${counts.done} done`
-                    : 'The team’s issue tracker'}
+                {data.issues ? t('issues:page.counts', counts) : t('issues:page.tracker')}
             </PageHeader>
             <IssueToolbar
                 filters={filters}

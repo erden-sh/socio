@@ -1,5 +1,6 @@
 import { Link } from 'react-router';
 
+import { Trans, useTranslation } from '@socio/i18n/react';
 import type { ApprovalView } from '@socio/shared/approvals';
 import { MODULE_IDS } from '@socio/shared/modules';
 
@@ -15,16 +16,19 @@ export function ApprovalRequestPage({
     /** The request from the page's loader. */
     initial?: ApprovalView;
 } = {}) {
+    const { t } = useTranslation(['approvals.card']);
     const { approvalId = '' } = useRouteParams();
     return (
         <WorkspacePage
             slot="approval-request-page"
             module={MODULE_IDS.approvals}
-            title="A socio is asking"
+            title={t('approvals.card:request.title')}
             description={
-                <>
-                    Approve to let it go ahead, or deny. <Link to="/approvals">All approvals</Link>
-                </>
+                <Trans
+                    t={t}
+                    i18nKey="approvals.card:request.description"
+                    components={{ all: <Link to="/approvals" /> }}
+                />
             }
         >
             <div className="max-w-2xl">

@@ -1,0 +1,22 @@
+{
+    "description": "Under the Approvals page's title. \"Socio\" is a product noun: an AI agent. Auto review is a model that decides routine requests for you.",
+    "deleted-socio": "In place of a socio's name once it was deleted.",
+    "toasts.undone": "Toast after reversing an automatic approval.",
+    "waiting.count": "How many requests wait for the person's decision.",
+    "policies.description": "Manual, Auto and Bypass are the three policies (policies.policy.*): use the same words.",
+    "policies.socio": "Label of the menu that picks the socio whose policies show.",
+    "policies.auto-on": "Banner: {{socio}} is a socio's name, {{capabilities}} the actions it may do with auto approval.",
+    "policies.turn-off": "Button that sets every auto policy of this socio back to manual.",
+    "policies.policy.manual": "Each policies.policy.* key: an approval policy. Manual: you decide every time; Auto: a model decides for you; Bypass: the socio goes ahead without asking.",
+    "policies.auto-unavailable": "The Auto choice when this capability can't use it.",
+    "policies.limits": "{{risk}} is a risk level (policies.risk.*).",
+    "policies.risk.low": "Each policies.risk.* key: a risk level, inside policies.limits.",
+    "policies.always": "{{rules}} are rules, in English from the server, for what always comes to the person.",
+    "policies.select": "Accessible name of a capability's policy menu; {{capability}} is its name.",
+    "guidance.description": "Keep the quoted example as an example of what a person might write, in your language.",
+    "guidance.length": "How many characters the guidance has, of the most it may have.",
+    "recent.filter": "Accessible name of the menu that filters the recent decisions.",
+    "recent.filters.bypass": "Decisions made by the Bypass policy (policies.policy.bypass).",
+    "audit.events.requested": "Each audit.events.* key: one kind of entry in the audit log of requests, decisions and policy changes. A socio asked for approval.",
+    "audit.events.executed": "The approved action ran."
+}

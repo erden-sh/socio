@@ -96,6 +96,9 @@ const ON_DEMAND = [
 // The live chat's (client-only, ClientChat): some chat pages inline them,
 // the others load them on demand, as does the Ask panel.
 const LIVE_CHAT = ['chat', 'chat.composer', 'chat.model', 'chat.trace'];
+// Another module's words a chat loads on demand: the approval cards' (the
+// Approvals pages inline them).
+const CHAT_ELSEWHERE = ['approvals.card'];
 const manifest = {
     release: '1.0.0',
     locales: {
@@ -104,7 +107,7 @@ const manifest = {
             ns: Object.fromEntries(
                 readdirSync(locales)
                     .map((name) => name.slice(0, -'.json'.length))
-                    .filter((ns) => !inlined.has(ns) || LIVE_CHAT.includes(ns))
+                    .filter((ns) => !inlined.has(ns) || LIVE_CHAT.includes(ns) || CHAT_ELSEWHERE.includes(ns))
                     .map((ns) => [ns, { hash: 'test', sourceHash: 'test' }]),
             ),
         },
@@ -407,12 +410,17 @@ it('loads a chat’s namespaces together with its data when navigating to it, ne
     await settle(20);
     expect($('[data-slot="app-body"] textarea')).not.toBeNull();
     // Only the chat's loader runs (the root's and the shell's hold), and what
-    // the page loads on demand (the live chat's, the reactions') starts with
-    // it: no namespace is asked for after its data.
+    // the page loads on demand (the live chat's, the reactions', the approval
+    // cards') starts with it: no namespace is asked for after its data.
     expect(events.filter((event) => event.startsWith('data'))).toEqual(['data3 asked', 'data3 answered']);
     const answered = events.indexOf('data3 answered');
     const namespaces = events.filter((event) => event.startsWith('namespace'));
-    expect(namespaces.sort()).toEqual(['namespace chat.composer', 'namespace chat.model', 'namespace chat.report']);
+    expect(namespaces.sort()).toEqual([
+        'namespace approvals.card',
+        'namespace chat.composer',
+        'namespace chat.model',
+        'namespace chat.report',
+    ]);
     for (const event of namespaces) {
         expect(events.indexOf(event), event).toBeLessThan(answered);
     }
