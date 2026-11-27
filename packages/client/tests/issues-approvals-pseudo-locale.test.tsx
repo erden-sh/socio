@@ -201,7 +201,7 @@ const detail: IssueDetail = {
         decidedBy: null,
     },
     requesters: [{ dotId: 'd1', userId: 'u-ada', createdAt: 3 }],
-    filedBy: { dotId: 'd1', userId: 'u-ada', trigger: 'chat' },
+    filedBy: { dotId: 'd1', dotOwnerId: 'u-ada', userId: 'u-ada', trigger: 'chat', causeId: null, createdAt: 1 },
     users: { 'u-ada': 'Ada', 'dot:d1': 'Bob' },
     components: labels,
 } as IssueDetail;
