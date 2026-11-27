@@ -37,7 +37,7 @@ How this file is kept (scripts/release.mjs and the app's build read it):
 ### Fixed
 
 - Search no longer finds a folder by words that are only in its hidden body, on the web, in MCP or in a socio's page tools: a folder matches by its title only, and turning it back into a page makes its text searchable again (CB-426).
-- A folder on the web no longer offers **Ask about this page**, in the page chat or in the ⌘J Ask panel, which asks there as on a screen with nothing shared. A socio is never given a folder's hidden body: a chat about a folder tells it the folder's name and what it holds. Both come back when a folder is turned into a page (CB-426).
+- A folder on the web no longer offers **Ask about this page**, in the page chat or in the ⌘J Ask panel, which asks there as on a screen with nothing shared. When a socio is asked about a folder, it's no longer handed the folder's hidden text: it gets the folder's name and the titles of what it holds. A socio can still open a folder's text on purpose with its page tools, as it needs to in order to edit it or turn it back into a page. Both come back when a folder is turned into a page (CB-426).
 
 ## v0.56.0 (2026-11-26)
 
