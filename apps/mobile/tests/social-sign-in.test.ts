@@ -26,6 +26,7 @@ import {
     type TokenRequest,
 } from '../src/data/social-sign-in';
 import { createAuthedFetch, memoryJarStore, openCookieJar } from '../src/net';
+import type { FetchFunction } from '../src/net/fetch-function';
 import { AUTH_SESSION_PATH, LOGOUT_PATH, SESSION_PATH, SOCIAL_REDEEM_PATH } from '../src/net/sign-in';
 import {
     alreadyLinkedOtherLine,
@@ -417,6 +418,81 @@ describe('signing in with Google or Apple', { timeout: 20_000 }, () => {
         expect(outcome).toEqual({ kind: 'cancelled' });
         expect(server.fetch.calls.map((call) => new URL(call.url).pathname)).toEqual([SOCIAL_START_PATH]);
         expect(await store.registry.list()).toEqual([]);
+    });
+
+    describe('going back aborts it: nothing commits, and a session the server gave is signed out', () => {
+        const paths = (server: ReturnType<typeof workspace>) =>
+            server.fetch.calls.map((call) => new URL(call.url).pathname);
+
+        it('before the redeem: none is sent', async () => {
+            const server = workspace();
+            server.link('google', 'ada-test');
+            const { store } = await launch(device, { now: () => T0 });
+            const back = new AbortController();
+            const obtain: ObtainToken = async (asked) => {
+                const token = await testAccount('ada-test')(asked);
+                back.abort();
+                return token;
+            };
+            await expect(
+                signInWithSocial({ ...request('google', obtain), signal: back.signal }, deps(store, server)),
+            ).rejects.toMatchObject({ name: 'AbortError' });
+            expect(paths(server)).toEqual([SOCIAL_START_PATH]);
+            expect(server.sessions.size).toBe(0);
+            expect(await store.registry.list()).toEqual([]);
+        });
+
+        it('during the redeem: it stops, and with no answer there is no session to sign out', async () => {
+            const server = workspace();
+            server.link('google', 'ada-test');
+            const { store } = await launch(device, { now: () => T0 });
+            const back = new AbortController();
+            const sent: string[] = [];
+            const fetch: FetchFunction = (url, init) => {
+                sent.push(new URL(url).pathname);
+                if (url.endsWith(SOCIAL_REDEEM_PATH)) {
+                    // The person goes back while the redeem is on its way: it never answers.
+                    back.abort();
+                    return Promise.reject(new DOMException('The operation was aborted.', 'AbortError'));
+                }
+                return server.fetch(url, init);
+            };
+            await expect(
+                signInWithSocial(
+                    { ...request('google', testAccount('ada-test')), signal: back.signal },
+                    { ...deps(store, server), fetch },
+                ),
+            ).rejects.toMatchObject({ name: 'AbortError' });
+            expect(sent).toEqual([SOCIAL_START_PATH, SOCIAL_REDEEM_PATH]);
+            expect(server.sessions.size).toBe(0);
+            expect(await store.registry.list()).toEqual([]);
+        });
+
+        it('after the redeem’s answer, before the commit: no commit, and the staged session is signed out', async () => {
+            const server = workspace();
+            server.link('google', 'ada-test');
+            const { store } = await launch(device, { now: () => T0 });
+            const back = new AbortController();
+            const byOrigin = store.registry.byOrigin.bind(store.registry);
+            // The person check reads the registry once the sign-in is staged: going back lands there.
+            vi.spyOn(store.registry, 'byOrigin').mockImplementation(async (origin) => {
+                if (paths(server).includes(SOCIAL_REDEEM_PATH)) {
+                    back.abort();
+                }
+                return byOrigin(origin);
+            });
+            await expect(
+                signInWithSocial(
+                    { ...request('google', testAccount('ada-test')), signal: back.signal },
+                    deps(store, server),
+                ),
+            ).rejects.toMatchObject({ name: 'AbortError' });
+            expect(paths(server)).toContain(SOCIAL_REDEEM_PATH);
+            const logout = server.fetch.calls.find((call) => call.url.endsWith(LOGOUT_PATH));
+            expect(sentHeaders(logout).cookie).toMatch(/tok1\.c2ln/);
+            expect(server.sessions.size).toBe(0);
+            expect(await store.registry.list()).toEqual([]);
+        });
     });
 
     it.each([

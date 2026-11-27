@@ -1,6 +1,7 @@
 import type { WorkspaceManifest } from '@socio/shared/device-sign-in';
 
 import { memoryJarStore, openCookieJar } from '../net/cookie-jar';
+import { AbortedError } from '../net/errors';
 import type { FetchFunction } from '../net/fetch-function';
 import { readManifest } from '../net/probe';
 import { createPublicFetch } from '../net/public-fetch';
@@ -155,6 +156,9 @@ export async function signInAndCommit(request: SignInRequest, deps: SignInFlowDe
         return { kind: 'problem', problem: result.problem, wiped };
     }
     const staged = result.signIn;
+    // The person going back once the sign-in's answer is in: nothing commits, and the staged
+    // session is signed out (its staging jar no longer follows the signal, so the logout goes).
+    await releaseIfAborted(staged, request.signal);
     let check: Awaited<ReturnType<typeof checkPerson>>;
     try {
         check = await checkPerson(store, request.origin, { kind: 'signed-in', appUserId: staged.appUserId });
@@ -162,6 +166,7 @@ export async function signInAndCommit(request: SignInRequest, deps: SignInFlowDe
         await staged.cancel();
         throw error;
     }
+    await releaseIfAborted(staged, request.signal);
     if (check.kind === 'unfinished' || check.kind === 'deactivated') {
         await staged.cancel();
         return { kind: 'unfinished' };
@@ -203,6 +208,14 @@ export async function signInAndCommit(request: SignInRequest, deps: SignInFlowDe
             return commit(staged, request, manifest, deps);
         },
     };
+}
+
+/** Signs the staged session out and rejects with AbortedError once `signal` has aborted. */
+async function releaseIfAborted(staged: StagedSignIn, signal: AbortSignal | undefined): Promise<void> {
+    if (signal?.aborted) {
+        await staged.cancel();
+        throw new AbortedError(staged.origin, signal.reason);
+    }
 }
 
 /** What the sign-in sends and commits besides the password, or why it may not be sent. */

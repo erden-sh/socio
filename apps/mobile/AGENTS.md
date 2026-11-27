@@ -598,7 +598,7 @@ Signing in is `src/net/sign-in.ts` and `sign-in-copy.ts`, then
   nonce (and Google's `serverClientId`), the phone's sign-in with that nonce (Apple's is its SHA-256 in
   hex, `providerNonce`), then `redeemSocialToken` (`POST …/social/redeem {provider, idToken, nonce,
   installId, platform, label, variant}`) through `signInAndCommit`'s stage with `email: null`, as the
-  sheet's redeem (a fresh install id, the person check, the commit). The person's Cancel shows nothing.
+  sheet's redeem (a fresh install id, the person check, the commit). The person's Cancel shows nothing. Going back stops it (the screen's signal reaches the redeem): before the redeem nothing is sent; during it the jar holds no session, so nothing is signed out; once its answer is in, `signInAndCommit` checks the signal before the person check and again before the commit (every method's), commits nothing and signs the staged session out (`POST /api/auth/logout`, best effort). The nonce is single-use: trying again starts over with `start`.
   Refusals are worded by code and provider (`social-copy.ts`: `not_linked` "No Socio account uses this
   Google account. Sign in another way, then link it in Settings → Account.", `invalid_token`,
   `nonce_invalid`, `not_authorized`, `method_off`, `deactivated`, 429, `provider_unavailable` "Google

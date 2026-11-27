@@ -7,6 +7,7 @@ import type {
 } from '@socio/shared/device-sign-in';
 
 import type { AuthedFetch } from '../net/authed-fetch';
+import { AbortedError } from '../net/errors';
 import { redeemSocialToken } from '../net/sign-in';
 import {
     linkSocial,
@@ -102,6 +103,10 @@ export async function signInWithSocial(
     if (token.kind !== 'token') {
         return { kind: 'native', failure: token };
     }
+    // Gone back while the phone's sheet was up: no redeem is sent, and the token is dropped.
+    if (request.signal?.aborted) {
+        throw new AbortedError(request.origin, request.signal.reason);
+    }
     const { idToken } = token;
     const outcome = await signInAndCommit(
         {
@@ -122,6 +127,10 @@ export async function signInWithSocial(
                     variant: request.variant,
                     fetch: deps.fetch,
                     userAgent: deps.userAgent,
+                    // Going back stops the redeem: before its answer nothing is held, so nothing is
+                    // signed out; after it, signInAndCommit signs the staged session out instead of
+                    // committing. The nonce is single-use, so trying again starts over.
+                    signal: request.signal,
                     now: deps.now,
                 }),
         },
