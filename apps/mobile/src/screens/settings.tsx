@@ -63,6 +63,7 @@ import { MODULE_ICONS } from './module-icons';
 import { NotificationPermissionRow } from './notification-permission-row';
 import { useOpenLink } from './open-link';
 import { ListRow, PageIntro, Section } from './shell-parts';
+import { SignInMethodsSection } from './sign-in-methods';
 
 // Settings, from More and the
 // drawer: "Settings" as the bar's large title in the module's tone (CB-420)
@@ -111,6 +112,7 @@ export function SettingsScreen() {
                 <SwitchRowView row={HAPTICS_ROW} settings={settings} first footer />
             </Section>
             {open ? <AccountSection /> : null}
+            {open ? <SignInMethodsSection /> : null}
             <NotificationsSection />
             {open ? <LocalCache /> : null}
             {open ? <KeptSpacesSection /> : null}

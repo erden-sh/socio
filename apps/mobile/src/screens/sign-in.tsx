@@ -4,11 +4,12 @@ import { useEffect, useRef, useState } from 'react';
 import { Alert, Linking, type TextInputInstance, View } from 'react-native';
 import { useKeyboardState } from 'react-native-keyboard-controller';
 
-import type { WorkspaceManifest } from '@socio/shared/device-sign-in';
+import type { SocialProvider, WorkspaceManifest } from '@socio/shared/device-sign-in';
 import { characterFor } from '@socio/shared/mascot';
 
 import type { SheetStart } from '../data/sheet-sign-ins';
 import type { SignInOutcome } from '../data/sign-in-flow';
+import type { NativeFailure, SocialSignInOutcome } from '../data/social-sign-in';
 import { routeInVariant } from '../navigation/routes';
 import { AbortedError } from '../net/errors';
 import { signInManifest, signInWays } from '../net/sheet-sign-in';
@@ -22,14 +23,30 @@ import {
     WELCOME_HEADLINE,
     welcomeLine,
 } from '../net/sign-in-copy';
+import {
+    nativeFailedLine,
+    nativeUnavailableLine,
+    NO_GOOGLE_ACCOUNT,
+    socialProblemLine,
+    socialSignInLine,
+} from '../net/social-copy';
+import { socialWays } from '../net/social-sign-in';
 import { readWorkspaceManifest } from '../platform/add-workspace';
 import { HAS_SHEET, sheetSignIns } from '../platform/sheet-sign-in';
 import { signIn } from '../platform/sign-in';
+import {
+    showsTestAccount,
+    socialBuildWith,
+    socialSignIn,
+    TEST_ACCOUNTS,
+    testAccountOf,
+} from '../platform/social-sign-in';
 import { BUILD_VARIANT } from '../platform/variant';
 import { Banner, Button, Field, LOCAL_ART_MAX, LocalAvatar, Screen, Text } from '../ui';
 
 import type { ConfirmWorkspaceParams } from './confirm-workspace';
 import { PrivacyLink } from './legal-links';
+import { SocialButtons } from './social-buttons';
 import { WorkspaceHost } from './workspace-host';
 
 // Signing in with an email and a password, after Confirm. The
@@ -155,6 +172,40 @@ function sheetShown(start: SheetStart): Shown | null {
     }
 }
 
+/** The line for the phone's own Google or Apple sign-in that gave no token. */
+export function nativeShown(provider: SocialProvider, failure: NativeFailure): Shown {
+    const line =
+        failure.kind === 'no-account'
+            ? NO_GOOGLE_ACCOUNT
+            : failure.kind === 'unavailable'
+              ? nativeUnavailableLine(provider)
+              : nativeFailedLine(provider);
+    return { line, detail: TEST_BUILD && 'reason' in failure ? failure.reason : null, openWeb: false };
+}
+
+/** What the screen shows after Google or Apple, or null for nothing (signed in, the person's Cancel). */
+async function socialShown(provider: SocialProvider, outcome: SocialSignInOutcome): Promise<Shown | null> {
+    switch (outcome.kind) {
+        case 'cancelled':
+            return null;
+        case 'native':
+            return nativeShown(provider, outcome.failure);
+        case 'start-refused': {
+            const { problem } = outcome;
+            const detail = [problem.status === null ? null : `HTTP ${problem.status}`, problem.code]
+                .filter((part) => part !== null)
+                .join(' · ');
+            return {
+                line: socialProblemLine(provider, problem, 'signin'),
+                detail: TEST_BUILD && detail !== '' ? detail : null,
+                openWeb: false,
+            };
+        }
+        case 'signed':
+            return settle(outcome.outcome, (problem) => socialSignInLine(provider, problem));
+    }
+}
+
 export function SignInScreen({ route }: StaticScreenProps<SignInParams>) {
     const { origin, host, name, logo, methods } = route.params;
     const navigation = useNavigation();
@@ -163,6 +214,9 @@ export function SignInScreen({ route }: StaticScreenProps<SignInParams>) {
     const sheet = ways.includes('sheet');
     const password = ways.includes('password');
     const channel = ways.includes('code') ? codeChannel(manifest) : null;
+    const [socialBusy, setSocialBusy] = useState<SocialProvider | null>(null);
+    const [testAccount, setTestAccount] = useState('');
+    const social = socialWays(manifest, socialBuildWith(testAccountOf(testAccount)));
     const footer = signInFooter(methods, password);
     const [email, setEmail] = useState('');
     const [secret, setSecret] = useState('');
@@ -242,6 +296,43 @@ export function SignInScreen({ route }: StaticScreenProps<SignInParams>) {
         setShown(sheetShown(start));
     };
 
+    const continueWithSocial = async (provider: SocialProvider) => {
+        if (busy) {
+            return;
+        }
+        const own = new AbortController();
+        controller.current = own;
+        setBusy(true);
+        setSocialBusy(provider);
+        setShown(null);
+        let next: Shown | null;
+        try {
+            next = await socialShown(
+                provider,
+                await socialSignIn({
+                    provider,
+                    origin,
+                    logo,
+                    manifest,
+                    signal: own.signal,
+                    testAccount: testAccountOf(testAccount),
+                }),
+            );
+        } catch (error) {
+            if (error instanceof AbortedError || own.signal.aborted) {
+                return;
+            }
+            console.warn('[sign-in] social sign-in failed', error instanceof Error ? error.name : 'unknown');
+            next = { line: COMMIT_FAILED, detail: null, openWeb: false };
+        }
+        if (own.signal.aborted) {
+            return;
+        }
+        setBusy(false);
+        setSocialBusy(null);
+        setShown(next !== null && next.line === '' ? null : next);
+    };
+
     return (
         <Screen testID="sign-in-screen" centered edges={['right', 'bottom', 'left']}>
             <View className="items-center gap-2" testID="sign-in-welcome">
@@ -256,13 +347,37 @@ export function SignInScreen({ route }: StaticScreenProps<SignInParams>) {
                 </Text>
             </View>
             <WorkspaceHost host={host} testID="sign-in-host" />
+            <SocialButtons
+                providers={social}
+                busy={socialBusy}
+                disabled={busy}
+                onPress={(provider) => void continueWithSocial(provider)}
+            />
+            {TEST_ACCOUNTS && showsTestAccount(manifest) ? (
+                // Development builds only: a made-up account stands in for Google and Apple (e2e/fake-cloud.mjs).
+                <Field
+                    label="Test account (development)"
+                    hint="Leave empty for the phone's own Google or Apple sign-in."
+                    value={testAccount}
+                    onChangeText={setTestAccount}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    editable={!busy}
+                    testID="sign-in-test-account"
+                />
+            ) : null}
+            {social.length > 0 && ways.length > 0 ? (
+                <Text variant="subheadline" tone="muted" className="text-center" testID="sign-in-social-or">
+                    or
+                </Text>
+            ) : null}
             {sheet ? (
                 <>
                     <Button
                         variant={password ? 'secondary' : 'primary'}
                         label="Continue"
                         onPress={() => void continueInSheet()}
-                        busy={busy}
+                        busy={busy && socialBusy === null}
                         testID="sign-in-continue"
                     />
                     <Text variant="footnote" tone="muted" className="text-center" testID="sign-in-continue-hint">
@@ -320,7 +435,7 @@ export function SignInScreen({ route }: StaticScreenProps<SignInParams>) {
                     />
                 </>
             ) : null}
-            {ways.length === 0 ? (
+            {ways.length === 0 && social.length === 0 ? (
                 <Banner tone="error" testID="sign-in-no-way" action={{ label: 'Open in browser', onPress: openWeb }}>
                     {NO_WAY_IN}
                 </Banner>
@@ -343,7 +458,7 @@ export function SignInScreen({ route }: StaticScreenProps<SignInParams>) {
                 <Button
                     label="Sign in"
                     onPress={() => void submit()}
-                    busy={busy}
+                    busy={busy && socialBusy === null}
                     disabled={email.trim() === '' || secret === ''}
                     testID="sign-in-submit"
                 />

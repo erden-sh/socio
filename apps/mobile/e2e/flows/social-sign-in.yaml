@@ -1,0 +1,86 @@
+# Google and Apple sign-in (CB-570), on servers.mjs --social with a development build: workspace A's
+# manifest offers both, and the fake cloud verifies test accounts (e2e/fake-cloud.mjs). SignIn shows
+# Google (and Apple on iOS) once a test account is typed where the build lacks them; each refusal is
+# the app's own words; Ada links ada-test in Settings → Account's Sign-in methods, signs out, signs
+# in with Google as ada-test, then unlinks Google, which ends this phone's session (Ended, the lock).
+# PROVIDER (run.mjs --env PROVIDER=google, or apple on iOS) picks the button.
+appId: ${APP_ID}
+name: social-sign-in
+---
+- runFlow: launch.yaml
+- runFlow:
+    file: common/add-workspace.yaml
+    env:
+      ORIGIN: ${ORIGIN_A}
+- extendedWaitUntil:
+    visible:
+      id: sign-in-test-account
+    timeout: 20000
+- takeScreenshot: social-sign-in-buttons
+# An account nobody linked: no email is ever matched.
+- tapOn:
+    id: sign-in-test-account
+- inputText: nobody-test
+- hideKeyboard
+- tapOn:
+    id: sign-in-${PROVIDER}
+- extendedWaitUntil:
+    visible:
+      text: 'No Socio account uses this .* account\. Sign in another way, then link it in Settings → Account\.'
+    timeout: 20000
+- takeScreenshot: social-not-linked
+# The service's refusals, each in the app's words.
+- tapOn:
+    id: sign-in-test-account
+- eraseText: 40
+- inputText: refuse-unavailable
+- hideKeyboard
+- tapOn:
+    id: sign-in-${PROVIDER}
+- extendedWaitUntil:
+    visible:
+      text: ".* sign-in isn't available right now\\. Sign in another way\\."
+    timeout: 20000
+- takeScreenshot: social-unavailable
+- tapOn:
+    id: sign-in-test-account
+- eraseText: 40
+- inputText: cy-test
+- hideKeyboard
+- tapOn:
+    id: sign-in-${PROVIDER}
+- extendedWaitUntil:
+    visible:
+      text: '.*deactivated.*'
+    timeout: 20000
+- takeScreenshot: social-deactivated
+# Ada signs in with her password and links ada-test.
+- tapOn:
+    id: sign-in-test-account
+- eraseText: 40
+- runFlow:
+    file: common/sign-in.yaml
+    env:
+      EMAIL: ada@example.test
+      SECRET: ${PASSWORD}
+- extendedWaitUntil:
+    visible:
+      text: '.*${CHAT_A}.*'
+    timeout: 30000
+- openLink: ${APP_SCHEME}://settings
+- scrollUntilVisible:
+    element:
+      id: settings-test-account
+    direction: DOWN
+    timeout: 20000
+- tapOn:
+    id: settings-test-account
+- inputText: ada-test
+- hideKeyboard
+- tapOn:
+    id: settings-link-${PROVIDER}
+- extendedWaitUntil:
+    visible:
+      text: 'ada-test@example.test'
+    timeout: 20000
+- takeScreenshot: social-linked

@@ -1,0 +1,26 @@
+// socio-google-signin: Credential Manager's "Sign in with Google" (../README.md, CB-570).
+// Autolinking finds it in apps/mobile/modules; Expo's Gradle plugin sets the SDK versions and Kotlin.
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'expo.modules.sociogooglesignin'
+version = '0.1.0'
+
+android {
+  namespace "expo.modules.sociogooglesignin"
+  defaultConfig {
+    versionCode 1
+    versionName '0.1.0'
+  }
+}
+
+// Credential Manager, its Google Play services provider (Android 13 and earlier, and the Google ID
+// provider on later ones) and Google's ID token credential. The README lists what the release build
+// gains with them.
+dependencies {
+  implementation "androidx.credentials:credentials:1.6.0"
+  implementation "androidx.credentials:credentials-play-services-auth:1.6.0"
+  implementation "com.google.android.libraries.identity.googleid:googleid:1.1.1"
+}

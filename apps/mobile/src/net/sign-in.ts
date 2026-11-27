@@ -1,4 +1,9 @@
-import { type AppVariant, DEVICE_AUTH_PATH } from '@socio/shared/device-sign-in';
+import {
+    type AppVariant,
+    DEVICE_AUTH_PATH,
+    type DevicePlatform,
+    type SocialProvider,
+} from '@socio/shared/device-sign-in';
 
 import { createAuthedFetch, type AuthedFetch } from './authed-fetch';
 import { type CookieJar, type JarStore, memoryJarStore, openCookieJar } from './cookie-jar';
@@ -41,6 +46,11 @@ import { readJson, readText } from './read-body';
 // whose refusals carry @socio/shared/device-sign-in's codes. Its session
 // answer has no email, so Better Auth's own (`GET /api/auth/get-session`) is
 // read for it, best effort.
+//
+// Google and Apple (CB-570) take the same steps with step 2's request
+// `POST /api/auth/device/social/redeem` `{provider, idToken, nonce, installId, platform, label, variant}`,
+// the token the phone's own Google or Apple sign-in made with the nonce the server's
+// `social/start` gave (social-sign-in.ts). Its session answer has no email either.
 
 /** Better Auth's email and password sign-in. */
 export const SIGN_IN_PATH = '/api/auth/sign-in/email';
@@ -92,6 +102,16 @@ export type SignInProblemKind =
     | 'not-allowed-yet'
     /** A sign-in code's redeem, 429 `too_many`: the request's 5 tries are used up, so it is dead. */
     | 'too-many-tries'
+    /** Google or Apple (CB-570), 404 `not_linked`: no account here is linked to that Google or Apple account. */
+    | 'not-linked'
+    /** Google or Apple, 401 `invalid_token`: the token didn't verify. */
+    | 'invalid-token'
+    /** Google or Apple, 401 `nonce_invalid`: the server's nonce ran out or was used. */
+    | 'nonce-invalid'
+    /** Google or Apple, 403 `method_off`: the access policy turned that provider off here. */
+    | 'social-off'
+    /** Google or Apple, 503 `provider_unavailable`: the server can't have the token verified now. */
+    | 'provider-unavailable'
     /** A 5xx: the server, or a proxy in front of it, is failing. */
     | 'server-error'
     /** Anything else: another status or code, a redirect, an answer that can't be read. */
@@ -238,6 +258,24 @@ export interface RedeemPairingOptions extends StagingOptions {
     email: string;
 }
 
+/** Google or Apple's redeem (CB-570): the token, with the server's nonce, for a device session in `Set-Cookie`. */
+export const SOCIAL_REDEEM_PATH = `${DEVICE_AUTH_PATH}/social/redeem`;
+
+/** Google or Apple's redeem (`POST /api/auth/device/social/redeem`). */
+export interface RedeemSocialOptions extends StagingOptions {
+    readonly provider: SocialProvider;
+    /** The ID token the phone's Google or Apple sign-in made. */
+    readonly idToken: string;
+    /** The nonce from the server's `social/start`, as it gave it (Apple's token carries its SHA-256). */
+    readonly nonce: string;
+    /** This install's id for the workspace: the redeem's body carries it, and the header too. */
+    readonly installId: string;
+    readonly platform: DevicePlatform;
+    /** What the person's device list calls this device (`deviceLabel`). */
+    readonly label: string;
+    readonly variant: AppVariant;
+}
+
 /** Add a device's redeem: the claim, with the verifier, for a device session in `Set-Cookie` once the web typed the digits. */
 export const PAIR_REDEEM_PATH = `${DEVICE_AUTH_PATH}/pair/redeem`;
 
@@ -299,6 +337,23 @@ const PAIR_REDEEM_CODES: ProblemCodes = new Map([
     ['not_authorized', 'not-authorized'],
     ['method_off', 'sheet-off'],
     ['BANNED_USER', 'deactivated'],
+]);
+
+/**
+ * Google or Apple's redeem (src/server/auth/social-sign-in.ts). `too_many` is the verifier's or
+ * the limiter's 429, which asks to wait (`rate-limited`, by its status); `deactivated` is the
+ * linked account's.
+ */
+const SOCIAL_REDEEM_CODES: ProblemCodes = new Map([
+    ['not_linked', 'not-linked'],
+    ['invalid_token', 'invalid-token'],
+    ['nonce_invalid', 'nonce-invalid'],
+    ['not_authorized', 'not-authorized'],
+    ['method_off', 'social-off'],
+    ['deactivated', 'deactivated'],
+    ['BANNED_USER', 'deactivated'],
+    ['provider_unavailable', 'provider-unavailable'],
+    ['code_invalid', 'unknown'],
 ]);
 
 /** A code worth keeping: an identifier, never a sentence. */
@@ -378,6 +433,21 @@ export function redeemPairing(options: RedeemPairingOptions): Promise<SignInResu
         body: { claimId, verifier, installId },
         personEmail: options.email.trim(),
         codes: PAIR_REDEEM_CODES,
+    });
+}
+
+/**
+ * Redeems a Google or Apple ID token through a fresh staging jar, as `redeemSheetCode` does. The
+ * token and the nonce go into the request's body and nowhere else: no problem, error or log holds
+ * them. The person's email comes from Better Auth's session answer, best effort.
+ */
+export function redeemSocialToken(options: RedeemSocialOptions): Promise<SignInResult> {
+    const { provider, idToken, nonce, installId, platform, label, variant } = options;
+    return stageSignIn(options, {
+        path: SOCIAL_REDEEM_PATH,
+        body: { provider, idToken, nonce, installId, platform, label, variant },
+        personEmail: null,
+        codes: SOCIAL_REDEEM_CODES,
     });
 }
 

@@ -15,6 +15,7 @@ import type { VariantName } from '../variant.ts';
 
 import { linkHost as pickLinkHost } from './app-links.ts';
 import type { PersonalTeam } from './personal-team.ts';
+import { GOOGLE_IOS_CLIENT_ID_VARIABLES } from './social-sign-in.ts';
 
 const defaultLinkHost = (variant: VariantName) => pickLinkHost({}, variant);
 
@@ -46,6 +47,10 @@ const defaultLinkHost = (variant: VariantName) => pickLinkHost({}, variant);
 //   SOCIO_APS_ENVIRONMENT, when it isn't the variant's default, in `.xcode.env` and
 //   `socio.apsEnvironment` in gradle.properties, checked with the stamp, so the embedded config
 //   says the environment the `aps-environment` entitlement was made for.
+// - The iOS Google client id (plugins/social-sign-in.ts, `extra.googleIosClientId`) the same way: the
+//   variant's SOCIO_GOOGLE_IOS_CLIENT_ID or SOCIO_GOOGLE_IOS_PREVIEW_CLIENT_ID in `.xcode.env` (a
+//   generated file, never committed), so the embedded config keeps the id the URL scheme was made
+//   for. Android doesn't use it, so Gradle records nothing.
 //
 // Each change is a marked block that a rerun replaces, so prebuild stays idempotent.
 
@@ -97,6 +102,15 @@ export interface BuildEnvOptions {
      * SOCIO_APS_ENVIRONMENT only when it isn't the variant's default, which an unset one gives again.
      */
     apsEnvironment?: ApsEnvironment;
+    /** The iOS Google client id the prebuild read for the variant (plugins/social-sign-in.ts); none means unset. */
+    googleIosClientId?: string | null;
+}
+
+/** `.xcode.env`'s lines for the iOS Google client id: both variables unset, then the variant's, when it has one. */
+export function googleXcodeEnvLines(variant: VariantName, clientId: string | null | undefined): string[] {
+    const name = GOOGLE_IOS_CLIENT_ID_VARIABLES[variant];
+    const names = Object.values(GOOGLE_IOS_CLIENT_ID_VARIABLES).filter((value) => value !== null);
+    return [`unset ${names.join(' ')}`, ...(name !== null && clientId ? [`export ${name}=${clientId}`] : [])];
 }
 
 /** The SOCIO_APS_ENVIRONMENT a build must see to resolve `aps` again: '' for the variant's default. */
@@ -156,7 +170,7 @@ export function quietXcodeEnv(contents: string): string {
 /** `ios/.xcode.env` with the environment app.config.ts saw at prebuild, for the script phases that read it again. */
 export function variantXcodeEnv(
     contents: string,
-    { variant, personalTeam, stamp, relayOrigin, linkHost, apsEnvironment }: BuildEnvOptions,
+    { variant, personalTeam, stamp, relayOrigin, linkHost, apsEnvironment, googleIosClientId }: BuildEnvOptions,
 ): string {
     const links = linkHostVariable(variant, linkHost);
     const aps = apsEnvironmentVariable(variant, apsEnvironment);
@@ -179,6 +193,7 @@ export function variantXcodeEnv(
             relayOrigin ? `export SOCIO_RELAY_ORIGIN=${relayOrigin}` : 'unset SOCIO_RELAY_ORIGIN',
             links ? `export SOCIO_LINK_HOST=${links}` : 'unset SOCIO_LINK_HOST',
             aps ? `export SOCIO_APS_ENVIRONMENT=${aps}` : 'unset SOCIO_APS_ENVIRONMENT',
+            ...googleXcodeEnvLines(variant, googleIosClientId),
         ],
         'end',
     );

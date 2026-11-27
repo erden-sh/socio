@@ -1261,3 +1261,102 @@ describe('getting in: servers.mjs --codes, web-side.mjs and act-as.mjs web-invit
         }
     });
 });
+
+describe('Google and Apple on the local servers (CB-570)', async () => {
+    const {
+        parseServerArgs: parse,
+        serverEnv: env,
+        linkSocial,
+        CY_SOCIAL_ACCOUNT,
+    } = await import('../e2e/servers.mjs');
+    const { fakeCloud, verdict, E2E_SERVER_CLIENT_ID } = await import('../e2e/fake-cloud.mjs');
+    const { testIdToken } = await import('../src/net/social-test-token');
+    const { createHash } = await import('node:crypto');
+
+    it('--social starts the fake cloud on its own port, and every workspace gets an enrollment token', () => {
+        expect(parse([]).social).toBeNull();
+        expect(parse(['--social']).social).toEqual({ cloudPort: 4548 });
+        expect(parse(['--social', '--cloud-port', '4600']).social).toEqual({ cloudPort: 4600 });
+        expect(() => parse(['--cloud-port', '4600'])).toThrow(/--social/);
+        expect(() => parse(['--social', '--cloud-port', '4549'])).toThrow(/different/);
+        const withCloud = env({
+            port: 4351,
+            home: '/tmp/x',
+            modelPort: 4550,
+            cloud: { issuer: 'http://127.0.0.1:4548', token: 'iat_x' },
+        });
+        expect(withCloud).toMatchObject({
+            SOCIO_CLOUD_ISSUER: 'http://127.0.0.1:4548',
+            SOCIO_CLOUD_ENROLLMENT_TOKEN: 'iat_x',
+        });
+        expect(env({ port: 4351, home: '/tmp/x', modelPort: 4550 })).not.toHaveProperty('SOCIO_CLOUD_ISSUER');
+    });
+
+    it('verifies a test token with the nonce Google or Apple carries, and stands refuse-* accounts for the service’s refusals', () => {
+        const nonce = 'n'.repeat(43);
+        const google = testIdToken({ variant: 'development', provider: 'google', account: 'ada-test', nonce });
+        expect(verdict({ provider: 'google', idToken: google, nonce })).toMatchObject({ status: 200, sub: 'ada-test' });
+        const hashed = createHash('sha256').update(nonce).digest('hex');
+        const apple = testIdToken({ variant: 'development', provider: 'apple', account: 'ada-test', nonce: hashed });
+        expect(verdict({ provider: 'apple', idToken: apple, nonce })).toMatchObject({ status: 200 });
+        // Apple's token with the raw nonce, or a token made for the other provider, doesn't verify.
+        const raw = testIdToken({ variant: 'development', provider: 'apple', account: 'ada-test', nonce });
+        expect(verdict({ provider: 'apple', idToken: raw, nonce })).toMatchObject({
+            status: 422,
+            body: { code: 'nonce_mismatch' },
+        });
+        expect(verdict({ provider: 'apple', idToken: google, nonce })).toMatchObject({
+            status: 422,
+            body: { code: 'invalid_token' },
+        });
+        for (const [account, status, code] of [
+            ['refuse-invalid', 422, 'invalid_token'],
+            ['refuse-nonce', 422, 'nonce_mismatch'],
+            ['refuse-many', 429, 'too_many'],
+            ['refuse-unavailable', 503, 'provider_unavailable'],
+        ] as const) {
+            const token = testIdToken({ variant: 'development', provider: 'google', account, nonce });
+            expect(verdict({ provider: 'google', idToken: token, nonce })).toMatchObject({ status, body: { code } });
+        }
+        expect(verdict({ provider: 'google', idToken: 'a.b.c', nonce })).toMatchObject({ status: 422 });
+    });
+
+    it('answers the config with a made-up server client id, and only to an enrolled deployment', async () => {
+        expect(E2E_SERVER_CLIENT_ID).toMatch(/^000000000000-/);
+        const cloud = await fakeCloud(0);
+        try {
+            const config = await fetch(`${cloud.origin}/v1/social/config`);
+            expect(config.status).toBe(401);
+            const metadata = await (await fetch(`${cloud.origin}/.well-known/oauth-authorization-server`)).json();
+            expect(metadata).toMatchObject({ issuer: cloud.origin, jwks_uri: `${cloud.origin}/.well-known/jwks.json` });
+            expect(cloud.provision()).toMatch(/^iat_/);
+        } finally {
+            await cloud.close();
+        }
+    });
+
+    it('links Cy to both providers as cy-test, by the link alone', () => {
+        const dir = mkdtempSync(join(tmpdir(), 'socio-e2e-social-'));
+        try {
+            const path = join(dir, 'brain.sqlite');
+            const db = new DatabaseSync(path);
+            db.exec(
+                'CREATE TABLE auth_user(id TEXT PRIMARY KEY, email TEXT); CREATE TABLE auth_account(id TEXT PRIMARY KEY, accountId TEXT, providerId TEXT, userId TEXT, linkEmail TEXT, createdAt TEXT, updatedAt TEXT, UNIQUE(providerId, accountId));',
+            );
+            db.prepare('INSERT INTO auth_user VALUES (?, ?)').run('u-cy', 'cy@example.test');
+            db.close();
+            linkSocial(path, 'cy@example.test', CY_SOCIAL_ACCOUNT);
+            linkSocial(path, 'cy@example.test', CY_SOCIAL_ACCOUNT);
+            const read = new DatabaseSync(path);
+            expect(
+                read.prepare('SELECT accountId, providerId, userId FROM auth_account ORDER BY providerId').all(),
+            ).toEqual([
+                { accountId: 'cy-test', providerId: 'apple-native', userId: 'u-cy' },
+                { accountId: 'cy-test', providerId: 'google-native', userId: 'u-cy' },
+            ]);
+            read.close();
+        } finally {
+            rmSync(dir, { recursive: true, force: true });
+        }
+    });
+});

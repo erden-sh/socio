@@ -112,6 +112,17 @@ export const SHEET_METHOD_OFF =
 /** A sign-in code's 5 tries are used up (`too_many`): the request is dead. */
 export const CODE_TRIES_USED = 'Too many wrong codes. Ask for a new code and try again.';
 
+/**
+ * Google or Apple (CB-570) without the provider's name: social-copy.ts words each with it, and the
+ * SignIn screen shows those. These stand in where no provider is known.
+ */
+export const SOCIAL_NOT_LINKED_ANY =
+    'No Socio account uses that account. Sign in another way, then link it in Settings → Account.';
+export const SOCIAL_INVALID_TOKEN_ANY = "That sign-in couldn't be confirmed. Try again.";
+export const SOCIAL_NONCE_INVALID = 'That sign-in took too long or was used already. Try again.';
+export const SOCIAL_OFF_ANY = 'That way of signing in is turned off for this workspace. Sign in another way.';
+export const SOCIAL_UNAVAILABLE_ANY = "That way of signing in isn't available right now. Sign in another way.";
+
 /** Any answer the table doesn't know: never the server's text. */
 export const GENERIC = "Couldn't sign you in. Try again, or ask your admin.";
 
@@ -171,6 +182,16 @@ export function signInCopy(problem: SignInProblem): SignInCopy {
             return { message: NOT_SIGNED_IN, action: 'retry' };
         case 'too-many-tries':
             return { message: CODE_TRIES_USED, action: 'retry' };
+        case 'not-linked':
+            return { message: SOCIAL_NOT_LINKED_ANY, action: 'retry' };
+        case 'invalid-token':
+            return { message: SOCIAL_INVALID_TOKEN_ANY, action: 'retry' };
+        case 'nonce-invalid':
+            return { message: SOCIAL_NONCE_INVALID, action: 'retry' };
+        case 'social-off':
+            return { message: SOCIAL_OFF_ANY, action: 'retry' };
+        case 'provider-unavailable':
+            return { message: SOCIAL_UNAVAILABLE_ANY, action: 'retry' };
         case 'unknown':
             return { message: GENERIC, action: 'retry' };
     }

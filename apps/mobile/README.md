@@ -192,6 +192,28 @@ from T3 Code are in `vendor/t3code/plugins/` (`vendor/t3code/SYNC.md`).
   keeps it, and `gradle.properties` records it (`socio.linkHost`), checked like the stamp. The sheet's
   https callback works only in builds signed by the Ingenio team: a Personal Team build has no
   associated domains (development falls back to `socio-dev://auth-callback`).
+- **Google and Apple sign-in** (CB-570, `plugins/social-sign-in.ts`): Google on iOS needs the build's
+  iOS OAuth client id, which is never committed. Prebuild reads it from `SOCIO_GOOGLE_IOS_CLIENT_ID` for
+  production and `SOCIO_GOOGLE_IOS_PREVIEW_CLIENT_ID` for preview (`<number>-<id>.apps.googleusercontent.com`;
+  anything else fails the config without echoing it) into `extra.googleIosClientId`, and registers its
+  reversed form (`com.googleusercontent.apps.<…>`) as a URL scheme. Development reads neither, so its
+  iOS builds have no Google; unset, the iOS Google button doesn't show. `ios/.xcode.env` keeps the
+  variant's variable for the config Xcode embeds (a generated file, never committed); Android needs
+  neither (Credential Manager takes the server's client id from the server), so Gradle records nothing.
+  The preview and release builders pass it to prebuild without printing it, sourcing the file that
+  holds it:
+
+    ```sh
+    set -a; . ~/.config/socio-google/ids.env; set +a   # mode 600; never echo it
+    APP_VARIANT=preview EXPO_NO_TELEMETRY=1 npx expo prebuild --clean -p ios
+    ```
+
+    Sign in with Apple's entitlement (`com.apple.developer.applesignin`) is in production and preview
+    only: expo-apple-authentication's plugin adds it whenever the package is installed, and the
+    development variant (whose App ID lacks the capability) and Personal Team builds take it out
+    (`extra.appleSignIn` false). Neither the server nor the repository holds a Google or Apple client id
+    or secret: the server gives Google's `serverClientId` from its start.
+
 - **App Store Connect** (iOS): `ITSAppUsesNonExemptEncryption` is false (HTTPS and SQLCipher's AES
   through CommonCrypto are exempt, the owner's 2026-11-10 decision), so no TestFlight build waits on
   export compliance; the privacy manifest (`privacyManifest`, `ios.privacyManifests`) declares no
@@ -255,6 +277,8 @@ itself: no `package.json` entry, and prebuild links them like any package. Each 
   start time, and Android's `reportFullyDrawn()`.
 - `modules/socio-push`: the Web Push keys, made and kept natively, the RFC 8291 decryptor and the
   inbox files the notification extension (iOS) or the messaging service (Android) writes.
+- `modules/socio-google-signin`: the phone's own Google sign-in for one ID token (Google's GoogleSignIn
+  SDK on iOS, Credential Manager on Android), CB-570.
 
 ## End-to-end tests
 
@@ -526,6 +550,23 @@ well. A development client started by a link shows its launcher first; `common/c
 Metro it last loaded, and the app then starts with the link. `getting-in-sheet.yaml` drives the
 sheet (SignIn's Continue): the workspace's web sign-in in Chrome's tab on Android (Ada's password, then the
 Continue page), back through the verified callback link to Home.
+
+**Google and Apple** (CB-570): `servers.mjs --social` starts a fake of Socio's cloud services
+(`e2e/fake-cloud.mjs`, on `--cloud-port`, 4548 by default) that every workspace enrolls with over
+loopback, so the manifests offer Google and Apple. It verifies only a development build's test accounts:
+SignIn and Settings → Account's Sign-in methods show a "Test account (development)" field under the
+buttons, and a name typed there stands in for the phone's own Google or Apple sign-in (an unsigned token
+with the server's nonce, Apple's hashed, `src/net/social-test-token.ts`); left empty, the real sheet
+opens. `refuse-invalid`, `refuse-nonce`, `refuse-many` and `refuse-unavailable` get the service's
+refusals (`invalid_token`, `nonce_invalid`, `too_many`, `provider_unavailable`), an account nobody
+linked gets `not_linked`, and `cy-test` is linked to Cy, who is deactivated (`deactivated`). `POST
+/web/social?google=off` (or `apple=`, `on` again) has Opal turn a provider off in the access policy
+(`method_off`). Link `ada-test` in Settings as Ada first, sign out, then Continue with Google with the
+same account. Nothing reaches Google, Apple or the real cloud.
+
+```sh
+node apps/mobile/e2e/servers.mjs --social --device emulator-5554
+```
 
 ### Chaos
 

@@ -6,6 +6,7 @@ import packageJson from './package.json';
 import { appLinkIntentFilters, associatedDomains, linkHost, sheetCallback } from './plugins/app-links.ts';
 import { iosPersonalTeam } from './plugins/personal-team.ts';
 import { googleServicesFile } from './plugins/push.ts';
+import { appleSignIn, googleIosClientId } from './plugins/social-sign-in.ts';
 import { relayOrigin } from './relay-origin.ts';
 import theme from './src/theme/generated/theme.json';
 import { appVariant } from './variant.ts';
@@ -207,6 +208,11 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     const links = linkHost(process.env, variant);
     const callback = sheetCallback(variant, links, personalTeam !== undefined);
     const domains = associatedDomains(variant, links, personalTeam !== undefined);
+    // Google and Apple sign-in (CB-570, plugins/social-sign-in.ts): the iOS Google client id from
+    // SOCIO_GOOGLE_IOS_CLIENT_ID (production) or SOCIO_GOOGLE_IOS_PREVIEW_CLIENT_ID (preview), never
+    // committed, none in development; Sign in with Apple in production and preview only.
+    const googleIos = googleIosClientId(process.env, variant);
+    const apple = appleSignIn(variant, personalTeam !== undefined);
     return {
         ...config,
         name,
@@ -258,12 +264,33 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             // listed earlier, so the strip runs after every other plugin here has added its
             // entitlements (push, Sign in with Apple, app groups). Keep it first.
             ...(personalTeam ? [`${T3}/withoutIosPersonalTeamCapabilities.cjs`, './plugins/personal-team.ts'] : []),
+            // Sign in with Apple's entitlement, which expo-apple-authentication adds whenever it is
+            // installed, comes out of development builds (the dev App ID lacks the capability), and
+            // Google's reversed iOS client id is a URL scheme when the build has one. Early for the
+            // same reason as the strip above.
+            ['./plugins/social-sign-in.ts', { variant, clientId: googleIos }],
+            ...(variant === 'development' ? [] : ['expo-apple-authentication']),
             // The dev client would also register exp+<slug>, the same `exp+socio` in
             // every variant, and prefer it for its links: off, so each variant opens
             // by its own scheme.
             ['expo-dev-client', { addGeneratedScheme: false }],
             // iOS 17.4 is the first with the https sign-in callback sign-in needs.
-            ['expo-build-properties', { ios: { deploymentTarget: '17.4' } }],
+            // GoogleSignIn's AppCheckCore (modules/socio-google-signin, CB-570) is Swift and imports these,
+            // which define no modules: their module maps on, as CocoaPods asks for static pods. Only the
+            // subspecs AppCheckCore takes, so no other part of GoogleUtilities (its swizzlers) comes in.
+            [
+                'expo-build-properties',
+                {
+                    ios: {
+                        deploymentTarget: '17.4',
+                        extraPods: [
+                            { name: 'GoogleUtilities/Environment', modular_headers: true },
+                            { name: 'GoogleUtilities/UserDefaults', modular_headers: true },
+                            { name: 'RecaptchaInterop', modular_headers: true },
+                        ],
+                    },
+                },
+            ],
             ['expo-splash-screen', SPLASH],
             // SQLCipher and FTS5 for the device store.
             // package.json builds expo-sqlite from source, since a prebuilt one has no
@@ -315,7 +342,15 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             ['./plugins/transport-security.ts', { variant }],
             [
                 './plugins/build-env.ts',
-                { variant, personalTeam, stamp, relayOrigin: relay, linkHost: links, apsEnvironment: aps },
+                {
+                    variant,
+                    personalTeam,
+                    stamp,
+                    relayOrigin: relay,
+                    linkHost: links,
+                    apsEnvironment: aps,
+                    googleIosClientId: googleIos,
+                },
             ],
             // The native tab bar's lucide icons on Android, as vector drawables.
             './plugins/tab-icons.ts',
@@ -344,6 +379,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             // The sign-in sheet's callback (src/net/auth-sheet.ts); none in a preview or production
             // Personal Team build, whose sheet is unavailable.
             ...(callback === null ? {} : { authCallback: callback }),
+            // Google on iOS (left out without one) and Sign in with Apple (CB-570).
+            ...(googleIos === null ? {} : { googleIosClientId: googleIos }),
+            appleSignIn: apple,
         },
         experiments: {
             // Expo CLI asks Metro for babel-preset-expo's React Compiler only when this is
