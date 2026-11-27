@@ -197,7 +197,7 @@ function body(link: LinkPath): { title: string; html: string } {
                 title: 'Add a device to Socio',
                 html: `<h1>Add a device</h1>
 <p>If Socio is installed, open this link from your camera or a message so it opens in the app.</p>
-<p>If it still opens here, reinstall Socio, then scan the code again.</p>${INVALID}
+<p>If it still opens here, update Socio (or reinstall it), then scan the code again.</p>${INVALID}
 ${getTheApp(variant)}`,
             };
         case 'i':
