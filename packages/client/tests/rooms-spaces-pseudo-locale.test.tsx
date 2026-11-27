@@ -212,7 +212,10 @@ const people: SpacePeopleView = {
     access: 'editor',
     candidates: [{ id: 'u-eta', name: 'Eta' }],
 };
-const now = Date.UTC(2026, 10, 20);
+// The page's clock and time zone, fixed: what the fixtures' times read as
+// doesn't depend on when or where the test runs (set in beforeEach).
+const now = Date.UTC(2026, 10, 20, 12);
+const TIME_ZONE = 'UTC';
 const radarEntry = (id: string, title: string, ageDays: number) => ({
     id,
     spaceId: 's1',
@@ -263,12 +266,6 @@ const FIXTURE_TEXT = [
     'Alice',
     'Mu',
     'Nu',
-    // Dates in the fixtures, which Intl spells in English for en-XA.
-    'Sep',
-    'Oct',
-    'Nov',
-    'May',
-    'PM',
     // The radar's open marker, a word found in the page.
     'todo',
 ];
@@ -351,8 +348,13 @@ const respond = (path: string): [number, unknown] => {
 
 let host: HTMLElement;
 let root: Root | undefined;
+const zone = process.env.TZ;
 beforeEach(() => {
     globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+    process.env.TZ = TIME_ZONE;
+    // Only Date: the router and the settle loop keep their real timers.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(now);
     Element.prototype.scrollIntoView ??= () => {};
     window.matchMedia = (query: string) =>
         ({ matches: false, media: query, addEventListener: () => {}, removeEventListener: () => {} }) as never;
@@ -381,7 +383,40 @@ afterEach(() => {
     root = undefined;
     host.remove();
     vi.unstubAllGlobals();
+    vi.useRealTimers();
+    if (zone === undefined) {
+        delete process.env.TZ;
+    } else {
+        process.env.TZ = zone;
+    }
 });
+
+/**
+ * The words Intl itself writes for en-XA's dates and times: month and
+ * weekday names and day periods (AM, PM). They are the locale's data, as
+ * `{{when, datetime}}` and `LocalTime` format them, not copy to translate.
+ * Taken from Intl, not listed, so they follow the engine's CLDR.
+ */
+const INTL_WORDS = (() => {
+    const words = new Set<string>();
+    const add = (options: Intl.DateTimeFormatOptions, at: number) => {
+        for (const part of new Intl.DateTimeFormat('en-XA', { timeZone: TIME_ZONE, ...options }).formatToParts(at)) {
+            if (part.type === 'month' || part.type === 'weekday' || part.type === 'dayPeriod') {
+                words.add(part.value);
+            }
+        }
+    };
+    for (let day = 0; day < 366; day += 1) {
+        const at = Date.UTC(2026, 0, 1 + day);
+        add({ month: 'long', weekday: 'long' }, at);
+        add({ month: 'short', weekday: 'short' }, at);
+    }
+    for (let hour = 0; hour < 24; hour += 1) {
+        add({ hour: 'numeric', hour12: true }, Date.UTC(2026, 0, 1, hour));
+        add({ hour: 'numeric', hour12: true, dayPeriod: 'short' }, Date.UTC(2026, 0, 1, hour));
+    }
+    return words;
+})();
 
 /** What a person reads in `node`, without the parts `skip` names (other modules'). */
 function readable(node: Element, skip: readonly string[] = []) {
@@ -410,7 +445,7 @@ function untranslated(texts: readonly string[]) {
         for (const fixture of [...SHARED_TEXT, ...FIXTURE_TEXT]) {
             rest = rest.replaceAll(fixture, ' ');
         }
-        return [...rest.matchAll(/\p{L}{2,}/gu)].map((match) => match[0]);
+        return [...rest.matchAll(/\p{L}{2,}/gu)].map((match) => match[0]).filter((word) => !INTL_WORDS.has(word));
     });
 }
 
