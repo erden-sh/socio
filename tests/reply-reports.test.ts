@@ -593,6 +593,27 @@ describe('the report', () => {
         expect(body.note).toBe("It said password='[redacted]' to me.");
     });
 
+    it('redacts the values of camelCase credential keys in the reply, the prompt and the note', async () => {
+        const server = await runtime({
+            prompts: { solo: 'My config is {"dbPassword": "open sesame now", "user": "ada"} today.' },
+            replies: { solo: "Set stripeSecretKey='two words here' and githubToken=abcdef123456 then." },
+        });
+        const consent = await server.share();
+        await server.report(consent, { note: 'It printed UserPassword: hunter2222 to me.' });
+        await server.reports.send();
+        const { raw, body } = server.collector.posts[0]!;
+        for (const secret of ['open sesame', 'two words', 'abcdef123456', 'hunter2222']) {
+            expect(raw).not.toContain(secret);
+        }
+        expect((body.prompt as { text: string }).text).toBe(
+            'My config is {"dbPassword": "[redacted]", "user": "ada"} today.',
+        );
+        expect((body.reply as { text: string }).text).toBe(
+            "Set stripeSecretKey='[redacted]' and githubToken=[redacted] then.",
+        );
+        expect(body.note).toBe('It printed UserPassword: [redacted] to me.');
+    });
+
     it('redacts a secret on an inner line of a multi-line JSON blob in the prompt, and an unquoted one in the note', async () => {
         const blob = '{\n  "user": "ada",\n  "client_secret": "inner line value",\n  "n": 1\n}';
         const server = await runtime({ prompts: { solo: `Here is my config:\n${blob}` } });

@@ -50,8 +50,92 @@ describe('a credential key’s quoted value', () => {
             '{"user": "ada lovelace", "mode": "password-less"}',
         );
     });
+});
 
+describe('a camelCase or PascalCase credential key', () => {
+    const keys = [
+        'userPassword',
+        'dbPassword',
+        'adminPasswd',
+        'gpgPassphrase',
+        'clientSecret',
+        'githubToken',
+        'oauthAccessToken',
+        'stripeSecretKey',
+        'awsSecretAccessKey',
+        'myApiKey',
+        'myAPIKey',
+        'sshPrivateKey',
+        'UserPassword',
+        'GithubToken',
+        'v2Token',
+    ];
+    for (const key of keys) {
+        it(`${key}: JSON, key=value and key: value, quoted and unquoted`, () => {
+            const forms: Array<[string, string]> = [
+                [`{"${key}":"two words"}`, `{"${key}":"[redacted]"}`],
+                [`{"${key}": "value99"}`, `{"${key}": "[redacted]"}`],
+                [`${key}="two words" next`, `${key}="[redacted]" next`],
+                [`${key}='two words' next`, `${key}='[redacted]' next`],
+                [`${key}=value99 next`, `${key}=[redacted] next`],
+                [`${key}: "two words" next`, `${key}: "[redacted]" next`],
+                [`${key}: value99 next`, `${key}: [redacted] next`],
+            ];
+            for (const [text, redacted] of forms) {
+                expect(redactAppLog(text)).toBe(redacted);
+                expect(redactAppLog(text)).not.toContain('two words');
+                expect(redactAppLog(text)).not.toContain('value99');
+            }
+        });
+    }
+
+    it('proxyAuthorization: its quoted value whole, as authorization’s', () => {
+        expect(redactAppLog('{"proxyAuthorization": "Basic two words"}')).toBe('{"proxyAuthorization": "[redacted]"}');
+        expect(redactAppLog("proxyAuthorization='a b' next")).toBe("proxyAuthorization='[redacted]' next");
+        expect(redactAppLog('proxyAuthorization: Bearer abc.def.ghi')).toBe('proxyAuthorization: Bearer [redacted]');
+    });
+
+    it('with a separator before the last word', () => {
+        expect(redactAppLog('mySecret_key=abcdef rest')).toBe('mySecret_key=[redacted] rest');
+        expect(redactAppLog('myApi-Key: abcdef rest')).toBe('myApi-Key: [redacted] rest');
+    });
+
+    it('stays redacted the same when redacted again', () => {
+        for (const text of [
+            '{"userPassword":"two words","githubToken":"abc"}',
+            "stripeSecretKey='x y' myApiKey=abcdef",
+            'awsSecretAccessKey: "a b" UserPassword=abcdef',
+        ]) {
+            const once = redactAppLog(text);
+            expect(redactAppLog(once)).toBe(once);
+        }
+    });
+
+    it('leaves ordinary words and other camelCase keys alone', () => {
+        for (const text of [
+            'tokenize: the input first',
+            'secretary: Ada',
+            'Passwordless: sign in by link',
+            'passwordless: true',
+            'Tokens are: short lived',
+            'maxTokens: 4096',
+            'tokenCount=12',
+            '{"isPasswordless": true, "tokenizer": "word piece"}',
+            'primaryKey=userId sortKey=createdAt',
+            'The userPassword field is required, and githubToken is optional.',
+            'Use a Password manager; a Secret Santa list; Token Ring networks.',
+        ]) {
+            expect(redactAppLog(text)).toBe(text);
+        }
+    });
+});
+
+describe('every pattern', () => {
     for (const [name, text] of Object.entries({
+        'camelCase keys': 'aPassword'.repeat(7282),
+        'camelCase opened quotes': 'aPassword:"'.repeat(5957),
+        'camelCase JSON keys': '"userToken": "'.repeat(4681),
+        'capitals before a key': `${'A'.repeat(65_000)}Token`,
         'opened quotes': 'password:"'.repeat(6553),
         'a long open value': `token="${'a'.repeat(65_000)}`,
         'JSON keys': '"password": "'.repeat(5000),
