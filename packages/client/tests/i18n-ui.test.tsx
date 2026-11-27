@@ -72,6 +72,26 @@ async function open(data: PageI18n, mutate = vi.fn(async () => true)) {
     return mutate;
 }
 
+it('matches the device over the offered locales only: a Portuguese browser with pt-BR under the gate gets en-US', async () => {
+    vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['pt-BR', 'pt']);
+    vi.stubGlobal(
+        'fetch',
+        vi.fn(
+            async () =>
+                new Response(JSON.stringify({ release: '1.0.0', locales: { 'es-419': { coverage: 1, ns: {} } } })),
+        ),
+    );
+    const mutate = await open(page(['en-US', 'es-419']));
+    const section = host.querySelector('[data-slot="language-preference"]')!;
+    expect(section.querySelector('label')!.textContent).toBe('Match my device (currently American English)');
+    // Choosing it applies en-US, the same the server picks for this browser.
+    const radios = section.querySelectorAll<HTMLInputElement>('input[type="radio"]');
+    await act(async () => radios[2]!.click());
+    await act(async () => radios[0]!.click());
+    expect(mutate).toHaveBeenLastCalledWith('/preferences', 'PATCH', { locale: null });
+    expect(document.documentElement.lang).toBe('en-US');
+});
+
 it('doesn’t render with en-US alone', async () => {
     await open(page(['en-US']));
     expect(host.querySelector('[data-slot="language-preference"]')).toBeNull();

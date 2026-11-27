@@ -35,7 +35,8 @@ export interface I18nCatalogShape {
     /**
      * A page's locale and dictionaries: the locale the request resolves to,
      * the namespaces' files for it and the locales it falls back to, the
-     * manifest of those locales, and the locales Settings › Language offers.
+     * manifest of those locales, and the locales Settings › Language offers:
+     * the same eligible set the request was negotiated over.
      */
     page(sources: LocaleSources, namespaces: readonly string[]): PageI18n;
 }

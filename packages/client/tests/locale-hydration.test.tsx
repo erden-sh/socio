@@ -6,7 +6,14 @@ import { createMemoryRouter, RouterProvider } from 'react-router';
 import { afterAll, afterEach, beforeAll, beforeEach, expect, it } from 'vitest';
 
 import { useTranslation } from '@socio/i18n/react';
-import { APP_LOCALE, compareText, formatNumber, lowerText, setActiveLocale } from '@socio/shared/locale';
+import {
+    APP_LOCALE,
+    compareText,
+    formatNumber,
+    lowerText,
+    scopeActiveLocale,
+    setActiveLocale,
+} from '@socio/shared/locale';
 import type { PageSummary } from '@socio/shared/pages/page-library';
 import type { Space } from '@socio/shared/types';
 import type { PageI18n } from '@socio/shared/web/web';
@@ -241,5 +248,44 @@ it('renders and hydrates a page in its inlined locale', async () => {
         expect(host.querySelector('[data-slot="probe"]')!.textContent).toBe('Idioma · 1,234.5 · Idioma: español');
     } finally {
         setActiveLocale(APP_LOCALE);
+    }
+});
+
+/**
+ * Successive and interleaved page renders in two locales, as the server's
+ * renderer scopes them (entry.server.tsx): every formatter, made at module
+ * load (`formatNumber`) or kept in a cache (`bucketLabel`'s, by zone and
+ * shape), writes in the render's own locale, never the one before it.
+ */
+it('formats each render in its own locale, whatever rendered before', async () => {
+    const { AsyncLocalStorage } = await import('node:async_hooks');
+    const { bucketLabel } = await import('../src/modules/operations/format');
+    const store = new AsyncLocalStorage<string>();
+    scopeActiveLocale(() => store.getStore());
+    const at = Date.UTC(2026, 9, 22, 12);
+    function Report() {
+        return (
+            <p>
+                {bucketLabel(at, 'day', 'UTC')} | {formatNumber(1234.5)} | {['Zebra', 'Äpple'].sort(compareText)[0]}
+            </p>
+        );
+    }
+    const render = (locale: string) =>
+        store.run(locale, async () => {
+            const first = renderToString(<Report />).replaceAll('<!-- -->', '');
+            // Another request renders while this one waits.
+            await new Promise((resolve) => setTimeout(resolve, 5));
+            const second = renderToString(<Report />).replaceAll('<!-- -->', '');
+            return [first, second];
+        });
+    try {
+        const [ptBr, enUs, sv] = await Promise.all([render('pt-BR'), render('en-US'), render('sv-SE')]);
+        expect(ptBr).toEqual(['<p>22 de out. | 1.234,5 | Äpple</p>', '<p>22 de out. | 1.234,5 | Äpple</p>']);
+        expect(enUs).toEqual(['<p>Oct 22 | 1,234.5 | Äpple</p>', '<p>Oct 22 | 1,234.5 | Äpple</p>']);
+        expect(sv![0]).toMatch(/^<p>22 okt\. \| 1\s234,5 \| Zebra<\/p>$/);
+        // Then en-US alone, after the others filled every cache.
+        expect(await render('en-US')).toEqual(enUs);
+    } finally {
+        scopeActiveLocale(undefined);
     }
 });

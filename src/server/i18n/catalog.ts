@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { brotliCompressSync, constants, gzipSync } from 'node:zlib';
 
 import { buildCatalog, type Sources } from '@socio/i18n/catalog';
-import { availableLocales, narrowManifest, offeredLocales, type I18nManifest } from '@socio/i18n/manifest';
+import { eligibleLocales, explicitLocales, narrowManifest, type I18nManifest } from '@socio/i18n/manifest';
 import { resolveRequestLocale } from '@socio/i18n/negotiate';
 import { isSupportedLocale, localeDir, resolutionChain } from '@socio/i18n/registry';
 
@@ -110,8 +110,8 @@ export function loadI18nCatalog(location: CatalogLocation): I18nCatalogShape {
               : { manifest: { release, locales: {} } as I18nManifest, read: () => undefined };
     const { manifest, read } = loaded;
     const bodies = new Map<string, { body: string; etag: string }>();
-    const available = availableLocales(manifest);
-    const offered = offeredLocales(manifest);
+    const eligible = eligibleLocales(manifest);
+    const explicit = explicitLocales(manifest);
     const parsed = new Map<string, unknown>();
     const dictionary = (locale: string, ns: string) => {
         const hash = manifest.locales[locale]?.ns[ns]?.hash;
@@ -143,7 +143,7 @@ export function loadI18nCatalog(location: CatalogLocation): I18nCatalogShape {
         },
         file: read,
         page(sources, namespaces) {
-            const locale = resolveRequestLocale(sources, available);
+            const locale = resolveRequestLocale(sources, eligible, explicit);
             const chain = resolutionChain(locale);
             const resources: Record<string, Record<string, unknown>> = {};
             for (const tag of chain) {
@@ -159,7 +159,7 @@ export function loadI18nCatalog(location: CatalogLocation): I18nCatalogShape {
                 dir: localeDir(locale),
                 manifest: narrowManifest(manifest, [locale]),
                 resources,
-                offered,
+                offered: eligible,
             };
         },
     };

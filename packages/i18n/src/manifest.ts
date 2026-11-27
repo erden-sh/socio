@@ -1,4 +1,4 @@
-import { LOCALES, SOURCE_LOCALE, isSupportedLocale, resolutionChain } from './registry.js';
+import { LOCALES, PSEUDO_LOCALE, SOURCE_LOCALE, isSupportedLocale, resolutionChain } from './registry.js';
 
 /**
  * The dictionaries a build holds (`dist/i18n/manifest.json`), as
@@ -78,15 +78,23 @@ export const languageSettingVisible = (manifest: I18nManifest | undefined) =>
     hasLanguageChoice(offeredLocales(manifest));
 
 /**
- * The locales a request may resolve to: those with any strings in this
- * manifest (a locale with none would only render en-US under another
- * `lang`), and en-US.
+ * The locales a request or a device may resolve to: exactly the offered
+ * ones (`offeredLocales`). One set for the server's negotiation, the
+ * `socio_locale` cookie, a saved preference and the Language setting's
+ * "Match my device", so a partly translated locale is never picked, and
+ * the server and the browser always agree. The pseudo-locale is the one
+ * exception, and only when named explicitly (`explicitLocales`).
  */
-export function availableLocales(manifest: I18nManifest | undefined): string[] {
-    const found = Object.entries(manifest?.locales ?? {})
-        .filter(([locale, entry]) => isSupportedLocale(locale) && entry.coverage > 0)
-        .map(([locale]) => locale);
-    return found.includes(SOURCE_LOCALE) ? found : [SOURCE_LOCALE, ...found];
+export const eligibleLocales = (manifest: I18nManifest | undefined): string[] => offeredLocales(manifest);
+
+/**
+ * What a cookie or a saved preference may name: the eligible locales, and
+ * the pseudo-locale when the build has it, for tests and smoke checks. Never
+ * negotiated from a browser's languages.
+ */
+export function explicitLocales(manifest: I18nManifest | undefined): string[] {
+    const eligible = eligibleLocales(manifest);
+    return manifest?.locales[PSEUDO_LOCALE] ? [...eligible, PSEUDO_LOCALE] : eligible;
 }
 
 /** The manifest with only `locales` and the locales their keys fall back to kept (es-US brings es-419 and en-US). */

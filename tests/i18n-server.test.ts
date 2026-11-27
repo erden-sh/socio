@@ -36,8 +36,16 @@ const SOURCES = {
             Array.from({ length: 60 }, (_, i) => [`line${i}`, `The language line number ${i}`]),
         ),
     },
-    'es-419': { common: { product: 'Socio (es)' } },
+    // Fully translated: over the coverage gate, as es-US is through it.
+    'es-419': {
+        common: { product: 'Socio (es)' },
+        'settings.language': Object.fromEntries(
+            Array.from({ length: 60 }, (_, i) => [`line${i}`, `La línea de idioma número ${i}`]),
+        ),
+    },
     'es-US': {},
+    // Barely started: under the gate, so nothing picks it.
+    'pt-BR': { common: { product: 'Socio (pt)' } },
 };
 
 function sourceDir() {
@@ -180,14 +188,29 @@ describe('the catalog', () => {
             'en-US': { common: { product: 'Socio' } },
         });
         expect(Object.keys(page.manifest.locales)).toEqual(['en-US', 'es-419']);
-        // es-419 is under the gate: nothing to choose yet.
-        expect(page.offered).toEqual(['en-US']);
+        // The offered set is the one the request was negotiated over.
+        expect(page.offered).toEqual(['en-US', 'es-419', 'es-US']);
         // es-US has no file of its own: it falls through to es-419's strings.
         const us = catalog().page({ preference: 'es-US' }, ['common']);
         expect(us.locale).toBe('es-US');
         expect(Object.keys(us.resources)).toEqual(['es-419', 'en-US']);
-        // pt-BR has no strings at all: the request renders en-US.
-        expect(catalog().page({ preference: 'pt-BR', acceptLanguage: 'pt-BR' }, ['common']).locale).toBe('en-US');
+    });
+
+    it('never picks a locale under the coverage gate, from a browser, a cookie or a preference', () => {
+        const loaded = catalog();
+        expect(loaded.manifest().locales['pt-BR']!.coverage).toBeGreaterThan(0);
+        for (const sources of [
+            { acceptLanguage: 'pt-BR,pt;q=0.9' },
+            { cookie: 'pt-BR', acceptLanguage: 'pt-BR' },
+            { preference: 'pt-BR', acceptLanguage: 'pt-BR' },
+        ]) {
+            const page = loaded.page(sources, ['common']);
+            expect(page.locale, JSON.stringify(sources)).toBe('en-US');
+            expect(page.offered).not.toContain('pt-BR');
+        }
+        // The pseudo-locale only when named.
+        expect(loaded.page({ cookie: 'en-XA' }, ['common']).locale).toBe('en-XA');
+        expect(loaded.page({ acceptLanguage: 'en-XA' }, ['common']).locale).toBe('en-US');
     });
 
     it('resolves a request: preference, cookie, Accept-Language, en-US', async () => {

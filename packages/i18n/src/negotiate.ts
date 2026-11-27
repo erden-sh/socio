@@ -123,14 +123,20 @@ export const LOCALE_COOKIE = 'socio_locale';
 /**
  * The request's locale: the preference, then the cookie, then
  * Accept-Language, then en-US. A preference or cookie names a registered
- * locale exactly; it is taken when `available` holds it. Accept-Language
- * negotiates over `available`, which is what the server has strings for.
+ * locale exactly, and is taken when `explicit` holds it; Accept-Language
+ * negotiates over `eligible`. Both come from the manifest
+ * (`eligibleLocales`, `explicitLocales`): the locales over the coverage
+ * gate, so a partly translated one is never picked.
  */
-export function resolveRequestLocale(sources: LocaleSources, available: readonly string[]): string {
+export function resolveRequestLocale(
+    sources: LocaleSources,
+    eligible: readonly string[],
+    explicit: readonly string[] = eligible,
+): string {
     for (const chosen of [sources.preference, sources.cookie]) {
-        if (isSupportedLocale(chosen) && available.includes(chosen)) {
+        if (isSupportedLocale(chosen) && explicit.includes(chosen)) {
             return chosen;
         }
     }
-    return negotiateLocale(parseAcceptLanguage(sources.acceptLanguage), available);
+    return negotiateLocale(parseAcceptLanguage(sources.acceptLanguage), eligible);
 }

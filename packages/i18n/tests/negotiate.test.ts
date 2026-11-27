@@ -58,9 +58,17 @@ describe('resolveRequestLocale', () => {
         expect(resolveRequestLocale({}, available)).toBe('en-US');
     });
 
-    it('ignores a preference or cookie the server has no strings for, or that is not registered', () => {
+    it('ignores a preference or cookie outside the eligible set, or that is not registered', () => {
         expect(resolveRequestLocale({ preference: 'pt-BR', acceptLanguage: 'es' }, available)).toBe('es-419');
         expect(resolveRequestLocale({ cookie: 'xx-YY<script>' }, available)).toBe('en-US');
+        // pt-BR under the gate: a Portuguese browser gets en-US.
+        expect(resolveRequestLocale({ acceptLanguage: 'pt-BR,pt;q=0.9' }, available)).toBe('en-US');
+    });
+
+    it('takes the pseudo-locale only when named explicitly', () => {
+        const explicit = [...available, 'en-XA'];
+        expect(resolveRequestLocale({ cookie: 'en-XA' }, available, explicit)).toBe('en-XA');
+        expect(resolveRequestLocale({ acceptLanguage: 'en-XA' }, available, explicit)).toBe('en-US');
     });
 });
 

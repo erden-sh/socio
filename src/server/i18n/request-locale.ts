@@ -16,6 +16,10 @@ export function requestLocaleSources(c: Context, preference?: string | null): Lo
     };
 }
 
-/** The request's locale among `available` (`availableLocales(manifest)`). */
-export const requestLocale = (c: Context, available: readonly string[], preference?: string | null) =>
-    resolveRequestLocale(requestLocaleSources(c, preference), available);
+/** The request's locale among `eligible` (`eligibleLocales(manifest)`; `explicit` adds the pseudo-locale). */
+export const requestLocale = (
+    c: Context,
+    eligible: readonly string[],
+    preference?: string | null,
+    explicit: readonly string[] = eligible,
+) => resolveRequestLocale(requestLocaleSources(c, preference), eligible, explicit);

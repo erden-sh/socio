@@ -30,7 +30,8 @@ export {
 } from './registry.js';
 export {
     acceptsServerNamespace,
-    availableLocales,
+    eligibleLocales,
+    explicitLocales,
     hasLanguageChoice,
     languageSettingVisible,
     namespacePath,

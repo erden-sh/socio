@@ -4,7 +4,8 @@ import { buildCatalog, CatalogError, type Sources } from '../src/catalog.js';
 import { sourceHash } from '../src/keys.js';
 import {
     acceptsServerNamespace,
-    availableLocales,
+    eligibleLocales,
+    explicitLocales,
     languageSettingVisible,
     narrowManifest,
     offeredLocales,
@@ -184,8 +185,10 @@ describe('the manifest’s gate', () => {
         const later = fixture({ 'en-US': 1, 'es-419': 0.97, 'es-US': 0.97, 'pt-BR': 0.2, 'en-XA': 1 });
         expect(offeredLocales(later)).toEqual(['en-US', 'es-419', 'es-US']);
         expect(languageSettingVisible(later)).toBe(true);
-        // What a request may resolve to: any locale with strings.
-        expect(availableLocales(later)).toEqual(['en-US', 'es-419', 'es-US', 'pt-BR', 'en-XA']);
+        // What a request or a device may resolve to: the same set, never the thin pt-BR.
+        expect(eligibleLocales(later)).toEqual(['en-US', 'es-419', 'es-US']);
+        // A cookie or preference may also name the pseudo-locale, for smoke checks.
+        expect(explicitLocales(later)).toEqual(['en-US', 'es-419', 'es-US', 'en-XA']);
     });
 
     it('narrows to a locale and its chain', () => {

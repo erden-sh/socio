@@ -11,8 +11,10 @@
  * browser puts Ä after Z). Nothing else sets it, so the server's own text
  * stays en-US.
  *
- * A formatter made once at module load keeps the locale active then: make
- * it where it is used, or through these helpers at the call.
+ * The formatters these helpers make follow the active locale at each call,
+ * so one made at module load or kept in a cache is safe across requests.
+ * A cache of formatters made with `new Intl.*` must key on the locale
+ * (tests/integration/intl-caches.test.ts).
  *
  * Times are separate: `<LocalTime>` renders UTC on the server and the
  * reader's own words after hydration.
@@ -52,6 +54,26 @@ const perLocale = <T>(make: (locale: string) => T) => {
     };
 };
 
+/**
+ * A formatter that follows the active locale: each call (`format`,
+ * `formatToParts`, `resolvedOptions`…) goes to the instance for the locale
+ * active then, made once per locale. So a formatter made once at module
+ * load, or kept in a cache, never carries one request's locale into
+ * another's: the cache key needs no locale, because the formatter has one
+ * per locale inside. With an explicit `locale`, the factories below return
+ * a plain instance for it instead.
+ */
+function following<T extends object>(make: (locale: string) => T): T {
+    const instance = perLocale(make);
+    return new Proxy(instance(APP_LOCALE), {
+        get(_target, property) {
+            const current = instance(activeLocale()) as Record<PropertyKey, unknown>;
+            const value = current[property];
+            return typeof value === 'function' ? value.bind(current) : value;
+        },
+    });
+}
+
 const collator = perLocale((locale) => new Intl.Collator(locale));
 
 /** Orders display text (names, titles) for `Array.prototype.sort`. */
@@ -60,34 +82,47 @@ export const compareText = (a: string, b: string) => collator(activeLocale()).co
 /** Lower-cases text for matching a search, the same everywhere. */
 export const lowerText = (text: string) => text.toLocaleLowerCase(activeLocale());
 
-/** A number formatter in the active locale (`1,234.5` in en-US), or in `locale`. */
-export const numberFormat = (options?: Intl.NumberFormatOptions, locale: string = activeLocale()) =>
-    new Intl.NumberFormat(locale, options);
+/** A number formatter in the active locale at each call (`1,234.5` in en-US), or in `locale`. */
+export const numberFormat = (options?: Intl.NumberFormatOptions, locale?: string): Intl.NumberFormat =>
+    locale === undefined
+        ? following((active) => new Intl.NumberFormat(active, options))
+        : new Intl.NumberFormat(locale, options);
 
-const plain = perLocale((locale) => numberFormat(undefined, locale));
+const plain = numberFormat();
 
 /** A count or amount in the active locale: `12,345`. */
-export const formatNumber = (value: number) => plain(activeLocale()).format(value);
+export const formatNumber = (value: number) => plain.format(value);
 
 /**
- * A date and time formatter in the active locale (`Oct 15, 3:04 PM` in
- * en-US), or in `locale`. In the reader's time zone: render it through
- * `<LocalTime>`.
+ * A date and time formatter in the active locale at each call (`Oct 15,
+ * 3:04 PM` in en-US), or in `locale`. In the reader's time zone: render it
+ * through `<LocalTime>`.
  */
-export const dateTimeFormat = (options?: Intl.DateTimeFormatOptions, locale: string = activeLocale()) =>
-    new Intl.DateTimeFormat(locale, options);
+export const dateTimeFormat = (options?: Intl.DateTimeFormatOptions, locale?: string): Intl.DateTimeFormat =>
+    locale === undefined
+        ? following((active) => new Intl.DateTimeFormat(active, options))
+        : new Intl.DateTimeFormat(locale, options);
 
-/** A relative time formatter (`in 3 days`, `yesterday`) in the active locale, or in `locale`. */
-export const relativeTimeFormat = (options?: Intl.RelativeTimeFormatOptions, locale: string = activeLocale()) =>
-    new Intl.RelativeTimeFormat(locale, options);
+/** A relative time formatter (`in 3 days`, `yesterday`) in the active locale at each call, or in `locale`. */
+export const relativeTimeFormat = (
+    options?: Intl.RelativeTimeFormatOptions,
+    locale?: string,
+): Intl.RelativeTimeFormat =>
+    locale === undefined
+        ? following((active) => new Intl.RelativeTimeFormat(active, options))
+        : new Intl.RelativeTimeFormat(locale, options);
 
-/** A list formatter (`Ada, Alice, and Bob`) in the active locale, or in `locale`. */
-export const listFormat = (options?: Intl.ListFormatOptions, locale: string = activeLocale()) =>
-    new Intl.ListFormat(locale, options);
+/** A list formatter (`Ada, Alice, and Bob`) in the active locale at each call, or in `locale`. */
+export const listFormat = (options?: Intl.ListFormatOptions, locale?: string): Intl.ListFormat =>
+    locale === undefined
+        ? following((active) => new Intl.ListFormat(active, options))
+        : new Intl.ListFormat(locale, options);
 
-/** The plural rules (`one`, `few`, `other`…) of the active locale, or of `locale`. */
-export const pluralRules = (options?: Intl.PluralRulesOptions, locale: string = activeLocale()) =>
-    new Intl.PluralRules(locale, options);
+/** The plural rules (`one`, `few`, `other`…) of the active locale at each call, or of `locale`. */
+export const pluralRules = (options?: Intl.PluralRulesOptions, locale?: string): Intl.PluralRules =>
+    locale === undefined
+        ? following((active) => new Intl.PluralRules(active, options))
+        : new Intl.PluralRules(locale, options);
 
 /**
  * A language's name (`es-US` → `español (Estados Unidos)` in `es-US`,
