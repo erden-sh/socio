@@ -1,0 +1,81 @@
+# AI reply reports (CB-382), with workspace A up under `servers.mjs --reports` (run.mjs --credentials):
+# Ada opens A's marker chat from Chats, long-presses the socio's reply and picks Bad reply: the
+# report sheet asks first (the shared confirmation, the reasons, the note and its counter). Report is
+# off until a reason is picked; she picks Offensive, types a note and reports. The reply's Bad reply
+# is on, and the sheet is gone. Once the fake collector has taken it (the server sends every minute)
+# and the chat is opened again, "Shared with Ingenio" shows under the reply, and removing the
+# thumbs-down asks first that it doesn't recall the report. The room, sharing off and offline are
+# README's steps (End-to-end tests, AI reply reports).
+appId: ${APP_ID}
+name: reply-reports
+---
+- runFlow: launch.yaml
+- runFlow:
+    file: common/add-workspace.yaml
+    env:
+      ORIGIN: ${ORIGIN_A}
+- runFlow:
+    file: common/sign-in.yaml
+    env:
+      EMAIL: ada@example.test
+      SECRET: ${PASSWORD}
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 30000
+- runFlow:
+    file: common/tab.yaml
+    env:
+      TAB: Chats
+- extendedWaitUntil:
+    visible:
+      text: '.*${CHAT_A}.*'
+    timeout: 30000
+- tapOn:
+    text: '.*${CHAT_A}.*'
+- extendedWaitUntil:
+    visible:
+      text: '(?s).*That is the end of the long answer.*'
+    timeout: 30000
+- longPressOn:
+    text: '(?s).*That is the end of the long answer.*'
+- tapOn: 'Bad reply'
+- extendedWaitUntil:
+    visible:
+      id: report-sheet-body
+    timeout: 20000
+- assertVisible: 'Report this reply to Ingenio?'
+- assertVisible:
+    id: report-reason-offensive
+- takeScreenshot: reply-reports-sheet
+- tapOn:
+    id: report-reason-offensive
+# The sheet opens at the medium detent: a swipe up on it takes it to large, then scrolls it.
+- repeat:
+    times: 4
+    while:
+      notVisible:
+        id: report-note-count
+    commands:
+      - swipe:
+          start: 50%,85%
+          end: 50%,40%
+- tapOn:
+    id: report-note
+- inputText: 'A made-up test note'
+- takeScreenshot: reply-reports-sheet-filled
+# Report sits under the keyboard: the sheet scrolls it up above it (its keyboard insets).
+- swipe:
+    start: 50%,55%
+    end: 50%,15%
+- swipe:
+    start: 50%,55%
+    end: 50%,15%
+- takeScreenshot: reply-reports-sheet-confirm
+- tapOn:
+    id: report-confirm
+- extendedWaitUntil:
+    notVisible:
+      id: report-sheet-body
+    timeout: 10000
+- takeScreenshot: reply-reports-reported

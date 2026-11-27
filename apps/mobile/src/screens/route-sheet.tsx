@@ -80,6 +80,8 @@ export function RouteSheetScreen({ route }: StaticScreenProps<{ id: string }>) {
             className="bg-sheet"
             {...(content.title === undefined ? {} : { stickyHeaderIndices: [0] })}
             contentContainerStyle={{ paddingBottom: 16 + insets.bottom }}
+            // A field low in the sheet (a report's note, CB-382) stays above the keyboard on iOS.
+            automaticallyAdjustKeyboardInsets
             {...keyboardScroll(Platform.OS)}
         >
             {content.title === undefined ? null : (

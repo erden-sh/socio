@@ -581,6 +581,22 @@ node apps/mobile/e2e/servers.mjs --social --device emulator-5554
 node apps/mobile/e2e/run.mjs --credentials <file> --env PROVIDER=google apps/mobile/e2e/flows/social-sign-in.yaml
 ```
 
+**AI reply reports** (CB-382): `servers.mjs --reports` starts the same fake cloud (with `--social` too,
+one fake for both), which grants `reports:write` and is the reports collector as well
+(`SOCIO_CLOUD_REPORTS_ORIGIN`, its own origin), and once each workspace has enrolled, Ada turns "Share AI
+reply reports with Ingenio" on. A thumbs-down on a socio's reply then opens the report sheet. The leader
+sends queued reports every minute, so a report shows "Shared with Ingenio" a minute or so after it is
+made. `POST /web/reports?sharing=off` (`on` again) has Ada turn sharing off, `POST
+/web/reports?collector=hold` keeps reports queued (the fake answers 503; `take` takes them again), and
+`GET /web/reports` gives the admins' view and how many reports the fake took. In the seeded room the socios
+answer Ada's messages, so signed in as Ben a report there says Ada's message goes too. The fake keeps what
+it takes in memory; nothing leaves the machine.
+
+```sh
+node apps/mobile/e2e/servers.mjs --reports --device emulator-5554
+curl -s -X POST 'http://127.0.0.1:4549/web/reports?sharing=off'
+```
+
 ### Chaos
 
 `e2e/chaos-proxy.mjs` sits between the app and one workspace, so a flow (or a person) can break the

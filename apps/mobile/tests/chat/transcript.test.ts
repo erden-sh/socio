@@ -200,3 +200,17 @@ describe('message times', () => {
         expect(bubbleLabel({ text: 'Hi', speaker: { kind: 'you', name: 'You' }, at }, now)).toBe('You: Hi, 10:01 AM');
     });
 });
+
+describe('the socio a reply names (CB-382)', () => {
+    it('carries the runner’s socio stamp on a reply row, and nothing when there is none', () => {
+        const stamped: Message = {
+            id: 'a1',
+            role: 'assistant',
+            content: 'Hi',
+            metadata: { socioDot: 'dot-b' },
+        } as Message;
+        const rows = transcriptRows([run(1, [stamped, { id: 'a2', role: 'assistant', content: 'Hey' }])], NO_LIVE_TURN);
+        expect(rows[0]).toMatchObject({ kind: 'reply', socioId: 'dot-b' });
+        expect(rows[1]).not.toHaveProperty('socioId');
+    });
+});

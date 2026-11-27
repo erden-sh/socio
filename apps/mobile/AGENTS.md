@@ -1483,7 +1483,12 @@ ported (no Effect), its test's cases as specs:
   (`chat-delete`), reactions (`reaction`, `PUT`/`DELETE …/messages/:id/reactions/:kind`) and a queued
   message's edit and cancel (`steering-edit`, `steering-cancel`, `…/steering/:id`). Lanes:
   `conversation:<chat>`, `reaction:<chat>/<message>`, `steering:<chat>`, never the chat's message lane; a
-  new chat's write waits for its create and joins the local id's lane while that holds a write. Written
+  new chat's write waits for its create and joins the local id's lane while that holds a write. A
+  thumbs-down being added may carry the AI reply report the person confirmed (CB-382, `report`: reason,
+  trimmed note, consent, `shownByOther`), sent as the PUT's body; such a row is payload version 2
+  (`reactionVersion`), so an older build keeps it unsent rather than send it plain; a fold takes the newest
+  report, and a removal drops it. The answer's `report` is never an error: it goes to `onReactions` with
+  the view (`ReactionReport`). Written
   through `renameChat`, `archiveChat`, `deleteChat`, `react`, `editQueuedMessage` and
   `cancelQueuedMessage`: a rename, archive or delete first discards its lane's refused ones (a reaction,
   its message's), a rename, archive or the same reaction folds into its lane's queued row, and a
@@ -2524,6 +2529,38 @@ Chats) by the chat list's, Home's and Search's rows (`useOpenChat`, `chatAction`
   reaction write's answer (`onReactions`; a GET sent before it is asked again), the outbox's reaction
   rows laid over in order (`reactionsShown`). The newest stored reply, and any with reactions, keep the
   row of four 44 pt toggles under them.
+- **AI reply reports** (CB-382, docs/specs/REPLY-REPORTS.md; the web's ReportDialog and MessageReactions;
+  rules and words in `src/chat/reply-reports.ts`, the screen's part `screens/reply-report.tsx`). Only while
+  the shell's workspace row says `replyReports` (`replyReportsOf`; null, or an older server with none, is a
+  plain thumbs-down and no report UI). A thumbs-down, the row's or the menu's "Bad reply"
+  (`reactionPress`), asks `GET …/messages/:id/report` first (`readReportPreview`, online only, never
+  queued), then opens the confirmation as a `TallSheet` (`useRouteSheet`): `REPORT_CONFIRMATION`'s title and
+  body with `{socio}` the reply's own socio (`ReplyRow.socioId`, the stored reply's `SOCIO_METADATA` or a
+  room's live `socioId`, named by the socios, else "The socio", never the chat's), the other person's line
+  exactly when the server's `promptByOther` says so (`{author}` its `author`, else "Another person"), the
+  `REPORT_REASONS` as radios, an optional note whose counter and warning count code points after trimming
+  (`noteCount`, `REPORT_NOTE_MAX`), Cancel (sends nothing) and Report (disabled without a reason or over
+  the limit), which queues the thumbs-down with its report (`react`, `reportRequest`; `shownByOther` is
+  whether the sheet showed that line, `consent` the preview's, else the workspace's). The texts and
+  reasons are `@socio/shared/chat/reply-reports`'s; the rest are the web's words by code
+  (`REPORT_WORDS`, `REPORT_NOTICES`), never the server's. The preview's `sharing: false` is a plain
+  thumbs-down (and the shell pulled); a refusal says "Couldn’t check what this report would include. Try
+  again." and sends nothing. Offline (`reconnecting`, or a preview with no answer) the thumbs-down goes
+  plain through the outbox and the reply is offered "Report it now?" (Report, Not now) once the app is
+  back and the row has gone (`offersReport`; the offers live in the reactions store's memory, `offer`):
+  Report opens the same sheet, and the report on the existing thumbs-down makes it (`queued`).
+  Under the reply (`lines`): "Shared with Ingenio" while the reader's thumbs-down is there and its report
+  `shared` (nothing for `queued`, and nothing for `failed`, which is final); for 8 s the quiet line for
+  `not-sharing`, `consent-changed` or `unavailable` (the store's `report`, numbered), which also pulls the
+  shell; nothing for `queued` or `already`. Each notice runs out on its own clock (`useReportNotice`,
+  `screens/report-notice.ts`), whatever outcome follows it. A queued report goes to Ingenio later with
+  nothing to tell the phone, so while the chat shows in the foreground and online its reactions are asked
+  again every `REPORT_POLL_MS` (15 s) until no report is queued (the store's `watchQueued`), and once more
+  on each reconnect. Removing a thumbs-down whose report went, or a thumbs-up in its
+  place, asks first in a system alert (`removeSharedAsk`: "Removing it doesn't recall the report."); a
+  withdrawn or kept answer shows nothing, as on the web. `tests/chat/reply-reports.test.ts`, the report
+  cases in `tests/sync/chat-manage.test.ts` and `tests/sync/reactions.test.ts`; `e2e/servers.mjs
+  --reports` on devices (README).
 - **The name suggestion** (`src/chat/name-suggestion.ts`, CB-292): read as a server chat opens, shown
   above the composer with Accept, Not now and Customize, each sent at once, online only (a 404 means it
   was settled elsewhere), then a pull.

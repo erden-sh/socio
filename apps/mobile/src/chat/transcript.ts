@@ -6,8 +6,8 @@ import { spokenMessage, splitQuote } from '@socio/shared/chat/quote-reply';
 import { dateTimeFormat } from '@socio/shared/locale';
 import type { LocalId } from '@socio/shared/mascot';
 import type { LiveTurn } from '@socio/shared/rooms/live-turn';
-import { messageAt } from '@socio/shared/runs/socio-fields';
-import type { CallReceipt } from '@socio/shared/types';
+import { messageAt, socioField } from '@socio/shared/runs/socio-fields';
+import { type CallReceipt, SOCIO_METADATA } from '@socio/shared/types';
 
 import type { ToneName } from '../theme/theme';
 
@@ -89,6 +89,11 @@ export interface ReplyRow {
     readonly stored: boolean;
     /** In a room: the socio that wrote it. */
     readonly speaker?: Speaker;
+    /**
+     * The socio that wrote it, by id, when the reply says (the runner's
+     * `SOCIO_METADATA` stamp, a room's live `socioId`): a report names it (CB-382).
+     */
+    readonly socioId?: string;
     /** When it was written (the run's message times), when known. */
     readonly at?: number;
 }
@@ -164,9 +169,18 @@ function rowOf(
     if (message.role === 'assistant') {
         const streaming = message.id === streamingId;
         // A reply with no words yet (a tool call alone) has no row, unless it is being written.
+        const socioId = socioField(message, SOCIO_METADATA);
         return text.trim() === '' && !streaming
             ? null
-            : { kind: 'reply', id: message.id, text, streaming, stored: stored && !streaming, ...when };
+            : {
+                  kind: 'reply',
+                  id: message.id,
+                  text,
+                  streaming,
+                  stored: stored && !streaming,
+                  ...when,
+                  ...(typeof socioId === 'string' && socioId !== '' ? { socioId } : {}),
+              };
     }
     return null;
 }

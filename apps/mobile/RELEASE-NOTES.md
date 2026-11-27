@@ -5,7 +5,15 @@ build's "What to Test" in TestFlight (AGENTS.md, Versions). An entry is `## <ver
 <YYYY-MM-DD>)`, or `(build pending)` until it is uploaded, then a short **What to test** list in plain
 words, grouped by screen.
 
-## 0.2.9 (build pending)
+## 0.2.10 (build pending)
+
+**What to test**
+
+Chats
+
+- Give a socio's reply a thumbs-down to report it to Ingenio, with a reason and an optional note, when your workspace shares AI reply reports.
+
+## 0.2.9 (build 3974, 2026-11-27)
 
 Your notes on 0.2.7: a QR scanner inside the app, a clearer Add a device screen, and quote-reply; plus folders in Spaces, and Google and Apple sign-in.
 
