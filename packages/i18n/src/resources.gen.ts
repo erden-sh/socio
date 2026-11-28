@@ -6457,7 +6457,6 @@ export interface EnglishResources {
         };
         code: {
             label: 'Code shown on your new device';
-            placeholder: '6-digit code';
             hint: 'The 6 digits shown on that device.';
             'time-left': 'Time left: {{left}}.';
             wrong: 'That code didn’t match. Try again.';

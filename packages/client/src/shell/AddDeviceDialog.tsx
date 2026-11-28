@@ -17,7 +17,14 @@ import { api } from '../lib/api';
 
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
+import {
+    InputOTP,
+    InputOTPGroup,
+    InputOTPSeparator,
+    InputOTPSlot,
+    pasteDigits,
+    REGEXP_ONLY_DIGITS,
+} from '@/components/ui/input-otp';
 
 /** How often the page asks whether a device claimed the code (the server ends a claim nobody polls). */
 export const PAIR_POLL_MS = 1500;
@@ -146,6 +153,14 @@ export const AddDeviceDialog = onDemand(
         /** A confirm is on its way: a second (another 6th digit, or Enter) is dropped. */
         const confirming = useRef(false);
         const field = useRef<HTMLInputElement>(null);
+        /** A confirm ended: the field, enabled again, takes the focus back. */
+        const refocus = useRef(false);
+        useEffect(() => {
+            if (!busy && refocus.current) {
+                refocus.current = false;
+                field.current?.focus();
+            }
+        }, [busy]);
 
         const mint = useCallback(async () => {
             const mine = ++minting.current;
@@ -264,7 +279,6 @@ export const AddDeviceDialog = onDemand(
                     // A wrong code: the count only as the server gave it.
                     const count = typeof said.triesLeft === 'number' && said.triesLeft > 0 ? said.triesLeft : undefined;
                     setWrong(count === undefined ? {} : { triesLeft: count });
-                    field.current?.focus();
                 } else if (answer.success && answer.data.state === 'denied') {
                     current.current = undefined;
                     setEnded({ kind: 'mismatch' });
@@ -295,6 +309,8 @@ export const AddDeviceDialog = onDemand(
                 setDigits('');
             } finally {
                 confirming.current = false;
+                // The field is disabled on the way: back in it for the next try, if it stays.
+                refocus.current = true;
                 setBusy(false);
             }
         };
@@ -422,7 +438,7 @@ export const AddDeviceDialog = onDemand(
                                 }
                             }}
                         >
-                            <Input
+                            <InputOTP
                                 ref={field}
                                 aria-label={t('shell.add-device:code.label')}
                                 aria-describedby="add-device-code-hint"
@@ -431,22 +447,35 @@ export const AddDeviceDialog = onDemand(
                                 autoComplete="one-time-code"
                                 data-1p-ignore
                                 data-lpignore="true"
-                                pattern="[0-9]{6}"
-                                placeholder={t('shell.add-device:code.placeholder')}
-                                className="text-center font-mono tracking-widest"
+                                maxLength={6}
+                                pattern={REGEXP_ONLY_DIGITS}
+                                // A pasted "123 456" or "123-456" keeps its digits.
+                                pasteTransformer={pasteDigits}
+                                containerClassName="justify-center"
+                                autoFocus
+                                disabled={busy}
                                 required
                                 value={digits}
-                                onChange={(e) => {
-                                    // No maxLength on the field: a pasted "123 456" or
-                                    // "123-456" arrives whole, then keeps its 6 digits.
-                                    const next = e.target.value.replace(/\D/g, '').slice(0, 6);
+                                onChange={(next) => {
                                     setDigits(next);
-                                    // The 6th digit sends it; confirm() takes one at a time.
+                                    // The 6th digit, typed or pasted, sends it; confirm() takes one at a time.
                                     if (next.length === 6 && next !== digits) {
                                         void confirm(next);
                                     }
                                 }}
-                            />
+                            >
+                                <InputOTPGroup>
+                                    <InputOTPSlot index={0} />
+                                    <InputOTPSlot index={1} />
+                                    <InputOTPSlot index={2} />
+                                </InputOTPGroup>
+                                <InputOTPSeparator />
+                                <InputOTPGroup>
+                                    <InputOTPSlot index={3} />
+                                    <InputOTPSlot index={4} />
+                                    <InputOTPSlot index={5} />
+                                </InputOTPGroup>
+                            </InputOTP>
                             <p id="add-device-code-hint" className="text-sm text-muted-foreground">
                                 {t('shell.add-device:code.hint')}
                                 {claimLeft !== undefined && (

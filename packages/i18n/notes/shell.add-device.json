@@ -13,7 +13,7 @@
     "asking.quoted": "The subject when the device gave a name of its own; {{name}} is that name, quoted.",
     "asking.named": "The subject for the app's own device name, like \"iPhone\"; the _vowel form is for names that start with a vowel (English \"An\"). Use the same words for both if your language doesn't differ.",
     "platforms.new": "Inside done and finishing when nothing names the device; lowercase.",
-    "code.label": "Screen-reader label of the field for the 6-digit code the new device shows.",
+    "code.label": "Screen-reader label of the field for the 6-digit code the new device shows (drawn as six boxes, 3 and 3).",
     "code.time-left": "How long the request stays open; {{left}} is minutes and seconds like \"1:59\".",
     "code.wrong-tries": "{{count}} is how many tries are left.",
     "qr.show": "Screen-reader label of the blurred QR code: showing it is a click.",
