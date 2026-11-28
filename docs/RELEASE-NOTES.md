@@ -29,6 +29,20 @@ How this file is kept (scripts/release.mjs and the app's build read it):
 
 ## Unreleased
 
+### New
+
+- **Report a socio's reply from the Socio app (CB-382).** When the workspace shares AI reply reports, a thumbs-down on a socio's reply in the app opens the same confirmation as the web's: a reason, an optional note and what goes to Ingenio, with a notice if the workspace's consent changed in the meantime. A thumbs-down given offline offers **Report it now?** once the phone is back online, and **Shared with Ingenio** appears once the report is sent, even while the chat stays open. It comes with app 0.2.10.
+
+### Changed
+
+- **More of the web is ready for other languages.** Rooms and Spaces, issues and approvals, Operations and pages now take their words from the translation files, loaded per page. Everything is still English, with small changes: counts say "1 turn" rather than "1 turns", durations and times read like "3.2 sec" and "4 minutes ago", and "labelled" is now "labeled".
+- The Socio app's Update Socio screen now covers the whole screen, edge to edge, in light and dark. It comes with app 0.2.10.
+
+### Fixed
+
+- Socios on self-hosted thinking models no longer fail with "Socio could not complete this request" when they think and then use a tool without writing anything in between. The run had failed with "Cannot send 'REASONING_MESSAGE_END'… Start a reasoning message with 'REASONING_MESSAGE_START' first", because two libraries both closed the model's thinking. Socio now closes it exactly once and starts a new one for thinking that comes later.
+- Accounts created in the same instant are listed in the order they were added, in the admins' roster and the sign-in list.
+
 ## v0.57.1 (2026-11-27)
 
 The release v0.57.0 was meant to be, with its coding sandbox image building again. iPhones are now pointed at app 0.2.9.
