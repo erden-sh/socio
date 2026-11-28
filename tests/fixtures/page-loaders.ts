@@ -43,7 +43,18 @@ export interface PageLoader {
  */
 async function routeI18n(
     services: WebServices,
-    id: 'approvals' | 'approvals:request' | 'spaces:space' | 'spaces:page' | 'schedules' | 'runs',
+    id:
+        | 'approvals'
+        | 'approvals:request'
+        | 'spaces:space'
+        | 'spaces:page'
+        | 'schedules'
+        | 'runs'
+        | 'plugins'
+        | 'plugins:manage'
+        | 'plugins:frame'
+        | 'apps'
+        | 'apps:open',
 ): Promise<PageI18n> {
     return (
         (await services.i18n?.(ROUTES[id])) ?? {
@@ -245,6 +256,43 @@ export async function pageLoaders(seed: SeededWorkspace): Promise<PageLoader[]> 
             kept: true,
             address: () => '/settings/operator',
             load: (services) => services.inference(),
+        },
+        {
+            page: '/plugins (the catalog’s words; the page reads its plugins)',
+            route: 'plugins',
+            admins: true,
+            kept: true,
+            address: () => '/plugins',
+            load: async (services) => ({ i18n: await routeI18n(services, 'plugins') }),
+        },
+        {
+            page: '/settings/plugins/:pluginId (the page’s words)',
+            route: 'plugins:manage',
+            admins: true,
+            kept: true,
+            address: () => '/settings/plugins/example',
+            load: async (services) => ({ i18n: await routeI18n(services, 'plugins:manage') }),
+        },
+        {
+            page: '/plugins/:pluginId/* (the words around the frame)',
+            route: 'plugins:frame',
+            kept: true,
+            address: () => '/plugins/example',
+            load: async (services) => ({ i18n: await routeI18n(services, 'plugins:frame') }),
+        },
+        {
+            page: '/apps (the page’s words; it reads its apps)',
+            route: 'apps',
+            kept: true,
+            address: () => '/apps',
+            load: async (services) => ({ i18n: await routeI18n(services, 'apps') }),
+        },
+        {
+            page: '/apps/:appId/open',
+            route: 'apps:open',
+            kept: true,
+            address: () => '/apps/example/open',
+            load: async (services) => ({ i18n: await routeI18n(services, 'apps:open') }),
         },
     ];
 }
