@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -58,11 +58,21 @@ const exportOf = (locale: string, candidates: ExportCandidate[]): ExportBody => 
 });
 
 describe('the import', () => {
+    it("sends the repository's own context notes, the files i18n-build checks", () => {
+        const i18nDir = join(import.meta.dirname, '../packages/i18n');
+        const { body } = importPayload({ commit: 'abcdef1', localesDir: join(i18nDir, 'locales'), i18nDir });
+        const notes = readdirSync(join(i18nDir, 'notes')).filter((name) => name.endsWith('.json'));
+        expect(notes.length).toBeGreaterThan(0);
+        expect(Object.keys(body.context as Record<string, unknown>).sort()).toEqual(
+            notes.map((name) => name.slice(0, -5)).sort(),
+        );
+    });
+
     it('sends en-US, the translations, the context notes and the glossary, and hashes all but the commit', () => {
         const dir = setup({
             'locales/en-US/common.json': { a: 'Hello' },
             'locales/es-419/common.json': { a: 'Hola' },
-            'context/common.json': { a: 'A greeting on the home page' },
+            'notes/common.json': { a: 'A greeting on the home page' },
             'glossary/es-419.json': [{ term: 'workspace', translation: 'espacio de trabajo' }],
             'glossary/xx-YY.json': [{ term: 'not a locale' }],
         });

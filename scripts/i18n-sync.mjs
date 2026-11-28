@@ -78,7 +78,8 @@ export function pullRequestStates(list) {
 
 /**
  * The import's body: every locale folder's dictionaries (en-US and the translations, not the
- * pseudo-locale), `packages/i18n/context/<ns>.json` ({ key: note }) and
+ * pseudo-locale), the context notes `packages/i18n/notes/<ns>.json` ({ key: note }, the folder
+ * i18n-build checks) and
  * `packages/i18n/glossary/<locale>.json` ([{ term, translation, note, doNotTranslate }]).
  */
 export function importPayload({ commit, localesDir, i18nDir, pullRequests = [] }) {
@@ -101,10 +102,7 @@ export function importPayload({ commit, localesDir, i18nDir, pullRequests = [] }
         );
     }
     const context = Object.fromEntries(
-        jsonFiles(join(i18nDir, 'context')).map((name) => [
-            name.slice(0, -5),
-            readJson(join(i18nDir, 'context', name)),
-        ]),
+        jsonFiles(join(i18nDir, 'notes')).map((name) => [name.slice(0, -5), readJson(join(i18nDir, 'notes', name))]),
     );
     const glossary = Object.fromEntries(
         jsonFiles(join(i18nDir, 'glossary'))
