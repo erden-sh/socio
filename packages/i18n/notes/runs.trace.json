@@ -11,6 +11,7 @@
     "round.notes": "The request that updated the chat's notes (its summary) before round {{round}}.",
     "round.fallback": "A round run on the shared model because the person's own was busy.",
     "round.retry": "A round sent again ({{retry}} counts the retries); the forms say why: rate limited, out of reach, or on the shared model.",
+    "round.retry_rate_limited": "A model round sent again because the AI provider limited how many requests it takes; {{round}} is the round's number, {{retry}} counts the retries.",
     "round.first-output": "How long until the model's first output ({{duration}}).",
     "stop.stop": "How a model round ended, lowercase. tool_calls: it called tools; length: it hit its output limit; content_filter: the provider's filter stopped it.",
     "stop.tool_calls": "How a model round ended, lowercase. tool_calls: it called tools; length: it hit its output limit; content_filter: the provider's filter stopped it.",

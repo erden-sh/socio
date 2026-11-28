@@ -40,6 +40,8 @@
     "review.unreviewed": "A choice in the menu of which sessions to review: those no admin has labeled yet.",
     "review.all": "A choice in the menu of which sessions to review: every session that has a label.",
     "review.list": "Accessible name of the list of sessions to review.",
+    "review.empty-unreviewed": "In place of the Review card's list on the Themes page when Not reviewed yet is picked and no session waits for an admin's review.",
+    "review.empty": "In place of the Review card's list when Every labeled session is picked and the model hasn't labeled any session yet.",
     "review.no-topics": "In place of a session's topics when it has none.",
     "review.reviewed": "Badge on a session an admin labeled.",
     "label.title": "Accessible name of an opened session's panel of labels.",

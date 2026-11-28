@@ -8,8 +8,9 @@
 //   - coverage is counted through each locale's fallback chain, so a sparse
 //     locale (es-US over es-419) only holds what differs;
 //   - every context note (packages/i18n/notes/<ns>.json, beside locales/)
-//     names a namespace and a key en-US has. Notes are for translators and
-//     drafting; they are never built or served;
+//     names a namespace and a key en-US has, and every en-US key has a note,
+//     its own or its plural's or context's base's. Notes are for translators
+//     and drafting; they are never built or served;
 //   - packages/i18n/namespaces.json, beside locales/, gives every en-US
 //     namespace a label ("Chat · Message box") and where it appears in the
 //     app, for translators: one entry per namespace and no other, each plain
@@ -84,19 +85,42 @@ function readSources(dir) {
     return { sources, problems };
 }
 
+/** A plural form's suffix (`_one`, `_ordinal_few`…), which i18next adds to a base key. */
+const PLURAL_SUFFIX = /(?:_ordinal)?_(?:zero|one|two|few|many|other)$/;
+
+/**
+ * Whether an en-US key has a context note, as the translation app finds one:
+ * its own; or, with a plural suffix stripped, the base's (`files` for
+ * `files_one`); or, with one `_<context>` suffix then stripped, that base's
+ * (`edited` for `edited_socio` and `edited_socio_one`).
+ */
+function hasNote(key, notes) {
+    const noted = (name) => Object.hasOwn(notes, name);
+    if (noted(key)) {
+        return true;
+    }
+    const base = key.replace(PLURAL_SUFFIX, '');
+    if (base !== key && noted(base)) {
+        return true;
+    }
+    const cut = base.lastIndexOf('_');
+    return cut > 0 && !base.slice(cut).includes('.') && noted(base.slice(0, cut));
+}
+
 /**
  * The context notes: `notes/<ns>.json`, an object of en-US key → note. A
  * note may name a plain key, a plural's base (`files` for `files_one`…) or a
- * context's base (`edited` for `edited_socio`). Problems join the build's.
+ * context's base (`edited` for `edited_socio`), and every en-US key needs one
+ * (hasNote): translators see only a key, its English and its note. Problems
+ * join the build's.
  */
 function checkNotes(dir, english) {
     const problems = [];
+    const notesOf = {};
     let names = [];
     try {
         names = readdirSync(dir).sort();
-    } catch {
-        return problems;
-    }
+    } catch {}
     for (const name of names) {
         const ns = name.endsWith('.json') ? name.slice(0, -'.json'.length) : null;
         if (!ns || !english?.[ns]) {
@@ -108,8 +132,17 @@ function checkNotes(dir, english) {
             notes = JSON.parse(readFileSync(join(dir, name), 'utf8'));
         } catch (error) {
             problems.push(`notes/${name}: not valid JSON (${error.message})`);
+            notesOf[ns] = null;
             continue;
         }
+        if (typeof notes !== 'object' || notes === null || Array.isArray(notes)) {
+            problems.push(`notes/${name}: must be an object of en-US key → note`);
+            notesOf[ns] = null;
+            continue;
+        }
+        notesOf[ns] = Object.fromEntries(
+            Object.entries(notes).filter(([, note]) => typeof note === 'string' && note.trim()),
+        );
         const keys = [...flattenKeys(english[ns])];
         for (const [key, note] of Object.entries(notes)) {
             if (typeof note !== 'string' || !note.trim()) {
@@ -117,6 +150,18 @@ function checkNotes(dir, english) {
             } else if (!keys.some((known) => known === key || known.startsWith(`${key}_`))) {
                 problems.push(`notes/${name}: ${key} isn't an en-US key of ${ns}`);
             }
+        }
+    }
+    // A file that didn't parse is reported above, not as every key it lacks.
+    for (const ns of Object.keys(english ?? {}).sort()) {
+        if (notesOf[ns] === null) {
+            continue;
+        }
+        const missing = [...flattenKeys(english[ns])].filter((key) => !hasNote(key, notesOf[ns] ?? {}));
+        if (missing.length) {
+            problems.push(
+                `notes/${ns}.json: ${missing.length} en-US key(s) need a context note for translators, on the key or its plural or context base (docs/I18N.md): ${missing.join(', ')}`,
+            );
         }
     }
     return problems;

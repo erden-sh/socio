@@ -15,6 +15,7 @@
     "components.add": "Button in the Components field that opens the list of plugins and apps to pick from.",
     "components.loading": "Text of that button while the list of plugins and apps loads.",
     "components.search": "Accessible name of the search box in that list.",
+    "components.search-placeholder": "Placeholder of the search box in the Components field's list of plugins and apps an issue can be about.",
     "components.group.all": "Group of the two choices that stand for every plugin or every app.",
     "components.group.plugins": "Heading of the group of plugins in the component list. Plugins add pages and tools to the app.",
     "components.group.apps": "Heading of the group of mini apps people published in the workspace.",

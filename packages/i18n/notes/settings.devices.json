@@ -4,6 +4,7 @@
     "empty": "Shown when the person (base) or the person an admin is looking at (_admin) has never signed in on the mobile app.",
     "list": "Accessible name of the list of devices (read by screen readers).",
     "current": "Appended after the name of the device the person is using right now; keep the parentheses unless your language marks asides differently.",
+    "loadFailed": "Error shown in the devices card when the list of mobile devices can't be loaded and the server gave no message.",
     "platforms.ios": "The device's platform, shown in its details line.",
     "platforms.android": "The device's platform, shown in its details line. Android is a brand name.",
     "details.by": "In a device's details line: how its current session signed in. {{method}} is a sign-in method, such as \"Passkey\" or \"Sign-in link\", or a sign-in provider's brand name (Google, GitHub).",
@@ -32,5 +33,6 @@
     "erase.title": "Title of the confirmation dialog before signing a device out and erasing the app's copy of the workspace; {{device}} is the device's name.",
     "erase.action": "The confirmation dialog's destructive button: signs the device out and has the app delete its copy of the workspace.",
     "erase.body": "What erasing does: the app deletes its copy, including drafts not sent yet. Base form: the person's own device; _admin: an admin acting on another person's device.",
-    "erase.done": "Toast after the device was signed out; the app deletes its copy when it next connects."
+    "erase.done": "Toast after the device was signed out; the app deletes its copy when it next connects.",
+    "signOutFailed": "Error toast when signing a device out (with or without erasing the app's copy of the workspace) failed and the server gave no message."
 }

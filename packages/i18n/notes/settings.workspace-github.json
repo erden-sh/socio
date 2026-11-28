@@ -3,6 +3,7 @@
     "intro": "Coding sessions are AI coding agents' sessions. \"Coding → Repositories\" names a settings page: keep it matching the Settings nav.",
     "repository": "Label of the text field where an admin enters the GitHub repository (owner/name) whose owner the GitHub App is made for.",
     "repositoryPlaceholder": "Format hint in an empty field: a GitHub repository as owner/name. Keep the slash; you may translate the two words.",
+    "repositoryHint": "Hint under the repository field on the GitHub App card. \"Connect GitHub\" is the card's button: keep it matching. \"App\" is the GitHub App, made for the owner (account or organization) of this repository.",
     "repositoryInvalid": "\"owner/name\" and \"acme/app\" show the format: keep the slash.",
     "ownerFrom": "Toast after saving: {{repository}} is the repository, such as acme/app.",
     "repositoryCleared": "Toast after the repository field was emptied and saved.",
@@ -10,6 +11,7 @@
     "usingDefault": "Toast after the \"Use the server’s default\" button: the repository now comes from the server’s configuration.",
     "saveFailed": "Error on the GitHub App card when saving the repository failed. \"Retry\": try again.",
     "status.unreadable": "{{name}} is the GitHub App's short name or number; {{account}} the GitHub account or organization it is installed on. The _env forms add that the App comes from the server's environment (GITHUB_APP_ID, an environment variable). \"Disconnect\" and \"Connect GitHub\" are this card's buttons: keep them matching.",
+    "status.notConnected": "Status line on the GitHub App card when no GitHub App is connected yet.",
     "status.connected": "Status line on the GitHub App card. {{name}} is the GitHub App’s short name or number. The _env form adds that the App comes from the server’s environment (GITHUB_APP_ID is an environment variable name: keep it).",
     "status.installed": "Status line: the GitHub App is connected and installed. {{name}} is the App’s short name or number; the _env form says it comes from the server’s environment.",
     "status.installedOn": "Status line: {{name}} is the GitHub App’s short name or number; {{account}} the GitHub account or organization it is installed on. The _env form says the App comes from the server’s environment.",
@@ -21,5 +23,7 @@
     "disconnectNote": "\"Developer settings → GitHub Apps\" names GitHub's own settings pages, in English.",
     "connected": "Toast after coming back from GitHub with the App connected.",
     "disconnected": "Toast after Disconnect: the App is forgotten here but still exists on GitHub.",
+    "finishFailed": "Error on the GitHub App card after coming back from GitHub, when connecting or installing the App could not be completed. Shown only when the server gives no message of its own.",
+    "startFailed": "Error on the GitHub App card after the Connect GitHub button, when the connection could not start. Shown only when the server gives no message of its own.",
     "disconnectFailed": "Error on the GitHub App card when Disconnect failed. \"Retry\": try again."
 }

@@ -5,6 +5,7 @@
     "refresh-label": "Accessible name of the Refresh button.",
     "missing": "Shown when the Space doesn't exist or the person can't read it.",
     "loading": "On a Space's Radar tab while it loads.",
+    "load-failed": "Error on a Space's Radar tab when it couldn't load and the server gave no reason.",
     "scope": "Explains the radar's scope. {{count}} is how many pages the Space has; {{days}} the stale threshold in days. \"Markers\" are keywords found in a page (todo, decision…); a dismissal hides an entry until the tab closes.",
     "recent.title": "Section heading: pages changed most recently.",
     "recent.empty": "In the Radar's recently changed section when the Space has no pages.",

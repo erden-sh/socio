@@ -13,6 +13,7 @@
     "delete.action": "Destructive button that deletes the Space.",
     "delete.deleting": "The delete button while the Space is being deleted.",
     "delete.deleted": "Toast after the Space is deleted. {{name}} is its name.",
+    "delete.failed": "Error in the delete-Space dialog when the Space couldn't be deleted and the server gave no reason.",
     "dataset.new": "Dialog title: makes a new dataset in the Space.",
     "dataset.existing": "Dialog title: places a dataset the person already has in the Space.",
     "dataset.description-new": "Dialog description. {{space}} is the Space's name.",
@@ -25,8 +26,11 @@
     "dataset.socio": "Fallback owner name in the picker for a dataset a socio (AI agent) wrote, when it has no name. \"Socio\" is a product noun.",
     "dataset.written-by": "Owner note in the picker: a plugin wrote the dataset. {{plugin}} is the plugin's name.",
     "dataset.workspace": "Owner note in the picker: the dataset is the workspace's, not a person's.",
+    "dataset.none": "In the dialog that places an existing dataset in the Space, when every dataset the person manages is in a Space already. Space is a product noun.",
     "dataset.cancel": "Button that closes the dataset dialog without changing anything.",
     "dataset.create": "Button that creates the new dataset.",
     "dataset.add": "Button that places the chosen dataset in the Space.",
-    "dataset.placed": "Toast after placing a dataset. {{dataset}} is its name, {{space}} the Space's."
+    "dataset.placed": "Toast after placing a dataset. {{dataset}} is its name, {{space}} the Space's.",
+    "dataset.load-failed": "Error in the dataset dialog when the list of the person's datasets couldn't load.",
+    "dataset.failed": "Error in the dataset dialog when the dataset couldn't be made or placed in the Space and the server gave no reason."
 }

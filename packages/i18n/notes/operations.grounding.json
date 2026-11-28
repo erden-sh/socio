@@ -1,5 +1,6 @@
 {
     "title": "Card heading: what socios (AI agents) read to answer: pages, searches, datasets. \"Grounded\": used as the basis of an answer.",
+    "description": "Description under the What grounded chats card heading on the Knowledge page. \"Space\" is a product noun; \"the map\": the heatmap of reads per Space; \"recalls of the chat\": a socio looking back at earlier messages.",
     "none": "In place of the card's content while the analytics store has no numbers yet.",
     "removed-space": "In place of the name of a Space that was deleted. \"Space\" is a product noun.",
     "removed-page": "In place of the title of a page that was deleted.",

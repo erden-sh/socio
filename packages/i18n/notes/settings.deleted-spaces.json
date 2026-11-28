@@ -10,5 +10,6 @@
     "restore.busy": "Text of the Restore button while the Space is being restored.",
     "restore.label": "Screen-reader label of the Restore button; {{name}} is the Space's name.",
     "restore.done": "Toast after a Space was restored; {{name}} is its name, in quotation marks (use your language's quotation marks).",
+    "errors.load": "Error toast on Settings › Deleted Spaces when the list can't be loaded and the server gave no message. \"Space\" is a product noun; keep it capitalized if your language allows.",
     "errors.restore": "Error after restoring a deleted Space failed."
 }

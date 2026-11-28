@@ -6,6 +6,7 @@
     "list.lastUsed": "Column heading: when each token last made a request.",
     "list.expiry": "Column heading: when each token expires, or when it was revoked.",
     "list.actions": "Hidden column heading (screen readers only) over the Revoke buttons.",
+    "list.empty": "Shown on the admins' Settings › Data API page instead of the table when no data API token was made yet.",
     "token.usage": "Under a token's name. {{scopes}} is a comma-separated list of permission identifiers such as data:read (not translated); {{perMinute}} is the token's budget of data operations per minute.",
     "token.unknownMaker": "Stands in for the name of the admin who made a token when that person is no longer known.",
     "token.madeAt": "The date a token was made, under its maker's name.",
@@ -35,5 +36,8 @@
     "new.submit": "Button that creates the token.",
     "scopes.read": "What the data:read permission allows. \"Field settings\" are per-column display and validation settings of a dataset.",
     "scopes.write": "What the data:write permission allows.",
-    "scopes.admin": "What the data:admin permission allows. \"Space\" is a product noun (a shared area for a team's pages and chats)."
+    "scopes.admin": "What the data:admin permission allows. \"Space\" is a product noun (a shared area for a team's pages and chats).",
+    "errors.load": "Error toast on Settings › Data API when the list of tokens can't be loaded and the server gave no message.",
+    "errors.make": "Error toast when making a new data API token failed and the server gave no message.",
+    "errors.revoke": "Error toast when revoking (ending) a data API token failed and the server gave no message."
 }
