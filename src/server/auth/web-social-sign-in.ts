@@ -56,17 +56,21 @@ const sha256 = (value: string) => createHash('sha256').update(value).digest('bas
 /** A binding cookie as this server makes them: 32 random bytes, base64url. */
 const BINDING = /^[A-Za-z0-9_-]{43}$/;
 
+/** A leading `//`, any backslash, any control character. */
+// oxlint-disable-next-line no-control-regex -- control characters are what this refuses
+const UNSAFE = /^\/\/|[\\\u0000-\u001f\u007f]/;
+
 /**
  * Where to go after: a path on this origin, as given, else `fallback`.
- * Refused: anything absolute or protocol-relative (`//evil`), backslashes
- * (which browsers read as slashes), control characters, and the API.
+ * Normalized first (`/a/../b` is `/b`), then the result is checked, so
+ * nothing that normalizes to another host passes (`/a/..//evil` would be
+ * `//evil`, protocol-relative). Refused: anything absolute or
+ * protocol-relative, backslashes (which browsers read as slashes) and
+ * slashes or backslashes percent-encoded at the start, control
+ * characters, and the API.
  */
 export function safeNext(value: unknown, origin: string, fallback = '/'): string {
-    if (typeof value !== 'string' || !value.startsWith('/') || value.length > 2048) {
-        return fallback;
-    }
-    // oxlint-disable-next-line no-control-regex -- control characters are what this refuses
-    if (value.startsWith('//') || /[\\\u0000-\u001f\u007f]/.test(value)) {
+    if (typeof value !== 'string' || !value.startsWith('/') || value.length > 2048 || UNSAFE.test(value)) {
         return fallback;
     }
     let url: URL;
@@ -75,10 +79,40 @@ export function safeNext(value: unknown, origin: string, fallback = '/'): string
     } catch {
         return fallback;
     }
-    if (url.origin !== new URL(origin).origin || url.pathname === '/api' || url.pathname.startsWith('/api/')) {
+    const next = `${url.pathname}${url.search}${url.hash}`;
+    if (
+        url.origin !== new URL(origin).origin ||
+        !next.startsWith('/') ||
+        UNSAFE.test(next) ||
+        /^\/(\/|%2f|%5c)/i.test(next) ||
+        url.pathname === '/api' ||
+        url.pathname.startsWith('/api/') ||
+        // Checked as the redirect will be read: still this origin.
+        new URL(next, origin).origin !== new URL(origin).origin
+    ) {
         return fallback;
     }
-    return `${url.pathname}${url.search}${url.hash}`;
+    return next;
+}
+
+/** Where the landing page goes on: the one place a result is redeemed. */
+export const WEB_SOCIAL_COMPLETE_PATH = '/api/auth/web/social/complete';
+
+const escapeHtml = (text: string) => text.replace(/[&"'<>]/g, (char) => `&#${char.charCodeAt(0)};`);
+
+/**
+ * The page the browser lands on back from Socio's sign-in page: a form of
+ * this origin, sent at once by a script with this response's CSP nonce,
+ * and a Continue button without JavaScript. The form's request is
+ * same-origin, so the session cookie (SameSite=Strict) comes along, which
+ * the cross-site return itself can't carry.
+ */
+export function webSocialLanding(action: string, fields: Record<string, string | undefined>, nonce: string): string {
+    const inputs = Object.entries(fields)
+        .filter((entry): entry is [string, string] => entry[1] !== undefined)
+        .map(([name, value]) => `<input type="hidden" name="${escapeHtml(name)}" value="${escapeHtml(value)}">`)
+        .join('');
+    return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><title>Signing in</title></head><body style="font-family:system-ui,sans-serif;margin:2rem"><form id="continue" method="get" action="${escapeHtml(action)}">${inputs}<p>Finishing signing in…</p><button type="submit">Continue</button></form><script nonce="${escapeHtml(nonce)}">document.getElementById('continue').submit()</script></body></html>`;
 }
 
 export type WebSocialStarted = { ok: true; url: string; binding: string; maxAgeS: number };

@@ -133,8 +133,10 @@ import type { BetterAuthSettings } from './settings.js';
 import { NATIVE_PROVIDER_IDS, SocialSignIn, socialRefusal } from './social-sign-in.js';
 import { expiredStepUp, STEP_UP_LOCKED, STEP_UP_SECONDS, StepUpChallenges } from './step-up.js';
 import {
+    WEB_SOCIAL_COMPLETE_PATH,
     WEB_SOCIAL_FINISH_PATH,
     WebSocialSignIn,
+    webSocialLanding,
     webSocialPlugin,
     type WebSocialFinished,
 } from './web-social-sign-in.js';
@@ -2263,23 +2265,47 @@ export class BetterAuthProvider implements AuthProvider {
             c.header('set-cookie', this.webSocialCookieHeader(started.binding, started.maxAgeS));
             return c.json({ url: started.url });
         });
-        app.get(WEB_SOCIAL_CALLBACK_PATH, async (c) => {
+        const query = (c: Context<AppEnv>, key: string) => {
+            const value = c.req.query(key);
+            return value !== undefined && value.length <= 8192 ? value : undefined;
+        };
+        // The browser's return from Socio's sign-in page: a cross-site
+        // navigation, which carries the Lax binding cookie but not the Strict
+        // session cookie a link needs. So it redeems nothing: it answers a
+        // page of this origin that goes on to `complete` at once (or with a
+        // click, without JavaScript), a same-origin request with every cookie.
+        app.get(WEB_SOCIAL_CALLBACK_PATH, (c) => {
+            const nonce = randomBytes(16).toString('base64');
+            // Its one inline script runs by this response's nonce; it loads
+            // nothing, and its form goes only to this origin. (The pages'
+            // policy, if it applies, allows the same nonce: security-headers.ts.)
+            c.set('cspNonce', nonce);
+            c.header(
+                'content-security-policy',
+                `default-src 'none'; script-src 'nonce-${nonce}'; style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'`,
+            );
+            c.header('cache-control', 'no-store');
+            c.header('referrer-policy', 'no-referrer');
+            return c.html(
+                webSocialLanding(WEB_SOCIAL_COMPLETE_PATH, { r: query(c, 'r'), error: query(c, 'error') }, nonce),
+            );
+        });
+        // The landing page's request: the one place a result is redeemed.
+        // Same-origin only (a cross-site request is refused before it: it
+        // isn't a navigation path).
+        app.get(WEB_SOCIAL_COMPLETE_PATH, async (c) => {
             const name = `${this.webSocialCookie}=`;
             const binding = (c.req.header('cookie') ?? '')
                 .split(';')
                 .map((part) => part.trim())
                 .find((part) => part.startsWith(name))
                 ?.slice(name.length);
-            const query = (key: string) => {
-                const value = c.req.query(key);
-                return value !== undefined && value.length <= 8192 ? value : undefined;
-            };
             let answer: { headers: Headers; response: WebSocialFinished };
             try {
                 answer = await (
                     await this.auth()
                 ).api.webSocialFinish({
-                    body: { binding, result: query('r'), error: query('error') },
+                    body: { binding, result: query(c, 'r'), error: query(c, 'error') },
                     headers: this.cookies.incoming(c.req.raw.headers),
                     returnHeaders: true,
                 });
@@ -2291,7 +2317,12 @@ export class BetterAuthProvider implements AuthProvider {
                 };
             }
             const done = answer.response;
-            const to = new URL(done.next, this.settings.origin);
+            const { origin } = new URL(this.settings.origin);
+            // Checked again right before the redirect: never off this origin.
+            let to = new URL(done.next, origin);
+            if (to.origin !== origin) {
+                to = new URL('/', origin);
+            }
             if (done.purpose === 'link') {
                 to.searchParams.set(WEB_SOCIAL_LINK_PARAM, done.ok ? 'linked' : done.code);
                 if (done.ok && done.changed) {

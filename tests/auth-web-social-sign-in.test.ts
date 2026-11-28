@@ -34,12 +34,22 @@ const ORIGIN = 'https://brain.example.test';
 const PASSWORD = 'correct-horse-battery';
 const START = '/api/auth/web/social/start';
 const CALLBACK = '/api/auth/web/social/callback';
+const COMPLETE = '/api/auth/web/social/complete';
+const unescapeHtml = (text: string) =>
+    text.replace(/&#(\d+);/g, (_, code: string) => String.fromCharCode(Number(code)));
 const BINDING = '__Host-socio-social';
 const SESSION = '__Host-cb.session_token';
 const WEB_CONFIG = { google: { serverClientId: 'test-web-client.apps.example.test', web: true }, apple: { web: true } };
 
+/**
+ * A browser's cookies, with its SameSite rules: a cross-site request (the
+ * return from Socio's sign-in page, a top-level GET) carries Lax and None
+ * cookies, never Strict ones, so no test can pass by sending everything.
+ */
 class Jar {
     cookies = new Map<string, string>();
+    /** Each cookie's SameSite, as set (Lax when it says none, as browsers default). */
+    sameSite = new Map<string, 'strict' | 'lax' | 'none'>();
     store(response: Response) {
         for (const header of response.headers.getSetCookie()) {
             const [pair] = header.split(';');
@@ -48,14 +58,24 @@ class Jar {
             const value = pair.slice(index + 1);
             if (!value || /max-age=0/i.test(header)) {
                 this.cookies.delete(name);
+                this.sameSite.delete(name);
             } else {
                 this.cookies.set(name, value);
+                const mode = /;\s*samesite=(strict|lax|none)/i.exec(header)?.[1]?.toLowerCase();
+                this.sameSite.set(name, (mode as 'strict' | 'lax' | 'none' | undefined) ?? 'lax');
             }
         }
         return response;
     }
+    /** The Cookie header for a request from this origin, or a top-level GET from another site. */
+    headerFor(site: 'same-origin' | 'cross-site') {
+        return [...this.cookies]
+            .filter(([name]) => site === 'same-origin' || this.sameSite.get(name) !== 'strict')
+            .map(([k, v]) => `${k}=${v}`)
+            .join('; ');
+    }
     get header() {
-        return [...this.cookies].map(([k, v]) => `${k}=${v}`).join('; ');
+        return this.headerFor('same-origin');
     }
 }
 
@@ -132,22 +152,30 @@ async function brain(options: { config?: Record<string, unknown>; enroll?: boole
     const call = async (
         jar: Jar,
         path: string,
-        init: { body?: unknown; headers?: Record<string, string>; ip?: string } = {},
-    ) =>
-        jar.store(
+        init: {
+            body?: unknown;
+            headers?: Record<string, string>;
+            ip?: string;
+            /** Where the request comes from, as a browser says and decides its cookies by. */
+            site?: 'same-origin' | 'cross-site';
+        } = {},
+    ) => {
+        const site = init.site ?? 'same-origin';
+        const cookie = jar.headerFor(site);
+        return jar.store(
             await app.request(path, {
                 method: init.body === undefined ? 'GET' : 'POST',
                 headers: {
                     'x-forwarded-for': init.ip ?? `10.${randomInt(256)}.${randomInt(256)}.${randomInt(256)}`,
-                    ...(init.body === undefined
-                        ? {}
-                        : { origin: ORIGIN, 'content-type': 'application/json', 'sec-fetch-site': 'same-origin' }),
-                    ...(jar.header ? { cookie: jar.header } : {}),
+                    'sec-fetch-site': site,
+                    ...(init.body === undefined ? {} : { origin: ORIGIN, 'content-type': 'application/json' }),
+                    ...(cookie ? { cookie } : {}),
                     ...init.headers,
                 },
                 body: init.body === undefined ? undefined : JSON.stringify(init.body),
             }),
         );
+    };
     const account = async (email: string, name: string) => {
         await provider.createAccount({ email, name, role: 'member', password: PASSWORD });
         return db.prepare('SELECT id FROM auth_user WHERE email = ?').get(email) as { id: string };
@@ -186,10 +214,26 @@ async function brain(options: { config?: Record<string, unknown>; enroll?: boole
         return { response, body: (await response.json()) as { url?: string; code?: string; error?: string } };
     };
     /** The browser's return from Socio's sign-in page: a top-level navigation from another site. */
-    const back = (jar: Jar, query: string) =>
-        call(jar, `${CALLBACK}?${query}`, {
-            headers: { 'sec-fetch-site': 'cross-site', 'sec-fetch-mode': 'navigate' },
-        });
+    const landing = (jar: Jar, query: string) =>
+        call(jar, `${CALLBACK}?${query}`, { site: 'cross-site', headers: { 'sec-fetch-mode': 'navigate' } });
+    /**
+     * The browser's return: the cross-site GET (Strict cookies withheld)
+     * answers a page of this origin, whose form the browser sends on, from
+     * this origin, with every cookie. The page's last answer.
+     */
+    const back = async (jar: Jar, query: string) => {
+        const page = await landing(jar, query);
+        expect(page.status).toBe(200);
+        const html = await page.text();
+        const form = /<form id="continue" method="get" action="([^"]+)">/.exec(html);
+        expect(form?.[1]).toBe(COMPLETE);
+        const fields = new URLSearchParams(
+            [...html.matchAll(/<input type="hidden" name="([^"]+)" value="([^"]*)">/g)].map(
+                ([, name, value]) => [name!, unescapeHtml(value!)] as [string, string],
+            ),
+        );
+        return call(jar, `${COMPLETE}?${fields}`, { headers: { 'sec-fetch-mode': 'navigate' } });
+    };
     /** Start, sign in at the provider as `sub`, and come back. */
     const flow = async (
         jar: Jar,
@@ -225,6 +269,7 @@ async function brain(options: { config?: Record<string, unknown>; enroll?: boole
         linkRow,
         start,
         back,
+        landing,
         flow,
         signedIn,
         savePolicy,
@@ -289,11 +334,31 @@ describe('start', () => {
         ['the API', '/api/auth/device/start'],
         ['a control character', '/x\ny'],
         ['nothing like a path', 'spaces'],
+        // Normalized, these would be protocol-relative (`//evil…`): checked after normalizing.
+        ['a dot segment before //', '/a/..//evil.example.com/path'],
+        ['dot segments before //', '/a/b/../..//evil.example.com'],
+        ['a percent-encoded //', '/%2F%2Fevil.example.com'],
+        ['a percent-encoded backslash', '/%5Cevil.example.com'],
+        ['mixed encodings', '/%2f%5cevil.example.com'],
+        ['an encoded dot segment before //', '/a/%2e%2e//evil.example.com'],
     ])('stores / for %s as next', async (_, next) => {
         const b = await brain();
         const { response } = await b.start(new Jar(), 'google', 'signin', next);
         expect(response.status).toBe(200);
         expect(b.db.prepare('SELECT next FROM auth_social_web_nonce').get()).toEqual({ next: '/' });
+    });
+
+    it.each([
+        '/a/..//evil.example.com/path',
+        '/%2F%2Fevil.example.com',
+        '/%5Cevil.example.com',
+        '/a/%2e%2e//evil.example.com',
+        '//evil.example.com',
+        '/\\evil.example.com',
+    ])('never makes %s a path that leaves the origin', (next) => {
+        const kept = safeNext(next, ORIGIN);
+        expect(new URL(kept, ORIGIN).origin).toBe(ORIGIN);
+        expect(kept).toBe('/');
     });
 
     it('keeps a same-origin path, its query and fragment', () => {
@@ -516,6 +581,68 @@ describe('sign-in', () => {
             body: { binding: 'x', result: 'y' },
         });
         expect(response.status).toBe(404);
+    });
+});
+
+describe('the return from Socio’s sign-in page', () => {
+    it('answers a page of this origin that redeems nothing yet, without the Strict session cookie', async () => {
+        const b = await brain();
+        await b.account('ada@example.com', 'Ada');
+        const web = await b.signIn('ada@example.com');
+        const { body } = await b.start(web, 'google', 'link');
+        const r = b.issuer.completeWeb(body.url!, 'google-sub-ada');
+        // The cross-site return carries the Lax binding, not the Strict session.
+        expect(web.sameSite.get(SESSION)).toBe('strict');
+        expect(web.sameSite.get(BINDING)).toBe('lax');
+        expect(web.headerFor('cross-site')).toContain(`${BINDING}=`);
+        expect(web.headerFor('cross-site')).not.toContain(SESSION);
+        const page = await b.landing(web, `r=${r}`);
+        expect(page.status).toBe(200);
+        expect(page.headers.get('content-type')).toMatch(/^text\/html/);
+        expect(page.headers.get('cache-control')).toBe('no-store');
+        expect(page.headers.get('referrer-policy')).toBe('no-referrer');
+        const html = await page.text();
+        // Its one script carries the CSP's nonce; no other inline script runs.
+        const nonce = /<script nonce="([^"]+)">/.exec(html)?.[1];
+        expect(nonce).toBeTruthy();
+        const csp = page.headers.get('content-security-policy')!;
+        expect(csp).toContain(`'nonce-${nonce}'`);
+        expect(csp).toContain("form-action 'self'");
+        expect(html.match(/<script/g)).toHaveLength(1);
+        // Without JavaScript, a button.
+        expect(html).toContain('<button type="submit">Continue</button>');
+        // Nothing redeemed, the binding kept, nothing linked yet.
+        expect(b.issuer.requests.some((request) => request.path === '/v1/social/web/redeem')).toBe(false);
+        expect(web.cookies.has(BINDING)).toBe(true);
+        expect(page.headers.getSetCookie()).toEqual([]);
+        expect(b.db.prepare("SELECT count(*) AS n FROM auth_account WHERE providerId = 'google-native'").get()).toEqual(
+            { n: 0 },
+        );
+    });
+
+    it('escapes what the return carried', async () => {
+        const b = await brain();
+        const html = await (
+            await b.landing(new Jar(), `error=${encodeURIComponent('"><script>alert(1)</script>')}`)
+        ).text();
+        expect(html).not.toContain('<script>alert');
+        expect(html.match(/<script/g)).toHaveLength(1);
+    });
+
+    it('redeems only on this origin’s own request: complete from another site is refused', async () => {
+        const b = await brain();
+        await adaLinked(b);
+        const jar = new Jar();
+        const { body } = await b.start(jar, 'google');
+        const r = b.issuer.completeWeb(body.url!, 'google-sub-ada');
+        const refused = await b.call(jar, `${COMPLETE}?r=${r}`, { site: 'cross-site' });
+        expect(refused.status).toBe(403);
+        expect(b.issuer.requests.some((request) => request.path === '/v1/social/web/redeem')).toBe(false);
+        expect(jar.cookies.has(SESSION)).toBe(false);
+        // The flow still finishes from this origin, once.
+        const done = await b.back(jar, `r=${r}`);
+        expect(location(done).searchParams.get('error')).toBeNull();
+        expect(b.issuer.requests.filter((request) => request.path === '/v1/social/web/redeem')).toHaveLength(1);
     });
 });
 
