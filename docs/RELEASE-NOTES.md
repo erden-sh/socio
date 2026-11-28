@@ -29,6 +29,14 @@ How this file is kept (scripts/release.mjs and the app's build read it):
 
 ## Unreleased
 
+## v0.58.0 (2026-11-27)
+
+Socios on self-hosted thinking models answer again instead of failing on almost every turn. More of the web is ready for other languages, and the Socio app can report a socio's reply.
+
+- Self-hosted thinking models no longer fail their turns
+- More of the web ready for other languages
+- Report a socio's reply from the app (CB-382)
+
 ### New
 
 - **Report a socio's reply from the Socio app (CB-382).** When the workspace shares AI reply reports, a thumbs-down on a socio's reply in the app opens the same confirmation as the web's: a reason, an optional note and what goes to Ingenio, with a notice if the workspace's consent changed in the meantime. A thumbs-down given offline offers **Report it now?** once the phone is back online, and **Shared with Ingenio** appears once the report is sent, even while the chat stays open. It comes with app 0.2.10.
