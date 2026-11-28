@@ -1,9 +1,14 @@
 {
     "title": "Heading of the admins' Settings page listing deleted Spaces. \"Space\" is a product noun (a shared area for a team's pages and chats); keep it capitalized if your language allows.",
     "description": "Explains what deleting a Space did and what restoring does. \"socios\" are the AI agents; their access to the Space is restored too.",
+    "loading": "Shown while the list of deleted Spaces loads.",
+    "empty": "Shown on Settings › Deleted Spaces when no Space was deleted. \"Space\" is a product noun; keep it capitalized if your language allows.",
     "item.deleted": "Second line of a deleted Space's row. {{name}} is the person who deleted it (or \"a former member\"), <when></when> is the date and time it was deleted (keep the tags), {{count}} is how many pages the Space holds.",
     "item.formerMember": "Stands in for {{name}} in \"Deleted by {{name}}\" when the person who deleted the Space is no longer in the workspace.",
     "item.when": "The date and time a Space was deleted; only formats the date, adjust the style only if your locale needs it.",
+    "restore.action": "Button on a deleted Space: brings it back, with its pages and chats, for everyone who could see it.",
+    "restore.busy": "Text of the Restore button while the Space is being restored.",
     "restore.label": "Screen-reader label of the Restore button; {{name}} is the Space's name.",
-    "restore.done": "Toast after a Space was restored; {{name}} is its name, in quotation marks (use your language's quotation marks)."
+    "restore.done": "Toast after a Space was restored; {{name}} is its name, in quotation marks (use your language's quotation marks).",
+    "errors.restore": "Error after restoring a deleted Space failed."
 }

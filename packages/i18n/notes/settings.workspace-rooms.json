@@ -1,12 +1,20 @@
 {
     "title": "\"Rooms\" is a product feature: conversations several people share with an AI agent. Keep the noun consistent.",
     "intro": "A company socio is an AI agent the whole company shares.",
+    "enable.title": "Switch on the Rooms card: lets workspace members create rooms (conversations several people share with a socio, an AI agent).",
+    "enable.saved": "Toast after the switch saved; the _off form is for when it was turned off.",
     "budget.title": "Switch: members see how much of the room's limits (time, tokens, spend) is used.",
+    "budget.saved": "Toast after the switch saved; the _off form is for when it was turned off.",
     "readiness.allPrivate": "Shown to admins before they turn Rooms on: how many of the workspace's chats are private and how many are rooms.",
     "readiness.mixed": "{{chats}} is readiness.chats and {{rooms}} is readiness.rooms, with their numbers.",
+    "readiness.chats": "Inserted as {{chats}} into readiness.mixed: how many private chats the workspace has. {{count}} is that number.",
+    "readiness.rooms": "Inserted as {{rooms}} into readiness.mixed: how many rooms the workspace has. {{count}} is that number.",
     "requests.title": "Heading: AI agents (socios) that rooms asked to have let in.",
     "requests.request": "{{socio}} is the AI agent's name, shown in bold (keep the <socio> tags around it); {{room}} is the room's title.",
     "requests.askedBy": "{{name}} is the person who asked.",
+    "requests.askedByAdmin": "Line under a request to let a socio (AI agent) into a room, shown instead of \"Asked by {{name}}\" when a room admin asked.",
     "requests.letIn": "Button: lets the socio (AI agent) answer in that room.",
-    "requests.letInLabel": "Screen reader label of the Let in button. {{socio}} is the agent's name, {{room}} the room's title."
+    "requests.letInLabel": "Screen reader label of the Let in button. {{socio}} is the agent's name, {{room}} the room's title.",
+    "requests.letInDone": "Toast after Let in: {{socio}} is the AI agent’s name, {{room}} the room’s title.",
+    "requests.letInFailed": "Error toast when letting the socio (AI agent) into the room failed."
 }

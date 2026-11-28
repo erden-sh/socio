@@ -38,8 +38,16 @@
     "access.verb.read": "Completes \"wants to … <app>\" on a request card: what the socio (AI agent) wants to do in the mini app.",
     "access.verb.write": "Completes \"wants to … <app>\" on a request card: what the socio (AI agent) wants to do in the mini app.",
     "access.verb.act": "Completes \"wants to … <app>\" on a request card: what the socio (AI agent) wants to do in the mini app.",
+    "action.openFailed": "Error on a request card in the chat when the full parameters can't be loaded.",
+    "action.describedLead": "Lead-in above the mini app's own description of the action, on a request card in the chat.",
+    "size.bytes": "A size in bytes, for small parameters on a request card.",
+    "grant.access.read": "Badge on a granted access: the socio (AI agent) may only read the mini app.",
+    "grant.access.write": "Badge on a granted access: the socio (AI agent) may read and change the mini app's data.",
     "grant.access.act": "Badge on a granted access: what the socio (AI agent) may do in the mini app.",
+    "grant.access.other": "Badge on a granted access of a kind not listed here.",
     "grant.place.room": "Where the access was granted, inserted into grant.from. {{title}} is the chat's or room's title.",
+    "grant.place.roomUntitled": "Where the access was granted, inserted into grant.from: a Room (group chat) with no title.",
     "grant.place.chat": "Where the access was granted, inserted into grant.from. {{title}} is the chat's or room's title.",
-    "grant.place.schedule": "Where the access was granted, inserted into grant.from: a scheduled task."
+    "grant.place.schedule": "Where the access was granted, inserted into grant.from: a scheduled task.",
+    "grant.place.chatUntitled": "Where the access was granted, inserted into grant.from: a private chat with no title."
 }

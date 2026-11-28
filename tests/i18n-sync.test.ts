@@ -66,13 +66,20 @@ describe('the import', () => {
         expect(Object.keys(body.context as Record<string, unknown>).sort()).toEqual(
             notes.map((name) => name.slice(0, -5)).sort(),
         );
+        // A label and where it appears for every en-US namespace, as i18n-build checks.
+        const namespaces = body.namespaces as Record<string, { label: string; where: string }>;
+        expect(Object.keys(namespaces).sort()).toEqual(
+            Object.keys((body.locales as Record<string, object>)['en-US']).sort(),
+        );
+        expect(namespaces['chat.composer']).toEqual({ label: expect.any(String), where: expect.any(String) });
     });
 
-    it('sends en-US, the translations, the context notes and the glossary, and hashes all but the commit', () => {
+    it('sends en-US, the translations, the context notes, the namespaces and the glossary, and hashes all but the commit', () => {
         const dir = setup({
             'locales/en-US/common.json': { a: 'Hello' },
             'locales/es-419/common.json': { a: 'Hola' },
             'notes/common.json': { a: 'A greeting on the home page' },
+            'namespaces.json': { common: { label: 'Home · Greeting', where: 'The top of the home page.' } },
             'glossary/es-419.json': [{ term: 'workspace', translation: 'espacio de trabajo' }],
             'glossary/xx-YY.json': [{ term: 'not a locale' }],
         });
@@ -88,6 +95,7 @@ describe('the import', () => {
             commit: 'abcdef1',
             locales: { 'en-US': { common: { a: 'Hello' } }, 'es-419': { common: { a: 'Hola' } } },
             context: { common: { a: 'A greeting on the home page' } },
+            namespaces: { common: { label: 'Home · Greeting', where: 'The top of the home page.' } },
             glossary: { 'es-419': [{ term: 'workspace', translation: 'espacio de trabajo' }] },
             pullRequests,
         });
@@ -105,6 +113,33 @@ describe('the import', () => {
             pullRequests: [{ number: 7, state: 'merged' }],
         });
         expect(merged.hash).not.toBe(first.hash);
+        writeFileSync(
+            join(dir, 'namespaces.json'),
+            JSON.stringify({ common: { label: 'Home · Greeting', where: 'The heading of the home page.' } }),
+        );
+        const moved = importPayload({
+            commit: '1234567',
+            localesDir: join(dir, 'locales'),
+            i18nDir: dir,
+            pullRequests,
+        });
+        expect(moved.body.namespaces).toEqual({
+            common: { label: 'Home · Greeting', where: 'The heading of the home page.' },
+        });
+        expect(moved.hash).not.toBe(first.hash);
+        // The app refuses a whole import over one bad entry: the body isn't built.
+        writeFileSync(
+            join(dir, 'namespaces.json'),
+            JSON.stringify({ common: { label: 'Home &amp; Greeting', where: 'The top of the home page.' } }),
+        );
+        expect(() => importPayload({ commit: '1234567', localesDir: join(dir, 'locales'), i18nDir: dir })).toThrow(
+            /namespaces\.json would fail the import:\ncommon\.label has an HTML entity/,
+        );
+        // Without the file, the field is left out rather than sent empty, which would clear every label.
+        rmSync(join(dir, 'namespaces.json'));
+        expect(
+            importPayload({ commit: '1234567', localesDir: join(dir, 'locales'), i18nDir: dir }).body,
+        ).not.toHaveProperty('namespaces');
         expect(() => importPayload({ commit: 'main', localesDir: join(dir, 'locales'), i18nDir: dir })).toThrow(
             /commit/,
         );
@@ -298,11 +333,16 @@ describe('the export', () => {
             files_other: '{{count}} ficheros',
         });
         // The build's other inputs, outside the locales folder.
-        const other = setup({ 'routes.json': { root: ['common'] } });
+        const other = setup({
+            'routes.json': { root: ['common'] },
+            'namespaces.json': { common: { label: 'Home · Greeting', where: 'The top of the home page.' } },
+        });
         const args = [
             '--check',
             '--locales',
             dir,
+            '--namespaces',
+            join(other, 'namespaces.json'),
             '--routes',
             join(other, 'routes.json'),
             '--types',

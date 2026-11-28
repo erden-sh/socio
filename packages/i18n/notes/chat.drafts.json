@@ -1,7 +1,9 @@
 {
     "title": "Title of the warning before signing out with messages typed but not sent.",
+    "sign-out": "Button in the warning before signing out with unsent drafts: signs out and clears them.",
     "body": "{{count}} is how many unsent drafts; {{places}} is a list of where they are (chat titles, or \"a new chat with Ada\").",
     "more": "The last item in that list, for the places not named.",
+    "place.untitled": "In the list of where unsent drafts are: a chat that has no title yet.",
     "place.new-chat": "Where a draft is: the new-chat box of a socio (AI agent). {{socio}} is its name. Lowercase: it goes inside a sentence.",
     "place.unknown": "Where a draft is, when the chat isn't known. Lowercase: it goes inside a sentence.",
     "leave-page-draft": "Browser confirmation when leaving a page being edited with unsaved changes."

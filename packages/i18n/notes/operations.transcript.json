@@ -15,6 +15,7 @@
     "note": "Notice above the chat. <link> wraps a link to the access log, the list of who opened what. The _room form is for a room (a chat with several people).",
     "load-earlier": "Button that loads earlier turns (answers from a socio) of the chat.",
     "try-again": "Button after a load error.",
+    "empty": "In place of the turns (answers from a socio) when the chat has none finished yet.",
     "loading": "Screen-reader status while turns load.",
     "showing-more": "Screen-reader status: how many turns are shown, and there are earlier ones to load.",
     "showing-all": "Screen-reader status: how many turns are shown, which is every one.",

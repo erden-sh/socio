@@ -24,6 +24,9 @@
     "heatmap.more": "Heatmap legend: the dark end of the color scale.",
     "heatmap.top": "After the legend when not every Space fits: {{shown}} Spaces shown, out of {{total}}.",
     "pages.title": "Heading of the table of pages that grounded (were read for) the most chats.",
+    "pages.page": "Column heading: the page's title.",
+    "pages.space": "Column heading: the Space (a shared area of pages; product noun) the page is in.",
+    "pages.chats": "Column heading: in how many chats socios read the page.",
     "pages.turns": "Column heading: how many turns (answers from a socio) read the page.",
     "pages.last": "Column heading: when the page was last read by a socio."
 }

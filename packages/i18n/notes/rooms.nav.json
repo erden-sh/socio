@@ -17,8 +17,13 @@
     "menu.section": "Label over the room's items in the phone header's ⋯ menu.",
     "menu.members": "Menu item: opens the room's Members panel (its people and socios).",
     "menu.topic": "Menu item: opens the room's Telegram topic settings (a Telegram group topic linked to the room).",
+    "menu.rename": "Item in a room's ⋯ menu, for room admins: opens the Rename room dialog.",
+    "menu.archive": "Item in a room's ⋯ menu, for room admins: archives the room, making it read-only.",
+    "menu.unarchive": "Item in an archived room's ⋯ menu, for room admins: brings the room back.",
     "menu.leave": "Destructive menu item: the reader leaves the room.",
     "menu.notify": "Label over the menu's choices of what in this room notifies the reader (everything, mentions, nothing).",
+    "toasts.archived": "Toast after a room was archived; it has an Undo button.",
     "toasts.undo": "Button in the \"Room archived\" toast; it unarchives the room again.",
+    "toasts.unarchived": "Toast after a room was unarchived.",
     "errors.read": "Toast when the room's people couldn't be read before the Leave dialog opens."
 }

@@ -4,8 +4,8 @@
 // only files; the workflows make the requests.
 //
 //   node scripts/i18n-sync.mjs payload --commit <sha> --out <file> [--pull-requests <file>]
-//       Writes the import's body (en-US, the translations, the glossary, the context notes and
-//       the state of the i18n/ pull requests) and prints its content hash, which leaves the
+//       Writes the import's body (en-US, the translations, the glossary, the context notes, each
+//       namespace's label and where it appears, and the state of the i18n/ pull requests) and prints its content hash, which leaves the
 //       commit out: an import whose hash is unchanged has nothing new to send.
 //   node scripts/i18n-sync.mjs locales --export <file>
 //       Prints the locales the export has candidates for, one per line, and how many candidates
@@ -24,6 +24,8 @@ import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import { LOCALES, SOURCE_LOCALE, resolutionChain } from '../packages/i18n/src/registry.ts';
+
+import { namespaceEntryProblems } from './lib/i18n-namespaces.mjs';
 
 const root = resolve(import.meta.dirname, '..');
 
@@ -79,7 +81,9 @@ export function pullRequestStates(list) {
 /**
  * The import's body: every locale folder's dictionaries (en-US and the translations, not the
  * pseudo-locale), the context notes `packages/i18n/notes/<ns>.json` ({ key: note }, the folder
- * i18n-build checks) and
+ * i18n-build checks), each namespace's label and where it appears (`packages/i18n/namespaces.json`,
+ * { ns: { label, where } }, every entry, checked with i18n-build's rules; no field without the
+ * file) and
  * `packages/i18n/glossary/<locale>.json` ([{ term, translation, note, doNotTranslate }]).
  */
 export function importPayload({ commit, localesDir, i18nDir, pullRequests = [] }) {
@@ -109,7 +113,17 @@ export function importPayload({ commit, localesDir, i18nDir, pullRequests = [] }
             .map((name) => [name.slice(0, -5), readJson(join(i18nDir, 'glossary', name))])
             .filter(([locale]) => isTranslatedLocale(locale)),
     );
-    const content = { locales, context, glossary, pullRequests };
+    // The app takes the namespaces as the complete set (one left out loses its label) and
+    // refuses the whole import if one entry breaks its rules, so every entry goes, checked.
+    const namespacesFile = join(i18nDir, 'namespaces.json');
+    const namespaces = existsSync(namespacesFile) ? readJson(namespacesFile) : undefined;
+    if (namespaces !== undefined) {
+        const problems = namespaceEntryProblems(namespaces);
+        if (problems.length) {
+            throw new Error(`namespaces.json would fail the import:\n${problems.join('\n')}`);
+        }
+    }
+    const content = { locales, context, ...(namespaces && { namespaces }), glossary, pullRequests };
     return { body: { commit, ...content }, hash: createHash('sha256').update(JSON.stringify(content)).digest('hex') };
 }
 

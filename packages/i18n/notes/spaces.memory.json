@@ -4,6 +4,7 @@
     "add": "Button for an editor: adds a memory entry at once.",
     "propose": "Button for a member who isn't an editor: proposes an entry for the editors to approve.",
     "missing": "Shown when the Space doesn't exist or the person can't read it.",
+    "loading": "On a Space's Memory tab while its entries load.",
     "audience.who": "First sentence of the Memory tab's intro: who reads the memory. _private for a private Space.",
     "audience.use": "Second sentence of the intro. \"Socios\" are AI agents.",
     "audience.waits": "Last sentence of the intro: where a proposal goes. _editor is shown to the Space's editors.",
@@ -11,7 +12,9 @@
     "provenance.proposed-in": "As provenance.proposed, with the chat it came from: <chat> wraps {{chat}}, the chat's title, as a link; keep the tags.",
     "proposals.title": "Heading of the proposals section: the reader's own proposals, or (_editor) everyone's waiting for approval.",
     "proposals.changes": "On a proposal that changes an existing entry: {{text}} is the entry it replaces. _unknown when that entry isn't shown.",
+    "proposals.approve": "Button for a Space editor on a proposed memory entry: approves it so the socios (AI agents) start using it.",
     "proposals.edit-approve": "Button: opens the proposal in an editor to reword it before approving.",
+    "proposals.reject": "Button for a Space editor on a proposed memory entry: turns it down.",
     "proposals.withdraw": "Button for the proposal's author: takes it back.",
     "entries.title": "Heading of the entries in use.",
     "entries.version": "Badge on an entry changed before. {{version}} is its version number.",
@@ -39,7 +42,9 @@
     "history.proposal": "Badge on a version that was only proposed, never in use.",
     "history.decided": "After a version's provenance: {{name}} is the editor who approved it, or (_rejected) rejected it. Lowercase: it follows \" · \".",
     "status.proposed": "A version's state: it waits for an editor.",
+    "status.active": "A version's state in an entry's history: the version socios (AI agents) use now.",
     "status.superseded": "A version's state: a newer version replaced it.",
+    "status.rejected": "A version's state in an entry's history: an editor turned the proposal down.",
     "status.withdrawn": "A version's state: its author took the proposal back.",
     "status.retired": "A version's state: no longer used."
 }

@@ -6,11 +6,15 @@
     "shortcuts.description": "Under that title: the shortcuts work anywhere in the app.",
     "shortcuts.search": "What the shortcut does: opens the search palette.",
     "shortcuts.ask": "What the shortcut does: opens the panel to ask a socio (an AI agent).",
+    "shortcuts.sidebar": "What the shortcut does, in the keyboard shortcuts dialog: hides or shows the sidebar.",
     "get-the-app.title": "Title of the dialog with a QR code for the mobile app; also the label of the banner offering it. \"Socio\" is the product name.",
+    "get-the-app.description": "Text of the dialog with a QR code for the mobile app. \"Socio\" is the product name; \"team beta\" means only some testers have the app so far.",
     "get-the-app.code": "Alternative text of the QR code image.",
     "get-the-app.banner": "Banner on a phone's browser offering the mobile app.",
     "get-the-app.get": "Button on that banner.",
     "get-the-app.not-now": "Screen-reader label of the banner's close button.",
     "theme.title": "Label of the color theme choice (light, dark or the system's).",
+    "theme.light": "Theme choice, in the Help menu and the command palette: always use the light colors.",
+    "theme.dark": "Theme choice, in the Help menu and the command palette: always use the dark colors.",
     "theme.system": "Theme choice: follow the device's light or dark setting."
 }

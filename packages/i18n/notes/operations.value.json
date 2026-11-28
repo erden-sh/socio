@@ -1,5 +1,7 @@
 {
     "tiles.completed": "Each tiles.*: a stat tile's label on the Value page. A session is a stretch of one chat; completed, answered and abandoned are how it ended (see outcomes.description).",
+    "tiles.answered": "Stat tile label: sessions that got answers but were neither completed nor abandoned.",
+    "tiles.abandoned": "Stat tile label: sessions nobody came back to within a day after a failure, a stop or a thumbs down.",
     "tiles.completedShare": "The share of sessions that were completed, as a percentage.",
     "tiles.resumption": "The share of chats people came back to after a break.",
     "outcomes.title": "Heading of the card about how sessions ended.",
@@ -12,12 +14,17 @@
     "chart.empty": "In place of the chart when the range has no data.",
     "intents.title": "Heading of the table of how sessions ended by intent (what people wanted: asking, writing…).",
     "intents.description": "<link> wraps the name of the Themes page (operations:sections.themes.label) and links to it. \"Operations → Settings\" names a page of this dashboard.",
+    "intents.empty": "In place of the intents table when the range has no sessions.",
     "approvals.title": "Heading of the card of approvals: actions socios (AI agents) asked people to allow.",
     "approvals.row": "A capability's funnel: how many actions socios asked for, people allowed, denied, let expire, and were carried out (done). The _failed form adds those that failed.",
+    "approvals.empty": "In place of the approvals card's table when socios asked for no approval in the range.",
     "reactions.title": "Heading of the card of people's reactions to socios' answers.",
     "reactions.reacted": "Label of a figure: socio answers that got any reaction.",
     "reactions.reacted-value": "That figure: {{reacted}} of {{total}} answers, {{share}} as a percentage.",
     "reactions.up": "Each of up, down, retry and needs-work: a reaction people can give an answer, as the chat's reaction buttons name them.",
+    "reactions.down": "A count's label: answers people gave a thumbs down. The same name as the chat's reaction button.",
+    "reactions.retry": "A count's label: answers people asked the socio to redo. The same name as the chat's reaction button.",
+    "reactions.needs-work": "A count's label: answers people marked as needing work. The same name as the chat's reaction button.",
     "lists.title": "Heading of the card with tabs of socios' usefulness and people's sessions.",
     "lists.socios": "Tab, and its list's accessible name. \"Socios\" are AI agents (product noun).",
     "lists.sessions": "Tab, and its list's accessible name.",
@@ -26,5 +33,7 @@
     "usefulness.repeat": "{{share}}: the share of its people who used it on 2 or more of the last 28 days.",
     "sessions.outcome": "Accessible name of the menu that narrows the sessions to one outcome.",
     "sessions.every-outcome": "The menu's choice that shows sessions of every outcome.",
-    "sessions.a-chat": "In place of a session's socio name when it has none."
+    "sessions.a-chat": "In place of a session's socio name when it has none.",
+    "sessions.messages": "In a session's row: how many messages it had.",
+    "sessions.people": "In a session's row: how many people took part in it."
 }

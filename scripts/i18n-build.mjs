@@ -9,7 +9,12 @@
 //     locale (es-US over es-419) only holds what differs;
 //   - every context note (packages/i18n/notes/<ns>.json, beside locales/)
 //     names a namespace and a key en-US has. Notes are for translators and
-//     drafting; they are never built or served.
+//     drafting; they are never built or served;
+//   - packages/i18n/namespaces.json, beside locales/, gives every en-US
+//     namespace a label ("Chat · Message box") and where it appears in the
+//     app, for translators: one entry per namespace and no other, each plain
+//     text on one line within the limits, as the translation app's import
+//     accepts them (scripts/lib/i18n-namespaces.mjs).
 //
 // It writes dist/i18n/<locale>/<ns>.<sha256-12>.json, each with a gzip and a
 // Brotli copy when that pays (as scripts/precompress.mjs), en-XA generated
@@ -33,6 +38,8 @@ import { brotliCompressSync, constants, gzipSync } from 'node:zlib';
 
 import { buildCatalog, CatalogError } from '../packages/i18n/src/catalog.ts';
 
+import { namespaceEntryProblems } from './lib/i18n-namespaces.mjs';
+
 /** The most a route's inlined en-US dictionaries may weigh, gzipped, before the build warns. */
 export const ROUTE_BUDGET_BYTES = 8 * 1024;
 const MIN_COMPRESSED = 1024;
@@ -49,6 +56,7 @@ const outDir = option('--out', join(root, 'dist/i18n'));
 const routesFile = option('--routes', join(root, 'packages/i18n/src/route-namespaces.json'));
 const typesFile = option('--types', join(root, 'packages/i18n/src/resources.gen.ts'));
 const notesDir = option('--notes', join(localesDir, '..', 'notes'));
+const namespacesFile = option('--namespaces', join(localesDir, '..', 'namespaces.json'));
 
 /** The files, parsed; a file that isn't JSON is a problem, reported with the rest. */
 function readSources(dir) {
@@ -114,6 +122,44 @@ function checkNotes(dir, english) {
     return problems;
 }
 
+/**
+ * namespaces.json: `{ "<ns>": { "label", "where" } }`, one entry for each en-US
+ * namespace and none for a namespace en-US doesn't have. Both fields are
+ * plain text on one line within their limits (lib/i18n-namespaces.mjs).
+ * Problems join the build's.
+ */
+function checkNamespaces(file, english) {
+    const name = 'namespaces.json';
+    let entries;
+    try {
+        entries = JSON.parse(readFileSync(file, 'utf8'));
+    } catch (error) {
+        return [
+            error.code === 'ENOENT'
+                ? `${name}: missing; it gives each en-US namespace a label and where it appears (docs/I18N.md)`
+                : `${name}: not valid JSON (${error.message})`,
+        ];
+    }
+    if (typeof entries !== 'object' || entries === null || Array.isArray(entries)) {
+        return [`${name}: must be an object of namespace → { label, where }`];
+    }
+    const problems = [];
+    const namespaces = Object.keys(english ?? {});
+    for (const ns of namespaces) {
+        if (!Object.hasOwn(entries, ns)) {
+            problems.push(`${name}: en-US namespace ${ns} needs an entry with a label and where it appears`);
+        }
+    }
+    const known = Object.fromEntries(Object.entries(entries).filter(([ns]) => namespaces.includes(ns)));
+    for (const ns of Object.keys(entries)) {
+        if (!Object.hasOwn(known, ns)) {
+            problems.push(`${name}: en-US has no namespace ${ns}`);
+        }
+    }
+    problems.push(...namespaceEntryProblems(known).map((problem) => `${name}: ${problem}`));
+    return problems;
+}
+
 /** A dictionary's dotted keys. */
 function* flattenKeys(dictionary, prefix = '') {
     for (const [key, value] of Object.entries(dictionary ?? {})) {
@@ -133,6 +179,7 @@ const kb = (bytes) => `${(bytes / 1024).toFixed(1)} kB`;
 const release = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).version;
 const { sources, problems } = readSources(localesDir);
 problems.push(...checkNotes(notesDir, sources['en-US']));
+problems.push(...checkNamespaces(namespacesFile, sources['en-US']));
 let catalog;
 try {
     catalog = buildCatalog(sources, release);

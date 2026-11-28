@@ -3,6 +3,7 @@
     "delete.subpages": "First sentence of the dialog's text when the page has pages under it (subpages). {{count}} is how many.",
     "delete.description": "The dialog's text: what deleting does. Space is a product noun.",
     "delete.list": "Accessible name of the list of subpages deleted with the page.",
+    "delete.cancel": "Button that closes the delete-page dialog without deleting anything.",
     "delete.action": "Destructive button that deletes the page; {{count}} counts the page and its subpages (one form for one page, the other for several).",
     "delete.deleting": "The delete button while the page is being deleted.",
     "delete.deleted": "Toast after deleting. {{title}} is the page's title.",
@@ -13,11 +14,13 @@
     "move.to": "Label of the picker of the Space to move to.",
     "move.destination": "Accessible name of the picker of the Space to move to.",
     "move.list": "Accessible name of the list of subpages moved with the page.",
+    "move.cancel": "Button that closes the move-page dialog without moving the page.",
     "move.action": "Button that moves the page; {{count}} counts the page and its subpages.",
     "move.moving": "The move button while the page is being moved.",
     "move.moved": "Toast after moving. {{title}} is the page's title, {{space}} the Space's name.",
     "move.save-first": "Error when the page's unsaved changes couldn't be saved before the move.",
     "folder.title": "Title of the dialog that makes a new folder of pages.",
     "folder.name": "Placeholder and accessible name of the folder's name field.",
+    "folder.cancel": "Button that closes the new-folder dialog without creating a folder.",
     "folder.create": "Button that makes the folder."
 }

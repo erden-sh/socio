@@ -2,6 +2,7 @@
     "title": "Heading of the popover with the connection's details. \"Socio\" is the product name.",
     "status": "Row label; the value is Online, Reconnecting or Offline.",
     "round-trip": "Row label; the value is the time a request took to the server and back.",
+    "not-measured": "Value of the Round trip row in the connection details popover before any round trip was timed.",
     "latency-quality": "{{latency}} is like \"120 ms\"; {{quality}} is good, fair or slow.",
     "recent": "Row label; the value lists the last few round-trip times.",
     "recent-list": "{{latencies}} is a list of times like \"120 ms\", formatted as a list.",
@@ -11,5 +12,7 @@
     "no-disconnect": "Value of Last disconnect when the connection never dropped since the tab was opened.",
     "how": "Footnote of the popover.",
     "quality.good": "How fast the last round trip to the server was, lowercase, after the time (\"120 ms, good\").",
+    "quality.fair": "How fast the last round trip to the server was, lowercase, after the time (\"350 ms, fair\").",
+    "quality.slow": "How fast the last round trip to the server was, lowercase, after the time (\"900 ms, slow\").",
     "label-measured": "The same once a round trip was measured: {{latency}} is like \"120 ms\", {{quality}} good, fair or slow."
 }

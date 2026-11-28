@@ -1,0 +1,458 @@
+{
+    "activity": {
+        "label": "Activity · Scheduled tasks page",
+        "where": "The Activity page (Scheduled & activity in the sidebar): the tasks you scheduled from a conversation with the clock button, their search box and status chips, and the details of an open task with its buttons to run, pause, repeat or cancel it."
+    },
+    "approvals": {
+        "label": "Approvals · Approvals page",
+        "where": "The Approvals page, where you see requests waiting for you, choose per socio how each kind of action is approved (manual, auto or bypass), write guidance for auto review, and browse recent decisions and the audit log."
+    },
+    "approvals.card": {
+        "label": "Approvals · Request card",
+        "where": "The card for one request a socio asks permission for, with Approve and Deny buttons. It shows in the chat, in the bar above the message box, on a request's own page, and in the Waiting for you panel on a socio's page."
+    },
+    "chat": {
+        "label": "Chat · Conversation",
+        "where": "An open conversation with a socio: the chat header (status, model, voice call, save as page), the messages with their copy, quote and feedback buttons, attachments and their viewer, and messages waiting in the queue."
+    },
+    "chat.composer": {
+        "label": "Chat · Message box",
+        "where": "The box at the bottom of a conversation where you type a message, with its buttons for attaching files, adding a source link, choosing a skill and sending. Also the welcome and suggested first messages of a new chat, and send errors."
+    },
+    "chat.dot-home": {
+        "label": "Chat · Socio home page",
+        "where": "A socio's own home page, opened from the sidebar: its name and buttons (Soul, Settings, New chat) and three columns of what is happening now, what happened earlier and what is planned next, plus the list of its chats."
+    },
+    "chat.drafts": {
+        "label": "Chat · Unsent drafts warning",
+        "where": "The warning shown when you sign out while messages you typed in chats are still unsent, and the browser prompt when you leave a page with an unsaved draft."
+    },
+    "chat.menu": {
+        "label": "Chat · Chat and socio menus",
+        "where": "The ⋯ menus beside a chat's title and a socio's name (rename, archive, delete, permissions, Soul), their confirmation dialogs and toasts, the menu of a socio's chats in the header, and the banner over an archived chat or socio."
+    },
+    "chat.model": {
+        "label": "Chat · Model picker",
+        "where": "The list for choosing which AI model a socio uses, in the chat header, in a new chat and in a socio's settings dialog, including the automatic and default choices."
+    },
+    "chat.nav": {
+        "label": "Chat · Sidebar",
+        "where": "The sidebar on every page: the list of your socios and your recent chats, with buttons to create a socio or start a chat, and the line shown while a chat is loading."
+    },
+    "chat.report": {
+        "label": "Chat · Report a reply",
+        "where": "The dialog that opens after a thumbs-down on a socio's reply, to report that reply to Ingenio with a reason and an optional note, and the warning before removing a reported thumbs-down."
+    },
+    "chat.result": {
+        "label": "Chat · Findings panel",
+        "where": "The panel beside a chat (or over it on small screens) with two tabs: the research brief the socio wrote, with its sources, and the socio's computer. It opens with the Show computer button."
+    },
+    "chat.soul": {
+        "label": "Chat · Soul page",
+        "where": "A socio's Soul page, opened from its home page: its character and instructions, the editor to change them, and the history of earlier versions that can be restored."
+    },
+    "chat.trace": {
+        "label": "Chat · Steps of a reply",
+        "where": "The expandable list of steps under a socio's reply (tools it used, thinking time) and each step's details, such as what the tool was given and what it returned."
+    },
+    "common": {
+        "label": "Everywhere · Product name",
+        "where": "Words any screen may use, such as the product name Socio, which appears for example as the author of automatic comments on an issue."
+    },
+    "issues": {
+        "label": "Issues · Board and list",
+        "where": "The Issues page, the team's issue tracker: the board with one column per status, the list view, the search and filter toolbar, voting, and Select mode for changing several issues at once (admins only)."
+    },
+    "issues.detail": {
+        "label": "Issues · Issue window",
+        "where": "The window that opens over the Issues board when you click an issue: its title, description, files, comments and history tabs, and the side panel with its fields, links and triage proposal. Admins can edit every field and delete the issue."
+    },
+    "issues.form": {
+        "label": "Issues · Attachments and components",
+        "where": "Pieces shared by the issue window and the Report an issue dialog: the buttons and thumbnails for attached files, and the Components field where you pick the plugins and apps an issue is about."
+    },
+    "issues.report": {
+        "label": "Issues · Report an issue",
+        "where": "The dialog that files a new issue on the team's tracker, with its title, description, kind, priority and area. It opens from the New issue button on the Issues page, the bug button in the header, or a socio's failed run."
+    },
+    "issues.slots": {
+        "label": "Issues · Shortcuts elsewhere in the app",
+        "where": "Issue tracker pieces shown outside the Issues page: the Report issue button in the header and account menu, the File issue button under a failed run, the Issues card on Home, a socio's Filed on the board panel, and toasts when a socio's request is done."
+    },
+    "issues.terms": {
+        "label": "Issues · Statuses, priorities and labels",
+        "where": "The fixed words of the issue tracker, used on badges, board columns, filters and menus everywhere issues appear: each status, priority, kind, product area and label, and the names of plugin and app components."
+    },
+    "operations": {
+        "label": "Operations · Dashboard navigation",
+        "where": "The admin-only Operations dashboard that shows how the workspace uses Socio: its title, breadcrumb and the side navigation listing its pages (Overview, Activity, Value, Themes and the others)."
+    },
+    "operations.access-log": {
+        "label": "Operations · Access log",
+        "where": "The Access log page of Operations, for admins only: a list of each time an admin opened a person's activity, a chat or a turn's record, with the page it was opened from."
+    },
+    "operations.activity": {
+        "label": "Operations · Activity",
+        "where": "The Activity page of Operations, for admins only: tiles, a chart and cards on who works with which socios and through which channels, and tabs listing people, socios and chats."
+    },
+    "operations.capabilities": {
+        "label": "Operations · Capabilities",
+        "where": "The Capabilities page of Operations, for admins only: which tools socios have and use, gaps between the tools and what socios are told they can do, and what socios asked to be able to do."
+    },
+    "operations.chat-grounding": {
+        "label": "Operations · Chat transcript sources",
+        "where": "On a chat's transcript in Operations, for admins only: the list inside the What grounded this chat panel, shown when the admin opens it, of the pages and datasets the chat's answers read."
+    },
+    "operations.cost": {
+        "label": "Operations · Cost",
+        "where": "The Cost page of Operations, for admins only: totals, a cost chart, and tables of what socios' answers cost by model, socio, person, room and backend, plus work cycles and unpriced models."
+    },
+    "operations.cost-admin": {
+        "label": "Operations · Cost pools and prices",
+        "where": "The lower cards of the Cost page in Operations, for admins only: cost pools for self-hosted backends and subscriptions, the daily price sync, and the table of model prices with its form."
+    },
+    "operations.dashboard": {
+        "label": "Operations · Shared page parts",
+        "where": "Parts shared by the pages of Operations, for admins only: each page's intro under its title, the bar that picks the time range and filters, the line about how fresh the data is, and the sessions-by-intent table."
+    },
+    "operations.failure-label": {
+        "label": "Operations · Failure label panel",
+        "where": "On the Reliability page of Operations, for admins only: the panel shown when an admin opens a failure the rules couldn't sort, to read its error text and choose its category."
+    },
+    "operations.grounding": {
+        "label": "Operations · Knowledge grounding card",
+        "where": "A card on the Knowledge page of Operations, for admins only: what socios read to answer, with a heatmap of reads by Space and a table of the pages used in the most chats."
+    },
+    "operations.health": {
+        "label": "Operations · Backups and data freshness",
+        "where": "The top card of the Health page in Operations, for admins only: backups, the database's continuous copy, restore drills, mini apps, and how fresh the dashboard's copied data is."
+    },
+    "operations.health-numbers": {
+        "label": "Operations · Health numbers",
+        "where": "The lower cards of the Health page in Operations, for admins only: latency and queues, tokens used, schedules and goals, jobs and long runs, and how much of the data was recorded."
+    },
+    "operations.knowledge": {
+        "label": "Operations · Knowledge",
+        "where": "Admin-only Operations dashboard, Knowledge page: stat tiles and cards on Spaces, pages, page searches and datasets, and how they were used in the chosen range."
+    },
+    "operations.knowledge-storage": {
+        "label": "Operations · Knowledge, storage and limits",
+        "where": "Admin-only Operations dashboard, Knowledge page: the cards on data that company socios share, what the workspace stores (with a chart over time) and the limits on what each person may store."
+    },
+    "operations.labeling": {
+        "label": "Operations · Settings, model labeling",
+        "where": "Admin-only Operations dashboard, Settings page: the cards that let the workspace's model label failed turns, session intents, session themes and Learning conversations, with the results of its evaluations."
+    },
+    "operations.overview": {
+        "label": "Operations · Overview",
+        "where": "The first page of the admin-only Operations dashboard: stat tiles and a chart for the chosen range, and a list of recent socio answers (turns) with their status."
+    },
+    "operations.reliability": {
+        "label": "Operations · Reliability",
+        "where": "Admin-only Operations dashboard, Reliability page: failure rate tiles and chart, failures by category, where failures happen, failures that keep repeating, and the list of recent failures."
+    },
+    "operations.reliability-board": {
+        "label": "Operations · Reliability, Improvements board",
+        "where": "Admin-only Operations dashboard, Reliability page: the card with tiles and a chart on items filed on the Improvements board, and how fast they are reported and resolved."
+    },
+    "operations.resources": {
+        "label": "Operations · Health, server resources",
+        "where": "Admin-only Operations dashboard, Health page: the cards on the server's resources, the deployment's services and socios' computers (CPU, memory, disk), with their hourly history."
+    },
+    "operations.room-audit": {
+        "label": "Operations · Room audit log",
+        "where": "Admin-only: on a room's read-only transcript opened from the Operations dashboard, the collapsible list of who joined, left, was invited, changed roles or socios, and when."
+    },
+    "operations.settings": {
+        "label": "Operations · Settings",
+        "where": "Admin-only Operations dashboard, Settings page: the reporting time zone, how chats are cut into sessions, how long data is kept, and the daily sync of model prices."
+    },
+    "operations.socio-access": {
+        "label": "Operations · Socio access",
+        "where": "Admin-only Operations dashboard, Socio access page: the permissions people gave socios to use apps on their behalf, where an admin can end one."
+    },
+    "operations.themes": {
+        "label": "Operations · Themes",
+        "where": "Admin-only Operations dashboard, Themes page: what people come to socios for (intents and topics), and a review list where admins check and correct the model's labels on sessions."
+    },
+    "operations.transcript": {
+        "label": "Operations · Chat transcript",
+        "where": "Admin-only: the read-only view of a person's chat or a room, opened from the Operations dashboard, with its heading line, the access notice and the list of turns."
+    },
+    "operations.value": {
+        "label": "Operations · Value",
+        "where": "Admin-only Operations dashboard, Value page: how sessions end (completed, answered, abandoned), by intent, plus approvals, reactions to answers, and lists of socios and sessions."
+    },
+    "pages": {
+        "label": "Pages · Page view",
+        "where": "A page open in a Space: its header with save status and menu, title and cover, the side list of the Space's pages, folder contents, the chat about the page beside it, and the message shown when a page was deleted or not found."
+    },
+    "pages.cover": {
+        "label": "Pages · Cover picker",
+        "where": "The popup on a Space page where you choose a cover, the wide picture above the page's title: upload a new picture or pick one already in the Space."
+    },
+    "pages.dialogs": {
+        "label": "Pages · Delete, move and new folder dialogs",
+        "where": "The dialogs opened from a Space page's menu or library: confirm deleting a page and its subpages, move a page to another Space, and name a new folder."
+    },
+    "pages.editor": {
+        "label": "Pages · Text editor",
+        "where": "The editor where you write a Space page: its formatting toolbar, the block menu that opens when you type a slash, link cards, pictures, and dataset view blocks that show a live table or chart."
+    },
+    "pages.review": {
+        "label": "Chat · Page review card",
+        "where": "The card in a conversation where you approve or decline a page a socio drafted; once approved, the draft is saved as a page in the Space."
+    },
+    "rooms": {
+        "label": "Rooms · Room conversation",
+        "where": "The screen of a Room, a conversation several people and socios share: its header, messages, the message box with @mentions and /invite, and read-only Telegram team conversations."
+    },
+    "rooms.dialogs": {
+        "label": "Rooms · Dialogs",
+        "where": "The pop-up dialogs for rooms: creating a room, turning a private chat into a room, renaming, leaving, answering room invitations, and linking a room to a Telegram topic."
+    },
+    "rooms.members": {
+        "label": "Rooms · Members panel",
+        "where": "The panel beside a Room, opened from its header: its people, invitations and socios, with inviting, roles, the lead socio, the handoff limit and the room's usage and limits."
+    },
+    "rooms.nav": {
+        "label": "Rooms · Sidebar and room menu",
+        "where": "The Rooms list in the sidebar, each room's options menu (also in the room's header), the notice of waiting invitations on Home, and the toasts after archiving a room."
+    },
+    "rooms.notify": {
+        "label": "Settings · Notifications, Rooms card",
+        "where": "The Rooms card on the Notifications page of your account Settings: how room notifications work, and the switch for showing your avatar to others while you have a room open."
+    },
+    "rooms.pins": {
+        "label": "Rooms · Pinned facts panel",
+        "where": "The panel beside a Room, opened from the Pinned button in its header: facts pinned for the room's socio, proposals waiting for an admin, each pin's history and the room's notes."
+    },
+    "runs": {
+        "label": "Runs · Recent turns page",
+        "where": "The Runs page: a table of recent socio turns (replies to a message) with their status, conversation, owner, source, start time and duration, and a status filter. Members see their own turns; admins see the whole team's."
+    },
+    "runs.summary": {
+        "label": "Runs · Turn summary line",
+        "where": "The short line under a turn on the Runs page and at the top of a turn's trace: why the turn ended, how many model rounds it ran, and how many tokens the AI model read and wrote."
+    },
+    "runs.trace": {
+        "label": "Runs · Turn trace",
+        "where": "The step-by-step timeline that opens under a turn on the Runs page, and under a failure on the admin-only Operations Reliability page: each model round, tool call, retry, switch to the shared model, and wait."
+    },
+    "schedules": {
+        "label": "Schedules · Statuses, repeats and shared buttons",
+        "where": "Words shared by the schedule screens and a socio's home page panels: schedule, run and goal status badges, how often a task repeats, the Run now, Pause and Resume buttons, and the comments on a goal."
+    },
+    "schedules.detail": {
+        "label": "Schedules · Schedule page",
+        "where": "The page of one schedule, opened from the Schedules page: its purpose, its goal's progress and comments, the What it does card (socio, cadence, next runs, time zone, approvals, status) and the list of its past runs."
+    },
+    "schedules.dialogs": {
+        "label": "Schedules · Cancel schedule dialog",
+        "where": "The dialog that opens when you cancel a schedule from the Schedules page or a schedule's page, where you type the schedule's title to confirm."
+    },
+    "schedules.job": {
+        "label": "Schedules · Job details panel",
+        "where": "The panel that opens under the jobs table on the Schedules page when you click Details on a job: its code versions, its runs and their logs, a long-running job's progress, and the button to delete the job."
+    },
+    "schedules.list": {
+        "label": "Schedules · Schedules and jobs page",
+        "where": "The Schedules page: the Goals card and the table of your schedules, the Jobs tab with the code your socios saved to run regularly, and an admin-only Workspace tab with counts for everyone."
+    },
+    "schedules.plans": {
+        "label": "Schedules · Goals and Scheduled panels on a socio's home",
+        "where": "The Goals and Scheduled panels in the planned-next column of a socio's home page: the goals the socio works toward for you and its schedules that will run again."
+    },
+    "schedules.purpose": {
+        "label": "Schedules · Show all and Show less for long prompts",
+        "where": "The buttons under a long task or schedule prompt, on the Activity page and on a schedule's page, that expand the prompt or collapse it again."
+    },
+    "settings": {
+        "label": "Settings · Navigation and shared parts",
+        "where": "The list of Settings pages beside every settings page, with its group headings and the version footer, plus the Saving and Saved status of settings cards and the Socios widget on the home page that pauses or resumes all socios."
+    },
+    "settings.access": {
+        "label": "Settings · Access (sign-in)",
+        "where": "The admins' Settings page about how people sign in to this server: sign-in methods, allowed emails and domains, the dialog to confirm a change with a password or passkey, and the history of changes. Admins only."
+    },
+    "settings.account": {
+        "label": "Settings · Profile",
+        "where": "The person's own Profile page in Settings: their name, passkeys, password, signing out everywhere, and leaving the workspace."
+    },
+    "settings.archived-chats": {
+        "label": "Settings · Archived chats",
+        "where": "The person's Archived chats page in Settings and its dialog listing the chats they hid from the sidebar, where they can unarchive or delete each one."
+    },
+    "settings.backups": {
+        "label": "Settings · Database copy status",
+        "where": "The status line about the continuous copy of the database, shown to admins in the Service setup card on Settings › General and on the Platform page. Admins only."
+    },
+    "settings.chat-skills": {
+        "label": "Settings · Chat skills",
+        "where": "The admins' Settings page of chat skills, saved instructions people start a message with (such as /standup): the list, the form to add or edit one, its history, and importing one from GitHub. Admins only."
+    },
+    "settings.connected-agents": {
+        "label": "Settings · Connected agents",
+        "where": "The person's Settings page listing outside AI agents, such as Claude Code, that act in Socio for them, with a button to disconnect each one."
+    },
+    "settings.data-api": {
+        "label": "Settings · Data API tokens",
+        "where": "The admins' Settings page of data API tokens that their own scripts use to fill the company's datasets: the table of tokens and the dialog that makes a new one. Admins only."
+    },
+    "settings.deleted-spaces": {
+        "label": "Settings · Deleted Spaces",
+        "where": "The admins' Settings page listing deleted Spaces, who deleted them and when, with a button to restore each one. Admins only."
+    },
+    "settings.devices": {
+        "label": "Settings · Phones with the app",
+        "where": "The card listing phones signed in to the Socio mobile app, with buttons to sign out or erase each one. It shows on the person's Profile page, and to admins on a person's page under Settings › People."
+    },
+    "settings.dialogs": {
+        "label": "Dialogs · Socio, Space, memory and schedule",
+        "where": "The dialogs that create or edit a socio (an AI agent), create a Space, save a memory, or schedule a repeating task in a chat. They open from the sidebar, a socio's page, a chat or the command palette."
+    },
+    "settings.features": {
+        "label": "Settings · Optional and early features",
+        "where": "The admins' Settings pages Optional features, Early access and In development, where they switch features on or off for the workspace or for some roles and people. Admins only."
+    },
+    "settings.inference": {
+        "label": "Settings · Inference",
+        "where": "The person's Inference page in Settings: which AI model their chats run on, and the AI subscriptions they can connect or disconnect."
+    },
+    "settings.language": {
+        "label": "Settings · Language",
+        "where": "The Language card on the person's Profile page in Settings, where they pick the language Socio shows them or choose to match their device."
+    },
+    "settings.mcp": {
+        "label": "Settings · External MCP connections",
+        "where": "The card on the person's Profile page in Settings where they connect outside MCP servers, review the sign-in and tools, and choose which socios may use those tools."
+    },
+    "settings.notifications": {
+        "label": "Settings · Notifications",
+        "where": "The person's Notifications page in Settings: push notifications and Telegram as channels, what a notification shows, a test button, and one-time subscriptions to issues reaching a status."
+    },
+    "settings.people": {
+        "label": "Settings · People",
+        "where": "The admins' People page in Settings: the table of people with their roles, status and sign-in, the invite and password link dialogs, and the Groups tab. Parts also show on a person's own page. Admins only."
+    },
+    "settings.performance": {
+        "label": "Settings · Performance recording",
+        "where": "The person's Performance page in Settings, which records how fast the app responds in this tab and downloads a report for a bug report."
+    },
+    "settings.person": {
+        "label": "Settings · Person page",
+        "where": "The page an admin opens for one person from Settings, People: its header and menu, the stat tiles, the tab names, the Access tab (Spaces, socios, agents, groups) and the deactivate footer. Admins only."
+    },
+    "settings.person-dialogs": {
+        "label": "Settings · Person dialogs",
+        "where": "The dialogs an admin opens from a person's page in Settings, People: deactivate or reactivate them, transfer what they own to someone else, make them the workspace owner, or remove them for good. Admins only."
+    },
+    "settings.person-tabs": {
+        "label": "Settings · Person's sign-in, owns and activity tabs",
+        "where": "The Sign-in, Owns and Activity tabs of a person's page in Settings, People: where they are signed in and how they sign in, what they own that can be transferred, and the audit log about them. Admins only."
+    },
+    "settings.secrets": {
+        "label": "Settings · Secrets",
+        "where": "The Secrets page in Settings, where admins set the API keys and passwords that workspace apps and plugins read while they run, see who read them and grant them to apps. Admins only."
+    },
+    "settings.service-accounts": {
+        "label": "Settings · Service accounts",
+        "where": "The Service accounts tab of Settings, People, where admins add accounts for outside agents and scripts and make, revoke or delete their API keys. Admins only."
+    },
+    "settings.shared": {
+        "label": "Socio access · Request cards and grants",
+        "where": "Shared words for socio access: the card in a chat where a socio asks to read or act in a mini app for you, and the list of granted accesses in Settings and on admin pages."
+    },
+    "settings.socio-access": {
+        "label": "Settings · Socio access",
+        "where": "The Socio access page in your account Settings: whether each socio may read mini apps for you without asking, and the accesses you granted socios, which you can end."
+    },
+    "settings.workspace": {
+        "label": "Settings · General",
+        "where": "The workspace's General settings page: cards for branding, permissions, who creates Spaces, daily limits, triage, busy models, tracing, long chats and the backup schedule. Members can read most; only admins change them."
+    },
+    "settings.workspace-apps": {
+        "label": "Settings · Mobile app and mini app logs",
+        "where": "Three cards on the workspace's General settings page: whether invites open the Socio mobile app, the rules for the app's copy of the workspace on phones, and how long mini app logs are kept. Only admins can change them."
+    },
+    "settings.workspace-github": {
+        "label": "Settings · GitHub App",
+        "where": "A card on the workspace's General settings page, shown only to admins, where they connect a GitHub App so coding sessions can push branches and open draft pull requests."
+    },
+    "settings.workspace-limits": {
+        "label": "Settings · Workspace limits",
+        "where": "The cards of workspace limits on the General settings page, such as schedules and jobs, data space, socio replies, memory and backups, each with number fields. Members can read them; only admins can change them."
+    },
+    "settings.workspace-rooms": {
+        "label": "Settings · Workspace rooms",
+        "where": "The Rooms card on the workspace's General settings page: whether members may create shared rooms and see a room's use, and, for admins, the socios that rooms asked to let in."
+    },
+    "settings.workspace-setup": {
+        "label": "Settings · Service setup",
+        "where": "The Service setup card at the bottom of the workspace's General settings page: status lines about the model, Telegram, voice, encryption keys, backups and restore drills, with admin-only buttons."
+    },
+    "shell": {
+        "label": "App · Header and errors",
+        "where": "The app's frame on every page: the header with breadcrumbs, search, Help and (for admins) pause buttons, the connection indicator, notice toasts, the loading screen and the error and page-not-found screens."
+    },
+    "shell.add-device": {
+        "label": "App · Add a device",
+        "where": "The Add a device dialog, opened from the account menu at the bottom of the sidebar, that shows a QR code to sign the Socio mobile app in and asks for the code the new device shows."
+    },
+    "shell.dot-state": {
+        "label": "App · Socio status",
+        "where": "The short status word beside a socio (Idle, Working, Paused) on the home page and on the socio's own home page."
+    },
+    "shell.help": {
+        "label": "App · Help menu",
+        "where": "The Help menu in the header (guides, what's new, keyboard shortcuts and the light or dark theme), the keyboard shortcuts dialog, and the banner and dialog offering the Socio mobile app."
+    },
+    "shell.home": {
+        "label": "App · Home page",
+        "where": "The home page you see after signing in: its heading with counts of your socios, Spaces and chats, your socios, the apps you can open, small status widgets, recent conversations and what's new."
+    },
+    "shell.palette": {
+        "label": "App · Search palette",
+        "where": "The search and command palette, opened with a keyboard shortcut (Ctrl K) or the header's search, that finds socios, chats, pages, issues and commands as you type, grouped under headings."
+    },
+    "shell.sign-in": {
+        "label": "App · Sign-in screen",
+        "where": "The screen shown before you are signed in: sign in with a password, passkey, provider or Telegram link, create an account, reset a password, open a one-time sign-in link, and set a new password."
+    },
+    "shell.status": {
+        "label": "App · Connection details",
+        "where": "The small popover that opens from the connection indicator in the header, with the connection status, how long a round trip to the server takes, and when it last checked or disconnected."
+    },
+    "spaces": {
+        "label": "Spaces · Page library",
+        "where": "A Space's main screen: the tabs under its name and the Pages tab, the library of its pages and folders as cards or rows, with search, sorting, the path you are browsing, and the buttons for new pages, folders and datasets."
+    },
+    "spaces.audience": {
+        "label": "Spaces · Who sees a Space",
+        "where": "The two choices for who sees a Space, the whole workspace or only its people, shown in the dialog that creates a Space and on the Space's Settings tab."
+    },
+    "spaces.dialogs": {
+        "label": "Spaces · Delete Space and dataset dialogs",
+        "where": "The dialog that confirms deleting a whole Space by typing its name, and the dialogs from a Space's library that create a new dataset or add one you already have to the Space."
+    },
+    "spaces.memory": {
+        "label": "Spaces · Memory tab",
+        "where": "A Space's Memory tab: the shared facts the Space's socios use for everyone in it, proposals waiting for an editor's approval, retired entries, and each entry's history of versions."
+    },
+    "spaces.nav": {
+        "label": "Spaces · Sidebar and breadcrumbs",
+        "where": "The Spaces list in the left sidebar with its button to create a Space, and the breadcrumbs in the header on a Space's tabs."
+    },
+    "spaces.promote": {
+        "label": "Spaces · Follow-up dialog",
+        "where": "The dialog opened from a Space page's menu that turns what the page found into a follow-up: an issue on the Improvements board, a recurring schedule, or a goal for the Space's socio."
+    },
+    "spaces.radar": {
+        "label": "Spaces · Radar tab",
+        "where": "A Space's Radar tab: the pages changed most recently, pages with an open decision or experiment, and pages that may be out of date."
+    },
+    "spaces.settings": {
+        "label": "Spaces · Settings tab",
+        "where": "A Space's Settings tab: renaming the Space, who sees it, its people and their roles, and deleting the Space. Space editors make these changes; other members see them read-only."
+    }
+}

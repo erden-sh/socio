@@ -3,7 +3,9 @@
     "listLabel": "Accessible name of the list of connected agents.",
     "disconnect": "Button: ends an external agent's access at once.",
     "used": "Line under a connected agent. {{connected}} and {{used}} are dates and times, or \"never\".",
+    "when": "A date and time in a connected agent's line (when it connected or was last used); only formats it.",
     "never": "Stands in for a date in \"last used …\" when the agent never acted.",
+    "none": "Shown on Settings › Connected agents when no outside agent is connected.",
     "confirmTitle": "Title of the confirmation before disconnecting. {{agent}} is the agent's label.",
     "disconnected": "Toast after disconnecting. {{agent}} is the agent's label."
 }

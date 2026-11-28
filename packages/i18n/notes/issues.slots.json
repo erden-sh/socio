@@ -10,6 +10,7 @@
     "widget.title": "Home page card for the team's issue tracker.",
     "widget.open": "The card's number: how many issues are open.",
     "widget.triage": "Under it: how many wait in triage, the tracker's first status, to be sorted.",
+    "widget.tracker": "Under the Home page card's title while the issue counts load.",
     "filings.title": "Heading of the panel, on a socio's page, of what it filed on the issue board for you.",
     "filings.failed": "When the panel couldn't load.",
     "filings.empty": "{{name}} is the socio's name.",
