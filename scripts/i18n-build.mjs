@@ -13,7 +13,8 @@
 //   - packages/i18n/namespaces.json, beside locales/, gives every en-US
 //     namespace a label ("Chat · Message box") and where it appears in the
 //     app, for translators: one entry per namespace and no other, each plain
-//     text on one line within the limits (NAMESPACE_LABEL_MAX, NAMESPACE_WHERE_MAX).
+//     text on one line within the limits, as the translation app's import
+//     accepts them (scripts/lib/i18n-namespaces.mjs).
 //
 // It writes dist/i18n/<locale>/<ns>.<sha256-12>.json, each with a gzip and a
 // Brotli copy when that pays (as scripts/precompress.mjs), en-XA generated
@@ -37,12 +38,11 @@ import { brotliCompressSync, constants, gzipSync } from 'node:zlib';
 
 import { buildCatalog, CatalogError } from '../packages/i18n/src/catalog.ts';
 
+import { namespaceEntryProblems } from './lib/i18n-namespaces.mjs';
+
 /** The most a route's inlined en-US dictionaries may weigh, gzipped, before the build warns. */
 export const ROUTE_BUDGET_BYTES = 8 * 1024;
 const MIN_COMPRESSED = 1024;
-/** The longest a namespace's label and where-it-appears may be, in characters (the translation app's limits). */
-export const NAMESPACE_LABEL_MAX = 80;
-export const NAMESPACE_WHERE_MAX = 300;
 
 const root = resolve(import.meta.dirname, '..');
 const args = process.argv.slice(2);
@@ -125,7 +125,7 @@ function checkNotes(dir, english) {
 /**
  * namespaces.json: `{ "<ns>": { "label", "where" } }`, one entry for each en-US
  * namespace and none for a namespace en-US doesn't have. Both fields are
- * plain text on one line, within their limits, with no `{{` and no markup.
+ * plain text on one line within their limits (lib/i18n-namespaces.mjs).
  * Problems join the build's.
  */
 function checkNamespaces(file, english) {
@@ -150,38 +150,13 @@ function checkNamespaces(file, english) {
             problems.push(`${name}: en-US namespace ${ns} needs an entry with a label and where it appears`);
         }
     }
-    const limits = { label: NAMESPACE_LABEL_MAX, where: NAMESPACE_WHERE_MAX };
-    for (const [ns, entry] of Object.entries(entries)) {
-        if (!namespaces.includes(ns)) {
+    const known = Object.fromEntries(Object.entries(entries).filter(([ns]) => namespaces.includes(ns)));
+    for (const ns of Object.keys(entries)) {
+        if (!Object.hasOwn(known, ns)) {
             problems.push(`${name}: en-US has no namespace ${ns}`);
-            continue;
-        }
-        if (typeof entry !== 'object' || entry === null || Array.isArray(entry)) {
-            problems.push(`${name}: ${ns} must be an object with a label and a where`);
-            continue;
-        }
-        for (const field of Object.keys(entry)) {
-            if (!Object.hasOwn(limits, field)) {
-                problems.push(`${name}: ${ns} has an unknown field ${field} (only label and where)`);
-            }
-        }
-        for (const [field, max] of Object.entries(limits)) {
-            const text = entry[field];
-            if (typeof text !== 'string' || !text.trim()) {
-                problems.push(`${name}: ${ns}.${field} needs text (a non-empty string)`);
-            } else if (text.length > max) {
-                problems.push(`${name}: ${ns}.${field} is ${text.length} characters, over the ${max} limit`);
-            } else if (/[\p{Cc}\u2028\u2029]/u.test(text)) {
-                problems.push(`${name}: ${ns}.${field} must be a single line, with no tabs or control characters`);
-            } else if (text.includes('{{')) {
-                problems.push(`${name}: ${ns}.${field} has a {{ placeholder; it's shown as plain text`);
-            } else if (/[<>]/u.test(text)) {
-                problems.push(`${name}: ${ns}.${field} has < or >; it's plain text, with no HTML`);
-            } else if (text !== text.trim()) {
-                problems.push(`${name}: ${ns}.${field} starts or ends with spaces`);
-            }
         }
     }
+    problems.push(...namespaceEntryProblems(known).map((problem) => `${name}: ${problem}`));
     return problems;
 }
 

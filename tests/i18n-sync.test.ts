@@ -127,6 +127,19 @@ describe('the import', () => {
             common: { label: 'Home · Greeting', where: 'The heading of the home page.' },
         });
         expect(moved.hash).not.toBe(first.hash);
+        // The app refuses a whole import over one bad entry: the body isn't built.
+        writeFileSync(
+            join(dir, 'namespaces.json'),
+            JSON.stringify({ common: { label: 'Home &amp; Greeting', where: 'The top of the home page.' } }),
+        );
+        expect(() => importPayload({ commit: '1234567', localesDir: join(dir, 'locales'), i18nDir: dir })).toThrow(
+            /namespaces\.json would fail the import:\ncommon\.label has an HTML entity/,
+        );
+        // Without the file, the field is left out rather than sent empty, which would clear every label.
+        rmSync(join(dir, 'namespaces.json'));
+        expect(
+            importPayload({ commit: '1234567', localesDir: join(dir, 'locales'), i18nDir: dir }).body,
+        ).not.toHaveProperty('namespaces');
         expect(() => importPayload({ commit: 'main', localesDir: join(dir, 'locales'), i18nDir: dir })).toThrow(
             /commit/,
         );

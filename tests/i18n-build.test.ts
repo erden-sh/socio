@@ -169,12 +169,24 @@ describe('scripts/i18n-build.mjs', () => {
     it('needs a label and where it appears for every namespace, and nothing else, in plain text on one line', () => {
         const where = 'The box at the bottom of a conversation.';
         const dir = setup(
-            { 'en-US/common.json': EN, 'en-US/chat.json': EN, 'en-US/shell.json': EN, 'en-US/pages.json': EN },
+            {
+                'en-US/common.json': EN,
+                'en-US/chat.json': EN,
+                'en-US/shell.json': EN,
+                'en-US/pages.json': EN,
+                'en-US/rooms.json': EN,
+                'en-US/spaces.json': EN,
+            },
             undefined,
             {
                 common: { label: 'Common words', where },
                 chat: { label: 'L'.repeat(81), where: 'W'.repeat(301) },
                 shell: { label: 'Shell · {{name}}', where: 'The <b>header</b>.' },
+                rooms: { label: 'Rooms &amp; chats', where: 'A room\u202e, reversed.' },
+                spaces: {
+                    label: 'Spaces & pages',
+                    where: `Shown when fewer than 5 < 6 items remain ${'é'.repeat(250)}`,
+                },
                 pages: { label: ' ', where: 'Two\nlines.', screenshot: 'x' },
                 gone: { label: 'Gone', where },
             },
@@ -184,12 +196,16 @@ describe('scripts/i18n-build.mjs', () => {
         expect(run.stderr).toContain('namespaces.json: chat.label is 81 characters, over the 80 limit');
         expect(run.stderr).toContain('namespaces.json: chat.where is 301 characters, over the 300 limit');
         expect(run.stderr).toContain('namespaces.json: shell.label has a {{ placeholder');
-        expect(run.stderr).toContain("namespaces.json: shell.where has < or >; it's plain text, with no HTML");
+        expect(run.stderr).toContain("namespaces.json: shell.where has an HTML-like tag; it's plain text");
+        expect(run.stderr).toContain('namespaces.json: rooms.label has an HTML entity');
+        expect(run.stderr).toContain('namespaces.json: rooms.where has a bidi override or isolate character');
+        // A lone & or < is prose, and the limit counts code points.
+        expect(run.stderr).not.toContain('namespaces.json: spaces');
         expect(run.stderr).toContain('namespaces.json: pages.label needs text (a non-empty string)');
         expect(run.stderr).toContain('namespaces.json: pages.where must be a single line');
         expect(run.stderr).toContain('namespaces.json: pages has an unknown field screenshot');
         expect(run.stderr).toContain('namespaces.json: en-US has no namespace gone');
-        expect(run.stderr).not.toContain('common');
+        expect(run.stderr).not.toContain('namespaces.json: common');
 
         writeFileSync(join(dir, 'namespaces.json'), JSON.stringify({ common: { label: 'Common words', where } }));
         const missing = build(dir, '--check');

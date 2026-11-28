@@ -390,7 +390,10 @@ describe('i18n-export.yml', () => {
                 van: 'Furgoneta',
                 truck: 'Camión',
             });
-            write(join(seed, 'scripts/i18n-sync.mjs'), readFileSync(join(root, 'scripts/i18n-sync.mjs'), 'utf8'));
+            // The export's script and what it imports.
+            for (const file of ['scripts/i18n-sync.mjs', 'scripts/lib/i18n-namespaces.mjs']) {
+                write(join(seed, file), readFileSync(join(root, file), 'utf8'));
+            }
             write(
                 join(seed, 'packages/i18n/src/registry.ts'),
                 readFileSync(join(root, 'packages/i18n/src/registry.ts'), 'utf8'),

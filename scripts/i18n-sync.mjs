@@ -25,6 +25,8 @@ import { pathToFileURL } from 'node:url';
 
 import { LOCALES, SOURCE_LOCALE, resolutionChain } from '../packages/i18n/src/registry.ts';
 
+import { namespaceEntryProblems } from './lib/i18n-namespaces.mjs';
+
 const root = resolve(import.meta.dirname, '..');
 
 export const CANDIDATE_ID = /^k_[0-9A-HJKMNP-TV-Z]{26}$/u;
@@ -80,7 +82,8 @@ export function pullRequestStates(list) {
  * The import's body: every locale folder's dictionaries (en-US and the translations, not the
  * pseudo-locale), the context notes `packages/i18n/notes/<ns>.json` ({ key: note }, the folder
  * i18n-build checks), each namespace's label and where it appears (`packages/i18n/namespaces.json`,
- * { ns: { label, where } }, which i18n-build checks too) and
+ * { ns: { label, where } }, every entry, checked with i18n-build's rules; no field without the
+ * file) and
  * `packages/i18n/glossary/<locale>.json` ([{ term, translation, note, doNotTranslate }]).
  */
 export function importPayload({ commit, localesDir, i18nDir, pullRequests = [] }) {
@@ -110,14 +113,17 @@ export function importPayload({ commit, localesDir, i18nDir, pullRequests = [] }
             .map((name) => [name.slice(0, -5), readJson(join(i18nDir, 'glossary', name))])
             .filter(([locale]) => isTranslatedLocale(locale)),
     );
+    // The app takes the namespaces as the complete set (one left out loses its label) and
+    // refuses the whole import if one entry breaks its rules, so every entry goes, checked.
     const namespacesFile = join(i18nDir, 'namespaces.json');
-    const namespaces = Object.fromEntries(
-        Object.entries(existsSync(namespacesFile) ? readJson(namespacesFile) : {}).map(([ns, { label, where }]) => [
-            ns,
-            { label, where },
-        ]),
-    );
-    const content = { locales, context, namespaces, glossary, pullRequests };
+    const namespaces = existsSync(namespacesFile) ? readJson(namespacesFile) : undefined;
+    if (namespaces !== undefined) {
+        const problems = namespaceEntryProblems(namespaces);
+        if (problems.length) {
+            throw new Error(`namespaces.json would fail the import:\n${problems.join('\n')}`);
+        }
+    }
+    const content = { locales, context, ...(namespaces && { namespaces }), glossary, pullRequests };
     return { body: { commit, ...content }, hash: createHash('sha256').update(JSON.stringify(content)).digest('hex') };
 }
 
