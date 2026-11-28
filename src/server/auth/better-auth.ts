@@ -1248,7 +1248,7 @@ export class BetterAuthProvider implements AuthProvider {
     users(): User[] {
         const rows = this.database()
             .prepare(
-                'SELECT appUserId, name, email, emailVerified, role FROM auth_user WHERE appUserId IS NOT NULL AND NOT coalesce(banned, 0) ORDER BY createdAt, id',
+                'SELECT appUserId, name, email, emailVerified, role FROM auth_user WHERE appUserId IS NOT NULL AND NOT coalesce(banned, 0) ORDER BY createdAt, rowid',
             )
             .all() as unknown as AuthUserRow[];
         const rules = this.rules();
@@ -3697,7 +3697,7 @@ export class BetterAuthProvider implements AuthProvider {
           EXISTS(SELECT 1 FROM auth_account a WHERE a.userId=u.id AND a.providerId='credential' AND a.password IS NOT NULL) AS password,
           (SELECT COUNT(*) FROM auth_passkey p WHERE p.userId=u.id) AS passkeys,
           (SELECT group_concat(a.providerId) FROM auth_account a WHERE a.userId=u.id AND a.providerId<>'credential') AS providers
-        FROM auth_user u ORDER BY u.createdAt, u.id`,
+        FROM auth_user u ORDER BY u.createdAt, u.rowid`,
             )
             .all() as unknown as (AuthUserRow & {
             password: number;
