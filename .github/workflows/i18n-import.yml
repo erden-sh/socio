@@ -25,6 +25,11 @@ on:
   schedule:
     - cron: '23 * * * *'
   workflow_dispatch:
+    inputs:
+      force:
+        description: Send the import even when it matches the last one sent to this translation app.
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -60,6 +65,9 @@ jobs:
             echo "::error::TRANSLATE_BASE_URL must be an https:// URL."
             exit 1
           fi
+          # The last import is remembered per translation app: pointing TRANSLATE_BASE_URL at
+          # another one (staging to production) sends that app its first import.
+          echo "target=$(printf '%s' "${BASE_URL%/}" | sha256sum | cut -c1-16)" >> "$GITHUB_OUTPUT"
           echo "enabled=true" >> "$GITHUB_OUTPUT"
 
       - if: steps.config.outputs.enabled == 'true'
@@ -89,18 +97,22 @@ jobs:
         uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: ${{ runner.temp }}/i18n-import-last
-          key: i18n-import-last-${{ github.run_id }}
-          restore-keys: i18n-import-last-
+          key: i18n-import-last-${{ steps.config.outputs.target }}-${{ github.run_id }}
+          restore-keys: i18n-import-last-${{ steps.config.outputs.target }}-
 
       - name: Compare with the last import
         id: sent
         if: steps.config.outputs.enabled == 'true'
         env:
           HASH: ${{ steps.payload.outputs.hash }}
+          FORCE: ${{ github.event_name == 'workflow_dispatch' && inputs.force == true }}
         run: |
           set -euo pipefail
           last="$(cat "$RUNNER_TEMP/i18n-import-last/hash" 2>/dev/null || true)"
-          if [ "$last" = "$HASH" ]; then
+          if [ "$FORCE" = true ]; then
+            echo "::notice::Sending the import as asked (force), whatever the last one was."
+            echo "unchanged=false" >> "$GITHUB_OUTPUT"
+          elif [ "$last" = "$HASH" ]; then
             echo "::notice::The translations, glossary, context notes and pull requests are unchanged since the last import. Nothing to send."
             echo "unchanged=true" >> "$GITHUB_OUTPUT"
           else
@@ -158,4 +170,4 @@ jobs:
         uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: ${{ runner.temp }}/i18n-import-last
-          key: i18n-import-last-${{ github.run_id }}-${{ github.run_attempt }}
+          key: i18n-import-last-${{ steps.config.outputs.target }}-${{ github.run_id }}-${{ github.run_attempt }}
