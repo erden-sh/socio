@@ -121,6 +121,8 @@ beforeEach(() => {
         }
         return Response.json({ ok: true });
     });
+    // jsdom has no layout: input-otp looks for a password manager's badge with it.
+    document.elementFromPoint ??= () => null;
     host = document.createElement('div');
     document.body.append(host);
     root = createRoot(host);
@@ -149,6 +151,12 @@ const input = () => dialog()?.querySelector<HTMLInputElement>('input[aria-label=
 const type = (value: string) => {
     Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input()!, value);
     input()!.dispatchEvent(new Event('input', { bubbles: true }));
+};
+/** A paste into the field, as the browser sends it (input-otp handles it itself). */
+const paste = (text: string) => {
+    const event = new Event('paste', { bubbles: true, cancelable: true });
+    Object.defineProperty(event, 'clipboardData', { value: { getData: () => text } });
+    input()!.dispatchEvent(event);
 };
 const title = () => dialog()?.querySelector('[data-slot="dialog-title"]')?.textContent;
 const description = () => dialog()?.querySelector('[data-slot="dialog-description"]')?.textContent;
@@ -455,7 +463,7 @@ it('hides “No app yet?” once a device claimed the code, and shows it again w
     expect(footer()).toBeNull();
 });
 
-it('makes the field a 6-digit code field', async () => {
+it('makes the field a 6-digit code field, drawn as 3 + 3 boxes, in focus', async () => {
     await open();
     await until(() => !!code());
     status = appClaim();
@@ -463,19 +471,63 @@ it('makes the field a 6-digit code field', async () => {
     const field = input()!;
     expect(field.getAttribute('inputmode')).toBe('numeric');
     expect(field.getAttribute('autocomplete')).toBe('one-time-code');
-    // No maxLength on the raw field, so a pasted "123 456" arrives whole; the digits are cut to 6.
-    expect(field.hasAttribute('maxlength')).toBe(false);
-    expect(field.getAttribute('pattern')).toBe('[0-9]{6}');
-    expect(field.placeholder).toBe('6-digit code');
+    expect(field.maxLength).toBe(6);
+    expect(field.required).toBe(true);
     expect(document.getElementById(field.getAttribute('aria-describedby')!)!.textContent).toContain(
         'The 6 digits shown on that device.',
     );
-    type('12a-3');
-    expect(input()!.value).toBe('123');
+    // Focus lands in the field (its first box) as the step appears.
+    expect(document.activeElement).toBe(field);
+    // Six boxes in two groups of three, with a separator: drawing only, the input is what is read.
+    const groups = [...dialog()!.querySelectorAll('[data-slot="input-otp-group"]')];
+    expect(groups.map((group) => group.querySelectorAll('[data-slot="input-otp-slot"]').length)).toEqual([3, 3]);
+    expect(groups[0]!.nextElementSibling?.getAttribute('data-slot')).toBe('input-otp-separator');
+    for (const drawn of dialog()!.querySelectorAll('[data-slot="input-otp-slot"], [data-slot="input-otp-separator"]')) {
+        expect(drawn.getAttribute('aria-hidden')).toBe('true');
+    }
+    // Only digits go in; the boxes show them.
+    type('12');
+    type('12a');
+    expect(input()!.value).toBe('12');
+    type('123');
+    expect([...dialog()!.querySelectorAll('[data-slot="input-otp-slot"]')].map((slot) => slot.textContent)).toEqual([
+        '1',
+        '2',
+        '3',
+        '',
+        '',
+        '',
+    ]);
     expect(paths('/confirm')).toHaveLength(0);
-    type('12 34 56 78');
-    await until(() => paths('/confirm').length === 1, 'cut to 6');
+    type('123456');
+    await until(() => paths('/confirm').length === 1, 'sixth digit');
     expect(paths('/confirm').map((entry) => entry.body)).toEqual([{ digits: '123456' }]);
+});
+
+it('disables the field while the code is on its way, then is back in it', async () => {
+    await open();
+    await until(() => !!code());
+    status = appClaim();
+    await until(() => !!input(), 'claim');
+    let release: () => void = () => {};
+    const held = new Promise<void>((resolve) => {
+        release = resolve;
+    });
+    const real = globalThis.fetch;
+    vi.stubGlobal('fetch', async (input: string, init?: RequestInit) => {
+        if (String(input).endsWith('/confirm')) {
+            await held;
+        }
+        return real(input, init);
+    });
+    await act(async () => type('000000'));
+    expect(input()!.disabled).toBe(true);
+    expect(button('Not my device')!.disabled).toBe(true);
+    release();
+    await until(() => dialog()!.textContent!.includes('That code didn’t match. 2 tries left.'), 'mismatch');
+    expect(input()!.disabled).toBe(false);
+    expect(input()!.value).toBe('');
+    expect(document.activeElement).toBe(input());
 });
 
 it('sends the code once on the 6th typed digit, even with Enter and more typing on top', async () => {
@@ -511,15 +563,29 @@ it('sends the code once on the 6th typed digit, even with Enter and more typing 
     expect(paths('/confirm').map((entry) => entry.body)).toEqual([{ digits: '123456' }]);
 });
 
-it.each(['123 456', '123-456', ' 123456 '])('sends a pasted “%s” once, as its digits', async (pasted) => {
+it.each(['123 456', '123-456', ' 123456 ', '12 34 56 78'])(
+    'sends a pasted “%s” once, as its digits',
+    async (pasted) => {
+        await open();
+        await until(() => !!code());
+        status = appClaim();
+        await until(() => !!input(), 'claim');
+        await act(async () => paste(pasted));
+        await until(() => !input(), 'allowed');
+        await act(() => new Promise((resolve) => setTimeout(resolve, 50)));
+        expect(paths('/confirm').map((entry) => entry.body)).toEqual([{ digits: '123456' }]);
+    },
+);
+
+it('keeps the digits of a short paste without sending them', async () => {
     await open();
     await until(() => !!code());
     status = appClaim();
     await until(() => !!input(), 'claim');
-    type(pasted);
-    await until(() => !input(), 'allowed');
+    await act(async () => paste('12-3'));
+    expect(input()!.value).toBe('123');
     await act(() => new Promise((resolve) => setTimeout(resolve, 50)));
-    expect(paths('/confirm').map((entry) => entry.body)).toEqual([{ digits: '123456' }]);
+    expect(paths('/confirm')).toHaveLength(0);
 });
 
 it('says a wrong code didn’t match without a count when the server gives none', async () => {

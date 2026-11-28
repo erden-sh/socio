@@ -29,6 +29,10 @@ How this file is kept (scripts/release.mjs and the app's build read it):
 
 ## Unreleased
 
+### Changed
+
+- In **Add a device**, the code from the new device now goes in six boxes, three and three, instead of one plain field. It still sends itself on the last digit or a paste, and a pasted "123 456" or "123-456" still works (CB-575).
+
 ## v0.58.0 (2026-11-27)
 
 Socios on self-hosted thinking models answer again instead of failing on almost every turn. More of the web is ready for other languages, and the Socio app can report a socio's reply.
