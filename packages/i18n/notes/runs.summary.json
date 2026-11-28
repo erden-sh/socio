@@ -1,0 +1,16 @@
+{
+    "end.completed": "Why a turn's loop ended. round_cap: it ran its most model rounds; cycle_limit: the message it answered hit its own limit.",
+    "end.round_cap": "Why a turn's loop ended. round_cap: it ran its most model rounds; cycle_limit: the message it answered hit its own limit.",
+    "end.time_limit": "Why a turn's loop ended. round_cap: it ran its most model rounds; cycle_limit: the message it answered hit its own limit.",
+    "end.cycle_limit": "Why a turn's loop ended. round_cap: it ran its most model rounds; cycle_limit: the message it answered hit its own limit.",
+    "end.output_limit": "Why a turn's loop ended. round_cap: it ran its most model rounds; cycle_limit: the message it answered hit its own limit.",
+    "end.error": "Why a turn's loop ended. round_cap: it ran its most model rounds; cycle_limit: the message it answered hit its own limit.",
+    "end.model_unavailable": "Why a turn's loop ended. round_cap: it ran its most model rounds; cycle_limit: the message it answered hit its own limit.",
+    "end.stopped": "Why a turn's loop ended. round_cap: it ran its most model rounds; cycle_limit: the message it answered hit its own limit.",
+    "end.interrupted": "Why a turn's loop ended. round_cap: it ran its most model rounds; cycle_limit: the message it answered hit its own limit.",
+    "rounds": "How many model rounds (requests to the AI model) a turn ran.",
+    "tokens.in": "{{tokens}} is a token count the model read (e.g. 1.2k), compact.",
+    "tokens.cached": "The share of those tokens read from the model's cache (a percentage).",
+    "tokens.out": "{{tokens}} is a token count the model wrote.",
+    "tokens.reasoning": "{{tokens}} is a token count the model spent reasoning."
+}

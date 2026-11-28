@@ -226,7 +226,7 @@ it('drops to sign-in at once and forgets the user when another tab signs out', a
     const router = open('/runs');
     await until(() => /Recent turns across the team/.test(text()), 'Runs');
     expect(text()).toContain('Alice');
-    expect(router.state.loaderData.runs).toBeTruthy();
+    expect(router.state.loaderData.runs?.runs).toBeTruthy();
     // The page loaded signed in, and said so.
     await until(() => heard.includes('signed-in'), 'the load announced');
     signedIn = false;
@@ -236,7 +236,7 @@ it('drops to sign-in at once and forgets the user when another tab signs out', a
     expect(text()).not.toContain('Recent turns');
     // The server agreed (the loaders ran again): no page keeps its data.
     await until(() => router.state.loaderData.shell?.session === 'signed-out', 'the loaders');
-    expect(router.state.loaderData.runs ?? null).toBeNull();
+    expect(router.state.loaderData.runs?.runs ?? null).toBeNull();
     // And it doesn't poll.
     requests = [];
     await wait(10_000);

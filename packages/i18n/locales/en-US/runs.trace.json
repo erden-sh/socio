@@ -1,0 +1,84 @@
+{
+    "loading": "Loading trace…",
+    "none": "No trace: this turn ran before traces were recorded.",
+    "label": "Turn trace",
+    "inferred": "Worked out from how the turn ended",
+    "running": "Running",
+    "rounds-of_one": "{{count, number}} round of {{cap, number}} at most",
+    "rounds-of_other": "{{count, number}} rounds of {{cap, number}} at most",
+    "no-rounds": "No model rounds recorded.",
+    "dropped_one": "{{count, number}} more step was left out.",
+    "dropped_other": "{{count, number}} more steps were left out.",
+    "round": {
+        "plain": "Round {{round, number}}",
+        "notes": "Notes for round {{round, number}}",
+        "fallback": "Round {{round, number}}, on the shared model",
+        "retry": "Round {{round, number}}, retry {{retry, number}}",
+        "retry_rate_limited": "Round {{round, number}}, retry {{retry, number}} (rate limited)",
+        "retry_unavailable": "Round {{round, number}}, retry {{retry, number}} (out of reach)",
+        "retry_fallback": "Round {{round, number}}, retry {{retry, number}} (on the shared model)",
+        "first-output": "first output {{duration}}"
+    },
+    "stop": {
+        "stop": "answered",
+        "tool_calls": "called tools",
+        "length": "output limit",
+        "content_filter": "content filter",
+        "error": "error",
+        "cancelled": "canceled"
+    },
+    "outcome": {
+        "ok": "ok",
+        "error": "error",
+        "refused": "refused",
+        "timeout": "timed out"
+    },
+    "image": {
+        "screenshot": "Screenshot",
+        "image": "Image"
+    },
+    "compaction": {
+        "title": "Context fitted",
+        "tokens": "{{before}} → {{after}} of {{window}} tokens",
+        "cut_one": "{{count, number}} result cut",
+        "cut_other": "{{count, number}} results cut",
+        "notes_one": "{{count, number}} turn in notes",
+        "notes_other": "{{count, number}} turns in notes",
+        "retry": "retry {{count, number}}",
+        "facts": "{{shown, number}} of {{stored, number}} facts",
+        "facts_age": "{{shown, number}} of {{stored, number}} facts by age",
+        "facts_relevance": "{{shown, number}} of {{stored, number}} facts by relevance",
+        "facts_pointer": "{{shown, number}} of {{stored, number}} facts by pointer"
+    },
+    "notes": {
+        "by-shared": "Notes by the shared model",
+        "by-shared-model": "Notes by the shared model ({{model}})",
+        "by-chat": "Notes by the chat’s model",
+        "by-chat-model": "Notes by the chat’s model ({{model}})",
+        "turns_one": "{{count, number}} turn",
+        "turns_other": "{{count, number}} turns",
+        "fallback": {
+            "error": "plain summary kept: the request failed",
+            "empty": "plain summary kept: no summary came back",
+            "cap": "plain summary: this turn’s summaries were used up"
+        }
+    },
+    "retry": {
+        "rate_limited": "Rate limited",
+        "unavailable": "Out of reach",
+        "sent": "waited {{duration}}, then sent again",
+        "sent_cut": "waited {{duration}}, cut short, nothing sent again"
+    },
+    "fallback": {
+        "title": "Switched to the shared model",
+        "rate_limited": "{{from}} was busy, so {{to}} carried on",
+        "unavailable": "{{from}} was out of reach, so {{to}} carried on",
+        "usage_limit": "{{from}} hit its usage limit, so {{to}} carried on"
+    },
+    "reactions": "Told of reactions",
+    "reaction": "{{emoji}} {{reaction}} {{count, number}}",
+    "wait": {
+        "approval": "Waiting for approval",
+        "person": "Waiting for the person"
+    }
+}

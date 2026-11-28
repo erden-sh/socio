@@ -1,0 +1,11 @@
+{
+    "cancel": {
+        "title": "Cancel “{{title}}”?",
+        "description": "A canceled schedule won’t run again and can’t be resumed. Its goal stays, but its progress stops here. Type the title exactly to confirm.",
+        "type": "Type <title>{{title}}</title> to confirm",
+        "label": "Schedule title",
+        "mismatch": "Type it exactly as shown.",
+        "keep": "Keep it",
+        "confirm": "Cancel schedule"
+    }
+}

@@ -1,0 +1,38 @@
+{
+    "title": "A little follow-through.",
+    "description": "Scheduled turns run on the server in their original conversation.",
+    "search": "Search tasks",
+    "search-placeholder": "Find a task…",
+    "empty": {
+        "title": "Let a thought come back around.",
+        "description": "Open a conversation and use the clock button to schedule a server-side task."
+    },
+    "save-failed": "Could not save.",
+    "interval-prompt": "Repeat interval in minutes (0 removes the schedule)",
+    "interval-invalid": "Enter a valid number of minutes.",
+    "runs_one": "{{count, number}} saved run · <details>Details and past runs</details>",
+    "runs_other": "{{count, number}} saved runs · <details>Details and past runs</details>",
+    "repeats": "Repeats every {{interval}} · <time/>",
+    "status": {
+        "queued": "Queued",
+        "running": "Running",
+        "paused": "Paused",
+        "failed": "Failed",
+        "interrupted": "Interrupted",
+        "completed": "Completed",
+        "cancelled": "Canceled",
+        "scheduled": "Scheduled"
+    },
+    "actions": {
+        "pause": "Pause task",
+        "retry-review": "Retry after review",
+        "retry": "Retry task",
+        "resume": "Resume task",
+        "run": "Run again",
+        "pause-schedule": "Pause schedule",
+        "edit-schedule": "Edit schedule",
+        "set-schedule": "Set a schedule",
+        "cancel": "Cancel"
+    },
+    "crumb": "Activity"
+}

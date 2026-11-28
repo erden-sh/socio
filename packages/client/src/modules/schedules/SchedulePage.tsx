@@ -2,13 +2,9 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link } from 'react-router';
 import { toast } from 'sonner';
 
+import { Trans, useTranslation } from '@socio/i18n/react';
 import { MODULE_IDS } from '@socio/shared/modules';
-import type {
-    ScheduleDetail,
-    ScheduleRunBoardItem,
-    ScheduleRunsPage,
-    ScheduleView,
-} from '@socio/shared/schedule-types';
+import type { ScheduleDetail, ScheduleRunsPage, ScheduleView } from '@socio/shared/schedule-types';
 import type { Action } from '@socio/shared/types';
 
 import { api, ApiError } from '../../lib/api';
@@ -16,11 +12,12 @@ import { useLiveTopic } from '../../lib/change-channel';
 import { useLoaderSeed } from '../../lib/page-loader';
 import { useRouteParams } from '../../shell/shell-context';
 import { WorkspacePage } from '../../views/WorkspacePage';
+import { formatDuration } from '../runs/format';
 
 import { CancelScheduleDialog } from './CancelScheduleDialog';
 import { GoalComments } from './GoalComments';
 import { Purpose } from './Purpose';
-import { every, RunBadge, seconds, When } from './SchedulesPage';
+import { RunBadge, useScheduleWords, When } from './schedule-words';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -31,41 +28,34 @@ const failed = (e: unknown, fallback: string) => toast.error(e instanceof Error 
 const repeats = (schedule: ScheduleView) => !!schedule.cadence || !!schedule.intervalSeconds;
 /** A link within text: underlined, as in Markdown (IssueMarkdown). */
 const LINK = 'underline underline-offset-2 hover:text-primary';
-const took = (ms: number) => (ms < 60_000 ? seconds(ms) : `${Math.round(ms / 6_000) / 10} min`);
 
-/** Where a schedule stands, in words: active, paused (and why), done. */
-function standing(schedule: ScheduleView): { label: string; note: string } {
+/**
+ * Where a schedule stands: its status word (`schedules:status`: active,
+ * paused, canceled, stopped, completed) and the note beside it
+ * (`schedules.detail:standing`), or the schedule's own error.
+ */
+function standing(schedule: ScheduleView): {
+    status: 'scheduled' | 'paused' | 'cancelled' | 'failed' | 'completed';
+    note: 'active' | 'paused' | 'cancelled' | 'failed' | 'completed' | 'running';
+    error?: string;
+} {
     switch (schedule.status) {
         case 'paused':
-            return {
-                label: 'Paused',
-                note: schedule.error ?? 'It keeps its cadence and runs again once you resume it.',
-            };
+            return { status: 'paused', note: 'paused', error: schedule.error ?? undefined };
         case 'cancelled':
-            return { label: 'Canceled', note: 'It won’t run again.' };
+            return { status: 'cancelled', note: 'cancelled' };
         case 'failed':
-            return {
-                label: 'Stopped',
-                note: schedule.error ?? 'Its last run failed.',
-            };
+            return { status: 'failed', note: 'failed', error: schedule.error ?? undefined };
         case 'completed':
             if (!repeats(schedule)) {
-                return { label: 'Completed', note: 'It ran and has nothing left.' };
+                return { status: 'completed', note: 'completed' };
             }
             break;
         case 'running':
-            return { label: 'Active', note: 'Running now.' };
+            return { status: 'scheduled', note: 'running' };
     }
-    return { label: 'Active', note: 'It runs at its next time.' };
+    return { status: 'scheduled', note: 'active' };
 }
-
-const BOARD_VERB: Record<ScheduleRunBoardItem['action'], string> = {
-    create: 'Filed',
-    comment: 'Commented on',
-    vote: 'Voted for',
-    unvote: 'Withdrew a vote on',
-    update: 'Updated dependencies on',
-};
 
 /** One row of the "What it does" list. */
 function Fact({ label, children }: { label: string; children: ReactNode }) {
@@ -91,6 +81,8 @@ export function SchedulePage({
     /** The page's loader data: shown at once; the poll goes on from it. */
     initial?: ScheduleDetail;
 } = {}) {
+    const { t } = useTranslation(['schedules.detail', 'schedules']);
+    const words = useScheduleWords();
     const { scheduleId = '' } = useRouteParams();
     const [detail, setDetail] = useState<ScheduleDetail | undefined>(
         initial?.schedule.id === scheduleId ? initial : undefined,
@@ -130,10 +122,10 @@ export function SchedulePage({
             if (e instanceof ApiError && e.status === 404) {
                 setMissing(true);
             } else {
-                failed(e, 'Could not load the schedule.');
+                failed(e, t('schedules.detail:load-failed'));
             }
         }
-    }, [scheduleId]);
+    }, [scheduleId, t]);
     useEffect(() => {
         loaded.current = 0;
         setOlder({ runs: [], more: false });
@@ -152,7 +144,7 @@ export function SchedulePage({
             await api(`/schedules/${encodeURIComponent(scheduleId)}/actions`, 'POST', { action });
             await load();
         } catch (e) {
-            failed(e, 'Could not change the schedule.');
+            failed(e, t('schedules:actions.change-failed'));
         } finally {
             setBusy(false);
         }
@@ -174,21 +166,20 @@ export function SchedulePage({
                     return { runs, more: page.more };
                 }),
             )
-            .catch((e) => failed(e, 'Could not load older runs.'));
+            .catch((e) => failed(e, t('schedules:actions.older-failed')));
     };
     if (missing) {
         return (
             <WorkspacePage
                 slot="schedule-page"
                 module={MODULE_IDS.schedules}
-                title="Schedule not found"
+                title={t('schedules.detail:missing.title')}
                 description={
-                    <>
-                        It may have been deleted, or it isn’t yours.{' '}
-                        <Link className={LINK} to="/schedules">
-                            All schedules
-                        </Link>
-                    </>
+                    <Trans
+                        t={t}
+                        i18nKey="schedules.detail:missing.description"
+                        components={{ all: <Link className={LINK} to="/schedules" /> }}
+                    />
                 }
             />
         );
@@ -202,41 +193,71 @@ export function SchedulePage({
     }
     const { schedule, goal } = detail;
     const state = standing(schedule);
+    const socio = schedule.dotName ?? t('schedules:deleted-socio');
+    const mine = schedule.origin === 'user' ? 'mine' : undefined;
+    const all = { all: <Link className={LINK} to="/schedules" /> };
     return (
         <WorkspacePage
             slot="schedule-page"
             module={MODULE_IDS.schedules}
             title={schedule.title}
             description={
-                <>
-                    {schedule.dotName ?? 'A deleted socio'} ·{' '}
-                    {schedule.kind === 'job' ? `runs the job ${schedule.jobName ?? '(deleted)'}` : 'a socio turn'}
-                    {schedule.origin === 'user' ? ' · made by you' : ''} ·{' '}
-                    <Link className={LINK} to="/schedules">
-                        All schedules
-                    </Link>
-                </>
+                schedule.kind !== 'job' ? (
+                    <Trans
+                        t={t}
+                        i18nKey="schedules.detail:meta-turn"
+                        values={{ socio }}
+                        context={mine}
+                        components={all}
+                    />
+                ) : schedule.jobName ? (
+                    <Trans
+                        t={t}
+                        i18nKey="schedules.detail:meta"
+                        values={{ socio, job: schedule.jobName }}
+                        context={mine}
+                        components={all}
+                    />
+                ) : (
+                    <Trans
+                        t={t}
+                        i18nKey="schedules.detail:meta-deleted-job"
+                        values={{ socio }}
+                        context={mine}
+                        components={all}
+                    />
+                )
             }
         >
             <div className="grid max-w-4xl gap-4">
                 <Card data-slot="schedule-purpose-card">
                     <CardHeader>
-                        <CardTitle>Purpose</CardTitle>
+                        <CardTitle>{t('schedules.detail:purpose.title')}</CardTitle>
                         <CardDescription>
                             {goal
-                                ? 'The goal it works toward.'
+                                ? t('schedules.detail:purpose.goal')
                                 : schedule.kind === 'job'
-                                  ? 'What runs, without the model.'
-                                  : 'What each run asks the socio to do.'}
+                                  ? t('schedules.detail:purpose.job')
+                                  : t('schedules.detail:purpose.turn')}
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
                         {schedule.kind === 'job' ? (
                             <p className="text-sm">
-                                Runs the job {schedule.jobName ?? '(deleted)'} in the socio’s computer.{' '}
-                                <Link className={LINK} to="/schedules?tab=jobs">
-                                    Its code and logs
-                                </Link>
+                                {schedule.jobName ? (
+                                    <Trans
+                                        t={t}
+                                        i18nKey="schedules.detail:purpose.runs-job"
+                                        values={{ job: schedule.jobName }}
+                                        components={{ code: <Link className={LINK} to="/schedules?tab=jobs" /> }}
+                                    />
+                                ) : (
+                                    <Trans
+                                        t={t}
+                                        i18nKey="schedules.detail:purpose.runs-deleted-job"
+                                        components={{ code: <Link className={LINK} to="/schedules?tab=jobs" /> }}
+                                    />
+                                )}
                             </p>
                         ) : goal ? (
                             <div className="grid gap-1 text-sm">
@@ -252,10 +273,8 @@ export function SchedulePage({
                 {goal && (
                     <Card data-slot="schedule-goal">
                         <CardHeader>
-                            <CardTitle>Goal progress</CardTitle>
-                            <CardDescription>
-                                The socio notes its progress after each run, and marks the goal done when it is met.
-                            </CardDescription>
+                            <CardTitle>{t('schedules.detail:progress.title')}</CardTitle>
+                            <CardDescription>{t('schedules.detail:progress.description')}</CardDescription>
                         </CardHeader>
                         <CardContent className="grid gap-2 text-sm">
                             <div className="font-medium">
@@ -267,20 +286,22 @@ export function SchedulePage({
                                     goal.title
                                 )}{' '}
                                 <Badge variant="outline" data-slot="goal-status">
-                                    {goal.status}
+                                    {words.goalStatus(goal.status)}
                                 </Badge>
                             </div>
                             <p data-slot="goal-progress">
                                 {goal.progress ? (
                                     <>
-                                        <span className="text-muted-foreground">Latest note: </span>
+                                        <span className="text-muted-foreground">
+                                            {t('schedules.detail:progress.latest')}{' '}
+                                        </span>
                                         {goal.progress}{' '}
                                         <span className="text-xs text-muted-foreground">
                                             (<When value={goal.updatedAt} />)
                                         </span>
                                     </>
                                 ) : (
-                                    <span className="text-muted-foreground">No progress noted yet.</span>
+                                    <span className="text-muted-foreground">{t('schedules.detail:progress.none')}</span>
                                 )}
                             </p>
                         </CardContent>
@@ -290,16 +311,13 @@ export function SchedulePage({
                 {goal && (
                     <Card data-slot="schedule-goal-comments">
                         <CardHeader>
-                            <CardTitle>Comments</CardTitle>
-                            <CardDescription>
-                                Add context or a changed requirement; the socio reads them in each run, and can add its
-                                own.
-                            </CardDescription>
+                            <CardTitle>{t('schedules.detail:comments.title')}</CardTitle>
+                            <CardDescription>{t('schedules.detail:comments.description')}</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <GoalComments
                                 goal={goal}
-                                dotName={schedule.dotName ?? 'The socio'}
+                                dotName={schedule.dotName ?? t('schedules.detail:comments.the-socio')}
                                 onPosted={() => void load()}
                             />
                         </CardContent>
@@ -308,18 +326,18 @@ export function SchedulePage({
 
                 <Card data-slot="schedule-facts">
                     <CardHeader>
-                        <CardTitle>What it does</CardTitle>
+                        <CardTitle>{t('schedules.detail:facts.title')}</CardTitle>
                     </CardHeader>
                     <CardContent className="grid gap-4">
                         <dl className="grid gap-3 text-sm">
-                            <Fact label="Socio">{schedule.dotName ?? 'A deleted socio'}</Fact>
-                            <Fact label="Runs">
+                            <Fact label={t('schedules.detail:facts.socio')}>{socio}</Fact>
+                            <Fact label={t('schedules.detail:facts.runs')}>
                                 {detail.cadenceText ??
                                     (schedule.intervalSeconds
-                                        ? `${every(schedule.intervalSeconds).replace(/^e/, 'E')}, after each successful run`
-                                        : 'Once')}
+                                        ? words.interval(schedule.intervalSeconds)
+                                        : t('schedules.detail:facts.once'))}
                             </Fact>
-                            <Fact label="Next runs">
+                            <Fact label={t('schedules.detail:facts.next')}>
                                 {detail.upcoming.length ? (
                                     <ul className="grid gap-0.5" data-slot="schedule-upcoming">
                                         {detail.upcoming.map((at) => (
@@ -330,54 +348,54 @@ export function SchedulePage({
                                     </ul>
                                 ) : (
                                     <span className="text-muted-foreground">
-                                        None {schedule.status === 'paused' ? 'while paused' : ''}
+                                        {t('schedules.detail:facts.none', {
+                                            context: schedule.status === 'paused' ? 'paused' : undefined,
+                                        })}
                                     </span>
                                 )}
                             </Fact>
                             {schedule.cadence && (
-                                <Fact label="Time zone">
+                                <Fact label={t('schedules.detail:facts.zone')}>
                                     {schedule.timezone ?? 'UTC'}{' '}
                                     <span className="text-muted-foreground">
-                                        (its times; the next runs show in yours)
+                                        {t('schedules.detail:facts.zone-note')}
                                     </span>
                                 </Fact>
                             )}
-                            <Fact label="Posts in">
+                            <Fact label={t('schedules.detail:facts.posts')}>
                                 {schedule.threadId ? (
                                     <Link className={LINK} to={`/chats/${schedule.threadId}`}>
-                                        Its chat
+                                        {t('schedules.detail:facts.chat')}
                                     </Link>
                                 ) : (
-                                    <span className="text-muted-foreground">No chat</span>
+                                    <span className="text-muted-foreground">{t('schedules.detail:facts.no-chat')}</span>
                                 )}
                             </Fact>
-                            <Fact label="Approvals">
+                            <Fact label={t('schedules.detail:facts.approvals')}>
                                 <div data-slot="schedule-approvals">
-                                    {detail.approvals.length ? (
-                                        <>
-                                            Its runs act without asking for{' '}
-                                            {detail.approvals
-                                                .map(
-                                                    (item) =>
-                                                        `${item.label} (${item.policy === 'auto' ? 'auto review' : 'bypass'})`,
-                                                )
-                                                .join(', ')}
-                                            ; anything else waits for you.
-                                        </>
-                                    ) : (
-                                        'Anything that needs your approval waits for you.'
-                                    )}{' '}
+                                    {detail.approvals.length
+                                        ? t('schedules.detail:facts.approvals-some', {
+                                              items: detail.approvals.map((item) =>
+                                                  t('schedules.detail:facts.approval', {
+                                                      label: item.label,
+                                                      context: item.policy === 'auto' ? 'auto' : undefined,
+                                                  }),
+                                              ),
+                                          })
+                                        : t('schedules.detail:facts.approvals-none')}{' '}
                                     {schedule.dotId && (
                                         <Link className={LINK} to={`/approvals?dot=${schedule.dotId}`}>
-                                            Policies
+                                            {t('schedules.detail:facts.policies')}
                                         </Link>
                                     )}
                                 </div>
                             </Fact>
-                            <Fact label="Status">
+                            <Fact label={t('schedules.detail:facts.status')}>
                                 <span data-slot="schedule-standing">
-                                    <Badge variant="outline">{state.label}</Badge>{' '}
-                                    <span className="text-muted-foreground">{state.note}</span>
+                                    <Badge variant="outline">{words.status(state.status)}</Badge>{' '}
+                                    <span className="text-muted-foreground">
+                                        {state.error ?? t(`schedules.detail:standing.${state.note}`)}
+                                    </span>
                                 </span>
                             </Fact>
                         </dl>
@@ -385,7 +403,7 @@ export function SchedulePage({
                             <div className="flex flex-wrap gap-1">
                                 {schedule.status !== 'running' && (
                                     <Button size="sm" variant="ghost" disabled={busy} onClick={() => void act('run')}>
-                                        Run now
+                                        {t('schedules:actions.run')}
                                     </Button>
                                 )}
                                 {schedule.status === 'paused' ? (
@@ -395,7 +413,7 @@ export function SchedulePage({
                                         disabled={busy}
                                         onClick={() => void act('resume')}
                                     >
-                                        Resume
+                                        {t('schedules:actions.resume')}
                                     </Button>
                                 ) : (
                                     <Button
@@ -404,11 +422,11 @@ export function SchedulePage({
                                         disabled={busy}
                                         onClick={() => void act('pause')}
                                     >
-                                        Pause
+                                        {t('schedules:actions.pause')}
                                     </Button>
                                 )}
                                 <Button size="sm" variant="ghost" disabled={busy} onClick={() => setCancelling(true)}>
-                                    Cancel
+                                    {t('schedules.detail:cancel')}
                                 </Button>
                             </div>
                         )}
@@ -428,12 +446,12 @@ export function SchedulePage({
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>What it has done</CardTitle>
-                        <CardDescription>Its runs, newest first.</CardDescription>
+                        <CardTitle>{t('schedules.detail:runs.title')}</CardTitle>
+                        <CardDescription>{t('schedules.detail:runs.description')}</CardDescription>
                     </CardHeader>
                     <CardContent className="grid gap-2">
                         {!runs.length ? (
-                            <p className="text-sm text-muted-foreground">No runs yet.</p>
+                            <p className="text-sm text-muted-foreground">{t('schedules:no-runs')}</p>
                         ) : (
                             <ul className="grid text-sm" data-slot="schedule-runs">
                                 {runs.map((run) => (
@@ -449,7 +467,9 @@ export function SchedulePage({
                                             </span>
                                             {run.finishedAt && (
                                                 <span className="text-muted-foreground">
-                                                    · took {took(run.finishedAt - run.startedAt)}
+                                                    {t('schedules.detail:runs.took', {
+                                                        duration: formatDuration(run.finishedAt - run.startedAt),
+                                                    })}
                                                 </span>
                                             )}
                                         </span>
@@ -468,7 +488,7 @@ export function SchedulePage({
                                             <span className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs">
                                                 {run.turnPath && (
                                                     <Link className={LINK} to={run.turnPath}>
-                                                        Open in chat
+                                                        {t('schedules.detail:runs.open')}
                                                     </Link>
                                                 )}
                                                 {run.board.map((item) => (
@@ -478,7 +498,9 @@ export function SchedulePage({
                                                         to={`/issues/${item.issue}`}
                                                         title={item.title}
                                                     >
-                                                        {BOARD_VERB[item.action]} {item.issue}
+                                                        {t(`schedules.detail:runs.board.${item.action}`, {
+                                                            issue: item.issue,
+                                                        })}
                                                     </Link>
                                                 ))}
                                             </span>
@@ -489,7 +511,7 @@ export function SchedulePage({
                         )}
                         {moreRuns && (
                             <Button variant="outline" size="sm" className="justify-self-center" onClick={loadMore}>
-                                Load more
+                                {t('schedules:actions.load-more')}
                             </Button>
                         )}
                     </CardContent>

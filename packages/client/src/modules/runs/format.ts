@@ -1,16 +1,44 @@
-import { dateTimeFormat } from '@socio/shared/locale';
+import { dateTimeFormat, listFormat, numberFormat } from '@socio/shared/locale';
 
-/** A turn's or a step's duration in Runs: "820 ms", "1.5 s", "2m 05s". */
+// Units as the reader's locale writes them ("820 ms", "1.5 sec", "2 min,
+// 5 sec"): the locale's own words, from Intl, as Operations' formatMs.
+const unit = (name: 'millisecond' | 'second' | 'minute' | 'hour', digits = 0) =>
+    numberFormat({ style: 'unit', unit: name, unitDisplay: 'short', maximumFractionDigits: digits });
+const units = {
+    millisecond: unit('millisecond'),
+    tenths: unit('second', 1),
+    second: unit('second'),
+    minute: unit('minute'),
+    hour: unit('hour'),
+};
+const parts = listFormat({ type: 'unit', style: 'short' });
+
+/**
+ * A turn's or a step's duration in Runs (and a job's in Schedules): "820
+ * ms", "1.5 sec", "2 min, 5 sec", "1 hr, 3 min"; the zero parts left out.
+ */
 export function formatDuration(ms: number) {
     if (ms < 1000) {
-        return `${ms} ms`;
+        return units.millisecond.format(Math.round(ms));
     }
     if (ms < 60_000) {
-        return `${(ms / 1000).toFixed(1)} s`;
+        return units.tenths.format(Math.round(ms / 100) / 10);
     }
-    const seconds = Math.round(ms / 1000);
-    return `${Math.floor(seconds / 60)}m ${String(seconds % 60).padStart(2, '0')}s`;
+    const total = Math.round(ms / 1000);
+    const hours = Math.floor(total / 3600);
+    const minutes = Math.floor((total % 3600) / 60);
+    const seconds = total % 60;
+    return parts.format(
+        [
+            hours > 0 && units.hour.format(hours),
+            minutes > 0 && units.minute.format(minutes),
+            seconds > 0 && units.second.format(seconds),
+        ].filter((part): part is string => !!part),
+    );
 }
+
+/** A number of whole seconds, as a limit reads: "120 sec". */
+export const formatSeconds = (seconds: number) => units.second.format(seconds);
 
 const thisYear = dateTimeFormat({
     month: 'short',

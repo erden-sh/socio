@@ -134,7 +134,7 @@ it('lists turns in a table, with errors and links to readable chats', async () =
     ]);
     const rows = [...table.querySelectorAll<HTMLElement>('tbody tr')];
     expect(rows.map((row) => row.dataset.status)).toEqual(['finished', 'failed', 'finished']);
-    expect(rows[0].textContent).toContain('1.5 s');
+    expect(rows[0].textContent).toContain('1.5 sec');
     // Status as a dot and a word; one date format, the full time on hover (CB-308).
     expect(rows.map((row) => row.querySelector('[data-slot="run-status"]')?.textContent)).toEqual([
         'Finished',
@@ -610,7 +610,7 @@ it('shows a busy model’s retries, the switch to the shared model and a turn no
         'fallback',
         'round',
     ]);
-    expect(entries[2].textContent).toBe('Rate limited· chatgpt_rate_limited · waited 2.1 s, then sent again');
+    expect(entries[2].textContent).toBe('Rate limited· chatgpt_rate_limited · waited 2.1 sec, then sent again');
     expect(entries[3].textContent).toBe('Out of reach· http_503 · waited 400 ms, cut short, nothing sent again');
     expect(entries[4].textContent).toMatch(/^Round 2, retry 1 \(rate limited\)/);
     expect(entries[5].textContent).toBe('Switched to the shared model· ChatGPT was busy, so Homelab carried on');

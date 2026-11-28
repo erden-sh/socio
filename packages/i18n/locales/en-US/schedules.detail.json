@@ -1,0 +1,75 @@
+{
+    "load-failed": "Could not load the schedule.",
+    "missing": {
+        "title": "Schedule not found",
+        "description": "It may have been deleted, or it isn’t yours. <all>All schedules</all>"
+    },
+    "meta": "{{socio}} · runs the job {{job}} · <all>All schedules</all>",
+    "meta_mine": "{{socio}} · runs the job {{job}} · made by you · <all>All schedules</all>",
+    "meta-deleted-job": "{{socio}} · runs the job (deleted) · <all>All schedules</all>",
+    "meta-deleted-job_mine": "{{socio}} · runs the job (deleted) · made by you · <all>All schedules</all>",
+    "meta-turn": "{{socio}} · a socio turn · <all>All schedules</all>",
+    "meta-turn_mine": "{{socio}} · a socio turn · made by you · <all>All schedules</all>",
+    "purpose": {
+        "title": "Purpose",
+        "goal": "The goal it works toward.",
+        "job": "What runs, without the model.",
+        "turn": "What each run asks the socio to do.",
+        "runs-job": "Runs the job {{job}} in the socio’s computer. <code>Its code and logs</code>",
+        "runs-deleted-job": "Runs the job (deleted) in the socio’s computer. <code>Its code and logs</code>"
+    },
+    "progress": {
+        "title": "Goal progress",
+        "description": "The socio notes its progress after each run, and marks the goal done when it is met.",
+        "latest": "Latest note:",
+        "none": "No progress noted yet."
+    },
+    "comments": {
+        "title": "Comments",
+        "description": "Add context or a changed requirement; the socio reads them in each run, and can add its own.",
+        "the-socio": "The socio"
+    },
+    "facts": {
+        "title": "What it does",
+        "socio": "Socio",
+        "runs": "Runs",
+        "once": "Once",
+        "next": "Next runs",
+        "none": "None",
+        "none_paused": "None while paused",
+        "zone": "Time zone",
+        "zone-note": "(its times; the next runs show in yours)",
+        "posts": "Posts in",
+        "chat": "Its chat",
+        "no-chat": "No chat",
+        "approvals": "Approvals",
+        "approvals-some": "Its runs act without asking for {{items, list}}; anything else waits for you.",
+        "approval": "{{label}} (bypass)",
+        "approval_auto": "{{label}} (auto review)",
+        "approvals-none": "Anything that needs your approval waits for you.",
+        "policies": "Policies",
+        "status": "Status"
+    },
+    "standing": {
+        "paused": "It keeps its cadence and runs again once you resume it.",
+        "cancelled": "It won’t run again.",
+        "failed": "Its last run failed.",
+        "completed": "It ran and has nothing left.",
+        "running": "Running now.",
+        "active": "It runs at its next time."
+    },
+    "cancel": "Cancel",
+    "runs": {
+        "title": "What it has done",
+        "description": "Its runs, newest first.",
+        "took": "· took {{duration}}",
+        "open": "Open in chat",
+        "board": {
+            "create": "Filed {{issue}}",
+            "comment": "Commented on {{issue}}",
+            "vote": "Voted for {{issue}}",
+            "unvote": "Withdrew a vote on {{issue}}",
+            "update": "Updated dependencies on {{issue}}"
+        }
+    }
+}

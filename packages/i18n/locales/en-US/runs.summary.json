@@ -1,0 +1,21 @@
+{
+    "end": {
+        "completed": "Completed",
+        "round_cap": "Hit the round cap",
+        "time_limit": "Hit the time limit",
+        "cycle_limit": "Hit its message’s limit",
+        "output_limit": "Hit the output limit",
+        "error": "Error",
+        "model_unavailable": "Model unavailable",
+        "stopped": "Stopped",
+        "interrupted": "Interrupted"
+    },
+    "rounds_one": "{{count, number}} round",
+    "rounds_other": "{{count, number}} rounds",
+    "tokens": {
+        "in": "{{tokens}} in",
+        "cached": "{{share, number(style: percent)}} cached",
+        "out": "{{tokens}} out",
+        "reasoning": "{{tokens}} reasoning"
+    }
+}
