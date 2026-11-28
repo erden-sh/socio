@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import { safeFailure } from '@socio/foundation/observability/failures';
 import { withLengthFinish } from '@socio/foundation/turns/output-limit';
+import { withReasoningLifecycle } from '@socio/foundation/turns/reasoning-lifecycle';
 import { withNumberedToolCalls } from '@socio/foundation/turns/tool-call-args';
 import type { InferenceCapabilities } from '@socio/shared/inference';
 import { OPENAI_COMPATIBLE } from '@socio/shared/inference';
@@ -50,17 +51,20 @@ export function openAICompatibleModel(endpoint: {
         // A turn's own retries replace the client's (`maxRetries: 0`); the one-shot
         // callers (approvals, notes) keep its one.
         // Reasoning these servers stream is the model's own thinking
-        // (`reasoning_content`, `<think>`): `raw` (CB-185).
+        // (`reasoning_content`, `<think>`): `raw` (CB-185). Its events are
+        // kept well formed last, over what the other wrappers pass on.
         adapter: (options) =>
             withReasoningOutput(
-                withLengthFinish(
-                    withNumberedToolCalls(
-                        openaiCompatibleText(model, {
-                            apiKey: apiKey || 'unused',
-                            baseURL: baseUrl,
-                            api: 'chat-completions',
-                            maxRetries: options?.maxRetries ?? 1,
-                        }),
+                withReasoningLifecycle(
+                    withLengthFinish(
+                        withNumberedToolCalls(
+                            openaiCompatibleText(model, {
+                                apiKey: apiKey || 'unused',
+                                baseURL: baseUrl,
+                                api: 'chat-completions',
+                                maxRetries: options?.maxRetries ?? 1,
+                            }),
+                        ),
                     ),
                 ),
                 'raw',
