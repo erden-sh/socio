@@ -1,9 +1,10 @@
 import { useId } from 'react';
 
+import { useTranslation } from '@socio/i18n/react';
 import {
+    COLOR_MODES,
     DEFAULT_THEME_ID,
     THEME_IDS,
-    THEME_LABELS,
     isThemeId,
     resolveAppearance,
     type ColorMode,
@@ -11,12 +12,15 @@ import {
 } from '@socio/shared/settings/appearance';
 
 import type { Shell } from '../../shell/shell-context';
-import { useThemeChoices } from '../../shell/theme';
 
 import { SettingsCard, nativeSelect } from './AccountSettings';
 import { AutosaveHeader, SaveError, useAutosave } from './autosave';
 
-const paletteOptions = THEME_IDS.map((value) => ({ value, label: THEME_LABELS[value] }));
+function useAppearanceLabels() {
+    const { t } = useTranslation(['settings.appearance']);
+    const themeLabel = (id: ThemeId) => t(`settings.appearance:themes.${id}`);
+    return { t, themeLabel, paletteOptions: THEME_IDS.map((value) => ({ value, label: themeLabel(value) })) };
+}
 
 function Choice<T extends string>({
     label,
@@ -71,28 +75,31 @@ export function PersonalAppearance({
     colorMode?: ColorMode;
     mutate: Shell['mutate'];
 }) {
+    const { t, themeLabel, paletteOptions } = useAppearanceLabels();
     const inherited = resolveAppearance({ defaultThemeId }).themeId;
     const modes = resolveAppearance({ colorMode }).colorMode;
-    const themeChoices = useThemeChoices();
     return (
         <SettingsCard>
             <section className="grid gap-4" data-slot="personal-appearance">
-                <AutosaveHeader title="Appearance" status="idle">
-                    Your preferences follow you across browsers.
+                <AutosaveHeader title={t('settings.appearance:personal.title')} status="idle">
+                    {t('settings.appearance:personal.description')}
                 </AutosaveHeader>
                 <Choice<ThemeId | ''>
-                    label="Theme"
+                    label={t('settings.appearance:personal.theme')}
                     selected={isThemeId(themeId) ? themeId : ''}
                     options={[
-                        { value: '', label: `Use workspace theme (${THEME_LABELS[inherited]})` },
+                        {
+                            value: '',
+                            label: t('settings.appearance:personal.inherit', { theme: themeLabel(inherited) }),
+                        },
                         ...paletteOptions,
                     ]}
                     persist={(value) => mutate('/preferences', 'PATCH', { themeId: value || null })}
                 />
                 <Choice
-                    label="Color mode"
+                    label={t('settings.appearance:personal.colorMode')}
                     selected={modes}
-                    options={themeChoices}
+                    options={COLOR_MODES.map((value) => ({ value, label: t(`settings.appearance:modes.${value}`) }))}
                     persist={(value) => mutate('/preferences', 'PATCH', { colorMode: value })}
                 />
             </section>
@@ -107,17 +114,21 @@ export function WorkspaceAppearance({
     defaultThemeId?: ThemeId | null;
     mutate: Shell['mutate'];
 }) {
+    const { t, themeLabel, paletteOptions } = useAppearanceLabels();
     return (
         <SettingsCard>
             <section className="grid gap-4" data-slot="workspace-appearance">
-                <AutosaveHeader title="Workspace appearance" status="idle">
-                    Applies to people who use the workspace theme.
+                <AutosaveHeader title={t('settings.appearance:workspace.title')} status="idle">
+                    {t('settings.appearance:workspace.description')}
                 </AutosaveHeader>
                 <Choice<ThemeId | ''>
-                    label="Default theme"
+                    label={t('settings.appearance:workspace.defaultTheme')}
                     selected={isThemeId(defaultThemeId) ? defaultThemeId : ''}
                     options={[
-                        { value: '', label: `Use Socio default (${THEME_LABELS[DEFAULT_THEME_ID]})` },
+                        {
+                            value: '',
+                            label: t('settings.appearance:workspace.inherit', { theme: themeLabel(DEFAULT_THEME_ID) }),
+                        },
                         ...paletteOptions,
                     ]}
                     persist={(value) => mutate('/settings', 'PATCH', { defaultThemeId: value || null })}
