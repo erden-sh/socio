@@ -1,9 +1,20 @@
 {
+    "title": "Title of the dialog that files a new issue on the team's tracker.",
     "description": "Under the report dialog's title. \"Triage\" is the tracker's first status, where new issues wait to be sorted. The run form adds that the issue is linked to the socio's failed run.",
+    "field.title": "Label of the box for the new issue's title.",
+    "field.title-placeholder": "Placeholder of the new issue's title box.",
+    "field.description": "Label of the box for the new issue's description.",
+    "field.kind": "Label of the menu with the issue's kind (bug, feature...).",
+    "field.priority": "Label of the menu with the issue's priority.",
+    "field.area": "Label of the menu with the part of the product the issue is about.",
+    "field.no-area": "Choice in the Area menu: the issue is about no particular area.",
+    "cancel": "Button that closes the report dialog; it asks first if you wrote something.",
     "filing": "The submit button's text while the issue is being filed.",
+    "file": "The report dialog's submit button: it files (creates) the issue.",
     "filed": "Toast after filing; {{key}} is the new issue's key (CB-12).",
     "filed-partly": "Toast after filing when some attachments failed; {{key}} is the new issue's key.",
     "open": "Button in the toast that opens the new issue.",
+    "discard.title": "Title of the confirmation when you close the report dialog with unsaved text or files.",
     "discard.keep": "Button that goes back to the form.",
     "discard.confirm": "Button that closes the form and loses what was written."
 }

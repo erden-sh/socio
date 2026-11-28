@@ -4,7 +4,16 @@
     "groups.dashboard": "Heading of the section nav's first group: the dashboard's pages of numbers.",
     "groups.oversight": "Heading of the section nav's second group: who looked at what, which access socios have, and the dashboard's settings.",
     "sections.overview.label": "Each sections.*.label: a page of the Operations dashboard, in its section nav, page title and breadcrumb. Short. \"Socio\" is a product noun (an AI agent), \"Space\" one too (a shared area of pages).",
+    "sections.activity.label": "A page of the Operations dashboard: who works with which socios (AI agents), how often and through which channels.",
+    "sections.value.label": "A page of the Operations dashboard: which work gets finished, which is left, and what people come back for.",
+    "sections.themes.label": "A page of the Operations dashboard: what people come to socios for (intents and recurring topics).",
+    "sections.knowledge.label": "A page of the Operations dashboard: Spaces, pages, datasets and storage, and how they are used.",
+    "sections.reliability.label": "A page of the Operations dashboard: what fails and why (turns, tools, retries).",
+    "sections.capabilities.label": "A page of the Operations dashboard: what socios can do and what they are asked for.",
+    "sections.health.label": "A page of the Operations dashboard: the state of models, queues, schedules, backups and the server's resources.",
+    "sections.cost.label": "A page of the Operations dashboard: what socios' answers cost, and the prices behind them.",
     "sections.access-log.label": "The log of admins opening people's activity, chats and traces.",
     "sections.socio-access.label": "Which socios (AI agents) may act in which apps on behalf of which people.",
+    "sections.settings.label": "A page of the Operations dashboard with the dashboard's own settings (time zone, sessions, retention, price sync, labeling); not the app's Settings.",
     "load-failed": "Shown when a page's numbers didn't load and the server gave no reason."
 }

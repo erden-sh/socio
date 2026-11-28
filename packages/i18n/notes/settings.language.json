@@ -1,0 +1,8 @@
+{
+    "title": "Heading of the Language card on the person's Profile page, where they pick the language Socio shows them.",
+    "description": "Text of the Language card. \"Socio\" is the product name. The list names each language in that language (Deutsch, Español…), so those names are not translated.",
+    "matchDevice": "Option in the Language card: follow the language set on the person's device or browser.",
+    "matchDeviceCurrently": "The same option once the device's language is known; {{language}} is that language's name, such as \"English\".",
+    "saved": "Toast after the person picked a language; {{language}} is the chosen language's name in that language.",
+    "savedDevice": "Toast after the person chose to match their device's language."
+}

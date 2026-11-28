@@ -9,7 +9,11 @@
 //     locale (es-US over es-419) only holds what differs;
 //   - every context note (packages/i18n/notes/<ns>.json, beside locales/)
 //     names a namespace and a key en-US has. Notes are for translators and
-//     drafting; they are never built or served.
+//     drafting; they are never built or served;
+//   - packages/i18n/namespaces.json, beside locales/, gives every en-US
+//     namespace a label ("Chat · Message box") and where it appears in the
+//     app, for translators: one entry per namespace and no other, each plain
+//     text on one line within the limits (NAMESPACE_LABEL_MAX, NAMESPACE_WHERE_MAX).
 //
 // It writes dist/i18n/<locale>/<ns>.<sha256-12>.json, each with a gzip and a
 // Brotli copy when that pays (as scripts/precompress.mjs), en-XA generated
@@ -36,6 +40,9 @@ import { buildCatalog, CatalogError } from '../packages/i18n/src/catalog.ts';
 /** The most a route's inlined en-US dictionaries may weigh, gzipped, before the build warns. */
 export const ROUTE_BUDGET_BYTES = 8 * 1024;
 const MIN_COMPRESSED = 1024;
+/** The longest a namespace's label and where-it-appears may be, in characters (the translation app's limits). */
+export const NAMESPACE_LABEL_MAX = 80;
+export const NAMESPACE_WHERE_MAX = 300;
 
 const root = resolve(import.meta.dirname, '..');
 const args = process.argv.slice(2);
@@ -49,6 +56,7 @@ const outDir = option('--out', join(root, 'dist/i18n'));
 const routesFile = option('--routes', join(root, 'packages/i18n/src/route-namespaces.json'));
 const typesFile = option('--types', join(root, 'packages/i18n/src/resources.gen.ts'));
 const notesDir = option('--notes', join(localesDir, '..', 'notes'));
+const namespacesFile = option('--namespaces', join(localesDir, '..', 'namespaces.json'));
 
 /** The files, parsed; a file that isn't JSON is a problem, reported with the rest. */
 function readSources(dir) {
@@ -114,6 +122,69 @@ function checkNotes(dir, english) {
     return problems;
 }
 
+/**
+ * namespaces.json: `{ "<ns>": { "label", "where" } }`, one entry for each en-US
+ * namespace and none for a namespace en-US doesn't have. Both fields are
+ * plain text on one line, within their limits, with no `{{` and no markup.
+ * Problems join the build's.
+ */
+function checkNamespaces(file, english) {
+    const name = 'namespaces.json';
+    let entries;
+    try {
+        entries = JSON.parse(readFileSync(file, 'utf8'));
+    } catch (error) {
+        return [
+            error.code === 'ENOENT'
+                ? `${name}: missing; it gives each en-US namespace a label and where it appears (docs/I18N.md)`
+                : `${name}: not valid JSON (${error.message})`,
+        ];
+    }
+    if (typeof entries !== 'object' || entries === null || Array.isArray(entries)) {
+        return [`${name}: must be an object of namespace → { label, where }`];
+    }
+    const problems = [];
+    const namespaces = Object.keys(english ?? {});
+    for (const ns of namespaces) {
+        if (!Object.hasOwn(entries, ns)) {
+            problems.push(`${name}: en-US namespace ${ns} needs an entry with a label and where it appears`);
+        }
+    }
+    const limits = { label: NAMESPACE_LABEL_MAX, where: NAMESPACE_WHERE_MAX };
+    for (const [ns, entry] of Object.entries(entries)) {
+        if (!namespaces.includes(ns)) {
+            problems.push(`${name}: en-US has no namespace ${ns}`);
+            continue;
+        }
+        if (typeof entry !== 'object' || entry === null || Array.isArray(entry)) {
+            problems.push(`${name}: ${ns} must be an object with a label and a where`);
+            continue;
+        }
+        for (const field of Object.keys(entry)) {
+            if (!Object.hasOwn(limits, field)) {
+                problems.push(`${name}: ${ns} has an unknown field ${field} (only label and where)`);
+            }
+        }
+        for (const [field, max] of Object.entries(limits)) {
+            const text = entry[field];
+            if (typeof text !== 'string' || !text.trim()) {
+                problems.push(`${name}: ${ns}.${field} needs text (a non-empty string)`);
+            } else if (text.length > max) {
+                problems.push(`${name}: ${ns}.${field} is ${text.length} characters, over the ${max} limit`);
+            } else if (/[\p{Cc}\u2028\u2029]/u.test(text)) {
+                problems.push(`${name}: ${ns}.${field} must be a single line, with no tabs or control characters`);
+            } else if (text.includes('{{')) {
+                problems.push(`${name}: ${ns}.${field} has a {{ placeholder; it's shown as plain text`);
+            } else if (/[<>]/u.test(text)) {
+                problems.push(`${name}: ${ns}.${field} has < or >; it's plain text, with no HTML`);
+            } else if (text !== text.trim()) {
+                problems.push(`${name}: ${ns}.${field} starts or ends with spaces`);
+            }
+        }
+    }
+    return problems;
+}
+
 /** A dictionary's dotted keys. */
 function* flattenKeys(dictionary, prefix = '') {
     for (const [key, value] of Object.entries(dictionary ?? {})) {
@@ -133,6 +204,7 @@ const kb = (bytes) => `${(bytes / 1024).toFixed(1)} kB`;
 const release = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).version;
 const { sources, problems } = readSources(localesDir);
 problems.push(...checkNotes(notesDir, sources['en-US']));
+problems.push(...checkNamespaces(namespacesFile, sources['en-US']));
 let catalog;
 try {
     catalog = buildCatalog(sources, release);

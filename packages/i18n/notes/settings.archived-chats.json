@@ -4,6 +4,7 @@
     "summary": "How many archived chats the person has.",
     "manage": "Button that opens the dialog listing the archived chats.",
     "description": "\"⌘K palette\" is the quick search opened with Command-K (Ctrl-K); keep \"⌘K\". Scheduled tasks are tasks socios (AI agents) run on a schedule in those chats.",
+    "none": "Shown in the Archived chats dialog when it has nothing to list.",
     "list": "Accessible name of the list of archived chats (read by screen readers).",
     "row": "Under an archived chat's title: {{socio}} is the name of the socio (AI agent) the chat is with, and <date></date> is replaced by the date it was archived (see date). The _noSocio form is for chats without one. Keep the <date></date> tag; move it where your language puts the date.",
     "date": "The date a chat was archived, medium length (\"Oct 12, 2026\").",

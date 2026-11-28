@@ -2,11 +2,21 @@
     "title": "Title and label of the search palette (opened with Ctrl K). \"Socio\" is the product name.",
     "description": "Screen-reader description of the palette. A socio is an AI agent.",
     "placeholder": "Placeholder of the palette's search box.",
+    "searching": "Shown in the search palette while results from the server are still loading.",
+    "nothing": "Shown in the search palette when nothing matches what was typed.",
     "corrected": "Row offered when the search corrected a typo: <words> wraps the corrected words, shown bold. Keep the tags.",
     "search-instead": "Under that row: search for exactly what was typed; {{query}} is the typed text.",
     "new-chat": "Palette action: start a conversation with the person's home socio.",
     "theme": "Palette action to switch the color theme; {{theme}} is Light, Dark or System.",
+    "groups.actions": "Group heading in the search palette over commands that do something (for example New chat).",
+    "groups.theme": "Group heading in the search palette over the color theme choices.",
     "groups.go-to": "Group heading of the palette rows that open a module (Go to Chat, Go to Issues…).",
+    "groups.apps": "Group heading in the search palette over the workspace's added apps and plugins, to open one.",
+    "groups.help": "Group heading in the search palette over the guides and help.",
+    "groups.issues": "Group heading in the search palette over matching issues from the Improvements board.",
     "groups.socios": "Group heading: the socios (AI agents), to start a chat with one.",
-    "groups.spaces": "Group heading: Spaces (a product noun: a team's shared area)."
+    "groups.rooms": "Group heading in the search palette over Rooms (a product noun: chats several people share).",
+    "groups.recent-chats": "Group heading in the search palette over the person's latest conversations.",
+    "groups.spaces": "Group heading: Spaces (a product noun: a team's shared area).",
+    "groups.pages": "Group heading in the search palette over matching pages (documents in Spaces)."
 }

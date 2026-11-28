@@ -1,6 +1,7 @@
 {
     "label": "Accessible name of a Space's Settings tab. {{space}} is the Space's name. \"Space\" is a product noun (a shared area of pages).",
     "description": "Subtitle under the Space's name on its Settings tab.",
+    "loading": "On a Space's Settings tab while its settings and people load.",
     "audience-legend": "Legend of the two radio cards that choose who sees the Space (the whole workspace, or only its people).",
     "audience-note": "Shown to a Space's members who can't change who sees it; the _private form for a private Space. Its list of what a private Space covers matches the other audience texts.",
     "delete.title": "Heading of the danger zone at the foot of the Space's settings.",
@@ -11,6 +12,7 @@
     "confirm.body": "The confirmation dialog's body: _private for making the Space private (\"socios\" are AI agents), the base form for opening it.",
     "name.title": "Heading of the rename form.",
     "name.label": "Accessible name of the Space name text box.",
+    "name.rename": "Button (Space editors only) that saves the Space's new name.",
     "name.renamed": "Toast after renaming the Space.",
     "people.title": "Heading of the list of the Space's people.",
     "people.hint": "Explains the two Space roles, Editor and Member.",

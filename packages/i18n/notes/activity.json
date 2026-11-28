@@ -20,6 +20,8 @@
     "status.scheduled": "A task's status chip. scheduled: it completed and runs again.",
     "actions.pause": "Button that pauses a running or queued task.",
     "actions.retry-review": "Button for a task interrupted for review (a person had to look first): run it again.",
+    "actions.retry": "Button on a failed task's details that runs the task again.",
+    "actions.resume": "Button on a paused task's details that starts the task running again.",
     "actions.run": "Button that runs a finished task again.",
     "actions.pause-schedule": "Button that pauses a task's repeats.",
     "actions.edit-schedule": "Button that changes how often the task repeats.",

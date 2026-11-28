@@ -7,6 +7,7 @@
     "goals.no-progress": "A goal without a progress note yet.",
     "scheduled.title": "Panel heading: the socio's schedules that will run again.",
     "scheduled.failed": "Shown when the schedules could not be loaded.",
+    "scheduled.empty": "Shown in the Scheduled panel on a socio's home page when the socio has nothing set to run again.",
     "scheduled.all": "Link to the Schedules page.",
     "scheduled.paused": "A schedule's state instead of its next run time.",
     "scheduled.running": "A schedule's state instead of its next run time."

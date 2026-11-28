@@ -16,7 +16,22 @@ afterEach(() => {
     }
 });
 
-function setup(files: Record<string, string>, routes: Record<string, string[]> = { root: ['common'] }) {
+// A label and where-it-appears for each en-US namespace, as namespaces.json needs.
+const entriesFor = (files: Record<string, string>) =>
+    Object.fromEntries(
+        Object.keys(files)
+            .filter((path) => path.startsWith('en-US/'))
+            .map((path) => [
+                path.slice('en-US/'.length, -'.json'.length),
+                { label: 'Chat · Message box', where: 'The box at the bottom of a conversation.' },
+            ]),
+    );
+
+function setup(
+    files: Record<string, string>,
+    routes: Record<string, string[]> = { root: ['common'] },
+    namespaces: unknown = entriesFor(files),
+) {
     const dir = mkdtempSync(join(tmpdir(), 'socio-i18n-'));
     scratch.push(dir);
     for (const [path, text] of Object.entries(files)) {
@@ -24,6 +39,7 @@ function setup(files: Record<string, string>, routes: Record<string, string[]> =
         writeFileSync(join(dir, 'locales', path), text);
     }
     writeFileSync(join(dir, 'routes.json'), JSON.stringify(routes));
+    writeFileSync(join(dir, 'namespaces.json'), JSON.stringify(namespaces));
     return dir;
 }
 
@@ -148,6 +164,48 @@ describe('scripts/i18n-build.mjs', () => {
         const unknown = build(dir, '--check');
         expect(unknown.status).toBe(1);
         expect(unknown.stderr).toContain("route root inlines missing, which en-US doesn't have");
+    });
+
+    it('needs a label and where it appears for every namespace, and nothing else, in plain text on one line', () => {
+        const where = 'The box at the bottom of a conversation.';
+        const dir = setup(
+            { 'en-US/common.json': EN, 'en-US/chat.json': EN, 'en-US/shell.json': EN, 'en-US/pages.json': EN },
+            undefined,
+            {
+                common: { label: 'Common words', where },
+                chat: { label: 'L'.repeat(81), where: 'W'.repeat(301) },
+                shell: { label: 'Shell · {{name}}', where: 'The <b>header</b>.' },
+                pages: { label: ' ', where: 'Two\nlines.', screenshot: 'x' },
+                gone: { label: 'Gone', where },
+            },
+        );
+        const run = build(dir, '--check');
+        expect(run.status).toBe(1);
+        expect(run.stderr).toContain('namespaces.json: chat.label is 81 characters, over the 80 limit');
+        expect(run.stderr).toContain('namespaces.json: chat.where is 301 characters, over the 300 limit');
+        expect(run.stderr).toContain('namespaces.json: shell.label has a {{ placeholder');
+        expect(run.stderr).toContain("namespaces.json: shell.where has < or >; it's plain text, with no HTML");
+        expect(run.stderr).toContain('namespaces.json: pages.label needs text (a non-empty string)');
+        expect(run.stderr).toContain('namespaces.json: pages.where must be a single line');
+        expect(run.stderr).toContain('namespaces.json: pages has an unknown field screenshot');
+        expect(run.stderr).toContain('namespaces.json: en-US has no namespace gone');
+        expect(run.stderr).not.toContain('common');
+
+        writeFileSync(join(dir, 'namespaces.json'), JSON.stringify({ common: { label: 'Common words', where } }));
+        const missing = build(dir, '--check');
+        expect(missing.status).toBe(1);
+        expect(missing.stderr).toContain(
+            'namespaces.json: en-US namespace chat needs an entry with a label and where it appears',
+        );
+        expect(missing.stderr).toContain('namespaces.json: en-US namespace pages needs an entry');
+
+        rmSync(join(dir, 'namespaces.json'));
+        const none = build(dir, '--check');
+        expect(none.status).toBe(1);
+        expect(none.stderr).toContain('namespaces.json: missing');
+
+        writeFileSync(join(dir, 'namespaces.json'), '{ "common": ');
+        expect(build(dir, '--check').stderr).toMatch(/namespaces\.json: not valid JSON/);
     });
 
     it('checks the repository’s own dictionaries', () => {

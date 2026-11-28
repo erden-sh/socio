@@ -6,6 +6,8 @@
     "when": "A date and time on this page; only formats it.",
     "nothingNarrowed": "Status line when no admin has narrowed sign-in yet, so the server's configuration applies as is.",
     "methods.title": "Legend over the checkboxes of sign-in methods.",
+    "methods.password": "A sign-in method admins can switch off: signing in with an email address and a password.",
+    "methods.passkey": "A sign-in method admins can switch off: passkeys (a credential stored on the person's device: fingerprint, face or PIN).",
     "methods.signInLink": "A sign-in method: a one-time link sent by the Telegram bot.",
     "methods.emailLinks": "A sign-in method: one-time codes and links sent by email.",
     "methods.offIn": "Badge next to a sign-in method the server's configuration turned off, so it can't be turned on here. {{env}} is an environment variable name such as AUTH_PASSWORD (never translated). The _telegram form: the Telegram bot isn't set up. The _email form: this server has no email channel.",
@@ -37,5 +39,13 @@
     "errors.check": "Shown when the preview of a pending change's effects failed.",
     "methods.google": "A sign-in method admins switch on or off: people sign in with a Google account they linked, in the Socio mobile app and on the workspace's website. \"Google\" is a brand name.",
     "methods.apple": "A sign-in method admins switch on or off: people sign in with an Apple account they linked (Sign in with Apple), in the Socio mobile app and on the workspace's website. \"Apple\" is a brand name.",
-    "methods.offIn_cloud": "Badge on a sign-in method this server can't offer now: it needs the server's connection to Socio's cloud services."
+    "methods.offIn_cloud": "Badge on a sign-in method this server can't offer now: it needs the server's connection to Socio's cloud services.",
+    "confirm.title": "Title of the dialog where the admin proves it is them (password or passkey) before a sign-in change saves.",
+    "confirm.password": "Label of the password field in the confirmation dialog: the admin's own password.",
+    "confirm.withPassword": "Button in the confirmation dialog: confirms the change with the password typed above.",
+    "confirm.withPasskey": "Button in the confirmation dialog: confirms the change with one of the admin's passkeys.",
+    "confirm.cancel": "Button that closes the confirmation dialog without saving the change.",
+    "history.title": "Heading of the list of past changes to the sign-in policy, at the bottom of Settings › Access.",
+    "history.empty": "Shown in the History list when the sign-in policy was never changed.",
+    "errors.save": "Error in the confirmation dialog when the sign-in change could not be saved."
 }

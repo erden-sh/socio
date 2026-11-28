@@ -5,11 +5,17 @@
     "reported": "Tile and menu choice: items filed on the board.",
     "resolved": "Tile and menu choice: items closed as done on the board.",
     "series.reported": "Chart title.",
+    "series.resolved": "Chart title when the menu shows items resolved.",
     "axis.reported": "What the chart's values are, in a sentence for screen readers. Lowercase.",
+    "axis.resolved": "What the chart's values are, in a sentence for screen readers. Lowercase.",
     "bugs": "Of the items reported, how many were bugs.",
+    "resolve-time": "Tile: how long board items took from being filed to being resolved (a median).",
     "median": "The tile's value is the median.",
     "within": "90% of items took at most {{span}} (a span such as 3 h or 2.5 days).",
+    "open": "Tile: how many board items were still open when the range ended. A status (not resolved yet), not a verb.",
     "open-note": "The Open tile counts items still open when the range ends.",
     "report-time": "Tile: how long after a turn failed someone filed an issue about it.",
-    "filed-count": "How many failed turns were filed as issues from the Runs page."
+    "filed": "Note under the report time tile when there is no count: it measures only failed turns filed as issues from the Runs page.",
+    "filed-count": "How many failed turns were filed as issues from the Runs page.",
+    "empty": "In place of the board's chart when the board has no items in the range."
 }
