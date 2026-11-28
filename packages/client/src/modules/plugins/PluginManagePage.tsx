@@ -177,6 +177,9 @@ const BACKUP_POLL_MS = 3_000;
  */
 function PluginBackupsSection({ id, enabled }: { id: string; enabled: boolean }) {
     const { t } = useTranslation(['plugins.manage']);
+    // The latest t, for callbacks and effects that shouldn't run again when the language changes.
+    const latestT = useRef(t);
+    latestT.current = t;
     const backupDetail = useBackupDetail();
     const [backups, setBackups] = useState<PluginBackups>();
     const [starting, setStarting] = useState(false);
@@ -189,9 +192,9 @@ function PluginBackupsSection({ id, enabled }: { id: string; enabled: boolean })
                 setBackups(data);
             }
         } catch (error) {
-            failed(error, t('plugins.manage:backups.load-failed'));
+            failed(error, latestT.current('plugins.manage:backups.load-failed'));
         }
-    }, [id, t]);
+    }, [id]);
     useEffect(() => {
         void load();
     }, [load]);
@@ -291,6 +294,9 @@ function PluginBackupsSection({ id, enabled }: { id: string; enabled: boolean })
  */
 export function PluginManagePage({ id }: { id: string }) {
     const { t } = useTranslation(['plugins', 'plugins.manage']);
+    // The latest t, for callbacks and effects that shouldn't run again when the language changes.
+    const latestT = useRef(t);
+    latestT.current = t;
     const words = usePluginWords();
     const backupDetail = useBackupDetail();
     const shell = useShell();
@@ -318,9 +324,9 @@ export function PluginManagePage({ id }: { id: string }) {
             setLoaded(plugin ? { plugin, inCatalog: data.catalog.some((row) => row.id === id) } : { missing: true });
             setEgressSaved(false);
         } catch (error) {
-            failed(error, t('plugins.manage:load-failed'));
+            failed(error, latestT.current('plugins.manage:load-failed'));
         }
-    }, [id, t]);
+    }, [id]);
     useEffect(() => {
         setLoaded(undefined);
         void load();

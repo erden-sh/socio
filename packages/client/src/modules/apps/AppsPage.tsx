@@ -1,5 +1,5 @@
 import { Bug, ExternalLink, Power, RefreshCw, Rocket, ScrollText, Trash2, Undo2 } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { toast } from 'sonner';
 
@@ -244,6 +244,9 @@ function useAttemptLabel() {
 function LogsView({ app, onClose }: { app: AppView; onClose: () => void }) {
     const { t } = useTranslation(['apps.dialogs']);
     const attemptLabel = useAttemptLabel();
+    // The latest t, for callbacks and effects that shouldn't run again when the language changes.
+    const latestT = useRef(t);
+    latestT.current = t;
     const [state, setState] = useState<AppAttemptsState>();
     const [chosen, setChosen] = useState<number>();
     useEffect(() => {
@@ -251,10 +254,10 @@ function LogsView({ app, onClose }: { app: AppView; onClose: () => void }) {
         api<AppAttemptsState>(`/apps/${encodeURIComponent(app.id)}/attempts${chosen ? `?attempt=${chosen}` : ''}`)
             .then(setState)
             .catch((e) => {
-                failed(e, t('apps.dialogs:logs.load-failed'));
-                setState({ attempts: [], attempt: null, note: t('apps.dialogs:logs.none') });
+                failed(e, latestT.current('apps.dialogs:logs.load-failed'));
+                setState({ attempts: [], attempt: null, note: latestT.current('apps.dialogs:logs.none') });
             });
-    }, [app.id, chosen, t]);
+    }, [app.id, chosen]);
     const attempt = state?.attempt;
     return (
         <Dialog open onOpenChange={(open) => !open && onClose()}>
@@ -416,6 +419,9 @@ function OtherApps({ apps }: { apps: readonly AppDirectoryEntry[] }) {
 export function AppsPage() {
     const { t } = useTranslation(['apps']);
     const healthLine = useHealthLine();
+    // The latest t, for callbacks and effects that shouldn't run again when the language changes.
+    const latestT = useRef(t);
+    latestT.current = t;
     const shell = useShell();
     const [state, setState] = useState<AppsState>();
     const [busy, setBusy] = useState(false);
@@ -441,9 +447,9 @@ export function AppsPage() {
         setBusy(true);
         return api<AppsState>('/apps')
             .then(setState)
-            .catch((e) => failed(e, t('apps:load-failed')))
+            .catch((e) => failed(e, latestT.current('apps:load-failed')))
             .finally(() => setBusy(false));
-    }, [t]);
+    }, []);
     useEffect(() => void load(), [load]);
     const share = async (app: AppView, sharedSpaceId: string | null) => {
         try {

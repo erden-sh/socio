@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
+import { getI18n } from 'react-i18next';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
@@ -490,6 +491,28 @@ it('undoes and redoes this page’s saves with buttons and the keyboard (CB-398)
     expect(puts()[8]).toEqual({ NOTE: 'pending', SYNC: 'false' });
     expect(puts()[9]).toEqual({ NOTE: 'hello', SYNC: 'false' });
     expect(note.value).toBe('hello');
+});
+
+it('keeps the page and its undo history when the language changes', async () => {
+    open('/settings/plugins/typed');
+    await until(() => !!slot('plugin-settings'), 'the settings');
+    const sync = setting('SYNC').querySelector<HTMLButtonElement>('[role="switch"]')!;
+    act(() => sync.click());
+    await until(() => puts().length === 1, 'the save');
+    const undo = () => document.querySelector<HTMLButtonElement>('[aria-keyshortcuts="Control+Z Meta+Z"]');
+    expect(undo()!.disabled).toBe(false);
+    const form = slot('plugin-settings');
+    const i18n = getI18n();
+    const before = i18n.language;
+    try {
+        await act(async () => void (await i18n.changeLanguage('en-XA')));
+        await act(() => new Promise((resolve) => setTimeout(resolve, 50)));
+        // The same form, not one loaded again: Undo still has this page's save.
+        expect(slot('plugin-settings')).toBe(form);
+        expect(undo()!.disabled).toBe(false);
+    } finally {
+        await act(async () => void (await i18n.changeLanguage(before)));
+    }
 });
 
 it('leaves undo alone with nothing to undo, and puts a failed undo back (CB-398)', async () => {

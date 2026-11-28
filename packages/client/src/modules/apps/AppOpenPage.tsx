@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router';
 
 import { Trans, useTranslation } from '@socio/i18n/react';
@@ -15,6 +15,9 @@ import { launchUrl } from './launch';
  */
 export function AppOpenPage() {
     const { t } = useTranslation(['apps.open']);
+    // The latest t, for callbacks and effects that shouldn't run again when the language changes.
+    const latestT = useRef(t);
+    latestT.current = t;
     const { appId = '' } = useParams();
     const [params] = useSearchParams();
     const [error, setError] = useState<string>();
@@ -28,13 +31,13 @@ export function AppOpenPage() {
             })
             .catch((e) => {
                 if (!cancelled) {
-                    setError(e instanceof Error ? e.message : t('apps.open:failed'));
+                    setError(e instanceof Error ? e.message : latestT.current('apps.open:failed'));
                 }
             });
         return () => {
             cancelled = true;
         };
-    }, [appId, params, t]);
+    }, [appId, params]);
     return (
         <WorkspacePage
             slot="app-open-page"

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useTranslation } from '@socio/i18n/react';
@@ -33,6 +33,9 @@ const STEPS = ['review', 'data', 'promote'] as const;
  */
 function PromoteWizard({ appId, onClose, onDone }: { appId: string; onClose: () => void; onDone: () => void }) {
     const { t } = useTranslation(['apps.promote']);
+    // The latest t, for callbacks and effects that shouldn't run again when the language changes.
+    const latestT = useRef(t);
+    latestT.current = t;
     const shell = useShell();
     const [plan, setPlan] = useState<PromotionPlan>();
     const [error, setError] = useState<string>();
@@ -44,11 +47,15 @@ function PromoteWizard({ appId, onClose, onDone }: { appId: string; onClose: () 
         let cancelled = false;
         api<PromotionPlan>(`/apps/${encodeURIComponent(appId)}/promotion`)
             .then((loaded) => !cancelled && setPlan(loaded))
-            .catch((e) => !cancelled && setError(e instanceof Error ? e.message : t('apps.promote:load-failed')));
+            .catch(
+                (e) =>
+                    !cancelled &&
+                    setError(e instanceof Error ? e.message : latestT.current('apps.promote:load-failed')),
+            );
         return () => {
             cancelled = true;
         };
-    }, [appId, t]);
+    }, [appId]);
     const spaces = shell.workspace.spaces;
     const missing = useMemo(
         () =>
@@ -76,9 +83,9 @@ function PromoteWizard({ appId, onClose, onDone }: { appId: string; onClose: () 
         try {
             const result = await api<{ outcome: string }>(`/apps/${encodeURIComponent(appId)}/promote`, 'POST', {
                 version: plan.version.version,
-                datasets: Object.values(choices).filter((choice) =>
-                    plan.datasets.some((dataset) => dataset.ref === choice.ref),
-                ),
+                datasets: Object.values(choices)
+                    .filter((choice) => plan.datasets.some((dataset) => dataset.ref === choice.ref))
+                    .map((choice) => ({ ...choice, name: newName(choice) })),
                 env,
             });
             toast.success(result.outcome);
@@ -89,13 +96,26 @@ function PromoteWizard({ appId, onClose, onDone }: { appId: string; onClose: () 
             setBusy(false);
         }
     };
+    /**
+     * The name a moved dataset gets: the one typed, or the suggestion the
+     * field and the review show, in the reader's language (the server's own
+     * default is English). Too long a suggestion is left to the server's.
+     */
+    const suggested = t('apps.promote:default-name', { name: plan?.name ?? '' });
+    const newName = (choice: PromotionChoice) =>
+        choice.name?.trim() ||
+        (choice.choice !== 'keep' &&
+        plan?.datasets.some((dataset) => dataset.ref === choice.ref && dataset.kind === 'scratch') &&
+        suggested.length <= 80
+            ? suggested
+            : choice.name);
     const describe = (ref: string) => {
         const choice = choices[ref];
         if (!choice) {
             return t('apps.promote:describe.none');
         }
         const shared = plan?.datasets.find((dataset) => dataset.ref === ref)?.sharedArea;
-        const name = choice.name || t('apps.promote:default-name', { name: plan?.name ?? '' });
+        const name = newName(choice) || suggested;
         // The socio asks to write to a moved shared dataset, or keeps reading a moved scratch one.
         const context = choice.dotReads === false ? undefined : shared ? 'asks' : 'reads';
         const socio = plan?.dotName ?? '';

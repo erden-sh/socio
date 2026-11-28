@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useTranslation } from '@socio/i18n/react';
@@ -19,6 +19,9 @@ import { Input } from '@/components/ui/input';
  */
 export function PluginDataBudgetField({ pluginId }: { pluginId: string }) {
     const { t } = useTranslation(['plugins.manage']);
+    // The latest t, for callbacks and effects that shouldn't run again when the language changes.
+    const latestT = useRef(t);
+    latestT.current = t;
     const [budget, setBudget] = useState<PluginDataBudget>();
     const [value, setValue] = useState('');
     const [busy, setBusy] = useState(false);
@@ -30,8 +33,8 @@ export function PluginDataBudgetField({ pluginId }: { pluginId: string }) {
     useEffect(() => {
         api<PluginDataBudget>(path)
             .then(show)
-            .catch((error) => failed(error, t('plugins.manage:budget.load-failed')));
-    }, [path, show, t]);
+            .catch((error) => failed(error, latestT.current('plugins.manage:budget.load-failed')));
+    }, [path, show]);
     // An answer of another shape (an older server) shows nothing.
     if (typeof budget?.statementsPerMinute !== 'number') {
         return null;

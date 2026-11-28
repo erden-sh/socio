@@ -8,7 +8,7 @@ import { BarChart3, CalendarDays, ChevronRight, Search, Send } from 'lucide-reac
  * Empty states borrow the spacing and type of satnaing/shadcn-admin (MIT).
  * Copyright (c) Sat Naing.
  */
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 
 import { useTranslation } from '@socio/i18n/react';
@@ -79,6 +79,9 @@ const CATEGORIES: {
  */
 export function PluginsPage() {
     const { t } = useTranslation(['plugins', 'plugins.catalog']);
+    // The latest t, for callbacks and effects that shouldn't run again when the language changes.
+    const latestT = useRef(t);
+    latestT.current = t;
     const shell = useShell();
     const [params, setParams] = useSearchParams();
     const navigate = useNavigate();
@@ -91,8 +94,8 @@ export function PluginsPage() {
         () =>
             api<PluginList>('/plugins')
                 .then(setData)
-                .catch((error) => failed(error, t('plugins:load-failed'))),
-        [t],
+                .catch((error) => failed(error, latestT.current('plugins:load-failed'))),
+        [],
     );
     useEffect(() => void load(), [load]);
     const act = async (path: string, method: string, body?: unknown) => {

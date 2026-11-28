@@ -1005,11 +1005,17 @@ it('shows each step of the promotion wizard in en-XA', async () => {
     const { PromoteDialog } = await import('../src/modules/apps/PromoteDialog');
     const { ShellContext } = await import('../src/shell/shell-context');
     const fetch = globalThis.fetch;
-    vi.stubGlobal('fetch', async (input: string, init?: RequestInit) =>
-        String(input) === '/api/apps/a3/promotion' // Without the missing dataset, which has no choice and holds the wizard on its data step.
+    const promoted: unknown[] = [];
+    vi.stubGlobal('fetch', async (input: string, init?: RequestInit) => {
+        if (String(input) === '/api/apps/a3/promote') {
+            promoted.push(JSON.parse(String(init?.body)));
+            return Response.json({ outcome: 'Omicron' });
+        }
+        // Without the missing dataset, which has no choice and holds the wizard on its data step.
+        return String(input) === '/api/apps/a3/promotion'
             ? Response.json({ ...PLAN, runtime: true, datasets: PLAN.datasets.filter((item) => item.choices.length) })
-            : fetch(input, init),
-    );
+            : fetch(input, init);
+    });
     await renderWith(
         ['apps.promote'],
         <ShellContext.Provider value={{ workspace } as never}>
@@ -1042,6 +1048,23 @@ it('shows each step of the promotion wizard in en-XA', async () => {
     await click(next());
     await until(() => !!document.querySelector('[data-slot="promote-confirm"]'), 'the confirmation');
     dialogsRead();
+    // The suggested name the field and the review show is the one sent, in the reader's language.
+    const suggested = (pseudo('apps.promote') as { 'default-name': string })['default-name'].replace(
+        '{{name}}',
+        'Lambda',
+    );
+    expect($('[data-slot="promote-confirm"]').textContent).toContain(suggested);
+    await click(next());
+    await until(() => promoted.length === 1, 'the promotion');
+    expect(promoted[0]).toMatchObject({
+        datasets: expect.arrayContaining([
+            expect.objectContaining({ ref: 'xi', choice: 'share', spaceId: 's1', name: suggested }),
+            expect.objectContaining({ ref: 'nu', choice: 'keep' }),
+        ]),
+    });
+    expect(
+        (promoted[0] as { datasets: { ref: string; name?: string }[] }).datasets.find((d) => d.ref === 'nu')?.name,
+    ).toBeUndefined();
 });
 
 it('shows a socio’s Apps on its home page in en-XA, its words loaded on demand', async () => {

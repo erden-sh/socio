@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { Trans, useTranslation } from '@socio/i18n/react';
@@ -210,14 +210,17 @@ export const PluginInstallDialog = onDemand(['plugins.bindings'], PluginInstallF
  */
 export function PluginDatasetsSection({ pluginId }: { pluginId: string }) {
     const { t } = useTranslation(['plugins.bindings']);
+    // The latest t, for callbacks and effects that shouldn't run again when the language changes.
+    const latestT = useRef(t);
+    latestT.current = t;
     const [plan, setPlan] = useState<PluginBindingPlan>();
     const [busy, setBusy] = useState<string>();
     const load = useCallback(
         () =>
             api<PluginBindingPlan>(`/plugins/${pluginId}/bindings`)
                 .then(setPlan)
-                .catch((error) => failed(error, t('plugins.bindings:load-failed'))),
-        [pluginId, t],
+                .catch((error) => failed(error, latestT.current('plugins.bindings:load-failed'))),
+        [pluginId],
     );
     useEffect(() => void load(), [load]);
     // A plan of another shape (an older server) shows nothing.

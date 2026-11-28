@@ -114,6 +114,9 @@ export function PluginSettingsForm({
     onLeave?: () => void;
 }) {
     const { t } = useTranslation(['plugins.settings']);
+    // The latest t, for callbacks and effects that shouldn't run again when the language changes.
+    const latestT = useRef(t);
+    latestT.current = t;
     const fields = plugin.configFields ?? {};
     const initial = plugin.config ?? {};
     const [values, setValues] = useState<Config>(initial);
@@ -183,12 +186,14 @@ export function PluginSettingsForm({
                 unapplied.current = true;
                 setApplyStatus('failed');
                 setApplyError(
-                    failure instanceof Error && failure.message ? failure.message : t('plugins.settings:apply-failed'),
+                    failure instanceof Error && failure.message
+                        ? failure.message
+                        : latestT.current('plugins.settings:apply-failed'),
                 );
             }
         };
         return (queues.get(plugin.id) ?? Promise.resolve()).then(run, run);
-    }, [plugin.id, t]);
+    }, [plugin.id]);
 
     const show = useCallback((next: Config) => {
         valuesRef.current = next;
@@ -223,7 +228,7 @@ export function PluginSettingsForm({
                     setError(
                         failure instanceof Error && failure.message
                             ? failure.message
-                            : t('plugins.settings:save-failed'),
+                            : latestT.current('plugins.settings:save-failed'),
                     );
                 } finally {
                     pending.current -= 1;
@@ -238,7 +243,7 @@ export function PluginSettingsForm({
             queues.set(plugin.id, done);
             return done;
         },
-        [plugin.id, apply, t],
+        [plugin.id, apply],
     );
 
     /** Saves what is typed now (its valid part), when it differs from what is saved. */
