@@ -60,6 +60,9 @@ jobs:
             echo "::error::TRANSLATE_BASE_URL must be an https:// URL."
             exit 1
           fi
+          # The last import is remembered per translation app: pointing TRANSLATE_BASE_URL at
+          # another one (staging to production) sends that app its first import.
+          echo "target=$(printf '%s' "${BASE_URL%/}" | sha256sum | cut -c1-16)" >> "$GITHUB_OUTPUT"
           echo "enabled=true" >> "$GITHUB_OUTPUT"
 
       - if: steps.config.outputs.enabled == 'true'
@@ -89,8 +92,8 @@ jobs:
         uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: ${{ runner.temp }}/i18n-import-last
-          key: i18n-import-last-${{ github.run_id }}
-          restore-keys: i18n-import-last-
+          key: i18n-import-last-${{ steps.config.outputs.target }}-${{ github.run_id }}
+          restore-keys: i18n-import-last-${{ steps.config.outputs.target }}-
 
       - name: Compare with the last import
         id: sent
@@ -158,4 +161,4 @@ jobs:
         uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: ${{ runner.temp }}/i18n-import-last
-          key: i18n-import-last-${{ github.run_id }}-${{ github.run_attempt }}
+          key: i18n-import-last-${{ steps.config.outputs.target }}-${{ github.run_id }}-${{ github.run_attempt }}

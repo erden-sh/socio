@@ -278,7 +278,18 @@ describe('i18n-import.yml', () => {
 
     it('sends only a changed import, and remembers only one that was sent', () => {
         const byName = (name: string) => job.steps.find((step) => step.name === name)!;
-        expect(byName("Restore the last import's hash").with).toMatchObject({ 'restore-keys': 'i18n-import-last-' });
+        // Remembered per translation app, so a new TRANSLATE_BASE_URL gets its first import.
+        const target = '${{ steps.config.outputs.target }}';
+        expect(byName("Restore the last import's hash").with).toMatchObject({
+            key: `i18n-import-last-${target}-\${{ github.run_id }}`,
+            'restore-keys': `i18n-import-last-${target}-`,
+        });
+        expect(byName('Remember the import').with).toMatchObject({
+            key: `i18n-import-last-${target}-\${{ github.run_id }}-\${{ github.run_attempt }}`,
+        });
+        expect(byName('Check the configuration').run).toContain(
+            'echo "target=$(printf \'%s\' "${BASE_URL%/}" | sha256sum | cut -c1-16)"',
+        );
         for (const name of ['Send the import', "Write the import's hash", 'Remember the import']) {
             expect(byName(name).if).toContain("steps.sent.outputs.unchanged == 'false'");
         }
