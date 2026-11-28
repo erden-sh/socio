@@ -1,0 +1,9 @@
+{
+    "cancel.title": "Dialog title; {{title}} is the schedule's title.",
+    "cancel.description": "A canceled schedule can't be resumed; the person types its title to confirm.",
+    "cancel.type": "Label over the box; <title> wraps the schedule's title, which the person types.",
+    "cancel.label": "Accessible name of the box where the title is typed.",
+    "cancel.mismatch": "Shown while what was typed doesn't match the title.",
+    "cancel.keep": "Button that closes the dialog without canceling.",
+    "cancel.confirm": "Destructive button that cancels the schedule."
+}

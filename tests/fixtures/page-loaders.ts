@@ -43,7 +43,7 @@ export interface PageLoader {
  */
 async function routeI18n(
     services: WebServices,
-    id: 'approvals' | 'approvals:request' | 'spaces:space' | 'spaces:page',
+    id: 'approvals' | 'approvals:request' | 'spaces:space' | 'spaces:page' | 'schedules' | 'runs',
 ): Promise<PageI18n> {
     return (
         (await services.i18n?.(ROUTES[id])) ?? {
@@ -167,7 +167,10 @@ export async function pageLoaders(seed: SeededWorkspace): Promise<PageLoader[]> 
             admins: true,
             kept: true,
             address: () => '/runs',
-            load: (services) => services.runs(50),
+            load: async (services) => ({
+                i18n: await routeI18n(services, 'runs'),
+                runs: await services.runs(50),
+            }),
         },
         {
             page: '/media',
@@ -205,7 +208,10 @@ export async function pageLoaders(seed: SeededWorkspace): Promise<PageLoader[]> 
             route: 'schedules',
             kept: true,
             address: () => '/schedules',
-            load: (services) => services.schedules(),
+            load: async (services) => ({
+                i18n: await routeI18n(services, 'schedules'),
+                schedules: await services.schedules(),
+            }),
         },
         {
             page: '/learning (a container with proposal bodies)',

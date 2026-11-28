@@ -3,22 +3,22 @@ import type { ScheduleView } from '@socio/shared/schedule-types';
 import type { Status } from '@socio/shared/types';
 
 /**
- * The Schedules grid's words and order (CB-392): the same data-grid
+ * The Schedules grid's order (CB-392): the same data-grid
  * treatment as the People grid in Settings — search, a status filter, a
  * socio filter, and a default sort that keeps active work above the rest.
  */
 
-/** Friendly status labels, matching the detail page's `standing()`. */
-export const STATUS_LABELS: Record<Status, string> = {
-    scheduled: 'Active',
-    running: 'Running',
-    queued: 'Queued',
-    paused: 'Paused',
-    failed: 'Stopped',
-    interrupted: 'Interrupted',
-    completed: 'Completed',
-    cancelled: 'Canceled',
-};
+/** The statuses, in the status filter's order; their words are `useScheduleWords().status`. */
+export const STATUSES: readonly Status[] = [
+    'scheduled',
+    'running',
+    'queued',
+    'paused',
+    'failed',
+    'interrupted',
+    'completed',
+    'cancelled',
+];
 
 /** A status badge's tone, like the run badges. */
 export const STATUS_TONE: Record<Status, 'default' | 'secondary' | 'destructive'> = {
@@ -59,14 +59,14 @@ export interface ScheduleFilter {
 /**
  * The socio options on the list: each distinct `dotId` the schedules name,
  * sorted by name. A schedule whose socio was deleted groups under
- * '__none' ("A deleted socio").
+ * '__none', labeled `deleted` ("A deleted socio").
  */
-export function dotOptions(schedules: ScheduleView[]): Array<{ value: string; label: string }> {
+export function dotOptions(schedules: ScheduleView[], deleted: string): Array<{ value: string; label: string }> {
     const seen = new Map<string, string>();
     for (const schedule of schedules) {
         const key = schedule.dotId ?? '__none';
         if (!seen.has(key)) {
-            seen.set(key, schedule.dotName ?? 'A deleted socio');
+            seen.set(key, schedule.dotName ?? deleted);
         }
     }
     return [...seen.entries()]

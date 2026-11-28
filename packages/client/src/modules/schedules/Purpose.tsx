@@ -1,5 +1,7 @@
 import { useState } from 'react';
 
+import { useTranslation } from '@socio/i18n/react';
+
 import { IssueMarkdown } from '../issues/IssueMarkdown';
 
 import { Button } from '@/components/ui/button';
@@ -11,9 +13,12 @@ const LONG_LINES = 8;
 
 /**
  * What a schedule or task is for: its prompt (or goal) as Markdown at the
- * body's type sizes (CB-88), collapsed to a few lines when long.
+ * body's type sizes (CB-88), collapsed to a few lines when long. On a
+ * schedule's page and in Activity, which inline its words
+ * (`schedules.purpose`).
  */
 export function Purpose({ text }: { text: string }) {
+    const { t } = useTranslation(['schedules.purpose']);
     const long = text.length > LONG_CHARS || text.split('\n').length > LONG_LINES;
     const [open, setOpen] = useState(false);
     const collapsed = long && !open;
@@ -36,7 +41,7 @@ export function Purpose({ text }: { text: string }) {
                     aria-expanded={open}
                     onClick={() => setOpen(!open)}
                 >
-                    {open ? 'Show less' : 'Show all'}
+                    {open ? t('schedules.purpose:less') : t('schedules.purpose:more')}
                 </Button>
             )}
         </div>

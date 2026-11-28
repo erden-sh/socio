@@ -1,27 +1,26 @@
 import { CalendarClock, Target } from 'lucide-react';
 
+import { useTranslation } from '@socio/i18n/react';
+import { dateTimeFormat } from '@socio/shared/locale';
 import type { GoalStatus, SchedulesState } from '@socio/shared/schedule-types';
 import type { Dot } from '@socio/shared/types';
 
+import { useInlinedOrOnDemand } from '../../i18n/on-demand';
 import { LocalTime } from '../../lib/local-time';
 import { DotPanel, DotPanelItem, DotPanelAction, useDotPanelData } from '../../shell/DotPanel';
 
-/** "Mon, Oct 19, 09:00", in the reader's words once hydrated. */
-const nextRun = (value: number) =>
-    new Date(value).toLocaleString(undefined, {
-        weekday: 'short',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-    });
+import { useScheduleWords } from './schedule-words';
 
-const goalStatus: Record<GoalStatus, string> = {
-    active: 'Active',
-    paused: 'Paused',
-    done: 'Done',
-    cancelled: 'Canceled',
-};
+/** "Mon, Oct 19, 09:00", in the reader's words once hydrated. */
+const nextRunFormat = dateTimeFormat({
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+});
+const nextRun = (value: number) => nextRunFormat.format(value);
+
 // Open goals first, then the newest.
 const goalOrder: Record<GoalStatus, number> = {
     active: 0,
@@ -34,10 +33,14 @@ const goalOrder: Record<GoalStatus, number> = {
  * A Dot's home page, Next (CB-89): the signed-in person's goals for it,
  * with status and the latest progress note, and its schedules that will
  * run again, soonest first. A goal's own schedule is the goal's, not
- * listed twice. Only theirs (`/api/schedules` is).
+ * listed twice. Only theirs (`/api/schedules` is). Its words load on
+ * demand (schedules.plans, schedules), with its data: nothing until both.
  */
 export function DotPlans({ dot }: { dot: Dot }) {
     const { data, failed } = useDotPanelData<SchedulesState>('/schedules', 'schedules');
+    const worded = useInlinedOrOnDemand(['schedules.plans', 'schedules']);
+    const { t } = useTranslation(['schedules.plans']);
+    const words = useScheduleWords();
     const loading = !data && !failed;
     const goals = (data?.goals ?? [])
         .filter((goal) => goal.dotId === dot.id && goal.status !== 'cancelled')
@@ -52,22 +55,25 @@ export function DotPlans({ dot }: { dot: Dot }) {
                 item.status !== 'completed',
         )
         .sort((a, b) => (a.nextRunAt ?? Number.MAX_SAFE_INTEGER) - (b.nextRunAt ?? Number.MAX_SAFE_INTEGER));
+    if (!worded) {
+        return null;
+    }
     return (
         <>
             <DotPanel
                 slot="goals"
                 icon={Target}
                 tone="emerald"
-                title="Goals"
+                title={t('schedules.plans:goals.title')}
                 count={goals.length}
                 loading={loading}
                 failed={failed}
                 empty={
                     failed
-                        ? 'Could not load goals.'
+                        ? t('schedules.plans:goals.failed')
                         : dot.archivedAt
-                          ? 'No goals.'
-                          : `Ask ${dot.name} in a chat to work toward a goal for you.`
+                          ? t('schedules.plans:goals.none')
+                          : t('schedules.plans:goals.empty', { name: dot.name })
                 }
             >
                 {goals.map((goal) => (
@@ -78,10 +84,13 @@ export function DotPlans({ dot }: { dot: Dot }) {
                         title={goal.title}
                         meta={
                             goal.comments.length
-                                ? `${goalStatus[goal.status]} · ${goal.comments.length === 1 ? '1 comment' : `${goal.comments.length} comments`}`
-                                : goalStatus[goal.status]
+                                ? t('schedules.plans:goals.meta', {
+                                      status: words.goalStatus(goal.status),
+                                      count: goal.comments.length,
+                                  })
+                                : words.goalStatus(goal.status)
                         }
-                        detail={goal.progress ?? 'No progress yet'}
+                        detail={goal.progress ?? t('schedules.plans:goals.no-progress')}
                     />
                 ))}
             </DotPanel>
@@ -89,12 +98,12 @@ export function DotPlans({ dot }: { dot: Dot }) {
                 slot="schedules"
                 icon={CalendarClock}
                 tone="violet"
-                title="Scheduled"
+                title={t('schedules.plans:scheduled.title')}
                 count={schedules.length}
                 loading={loading}
                 failed={failed}
-                empty={failed ? 'Could not load schedules.' : 'Nothing scheduled.'}
-                action={<DotPanelAction to="/schedules">Schedules</DotPanelAction>}
+                empty={failed ? t('schedules.plans:scheduled.failed') : t('schedules.plans:scheduled.empty')}
+                action={<DotPanelAction to="/schedules">{t('schedules.plans:scheduled.all')}</DotPanelAction>}
             >
                 {schedules.map((item) => (
                     <DotPanelItem
@@ -104,9 +113,9 @@ export function DotPlans({ dot }: { dot: Dot }) {
                         title={item.title}
                         meta={
                             item.status === 'paused' ? (
-                                'Paused'
+                                t('schedules.plans:scheduled.paused')
                             ) : item.status === 'running' ? (
-                                'Running'
+                                t('schedules.plans:scheduled.running')
                             ) : item.nextRunAt ? (
                                 <LocalTime value={item.nextRunAt} format={nextRun} />
                             ) : undefined

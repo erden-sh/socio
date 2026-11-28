@@ -1,0 +1,56 @@
+{
+    "title": "Runs",
+    "description": "Your recent turns with socios, newest first. Open a turn’s trace to see each step it took, how long it took and why it ended.",
+    "description_admin": "Recent turns across the team, newest first. Failed turns show their error; open a conversation you can read, or a turn’s trace.",
+    "tabs": {
+        "label": "Runs",
+        "turns": "Turns"
+    },
+    "filter": {
+        "label": "Filter by status",
+        "all": "All turns",
+        "failed": "Failed only",
+        "interrupted": "Interrupted",
+        "stopped": "Stopped",
+        "running": "Running",
+        "finished": "Finished"
+    },
+    "latest": "Showing the latest {{count, number}}.",
+    "columns": {
+        "status": "Status",
+        "conversation": "Conversation",
+        "owner": "Owner",
+        "source": "Source",
+        "started": "Started",
+        "duration": "Duration"
+    },
+    "status": {
+        "running": "Running",
+        "finished": "Finished",
+        "stopped": "Stopped",
+        "failed": "Failed",
+        "interrupted": "Interrupted"
+    },
+    "source": {
+        "web": "Web",
+        "telegram": "Telegram",
+        "scheduled": "Scheduled task",
+        "voice": "Voice call"
+    },
+    "trace": "Show the trace of {{title}}",
+    "trace_open": "Hide the trace of {{title}}",
+    "this-turn": "this turn",
+    "untitled": "Untitled conversation",
+    "deleted": "Deleted conversation",
+    "unknown-owner": "unknown",
+    "room": "room",
+    "empty": "No turns yet.",
+    "empty-filtered": {
+        "failed": "No failed turns.",
+        "interrupted": "No interrupted turns.",
+        "stopped": "No stopped turns.",
+        "running": "No running turns.",
+        "finished": "No finished turns."
+    },
+    "loading": "Loading…"
+}

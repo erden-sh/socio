@@ -3,6 +3,44 @@
 // (docs/I18N.md) read it.
 
 export interface EnglishResources {
+    activity: {
+        title: 'A little follow-through.';
+        description: 'Scheduled turns run on the server in their original conversation.';
+        search: 'Search tasks';
+        'search-placeholder': 'Find a task…';
+        empty: {
+            title: 'Let a thought come back around.';
+            description: 'Open a conversation and use the clock button to schedule a server-side task.';
+        };
+        'save-failed': 'Could not save.';
+        'interval-prompt': 'Repeat interval in minutes (0 removes the schedule)';
+        'interval-invalid': 'Enter a valid number of minutes.';
+        runs_one: '{{count, number}} saved run · <details>Details and past runs</details>';
+        runs_other: '{{count, number}} saved runs · <details>Details and past runs</details>';
+        repeats: 'Repeats every {{interval}} · <time/>';
+        status: {
+            queued: 'Queued';
+            running: 'Running';
+            paused: 'Paused';
+            failed: 'Failed';
+            interrupted: 'Interrupted';
+            completed: 'Completed';
+            cancelled: 'Canceled';
+            scheduled: 'Scheduled';
+        };
+        actions: {
+            pause: 'Pause task';
+            'retry-review': 'Retry after review';
+            retry: 'Retry task';
+            resume: 'Resume task';
+            run: 'Run again';
+            'pause-schedule': 'Pause schedule';
+            'edit-schedule': 'Edit schedule';
+            'set-schedule': 'Set a schedule';
+            cancel: 'Cancel';
+        };
+        crumb: 'Activity';
+    };
     approvals: {
         title: 'Approvals';
         description: 'Actions with side effects wait for you: a new dataset, changes to a shared one, access to your data. Approve or deny them here or in the chat, or let auto review decide the routine ones. Reading and querying data a socio may use never needs approval.';
@@ -3886,6 +3924,512 @@ export interface EnglishResources {
             'in-turn': 'in {{name}}’s turn';
             fallback: 'kept plainly (the notes’ model failed)';
         };
+    };
+    runs: {
+        title: 'Runs';
+        description: 'Your recent turns with socios, newest first. Open a turn’s trace to see each step it took, how long it took and why it ended.';
+        description_admin: 'Recent turns across the team, newest first. Failed turns show their error; open a conversation you can read, or a turn’s trace.';
+        tabs: {
+            label: 'Runs';
+            turns: 'Turns';
+        };
+        filter: {
+            label: 'Filter by status';
+            all: 'All turns';
+            failed: 'Failed only';
+            interrupted: 'Interrupted';
+            stopped: 'Stopped';
+            running: 'Running';
+            finished: 'Finished';
+        };
+        latest: 'Showing the latest {{count, number}}.';
+        columns: {
+            status: 'Status';
+            conversation: 'Conversation';
+            owner: 'Owner';
+            source: 'Source';
+            started: 'Started';
+            duration: 'Duration';
+        };
+        status: {
+            running: 'Running';
+            finished: 'Finished';
+            stopped: 'Stopped';
+            failed: 'Failed';
+            interrupted: 'Interrupted';
+        };
+        source: {
+            web: 'Web';
+            telegram: 'Telegram';
+            scheduled: 'Scheduled task';
+            voice: 'Voice call';
+        };
+        trace: 'Show the trace of {{title}}';
+        trace_open: 'Hide the trace of {{title}}';
+        'this-turn': 'this turn';
+        untitled: 'Untitled conversation';
+        deleted: 'Deleted conversation';
+        'unknown-owner': 'unknown';
+        room: 'room';
+        empty: 'No turns yet.';
+        'empty-filtered': {
+            failed: 'No failed turns.';
+            interrupted: 'No interrupted turns.';
+            stopped: 'No stopped turns.';
+            running: 'No running turns.';
+            finished: 'No finished turns.';
+        };
+        loading: 'Loading…';
+    };
+    'runs.summary': {
+        end: {
+            completed: 'Completed';
+            round_cap: 'Hit the round cap';
+            time_limit: 'Hit the time limit';
+            cycle_limit: 'Hit its message’s limit';
+            output_limit: 'Hit the output limit';
+            error: 'Error';
+            model_unavailable: 'Model unavailable';
+            stopped: 'Stopped';
+            interrupted: 'Interrupted';
+        };
+        rounds_one: '{{count, number}} round';
+        rounds_other: '{{count, number}} rounds';
+        tokens: {
+            in: '{{tokens}} in';
+            cached: '{{share, number(style: percent)}} cached';
+            out: '{{tokens}} out';
+            reasoning: '{{tokens}} reasoning';
+        };
+    };
+    'runs.trace': {
+        loading: 'Loading trace…';
+        none: 'No trace: this turn ran before traces were recorded.';
+        label: 'Turn trace';
+        inferred: 'Worked out from how the turn ended';
+        running: 'Running';
+        'rounds-of_one': '{{count, number}} round of {{cap, number}} at most';
+        'rounds-of_other': '{{count, number}} rounds of {{cap, number}} at most';
+        'no-rounds': 'No model rounds recorded.';
+        dropped_one: '{{count, number}} more step was left out.';
+        dropped_other: '{{count, number}} more steps were left out.';
+        round: {
+            plain: 'Round {{round, number}}';
+            notes: 'Notes for round {{round, number}}';
+            fallback: 'Round {{round, number}}, on the shared model';
+            retry: 'Round {{round, number}}, retry {{retry, number}}';
+            retry_rate_limited: 'Round {{round, number}}, retry {{retry, number}} (rate limited)';
+            retry_unavailable: 'Round {{round, number}}, retry {{retry, number}} (out of reach)';
+            retry_fallback: 'Round {{round, number}}, retry {{retry, number}} (on the shared model)';
+            'first-output': 'first output {{duration}}';
+        };
+        stop: {
+            stop: 'answered';
+            tool_calls: 'called tools';
+            length: 'output limit';
+            content_filter: 'content filter';
+            error: 'error';
+            cancelled: 'canceled';
+        };
+        outcome: {
+            ok: 'ok';
+            error: 'error';
+            refused: 'refused';
+            timeout: 'timed out';
+        };
+        image: {
+            screenshot: 'Screenshot';
+            image: 'Image';
+        };
+        compaction: {
+            title: 'Context fitted';
+            tokens: '{{before}} → {{after}} of {{window}} tokens';
+            cut_one: '{{count, number}} result cut';
+            cut_other: '{{count, number}} results cut';
+            notes_one: '{{count, number}} turn in notes';
+            notes_other: '{{count, number}} turns in notes';
+            retry: 'retry {{count, number}}';
+            facts: '{{shown, number}} of {{stored, number}} facts';
+            facts_age: '{{shown, number}} of {{stored, number}} facts by age';
+            facts_relevance: '{{shown, number}} of {{stored, number}} facts by relevance';
+            facts_pointer: '{{shown, number}} of {{stored, number}} facts by pointer';
+        };
+        notes: {
+            'by-shared': 'Notes by the shared model';
+            'by-shared-model': 'Notes by the shared model ({{model}})';
+            'by-chat': 'Notes by the chat’s model';
+            'by-chat-model': 'Notes by the chat’s model ({{model}})';
+            turns_one: '{{count, number}} turn';
+            turns_other: '{{count, number}} turns';
+            fallback: {
+                error: 'plain summary kept: the request failed';
+                empty: 'plain summary kept: no summary came back';
+                cap: 'plain summary: this turn’s summaries were used up';
+            };
+        };
+        retry: {
+            rate_limited: 'Rate limited';
+            unavailable: 'Out of reach';
+            sent: 'waited {{duration}}, then sent again';
+            sent_cut: 'waited {{duration}}, cut short, nothing sent again';
+        };
+        fallback: {
+            title: 'Switched to the shared model';
+            rate_limited: '{{from}} was busy, so {{to}} carried on';
+            unavailable: '{{from}} was out of reach, so {{to}} carried on';
+            usage_limit: '{{from}} hit its usage limit, so {{to}} carried on';
+        };
+        reactions: 'Told of reactions';
+        reaction: '{{emoji}} {{reaction}} {{count, number}}';
+        wait: {
+            approval: 'Waiting for approval';
+            person: 'Waiting for the person';
+        };
+    };
+    schedules: {
+        crumb: 'Schedules';
+        'crumb-schedule': 'Schedule';
+        'deleted-socio': 'A deleted socio';
+        status: {
+            scheduled: 'Active';
+            running: 'Running';
+            queued: 'Queued';
+            paused: 'Paused';
+            failed: 'Stopped';
+            interrupted: 'Interrupted';
+            completed: 'Completed';
+            cancelled: 'Canceled';
+        };
+        'run-status': {
+            queued: 'queued';
+            starting: 'starting';
+            running: 'running';
+            waiting: 'waiting';
+            succeeded: 'succeeded';
+            completed: 'completed';
+            done: 'done';
+            failed: 'failed';
+            timed_out: 'timed out';
+            interrupted: 'interrupted';
+            cancelled: 'canceled';
+            paused: 'paused';
+            scheduled: 'scheduled';
+        };
+        'goal-status': {
+            active: 'Active';
+            paused: 'Paused';
+            done: 'Done';
+            cancelled: 'Canceled';
+        };
+        interval: {
+            week: 'Every week, after each successful run';
+            day: 'Every day, after each successful run';
+            hour: 'Every hour, after each successful run';
+            hours_one: 'Every {{count, number}} hour, after each successful run';
+            hours_other: 'Every {{count, number}} hours, after each successful run';
+            minutes_one: 'Every {{count, number}} minute, after each successful run';
+            minutes_other: 'Every {{count, number}} minutes, after each successful run';
+        };
+        actions: {
+            run: 'Run now';
+            pause: 'Pause';
+            resume: 'Resume';
+            'load-more': 'Load more';
+            'change-failed': 'Could not change the schedule.';
+            'older-failed': 'Could not load older runs.';
+        };
+        'no-runs': 'No runs yet.';
+        comments: {
+            count_one: '{{count, number}} comment';
+            count_other: '{{count, number}} comments';
+            you: 'You';
+            none: 'No comments yet.';
+            label: 'Add a comment';
+            placeholder: 'Add context or a changed requirement for {{name}}';
+            submit: 'Comment';
+            failed: 'Could not add the comment.';
+        };
+    };
+    'schedules.detail': {
+        'load-failed': 'Could not load the schedule.';
+        missing: {
+            title: 'Schedule not found';
+            description: 'It may have been deleted, or it isn’t yours. <all>All schedules</all>';
+        };
+        meta: '{{socio}} · runs the job {{job}} · <all>All schedules</all>';
+        meta_mine: '{{socio}} · runs the job {{job}} · made by you · <all>All schedules</all>';
+        'meta-deleted-job': '{{socio}} · runs the job (deleted) · <all>All schedules</all>';
+        'meta-deleted-job_mine': '{{socio}} · runs the job (deleted) · made by you · <all>All schedules</all>';
+        'meta-turn': '{{socio}} · a socio turn · <all>All schedules</all>';
+        'meta-turn_mine': '{{socio}} · a socio turn · made by you · <all>All schedules</all>';
+        purpose: {
+            title: 'Purpose';
+            goal: 'The goal it works toward.';
+            job: 'What runs, without the model.';
+            turn: 'What each run asks the socio to do.';
+            'runs-job': 'Runs the job {{job}} in the socio’s computer. <code>Its code and logs</code>';
+            'runs-deleted-job': 'Runs the job (deleted) in the socio’s computer. <code>Its code and logs</code>';
+        };
+        progress: {
+            title: 'Goal progress';
+            description: 'The socio notes its progress after each run, and marks the goal done when it is met.';
+            latest: 'Latest note:';
+            none: 'No progress noted yet.';
+        };
+        comments: {
+            title: 'Comments';
+            description: 'Add context or a changed requirement; the socio reads them in each run, and can add its own.';
+            'the-socio': 'The socio';
+        };
+        facts: {
+            title: 'What it does';
+            socio: 'Socio';
+            runs: 'Runs';
+            once: 'Once';
+            next: 'Next runs';
+            none: 'None';
+            none_paused: 'None while paused';
+            zone: 'Time zone';
+            'zone-note': '(its times; the next runs show in yours)';
+            posts: 'Posts in';
+            chat: 'Its chat';
+            'no-chat': 'No chat';
+            approvals: 'Approvals';
+            'approvals-some': 'Its runs act without asking for {{items, list}}; anything else waits for you.';
+            approval: '{{label}} (bypass)';
+            approval_auto: '{{label}} (auto review)';
+            'approvals-none': 'Anything that needs your approval waits for you.';
+            policies: 'Policies';
+            status: 'Status';
+        };
+        standing: {
+            paused: 'It keeps its cadence and runs again once you resume it.';
+            cancelled: 'It won’t run again.';
+            failed: 'Its last run failed.';
+            completed: 'It ran and has nothing left.';
+            running: 'Running now.';
+            active: 'It runs at its next time.';
+        };
+        cancel: 'Cancel';
+        runs: {
+            title: 'What it has done';
+            description: 'Its runs, newest first.';
+            took: '· took {{duration}}';
+            open: 'Open in chat';
+            board: {
+                create: 'Filed {{issue}}';
+                comment: 'Commented on {{issue}}';
+                vote: 'Voted for {{issue}}';
+                unvote: 'Withdrew a vote on {{issue}}';
+                update: 'Updated dependencies on {{issue}}';
+            };
+        };
+    };
+    'schedules.dialogs': {
+        cancel: {
+            title: 'Cancel “{{title}}”?';
+            description: 'A canceled schedule won’t run again and can’t be resumed. Its goal stays, but its progress stops here. Type the title exactly to confirm.';
+            type: 'Type <title>{{title}}</title> to confirm';
+            label: 'Schedule title';
+            mismatch: 'Type it exactly as shown.';
+            keep: 'Keep it';
+            confirm: 'Cancel schedule';
+        };
+    };
+    'schedules.job': {
+        'load-failed': 'Could not load the job.';
+        'run-failed': 'Could not load the run.';
+        'code-failed': 'Could not load the code.';
+        stopped: 'Stopped {{name}}.';
+        'stop-failed': 'Could not stop the job.';
+        restored: 'Restored the approved code of {{name}} and started it.';
+        'restore-failed': 'Could not restore the job’s code.';
+        deleted: 'Deleted {{name}}.';
+        'delete-failed': 'Could not delete the job.';
+        description: '{{command}} · datasets: scratch · code stored encrypted in your data space';
+        description_granted_one: '{{command}} · datasets: scratch + {{count, number}} granted · code stored encrypted in your data space';
+        description_granted_other: '{{command}} · datasets: scratch + {{count, number}} granted · code stored encrypted in your data space';
+        missing: 'The code of v{{version}} isn’t in storage, so it can’t run. Restoring stores the code you approved again.';
+        missing_files: 'The code of v{{version}} isn’t in storage ({{files, list(type: unit; style: short)}}), so it can’t run. Restoring stores the code you approved again.';
+        restore: 'Restore code and run';
+        versions: 'Versions';
+        version: 'v{{version}}';
+        'version-meta': '{{timeout}} · {{files, list(type: unit; style: short)}}';
+        'version-meta_until-done': '{{timeout}} per batch, until done · {{files, list(type: unit; style: short)}}';
+        code: 'Code';
+        'code-file': 'v{{version}} · {{path}}';
+        runs: 'Runs';
+        columns: {
+            started: 'Started';
+            trigger: 'Trigger';
+            status: 'Status';
+            exit: 'Exit';
+            took: 'Took';
+        };
+        trigger: {
+            manual: 'manual · v{{version}}';
+            manual_batch: 'manual · v{{version}} · batch';
+            dot: 'the socio · v{{version}}';
+            dot_batch: 'the socio · v{{version}} · batch';
+            schedule: 'schedule · v{{version}}';
+            schedule_batch: 'schedule · v{{version}} · batch';
+        };
+        wake: '(wake {{duration}})';
+        logs: 'Logs';
+        run: 'Run';
+        stdout: 'stdout';
+        stderr: 'stderr';
+        'empty-output': '(empty)';
+        delete: 'Delete job';
+        confirm: {
+            title: 'Delete job?';
+            body: 'This will delete {{name}}. It leaves your jobs and its socio’s, and schedules that run it stop.';
+            delete: 'Delete';
+        };
+        progress: {
+            title: 'Progress';
+            stop: 'Stop';
+            items: 'Items';
+            'items-line': '{{done, number}} done · {{left, number}} left · {{failed, number}} failed · {{total, number}} in all';
+            'items-line_so-far': '{{done, number}} done · {{left, number}} left · {{failed, number}} failed · {{total, number}} in all so far';
+            'items-line_working': '{{done, number}} done · {{left, number}} left ({{working, number}} in progress) · {{failed, number}} failed · {{total, number}} in all';
+            'items-line_working-so-far': '{{done, number}} done · {{left, number}} left ({{working, number}} in progress) · {{failed, number}} failed · {{total, number}} in all so far';
+            batches: 'Batches';
+            'batches-line': '{{batches, number}} of at most {{max, number}} · started <time/>';
+            checkpoint: 'Last checkpoint';
+            none: 'None';
+            retries: 'Retries in a row';
+            'retries-line': '{{retries, number}} of {{max, number}}';
+            next: 'Next batch';
+            waiting: 'Waiting';
+            'last-error': 'Last error';
+            outcome: 'Outcome';
+            'set-aside': 'Set aside after a try';
+            'set-aside_retries': 'Set aside after retries';
+            'set-aside-latest': 'Set aside after a try (latest {{shown, number}} of {{failed, number}})';
+            'set-aside-latest_retries': 'Set aside after retries (latest {{shown, number}} of {{failed, number}})';
+            'item-failed': 'Failed.';
+            tries_one: '{{error}} · {{count, number}} try';
+            tries_other: '{{error}} · {{count, number}} tries';
+        };
+    };
+    'schedules.list': {
+        title: 'Schedules & jobs';
+        description: 'Recurring work your socios do for you. A schedule runs a socio turn (in its own conversation, on your model) or a job: code a socio saved, run in its computer without the model. New ones need your approval; you can pause or cancel any of them here.';
+        'load-failed': 'Could not load schedules.';
+        tabs: {
+            label: 'Schedules and jobs';
+            schedules: 'Schedules';
+            jobs: 'Jobs';
+            workspace: 'Workspace';
+        };
+        goals: {
+            title: 'Goals';
+            description: 'What your socios keep working toward for you. Pause or cancel a goal by its schedule below; a socio marks it done when it is met.';
+            'some-socio': 'A socio';
+            line: '{{socio}} · {{cadence}} · {{progress}}';
+            'line_no-schedule': '{{socio}} · no schedule · {{progress}}';
+            'line_no-progress': '{{socio}} · {{cadence}} · no progress yet';
+            line_none: '{{socio}} · no schedule · no progress yet';
+        };
+        schedules: {
+            title: 'Schedules';
+            usage: '{{active, number}} of {{max, number}} active schedules. Runs are at least {{minutes, number}} minutes apart.';
+            empty: 'No schedules yet. Ask a socio to do something regularly, or use the clock button in a conversation.';
+            find: 'Find schedules';
+            search: 'Search title, socio or job';
+            'status-filter': 'Status filter';
+            'status-any': 'Status: any';
+            'socio-filter': 'Socio filter';
+            'socio-any': 'Socio: any';
+            'no-match': 'No schedules match.';
+            grid: 'Schedules';
+            columns: {
+                title: 'Schedule';
+                status: 'Status';
+                cadence: 'Runs';
+                next: 'Next run';
+                last: 'Last run';
+                goal: 'Goal';
+            };
+            next: 'Next:';
+            last: 'Last:';
+            goal: 'Goal:';
+            meta: '{{socio}} · job {{job}}';
+            meta_mine: '{{socio}} · job {{job}} · made by you';
+            'meta-deleted-job': '{{socio}} · job (deleted)';
+            'meta-deleted-job_mine': '{{socio}} · job (deleted) · made by you';
+            'meta-turn': '{{socio}} · Socio turn';
+            'meta-turn_mine': '{{socio}} · Socio turn · made by you';
+            cadence: '{{cadence}} ({{zone}})';
+            'not-yet': 'Not yet';
+            open: 'Open';
+            canceled: 'Canceled';
+            cancel: 'Cancel…';
+        };
+        jobs: {
+            title: 'Jobs';
+            description: 'Code your socios saved, run in their computer with a timeout (at most {{timeout}}, including starting the computer). A run reaches your data only through a token for that run. {{jobs, number}} of {{max, number}} jobs.';
+            empty: 'No jobs yet. A socio saves one with your approval when it needs to collect something regularly.';
+            columns: {
+                job: 'Job';
+                version: 'Version';
+                timeout: 'Timeout';
+                last: 'Last run';
+                actions: 'Actions';
+            };
+            meta_one: '{{socio}} · {{entry}} · {{count, number}} file';
+            meta_other: '{{socio}} · {{entry}} · {{count, number}} files';
+            'meta_until-done_one': '{{socio}} · {{entry}} · {{count, number}} file · runs until done';
+            'meta_until-done_other': '{{socio}} · {{entry}} · {{count, number}} files · runs until done';
+            version: 'v{{version}}';
+            never: 'Never';
+            running: 'Running';
+            details: 'Details';
+            hide: 'Hide';
+            started: 'Started “{{name}}”.';
+            'started_until-done': 'Started “{{name}}”; it runs until done.';
+            'start-failed': 'Could not start the job.';
+        };
+        'long-run': {
+            done: '{{done, number}} of {{total, number}} done';
+            done_failed: '{{done, number}} of {{total, number}} done · {{failed, number}} failed';
+            empty: 'No items yet';
+            meter: 'Items finished';
+        };
+        counts: {
+            title: 'Everyone’s';
+            description: 'Counts only: what each person’s schedules and jobs do is theirs.';
+            schedules: 'Schedules: {{counts}}';
+            jobs: 'Saved jobs: {{count, number}}';
+            'job-runs': 'Job runs kept: {{counts}}';
+            running: 'Job runs in progress: {{count, number}}';
+            status: '{{count, number}} {{status}}';
+            none: 'none';
+        };
+    };
+    'schedules.plans': {
+        goals: {
+            title: 'Goals';
+            failed: 'Could not load goals.';
+            none: 'No goals.';
+            empty: 'Ask {{name}} in a chat to work toward a goal for you.';
+            meta_one: '{{status}} · {{count, number}} comment';
+            meta_other: '{{status}} · {{count, number}} comments';
+            'no-progress': 'No progress yet';
+        };
+        scheduled: {
+            title: 'Scheduled';
+            failed: 'Could not load schedules.';
+            empty: 'Nothing scheduled.';
+            all: 'Schedules';
+            paused: 'Paused';
+            running: 'Running';
+        };
+    };
+    'schedules.purpose': {
+        more: 'Show all';
+        less: 'Show less';
     };
     settings: {
         title: 'Settings';

@@ -1,5 +1,7 @@
 import { CheckCheck, ChevronRight, LoaderCircle, MessageCircle } from 'lucide-react';
 
+import { Trans, useTranslation } from '@socio/i18n/react';
+import { dateTimeFormat, numberFormat, relativeTimeFormat } from '@socio/shared/locale';
 import type { Task } from '@socio/shared/types';
 
 import { LocalTime } from '../../lib/local-time';
@@ -7,20 +9,33 @@ import { LocalTime } from '../../lib/local-time';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
+// How long ago, in the reader's locale: "now", "5m ago", "3h ago", then the date.
+const ago = relativeTimeFormat({ numeric: 'auto', style: 'narrow' });
+const day = dateTimeFormat({ year: 'numeric', month: 'numeric', day: 'numeric' });
+/** When something last changed: "now", "5m ago", "3h ago", or its date ("11/27/2026"). */
 export const relative = (value: number) => {
     const minutes = Math.floor((Date.now() - value) / 60000);
     return minutes < 1
-        ? 'Just now'
+        ? ago.format(0, 'second')
         : minutes < 60
-          ? `${minutes}m ago`
+          ? ago.format(-minutes, 'minute')
           : minutes < 1440
-            ? `${Math.floor(minutes / 60)}h ago`
-            : new Date(value).toLocaleDateString();
+            ? ago.format(-Math.floor(minutes / 60), 'hour')
+            : day.format(value);
 };
-export const statusLabel = (task: Task) =>
-    task.status === 'completed' && task.nextRunAt
-        ? 'Scheduled'
-        : task.status.charAt(0).toUpperCase() + task.status.slice(1);
+
+// A repeat interval as the locale writes it: "30 min", "2 hr".
+const minutesUnit = numberFormat({ style: 'unit', unit: 'minute', unitDisplay: 'short', maximumFractionDigits: 1 });
+const hoursUnit = numberFormat({ style: 'unit', unit: 'hour', unitDisplay: 'short', maximumFractionDigits: 1 });
+const repeatInterval = (seconds: number) =>
+    seconds < 3600 ? minutesUnit.format(seconds / 60) : hoursUnit.format(seconds / 3600);
+
+/** A task's status word; a completed task that runs again is Scheduled. */
+export function useTaskStatus() {
+    const { t } = useTranslation(['activity']);
+    return (task: Task) =>
+        t(`activity:status.${task.status === 'completed' && task.nextRunAt ? 'scheduled' : task.status}`);
+}
 // The status chip's tones, as the Activity list had them.
 const STATUS_TONE: Partial<Record<Task['status'], string>> = {
     completed: 'bg-emerald-50 text-emerald-900/55 dark:bg-emerald-500/5 dark:text-emerald-100/60',
@@ -31,6 +46,7 @@ const STATUS_TONE: Partial<Record<Task['status'], string>> = {
 STATUS_TONE.interrupted = STATUS_TONE.failed;
 
 export function Status({ task }: { task: Task }) {
+    const statusLabel = useTaskStatus();
     return (
         <Badge
             variant="secondary"
@@ -48,6 +64,8 @@ export function Status({ task }: { task: Task }) {
 }
 
 export function TaskRow({ task, onClick }: { task: Task; onClick: () => void }) {
+    const { t } = useTranslation(['activity']);
+    const time = <LocalTime value={task.updatedAt} format={relative} />;
     return (
         <button
             data-slot="task-row"
@@ -68,10 +86,16 @@ export function TaskRow({ task, onClick }: { task: Task; onClick: () => void }) 
                     {task.prompt}
                 </strong>
                 <span className="mt-1.5 block text-xs leading-[normal] text-muted-foreground">
-                    {task.intervalSeconds
-                        ? `Repeats every ${task.intervalSeconds < 3600 ? task.intervalSeconds / 60 + ' min' : task.intervalSeconds / 3600 + ' hr'} · `
-                        : ''}
-                    <LocalTime value={task.updatedAt} format={relative} />
+                    {task.intervalSeconds ? (
+                        <Trans
+                            t={t}
+                            i18nKey="activity:repeats"
+                            values={{ interval: repeatInterval(task.intervalSeconds) }}
+                            components={{ time }}
+                        />
+                    ) : (
+                        time
+                    )}
                 </span>
             </div>
             <Status task={task} />

@@ -1,5 +1,6 @@
 import { useNavigate, useSearchParams } from 'react-router';
 
+import { useTranslation } from '@socio/i18n/react';
 import { MODULE_IDS } from '@socio/shared/modules';
 import type { RunList } from '@socio/shared/web/web';
 
@@ -17,6 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
  * by `?tab=`.
  */
 export function RunsPage({ initial }: { initial?: RunList } = {}) {
+    const { t } = useTranslation(['runs']);
     const { admin } = useShell();
     const navigate = useNavigate();
     const [params, setParams] = useSearchParams();
@@ -26,12 +28,8 @@ export function RunsPage({ initial }: { initial?: RunList } = {}) {
         <WorkspacePage
             slot="runs-page"
             module={MODULE_IDS.runs}
-            title="Runs"
-            description={
-                admin
-                    ? 'Recent turns across the team, newest first. Failed turns show their error; open a conversation you can read, or a turn’s trace.'
-                    : 'Your recent turns with socios, newest first. Open a turn’s trace to see each step it took, how long it took and why it ended.'
-            }
+            title={t('runs:title')}
+            description={t('runs:description', { context: admin ? 'admin' : undefined })}
         >
             {tabs.length ? (
                 <Tabs
@@ -39,8 +37,8 @@ export function RunsPage({ initial }: { initial?: RunList } = {}) {
                     onValueChange={(tab) => setParams(tab === 'turns' ? {} : { tab }, { replace: true })}
                     className="gap-4"
                 >
-                    <TabsList aria-label="Runs">
-                        <TabsTrigger value="turns">Turns</TabsTrigger>
+                    <TabsList aria-label={t('runs:tabs.label')}>
+                        <TabsTrigger value="turns">{t('runs:tabs.turns')}</TabsTrigger>
                         {tabs.map(({ key, Component }) => (
                             <Component key={key} part="trigger" />
                         ))}

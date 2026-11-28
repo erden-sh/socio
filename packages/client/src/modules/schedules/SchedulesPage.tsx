@@ -2,41 +2,27 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { toast } from 'sonner';
 
-import { jobEntryCommand } from '@socio/shared/job-entry';
+import { useTranslation } from '@socio/i18n/react';
 import { compareText } from '@socio/shared/locale';
 import { MODULE_IDS } from '@socio/shared/modules';
-import type {
-    GoalView,
-    JobDetail,
-    JobRunsPage,
-    JobRunView,
-    JobView,
-    ScheduleView,
-    SchedulesState,
-} from '@socio/shared/schedule-types';
-import type { Action, Status } from '@socio/shared/types';
+import type { GoalView, JobView, ScheduleView, SchedulesState } from '@socio/shared/schedule-types';
+import type { Action } from '@socio/shared/types';
 
 import { DataGrid, GridFilter, GridSearch, GridToolbar, RowActionsMenu } from '../../components/data-grid/DataGrid';
 import { api, apiIfChanged, PollTags, UNCHANGED } from '../../lib/api';
 import { useLiveTopic } from '../../lib/change-channel';
-import { LocalTime } from '../../lib/local-time';
 import { useLoaderSeed } from '../../lib/page-loader';
 import { useIsAdmin } from '../../shell/current-user';
 import { WorkspacePage } from '../../views/WorkspacePage';
+import { formatSeconds } from '../runs/format';
 
 import { CancelScheduleDialog } from './CancelScheduleDialog';
 import { GoalComments } from './GoalComments';
-import { LongRunLine, LongRunProgress } from './LongRunProgress';
-import {
-    byStatusThenTitle,
-    dotOptions,
-    matches,
-    STATUS_LABELS,
-    STATUS_TONE,
-    type ScheduleFilter,
-} from './schedules-format';
+import { JobPanel } from './JobPanel';
+import { LongRunLine } from './LongRunProgress';
+import { RunBadge, useScheduleWords, When } from './schedule-words';
+import { byStatusThenTitle, dotOptions, matches, STATUSES, STATUS_TONE, type ScheduleFilter } from './schedules-format';
 
-import { ConfirmDelete } from '@/components/confirm-delete';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -45,51 +31,15 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-const failed = (e: unknown, fallback: string) => toast.error(e instanceof Error ? e.message : fallback);
-export const dateTime = (t: number) =>
-    new Date(t).toLocaleString(undefined, {
-        dateStyle: 'medium',
-        timeStyle: 'short',
-    });
-/** A time in the reader's words once the page has hydrated; else a dash. */
-export function When({ value }: { value: number | null | undefined }) {
-    return value ? <LocalTime value={value} format={dateTime} /> : '—';
-}
-/** A repeat interval of a task made in a conversation, in words. */
-export const every = (seconds: number) =>
-    seconds === 604_800
-        ? 'every week'
-        : seconds === 86_400
-          ? 'every day'
-          : seconds === 3600
-            ? 'every hour'
-            : seconds % 3600 === 0
-              ? `every ${seconds / 3600} hours`
-              : `every ${Math.round(seconds / 60)} min`;
-export const seconds = (ms: number) => (ms < 1000 ? `${ms} ms` : `${Math.round(ms / 100) / 10} s`);
-
-const RUN_TONE: Record<string, 'default' | 'secondary' | 'destructive'> = {
-    succeeded: 'default',
-    completed: 'default',
-    done: 'default',
-    cancelled: 'secondary',
-    failed: 'destructive',
-    timed_out: 'destructive',
-    interrupted: 'secondary',
-};
-export function RunBadge({ status }: { status: string }) {
-    return (
-        <Badge variant={RUN_TONE[status] ?? 'outline'} data-status={status}>
-            {status.replace('_', ' ')}
-        </Badge>
-    );
-}
+export const failed = (e: unknown, fallback: string) => toast.error(e instanceof Error ? e.message : fallback);
 
 /**
  * `/schedules`: the signed-in user's schedules (proposed by their Dots and
  * approved, or made in a conversation) and their Dots' jobs. Pause, resume,
  * cancel, run now; a job's versions, runs and logs. Each user sees only
- * their own; admins also see the workspace's counts.
+ * their own; admins also see the workspace's counts. Its words are the
+ * route's (`schedules`, `schedules.list`); a job's panel and the cancel
+ * dialog load theirs on demand.
  */
 export function SchedulesPage({
     initial,
@@ -97,6 +47,7 @@ export function SchedulesPage({
     /** The page's loader data: shown at once; the poll goes on from it. */
     initial?: SchedulesState;
 } = {}) {
+    const { t } = useTranslation(['schedules.list']);
     const [params, setParams] = useSearchParams();
     const tab = params.get('tab') ?? 'schedules';
     const admin = useIsAdmin();
@@ -119,8 +70,8 @@ export function SchedulesPage({
                     setState(answer.data);
                     tags.set('/schedules', answer.tag);
                 })
-                .catch((e) => failed(e, 'Could not load schedules.')),
-        [tags],
+                .catch((e) => failed(e, t('schedules.list:load-failed'))),
+        [tags, t],
     );
     useEffect(() => {
         if (seeded.current) {
@@ -136,8 +87,8 @@ export function SchedulesPage({
         <WorkspacePage
             slot="schedules-page"
             module={MODULE_IDS.schedules}
-            title="Schedules & jobs"
-            description="Recurring work your socios do for you. A schedule runs a socio turn (in its own conversation, on your model) or a job: code a socio saved, run in its computer without the model. New ones need your approval; you can pause or cancel any of them here."
+            title={t('schedules.list:title')}
+            description={t('schedules.list:description')}
         >
             <Tabs
                 value={tab}
@@ -148,10 +99,10 @@ export function SchedulesPage({
                 }
                 className="gap-4"
             >
-                <TabsList aria-label="Schedules and jobs">
-                    <TabsTrigger value="schedules">Schedules</TabsTrigger>
-                    <TabsTrigger value="jobs">Jobs</TabsTrigger>
-                    {admin && <TabsTrigger value="workspace">Workspace</TabsTrigger>}
+                <TabsList aria-label={t('schedules.list:tabs.label')}>
+                    <TabsTrigger value="schedules">{t('schedules.list:tabs.schedules')}</TabsTrigger>
+                    <TabsTrigger value="jobs">{t('schedules.list:tabs.jobs')}</TabsTrigger>
+                    {admin && <TabsTrigger value="workspace">{t('schedules.list:tabs.workspace')}</TabsTrigger>}
                 </TabsList>
                 <TabsContent value="schedules">
                     {state ? (
@@ -176,20 +127,24 @@ export function SchedulesPage({
     );
 }
 
+/** Which of a goal's lines fits: with or without a schedule, with or without progress. */
+const goalContext = (goal: GoalView) =>
+    goal.cadence ? (goal.progress ? undefined : 'no-progress') : goal.progress ? 'no-schedule' : 'none';
+
 /**
  * The person's goals: what each Dot is working toward, its latest progress
  * note and status. Pausing and canceling are on the goal's schedule.
  */
 function Goals({ state, reload }: { state: SchedulesState; reload: () => void }) {
-    const dotName = (id: string) => state.schedules.find((schedule) => schedule.dotId === id)?.dotName ?? 'A socio';
+    const { t } = useTranslation(['schedules.list', 'schedules']);
+    const words = useScheduleWords();
+    const dotName = (id: string) =>
+        state.schedules.find((schedule) => schedule.dotId === id)?.dotName ?? t('schedules.list:goals.some-socio');
     return (
         <Card className="mb-4" data-slot="goal-list">
             <CardHeader>
-                <CardTitle>Goals</CardTitle>
-                <CardDescription>
-                    What your socios keep working toward for you. Pause or cancel a goal by its schedule below; a socio
-                    marks it done when it is met.
-                </CardDescription>
+                <CardTitle>{t('schedules.list:goals.title')}</CardTitle>
+                <CardDescription>{t('schedules.list:goals.description')}</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-3">
                 {state.goals.map((goal) => (
@@ -197,16 +152,20 @@ function Goals({ state, reload }: { state: SchedulesState; reload: () => void })
                         <span className="font-medium">
                             {goal.threadId ? <Link to={`/chats/${goal.threadId}`}>{goal.title}</Link> : goal.title}{' '}
                             <Badge variant="outline" data-slot="goal-status">
-                                {goal.status}
+                                {words.goalStatus(goal.status)}
                             </Badge>
                         </span>
                         <span className="text-xs text-muted-foreground">
-                            {dotName(goal.dotId)} · {goal.cadence ?? 'no schedule'}
-                            {goal.progress ? ` · ${goal.progress}` : ' · no progress yet'}
+                            {t('schedules.list:goals.line', {
+                                context: goalContext(goal),
+                                socio: dotName(goal.dotId),
+                                cadence: goal.cadence ?? '',
+                                progress: goal.progress ?? '',
+                            })}
                         </span>
                         <details data-slot="goal-comments-toggle" className="text-sm">
                             <summary className="w-fit cursor-pointer text-xs text-muted-foreground">
-                                {goal.comments.length === 1 ? '1 comment' : `${goal.comments.length} comments`}
+                                {t('schedules:comments.count', { count: goal.comments.length })}
                             </summary>
                             <div className="mt-2">
                                 <GoalComments goal={goal} dotName={dotName(goal.dotId)} onPosted={reload} />
@@ -220,6 +179,8 @@ function Goals({ state, reload }: { state: SchedulesState; reload: () => void })
 }
 
 function Schedules({ state, reload }: { state: SchedulesState; reload: () => void }) {
+    const { t } = useTranslation(['schedules.list', 'schedules']);
+    const words = useScheduleWords();
     const [busy, setBusy] = useState<string>();
     const [filter, setFilter] = useState<ScheduleFilter>({ query: '', status: '', dot: '' });
     const [cancelling, setCancelling] = useState<ScheduleView>();
@@ -229,7 +190,7 @@ function Schedules({ state, reload }: { state: SchedulesState; reload: () => voi
             await api(`/schedules/${schedule.id}/actions`, 'POST', { action });
             reload();
         } catch (e) {
-            failed(e, 'Could not change the schedule.');
+            failed(e, t('schedules:actions.change-failed'));
         } finally {
             setBusy(undefined);
         }
@@ -237,43 +198,43 @@ function Schedules({ state, reload }: { state: SchedulesState; reload: () => voi
     const goalOf = (schedule: ScheduleView) => state.goals.find((goal) => goal.scheduleId === schedule.id);
     const sorted = [...state.schedules].sort(byStatusThenTitle);
     const shown = sorted.filter((schedule) => matches(schedule, filter));
-    const socios = dotOptions(state.schedules);
+    const socios = dotOptions(state.schedules, t('schedules:deleted-socio'));
     return (
         <Card data-tour="schedules-card">
             <CardHeader>
-                <CardTitle>Schedules</CardTitle>
+                <CardTitle>{t('schedules.list:schedules.title')}</CardTitle>
                 <CardDescription>
-                    {state.usage.activeSchedules} of {state.limits.maxActiveSchedules} active schedules. Runs are at
-                    least {state.limits.minIntervalMinutes} minutes apart.
+                    {t('schedules.list:schedules.usage', {
+                        active: state.usage.activeSchedules,
+                        max: state.limits.maxActiveSchedules,
+                        minutes: state.limits.minIntervalMinutes,
+                    })}
                 </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-3">
                 {!state.schedules.length ? (
-                    <p className="text-sm text-muted-foreground">
-                        No schedules yet. Ask a socio to do something regularly, or use the clock button in a
-                        conversation.
-                    </p>
+                    <p className="text-sm text-muted-foreground">{t('schedules.list:schedules.empty')}</p>
                 ) : (
                     <>
-                        <GridToolbar label="Find schedules">
+                        <GridToolbar label={t('schedules.list:schedules.find')}>
                             <GridSearch
-                                label="Search title, socio or job"
+                                label={t('schedules.list:schedules.search')}
                                 value={filter.query}
                                 onChange={(query) => setFilter({ ...filter, query })}
                             />
                             <GridFilter
-                                label="Status filter"
-                                any="Status: any"
+                                label={t('schedules.list:schedules.status-filter')}
+                                any={t('schedules.list:schedules.status-any')}
                                 value={filter.status}
-                                options={(Object.keys(STATUS_LABELS) as Status[]).map((status) => ({
+                                options={STATUSES.map((status) => ({
                                     value: status,
-                                    label: STATUS_LABELS[status],
+                                    label: words.status(status),
                                 }))}
                                 onChange={(status) => setFilter({ ...filter, status })}
                             />
                             <GridFilter
-                                label="Socio filter"
-                                any="Socio: any"
+                                label={t('schedules.list:schedules.socio-filter')}
+                                any={t('schedules.list:schedules.socio-any')}
                                 value={filter.dot}
                                 options={socios}
                                 onChange={(dot) => setFilter({ ...filter, dot })}
@@ -281,11 +242,11 @@ function Schedules({ state, reload }: { state: SchedulesState; reload: () => voi
                         </GridToolbar>
                         {!shown.length ? (
                             <p className="text-sm text-muted-foreground" data-slot="schedules-empty">
-                                No schedules match.
+                                {t('schedules.list:schedules.no-match')}
                             </p>
                         ) : (
                             <DataGrid
-                                label="Schedules"
+                                label={t('schedules.list:schedules.grid')}
                                 tableSlot="schedule-list"
                                 cardsSlot="schedule-cards"
                                 rows={shown}
@@ -295,40 +256,40 @@ function Schedules({ state, reload }: { state: SchedulesState; reload: () => voi
                                 columns={[
                                     {
                                         id: 'title',
-                                        header: 'Schedule',
+                                        header: t('schedules.list:schedules.columns.title'),
                                         className: 'min-w-48 max-w-72 whitespace-normal',
-                                        cell: scheduleTitle,
+                                        cell: (schedule) => <ScheduleTitle schedule={schedule} />,
                                         compare: (a, b) => compareText(a.title, b.title),
                                     },
                                     {
                                         id: 'status',
-                                        header: 'Status',
+                                        header: t('schedules.list:schedules.columns.status'),
                                         cell: (schedule) => <StatusBadge schedule={schedule} />,
                                         compare: byStatusThenTitle,
                                     },
                                     {
                                         id: 'cadence',
-                                        header: 'Runs',
+                                        header: t('schedules.list:schedules.columns.cadence'),
                                         className: 'min-w-40 whitespace-normal text-sm',
-                                        cell: cadenceText,
+                                        cell: (schedule) => <Cadence schedule={schedule} />,
                                     },
                                     {
                                         id: 'next',
-                                        header: 'Next run',
+                                        header: t('schedules.list:schedules.columns.next'),
                                         className: 'whitespace-nowrap text-sm',
                                         cell: (schedule) => <When value={schedule.nextRunAt} />,
                                         compare: byTime((schedule) => schedule.nextRunAt),
                                     },
                                     {
                                         id: 'last',
-                                        header: 'Last run',
+                                        header: t('schedules.list:schedules.columns.last'),
                                         className: 'text-sm',
-                                        cell: lastRun,
+                                        cell: (schedule) => <LastRun schedule={schedule} />,
                                         compare: byTime((schedule) => schedule.lastRun?.startedAt),
                                     },
                                     {
                                         id: 'goal',
-                                        header: 'Goal',
+                                        header: t('schedules.list:schedules.columns.goal'),
                                         className: 'max-w-56 whitespace-normal text-sm',
                                         cell: (schedule) => goalTitle(goalOf(schedule)),
                                     },
@@ -344,25 +305,33 @@ function Schedules({ state, reload }: { state: SchedulesState; reload: () => voi
                                 card={(schedule) => {
                                     const goal = goalOf(schedule);
                                     return {
-                                        head: scheduleTitle(schedule),
+                                        head: <ScheduleTitle schedule={schedule} />,
                                         body: (
                                             <>
                                                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
                                                     <StatusBadge schedule={schedule} />
-                                                    <span className="whitespace-normal">{cadenceText(schedule)}</span>
+                                                    <span className="whitespace-normal">
+                                                        <Cadence schedule={schedule} />
+                                                    </span>
                                                 </div>
                                                 <div className="grid gap-0.5 text-sm">
                                                     <div>
-                                                        <span className="text-muted-foreground">Next: </span>
+                                                        <span className="text-muted-foreground">
+                                                            {t('schedules.list:schedules.next')}{' '}
+                                                        </span>
                                                         <When value={schedule.nextRunAt} />
                                                     </div>
                                                     <div>
-                                                        <span className="text-muted-foreground">Last: </span>
-                                                        {lastRun(schedule)}
+                                                        <span className="text-muted-foreground">
+                                                            {t('schedules.list:schedules.last')}{' '}
+                                                        </span>
+                                                        <LastRun schedule={schedule} />
                                                     </div>
                                                     {goal && (
                                                         <div className="whitespace-normal">
-                                                            <span className="text-muted-foreground">Goal: </span>
+                                                            <span className="text-muted-foreground">
+                                                                {t('schedules.list:schedules.goal')}{' '}
+                                                            </span>
                                                             {goalTitle(goal)}
                                                         </div>
                                                     )}
@@ -392,30 +361,38 @@ function Schedules({ state, reload }: { state: SchedulesState; reload: () => voi
 }
 
 /** A schedule's title and socio, as content (used by the table cell and the mobile card). */
-function scheduleTitle(schedule: ScheduleView) {
+function ScheduleTitle({ schedule }: { schedule: ScheduleView }) {
+    const { t } = useTranslation(['schedules.list', 'schedules']);
+    const socio = schedule.dotName ?? t('schedules:deleted-socio');
+    const context = schedule.origin === 'user' ? 'mine' : undefined;
     return (
         <div className="grid gap-0.5">
             <span className="font-medium">
                 <Link to={`/schedules/${schedule.id}`}>{schedule.title}</Link>
             </span>
             <span className="text-xs text-muted-foreground">
-                {schedule.dotName ?? 'A deleted socio'} ·{' '}
-                {schedule.kind === 'job' ? `job ${schedule.jobName ?? '(deleted)'}` : 'Socio turn'}
-                {schedule.origin === 'user' ? ' · made by you' : ''}
+                {schedule.kind !== 'job'
+                    ? t('schedules.list:schedules.meta-turn', { socio, context })
+                    : schedule.jobName
+                      ? t('schedules.list:schedules.meta', { socio, job: schedule.jobName, context })
+                      : t('schedules.list:schedules.meta-deleted-job', { socio, context })}
             </span>
         </div>
     );
 }
 
-function cadenceText(schedule: ScheduleView) {
+function Cadence({ schedule }: { schedule: ScheduleView }) {
+    const { t } = useTranslation(['schedules.list']);
+    const words = useScheduleWords();
     return schedule.cadence
-        ? `${schedule.cadence} (${schedule.timezone ?? 'UTC'})`
+        ? t('schedules.list:schedules.cadence', { cadence: schedule.cadence, zone: schedule.timezone ?? 'UTC' })
         : schedule.intervalSeconds
-          ? `${every(schedule.intervalSeconds)}, after each successful run`
+          ? words.interval(schedule.intervalSeconds)
           : '—';
 }
 
-function lastRun(schedule: ScheduleView) {
+function LastRun({ schedule }: { schedule: ScheduleView }) {
+    const { t } = useTranslation(['schedules.list']);
     return schedule.lastRun ? (
         <div className="grid gap-0.5">
             <span>
@@ -429,7 +406,7 @@ function lastRun(schedule: ScheduleView) {
             )}
         </div>
     ) : (
-        'Not yet'
+        t('schedules.list:schedules.not-yet')
     );
 }
 
@@ -452,19 +429,20 @@ function ScheduleRowMenu({
     onAct: (schedule: ScheduleView, action: Action) => Promise<void>;
     onCancel: () => void;
 }) {
+    const { t } = useTranslation(['schedules.list', 'schedules']);
     const off = schedule.status === 'cancelled';
     return (
         <RowActionsMenu name={schedule.title} slot="schedule-actions" title={schedule.title}>
             <DropdownMenuItem asChild>
-                <Link to={`/schedules/${schedule.id}`}>Open</Link>
+                <Link to={`/schedules/${schedule.id}`}>{t('schedules.list:schedules.open')}</Link>
             </DropdownMenuItem>
             {off ? (
-                <DropdownMenuItem disabled>Canceled</DropdownMenuItem>
+                <DropdownMenuItem disabled>{t('schedules.list:schedules.canceled')}</DropdownMenuItem>
             ) : (
                 <>
                     {schedule.status !== 'running' && (
                         <DropdownMenuItem disabled={busy === schedule.id} onSelect={() => void onAct(schedule, 'run')}>
-                            Run now
+                            {t('schedules:actions.run')}
                         </DropdownMenuItem>
                     )}
                     {schedule.status === 'paused' ? (
@@ -472,19 +450,19 @@ function ScheduleRowMenu({
                             disabled={busy === schedule.id}
                             onSelect={() => void onAct(schedule, 'resume')}
                         >
-                            Resume
+                            {t('schedules:actions.resume')}
                         </DropdownMenuItem>
                     ) : (
                         <DropdownMenuItem
                             disabled={busy === schedule.id}
                             onSelect={() => void onAct(schedule, 'pause')}
                         >
-                            Pause
+                            {t('schedules:actions.pause')}
                         </DropdownMenuItem>
                     )}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem variant="destructive" onSelect={onCancel}>
-                        Cancel…
+                        {t('schedules.list:schedules.cancel')}
                     </DropdownMenuItem>
                 </>
             )}
@@ -493,9 +471,10 @@ function ScheduleRowMenu({
 }
 
 function StatusBadge({ schedule }: { schedule: ScheduleView }) {
+    const words = useScheduleWords();
     return (
         <Badge variant={STATUS_TONE[schedule.status]} data-slot="schedule-status">
-            {STATUS_LABELS[schedule.status]}
+            {words.status(schedule.status)}
         </Badge>
     );
 }
@@ -508,14 +487,17 @@ const byTime = (at: (schedule: ScheduleView) => number | null | undefined) => (a
 };
 
 function Jobs({ state, reload }: { state: SchedulesState; reload: () => void }) {
+    const { t } = useTranslation(['schedules.list', 'schedules']);
     const [open, setOpen] = useState<string>();
     const run = async (job: JobView) => {
         try {
             await api(`/schedules/jobs/${job.id}/run`, 'POST', {});
-            toast.success(job.untilDone ? `Started “${job.name}”; it runs until done.` : `Started “${job.name}”.`);
+            toast.success(
+                t('schedules.list:jobs.started', { name: job.name, context: job.untilDone ? 'until-done' : undefined }),
+            );
             reload();
         } catch (e) {
-            failed(e, 'Could not start the job.');
+            failed(e, t('schedules.list:jobs.start-failed'));
         }
     };
     const going = (job: JobView) => job.longRun?.status === 'running' || job.longRun?.status === 'waiting';
@@ -523,28 +505,29 @@ function Jobs({ state, reload }: { state: SchedulesState; reload: () => void }) 
         <div className="grid gap-4">
             <Card>
                 <CardHeader>
-                    <CardTitle>Jobs</CardTitle>
+                    <CardTitle>{t('schedules.list:jobs.title')}</CardTitle>
                     <CardDescription>
-                        Code your socios saved, run in their computer with a timeout (at most{' '}
-                        {state.limits.maxJobTimeoutSeconds} s, including starting the computer). A run reaches your data
-                        only through a token for that run. {state.usage.jobs} of {state.limits.maxJobs} jobs.
+                        {t('schedules.list:jobs.description', {
+                            timeout: formatSeconds(state.limits.maxJobTimeoutSeconds),
+                            jobs: state.usage.jobs,
+                            max: state.limits.maxJobs,
+                        })}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     {!state.jobs.length ? (
-                        <p className="text-sm text-muted-foreground">
-                            No jobs yet. A socio saves one with your approval when it needs to collect something
-                            regularly.
-                        </p>
+                        <p className="text-sm text-muted-foreground">{t('schedules.list:jobs.empty')}</p>
                     ) : (
                         <Table data-slot="job-list">
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Job</TableHead>
-                                    <TableHead>Version</TableHead>
-                                    <TableHead>Timeout</TableHead>
-                                    <TableHead>Last run</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
+                                    <TableHead>{t('schedules.list:jobs.columns.job')}</TableHead>
+                                    <TableHead>{t('schedules.list:jobs.columns.version')}</TableHead>
+                                    <TableHead>{t('schedules.list:jobs.columns.timeout')}</TableHead>
+                                    <TableHead>{t('schedules.list:jobs.columns.last')}</TableHead>
+                                    <TableHead className="text-right">
+                                        {t('schedules.list:jobs.columns.actions')}
+                                    </TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -554,14 +537,19 @@ function Jobs({ state, reload }: { state: SchedulesState; reload: () => void }) 
                                             <div className="grid gap-0.5">
                                                 <span className="font-medium">{job.name}</span>
                                                 <span className="text-xs text-muted-foreground">
-                                                    {job.dotName ?? 'A deleted socio'} · {job.entry} ·{' '}
-                                                    {job.files.length} file(s)
-                                                    {job.untilDone ? ' · runs until done' : ''}
+                                                    {t('schedules.list:jobs.meta', {
+                                                        socio: job.dotName ?? t('schedules:deleted-socio'),
+                                                        entry: job.entry,
+                                                        count: job.files.length,
+                                                        context: job.untilDone ? 'until-done' : undefined,
+                                                    })}
                                                 </span>
                                             </div>
                                         </TableCell>
-                                        <TableCell>v{job.version}</TableCell>
-                                        <TableCell>{job.timeoutSeconds} s</TableCell>
+                                        <TableCell>
+                                            {t('schedules.list:jobs.version', { version: job.version })}
+                                        </TableCell>
+                                        <TableCell>{formatSeconds(job.timeoutSeconds)}</TableCell>
                                         <TableCell className="text-sm">
                                             {job.longRun ? (
                                                 <LongRunLine run={job.longRun} />
@@ -571,7 +559,7 @@ function Jobs({ state, reload }: { state: SchedulesState; reload: () => void }) 
                                                     <When value={job.lastRun.startedAt ?? job.lastRun.queuedAt} />
                                                 </span>
                                             ) : (
-                                                'Never'
+                                                t('schedules.list:jobs.never')
                                             )}
                                         </TableCell>
                                         <TableCell className="text-right">
@@ -582,7 +570,9 @@ function Jobs({ state, reload }: { state: SchedulesState; reload: () => void }) 
                                                     disabled={going(job)}
                                                     onClick={() => void run(job)}
                                                 >
-                                                    {going(job) ? 'Running' : 'Run now'}
+                                                    {going(job)
+                                                        ? t('schedules.list:jobs.running')
+                                                        : t('schedules:actions.run')}
                                                 </Button>
                                                 <Button
                                                     size="sm"
@@ -590,7 +580,9 @@ function Jobs({ state, reload }: { state: SchedulesState; reload: () => void }) 
                                                     aria-expanded={open === job.id}
                                                     onClick={() => setOpen(open === job.id ? undefined : job.id)}
                                                 >
-                                                    {open === job.id ? 'Hide' : 'Details'}
+                                                    {open === job.id
+                                                        ? t('schedules.list:jobs.hide')
+                                                        : t('schedules.list:jobs.details')}
                                                 </Button>
                                             </div>
                                         </TableCell>
@@ -617,288 +609,28 @@ function Jobs({ state, reload }: { state: SchedulesState; reload: () => void }) 
     );
 }
 
-function JobPanel({
-    jobId,
-    refresh,
-    onChanged,
-    onDeleted,
-}: {
-    jobId: string;
-    /** Reloads with the page's poll. */
-    refresh: unknown;
-    onChanged: () => void;
-    onDeleted: () => void;
-}) {
-    const [detail, setDetail] = useState<JobDetail>();
-    const [run, setRun] = useState<JobRunView>();
-    const [code, setCode] = useState<{
-        version: number;
-        files: Record<string, string>;
-    }>();
-    const [confirming, setConfirming] = useState(false);
-    // Runs past the detail's latest, read with "Load more" (every run is kept).
-    const [older, setOlder] = useState<JobRunsPage>({ runs: [], more: false });
-    const loaded = useRef(0);
-    useEffect(() => {
-        loaded.current = 0;
-        setOlder({ runs: [], more: false });
-    }, [jobId]);
-    useEffect(() => {
-        let current = true;
-        void (async () => {
-            const next = await api<JobDetail>(`/schedules/jobs/${jobId}`);
-            // A reload reads the older runs shown again, after the new latest.
-            const last = next.runs.at(-1);
-            const again =
-                loaded.current && last && next.moreRuns
-                    ? await api<JobRunsPage>(
-                          `/schedules/jobs/${jobId}/runs?before=${encodeURIComponent(last.id)}&limit=${Math.min(loaded.current, 200)}`,
-                      )
-                    : undefined;
-            if (!current) {
-                return;
-            }
-            setDetail(next);
-            if (loaded.current) {
-                setOlder(again ?? { runs: [], more: false });
-            }
-        })().catch((e) => failed(e, 'Could not load the job.'));
-        return () => {
-            current = false;
-        };
-    }, [jobId, refresh]);
-    const runs = detail ? [...detail.runs, ...older.runs] : [];
-    const moreRuns = older.runs.length ? older.more : !!detail?.moreRuns;
-    const loadMore = () => {
-        const last = runs.at(-1);
-        if (!last) {
-            return;
-        }
-        void api<JobRunsPage>(`/schedules/jobs/${jobId}/runs?before=${encodeURIComponent(last.id)}`)
-            .then((page) => {
-                setOlder((shown) => {
-                    const runs = [...shown.runs, ...page.runs];
-                    loaded.current = runs.length;
-                    return { runs, more: page.more };
-                });
-            })
-            .catch((e) => failed(e, 'Could not load older runs.'));
-    };
-    const showRun = (id: string) =>
-        void api<JobRunView>(`/schedules/runs/${id}`)
-            .then(setRun)
-            .catch((e) => failed(e, 'Could not load the run.'));
-    const showCode = (version: number) =>
-        void api<{ version: number; files: Record<string, string> }>(`/schedules/jobs/${jobId}/code?version=${version}`)
-            .then(setCode)
-            .catch((e) => failed(e, 'Could not load the code.'));
-    const stop = async () => {
-        try {
-            await api(`/schedules/jobs/${jobId}/stop`, 'POST', {});
-            toast.success(`Stopped ${detail?.job.name ?? 'the job'}.`);
-            onChanged();
-        } catch (e) {
-            failed(e, 'Could not stop the job.');
-        }
-    };
-    const retry = async () => {
-        try {
-            await api(`/schedules/jobs/${jobId}/retry`, 'POST', {});
-            toast.success(`Restored the approved code of ${detail?.job.name ?? 'the job'} and started it.`);
-            onChanged();
-        } catch (e) {
-            failed(e, 'Could not restore the job’s code.');
-        }
-    };
-    const remove = async () => {
-        try {
-            await api(`/schedules/jobs/${jobId}`, 'DELETE', {});
-            toast.success(`Deleted ${detail?.job.name ?? 'the job'}.`);
-            setConfirming(false);
-            onDeleted();
-        } catch (e) {
-            failed(e, 'Could not delete the job.');
-        }
-    };
-    if (!detail) {
-        return <Skeleton className="h-32" />;
-    }
-    return (
-        <Card data-slot="job-detail">
-            <CardHeader>
-                <CardTitle>{detail.job.name}</CardTitle>
-                <CardDescription>
-                    {jobEntryCommand(detail.job.entry)} · datasets: scratch
-                    {detail.job.datasets.filter((id) => id !== 'scratch').length
-                        ? ` + ${detail.job.datasets.filter((id) => id !== 'scratch').length} granted`
-                        : ''}{' '}
-                    · code stored encrypted in your data space
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-4">
-                {detail.code.state !== 'stored' && (
-                    <div
-                        className="flex flex-wrap items-center gap-2 rounded-md border border-destructive/40 p-2 text-sm"
-                        data-slot="job-code-missing"
-                    >
-                        <span>
-                            The code of v{detail.job.version} isn’t in storage
-                            {detail.code.missing.length ? ` (${detail.code.missing.join(', ')})` : ''}, so it can’t run.
-                            Restoring stores the code you approved again.
-                        </span>
-                        <Button size="sm" variant="outline" onClick={() => void retry()}>
-                            Restore code and run
-                        </Button>
-                    </div>
-                )}
-                {detail.longRun && <LongRunProgress run={detail.longRun} onStop={() => void stop()} />}
-                <div className="grid gap-2">
-                    <h3 className="text-sm font-medium">Versions</h3>
-                    <ul className="grid gap-1 text-sm">
-                        {detail.versions.map((version) => (
-                            <li key={version.version} className="flex items-center gap-2">
-                                <span>v{version.version}</span>
-                                <span className="text-muted-foreground">
-                                    <When value={version.createdAt} /> · {version.timeoutSeconds} s
-                                    {version.untilDone ? ' per batch, until done' : ''} ·{' '}
-                                    {version.files.map((file) => file.path).join(', ')}
-                                </span>
-                                <Button size="sm" variant="ghost" onClick={() => showCode(version.version)}>
-                                    Code
-                                </Button>
-                            </li>
-                        ))}
-                    </ul>
-                    {code && (
-                        <div className="grid gap-2" data-slot="job-code">
-                            {Object.entries(code.files).map(([path, contents]) => (
-                                <div key={path}>
-                                    <div className="text-xs text-muted-foreground">
-                                        v{code.version} · {path}
-                                    </div>
-                                    <pre className="max-h-72 overflow-auto rounded-md border bg-muted/40 p-2 text-xs">
-                                        {contents}
-                                    </pre>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-                <div className="grid gap-2">
-                    <h3 className="text-sm font-medium">Runs</h3>
-                    {!detail.runs.length ? (
-                        <p className="text-sm text-muted-foreground">No runs yet.</p>
-                    ) : (
-                        <Table data-slot="job-runs">
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Started</TableHead>
-                                    <TableHead>Trigger</TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead>Exit</TableHead>
-                                    <TableHead>Took</TableHead>
-                                    <TableHead />
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {runs.map((item) => (
-                                    <TableRow key={item.id}>
-                                        <TableCell className="whitespace-nowrap">
-                                            <When value={item.startedAt ?? item.queuedAt} />
-                                        </TableCell>
-                                        <TableCell>
-                                            {item.trigger === 'dot' ? 'the socio' : item.trigger} · v{item.version}
-                                            {item.longRunId ? ' · batch' : ''}
-                                        </TableCell>
-                                        <TableCell>
-                                            <RunBadge status={item.status} />
-                                        </TableCell>
-                                        <TableCell>{item.exitCode ?? '—'}</TableCell>
-                                        <TableCell className="whitespace-nowrap">
-                                            {item.finishedAt && item.startedAt
-                                                ? seconds(item.finishedAt - item.startedAt)
-                                                : '—'}
-                                            {item.wakeMs ? ` (wake ${seconds(item.wakeMs)})` : ''}
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <Button size="sm" variant="ghost" onClick={() => showRun(item.id)}>
-                                                Logs
-                                            </Button>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    )}
-                    {moreRuns && (
-                        <Button variant="outline" size="sm" className="justify-self-center" onClick={loadMore}>
-                            Load more
-                        </Button>
-                    )}
-                    {run && (
-                        <div className="grid gap-2" data-slot="job-logs">
-                            <div className="text-sm">
-                                Run <When value={run.startedAt ?? run.queuedAt} />: <RunBadge status={run.status} />
-                                {run.error ? ` ${run.error}` : ''}
-                            </div>
-                            {run.outputNotKept ? (
-                                <p className="text-sm text-muted-foreground" data-slot="job-output-not-kept">
-                                    {run.outputNotKept}
-                                </p>
-                            ) : (
-                                <>
-                                    <div className="text-xs text-muted-foreground">stdout</div>
-                                    <pre className="max-h-72 overflow-auto rounded-md border bg-muted/40 p-2 text-xs">
-                                        {run.stdout || '(empty)'}
-                                    </pre>
-                                    <div className="text-xs text-muted-foreground">stderr</div>
-                                    <pre className="max-h-72 overflow-auto rounded-md border bg-muted/40 p-2 text-xs">
-                                        {run.stderr || '(empty)'}
-                                    </pre>
-                                </>
-                            )}
-                        </div>
-                    )}
-                </div>
-                <div>
-                    <Button size="sm" variant="destructive" onClick={() => setConfirming(true)}>
-                        Delete job
-                    </Button>
-                </div>
-                {confirming && (
-                    <ConfirmDelete
-                        title="Delete job?"
-                        slot="job-confirm-delete"
-                        onClose={() => setConfirming(false)}
-                        onConfirm={remove}
-                    >
-                        This will delete {detail.job.name}. It leaves your jobs and its socio&apos;s, and schedules that
-                        run it stop.
-                    </ConfirmDelete>
-                )}
-            </CardContent>
-        </Card>
-    );
-}
-
 function Counts({ counts }: { counts: NonNullable<SchedulesState['counts']> }) {
+    const { t } = useTranslation(['schedules.list', 'schedules']);
+    const words = useScheduleWords();
     const rows = (record: Record<string, number>) =>
         Object.entries(record).length
             ? Object.entries(record)
-                  .map(([status, n]) => `${n} ${status.replace('_', ' ')}`)
+                  .map(([status, count]) =>
+                      t('schedules.list:counts.status', { count, status: words.runStatus(status) }),
+                  )
                   .join(' · ')
-            : 'none';
+            : t('schedules.list:counts.none');
     return (
         <Card data-slot="schedule-counts">
             <CardHeader>
-                <CardTitle>Everyone’s</CardTitle>
-                <CardDescription>Counts only: what each person’s schedules and jobs do is theirs.</CardDescription>
+                <CardTitle>{t('schedules.list:counts.title')}</CardTitle>
+                <CardDescription>{t('schedules.list:counts.description')}</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-1 text-sm">
-                <div>Schedules: {rows(counts.schedules)}</div>
-                <div>Saved jobs: {counts.jobs}</div>
-                <div>Job runs kept: {rows(counts.jobRuns)}</div>
-                <div>Job runs in progress: {counts.runningJobs}</div>
+                <div>{t('schedules.list:counts.schedules', { counts: rows(counts.schedules) })}</div>
+                <div>{t('schedules.list:counts.jobs', { count: counts.jobs })}</div>
+                <div>{t('schedules.list:counts.job-runs', { counts: rows(counts.jobRuns) })}</div>
+                <div>{t('schedules.list:counts.running', { count: counts.runningJobs })}</div>
             </CardContent>
         </Card>
     );

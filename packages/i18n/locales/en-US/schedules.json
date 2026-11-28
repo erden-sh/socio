@@ -1,0 +1,64 @@
+{
+    "crumb": "Schedules",
+    "crumb-schedule": "Schedule",
+    "deleted-socio": "A deleted socio",
+    "status": {
+        "scheduled": "Active",
+        "running": "Running",
+        "queued": "Queued",
+        "paused": "Paused",
+        "failed": "Stopped",
+        "interrupted": "Interrupted",
+        "completed": "Completed",
+        "cancelled": "Canceled"
+    },
+    "run-status": {
+        "queued": "queued",
+        "starting": "starting",
+        "running": "running",
+        "waiting": "waiting",
+        "succeeded": "succeeded",
+        "completed": "completed",
+        "done": "done",
+        "failed": "failed",
+        "timed_out": "timed out",
+        "interrupted": "interrupted",
+        "cancelled": "canceled",
+        "paused": "paused",
+        "scheduled": "scheduled"
+    },
+    "goal-status": {
+        "active": "Active",
+        "paused": "Paused",
+        "done": "Done",
+        "cancelled": "Canceled"
+    },
+    "interval": {
+        "week": "Every week, after each successful run",
+        "day": "Every day, after each successful run",
+        "hour": "Every hour, after each successful run",
+        "hours_one": "Every {{count, number}} hour, after each successful run",
+        "hours_other": "Every {{count, number}} hours, after each successful run",
+        "minutes_one": "Every {{count, number}} minute, after each successful run",
+        "minutes_other": "Every {{count, number}} minutes, after each successful run"
+    },
+    "actions": {
+        "run": "Run now",
+        "pause": "Pause",
+        "resume": "Resume",
+        "load-more": "Load more",
+        "change-failed": "Could not change the schedule.",
+        "older-failed": "Could not load older runs."
+    },
+    "no-runs": "No runs yet.",
+    "comments": {
+        "count_one": "{{count, number}} comment",
+        "count_other": "{{count, number}} comments",
+        "you": "You",
+        "none": "No comments yet.",
+        "label": "Add a comment",
+        "placeholder": "Add context or a changed requirement for {{name}}",
+        "submit": "Comment",
+        "failed": "Could not add the comment."
+    }
+}

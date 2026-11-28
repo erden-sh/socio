@@ -1,0 +1,19 @@
+{
+    "goals": {
+        "title": "Goals",
+        "failed": "Could not load goals.",
+        "none": "No goals.",
+        "empty": "Ask {{name}} in a chat to work toward a goal for you.",
+        "meta_one": "{{status}} · {{count, number}} comment",
+        "meta_other": "{{status}} · {{count, number}} comments",
+        "no-progress": "No progress yet"
+    },
+    "scheduled": {
+        "title": "Scheduled",
+        "failed": "Could not load schedules.",
+        "empty": "Nothing scheduled.",
+        "all": "Schedules",
+        "paused": "Paused",
+        "running": "Running"
+    }
+}

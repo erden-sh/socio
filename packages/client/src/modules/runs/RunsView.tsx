@@ -1,6 +1,7 @@
 import { ChevronRight } from 'lucide-react';
 import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 
+import { useTranslation } from '@socio/i18n/react';
 import type { AgentRunStatus, AgentRunSummary } from '@socio/shared/types';
 import type { RunList } from '@socio/shared/web/web';
 
@@ -18,24 +19,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 
-const sourceLabel: Record<AgentRunSummary['source'], string> = {
-    web: 'Web',
-    telegram: 'Telegram',
-    scheduled: 'Scheduled task',
-    voice: 'Voice call',
-};
-
 /**
  * Each status as a word beside a dot (CB-308): green when it finished,
  * red when it failed or broke off, the accent while it runs.
  */
-const statusLabel: Record<AgentRunStatus, string> = {
-    running: 'Running',
-    finished: 'Finished',
-    stopped: 'Stopped',
-    failed: 'Failed',
-    interrupted: 'Interrupted',
-};
 const statusDot: Record<AgentRunStatus, string> = {
     running: 'bg-primary motion-safe:animate-pulse',
     finished: 'bg-emerald-600 dark:bg-emerald-500',
@@ -45,25 +32,19 @@ const statusDot: Record<AgentRunStatus, string> = {
 };
 
 function RunStatusWord({ status }: { status: AgentRunStatus }) {
+    const { t } = useTranslation(['runs']);
     return (
         <span data-slot="run-status" className="inline-flex items-center gap-1.5 whitespace-nowrap">
             <span aria-hidden="true" className={cn('size-2 shrink-0 rounded-full', statusDot[status])} />
-            {statusLabel[status]}
+            {t(`runs:status.${status}`)}
         </span>
     );
 }
 
 // The status filter; Radix Select has no empty value, so "all" stands in.
 const ALL = 'all';
-const filters: [string, string][] = [
-    [ALL, 'All turns'],
-    ['failed', 'Failed only'],
-    ['interrupted', 'Interrupted'],
-    ['stopped', 'Stopped'],
-    ['running', 'Running'],
-    ['finished', 'Finished'],
-];
-const columns = ['Status', 'Conversation', 'Owner', 'Source', 'Started', 'Duration'];
+const filters = [ALL, 'failed', 'interrupted', 'stopped', 'running', 'finished'] as const;
+const columns = ['status', 'conversation', 'owner', 'source', 'started', 'duration'] as const;
 
 /**
  * A turn with a trace to show: one that runs, or ended since traces
@@ -85,6 +66,7 @@ export function RunsView({
     /** The page's loader data: the latest runs, as many as the first screen. */
     initial?: RunList;
 }) {
+    const { t } = useTranslation(['runs']);
     // Other modules' per-run actions (Issues' "File issue").
     const runActions = useSlot('run.actions');
     const [filter, setFilter] = useState<AgentRunStatus | ''>('');
@@ -134,19 +116,19 @@ export function RunsView({
                         setFilter(value === ALL ? '' : (value as AgentRunStatus));
                     }}
                 >
-                    <SelectTrigger aria-label="Filter by status">
+                    <SelectTrigger aria-label={t('runs:filter.label')}>
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                        {filters.map(([value, label]) => (
+                        {filters.map((value) => (
                             <SelectItem key={value} value={value}>
-                                {label}
+                                {t(`runs:filter.${value}`)}
                             </SelectItem>
                         ))}
                     </SelectContent>
                 </Select>
                 {data && data.runs.length >= data.limit && (
-                    <span className="text-xs text-muted-foreground">Showing the latest {data.limit}.</span>
+                    <span className="text-xs text-muted-foreground">{t('runs:latest', { count: data.limit })}</span>
                 )}
             </div>
             {error && (
@@ -160,7 +142,7 @@ export function RunsView({
                         <TableRow className="hover:bg-transparent">
                             {columns.map((column) => (
                                 <TableHead key={column} className="h-auto py-1.5 text-muted-foreground">
-                                    {column}
+                                    {t(`runs:columns.${column}`)}
                                 </TableHead>
                             ))}
                         </TableRow>
@@ -178,7 +160,10 @@ export function RunsView({
                                                 type="button"
                                                 className="-my-1 -ml-1.5 inline-flex items-center gap-1 rounded-md py-1 pr-1.5 pl-0.5 text-left outline-none hover:bg-muted focus-visible:ring-[3px] focus-visible:ring-ring/50"
                                                 aria-expanded={traced === run.runId}
-                                                aria-label={`${traced === run.runId ? 'Hide' : 'Show'} the trace of ${run.title ?? 'this turn'}`}
+                                                aria-label={t('runs:trace', {
+                                                    title: run.title ?? t('runs:this-turn'),
+                                                    context: traced === run.runId ? 'open' : undefined,
+                                                })}
                                                 onClick={() => setTraced(traced === run.runId ? undefined : run.runId)}
                                             >
                                                 <ChevronRight
@@ -203,10 +188,10 @@ export function RunsView({
                                                 className="h-auto p-0 text-left text-xs font-normal whitespace-normal text-foreground"
                                                 onClick={() => onOpen(run.threadId)}
                                             >
-                                                {run.title ?? 'Untitled conversation'}
+                                                {run.title ?? t('runs:untitled')}
                                             </Button>
                                         ) : (
-                                            <span>{run.title ?? 'Deleted conversation'}</span>
+                                            <span>{run.title ?? t('runs:deleted')}</span>
                                         )}
                                         {run.dotName && <span className="text-muted-foreground"> · {run.dotName}</span>}
                                         {run.error && (
@@ -235,10 +220,10 @@ export function RunsView({
                                         )}
                                     </TableCell>
                                     <TableCell>
-                                        {run.ownerName ?? run.ownerId ?? 'unknown'}
-                                        {run.room && <span className="text-muted-foreground"> · room</span>}
+                                        {run.ownerName ?? run.ownerId ?? t('runs:unknown-owner')}
+                                        {run.room && <span className="text-muted-foreground"> · {t('runs:room')}</span>}
                                     </TableCell>
-                                    <TableCell>{sourceLabel[run.source]}</TableCell>
+                                    <TableCell>{t(`runs:source.${run.source}`)}</TableCell>
                                     <TableCell className="tabular-nums">
                                         <LocalTime value={run.startedAt} format={formatRunTime} title={fullRunTime} />
                                     </TableCell>
@@ -262,7 +247,7 @@ export function RunsView({
                 </Table>
             ) : (
                 <p className="text-xs text-muted-foreground">
-                    {data ? (filter ? `No ${filter} turns.` : 'No turns yet.') : 'Loading…'}
+                    {data ? (filter ? t(`runs:empty-filtered.${filter}`) : t('runs:empty')) : t('runs:loading')}
                 </p>
             )}
         </section>

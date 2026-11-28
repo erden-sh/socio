@@ -1,19 +1,15 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 
+import { useTranslation } from '@socio/i18n/react';
 import { GOAL_COMMENT_MAX, type GoalView } from '@socio/shared/schedule-types';
 
 import { api } from '../../lib/api';
-import { LocalTime } from '../../lib/local-time';
+
+import { When } from './schedule-words';
 
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-
-const when = (t: number) =>
-    new Date(t).toLocaleString(undefined, {
-        dateStyle: 'medium',
-        timeStyle: 'short',
-    });
 
 /**
  * A goal's comment thread (CB-135): what the person and the Dot added to
@@ -21,6 +17,7 @@ const when = (t: number) =>
  * open. The Dot reads them in its goal turns.
  */
 export function GoalComments({ goal, dotName, onPosted }: { goal: GoalView; dotName: string; onPosted: () => void }) {
+    const { t } = useTranslation(['schedules']);
     const [draft, setDraft] = useState('');
     const [busy, setBusy] = useState(false);
     const open = goal.status === 'active' || goal.status === 'paused';
@@ -31,7 +28,7 @@ export function GoalComments({ goal, dotName, onPosted }: { goal: GoalView; dotN
             setDraft('');
             onPosted();
         } catch (e) {
-            toast.error(e instanceof Error ? e.message : 'Could not add the comment.');
+            toast.error(e instanceof Error ? e.message : t('schedules:comments.failed'));
         } finally {
             setBusy(false);
         }
@@ -47,15 +44,15 @@ export function GoalComments({ goal, dotName, onPosted }: { goal: GoalView; dotN
                             className="grid gap-0.5 rounded-lg border px-3 py-2 text-sm"
                         >
                             <span className="text-xs text-muted-foreground">
-                                {comment.author === 'person' ? 'You' : dotName} ·{' '}
-                                <LocalTime value={comment.createdAt} format={when} />
+                                {comment.author === 'person' ? t('schedules:comments.you') : dotName} ·{' '}
+                                <When value={comment.createdAt} />
                             </span>
                             <span className="whitespace-pre-wrap break-words">{comment.body}</span>
                         </li>
                     ))}
                 </ul>
             ) : (
-                <p className="text-sm text-muted-foreground">No comments yet.</p>
+                <p className="text-sm text-muted-foreground">{t('schedules:comments.none')}</p>
             )}
             {open && (
                 <form
@@ -68,8 +65,8 @@ export function GoalComments({ goal, dotName, onPosted }: { goal: GoalView; dotN
                     }}
                 >
                     <Textarea
-                        aria-label="Add a comment"
-                        placeholder={`Add context or a changed requirement for ${dotName}`}
+                        aria-label={t('schedules:comments.label')}
+                        placeholder={t('schedules:comments.placeholder', { name: dotName })}
                         value={draft}
                         rows={2}
                         maxLength={GOAL_COMMENT_MAX}
@@ -77,7 +74,7 @@ export function GoalComments({ goal, dotName, onPosted }: { goal: GoalView; dotN
                     />
                     <div className="flex justify-end">
                         <Button type="submit" size="sm" disabled={busy || !draft.trim()}>
-                            Comment
+                            {t('schedules:comments.submit')}
                         </Button>
                     </div>
                 </form>

@@ -1,0 +1,13 @@
+{
+    "goals.title": "Panel heading on a socio's home page: the goals it works toward for the person.",
+    "goals.failed": "Shown when the goals could not be loaded.",
+    "goals.none": "Shown for an archived socio with no goals.",
+    "goals.empty": "Shown when there are none; {{name}} is the socio's name (an AI agent).",
+    "goals.meta": "A goal's status and its comment count.",
+    "goals.no-progress": "A goal without a progress note yet.",
+    "scheduled.title": "Panel heading: the socio's schedules that will run again.",
+    "scheduled.failed": "Shown when the schedules could not be loaded.",
+    "scheduled.all": "Link to the Schedules page.",
+    "scheduled.paused": "A schedule's state instead of its next run time.",
+    "scheduled.running": "A schedule's state instead of its next run time."
+}

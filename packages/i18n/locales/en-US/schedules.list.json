@@ -1,0 +1,95 @@
+{
+    "title": "Schedules & jobs",
+    "description": "Recurring work your socios do for you. A schedule runs a socio turn (in its own conversation, on your model) or a job: code a socio saved, run in its computer without the model. New ones need your approval; you can pause or cancel any of them here.",
+    "load-failed": "Could not load schedules.",
+    "tabs": {
+        "label": "Schedules and jobs",
+        "schedules": "Schedules",
+        "jobs": "Jobs",
+        "workspace": "Workspace"
+    },
+    "goals": {
+        "title": "Goals",
+        "description": "What your socios keep working toward for you. Pause or cancel a goal by its schedule below; a socio marks it done when it is met.",
+        "some-socio": "A socio",
+        "line": "{{socio}} · {{cadence}} · {{progress}}",
+        "line_no-schedule": "{{socio}} · no schedule · {{progress}}",
+        "line_no-progress": "{{socio}} · {{cadence}} · no progress yet",
+        "line_none": "{{socio}} · no schedule · no progress yet"
+    },
+    "schedules": {
+        "title": "Schedules",
+        "usage": "{{active, number}} of {{max, number}} active schedules. Runs are at least {{minutes, number}} minutes apart.",
+        "empty": "No schedules yet. Ask a socio to do something regularly, or use the clock button in a conversation.",
+        "find": "Find schedules",
+        "search": "Search title, socio or job",
+        "status-filter": "Status filter",
+        "status-any": "Status: any",
+        "socio-filter": "Socio filter",
+        "socio-any": "Socio: any",
+        "no-match": "No schedules match.",
+        "grid": "Schedules",
+        "columns": {
+            "title": "Schedule",
+            "status": "Status",
+            "cadence": "Runs",
+            "next": "Next run",
+            "last": "Last run",
+            "goal": "Goal"
+        },
+        "next": "Next:",
+        "last": "Last:",
+        "goal": "Goal:",
+        "meta": "{{socio}} · job {{job}}",
+        "meta_mine": "{{socio}} · job {{job}} · made by you",
+        "meta-deleted-job": "{{socio}} · job (deleted)",
+        "meta-deleted-job_mine": "{{socio}} · job (deleted) · made by you",
+        "meta-turn": "{{socio}} · Socio turn",
+        "meta-turn_mine": "{{socio}} · Socio turn · made by you",
+        "cadence": "{{cadence}} ({{zone}})",
+        "not-yet": "Not yet",
+        "open": "Open",
+        "canceled": "Canceled",
+        "cancel": "Cancel…"
+    },
+    "jobs": {
+        "title": "Jobs",
+        "description": "Code your socios saved, run in their computer with a timeout (at most {{timeout}}, including starting the computer). A run reaches your data only through a token for that run. {{jobs, number}} of {{max, number}} jobs.",
+        "empty": "No jobs yet. A socio saves one with your approval when it needs to collect something regularly.",
+        "columns": {
+            "job": "Job",
+            "version": "Version",
+            "timeout": "Timeout",
+            "last": "Last run",
+            "actions": "Actions"
+        },
+        "meta_one": "{{socio}} · {{entry}} · {{count, number}} file",
+        "meta_other": "{{socio}} · {{entry}} · {{count, number}} files",
+        "meta_until-done_one": "{{socio}} · {{entry}} · {{count, number}} file · runs until done",
+        "meta_until-done_other": "{{socio}} · {{entry}} · {{count, number}} files · runs until done",
+        "version": "v{{version}}",
+        "never": "Never",
+        "running": "Running",
+        "details": "Details",
+        "hide": "Hide",
+        "started": "Started “{{name}}”.",
+        "started_until-done": "Started “{{name}}”; it runs until done.",
+        "start-failed": "Could not start the job."
+    },
+    "long-run": {
+        "done": "{{done, number}} of {{total, number}} done",
+        "done_failed": "{{done, number}} of {{total, number}} done · {{failed, number}} failed",
+        "empty": "No items yet",
+        "meter": "Items finished"
+    },
+    "counts": {
+        "title": "Everyone’s",
+        "description": "Counts only: what each person’s schedules and jobs do is theirs.",
+        "schedules": "Schedules: {{counts}}",
+        "jobs": "Saved jobs: {{count, number}}",
+        "job-runs": "Job runs kept: {{counts}}",
+        "running": "Job runs in progress: {{count, number}}",
+        "status": "{{count, number}} {{status}}",
+        "none": "none"
+    }
+}
