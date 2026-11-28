@@ -2,6 +2,7 @@ import { CalendarDays, Puzzle, ShieldAlert } from 'lucide-react';
 import { Link } from 'react-router';
 import { toast } from 'sonner';
 
+import { useTranslation } from '@socio/i18n/react';
 import type {
     PluginBackupHistoryEntry,
     PluginBackupState,
@@ -9,7 +10,7 @@ import type {
 } from '@socio/shared/plugins/plugin-backup';
 import type { PluginConfigField } from '@socio/shared/plugins/plugin-config';
 import type { PluginUpdateReview } from '@socio/shared/plugins/plugin-update';
-import { OPEN_ANY_HTTPS_LABEL } from '@socio/shared/plugins/plugins';
+import { OPEN_ANY_HTTPS_SCOPE } from '@socio/shared/plugins/plugins';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -107,14 +108,15 @@ export interface PluginBackups {
     history: PluginBackupHistoryEntry[];
 }
 
-const BADGES: Partial<Record<PluginBackupState, { label: string; slot: string; destructive: boolean }>> = {
-    not_backed_up: { label: 'Not backed up', slot: 'plugin-not-backed-up', destructive: true },
-    failing: { label: 'Backup failing', slot: 'plugin-backup-failing', destructive: true },
-    stale: { label: 'Backup out of date', slot: 'plugin-backup-stale', destructive: false },
+const BADGES: Partial<Record<PluginBackupState, { slot: string; destructive: boolean }>> = {
+    not_backed_up: { slot: 'plugin-not-backed-up', destructive: true },
+    failing: { slot: 'plugin-backup-failing', destructive: true },
+    stale: { slot: 'plugin-backup-stale', destructive: false },
 };
 
 /** The badge for a plugin whose state isn't safely backed up (CB-458); nothing for one that is, or keeps none. */
 export function BackupBadge({ backup }: { backup?: PluginBackupInfo }) {
+    const { t } = useTranslation(['plugins']);
     const badge = backup && BADGES[backup.state];
     if (!backup || !badge) {
         return null;
@@ -122,46 +124,9 @@ export function BackupBadge({ backup }: { backup?: PluginBackupInfo }) {
     const destructive = badge.destructive && !(backup.state === 'not_backed_up' && backup.declared);
     return (
         <Badge variant={destructive ? 'destructive' : 'outline'} data-slot={badge.slot}>
-            {badge.label}
+            {t(`plugins:backup-badge.${backup.state as 'not_backed_up' | 'failing' | 'stale'}`)}
         </Badge>
     );
-}
-
-/** Bytes in the largest unit that keeps a whole number in front: KB, MB or GB. */
-export function backupSize(bytes: number) {
-    const units = ['bytes', 'KB', 'MB', 'GB', 'TB'];
-    let value = bytes;
-    let unit = 0;
-    while (value >= 1024 && unit < units.length - 1) {
-        value /= 1024;
-        unit++;
-    }
-    return `${unit ? value.toFixed(value < 10 ? 1 : 0) : value} ${units[unit]}`;
-}
-
-const localWhen = (ms: number) => new Date(ms).toLocaleString();
-
-/** What the plugin's page says about its backups (CB-458). */
-export function backupDetail(backup: PluginBackupInfo, when: (ms: number) => string = localWhen) {
-    const volumes = backup.volumes.join(', ');
-    const last =
-        backup.lastSuccessAt !== undefined
-            ? `Last backed up ${when(backup.lastSuccessAt)}${backup.sizeBytes !== undefined ? ` (${backupSize(backup.sizeBytes)})` : ''}.`
-            : 'It has no good backup yet.';
-    switch (backup.state) {
-        case 'ok':
-            return `Its own storage (${volumes}) is backed up with every scheduled backup. ${last}`;
-        case 'stale':
-            return `Its own storage (${volumes}) hasn’t been backed up for more than two backup intervals. ${last}`;
-        case 'failing':
-            return `Its last backup failed${backup.lastErrorAt !== undefined ? ` (${when(backup.lastErrorAt)})` : ''}: ${backup.lastError ?? 'no reason given'} ${last}`;
-        case 'disabled':
-            return `It is disabled${backup.since !== undefined ? ` since ${when(backup.since)}` : ''}, so it isn’t backed up; its backups stay. ${last}`;
-        case 'not_backed_up':
-            return backup.declared
-                ? `It keeps data on its own storage (${volumes}) and declares backups. Its first backup comes with the next scheduled backup, or use Back up now.`
-                : `It keeps data on its own storage (${volumes}), and the installed version doesn’t declare backups, so the workspace’s backups don’t include it. Once its catalog entry declares service.backup, apply its Update. A later release refuses to install or update it without one.`;
-    }
 }
 
 /** Whether the plugin's page shows its backup line in red. */
@@ -170,6 +135,7 @@ export const backupAlarm = (backup: PluginBackupInfo) =>
 
 /** The catalog's storage warnings for an entry (CB-458), before install. */
 export function StorageWarnings({ warnings }: { warnings?: PluginStorageWarning[] }) {
+    const { t } = useTranslation(['plugins']);
     if (!warnings?.length) {
         return null;
     }
@@ -179,9 +145,12 @@ export function StorageWarnings({ warnings }: { warnings?: PluginStorageWarning[
                 <li key={warning.kind} className="flex flex-wrap items-start gap-2" data-warning={warning.kind}>
                     <Badge variant={warning.kind === 'not_backed_up' ? 'destructive' : 'outline'}>
                         <ShieldAlert aria-hidden="true" />{' '}
-                        {warning.kind === 'not_backed_up' ? 'Not backed up' : 'Private storage'}
+                        {warning.kind === 'not_backed_up'
+                            ? t('plugins:storage-warning.not-backed-up')
+                            : t('plugins:storage-warning.private')}
                     </Badge>
-                    <span>{warning.message}.</span>
+                    {/* The catalog's own words (the server's), like a manifest's. */}
+                    <span>{t('plugins:storage-warning.message', { message: warning.message })}</span>
                 </li>
             ))}
         </ul>
@@ -193,18 +162,14 @@ export interface PluginList {
     installed: InstalledRow[];
 }
 
-export const PERMISSIONS: Record<string, string> = {
-    'social:read': 'Read planned posts and the reply queue',
-    'social:write': 'Edit planned posts and replies',
-    'calendar:read': 'Read calendar events',
-    'calendar:write': 'Add, change and delete calendar events',
-    'person:read': 'See who is using it: their name, role and time zone (signed by Socio)',
-};
-
-export const AUDIENCE_LABEL: Record<Audience, string> = {
-    admins: 'Admins only',
-    members: 'Everyone (members too)',
-};
+/** The permissions Socio knows, by scope; a scope it doesn't know shows as itself. */
+const PERMISSIONS = {
+    'social:read': 'social-read',
+    'social:write': 'social-write',
+    'calendar:read': 'calendar-read',
+    'calendar:write': 'calendar-write',
+    'person:read': 'person-read',
+} as const;
 
 export const failed = (error: unknown, fallback: string) =>
     toast.error(error instanceof Error ? error.message : fallback);
@@ -218,58 +183,66 @@ export const pluginPath = (id: string) => `/plugins/${encodeURIComponent(id)}`;
 /** The Plugins page's Installed tab, the overview. */
 export const INSTALLED_PATH = '/plugins?tab=installed';
 
-export function permissionLine(permissions: string[]) {
-    if (!permissions.length) {
-        return 'Asks for no extra permissions.';
-    }
-    return `${permissions.map((item) => PERMISSIONS[item] ?? item).join('. ')}.`;
-}
-
 /**
  * The sensitive `bridge.openAnyHttps` scope as every review shows it (the
  * install page, the plugin's own page, an update that adds it): a
  * "Sensitive scope" warning and what it lets the plugin do.
  */
 export function OpenAnyHttpsScope({ as: Tag = 'p' }: { as?: 'p' | 'li' }) {
+    const { t } = useTranslation(['plugins']);
     return (
         <Tag className="flex flex-wrap items-start gap-2 text-sm" data-slot="plugin-sensitive-scope">
             <Badge variant="destructive">
-                <ShieldAlert aria-hidden="true" /> Sensitive scope
+                <ShieldAlert aria-hidden="true" /> {t('plugins:sensitive.badge')}
             </Badge>
             <span>
-                <span className="font-medium text-foreground">bridge.openAnyHttps</span>
+                <span className="font-medium text-foreground">{OPEN_ANY_HTTPS_SCOPE}</span>
                 {' · '}
-                {OPEN_ANY_HTTPS_LABEL}
+                {t('plugins:sensitive.open-any-https')}
             </span>
         </Tag>
     );
 }
 
-export function displayLabel(display: 'tab' | 'embed', mode: Mode = 'service') {
-    if (mode === 'bundled') {
-        return 'Opens inside Socio';
-    }
-    return display === 'embed' ? 'Opens inside Socio' : 'Opens in a new tab';
-}
-
-export function modeLabel(mode: Mode = 'service') {
-    return mode === 'bundled' ? 'Runs inside Socio' : 'Runs as its own service';
-}
-
-export function runLabel(plugin: InstalledRow) {
-    if (!plugin.enabled) {
-        return 'Disabled';
-    }
-    if (plugin.mode === 'bundled') {
-        return 'Runs inside Socio';
-    }
-    if (plugin.running > 0) {
-        return `${plugin.running} of ${plugin.replicas} running`;
-    }
-    if (plugin.state === 'stopped') {
-        return 'Stopped';
-    }
-    return 'Starting';
+/**
+ * The words the Plugins overview and a plugin's page say about a plugin, in
+ * the reader's language: how it opens and runs, a permission, the line of
+ * its permissions, and who may use it.
+ */
+export function usePluginWords() {
+    const { t } = useTranslation(['plugins']);
+    const permission = (scope: string) =>
+        Object.hasOwn(PERMISSIONS, scope)
+            ? t(`plugins:permissions.${PERMISSIONS[scope as keyof typeof PERMISSIONS]}`)
+            : scope;
+    return {
+        displayLabel: (display: 'tab' | 'embed', mode: Mode = 'service') =>
+            mode === 'bundled' || display === 'embed' ? t('plugins:display.inside') : t('plugins:display.tab'),
+        modeLabel: (mode: Mode = 'service') =>
+            mode === 'bundled' ? t('plugins:mode.bundled') : t('plugins:mode.service'),
+        runLabel: (plugin: InstalledRow) => {
+            if (!plugin.enabled) {
+                return t('plugins:run.disabled');
+            }
+            if (plugin.mode === 'bundled') {
+                return t('plugins:mode.bundled');
+            }
+            if (plugin.running > 0) {
+                return t('plugins:run.running', { running: plugin.running, count: plugin.replicas });
+            }
+            return plugin.state === 'stopped' ? t('plugins:run.stopped') : t('plugins:run.starting');
+        },
+        permission,
+        /** Its permissions as sentences, or that it asks for none. */
+        permissionLine: (permissions: string[]) =>
+            permissions.length
+                ? permissions
+                      .map((item) => t('plugins:permission-sentence', { permission: permission(item) }))
+                      .join(' ')
+                : t('plugins:no-permissions'),
+        audienceLabel: (audience: Audience) =>
+            audience === 'admins' ? t('plugins:audience.admins') : t('plugins:audience.members'),
+    };
 }
 
 export function PluginMark({ id, large }: { id: string; large?: boolean }) {
@@ -291,11 +264,12 @@ export function PluginMark({ id, large }: { id: string; large?: boolean }) {
  * so that route's CSP (its `frame-src`) applies.
  */
 export function OpenPlugin({ plugin, variant = 'default' }: { plugin: InstalledRow; variant?: 'default' | 'outline' }) {
+    const { t } = useTranslation(['plugins']);
     const bundled = plugin.mode === 'bundled';
     return (
         <Button variant={variant} size="sm" asChild>
             <Link to={pluginPath(plugin.id)} reloadDocument={!bundled && plugin.display === 'embed'}>
-                Open
+                {t('plugins:open')}
             </Link>
         </Button>
     );

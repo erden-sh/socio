@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
+import { useTranslation } from '@socio/i18n/react';
 import type { PluginDataBudget } from '@socio/shared/data-types';
 
 import { api } from '../../lib/api';
@@ -17,6 +18,7 @@ import { Input } from '@/components/ui/input';
  * at once; **Use the default** clears it.
  */
 export function PluginDataBudgetField({ pluginId }: { pluginId: string }) {
+    const { t } = useTranslation(['plugins.manage']);
     const [budget, setBudget] = useState<PluginDataBudget>();
     const [value, setValue] = useState('');
     const [busy, setBusy] = useState(false);
@@ -28,8 +30,8 @@ export function PluginDataBudgetField({ pluginId }: { pluginId: string }) {
     useEffect(() => {
         api<PluginDataBudget>(path)
             .then(show)
-            .catch((error) => failed(error, 'Could not load the plugin’s data budget.'));
-    }, [path, show]);
+            .catch((error) => failed(error, t('plugins.manage:budget.load-failed')));
+    }, [path, show, t]);
     // An answer of another shape (an older server) shows nothing.
     if (typeof budget?.statementsPerMinute !== 'number') {
         return null;
@@ -39,10 +41,10 @@ export function PluginDataBudgetField({ pluginId }: { pluginId: string }) {
         try {
             show(await api<PluginDataBudget>(path, 'PUT', { statementsPerMinute }));
             toast.success(
-                statementsPerMinute === null ? 'It uses the workspace’s default again.' : 'Data budget saved.',
+                statementsPerMinute === null ? t('plugins.manage:budget.reset') : t('plugins.manage:budget.saved'),
             );
         } catch (error) {
-            failed(error, 'Could not save the data budget.');
+            failed(error, t('plugins.manage:budget.save-failed'));
         } finally {
             setBusy(false);
         }
@@ -62,7 +64,7 @@ export function PluginDataBudgetField({ pluginId }: { pluginId: string }) {
             }}
         >
             <label htmlFor={id} className="font-medium">
-                Data operations a minute
+                {t('plugins.manage:budget.label')}
             </label>
             <div className="flex flex-wrap items-center gap-2">
                 <Input
@@ -77,20 +79,19 @@ export function PluginDataBudgetField({ pluginId }: { pluginId: string }) {
                     onChange={(event) => setValue(event.target.value)}
                 />
                 <Button type="submit" size="sm" disabled={busy || !valid || number === budget.statementsPerMinute}>
-                    Save
+                    {t('plugins.manage:budget.save')}
                 </Button>
                 {budget.override !== null && (
                     <Button type="button" size="sm" variant="ghost" disabled={busy} onClick={() => void save(null)}>
-                        Use the default
+                        {t('plugins.manage:budget.use-default')}
                     </Button>
                 )}
             </div>
             <p className="text-xs text-muted-foreground" data-slot="plugin-data-budget-state">
                 {budget.override === null
-                    ? `The workspace’s default for plugins, ${budget.workspaceDefault}, set in Settings → General → Plugin datasets.`
-                    : `Set for this plugin; the workspace’s default is ${budget.workspaceDefault}.`}{' '}
-                A query or a read batch counts as one, a write batch as one per statement. Socios and people keep their
-                own limit.
+                    ? t('plugins.manage:budget.default', { limit: budget.workspaceDefault })
+                    : t('plugins.manage:budget.override', { limit: budget.workspaceDefault })}{' '}
+                {t('plugins.manage:budget.counts')}
             </p>
         </form>
     );

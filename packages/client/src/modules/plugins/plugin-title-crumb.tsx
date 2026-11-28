@@ -1,13 +1,13 @@
 import { ExternalLink } from 'lucide-react';
 import { useEffect, useSyncExternalStore } from 'react';
 
+import { useTranslation } from '@socio/i18n/react';
+
 import { showInHeaderMenu } from '../../shell/header-menu';
 
 import { BreadcrumbPage } from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
-
-const OPEN_LABEL = 'Open in a new tab';
 
 /**
  * The embedded plugin page's own action for the header: Open in a new
@@ -39,6 +39,8 @@ const publish = (next: FrameAction | undefined) => {
  * on phones.
  */
 export function usePluginFrameAction(pluginId: string, open: () => void, enabled = true) {
+    const { t } = useTranslation(['plugins.frame']);
+    const label = t('plugins.frame:open-tab');
     useEffect(() => {
         if (!enabled) {
             return;
@@ -48,7 +50,7 @@ export function usePluginFrameAction(pluginId: string, open: () => void, enabled
         const hide = showInHeaderMenu(
             <DropdownMenuItem className="h-8.5" onSelect={open}>
                 <ExternalLink />
-                {OPEN_LABEL}
+                {label}
             </DropdownMenuItem>,
         );
         return () => {
@@ -57,7 +59,7 @@ export function usePluginFrameAction(pluginId: string, open: () => void, enabled
                 publish(undefined);
             }
         };
-    }, [pluginId, open, enabled]);
+    }, [pluginId, open, enabled, label]);
 }
 
 const useFrameAction = () =>
@@ -69,6 +71,7 @@ const useFrameAction = () =>
 
 /** The header's last crumb on `/plugins/:id`: the name, and Open in a new tab. */
 export function PluginTitleCrumb({ pluginId, name }: { pluginId: string; name: string }) {
+    const { t } = useTranslation(['plugins.frame']);
     const action = useFrameAction();
     return (
         <span className="flex min-w-0 items-center gap-1" data-slot="plugin-title">
@@ -83,8 +86,8 @@ export function PluginTitleCrumb({ pluginId, name }: { pluginId: string; name: s
                     // On phones it is in the header's ⋯ menu. An invisible
                     // 44 px hit area on a touch screen (CB-219).
                     className="relative size-7 shrink-0 text-muted-foreground max-md:hidden pointer-coarse:after:absolute pointer-coarse:after:-inset-2"
-                    aria-label={OPEN_LABEL}
-                    title={OPEN_LABEL}
+                    aria-label={t('plugins.frame:open-tab')}
+                    title={t('plugins.frame:open-tab')}
                     data-slot="plugin-open-tab"
                     onClick={action.open}
                 >

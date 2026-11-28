@@ -3,6 +3,8 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router';
 import { toast } from 'sonner';
 
+import { useTranslation } from '@socio/i18n/react';
+import { dateTimeFormat } from '@socio/shared/locale';
 import { MODULE_IDS } from '@socio/shared/modules';
 import { pluginUpdateAck, type PluginUpdateReview } from '@socio/shared/plugins/plugin-update';
 
@@ -12,21 +14,16 @@ import { WorkspacePage } from '../../views/WorkspacePage';
 import { openReport } from '../issues/report';
 
 import {
-    AUDIENCE_LABEL,
     BackupBadge,
     backupAlarm,
-    backupDetail,
-    backupSize,
-    displayLabel,
     failed,
     INSTALLED_PATH,
-    modeLabel,
     OpenAnyHttpsScope,
     OpenPlugin,
-    permissionLine,
     PluginMark,
-    runLabel,
+    usePluginWords,
     type InstalledRow,
+    type PluginBackupInfo,
     type PluginBackups,
     type PluginList,
 } from './plugin-rows';
@@ -85,20 +82,17 @@ function Section({
  * added none, with why.
  */
 function EgressSection({ egress, saved }: { egress: NonNullable<InstalledRow['egress']>; saved: boolean }) {
+    const { t } = useTranslation(['plugins.manage']);
     const missing = egress.settings.filter((setting) => !setting.host);
     return (
         <Section
-            title="Outbound network"
-            intro={
-                egress.hosts.length
-                    ? 'The hosts outside Socio its settings allow its service to reach, over HTTPS. A host from a setting reaches the service once the settings apply.'
-                    : 'Its settings allow its service nothing outside Socio, once they apply.'
-            }
+            title={t('plugins.manage:egress.title')}
+            intro={egress.hosts.length ? t('plugins.manage:egress.intro') : t('plugins.manage:egress.intro-none')}
             slot="plugin-egress"
         >
             {saved && (
                 <p className="text-muted-foreground" data-slot="plugin-egress-pending">
-                    From the settings just saved. Until they apply, the running service keeps the hosts it had.
+                    {t('plugins.manage:egress.pending')}
                 </p>
             )}
             {egress.hosts.length > 0 && (
@@ -108,7 +102,11 @@ function EgressSection({ egress, saved }: { egress: NonNullable<InstalledRow['eg
                         return (
                             <li key={host} className="flex flex-wrap items-baseline gap-2">
                                 <code className="font-mono">{host}</code>
-                                {from && <span className="text-muted-foreground">from the setting {from.field}</span>}
+                                {from && (
+                                    <span className="text-muted-foreground">
+                                        {t('plugins.manage:egress.from', { field: from.field })}
+                                    </span>
+                                )}
                             </li>
                         );
                     })}
@@ -121,20 +119,54 @@ function EgressSection({ egress, saved }: { egress: NonNullable<InstalledRow['eg
                     data-slot="plugin-egress-problem"
                     data-field={setting.field}
                 >
-                    No host added from {setting.field}: {setting.problem}. Set it to an https address to allow its host.
+                    {t('plugins.manage:egress.problem', { field: setting.field, problem: setting.problem ?? '' })}
                 </p>
             ))}
         </Section>
     );
 }
 
-const REASON_LABEL: Record<PluginBackups['history'][number]['reason'], string> = {
-    scheduled: 'Scheduled',
-    manual: 'Back up now',
-    request: 'Asked for by the plugin',
-    'pre-update': 'Before an update',
-    uninstall: 'Before uninstall',
-};
+/** A time on this page, in the reader's locale and zone. */
+const when = dateTimeFormat({ dateStyle: 'medium', timeStyle: 'short' });
+
+/** What the plugin's page says about its backups (CB-458), in the reader's language. */
+function useBackupDetail() {
+    const { t } = useTranslation(['plugins.manage']);
+    return (backup: PluginBackupInfo) => {
+        const volumes = backup.volumes;
+        const last =
+            backup.lastSuccessAt !== undefined
+                ? t('plugins.manage:backup.last', {
+                      when: when.format(backup.lastSuccessAt),
+                      context: backup.sizeBytes !== undefined ? 'size' : undefined,
+                      size: backup.sizeBytes ?? 0,
+                  })
+                : t('plugins.manage:backup.none-yet');
+        switch (backup.state) {
+            case 'ok':
+                return t('plugins.manage:backup.ok', { volumes, last });
+            case 'stale':
+                return t('plugins.manage:backup.stale', { volumes, last });
+            case 'failing':
+                return t('plugins.manage:backup.failing', {
+                    context: backup.lastErrorAt !== undefined ? 'when' : undefined,
+                    when: backup.lastErrorAt !== undefined ? when.format(backup.lastErrorAt) : '',
+                    reason: backup.lastError ?? t('plugins.manage:backup.no-reason'),
+                    last,
+                });
+            case 'disabled':
+                return t('plugins.manage:backup.disabled', {
+                    context: backup.since !== undefined ? 'since' : undefined,
+                    when: backup.since !== undefined ? when.format(backup.since) : '',
+                    last,
+                });
+            case 'not_backed_up':
+                return backup.declared
+                    ? t('plugins.manage:backup.first', { volumes })
+                    : t('plugins.manage:backup.undeclared', { volumes });
+        }
+    };
+}
 
 /** How often the page asks how a snapshot it started is going. */
 const BACKUP_POLL_MS = 3_000;
@@ -144,6 +176,8 @@ const BACKUP_POLL_MS = 3_000;
  * status, **Back up now**, and the snapshots the workspace keeps of it.
  */
 function PluginBackupsSection({ id, enabled }: { id: string; enabled: boolean }) {
+    const { t } = useTranslation(['plugins.manage']);
+    const backupDetail = useBackupDetail();
     const [backups, setBackups] = useState<PluginBackups>();
     const [starting, setStarting] = useState(false);
     const shown = useRef(id);
@@ -155,9 +189,9 @@ function PluginBackupsSection({ id, enabled }: { id: string; enabled: boolean })
                 setBackups(data);
             }
         } catch (error) {
-            failed(error, 'Could not load the plugin’s backups.');
+            failed(error, t('plugins.manage:backups.load-failed'));
         }
-    }, [id]);
+    }, [id, t]);
     useEffect(() => {
         void load();
     }, [load]);
@@ -174,17 +208,17 @@ function PluginBackupsSection({ id, enabled }: { id: string; enabled: boolean })
         setStarting(true);
         try {
             await api(`/plugins/${encodeURIComponent(id)}/backup`, 'POST');
-            toast.success('Backup started');
+            toast.success(t('plugins.manage:backups.started'));
             await load();
         } catch (error) {
-            failed(error, 'Could not start the backup.');
+            failed(error, t('plugins.manage:backups.start-failed'));
         } finally {
             setStarting(false);
         }
     };
     if (!backups) {
         return (
-            <Section title="Backups" slot="plugin-backups">
+            <Section title={t('plugins.manage:backups.title')} slot="plugin-backups">
                 <Skeleton className="h-16" />
             </Section>
         );
@@ -192,8 +226,8 @@ function PluginBackupsSection({ id, enabled }: { id: string; enabled: boolean })
     const { backup, history } = backups;
     return (
         <Section
-            title="Backups"
-            intro="The workspace backs up this plugin’s own storage with every scheduled backup, sealed under the data key, and off-site with the rest."
+            title={t('plugins.manage:backups.title')}
+            intro={t('plugins.manage:backups.intro')}
             slot="plugin-backups"
         >
             <p
@@ -201,7 +235,7 @@ function PluginBackupsSection({ id, enabled }: { id: string; enabled: boolean })
                 data-slot="plugin-backup-status"
                 data-state={backup.state}
             >
-                {running ? 'Backing up now… ' : ''}
+                {running ? `${t('plugins.manage:backups.running')} ` : ''}
                 {backupDetail(backup)}
             </p>
             <div>
@@ -213,7 +247,7 @@ function PluginBackupsSection({ id, enabled }: { id: string; enabled: boolean })
                     disabled={!enabled || running || starting}
                     onClick={() => void backUpNow()}
                 >
-                    Back up now
+                    {t('plugins.manage:backups.now')}
                 </Button>
             </div>
             {history.length > 0 ? (
@@ -224,18 +258,25 @@ function PluginBackupsSection({ id, enabled }: { id: string; enabled: boolean })
                             className="flex flex-wrap items-baseline gap-x-2"
                             data-snapshot={entry.snapshotId}
                         >
-                            <span>{new Date(entry.takenAt).toLocaleString()}</span>
+                            <span>{when.format(entry.takenAt)}</span>
                             <span className="text-muted-foreground">
-                                {REASON_LABEL[entry.reason]}
-                                {entry.note ? `: ${entry.note}` : ''} · {backupSize(entry.bytes)} · version{' '}
-                                {entry.version}
+                                {t('plugins.manage:backups.entry', {
+                                    reason: entry.note
+                                        ? t('plugins.manage:backups.noted', {
+                                              reason: t(`plugins.manage:backups.reasons.${entry.reason}`),
+                                              note: entry.note,
+                                          })
+                                        : t(`plugins.manage:backups.reasons.${entry.reason}`),
+                                    size: entry.bytes,
+                                    version: entry.version,
+                                })}
                             </span>
                         </li>
                     ))}
                 </ul>
             ) : (
                 <p className="text-muted-foreground" data-slot="plugin-backup-history-empty">
-                    No backups kept yet.
+                    {t('plugins.manage:backups.empty')}
                 </p>
             )}
         </Section>
@@ -249,6 +290,9 @@ function PluginBackupsSection({ id, enabled }: { id: string; enabled: boolean })
  * operator's, not set here (CB-396).
  */
 export function PluginManagePage({ id }: { id: string }) {
+    const { t } = useTranslation(['plugins', 'plugins.manage']);
+    const words = usePluginWords();
+    const backupDetail = useBackupDetail();
     const shell = useShell();
     const navigate = useNavigate();
     const [loaded, setLoaded] = useState<Loaded>();
@@ -274,9 +318,9 @@ export function PluginManagePage({ id }: { id: string }) {
             setLoaded(plugin ? { plugin, inCatalog: data.catalog.some((row) => row.id === id) } : { missing: true });
             setEgressSaved(false);
         } catch (error) {
-            failed(error, 'Could not load the plugin.');
+            failed(error, t('plugins.manage:load-failed'));
         }
-    }, [id]);
+    }, [id, t]);
     useEffect(() => {
         setLoaded(undefined);
         void load();
@@ -288,7 +332,7 @@ export function PluginManagePage({ id }: { id: string }) {
             await load();
             return true;
         } catch (error) {
-            failed(error, 'Could not update the plugin.');
+            failed(error, t('plugins:update-failed'));
             return false;
         }
     };
@@ -317,14 +361,19 @@ export function PluginManagePage({ id }: { id: string }) {
             className="inline-flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
             data-slot="plugin-back"
         >
-            <ArrowLeft className="size-4" aria-hidden="true" /> Installed plugins
+            <ArrowLeft className="size-4" aria-hidden="true" /> {t('plugins.manage:back')}
         </Link>
     );
 
     if (!loaded) {
         return (
-            <WorkspacePage slot="plugin-page" module={MODULE_IDS.plugins} title="Plugin" measure="form">
-                <div className="grid gap-4" aria-busy="true" aria-label="Loading the plugin">
+            <WorkspacePage
+                slot="plugin-page"
+                module={MODULE_IDS.plugins}
+                title={t('plugins:crumb-fallback')}
+                measure="form"
+            >
+                <div className="grid gap-4" aria-busy="true" aria-label={t('plugins.manage:loading')}>
                     {back}
                     <Skeleton className="h-32" />
                     <Skeleton className="h-48" />
@@ -337,8 +386,8 @@ export function PluginManagePage({ id }: { id: string }) {
             <WorkspacePage
                 slot="plugin-page"
                 module={MODULE_IDS.plugins}
-                title="Plugin not installed"
-                description="No plugin with this id is installed on this instance."
+                title={t('plugins.manage:missing.title')}
+                description={t('plugins.manage:missing.description')}
                 measure="form"
             >
                 <div className="grid gap-4" data-slot="plugin-missing">
@@ -355,7 +404,11 @@ export function PluginManagePage({ id }: { id: string }) {
             slot="plugin-page"
             module={MODULE_IDS.plugins}
             title={plugin.name}
-            description={`${plugin.author} · ${plugin.version}${inCatalog ? '' : ' · no longer in the catalog'}`}
+            description={t('plugins:meta', {
+                author: plugin.author,
+                version: plugin.version,
+                context: inCatalog ? undefined : 'removed',
+            })}
             measure="form"
             actions={
                 <>
@@ -367,7 +420,7 @@ export function PluginManagePage({ id }: { id: string }) {
                             data-slot="plugin-update"
                             onClick={() => setReviewing(true)}
                         >
-                            Update to {plugin.update.version}
+                            {t('plugins:update-to', { version: plugin.update.version })}
                         </Button>
                     )}
                     <Button
@@ -379,7 +432,7 @@ export function PluginManagePage({ id }: { id: string }) {
                             openReport({ components: [`plugin:${plugin.id}`] }, { returnFocus: event.currentTarget })
                         }
                     >
-                        <Bug /> Report issue
+                        <Bug /> {t('plugins.manage:report')}
                     </Button>
                     {plugin.enabled && <OpenPlugin plugin={plugin} />}
                 </>
@@ -387,18 +440,20 @@ export function PluginManagePage({ id }: { id: string }) {
         >
             <div className="grid gap-6" data-plugin={plugin.id}>
                 {back}
-                <Section title="Overview" slot="plugin-overview">
+                <Section title={t('plugins.manage:overview.title')} slot="plugin-overview">
                     <div className="flex items-start gap-3">
                         <PluginMark id={plugin.id} />
                         <div className="grid min-w-0 flex-1 gap-1">
                             <div className="flex flex-wrap items-center gap-2">
-                                <Badge variant={plugin.enabled ? 'default' : 'secondary'}>{runLabel(plugin)}</Badge>
-                                <Badge variant="outline">{displayLabel(plugin.display, plugin.mode)}</Badge>
-                                <Badge variant="outline">{modeLabel(plugin.mode)}</Badge>
+                                <Badge variant={plugin.enabled ? 'default' : 'secondary'}>
+                                    {words.runLabel(plugin)}
+                                </Badge>
+                                <Badge variant="outline">{words.displayLabel(plugin.display, plugin.mode)}</Badge>
+                                <Badge variant="outline">{words.modeLabel(plugin.mode)}</Badge>
                                 <BackupBadge backup={plugin.backup} />
                             </div>
                             <p>{plugin.description}</p>
-                            <p className="text-muted-foreground">{permissionLine(plugin.permissions)}</p>
+                            <p className="text-muted-foreground">{words.permissionLine(plugin.permissions)}</p>
                             {plugin.openAnyHttps && <OpenAnyHttpsScope />}
                             {plugin.backup && (
                                 <p
@@ -414,28 +469,32 @@ export function PluginManagePage({ id }: { id: string }) {
                     </div>
                     <label className="flex items-center justify-between gap-3 border-t pt-4">
                         <span className="grid gap-0.5">
-                            <span className="font-medium">Enabled</span>
+                            <span className="font-medium">{t('plugins.manage:overview.enabled')}</span>
                             <span className="text-muted-foreground">
                                 {bundled
-                                    ? 'Off, nobody can open it. Its data stays.'
-                                    : 'Off, its service scales to zero. Its data and settings stay.'}
+                                    ? t('plugins.manage:overview.off-bundled')
+                                    : t('plugins.manage:overview.off-service')}
                             </span>
                         </span>
                         <Switch
                             checked={plugin.enabled}
-                            aria-label={plugin.enabled ? `Disable ${plugin.name}` : `Enable ${plugin.name}`}
+                            aria-label={
+                                plugin.enabled
+                                    ? t('plugins.manage:overview.disable', { name: plugin.name })
+                                    : t('plugins.manage:overview.enable', { name: plugin.name })
+                            }
                             onCheckedChange={(checked) => void act(`${base}/${checked ? 'enable' : 'disable'}`, 'POST')}
                         />
                     </label>
                 </Section>
                 <Section
-                    title="Who can use it"
-                    intro="Admins can always manage it. Members see it in their sidebar only when it is for everyone."
+                    title={t('plugins.manage:access.title')}
+                    intro={t('plugins.manage:access.intro')}
                     slot="plugin-access"
                 >
                     <div className="grid gap-1.5">
                         <label id={`${plugin.id}-audience`} className="font-medium">
-                            Audience
+                            {t('plugins.manage:access.audience')}
                         </label>
                         <Select
                             value={plugin.audience ?? 'admins'}
@@ -451,7 +510,7 @@ export function PluginManagePage({ id }: { id: string }) {
                             <SelectContent>
                                 {(['admins', 'members'] as const).map((value) => (
                                     <SelectItem key={value} value={value}>
-                                        {AUDIENCE_LABEL[value]}
+                                        {words.audienceLabel(value)}
                                     </SelectItem>
                                 ))}
                             </SelectContent>
@@ -459,12 +518,8 @@ export function PluginManagePage({ id }: { id: string }) {
                     </div>
                 </Section>
                 <Section
-                    title="Settings"
-                    intro={
-                        fields.length
-                            ? 'What this plugin lets you change. Changes save as you make them; a field left empty uses its default.'
-                            : 'This plugin has no settings.'
-                    }
+                    title={t('plugins.manage:settings.title')}
+                    intro={fields.length ? t('plugins.manage:settings.intro') : t('plugins.manage:settings.none')}
                     slot="plugin-settings-card"
                 >
                     {fields.length > 0 && (
@@ -515,8 +570,8 @@ export function PluginManagePage({ id }: { id: string }) {
                 {plugin.egress && <EgressSection egress={plugin.egress} saved={egressSaved} />}
                 {!bundled && (
                     <Section
-                        title="Datasets"
-                        intro="The workspace datasets it reads or writes, and how many data operations it may make a minute. Each dataset has one plugin that writes it; a read need may stay unbound. Uninstalling keeps them."
+                        title={t('plugins.manage:datasets.title')}
+                        intro={t('plugins.manage:datasets.intro')}
                         slot="plugin-datasets-card"
                     >
                         <div className="grid gap-6">
@@ -527,23 +582,24 @@ export function PluginManagePage({ id }: { id: string }) {
                 )}
                 {plugin.backup?.declared && <PluginBackupsSection id={plugin.id} enabled={plugin.enabled} />}
                 <Section
-                    title="Danger zone"
-                    intro="Uninstalling can’t be undone from here. Installing it again starts with default settings."
+                    title={t('plugins.manage:danger.title')}
+                    intro={t('plugins.manage:danger.intro')}
                     slot="plugin-danger-zone"
                     danger
                 >
                     <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-destructive/30 p-4">
                         <div className="grid min-w-0 flex-1 basis-56 gap-0.5">
-                            <span className="font-medium">Uninstall {plugin.name}</span>
+                            <span className="font-medium">
+                                {t('plugins.manage:danger.uninstall-title', { name: plugin.name })}
+                            </span>
                             <span className="text-muted-foreground">
                                 {bundled
-                                    ? 'Removes it from this instance.'
-                                    : 'Removes its service, volumes and identity.'}{' '}
-                                Rows it saved stay, and its datasets stay the workspace’s.
+                                    ? t('plugins.manage:danger.uninstall-bundled')
+                                    : t('plugins.manage:danger.uninstall-service')}
                             </span>
                         </div>
                         <Button variant="destructive" onClick={() => setRemoving(true)}>
-                            Uninstall…
+                            {t('plugins.manage:danger.uninstall')}
                         </Button>
                     </div>
                 </Section>
@@ -568,10 +624,10 @@ export function PluginManagePage({ id }: { id: string }) {
                         try {
                             await api(base, 'DELETE');
                         } catch (error) {
-                            failed(error, 'Could not uninstall the plugin.');
+                            failed(error, t('plugins.manage:danger.failed'));
                             return;
                         }
-                        toast.success(`${plugin.name} uninstalled. Its saved rows stay.`);
+                        toast.success(t('plugins.manage:danger.done', { name: plugin.name }));
                         setRemoving(false);
                         await shell.refresh();
                         void navigate(INSTALLED_PATH);

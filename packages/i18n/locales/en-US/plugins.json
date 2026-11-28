@@ -1,0 +1,52 @@
+{
+    "title": "Plugins",
+    "crumb-fallback": "Plugin",
+    "open": "Open",
+    "load-failed": "Could not load plugins.",
+    "update-failed": "Could not update the plugin.",
+    "update-to": "Update to {{version}}",
+    "meta": "{{author}} · {{version}}",
+    "meta_removed": "{{author}} · {{version}} · no longer in the catalog",
+    "no-permissions": "Asks for no extra permissions.",
+    "permission-sentence": "{{permission}}.",
+    "permissions": {
+        "social-read": "Read planned posts and the reply queue",
+        "social-write": "Edit planned posts and replies",
+        "calendar-read": "Read calendar events",
+        "calendar-write": "Add, change and delete calendar events",
+        "person-read": "See who is using it: their name, role and time zone (signed by Socio)"
+    },
+    "audience": {
+        "admins": "Admins only",
+        "members": "Everyone (members too)"
+    },
+    "display": {
+        "inside": "Opens inside Socio",
+        "tab": "Opens in a new tab"
+    },
+    "mode": {
+        "bundled": "Runs inside Socio",
+        "service": "Runs as its own service"
+    },
+    "run": {
+        "disabled": "Disabled",
+        "running_one": "{{running}} of {{count}} running",
+        "running_other": "{{running}} of {{count}} running",
+        "stopped": "Stopped",
+        "starting": "Starting"
+    },
+    "backup-badge": {
+        "not_backed_up": "Not backed up",
+        "failing": "Backup failing",
+        "stale": "Backup out of date"
+    },
+    "storage-warning": {
+        "not-backed-up": "Not backed up",
+        "private": "Private storage",
+        "message": "{{message}}."
+    },
+    "sensitive": {
+        "badge": "Sensitive scope",
+        "open-any-https": "Open any https link in a new tab, after you confirm each one. Links it lists in its manifest open without asking."
+    }
+}

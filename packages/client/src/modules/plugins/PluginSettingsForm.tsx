@@ -1,6 +1,7 @@
 import { Redo2, Undo2 } from 'lucide-react';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 
+import { Trans, useTranslation } from '@socio/i18n/react';
 import { configErrors, configType, type PluginConfigField } from '@socio/shared/plugins/plugin-config';
 
 import { nativeSelect } from '../../components/form-fields';
@@ -112,6 +113,7 @@ export function PluginSettingsForm({
     /** The tab is closing with settings not yet applied: a request that outlives the page. */
     onLeave?: () => void;
 }) {
+    const { t } = useTranslation(['plugins.settings']);
     const fields = plugin.configFields ?? {};
     const initial = plugin.config ?? {};
     const [values, setValues] = useState<Config>(initial);
@@ -181,14 +183,12 @@ export function PluginSettingsForm({
                 unapplied.current = true;
                 setApplyStatus('failed');
                 setApplyError(
-                    failure instanceof Error && failure.message
-                        ? failure.message
-                        : 'The settings are saved, but the plugin could not be given them.',
+                    failure instanceof Error && failure.message ? failure.message : t('plugins.settings:apply-failed'),
                 );
             }
         };
         return (queues.get(plugin.id) ?? Promise.resolve()).then(run, run);
-    }, [plugin.id]);
+    }, [plugin.id, t]);
 
     const show = useCallback((next: Config) => {
         valuesRef.current = next;
@@ -221,7 +221,9 @@ export function PluginSettingsForm({
                     setError('');
                 } catch (failure) {
                     setError(
-                        failure instanceof Error && failure.message ? failure.message : 'Could not save the settings.',
+                        failure instanceof Error && failure.message
+                            ? failure.message
+                            : t('plugins.settings:save-failed'),
                     );
                 } finally {
                     pending.current -= 1;
@@ -236,7 +238,7 @@ export function PluginSettingsForm({
             queues.set(plugin.id, done);
             return done;
         },
-        [plugin.id, apply],
+        [plugin.id, apply, t],
     );
 
     /** Saves what is typed now (its valid part), when it differs from what is saved. */
@@ -355,7 +357,7 @@ export function PluginSettingsForm({
         <div
             ref={form}
             role="group"
-            aria-label="Plugin settings"
+            aria-label={t('plugins.settings:label')}
             className="grid gap-5"
             // Enter in a field saves it now, as leaving it does.
             onKeyDown={(event) => {
@@ -381,7 +383,7 @@ export function PluginSettingsForm({
                         onClick={() => void step(-1)}
                     >
                         <Undo2 aria-hidden="true" />
-                        Undo
+                        {t('plugins.settings:undo')}
                     </Button>
                     <Button
                         type="button"
@@ -392,7 +394,7 @@ export function PluginSettingsForm({
                         onClick={() => void step(1)}
                     >
                         <Redo2 aria-hidden="true" />
-                        Redo
+                        {t('plugins.settings:redo')}
                     </Button>
                 </div>
             </div>
@@ -415,16 +417,14 @@ export function PluginSettingsForm({
             ))}
             <SaveError error={error} />
             <SaveError error={applyError} />
-            <p className="text-xs text-muted-foreground">
-                A setting with an error keeps its saved value until it is fixed. Undo and Redo step through this page’s
-                saves.
-            </p>
+            <p className="text-xs text-muted-foreground">{t('plugins.settings:footnote')}</p>
         </div>
     );
 }
 
 /** Whether saved settings have reached a running service plugin, with **Apply now** while they wait. */
 export function ApplyNote({ status, onApply }: { status: ApplyStatus; onApply?: () => void }) {
+    const { t } = useTranslation(['plugins.settings']);
     if (status === 'idle') {
         return null;
     }
@@ -436,13 +436,10 @@ export function ApplyNote({ status, onApply }: { status: ApplyStatus; onApply?: 
             data-status={status}
             className="inline-flex items-center gap-1 text-xs text-muted-foreground"
         >
-            {status === 'pending' && 'The plugin restarts with them in a few seconds.'}
-            {status === 'applying' && 'Applying…'}
-            {status === 'applied' && 'Applied.'}
-            {status === 'failed' && 'Not applied yet.'}
+            {t(`plugins.settings:apply.${status}`)}
             {(status === 'pending' || status === 'failed') && onApply && (
                 <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs" onClick={onApply}>
-                    Apply now
+                    {t('plugins.settings:apply.now')}
                 </Button>
             )}
         </span>
@@ -467,6 +464,7 @@ export function SettingField({
     onChange: (value: string) => void;
     onBlur?: () => void;
 }) {
+    const { t } = useTranslation(['plugins.settings']);
     const id = useId();
     const type = configType(field);
     const help = `${id}-help`;
@@ -506,17 +504,21 @@ export function SettingField({
                 onBlur={onBlur}
             >
                 {(!field.required || field.default) && (
-                    <option value="">{field.default ? `Default (${field.default})` : 'Not set'}</option>
+                    <option value="">
+                        {field.default
+                            ? t('plugins.settings:field.default-choice', { value: field.default })
+                            : t('plugins.settings:field.not-set')}
+                    </option>
                 )}
                 {field.required && !field.default && !value && (
                     <option value="" disabled>
-                        Choose one
+                        {t('plugins.settings:field.choose')}
                     </option>
                 )}
                 {value && !(field.options ?? []).includes(value) && (
                     // A saved value that is no longer a choice shows as it is, with its error.
                     <option value={value} disabled>
-                        {value} (not a choice)
+                        {t('plugins.settings:field.not-a-choice', { value })}
                     </option>
                 )}
                 {(field.options ?? []).map((option) => (
@@ -567,10 +569,15 @@ export function SettingField({
                 {field.default ? (
                     <>
                         {' '}
-                        Default: <code className="text-xs">{field.default}</code>.
+                        <Trans
+                            t={t}
+                            i18nKey="plugins.settings:field.default"
+                            values={{ value: field.default }}
+                            components={{ code: <code className="text-xs" /> }}
+                        />
                     </>
                 ) : null}
-                {field.required && !field.default ? ' Required.' : null}
+                {field.required && !field.default ? ` ${t('plugins.settings:field.required')}` : null}
             </p>
             {error && (
                 <p

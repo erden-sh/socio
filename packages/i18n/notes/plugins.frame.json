@@ -1,0 +1,12 @@
+{
+    "crumb-fallback": "The header's crumb on a plugin's page while its name isn't known yet.",
+    "open-tab": "Button (and its tooltip, and a menu item on phones) that opens the plugin's page in a new browser tab.",
+    "open.opening": "Text on a plugin's page while it opens the plugin in a new tab (a plugin that runs outside Socio).",
+    "open.opened": "Text once the new tab opened.",
+    "open.blocked": "Error when the browser blocked the new tab (a pop-up blocker).",
+    "open.failed": "Error when the plugin could not be opened, without a reason from the server.",
+    "link.title": "Title of the workspace's own confirmation before it opens a link a plugin asked for. <host> wraps {{host}}, the link's full host name (like www.example.com); keep the tag around it.",
+    "link.description": "The confirmation's text. {{plugin}} is the plugin's name, {{host}} the link's host name. It's a safety warning: keep it plain.",
+    "link.cancel": "Button that doesn't open the link; it has the focus.",
+    "link.open": "Button that opens the link in a new tab."
+}

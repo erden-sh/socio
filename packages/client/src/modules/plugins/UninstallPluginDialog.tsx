@@ -1,5 +1,9 @@
 import { useState } from 'react';
 
+import { Trans, useTranslation } from '@socio/i18n/react';
+
+import { onDemand } from '../../i18n/on-demand';
+
 import type { InstalledRow } from './plugin-rows';
 
 import { Button } from '@/components/ui/button';
@@ -17,9 +21,10 @@ import { Input } from '@/components/ui/input';
  * Uninstall a plugin only after typing its name exactly (CB-397), as
  * cancelling a schedule and removing a person ask. What it removes and what
  * stays is the server's (docs/PLUGINS.md): the service, its volumes and its
- * identity go; rows it stored in Socio and its datasets stay.
+ * identity go; rows it stored in Socio and its datasets stay. Its words
+ * load on demand (plugins.dialogs).
  */
-export function UninstallPluginDialog({
+function UninstallPlugin({
     plugin,
     onClose,
     onConfirm,
@@ -28,6 +33,7 @@ export function UninstallPluginDialog({
     onClose: () => void;
     onConfirm: () => Promise<void>;
 }) {
+    const { t } = useTranslation(['plugins.dialogs']);
     const [typed, setTyped] = useState('');
     const [busy, setBusy] = useState(false);
     const matches = typed === plugin.name;
@@ -47,13 +53,11 @@ export function UninstallPluginDialog({
         <Dialog open onOpenChange={(open) => !open && !busy && onClose()}>
             <DialogContent data-slot="plugin-uninstall">
                 <DialogHeader>
-                    <DialogTitle>Uninstall {plugin.name}?</DialogTitle>
+                    <DialogTitle>{t('plugins.dialogs:uninstall.title', { name: plugin.name })}</DialogTitle>
                     <DialogDescription>
                         {bundled
-                            ? 'It is removed from this instance and nobody can open it. '
-                            : 'Its service stops and is removed, with its volumes and its identity. '}
-                        The rows it saved stay, and so do its datasets, the workspace’s: installing it again offers them
-                        back.
+                            ? t('plugins.dialogs:uninstall.description-bundled')
+                            : t('plugins.dialogs:uninstall.description-service')}
                     </DialogDescription>
                 </DialogHeader>
                 <form
@@ -65,10 +69,15 @@ export function UninstallPluginDialog({
                 >
                     <label className="grid gap-1">
                         <span>
-                            Type <strong className="select-all">{plugin.name}</strong> to confirm
+                            <Trans
+                                t={t}
+                                i18nKey="plugins.dialogs:uninstall.type"
+                                values={{ name: plugin.name }}
+                                components={{ name: <strong className="select-all" /> }}
+                            />
                         </span>
                         <Input
-                            aria-label="Plugin name"
+                            aria-label={t('plugins.dialogs:uninstall.name')}
                             value={typed}
                             onChange={(event) => setTyped(event.target.value)}
                             autoComplete="off"
@@ -78,19 +87,22 @@ export function UninstallPluginDialog({
                     </label>
                     {typed && !matches && (
                         <span className="text-xs text-muted-foreground" data-slot="uninstall-name-mismatch">
-                            Type it exactly as shown.
+                            {t('plugins.dialogs:uninstall.mismatch')}
                         </span>
                     )}
                 </form>
                 <DialogFooter>
                     <Button variant="ghost" disabled={busy} onClick={onClose}>
-                        Keep it
+                        {t('plugins.dialogs:uninstall.keep')}
                     </Button>
                     <Button variant="destructive" disabled={busy || !matches} onClick={() => void confirm()}>
-                        {busy ? 'Uninstalling…' : 'Uninstall'}
+                        {busy ? t('plugins.dialogs:uninstall.uninstalling') : t('plugins.dialogs:uninstall.uninstall')}
                     </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
     );
 }
+
+/** Uninstall (`UninstallPlugin`), once its words are in. */
+export const UninstallPluginDialog = onDemand(['plugins.dialogs'], UninstallPlugin);

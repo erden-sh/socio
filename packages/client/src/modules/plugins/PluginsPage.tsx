@@ -11,6 +11,7 @@ import { BarChart3, CalendarDays, ChevronRight, Search, Send } from 'lucide-reac
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 
+import { useTranslation } from '@socio/i18n/react';
 import { AppCard, AppDetail, CatalogEmpty, CategoryCard, ScreenshotFrame } from '@socio/plugin-ui';
 import { MODULE_IDS } from '@socio/shared/modules';
 import type { PluginBindingPlan } from '@socio/shared/plugins/bindings';
@@ -22,16 +23,13 @@ import { WorkspacePage } from '../../views/WorkspacePage';
 
 import {
     BackupBadge,
-    displayLabel,
     failed,
     managePath,
-    modeLabel,
     OpenAnyHttpsScope,
     OpenPlugin,
-    PERMISSIONS,
     PluginMark,
-    runLabel,
     StorageWarnings,
+    usePluginWords,
     type CatalogRow,
     type InstalledRow,
     type PluginList,
@@ -43,18 +41,15 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
+/** The featured categories; their names are plugins.catalog's (`categories.<id>`). */
 const CATEGORIES: {
-    id: string;
-    name: string;
-    blurb: string;
+    id: 'scheduling' | 'publishing' | 'analytics';
     className: string;
     icon: typeof CalendarDays;
     match: (plugin: CatalogRow) => boolean;
 }[] = [
     {
         id: 'scheduling',
-        name: 'Scheduling',
-        blurb: 'Calendars and queues',
         className: 'from-emerald-900 via-teal-800 to-slate-900',
         icon: CalendarDays,
         match: (plugin) =>
@@ -64,16 +59,12 @@ const CATEGORIES: {
     },
     {
         id: 'publishing',
-        name: 'Publishing',
-        blurb: 'Where a draft goes next',
         className: 'from-indigo-900 via-blue-800 to-slate-900',
         icon: Send,
         match: () => false,
     },
     {
         id: 'analytics',
-        name: 'Analytics',
-        blurb: 'What the plan did',
         className: 'from-rose-900 via-orange-800 to-slate-900',
         icon: BarChart3,
         match: () => false,
@@ -83,8 +74,11 @@ const CATEGORIES: {
 /**
  * `/plugins`: this instance's catalog and the services an admin has
  * installed. The catalog is empty until `PLUGIN_CATALOGS` names something.
+ * Its words are the route's (plugins, plugins.catalog); the install
+ * dialog's load on demand (plugins.bindings).
  */
 export function PluginsPage() {
+    const { t } = useTranslation(['plugins', 'plugins.catalog']);
     const shell = useShell();
     const [params, setParams] = useSearchParams();
     const navigate = useNavigate();
@@ -97,8 +91,8 @@ export function PluginsPage() {
         () =>
             api<PluginList>('/plugins')
                 .then(setData)
-                .catch((error) => failed(error, 'Could not load plugins.')),
-        [],
+                .catch((error) => failed(error, t('plugins:load-failed'))),
+        [t],
     );
     useEffect(() => void load(), [load]);
     const act = async (path: string, method: string, body?: unknown) => {
@@ -107,7 +101,7 @@ export function PluginsPage() {
             await shell.refresh();
             await load();
         } catch (error) {
-            failed(error, 'Could not update the plugin.');
+            failed(error, t('plugins:update-failed'));
             // What it asks for may have changed since this page loaded: show it as it is now.
             await load();
         }
@@ -125,7 +119,7 @@ export function PluginsPage() {
         try {
             plan = await api<PluginBindingPlan>(`/plugins/${plugin.id}/bindings`);
         } catch (error) {
-            failed(error, 'Could not load the plugin’s datasets.');
+            failed(error, t('plugins.catalog:datasets-failed'));
             return;
         }
         // The sensitive scope the install page showed, acknowledged; the
@@ -176,8 +170,8 @@ export function PluginsPage() {
         <WorkspacePage
             slot="plugins-page"
             module={MODULE_IDS.plugins}
-            title="Plugins"
-            description="Features installed on this instance. Some run inside Socio, others as their own service. Nothing is installed until you install it."
+            title={t('plugins:title')}
+            description={t('plugins.catalog:description')}
             actions={
                 <div className="relative w-full max-w-xs">
                     <Search
@@ -187,8 +181,8 @@ export function PluginsPage() {
                     <Input
                         value={query}
                         onChange={(event) => setQuery(event.target.value)}
-                        placeholder="Search plugins"
-                        aria-label="Search plugins"
+                        placeholder={t('plugins.catalog:search')}
+                        aria-label={t('plugins.catalog:search')}
                         className="pl-8"
                     />
                 </div>
@@ -196,13 +190,13 @@ export function PluginsPage() {
             bodyClassName="grid gap-8"
         >
             <Tabs value={tab} onValueChange={setTab}>
-                <TabsList aria-label="Plugin sections">
-                    <TabsTrigger value="discover">Discover</TabsTrigger>
-                    <TabsTrigger value="installed">Installed</TabsTrigger>
+                <TabsList aria-label={t('plugins.catalog:tabs.label')}>
+                    <TabsTrigger value="discover">{t('plugins.catalog:tabs.discover')}</TabsTrigger>
+                    <TabsTrigger value="installed">{t('plugins.catalog:tabs.installed')}</TabsTrigger>
                 </TabsList>
             </Tabs>
             {!data ? (
-                <div className="grid gap-4" aria-busy="true" aria-label="Loading plugins">
+                <div className="grid gap-4" aria-busy="true" aria-label={t('plugins.catalog:loading')}>
                     <Skeleton className="h-40" />
                     <Skeleton className="h-40" />
                 </div>
@@ -265,11 +259,12 @@ function Discover({
     onCategory: (id?: string) => void;
     onOpen: (id: string) => void;
 }) {
+    const { t } = useTranslation(['plugins.catalog']);
     if (catalog.length === 0) {
         return (
             <CatalogEmpty
-                title="No plugins in the catalog"
-                body="This instance offers no plugins. Whoever operates the server lists them in PLUGIN_CATALOGS."
+                title={t('plugins.catalog:empty-catalog.title')}
+                body={t('plugins.catalog:empty-catalog.body')}
             />
         );
     }
@@ -277,8 +272,8 @@ function Discover({
     const recent = [...visible].reverse();
     return (
         <div className="grid gap-8">
-            <section className="grid gap-3" aria-label="Featured categories">
-                <h2 className="text-sm font-medium">Featured categories</h2>
+            <section className="grid gap-3" aria-label={t('plugins.catalog:featured')}>
+                <h2 className="text-sm font-medium">{t('plugins.catalog:featured')}</h2>
                 <div className="grid gap-3 sm:grid-cols-3">
                     {CATEGORIES.map((item) => {
                         const count = catalog.filter((row) => item.match(row)).length;
@@ -286,8 +281,8 @@ function Discover({
                         return (
                             <CategoryCard
                                 key={item.id}
-                                name={item.name}
-                                detail={`${count} ${count === 1 ? 'app' : 'apps'}`}
+                                name={t(`plugins.catalog:categories.${item.id}`)}
+                                detail={t('plugins.catalog:category-count', { count })}
                                 icon={item.icon}
                                 className={item.className}
                                 selected={selected}
@@ -297,33 +292,51 @@ function Discover({
                     })}
                 </div>
             </section>
-            <AppRow title="Popular" rows={popular} onOpen={onOpen} slot="plugin-catalog" />
-            <AppRow title="Recently added" rows={recent} onOpen={onOpen} />
+            <AppRow
+                id="popular"
+                title={t('plugins.catalog:popular')}
+                rows={popular}
+                onOpen={onOpen}
+                slot="plugin-catalog"
+            />
+            <AppRow id="recent" title={t('plugins.catalog:recent')} rows={recent} onOpen={onOpen} />
         </div>
     );
 }
 
 function AppRow({
+    id,
     title,
     rows,
     onOpen,
     slot,
 }: {
+    /** Which row, for its cards' keys. */
+    id: string;
     title: string;
     rows: CatalogRow[];
     onOpen: (id: string) => void;
     slot?: string;
 }) {
+    const { t } = useTranslation(['plugins.catalog']);
+    const labels = {
+        installed: t('plugins.catalog:card.installed'),
+        notInstalled: t('plugins.catalog:card.not-installed'),
+        details: t('plugins.catalog:card.details'),
+    };
     return (
         <section className="grid gap-3" data-slot={slot}>
             <h2 className="text-sm font-medium">{title}</h2>
             {rows.length === 0 ? (
-                <CatalogEmpty title="No apps in this view" body="Clear the search or pick another category." />
+                <CatalogEmpty
+                    title={t('plugins.catalog:empty-view.title')}
+                    body={t('plugins.catalog:empty-view.body')}
+                />
             ) : (
                 <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                     {rows.map((plugin) => (
                         <AppCard
-                            key={`${title}-${plugin.id}`}
+                            key={`${id}-${plugin.id}`}
                             name={plugin.name}
                             author={plugin.author}
                             version={plugin.version}
@@ -331,6 +344,7 @@ function AppRow({
                             installed={plugin.installed}
                             icon={<PluginMark id={plugin.id} />}
                             onOpen={() => onOpen(plugin.id)}
+                            labels={labels}
                         />
                     ))}
                 </div>
@@ -352,20 +366,37 @@ function CatalogDetail({
     onInstall: () => void;
     onManage: () => void;
 }) {
+    const { t } = useTranslation(['plugins', 'plugins.catalog']);
+    const words = usePluginWords();
     return (
         <AppDetail
             icon={<PluginMark id={plugin.id} large />}
             name={plugin.name}
-            meta={`${plugin.author} · ${plugin.version} · ${displayLabel(plugin.display, plugin.mode)} · ${modeLabel(plugin.mode)}`}
+            meta={t('plugins.catalog:detail.meta', {
+                author: plugin.author,
+                version: plugin.version,
+                display: words.displayLabel(plugin.display, plugin.mode),
+                mode: words.modeLabel(plugin.mode),
+            })}
             description={plugin.description}
             installed={plugin.installed}
             onBack={onBack}
             onInstall={onInstall}
             onManage={onManage}
+            labels={{
+                back: t('plugins.catalog:detail.back'),
+                manage: t('plugins.catalog:detail.manage'),
+                install: t('plugins.catalog:detail.install'),
+                screenshots: t('plugins.catalog:detail.screenshots'),
+                permissions: t('plugins.catalog:detail.permissions'),
+            }}
             screenshots={
                 plugin.id === 'social-strategy' ? (
                     <div className="grid gap-3 md:grid-cols-2">
-                        <ScreenshotFrame title="Week" caption="Posts sit on a time grid.">
+                        <ScreenshotFrame
+                            title={t('plugins.catalog:screenshots.week.title')}
+                            caption={t('plugins.catalog:screenshots.week.caption')}
+                        >
                             <div className="grid h-36 grid-cols-7 gap-1">
                                 {Array.from({ length: 7 }, (_, index) => (
                                     <div key={index} className="rounded bg-background/70 p-1">
@@ -374,17 +405,22 @@ function CatalogDetail({
                                 ))}
                             </div>
                         </ScreenshotFrame>
-                        <ScreenshotFrame title="Composer" caption="A draft on the left, the X card on the right.">
+                        <ScreenshotFrame
+                            title={t('plugins.catalog:screenshots.composer.title')}
+                            caption={t('plugins.catalog:screenshots.composer.caption')}
+                        >
                             <div className="grid h-36 grid-cols-[1.2fr_0.8fr] gap-2">
                                 <div className="rounded bg-background/80 p-2 text-[10px] text-muted-foreground">
-                                    Write something…
+                                    {t('plugins.catalog:screenshots.composer.draft')}
                                 </div>
                                 <div className="rounded-2xl border bg-background p-2 text-[10px] text-foreground">
                                     <div className="mb-1 flex items-center gap-1">
                                         <span className="size-4 rounded-full bg-sky-500" />
-                                        <span className="font-semibold">account</span>
+                                        <span className="font-semibold">
+                                            {t('plugins.catalog:screenshots.composer.account')}
+                                        </span>
                                     </div>
-                                    Your post shows up here.
+                                    {t('plugins.catalog:screenshots.composer.preview')}
                                 </div>
                             </div>
                         </ScreenshotFrame>
@@ -400,13 +436,13 @@ function CatalogDetail({
                         </li>
                     ) : null}
                     {plugin.permissions.length === 0 && !plugin.openAnyHttps ? (
-                        <li>Asks for no extra permissions.</li>
+                        <li>{t('plugins:no-permissions')}</li>
                     ) : (
                         plugin.permissions.map((item) => (
                             <li key={item}>
                                 <span className="font-medium text-foreground">{item}</span>
                                 {' · '}
-                                {PERMISSIONS[item] ?? item}
+                                {words.permission(item)}
                             </li>
                         ))
                     )}
@@ -415,10 +451,9 @@ function CatalogDetail({
             status={
                 installed ? (
                     <p className="text-sm">
-                        {installed.enabled ? 'Enabled' : 'Disabled'} on this instance.{' '}
-                        {installed.mode === 'bundled'
-                            ? 'Choose who can use it and open it from Installed.'
-                            : 'Open it and change its settings from its page.'}
+                        {t('plugins.catalog:detail.status', {
+                            context: `${installed.enabled ? 'enabled' : 'disabled'}-${installed.mode === 'bundled' ? 'bundled' : 'service'}`,
+                        })}
                     </p>
                 ) : undefined
             }
@@ -432,11 +467,13 @@ function CatalogDetail({
  * and Uninstall are.
  */
 function InstalledList({ rows, catalogIds }: { rows: InstalledRow[]; catalogIds: Set<string> }) {
+    const { t } = useTranslation(['plugins', 'plugins.catalog']);
+    const words = usePluginWords();
     if (rows.length === 0) {
         return (
             <CatalogEmpty
-                title="No plugin is installed"
-                body="Install one from the catalog on this instance. It stays off everywhere else."
+                title={t('plugins.catalog:empty-installed.title')}
+                body={t('plugins.catalog:empty-installed.body')}
             />
         );
     }
@@ -452,24 +489,31 @@ function InstalledList({ rows, catalogIds }: { rows: InstalledRow[]; catalogIds:
                             data-slot="plugin-manage-link"
                         >
                             {plugin.name}
-                            <Badge variant={plugin.enabled ? 'default' : 'secondary'}>{runLabel(plugin)}</Badge>
-                            {plugin.update && <Badge variant="outline">Update to {plugin.update.version}</Badge>}
+                            <Badge variant={plugin.enabled ? 'default' : 'secondary'}>{words.runLabel(plugin)}</Badge>
+                            {plugin.update && (
+                                <Badge variant="outline">
+                                    {t('plugins:update-to', { version: plugin.update.version })}
+                                </Badge>
+                            )}
                             <BackupBadge backup={plugin.backup} />
                         </Link>
                         <p className="line-clamp-2 text-sm text-muted-foreground">{plugin.description}</p>
                         <p className="text-xs text-muted-foreground">
-                            {plugin.author} · {plugin.version}
-                            {catalogIds.has(plugin.id) ? '' : ' · no longer in the catalog'}
+                            {t('plugins:meta', {
+                                author: plugin.author,
+                                version: plugin.version,
+                                context: catalogIds.has(plugin.id) ? undefined : 'removed',
+                            })}
                         </p>
                     </div>
                     <div className="flex items-center gap-2">
                         {plugin.enabled && <OpenPlugin plugin={plugin} variant="outline" />}
                         <Link
                             to={managePath(plugin.id)}
-                            aria-label={`Manage ${plugin.name}`}
+                            aria-label={t('plugins.catalog:manage-label', { name: plugin.name })}
                             className="inline-flex h-8 items-center gap-1 rounded-md px-2 text-sm hover:bg-accent"
                         >
-                            Manage
+                            {t('plugins.catalog:manage')}
                             <ChevronRight className="size-4" aria-hidden="true" />
                         </Link>
                     </div>

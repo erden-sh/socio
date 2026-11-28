@@ -1,6 +1,7 @@
 import { createElement } from 'react';
-import type { ShouldRevalidateFunction } from 'react-router';
+import type { LoaderFunctionArgs, ShouldRevalidateFunction } from 'react-router';
 
+import { routeI18n } from '../../i18n/page-i18n';
 import type { RouteHandle } from '../../shell/shell-context';
 
 import { PluginTitleCrumb } from './plugin-title-crumb';
@@ -9,11 +10,23 @@ import { PluginTitleCrumb } from './plugin-title-crumb';
 export const handle: RouteHandle = {
     // The name, with Open in a new tab beside it while the plugin is in its
     // frame: the page draws no bar of its own.
-    crumb: ({ workspace, params }) => {
-        const label = workspace.plugins?.find((item) => item.id === params.pluginId)?.name ?? 'Plugin';
+    crumb: ({ workspace, params, t }) => {
+        const label =
+            workspace.plugins?.find((item) => item.id === params.pluginId)?.name ??
+            // oxlint-disable-next-line socio/translate-in-components -- the header's t, passed at each render (CrumbContext)
+            t('plugins.frame:crumb-fallback');
         return [{ label, node: createElement(PluginTitleCrumb, { pluginId: params.pluginId ?? '', name: label }) }];
     },
 };
+
+/**
+ * The words of the page around the plugin (route-namespaces.json): its
+ * crumb's Open in a new tab, a tab plugin's launch page and the link
+ * confirmation. The plugin's own page is the plugin's, in its frame.
+ */
+export async function loader({ context }: LoaderFunctionArgs) {
+    return { i18n: await routeI18n(context, 'plugins:frame') };
+}
 
 /**
  * The splat, query and fragment are the plugin's own route (CB-446): when

@@ -953,15 +953,15 @@ it('shows a plugin’s backups, starts Back up now, and lists what the workspace
     const status = slot('plugin-backup-status', section)!;
     expect(status.getAttribute('data-state')).toBe('ok');
     expect(status.textContent).toContain('is backed up with every scheduled backup');
-    expect(status.textContent).toContain('(3.0 MB)');
+    expect(status.textContent).toContain('(3.1 MB)');
     expect(status.className).not.toContain('text-destructive');
     const rows = [...slot('plugin-backup-history', section)!.querySelectorAll('li')];
     expect(rows.map((row) => row.getAttribute('data-snapshot'))).toEqual([
         '01JREQUEST00000000000000000',
         '01JSCHEDULED000000000000000',
     ]);
-    expect(rows[0]!.textContent).toContain('Asked for by the plugin: Imported 1,200 notes · 3.0 MB · version 1.2.0');
-    expect(rows[1]!.textContent).toContain('Scheduled · 2.0 KB');
+    expect(rows[0]!.textContent).toContain('Asked for by the plugin: Imported 1,200 notes · 3.1 MB · version 1.2.0');
+    expect(rows[1]!.textContent).toContain('Scheduled · 2 kB');
     // Healthy: no badge in the overview.
     expect(slot('plugin-not-backed-up')).toBeNull();
     expect(slot('plugin-backup-failing')).toBeNull();

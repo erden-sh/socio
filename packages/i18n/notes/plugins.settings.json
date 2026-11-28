@@ -1,0 +1,19 @@
+{
+    "label": "Accessible name of the group of a plugin's settings, which save as they change.",
+    "undo": "Button that takes back the last saved change to the settings.",
+    "redo": "Button that saves again a change Undo took back.",
+    "footnote": "Small print under the settings. Undo and Redo are the buttons' names.",
+    "save-failed": "Error when the settings could not be saved, without a reason from the server.",
+    "apply-failed": "Error when the settings were saved but the plugin's service could not restart with them.",
+    "apply.pending": "Status beside the save status: the plugin's service restarts with the saved settings shortly.",
+    "apply.applying": "Status: the service is restarting with the settings.",
+    "apply.applied": "Status: the service runs with the saved settings.",
+    "apply.failed": "Status: the service doesn't have the saved settings yet.",
+    "apply.now": "Link-styled button that gives the service the saved settings at once.",
+    "field.default-choice": "First choice of a setting's list: leave it empty and use its default. {{value}} is the default, as the plugin wrote it.",
+    "field.not-set": "First choice of a setting's list when it has no default: leave it empty.",
+    "field.choose": "Disabled first choice of a required list with no value yet.",
+    "field.not-a-choice": "A saved value that the setting's list no longer offers. {{value}} is that value.",
+    "field.default": "After a setting's description: its default value. <code> wraps {{value}}, the value as the plugin wrote it, in code style.",
+    "field.required": "After a setting's description: it must be set."
+}

@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 
+import { Trans, useTranslation } from '@socio/i18n/react';
+
 import {
     AlertDialog,
     AlertDialogAction,
@@ -38,6 +40,7 @@ export function OpenLinkDialog({
     onOpen: () => void;
     onCancel: () => void;
 }) {
+    const { t } = useTranslation(['plugins.frame']);
     const host = new URL(url).host;
     const [armed, setArmed] = useState(false);
     useEffect(() => {
@@ -50,10 +53,15 @@ export function OpenLinkDialog({
             <AlertDialogContent data-slot="plugin-open-link">
                 <AlertDialogHeader>
                     <AlertDialogTitle>
-                        Open <span data-slot="plugin-open-link-host">{host}</span> in a new tab?
+                        <Trans
+                            t={t}
+                            i18nKey="plugins.frame:link.title"
+                            values={{ host }}
+                            components={{ host: <span data-slot="plugin-open-link-host" /> }}
+                        />
                     </AlertDialogTitle>
                     <AlertDialogDescription>
-                        {pluginName} asks to open this link. Open it only if you expect to go to {host}.
+                        {t('plugins.frame:link.description', { plugin: pluginName, host })}
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <p
@@ -63,7 +71,9 @@ export function OpenLinkDialog({
                     {url}
                 </p>
                 <AlertDialogFooter>
-                    <AlertDialogCancel data-slot="plugin-open-link-cancel">Cancel</AlertDialogCancel>
+                    <AlertDialogCancel data-slot="plugin-open-link-cancel">
+                        {t('plugins.frame:link.cancel')}
+                    </AlertDialogCancel>
                     <AlertDialogAction
                         disabled={!armed}
                         data-slot="plugin-open-link-open"
@@ -73,7 +83,7 @@ export function OpenLinkDialog({
                             }
                         }}
                     >
-                        Open
+                        {t('plugins.frame:link.open')}
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>

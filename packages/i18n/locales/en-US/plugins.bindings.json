@@ -1,0 +1,31 @@
+{
+    "table": "{{table}} ({{columns, list(type: unit; style: short)}})",
+    "writes": "writes",
+    "reads": "reads",
+    "expects": "Expects {{columns}}.",
+    "new": "New dataset",
+    "not-now": "Not now",
+    "bound-now": "{{name}} (bound now)",
+    "used-before": "{{name}} (used before)",
+    "written-by": "written by {{name}}",
+    "does-not-fit": "doesn’t fit",
+    "why": "Why some datasets can’t be chosen",
+    "problem": "<name>{{name}}</name>: {{problem}}",
+    "install": {
+        "title": "Install {{name}}",
+        "description": "Choose the workspace data it uses. The data stays the workspace’s: uninstalling it never deletes a dataset, and each dataset has one plugin that writes it.",
+        "cancel": "Cancel",
+        "install": "Install",
+        "installing": "Installing…"
+    },
+    "load-failed": "Could not load the plugin’s datasets.",
+    "none": "It uses no workspace datasets.",
+    "bound": "{{need}} is bound.",
+    "unbound": "{{need}} is unbound.",
+    "change-failed": "Could not change the binding.",
+    "state": {
+        "bound_read": "Bound to {{name}}, read only.",
+        "bound_write": "Bound to {{name}}, which only this plugin writes.",
+        "unbound": "Not bound: the plugin’s data token doesn’t cover it."
+    }
+}
