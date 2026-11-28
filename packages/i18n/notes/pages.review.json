@@ -18,6 +18,7 @@
     "phase.ready.badge": "Short status at the card's top right: the person decides.",
     "preparing": "In place of the draft's title while it is being written.",
     "untitled": "In place of the title of a draft that has none.",
+    "conflict": "Error on the review card in a chat when the page saved from this review differs from the draft shown.",
     "invalid": "Error on the card. {{problem}} is what's wrong with the draft, in English from the app (not translated yet).",
     "retry": "Button that checks the review's state again after an error.",
     "open-saved": "Button on the review card when what was saved differs from this draft; it opens the page that was saved.",
@@ -27,5 +28,11 @@
     "approve": "Button that approves the draft and saves it as a page.",
     "send-back": "Button that returns a draft that can't be saved to the socio (AI agent) to fix.",
     "decline": "Button that declines the draft; nothing is saved.",
-    "hint.waiting": "Note on the card while it waits; \"any review above it\" is an earlier card in the same chat."
+    "hint.deleted": "Note at the foot of the review card: the page saved from this review was deleted since.",
+    "hint.checking": "Note at the foot of the review card while the app checks whether the draft was saved already.",
+    "hint.not-saved": "Note at the foot of the review card when the review ended without saving, or the draft can't be saved.",
+    "hint.waiting": "Note on the card while it waits; \"any review above it\" is an earlier card in the same chat.",
+    "hint.ready": "Note at the foot of the review card beside the approve and decline buttons: the page is saved only after approval.",
+    "errors.restore": "Error on the review card when its state couldn't be loaded again (for example after reopening the chat) and the server gave no reason.",
+    "errors.save": "Error on the review card when the approved draft couldn't be saved as a page and the server gave no reason."
 }

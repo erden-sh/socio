@@ -7,6 +7,7 @@
     "delete.action": "Destructive button that deletes the page; {{count}} counts the page and its subpages (one form for one page, the other for several).",
     "delete.deleting": "The delete button while the page is being deleted.",
     "delete.deleted": "Toast after deleting. {{title}} is the page's title.",
+    "delete.failed": "Error in the delete-page dialog when the page couldn't be deleted and the server gave no reason.",
     "move.title": "Title of the dialog that moves a page to another Space. {{title}} is the page's title.",
     "move.description": "The dialog's text. Space is a product noun.",
     "move.description-subpages": "The dialog's text when the page has pages under it (subpages). {{count}} is how many.",
@@ -19,8 +20,11 @@
     "move.moving": "The move button while the page is being moved.",
     "move.moved": "Toast after moving. {{title}} is the page's title, {{space}} the Space's name.",
     "move.save-first": "Error when the page's unsaved changes couldn't be saved before the move.",
+    "move.failed": "Error in the move-page dialog when the page couldn't be moved to the other Space and the server gave no reason.",
     "folder.title": "Title of the dialog that makes a new folder of pages.",
+    "folder.description": "Under the title of the dialog that makes a new folder of pages: what a folder is.",
     "folder.name": "Placeholder and accessible name of the folder's name field.",
     "folder.cancel": "Button that closes the new-folder dialog without creating a folder.",
-    "folder.create": "Button that makes the folder."
+    "folder.create": "Button that makes the folder.",
+    "folder.failed": "Error in the new-folder dialog when the folder couldn't be created and the server gave no reason."
 }

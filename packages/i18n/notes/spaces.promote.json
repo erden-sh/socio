@@ -28,7 +28,9 @@
     "toasts.filed": "Toast after filing the issue. {{key}} is its key, like CB-42; don't translate it.",
     "toasts.open": "Button in the toast that opens what was created.",
     "toasts.scheduled": "Toast after the recurring schedule was created.",
+    "toasts.scheduled-detail": "Under the toast after the recurring schedule was created: each run of the socio's (AI agent's) task happens in its own chat.",
     "toasts.asked": "Toast after the Space's socio (AI agent) was asked to propose the goal; the person approves it later.",
     "toasts.asked-detail": "Under the toast's title. {{socio}} is the socio's (AI agent's) name.",
-    "errors.no-specialist": "Error when the Space has no socio (AI agent) to run the schedule or goal."
+    "errors.no-specialist": "Error when the Space has no socio (AI agent) to run the schedule or goal.",
+    "errors.failed": "Error in the follow-up dialog when the issue, schedule or goal couldn't be created and the server gave no reason."
 }

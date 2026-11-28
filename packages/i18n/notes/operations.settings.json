@@ -13,6 +13,8 @@
     "session-gap.invalid": "Error under the gap field: {{min}} and {{max}} are minutes.",
     "session-gap.reset": "Button: goes back to the server's gap; the count is minutes.",
     "retention.title": "Card title: how often the server's resources are sampled and how many days each kind of record is kept.",
+    "retention.description": "Description on the Collection and retention card of Operations › Settings. \"Pruning\": deleting old records; \"source agent runs\": the original records of socios' turns.",
+    "retention.load-failed": "Error on the Collection and retention card when its settings could not be read.",
     "retention.fields.pageUseDays": "Each retention.fields.*: the label of a number field: how many days a kind of record is kept (or, for sampleEverySeconds, how often resources are sampled).",
     "retention.fields.pageSearchDays": "Days kept: the daily counts of page searches.",
     "retention.fields.notificationDays": "Days kept: notifications sent to people.",

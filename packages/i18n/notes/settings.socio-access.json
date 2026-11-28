@@ -1,12 +1,17 @@
 {
     "intro": "Intro of Settings › Socio access. Socios are the AI agents; mini apps are small apps people build in Socio. \"A card in the chat\" is the request card the person answers.",
     "reading.title": "Heading: per socio (AI agent), whether it may read mini apps for the person without asking first.",
+    "reading.help": "Help text under the heading of the per-socio choices on Settings › Socio access; socios are the AI agents. \"Without a card\": without asking on a request card in the chat. Some apps always ask, whatever is chosen here.",
     "reading.label": "Accessible name of the choice next to each socio. {{socio}} is the socio's name.",
     "reading.manual": "Option: the socio asks on a card each time it wants to read an app.",
     "reading.bypass": "Option: the socio may read apps without asking.",
     "reading.auto": "Option: an automatic reviewer decides each request. \"Auto review\" is a feature name.",
     "granted.title": "Heading of the list of live accesses the person granted to socios (AI agents).",
+    "granted.none": "Shown in the list of live accesses when no socio (AI agent) has access to a mini app for the person.",
     "granted.ended": "Summary of a collapsed list of ended accesses; {{n}} is how many.",
     "granted.endedLabel": "Accessible name of the list of ended accesses.",
-    "endedToast": "Toast after the person ended a socio's access to a mini app."
+    "loadFailed": "Error toast when Settings › Socio access could not load its socios' choices and accesses. Shown only when the server gives no message of its own.",
+    "saveFailed": "Error toast when saving a socio's choice of whether it may read apps without asking failed. Shown only when the server gives no message of its own.",
+    "endedToast": "Toast after the person ended a socio's access to a mini app.",
+    "endFailed": "Error toast after the confirmation to end a socio's access to a mini app, when ending it failed. Shown only when the server gives no message of its own."
 }

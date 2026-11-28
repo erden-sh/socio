@@ -54,6 +54,7 @@
     "intent.title": "Card title. \"Intent\": what a person wanted from a session (asking, writing, analyzing…).",
     "intent.intro": "\"Socios\": AI agents. \"Value\" and \"Themes\" are pages of Operations.",
     "intent.switch": "Switch title on the Session intent card: turns on the model labeling what each session's person wanted.",
+    "intent.switch-help": "Help under the switch of the Session intent card on Operations › Settings: when the model labels each session's intent.",
     "intent.list.title": "Subheading over the editable list of intents the model may answer with.",
     "intent.list.description": "{{min}} and {{max}}: how many intents the list may have. \"Golden set\": the labels admins set by hand that the model is evaluated against.",
     "intent.list.value": "Label of a field: an intent's value, a short lowercase word the model answers with.",
@@ -70,12 +71,14 @@
     "themes.title": "Card title on Operations › Settings: the model names the topics (themes) of each session.",
     "themes.intro": "\"Operations → Themes\" is a page of the dashboard. {{min}}: the fewest different people before a theme is named.",
     "themes.switch": "Switch title on the Session themes card: turns on the model naming each session's topics.",
+    "themes.switch-help": "Help under the switch of the Session themes card on Operations › Settings: when the model names each session's topics.",
     "themes.outcomes.resolved": "Each themes.outcomes.*: whether a session's person seems to have got what they came for; the label names in the evaluation table.",
     "themes.outcomes.unresolved": "An outcome label in the evaluation table: the person seems not to have gotten what they came for.",
     "themes.outcomes.unclear": "An outcome label in the evaluation table: the model can't tell whether the person got what they came for.",
     "learning.title": "Card title. \"Learning\": Socio's feature that turns repeated work into skills for socios. \"Triage\": sorting which conversations it analyzes.",
     "learning.intro": "{{chars}} is a number of characters. \"Session intent\" is the card of that name above; keep the same words. \"private\" is a label the model gives.",
     "learning.switch": "Switch title on the Learning triage card. \"Learning\" is a feature's name; \"triage\": sorting which conversations it analyzes.",
+    "learning.switch-help": "Help under the switch of the Learning triage card. \"Learning\" is a feature's name (it turns repeated work into skills for socios); \"calls\": requests to the AI model.",
     "learning.labels.repeatable": "Each learning.labels.*: a label the model gives a conversation; the label names in the evaluation table.",
     "learning.labels.one-off": "A label the model gives a conversation: work done once, not a procedure the team would repeat."
 }

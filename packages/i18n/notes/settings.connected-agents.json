@@ -7,5 +7,8 @@
     "never": "Stands in for a date in \"last used …\" when the agent never acted.",
     "none": "Shown on Settings › Connected agents when no outside agent is connected.",
     "confirmTitle": "Title of the confirmation before disconnecting. {{agent}} is the agent's label.",
-    "disconnected": "Toast after disconnecting. {{agent}} is the agent's label."
+    "confirmBody": "Body of the confirmation before disconnecting an external agent (such as Claude Code, a product name): it loses access at once and must be connected again to be used.",
+    "disconnected": "Toast after disconnecting. {{agent}} is the agent's label.",
+    "loadFailed": "Error toast on Settings › Connected agents when the list can't be loaded and the server gave no message.",
+    "disconnectFailed": "Error toast when disconnecting an external agent failed and the server gave no message."
 }

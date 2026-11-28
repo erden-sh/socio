@@ -25,5 +25,8 @@
     "toasts.archived": "Toast after a room was archived; it has an Undo button.",
     "toasts.undo": "Button in the \"Room archived\" toast; it unarchives the room again.",
     "toasts.unarchived": "Toast after a room was unarchived.",
-    "errors.read": "Toast when the room's people couldn't be read before the Leave dialog opens."
+    "errors.archive": "Toast when Archive in a room's ⋯ menu failed (shown when the server gives no reason).",
+    "errors.unarchive": "Toast when Unarchive in an archived room's ⋯ menu failed (shown when the server gives no reason).",
+    "errors.read": "Toast when the room's people couldn't be read before the Leave dialog opens.",
+    "errors.notify": "Toast when changing what in this room notifies the reader (everything, mentions, nothing), in the room's ⋯ menu, failed."
 }

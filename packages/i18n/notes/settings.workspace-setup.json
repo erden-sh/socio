@@ -1,6 +1,7 @@
 {
     "title": "Heading of the card that lists how the server is set up (Settings › General). Admins see every line; members fewer.",
     "missing": "{{names}} is a comma-separated list of environment variable names, such as \"OPENAI_BASE_URL, OPENAI_MODEL\": keep them as is.",
+    "ready": "First line of the Service setup card (Settings › General), shown instead of the missing line when no required environment variables are missing: the server is set up for text chat, and a successful chat proves it works.",
     "lines.model": "Each status line in Service setup: a label, a colon, then {{line}}, which starts in lowercase and is built from the other keys here; the sentence ends with a period.",
     "lines.telegram": "Status line in Service setup: {{line}} is one of the telegram keys, in lowercase.",
     "lines.voice": "Status line in Service setup: {{line}} is one of the voice keys, in lowercase.",

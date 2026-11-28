@@ -4,6 +4,7 @@
     "field.title": "Label of the box for the new issue's title.",
     "field.title-placeholder": "Placeholder of the new issue's title box.",
     "field.description": "Label of the box for the new issue's description.",
+    "field.description-placeholder": "Placeholder of the new issue's description box in the report dialog. Markdown is a format's name.",
     "field.kind": "Label of the menu with the issue's kind (bug, feature...).",
     "field.priority": "Label of the menu with the issue's priority.",
     "field.area": "Label of the menu with the part of the product the issue is about.",
@@ -14,7 +15,9 @@
     "filed": "Toast after filing; {{key}} is the new issue's key (CB-12).",
     "filed-partly": "Toast after filing when some attachments failed; {{key}} is the new issue's key.",
     "open": "Button in the toast that opens the new issue.",
+    "failed": "Error toast when the report dialog couldn't file the issue and the server gave no reason.",
     "discard.title": "Title of the confirmation when you close the report dialog with unsaved text or files.",
+    "discard.body": "Text of the confirmation when you close the report dialog with unsaved text or files.",
     "discard.keep": "Button that goes back to the form.",
     "discard.confirm": "Button that closes the form and loses what was written."
 }

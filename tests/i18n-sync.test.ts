@@ -336,6 +336,7 @@ describe('the export', () => {
         const other = setup({
             'routes.json': { root: ['common'] },
             'namespaces.json': { common: { label: 'Home · Greeting', where: 'The top of the home page.' } },
+            'notes/common.json': { car: 'A car.', files: 'How many files.', rows: 'How many rows.' },
         });
         const args = [
             '--check',
@@ -343,6 +344,8 @@ describe('the export', () => {
             dir,
             '--namespaces',
             join(other, 'namespaces.json'),
+            '--notes',
+            join(other, 'notes'),
             '--routes',
             join(other, 'routes.json'),
             '--types',

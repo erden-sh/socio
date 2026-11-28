@@ -27,16 +27,32 @@ const entriesFor = (files: Record<string, string>) =>
             ]),
     );
 
+// A context note on every en-US key, as notes/<ns>.json needs.
+const notesFor = (files: Record<string, string>) =>
+    Object.fromEntries(
+        Object.entries(files)
+            .filter(([path]) => path.startsWith('en-US/'))
+            .map(([path, text]) => [
+                path.slice('en-US/'.length, -'.json'.length),
+                Object.fromEntries(Object.keys(JSON.parse(text)).map((key) => [key, 'A note for translators.'])),
+            ]),
+    );
+
 function setup(
     files: Record<string, string>,
     routes: Record<string, string[]> = { root: ['common'] },
     namespaces: unknown = entriesFor(files),
+    notes: Record<string, unknown> = notesFor(files),
 ) {
     const dir = mkdtempSync(join(tmpdir(), 'socio-i18n-'));
     scratch.push(dir);
     for (const [path, text] of Object.entries(files)) {
         mkdirSync(join(dir, 'locales', path, '..'), { recursive: true });
         writeFileSync(join(dir, 'locales', path), text);
+    }
+    mkdirSync(join(dir, 'notes'));
+    for (const [ns, entries] of Object.entries(notes)) {
+        writeFileSync(join(dir, 'notes', `${ns}.json`), JSON.stringify(entries));
     }
     writeFileSync(join(dir, 'routes.json'), JSON.stringify(routes));
     writeFileSync(join(dir, 'namespaces.json'), JSON.stringify(namespaces));
@@ -222,6 +238,69 @@ describe('scripts/i18n-build.mjs', () => {
 
         writeFileSync(join(dir, 'namespaces.json'), '{ "common": ');
         expect(build(dir, '--check').stderr).toMatch(/namespaces\.json: not valid JSON/);
+    });
+
+    it('needs a context note on every en-US key, its own or its plural’s or context’s base’s', () => {
+        const english = {
+            title: 'Title',
+            nested: { label: 'Label', hint: 'Hint' },
+            files_one: '{{count}} file',
+            files_other: '{{count}} files',
+            edited_socio: 'Edited by a socio',
+            edited_person: 'Edited by {{name}}',
+            replies_socio_one: '{{count}} reply from a socio',
+            replies_socio_other: '{{count}} replies from a socio',
+            rank_ordinal_one: '{{count}}st',
+            rank_ordinal_two: '{{count}}nd',
+            rank_ordinal_few: '{{count}}rd',
+            rank_ordinal_other: '{{count}}th',
+            hint_external: 'External',
+            status: { long_wait: 'Waiting a long time' },
+        };
+        const files = { 'en-US/common.json': JSON.stringify(english), 'en-US/chat.json': EN };
+        const covered = {
+            title: 'Heading.',
+            'nested.label': 'Field label.',
+            'nested.hint': 'Hint under the field.',
+            files: 'How many files.',
+            edited: 'Who last edited it.',
+            replies: 'How many replies.',
+            rank: 'A place in a list.',
+            hint: 'A hint.',
+            'status.long': 'A status.',
+        };
+        const ok = build(
+            setup(files, undefined, undefined, { common: covered, chat: notesFor(files).chat }),
+            '--check',
+        );
+        expect(ok.status, ok.stderr).toBe(0);
+
+        // A plural's own base or a context's base covers its forms; nothing covers a key with neither.
+        const partial = {
+            'nested.label': 'Field label.',
+            edited: 'Who last edited it.',
+            replies_socio: 'How many replies from a socio.',
+            rank: 'A place in a list.',
+            hint: 'A hint.',
+            'status.long': 'A status.',
+        };
+        const run = build(setup(files, undefined, undefined, { common: partial }), '--check');
+        expect(run.status).toBe(1);
+        expect(run.stderr).toContain(
+            'notes/common.json: 4 en-US key(s) need a context note for translators, on the key or its plural or context base (docs/I18N.md): title, nested.hint, files_one, files_other',
+        );
+        // chat.json has no notes file at all, so all its keys are listed.
+        expect(run.stderr).toContain('notes/chat.json: 3 en-US key(s) need a context note');
+        expect(run.stderr).toContain('hello, files_one, files_other');
+    });
+
+    it('reports a notes file that isn’t JSON once, not as every key it lacks', () => {
+        const dir = setup({ 'en-US/common.json': EN }, undefined, undefined, {});
+        writeFileSync(join(dir, 'notes', 'common.json'), '{ "hello": ');
+        const run = build(dir, '--check');
+        expect(run.status).toBe(1);
+        expect(run.stderr).toMatch(/notes\/common\.json: not valid JSON/);
+        expect(run.stderr).not.toContain('need a context note');
     });
 
     it('checks the repository’s own dictionaries', () => {

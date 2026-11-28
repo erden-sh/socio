@@ -1,7 +1,9 @@
 {
     "title": "Accessible name (read by screen readers) of the Settings nav, the list of settings pages beside each settings page.",
     "groups.workspace.title": "Heading of the first group in the Settings nav: settings for the whole workspace (team), as opposed to the person's own account.",
+    "groups.workspace.description": "Line under the heading of every settings page in the Workspace group (settings for the whole team). \"socios\" are the product's AI agents.",
     "groups.account.title": "Heading of the second group in the Settings nav: the signed-in person's own settings. Other screens refer to it as \"Account → …\".",
+    "groups.account.description": "Line under the heading of every settings page in the Account group (the person's own settings). $t(common:product) becomes the product name, Socio (keep it as is); \"socios\" are the AI agents.",
     "sections.workspace": "Settings nav entry for the workspace's general settings page.",
     "sections.people": "Settings nav entry for the admins' page listing the workspace's people, their roles and groups. Admins only.",
     "sections.access": "Settings nav entry for the admins' page about how people sign in to this server (sign-in methods and allowed emails). Admins only.",
@@ -28,6 +30,7 @@
     "needsSignIn": "\"Better Auth\" is the name of the sign-in library; don't translate it. \"The local picker\" is the development sign-in that lists test users.",
     "save.saving": "Status at the top right of a settings card while a change saves on its own (there is no Save button).",
     "save.saved": "Status at the top right of a settings card once a change has saved.",
+    "save.failed": "Error on a settings card or in a workspace dialog when a change couldn't be saved; it asks the person to read the workspace's error message and try again.",
     "save.undo": "Button in the toast after a setting saved; it puts the previous value back.",
     "save.undone": "Toast after Undo put a setting's previous value back.",
     "paused.title": "Title of the home page widget about the AI agents (socios) as a whole.",

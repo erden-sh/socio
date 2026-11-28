@@ -45,7 +45,13 @@
     "errors.not-linked": "The provider (Google…) didn't confirm the email address of an existing account.",
     "social": "Button on the website's sign-in screen; {{name}} is Google or Apple, brand names not to translate.",
     "social-errors.canceled": "After the person canceled at Google's or Apple's sign-in.",
+    "social-errors.expired": "After a Google or Apple sign-in on the website that took too long and expired.",
+    "social-errors.provider-unavailable": "After a Google or Apple sign-in on the website when this server can't offer that provider right now.",
     "social-errors.nonce-invalid": "After a Google or Apple sign-in on the website that can't be used: too old, used already, or begun in another browser.",
     "social-errors.not-linked": "After a Google or Apple sign-in on the website for an account nobody here linked. Links are made in Settings, by a person already signed in.",
+    "social-errors.method-off": "After a Google or Apple sign-in on the website when an admin turned that way of signing in off.",
+    "social-errors.deactivated": "After a Google or Apple sign-in on the website for an account an admin deactivated.",
+    "social-errors.too-many": "After too many Google or Apple sign-in attempts on the website in a short time.",
+    "social-errors.failed": "After a Google or Apple sign-in on the website failed for another reason.",
     "errors.failed": "Generic error on the sign-in screen when no specific reason is known."
 }

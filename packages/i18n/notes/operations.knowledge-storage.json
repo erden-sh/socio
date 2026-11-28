@@ -1,5 +1,6 @@
 {
     "shared.title": "Card heading: the data areas each company socio shares with everyone who uses it. \"Socio\" is a product noun (an AI agent).",
+    "shared.description": "Description under the Socios' shared areas card heading on the Knowledge page. \"Socio\" is a product noun (an AI agent); a company socio is one the workspace offers to many people.",
     "shared.deleted": "In place of the name of a socio that was deleted.",
     "shared.empty": "In place of the shared data card's list when no company socio shares any data yet.",
     "shared.manage": "Link to the page where shared data is managed.",
