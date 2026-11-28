@@ -1,3 +1,12 @@
 {
-   "signedContributors": []
+  "signedContributors": [
+    {
+      "name": "el-frontend",
+      "id": 32143683,
+      "comment_id": 7233224658,
+      "created_at": "2026-11-28T03:37:25Z",
+      "repoId": 1470154953,
+      "pullRequestNo": 77
+    }
+  ]
 }
