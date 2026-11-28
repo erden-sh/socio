@@ -49,6 +49,7 @@ interface Row {
     sessionId: string | null;
     next: string;
     expiresAt: number;
+    redeemStartedAt: number | null;
     usedAt: number | null;
 }
 
@@ -279,7 +280,7 @@ export class WebSocialSignIn {
             code,
             next,
         });
-        if (!row || row.usedAt !== null || row.expiresAt <= now) {
+        if (!row || row.usedAt !== null || row.redeemStartedAt !== null || row.expiresAt <= now) {
             this.deps.log('Social sign-in: a website return was refused (no live flow for this browser).');
             return fail('nonce_invalid');
         }
@@ -289,6 +290,22 @@ export class WebSocialSignIn {
                     'UPDATE auth_social_web_nonce SET usedAt = ? WHERE nonceHash = ? AND usedAt IS NULL AND expiresAt > ? RETURNING nonceHash',
                 )
                 .get(this.now(), row.nonceHash, this.now());
+        /** The flow's spent: no second try with this binding, whatever happened. */
+        const spend = () =>
+            this.db
+                .prepare('UPDATE auth_social_web_nonce SET usedAt = ? WHERE nonceHash = ? AND usedAt IS NULL')
+                .run(this.now(), row.nonceHash);
+        // One attempt per flow, taken before anything goes out: of two returns
+        // with one binding, one goes on; a refused redeem isn't tried again.
+        const taken = !!this.db
+            .prepare(
+                'UPDATE auth_social_web_nonce SET redeemStartedAt = ? WHERE nonceHash = ? AND redeemStartedAt IS NULL AND usedAt IS NULL AND expiresAt > ? RETURNING nonceHash',
+            )
+            .get(this.now(), row.nonceHash, this.now());
+        if (!taken) {
+            this.deps.log('Social sign-in: a website return was refused (its flow was taken already).');
+            return fail('nonce_invalid');
+        }
         if (input.error !== undefined || !input.result) {
             // The provider's page came back without a result: the flow is over.
             claim();
@@ -296,6 +313,7 @@ export class WebSocialSignIn {
             return fail(code as 'canceled' | 'provider_unavailable' | 'expired' | 'failed');
         }
         if (purpose === 'link' && (!session || session.sessionId !== row.sessionId)) {
+            spend();
             this.deps.log('Social sign-in: a website link was refused (another session).');
             return failLink('not_authorized');
         }
@@ -305,6 +323,7 @@ export class WebSocialSignIn {
         }
         const verifier = this.deps.verifier();
         if (!verifier?.redeemWeb) {
+            spend();
             return fail('provider_unavailable');
         }
         let verdict: Awaited<ReturnType<NonNullable<SocialVerifier['redeemWeb']>>>;
@@ -314,10 +333,12 @@ export class WebSocialSignIn {
             verdict = { ok: false, code: 'provider_unavailable' };
         }
         if (!verdict.ok) {
+            spend();
             return fail(verdict.code === 'invalid_token' ? 'failed' : verdict.code);
         }
         // The statement must be for this browser's flow: its nonce, its provider.
         if (verdict.provider !== row.provider || socialNonceHash(verdict.nonce) !== row.nonceHash || !verdict.sub) {
+            spend();
             this.deps.log('Social sign-in: a website return was refused (the statement is for another flow).');
             return fail('nonce_invalid');
         }

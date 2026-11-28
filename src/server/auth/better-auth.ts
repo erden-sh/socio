@@ -173,6 +173,8 @@ const MIN_PASSWORD = 10;
 const COOKIE_PREFIX = 'cb';
 /** Website Google and Apple sign-in starts per client address per minute. */
 const WEB_SOCIAL_STARTS_PER_MINUTE = 5;
+/** Their returns' completes per client address per minute, checked before anything goes out. */
+const WEB_SOCIAL_COMPLETES_PER_MINUTE = 10;
 /**
  * "Send me a sign-in link": requests per client address, and links per
  * account (admins' sends count too), per 15 minutes.
@@ -503,6 +505,7 @@ export class BetterAuthProvider implements AuthProvider {
     /** Google and Apple on the website: its flows, and starts per address per minute. */
     private webSocial?: WebSocialSignIn;
     private webSocialStarts = new RateLimits(WEB_SOCIAL_STARTS_PER_MINUTE, 60_000);
+    private webSocialCompletes = new RateLimits(WEB_SOCIAL_COMPLETES_PER_MINUTE, 60_000);
 
     constructor(
         private settings: BetterAuthSettings,
@@ -2294,6 +2297,12 @@ export class BetterAuthProvider implements AuthProvider {
         // Same-origin only (a cross-site request is refused before it: it
         // isn't a navigation path).
         app.get(WEB_SOCIAL_COMPLETE_PATH, async (c) => {
+            if (!this.webSocialCompletes.take(`ip:${this.clientIp(c) ?? 'unknown'}`)) {
+                const refusal = socialRefusal('too_many');
+                c.header('retry-after', '60');
+                c.header('cache-control', 'no-store');
+                return c.json(refusal.body, refusal.status);
+            }
             const name = `${this.webSocialCookie}=`;
             const binding = (c.req.header('cookie') ?? '')
                 .split(';')

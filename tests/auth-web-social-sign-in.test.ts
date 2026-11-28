@@ -646,6 +646,100 @@ describe('the return from Socio’s sign-in page', () => {
     });
 });
 
+describe('one redeem per flow', () => {
+    const redeems = (b: Brain) =>
+        b.issuer.requests.filter((request) => request.path === '/v1/social/web/redeem').length;
+    /** A raw client's complete with this binding, from its own address unless told. */
+    const complete = (b: Brain, binding: string, query: string, ip?: string) => {
+        const jar = new Jar();
+        jar.cookies.set(BINDING, binding);
+        return b.call(jar, `${COMPLETE}?${query}`, { ip });
+    };
+
+    it('reaches the cloud once, however often a kept binding comes back with made-up results', async () => {
+        const b = await brain();
+        await adaLinked(b);
+        const jar = new Jar();
+        await b.start(jar, 'google');
+        const binding = jar.cookies.get(BINDING)!;
+        for (let i = 0; i < 20; i++) {
+            const response = await complete(b, binding, `r=${randomBytes(32).toString('base64url')}`);
+            expect(location(response).searchParams.get('error')).toBe('social_nonce_invalid');
+        }
+        expect(redeems(b)).toBe(1);
+        expect(b.db.prepare('SELECT redeemStartedAt, usedAt FROM auth_social_web_nonce').get()).toEqual({
+            redeemStartedAt: expect.any(Number),
+            usedAt: expect.any(Number),
+        });
+    });
+
+    it('redeems once for two completes at the same time with one binding', async () => {
+        const b = await brain();
+        await adaLinked(b);
+        const jar = new Jar();
+        const { body } = await b.start(jar, 'google');
+        const r = b.issuer.completeWeb(body.url!, 'google-sub-ada');
+        const binding = jar.cookies.get(BINDING)!;
+        const answers = await Promise.all([complete(b, binding, `r=${r}`), complete(b, binding, `r=${r}`)]);
+        expect(redeems(b)).toBe(1);
+        const errors = answers.map((response) => location(response).searchParams.get('error')).sort();
+        expect(errors).toEqual(['social_nonce_invalid', null].sort());
+        expect(b.db.prepare('SELECT count(*) AS n FROM auth_session').get()).toEqual({ n: 1 });
+    });
+
+    it('stays spent after the cloud refused it: no second call', async () => {
+        const b = await brain();
+        await adaLinked(b);
+        const jar = new Jar();
+        const { body } = await b.start(jar, 'google');
+        const r = b.issuer.completeWeb(body.url!, 'google-sub-ada');
+        const binding = jar.cookies.get(BINDING)!;
+        const redeem = b.issuer.socialWebRedeem;
+        b.issuer.socialWebRedeem = () =>
+            new Response(JSON.stringify({ error: 'result_invalid' }), {
+                status: 422,
+                headers: { 'content-type': 'application/json' },
+            });
+        expect(location(await complete(b, binding, `r=${r}`)).searchParams.get('error')).toBe('social_nonce_invalid');
+        b.issuer.socialWebRedeem = redeem;
+        expect(location(await complete(b, binding, `r=${r}`)).searchParams.get('error')).toBe('social_nonce_invalid');
+        expect(redeems(b)).toBe(1);
+        // And after the cloud was unreachable, the same.
+        const other = new Jar();
+        const second = await b.start(other, 'google');
+        const r2 = b.issuer.completeWeb(second.body.url!, 'google-sub-ada');
+        b.issuer.down = 'network';
+        expect(location(await complete(b, other.cookies.get(BINDING)!, `r=${r2}`)).searchParams.get('error')).toBe(
+            'social_provider_unavailable',
+        );
+        b.issuer.down = false;
+        expect(location(await complete(b, other.cookies.get(BINDING)!, `r=${r2}`)).searchParams.get('error')).toBe(
+            'social_nonce_invalid',
+        );
+        expect(redeems(b)).toBe(2);
+    });
+
+    it('refuses an eleventh complete a minute from one address before anything goes out', async () => {
+        const b = await brain();
+        await adaLinked(b);
+        const jar = new Jar();
+        const { body } = await b.start(jar, 'google');
+        const r = b.issuer.completeWeb(body.url!, 'google-sub-ada');
+        const binding = jar.cookies.get(BINDING)!;
+        for (let i = 0; i < 10; i++) {
+            expect((await b.call(new Jar(), `${COMPLETE}?r=x`, { ip: '10.7.7.7' })).status).toBe(302);
+        }
+        const limited = await complete(b, binding, `r=${r}`, '10.7.7.7');
+        expect(limited.status).toBe(429);
+        expect(limited.headers.get('retry-after')).toBe('60');
+        expect(redeems(b)).toBe(0);
+        // The flow is untouched: from another address it finishes.
+        const done = await complete(b, binding, `r=${r}`, '10.7.7.8');
+        expect(location(done).searchParams.get('error')).toBeNull();
+        expect(redeems(b)).toBe(1);
+    });
+});
+
 describe('link from Settings', () => {
     it.each(['google', 'apple'] as const)(
         'links %s to the session that started it, then back to Settings',
@@ -686,10 +780,16 @@ describe('link from Settings', () => {
         other.cookies.set(BINDING, web.cookies.get(BINDING)!);
         const elsewhere = await b.back(other, `r=${r}`);
         expect(location(elsewhere).searchParams.get('social_link')).toBe('not_authorized');
-        // Signed out.
+        // That spent the flow: even its own session can't finish it now.
+        expect(location(await b.back(web, `r=${r}`)).searchParams.get('social_link')).toBe('nonce_invalid');
+        // Signed out, with a flow of its own.
+        const second = await b.start(web, 'google', 'link');
+        const r2 = b.issuer.completeWeb(second.body.url!, 'google-sub-ada');
         const signedOut = new Jar();
         signedOut.cookies.set(BINDING, web.cookies.get(BINDING)!);
-        expect(location(await b.back(signedOut, `r=${r}`)).searchParams.get('social_link')).toBe('not_authorized');
+        expect(location(await b.back(signedOut, `r=${r2}`)).searchParams.get('social_link')).toBe('not_authorized');
+        // Neither reached the cloud.
+        expect(b.issuer.requests.some((request) => request.path === '/v1/social/web/redeem')).toBe(false);
         expect(b.db.prepare("SELECT count(*) AS n FROM auth_account WHERE providerId = 'google-native'").get()).toEqual(
             { n: 0 },
         );
