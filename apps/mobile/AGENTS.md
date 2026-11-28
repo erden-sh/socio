@@ -2746,7 +2746,7 @@ first frame with data, from the cache alone:
 The app's colors and radius are the web's, generated rather than copied; its type is each
 platform's own (Type, below):
 
-- `scripts/generate-theme.mts` reads `packages/client/src/globals.css`, `shell/tones.ts` and Tailwind's
+- `scripts/generate-theme.mts` reads `packages/ui/src/styles/tokens.css`, `shell/tones.ts` and Tailwind's
   palette in the app's own `tailwindcss/theme.css`. It writes `src/theme/generated/theme.css` (uniwind's
   `@variant light` and `@variant dark`) and `theme.json` (the same values, for native views). Never edit
   them: after a change to any of those, run `node apps/mobile/scripts/generate-theme.mts` and commit

@@ -4,6 +4,7 @@ import {
     Meta,
     Outlet,
     Scripts,
+    useRouteLoaderData,
     type LoaderFunctionArgs,
     type MetaFunction,
     type ShouldRevalidateFunction,
@@ -14,7 +15,8 @@ import { DEFAULT_BRANDING } from '@socio/shared/branding';
 import { polledLoadersSkipped } from './hooks/use-tab-refresh';
 import { I18nRoot, usePageLocale } from './i18n/I18nRoot';
 import { routeI18n } from './i18n/page-i18n';
-import { ThemeProvider } from './shell/theme';
+import { web } from './lib/web-context';
+import { DEFAULT_DOCUMENT_APPEARANCE, ThemeProvider } from './shell/theme';
 import { AppError } from './views/RouteError';
 import './globals.css';
 
@@ -29,13 +31,9 @@ const pageNonce =
         ? undefined
         : document.querySelector<HTMLScriptElement>('script[nonce]')?.nonce || undefined;
 
-/**
- * The page's locale, signed in or out (the preference, the `socio_locale`
- * cookie, Accept-Language), and the namespaces every page uses
- * (route-namespaces.json's `root`), inlined into the HTML.
- */
 export async function loader({ context }: LoaderFunctionArgs) {
-    return { i18n: await routeI18n(context, 'root') };
+    const [i18n, appearance] = await Promise.all([routeI18n(context, 'root'), web(context).services.appearance()]);
+    return { i18n, appearance };
 }
 
 /** Like the shell's: after signing in or out, not on every poll or search change. */
@@ -66,8 +64,19 @@ export const meta: MetaFunction = () => [
  */
 export function Layout({ children }: { children: ReactNode }) {
     const { lang, dir } = usePageLocale();
+    const appearance = useRouteLoaderData<typeof loader>('root')?.appearance ?? DEFAULT_DOCUMENT_APPEARANCE;
+    const scheme = appearance.colorMode === 'system' ? undefined : appearance.colorMode;
     return (
-        <html lang={lang} dir={dir} suppressHydrationWarning>
+        <html
+            lang={lang}
+            dir={dir}
+            data-theme={appearance.themeId}
+            data-color-mode={appearance.colorMode}
+            data-scheme={scheme}
+            data-appearance-scope={appearance.signedIn ? 'account' : 'browser'}
+            className={scheme}
+            suppressHydrationWarning
+        >
             <head>
                 <script src="/theme-init.js" />
                 <meta charSet="UTF-8" />
@@ -83,15 +92,25 @@ export function Layout({ children }: { children: ReactNode }) {
                     name="viewport"
                     content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content"
                 />
-                <meta name="theme-color" content="#f8f7f4" media="(prefers-color-scheme: light)" />
-                <meta name="theme-color" content="#141415" media="(prefers-color-scheme: dark)" />
+                <meta
+                    name="theme-color"
+                    content="#edf5f7"
+                    media={scheme ? (scheme === 'light' ? undefined : 'not all') : '(prefers-color-scheme: light)'}
+                    suppressHydrationWarning
+                />
+                <meta
+                    name="theme-color"
+                    content="#10191e"
+                    media={scheme ? (scheme === 'dark' ? undefined : 'not all') : '(prefers-color-scheme: dark)'}
+                    suppressHydrationWarning
+                />
                 <Meta />
                 <Links nonce={pageNonce} />
             </head>
             <body>
                 <div id="root">
                     <I18nRoot>
-                        <ThemeProvider>{children}</ThemeProvider>
+                        <ThemeProvider appearance={appearance}>{children}</ThemeProvider>
                     </I18nRoot>
                 </div>
                 <Scripts nonce={pageNonce} />

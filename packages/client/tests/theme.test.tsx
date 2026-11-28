@@ -52,6 +52,8 @@ afterEach(() => {
     localStorage.clear();
     html.className = '';
     html.style.colorScheme = '';
+    delete html.dataset.appearanceScope;
+    delete html.dataset.colorMode;
 });
 
 let current: ReturnType<typeof useThemeChoice>;
@@ -183,4 +185,22 @@ it('themes the first paint from the stored choice (public/theme-init.js)', () =>
     expect(run('light', true)).toBe('light light');
     expect(run('dark', false)).toBe('dark dark');
     expect(run('purple', false)).toBe('light light');
+});
+
+it('applies the account’s saved mode at first paint and ignores another account’s browser choice', () => {
+    const source = readFileSync(join(import.meta.dirname, '../../../public/theme-init.js'), 'utf8');
+    localStorage.setItem(THEME_STORAGE_KEY, 'dark');
+    html.dataset.appearanceScope = 'account';
+    html.dataset.colorMode = 'light';
+    new Function(source)();
+    expect(html.dataset.scheme).toBe('light');
+
+    systemDark = false;
+    html.dataset.colorMode = 'system';
+    new Function(source)();
+    expect(html.dataset.scheme).toBe('light');
+
+    html.dataset.appearanceScope = 'browser';
+    new Function(source)();
+    expect(html.dataset.scheme).toBe('dark');
 });

@@ -29,6 +29,7 @@ import { presenceHeaders } from './presence';
 import { serverAway } from './reconnect';
 import type { ShellData } from './Shell.route';
 import { SignIn } from './SignIn';
+import { useWorkspaceTheme } from './theme';
 import { defaultUiHints, UiHintsContext } from './ui-hints';
 
 /** The shell's data as the loader left it: signed in, or the sign-in gate. */
@@ -105,6 +106,7 @@ export function App() {
     const [methods, setMethods] = useState<SignInMethods>();
     const userId = workspace?.user.id;
     const signedOut = gate === 'sign-in';
+    useWorkspaceTheme(state, workspace, signedOut);
     // Counts sessions that ended here, so a poll that was in flight when
     // this tab signed out doesn't bring the old data back.
     const ended = useRef(0);
@@ -157,7 +159,11 @@ export function App() {
     // While the server is away (a restart, CB-108), the poll backs off:
     // failures in a row, and when it may ask again.
     const away = useRef({ failures: 0, retryAt: 0 });
+    // A response started before a completed refresh must not replace its fresher state.
+    const refreshStarted = useRef(0);
+    const refreshApplied = useRef(0);
     const refresh = useCallback(async () => {
+        const revision = ++refreshStarted.current;
         const session = ended.current;
         try {
             // A 304 (UNCHANGED) keeps the copy shown, without a render.
@@ -166,9 +172,10 @@ export function App() {
                 apiIfChanged<State>('/state', tags.get('/state'), undefined, presenceHeaders()),
                 apiIfChanged<WorkspaceState>('/workspace', tags.get('/workspace')),
             ]);
-            if (session !== ended.current) {
+            if (session !== ended.current || revision < refreshApplied.current) {
                 return;
             }
+            refreshApplied.current = revision;
             // Another account signed in in this browser (a sign-in link opened
             // in another tab): the pages' loader data is the previous user's.
             if (w !== UNCHANGED && shownUser.current && shownUser.current !== w.data.user.id) {
@@ -189,7 +196,7 @@ export function App() {
             void afterPoll(true);
             pollHeartbeat();
         } catch (e) {
-            if (session !== ended.current) {
+            if (session !== ended.current || revision < refreshApplied.current) {
                 return;
             }
             void afterPoll(false);

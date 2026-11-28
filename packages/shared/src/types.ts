@@ -12,6 +12,7 @@ import type { PluginBackupStatus } from './plugins/plugin-backup.js';
 import type { RoomNotifyLevel } from './rooms/room-notices.js';
 import type { ConversationKind, RoomRole, RoomsSettings } from './rooms/rooms.js';
 import type { RunTraceSummary } from './runs/run-trace.js';
+import type { ThemeId } from './settings/appearance.js';
 import type { SoulVersion } from './soul.js';
 import type { SavedUpdateSettings } from './updates/updates.js';
 import type { DictationAllowed, UserPreferences } from './voice/dictation.js';
@@ -32,6 +33,7 @@ import type { ClassifySettings } from './classify.js';
 
 export interface Settings {
     branding?: Branding | null;
+    defaultThemeId?: ThemeId | null;
     name: string;
     paused: boolean;
     researchAllowed: boolean;

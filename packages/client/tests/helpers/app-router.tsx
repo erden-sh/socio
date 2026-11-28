@@ -22,6 +22,7 @@ import type { MediaListing } from '@socio/shared/media-types';
 import type { MemoriesState } from '@socio/shared/memory';
 import { LIBRARY_FIRST_SCREEN, type PageLibrary, type PageSummary } from '@socio/shared/pages/page-library';
 import type { ScheduleDetail, SchedulesState } from '@socio/shared/schedule-types';
+import { resolveAppearance } from '@socio/shared/settings/appearance';
 import type { State, WorkspaceState } from '@socio/shared/types';
 import type { PageI18n, RunList, WebServices } from '@socio/shared/web/web';
 
@@ -226,6 +227,11 @@ export function fetchServices(log: string[] = []): WebServices {
         return value;
     };
     return {
+        appearance: async () => {
+            const viewer = await workspace();
+            const fallback = resolveAppearance({});
+            return { ...fallback, workspaceThemeId: fallback.themeId, signedIn: !!viewer };
+        },
         user: async () => (await workspace())?.user ?? null,
         i18n: async (namespaces) => englishPage(namespaces),
         signIn: once(async () => {

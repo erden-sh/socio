@@ -50,7 +50,7 @@ const workspace = (id: string) =>
     }) as unknown as WorkspaceState;
 const signedIn = (id: string) => ({
     session: 'signed-in',
-    state: {},
+    state: { settings: {} },
     workspace: workspace(id),
 });
 

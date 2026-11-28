@@ -5,14 +5,14 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 // The site's tokens (src/styles/tokens.css) are a copy of the web client's: its light :root and
-// its .dark set (packages/client/src/globals.css), the dark set under prefers-color-scheme here.
+// its .dark set (packages/ui/src/styles/tokens.css), the dark set under prefers-color-scheme here.
 // The tone shades are Tailwind 4's, used as the client's shell/tones.ts uses them. This fails when
 // either side changes alone.
 
 const root = join(import.meta.dirname, '../../..');
 const read = (path: string) => readFileSync(join(root, path), 'utf8');
 const site = read('apps/site/src/styles/tokens.css');
-const client = read('packages/client/src/globals.css');
+const client = read('packages/ui/src/styles/tokens.css');
 
 /** The custom properties declared directly in the first block opened by `opener`. */
 function block(css: string, opener: RegExp): Map<string, string> {

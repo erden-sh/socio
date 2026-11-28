@@ -11,6 +11,7 @@ import { DictationAllowedSetting, TranscriptionSetting } from '../voice/Dictatio
 import { VoiceCallsSetting } from '../voice/VoiceCallSettings';
 
 import { SettingsCard } from './AccountSettings';
+import { WorkspaceAppearance } from './AppearanceSettings';
 import { AppInviteLinksSetting } from './AppInviteLinksSetting';
 import { AppLogsSetting } from './AppLogsSetting';
 import { AppPolicySetting } from './AppPolicySetting';
@@ -49,12 +50,11 @@ export function WorkspaceSettings({
     const { setup } = workspace;
     return (
         <>
-            {isAdmin(workspace.user) && (
-                <BrandingSetting
-                    // Saved changes come in through the props (useAutosave follows them).
-                    branding={state.settings.branding}
-                    mutate={mutate}
-                />
+            {!readOnly && (
+                <>
+                    <BrandingSetting branding={state.settings.branding} mutate={mutate} />
+                    <WorkspaceAppearance defaultThemeId={state.settings.defaultThemeId} mutate={mutate} />
+                </>
             )}
             <PermissionsCard
                 researchAllowed={state.settings.researchAllowed}

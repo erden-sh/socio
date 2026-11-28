@@ -2,10 +2,10 @@ import { readFileSync } from 'node:fs';
 
 import { expect } from 'vitest';
 
-// The theme's tokens as globals.css sets them: `:root` for light, and
+// The theme's tokens as the UI package sets them: `:root` for light, and
 // `.dark` laid over it for dark, as the browser resolves them.
 
-const css = readFileSync(new URL('../../src/globals.css', import.meta.url), 'utf8');
+const css = readFileSync(new URL(import.meta.resolve('@socio/ui/tokens.css')), 'utf8');
 
 /** A block's custom properties: `:root { … }` or `.dark { … }`. */
 function block(selector: string): Record<string, string> {

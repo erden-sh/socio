@@ -21,8 +21,15 @@ it('gives native selects one look whose fixed height can’t clip the chosen val
         // 16 px on phones, so iOS doesn't zoom in (CB-96); smaller from md.
         expect(list).toContain('text-base');
         expect(list.some((name) => name.startsWith('md:text-'))).toBe(true);
-        // A focus ring of its own, now that the legacy outline is gone.
-        expect(list).toContain('focus-visible:ring-[3px]');
+        // The shared keyboard focus indicator is solid and offset.
+        expect(list).toEqual(
+            expect.arrayContaining([
+                'focus-visible:outline-2',
+                'focus-visible:outline-offset-2',
+                'focus-visible:outline-solid',
+                'focus-visible:outline-ring',
+            ]),
+        );
     }
     expect(classes(dialogSelect)).toContain('w-full');
 });

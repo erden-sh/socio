@@ -46,8 +46,9 @@ it('makes every editable field 16px on touch screens, so iOS does not zoom in on
 
 it('keeps the shadcn fields and the page editor at 16px on phones', () => {
     // Already 16px below md, so the rule changes nothing for them.
-    for (const file of ['components/ui/input.tsx', 'components/ui/textarea.tsx']) {
-        expect(read(file), file).toMatch(/ text-base .*md:text-sm/);
+    for (const file of ['input', 'textarea']) {
+        const source = readFileSync(new URL(import.meta.resolve(`@socio/ui/components/${file}`)), 'utf8');
+        expect(source, file).toMatch(/ text-base .*md:text-sm/);
     }
     expect(read('modules/pages/editor.css')).toMatch(/\.document-prose \{[^}]*font-size: 16px;/);
 });

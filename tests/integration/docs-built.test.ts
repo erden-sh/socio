@@ -39,7 +39,7 @@ it.skipIf(!existsSync('dist/web/server/index.js'))(
             clientDir: resolve('dist/web/client'),
             services: () => ({
                 headers: [],
-                services: userServices({ docs } as WebServiceSources, async () =>
+                services: userServices({ docs, store: { settings: () => ({}) } } as WebServiceSources, async () =>
                     role ? ({ id: 'test', role } as User) : null,
                 ),
             }),

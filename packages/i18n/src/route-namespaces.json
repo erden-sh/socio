@@ -10,7 +10,7 @@
         "rooms.nav",
         "spaces.nav"
     ],
-    "settings:section:workspace": ["settings.workspace"],
+    "settings:section:workspace": ["settings.workspace", "settings.appearance"],
     "settings:section:people": ["settings.people", "settings.service-accounts"],
     "settings:section:access": ["settings.access"],
     "settings:section:secrets": ["settings.secrets"],
@@ -19,7 +19,13 @@
     "settings:section:deleted-spaces": ["settings.deleted-spaces"],
     "settings:section:features": ["settings.features"],
     "settings:section:coding": [],
-    "settings:section:account": ["settings.account", "settings.devices", "settings.language", "settings.mcp"],
+    "settings:section:account": [
+        "settings.account",
+        "settings.appearance",
+        "settings.devices",
+        "settings.language",
+        "settings.mcp"
+    ],
     "settings:section:notifications": ["settings.notifications", "rooms.notify"],
     "settings:section:inference": ["settings.inference"],
     "settings:section:archived-chats": ["settings.archived-chats"],

@@ -77,7 +77,7 @@ describe('--check', () => {
 
 describe('--check against a web that changed', () => {
     const committed = buildTheme();
-    /** The sources with globals.css or tones.ts replaced by an edited copy in the scratch folder. */
+    /** The sources with tokens.css or tones.ts replaced by an edited copy in the scratch folder. */
     let copies = 0;
     const edited = (name: 'globals' | 'tones', edit: (text: string) => string) => {
         copies += 1;

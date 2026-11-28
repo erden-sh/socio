@@ -1,0 +1,283 @@
+/* Socio web palette. The shared typography, layout and radii are in globals.css. */
+
+:root[data-theme='erden-glass'] {
+    --brand: #176358;
+    --brand-foreground: #ffffff;
+    --background: #edf5f7;
+    --foreground: #14282d;
+    --card: #fcfefe;
+    --card-foreground: var(--foreground);
+    --popover: #fcfefe;
+    --popover-foreground: var(--foreground);
+    --primary: #21675c;
+    --primary-foreground: #ffffff;
+    --primary-hover: #1d5a50;
+    --primary-disabled: #255953;
+    --secondary: #f2f4f5;
+    --secondary-foreground: var(--foreground);
+    --muted: #f2f4f5;
+    --muted-foreground: #395760;
+    --accent: #e5efed;
+    --accent-foreground: var(--foreground);
+    --destructive: #a2393d;
+    --destructive-foreground: #ffffff;
+    --border: #cbdde0;
+    --input: #7c888b;
+    --ring: #176358;
+    --chart-1: var(--brand);
+    --chart-2: #5669ab;
+    --chart-3: #a54429;
+    --chart-4: #557570;
+    --chart-5: var(--muted-foreground);
+    --sidebar: #f5fbfb;
+    --sidebar-foreground: var(--foreground);
+    --sidebar-primary: var(--primary);
+    --sidebar-primary-foreground: var(--primary-foreground);
+    --sidebar-accent: #e5efed;
+    --sidebar-accent-foreground: var(--foreground);
+    --sidebar-muted-foreground: var(--muted-foreground);
+    --sidebar-border: var(--border);
+    --sidebar-ring: var(--ring);
+    --user-bubble: var(--primary);
+    --user-bubble-foreground: var(--primary-foreground);
+    --user-bubble-pending: #e5efed;
+    --user-bubble-pending-border: var(--ring);
+    --chat-link: #176358;
+}
+
+:root[data-theme='erden-glass'].dark {
+    --brand: #a3e7db;
+    --brand-foreground: #000000;
+    --background: #10191e;
+    --foreground: #edf9fa;
+    --card: #1b282e;
+    --card-foreground: var(--foreground);
+    --popover: #1b282e;
+    --popover-foreground: var(--foreground);
+    --primary: #92decf;
+    --primary-foreground: #000000;
+    --primary-hover: #a0e2d5;
+    --primary-disabled: #9ed7cd;
+    --secondary: #2a373c;
+    --secondary-foreground: var(--foreground);
+    --muted: #2a373c;
+    --muted-foreground: #a8c2c7;
+    --accent: #354c4f;
+    --accent-foreground: var(--foreground);
+    --destructive: #ffb0af;
+    --destructive-foreground: #2b151a;
+    --border: #3a525d;
+    --input: #708890;
+    --ring: #a3e7db;
+    --chart-1: var(--brand);
+    --chart-2: #95a5e6;
+    --chart-3: #ec8466;
+    --chart-4: #c9e8dd;
+    --chart-5: var(--muted-foreground);
+    --sidebar: #17232a;
+    --sidebar-foreground: var(--foreground);
+    --sidebar-primary: var(--primary);
+    --sidebar-primary-foreground: var(--primary-foreground);
+    --sidebar-accent: #354c4f;
+    --sidebar-accent-foreground: var(--foreground);
+    --sidebar-muted-foreground: var(--muted-foreground);
+    --sidebar-border: var(--border);
+    --sidebar-ring: var(--ring);
+    --user-bubble: var(--primary);
+    --user-bubble-foreground: var(--primary-foreground);
+    --user-bubble-pending: #354c4f;
+    --user-bubble-pending-border: var(--ring);
+    --chat-link: #a3e7db;
+}
+
+/* The People Desk material separates floating controls from solid working surfaces. */
+:root[data-theme='erden-glass'] {
+    --glass-rim: light-dark(#ffffffdc, #d7faff40);
+    --glass-highlight: light-dark(#ffffffbf, #d3feff23);
+    --glass-recess: light-dark(#5280941d, #050e1654);
+    --glass-shadow-color: light-dark(#25617021, #03080d70);
+    --glass-edge: inset 0 1px 0 var(--glass-highlight);
+    --glass-float:
+        0 1px 2px var(--glass-recess), 0 10px 26px -10px var(--glass-shadow-color), var(--glass-edge),
+        inset 0 -1px 0 var(--glass-recess);
+    --glass-filter: blur(18px) saturate(117%);
+    --glass-opacity: 77%;
+    --glass-command-opacity: 89%;
+    --glass-toolbar-button-opacity: 52%;
+    --glass-panel-radius: 18px;
+    --glass-floating-radius: 22px;
+    --glass-canvas:
+        radial-gradient(ellipse 670px 420px at 7% 6%, light-dark(#99dace8c, #3caa9570), transparent 86%),
+        radial-gradient(ellipse 630px 355px at 82% 0%, light-dark(#adcaf584, #4676ad66), transparent 90%),
+        radial-gradient(ellipse 580px 410px at 100% 96%, light-dark(#7eaede4d, #4a62ac50), transparent 94%);
+    --control-selection: light-dark(#e4efed, #354c4f);
+    --control-selection-border: light-dark(#acceca, #52797c);
+}
+
+:root[data-theme='erden-glass'] [data-slot='workspace-canvas'] {
+    background-image: var(--glass-canvas);
+}
+
+:root[data-theme='erden-glass']
+    :is(
+        [data-slot='app-header'],
+        [data-slot='sidebar-inner'],
+        [data-slot='dialog-content'][data-content='command'],
+        [data-slot='dropdown-menu-content'],
+        [data-slot='dropdown-menu-sub-content'],
+        [data-slot='select-content'],
+        [data-slot='popover-content']
+    ) {
+    background-color: var(--popover);
+}
+
+:root[data-theme='erden-glass']
+    :is([data-slot='app-header'], [data-slot='sidebar-inner'], [data-slot='dialog-content'][data-content='command']) {
+    border: 1px solid var(--glass-rim);
+    border-radius: var(--glass-floating-radius);
+    box-shadow: var(--glass-float);
+}
+
+:root[data-theme='erden-glass'] [data-slot='dialog-content'][data-content='command'] {
+    --glass-opacity: var(--glass-command-opacity);
+}
+
+:root[data-theme='erden-glass'] [data-slot='dialog-content'][data-content='command'] [data-slot='command'] {
+    background: transparent;
+}
+
+:root[data-theme='erden-glass'] [data-slot='command-input-wrapper']:has([data-slot='command-input']:focus-visible) {
+    box-shadow: inset 0 -2px var(--ring);
+}
+
+:root[data-theme='erden-glass'] [data-slot='command-item'][data-selected='true'] {
+    background-color: var(--control-selection);
+    box-shadow: inset 0 0 0 1px var(--control-selection-border);
+}
+
+:root[data-theme='erden-glass'] [data-slot='card'] {
+    border-radius: var(--glass-panel-radius);
+    box-shadow: 0 5px 18px -13px var(--glass-shadow-color);
+}
+
+:root[data-theme='erden-glass'] [data-slot='dialog-content']:not([data-content='command']),
+:root[data-theme='erden-glass'] [data-slot='alert-dialog-content'] {
+    border-radius: var(--glass-panel-radius);
+    background-color: var(--card);
+}
+
+:root[data-theme='erden-glass']
+    [data-component='button'][data-variant='default']:is([data-size='default'], [data-size='lg']),
+:root[data-theme='erden-glass'] [data-slot='app-header'] [data-component='button'][data-variant='outline'] {
+    border-radius: 999px;
+    border: 1px solid var(--glass-rim);
+    box-shadow: var(--glass-float);
+}
+
+:root[data-theme='erden-glass'] [data-slot='app-header'] [data-component='button'][data-variant='outline']:not(:hover) {
+    background-color: color-mix(in srgb, var(--card) var(--glass-toolbar-button-opacity), transparent);
+}
+
+:root[data-theme='erden-glass'] [data-slot='sidebar-menu-button'] {
+    border-radius: 999px;
+}
+
+:root[data-theme='erden-glass'] [data-slot='sidebar-menu-button']:focus-visible {
+    outline: 2px solid var(--sidebar-ring);
+    outline-offset: -2px;
+}
+
+:root[data-theme='erden-glass'] [data-slot='sidebar-menu-button'][data-active='true'] {
+    color: var(--brand);
+    background: var(--control-selection);
+    box-shadow:
+        inset 0 0 0 1px var(--control-selection-border),
+        var(--glass-edge);
+}
+
+:root[data-theme='erden-glass'] [data-slot='tabs-list'][data-variant='default'][aria-orientation='horizontal'] {
+    height: 2.5rem;
+    max-width: 100%;
+    gap: 2px;
+    padding: 3px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background-color: var(--card);
+}
+
+:root[data-theme='erden-glass']
+    [data-slot='tabs-list'][data-variant='default'][aria-orientation='horizontal']
+    > [data-slot='tabs-trigger'] {
+    border-radius: 999px;
+}
+
+:root[data-theme='erden-glass']
+    [data-slot='tabs-list'][data-variant='default'][aria-orientation='horizontal']
+    > [data-slot='tabs-trigger'][data-state='active'] {
+    border-color: var(--control-selection-border);
+    background: var(--control-selection);
+    color: var(--brand);
+}
+
+:root[data-theme='erden-glass'] [data-slot='table-row'][data-state='selected'] {
+    background-color: var(--control-selection);
+}
+
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+    :root[data-theme='erden-glass']
+        :is(
+            [data-slot='app-header'],
+            [data-slot='sidebar-inner'],
+            [data-slot='dialog-content'][data-content='command'],
+            [data-slot='dropdown-menu-content'],
+            [data-slot='dropdown-menu-sub-content'],
+            [data-slot='select-content'],
+            [data-slot='popover-content']
+        ) {
+        background-color: color-mix(in srgb, var(--popover) var(--glass-opacity), transparent);
+        -webkit-backdrop-filter: var(--glass-filter);
+        backdrop-filter: var(--glass-filter);
+    }
+
+    :root[data-theme='erden-glass']
+        :is(
+            [data-slot='app-header'],
+            [data-slot='sidebar-inner'],
+            [data-slot='dialog-content'][data-content='command']
+        ) {
+        background-image: linear-gradient(
+            to bottom,
+            color-mix(in srgb, var(--glass-highlight) 44%, transparent),
+            transparent 38px
+        );
+    }
+}
+
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more), (forced-colors: active) {
+    :root[data-theme='erden-glass'] {
+        --glass-rim: var(--input);
+        --glass-filter: none;
+        --glass-opacity: 100%;
+        --glass-command-opacity: 100%;
+        --glass-toolbar-button-opacity: 100%;
+        --glass-canvas: none;
+        --glass-float: none;
+    }
+
+    :root[data-theme='erden-glass']
+        :is(
+            [data-slot='app-header'],
+            [data-slot='sidebar-inner'],
+            [data-slot='dialog-content'][data-content='command']
+        ) {
+        background-image: none;
+    }
+}
+
+@media (forced-colors: active) {
+    :root[data-theme='erden-glass']
+        :is([data-slot='sidebar-menu-button'][data-active='true'], [data-slot='command-item'][data-selected='true']) {
+        outline: 1px solid Highlight;
+        outline-offset: -2px;
+    }
+}

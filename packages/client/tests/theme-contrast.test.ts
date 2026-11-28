@@ -4,7 +4,7 @@ import { expect, it } from 'vitest';
 
 import { color, contrast, light, themes } from './helpers/theme-tokens';
 
-// The theme's tokens (globals.css) meet WCAG AA where text sits on them,
+// The theme's tokens meet WCAG AA where text sits on them,
 // in light and in dark: white (or the dark theme's ink) on the primary
 // fill at rest, hovered and disabled; the sidebar's quieter words on its
 // rows; muted words on the surfaces they're used on; the menus' focus
@@ -83,3 +83,46 @@ it.each(Object.entries(themes))(
         }
     },
 );
+
+const workspacePalettes = ['indigo', 'erden', 'erden-glass', 'cobalt', 'plum', 'clay'] as const;
+
+it.each(workspacePalettes)('ships both schemes of %s with usable text, controls and focus', (id) => {
+    const theme = readFileSync(new URL(import.meta.resolve('@socio/ui/theme.css')), 'utf8');
+    expect(theme).toContain(`./themes/${id}.css`);
+    const css = readFileSync(new URL(import.meta.resolve(`@socio/ui/themes/${id}.css`)), 'utf8');
+
+    for (const scheme of ['light', 'dark'] as const) {
+        const selector = `:root[data-theme='${id}']${scheme === 'dark' ? '.dark' : ''}`;
+        const start = css.indexOf(`${selector} {`);
+        expect(start, selector).toBeGreaterThanOrEqual(0);
+        const declaration = css.slice(start, css.indexOf('}', start));
+        const tokens = {
+            ...themes[scheme],
+            ...Object.fromEntries(
+                [...declaration.matchAll(/--([\w-]+):\s*([^;]+);/g)].map(([, key, value]) => [key, value]),
+            ),
+        };
+        for (const [ink, surface, ratio] of [
+            ['foreground', 'background', 4.5],
+            ['card-foreground', 'card', 4.5],
+            ['popover-foreground', 'popover', 4.5],
+            ['primary-foreground', 'primary', 4.5],
+            ['primary-foreground', 'primary-hover', 4.5],
+            ['primary-foreground', 'primary-disabled', 4.5],
+            ['sidebar-muted-foreground', 'sidebar-accent', 4.5],
+            ['muted-foreground', 'muted', 4.5],
+            ['ring', 'popover', 3],
+            ['ring', 'accent', 3],
+            ['input', 'card', 3],
+            ['destructive-foreground', 'destructive', 4.5],
+            ['destructive', 'card', 4.5],
+            ['chat-link', 'muted', 4.5],
+            ['chat-link', 'user-bubble-pending', 4.5],
+        ] as const) {
+            expect(
+                contrast(color(tokens, ink), color(tokens, surface)),
+                `${scheme} ${ink} on ${surface}`,
+            ).toBeGreaterThanOrEqual(ratio);
+        }
+    }
+});

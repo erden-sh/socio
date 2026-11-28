@@ -11,7 +11,9 @@ import { learningContainerIdSchema } from '@socio/shared/learning';
 import type { MediaKind } from '@socio/shared/media-types';
 import { LIBRARY_FIRST_SCREEN } from '@socio/shared/pages/page-library';
 import { isAdmin, isOperator } from '@socio/shared/roles';
+import { resolveAppearance } from '@socio/shared/settings/appearance';
 import type { User } from '@socio/shared/types';
+import type { UserPreferences } from '@socio/shared/voice/dictation';
 import type { WebServices } from '@socio/shared/web/web';
 
 import type { ApprovalsViewsShape } from '../approvals/contract.js';
@@ -107,6 +109,7 @@ export interface WebServiceSources {
     /** The features' views (the sign-in screen and the state's version read them without a platform too). */
     views: PageViews;
     auth: AuthSetup;
+    appearancePreferences?: (userId: string) => Pick<UserPreferences, 'themeId' | 'colorMode'>;
     /**
      * The dictionaries (`I18nCatalog`), and a person's saved locale
      * (`user_preferences.locale`); without them, pages render en-US.
@@ -152,6 +155,20 @@ export function userServices(
     };
     return {
         user,
+        appearance: once(async () => {
+            const viewer = await user();
+            const defaultThemeId = store.settings().defaultThemeId;
+            const preferences = viewer ? sources.appearancePreferences?.(viewer.id) : undefined;
+            return {
+                ...resolveAppearance({
+                    defaultThemeId,
+                    personalThemeId: preferences?.themeId,
+                    colorMode: preferences?.colorMode,
+                }),
+                workspaceThemeId: resolveAppearance({ defaultThemeId }).themeId,
+                signedIn: !!viewer,
+            };
+        }),
         docsPage: async (url) => sources.docs?.screen(url, (await user())?.role) ?? null,
         docsTree: async () => sources.docs?.tree((await user())?.role) ?? null,
         docsMarkdown: async (url) => sources.docs?.markdown(url, (await user())?.role) ?? null,

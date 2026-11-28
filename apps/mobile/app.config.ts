@@ -21,7 +21,7 @@ import { appVariant } from './variant.ts';
 const CREAM = '#F5EBD6';
 
 // The native parts drawn before or outside React, in the web's tokens
-// (src/theme/generated/theme.json, generated from packages/client/src/globals.css),
+// (src/theme/generated/theme.json, generated from packages/ui/src/styles/tokens.css),
 // light and dark, so none flashes the other scheme:
 // - Android's alert dialogs (T3 Code's modern alert dialog plugin): card,
 //   foreground, muted-foreground and primary.

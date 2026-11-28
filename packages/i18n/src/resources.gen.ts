@@ -4086,6 +4086,35 @@ export interface EnglishResources {
             failed: 'Could not leave the workspace.';
         };
     };
+    'settings.appearance': {
+        personal: {
+            title: 'Appearance';
+            description: 'Your preferences follow you across browsers.';
+            theme: 'Theme';
+            inherit: 'Use workspace theme ({{theme}})';
+            colorMode: 'Color mode';
+        };
+        workspace: {
+            title: 'Workspace appearance';
+            description: 'Applies to people who use the workspace theme.';
+            defaultTheme: 'Default theme';
+            inherit: 'Use Socio default ({{theme}})';
+        };
+        modes: {
+            light: 'Light';
+            dark: 'Dark';
+            system: 'System';
+        };
+        themes: {
+            socio: 'Socio';
+            indigo: 'People desk · Indigo';
+            erden: 'Erden';
+            'erden-glass': 'Erden Glass';
+            cobalt: 'Cobalt & Ice';
+            plum: 'Plum & Smoke';
+            clay: 'Clay & Graphite';
+        };
+    };
     'settings.archived-chats': {
         title: 'Archived chats';
         empty: 'Chats you archive leave your sidebar and wait here.';

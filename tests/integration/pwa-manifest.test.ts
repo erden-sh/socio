@@ -42,7 +42,9 @@ it('lists each icon at the size its file is', () => {
 
 it("matches the page's light theme colour", () => {
     const root = readFileSync('packages/client/src/root.tsx', 'utf8');
+    const css = readFileSync('packages/ui/src/styles/themes/erden-glass.css', 'utf8');
     for (const colour of [manifest.theme_color, manifest.background_color]) {
         expect(root).toContain(`content="${colour}"`);
+        expect(css).toContain(`--background: ${colour};`);
     }
 });

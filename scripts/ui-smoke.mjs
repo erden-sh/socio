@@ -657,7 +657,7 @@ try {
         const theme = () =>
             page.evaluate(() => ({
                 dark: document.documentElement.classList.contains('dark'),
-                stored: localStorage.getItem('theme'),
+                mode: document.documentElement.dataset.colorMode,
                 // Relative luminance of the view canvas.
                 canvas: (() => {
                     const [r, g, b] = getComputedStyle(document.querySelector('[data-view-canvas]'))
@@ -666,17 +666,21 @@ try {
                     return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
                 })(),
             }));
-        const expectTheme = async (dark, stored) => {
-            await page.waitForFunction((want) => document.documentElement.classList.contains('dark') === want, dark, {
-                timeout: 5_000,
-            });
+        const expectTheme = async (dark, mode) => {
+            await page.waitForFunction(
+                ({ dark, mode }) =>
+                    document.documentElement.classList.contains('dark') === dark &&
+                    document.documentElement.dataset.colorMode === mode,
+                { dark, mode },
+                { timeout: 5_000 },
+            );
             const now = await theme();
-            if (now.stored !== stored || (dark ? now.canvas > 0.2 : now.canvas < 0.9)) {
+            if (now.mode !== mode || (dark ? now.canvas > 0.2 : now.canvas < 0.9)) {
                 throw new Error(`Theme ${JSON.stringify(now)}, wanted dark=${dark}`);
             }
         };
         const before = await theme();
-        if (before.dark || before.stored) {
+        if (before.dark || before.mode !== 'system') {
             throw new Error(`Not on the light system default: ${JSON.stringify(before)}`);
         }
         await page.getByRole('button', { name: /^Account: / }).click();
@@ -1415,7 +1419,10 @@ try {
                     step(`screenshot ${name}-${theme}.png`);
                 }
                 await page.evaluate(() =>
-                    document.documentElement.classList.toggle('dark', localStorage.getItem('theme') === 'dark'),
+                    document.documentElement.classList.toggle(
+                        'dark',
+                        document.documentElement.dataset.scheme === 'dark',
+                    ),
                 );
             };
             await page.setViewportSize({ width: 1440, height: 900 });
@@ -1533,7 +1540,10 @@ try {
                     step(`screenshot ${name}-${theme}.png`);
                 }
                 await page.evaluate(() =>
-                    document.documentElement.classList.toggle('dark', localStorage.getItem('theme') === 'dark'),
+                    document.documentElement.classList.toggle(
+                        'dark',
+                        document.documentElement.dataset.scheme === 'dark',
+                    ),
                 );
             };
             await page.setViewportSize({ width: 1440, height: 900 });
@@ -1631,7 +1641,10 @@ try {
                     step(`screenshot ${name}-${theme}.png`);
                 }
                 await page.evaluate(() =>
-                    document.documentElement.classList.toggle('dark', localStorage.getItem('theme') === 'dark'),
+                    document.documentElement.classList.toggle(
+                        'dark',
+                        document.documentElement.dataset.scheme === 'dark',
+                    ),
                 );
             };
             const tiles = page.locator('[data-slot="ops-tile"]');
@@ -1739,7 +1752,10 @@ try {
                     step(`screenshot ${name}-${theme}.png`);
                 }
                 await page.evaluate(() =>
-                    document.documentElement.classList.toggle('dark', localStorage.getItem('theme') === 'dark'),
+                    document.documentElement.classList.toggle(
+                        'dark',
+                        document.documentElement.dataset.scheme === 'dark',
+                    ),
                 );
             };
             const open = async (path, heading, ready) => {
@@ -1866,7 +1882,10 @@ try {
                     step(`screenshot ${name}-${theme}.png`);
                 }
                 await page.evaluate(() =>
-                    document.documentElement.classList.toggle('dark', localStorage.getItem('theme') === 'dark'),
+                    document.documentElement.classList.toggle(
+                        'dark',
+                        document.documentElement.dataset.scheme === 'dark',
+                    ),
                 );
             };
             await page.setViewportSize({ width: 1440, height: 900 });
@@ -1988,7 +2007,10 @@ try {
                 }
                 await page.setViewportSize({ width: 1280, height: 860 });
                 await page.evaluate(() =>
-                    document.documentElement.classList.toggle('dark', localStorage.getItem('theme') === 'dark'),
+                    document.documentElement.classList.toggle(
+                        'dark',
+                        document.documentElement.dataset.scheme === 'dark',
+                    ),
                 );
                 step(`screenshots ${name}-light.png, ${name}-dark.png`);
             };
@@ -2582,8 +2604,7 @@ try {
             await checkBubble();
             step('the bubble shows the thumbnail and the file chip, after a reload too');
             if (shots) {
-                await page.evaluate(() => localStorage.setItem('theme', 'dark'));
-                await reload();
+                await page.evaluate(() => document.documentElement.classList.add('dark'));
                 await checkBubble();
                 await shot('media-bubble-dark');
                 await page.evaluate(() => localStorage.removeItem('theme'));
@@ -2667,8 +2688,8 @@ try {
             await page.locator('[data-slot="media-empty"]').waitFor();
             step('deleted it');
             if (shots) {
-                await page.evaluate(() => localStorage.setItem('theme', 'dark'));
                 await goto(`${base}/media`);
+                await page.evaluate(() => document.documentElement.classList.add('dark'));
                 await page.locator('[data-slot="media-folders"]').waitFor();
                 await shot('media-page-dark');
                 await page.evaluate(() => localStorage.removeItem('theme'));
@@ -2687,9 +2708,8 @@ try {
             };
             const setDark = async (dark) => {
                 await page.evaluate((value) => {
-                    localStorage.setItem('theme', value ? 'dark' : 'light');
+                    document.documentElement.classList.toggle('dark', value);
                 }, dark);
-                await reload();
                 await page.locator('[data-slot="app-header"]').waitFor();
             };
             await goto(base);
@@ -2882,9 +2902,8 @@ try {
             };
             const setDark = async (dark) => {
                 await page.evaluate((value) => {
-                    localStorage.setItem('theme', value ? 'dark' : 'light');
+                    document.documentElement.classList.toggle('dark', value);
                 }, dark);
-                await reload();
                 await page.locator('[data-slot="app-header"]').waitFor();
             };
             const api = await apiSignIn(base, admin);
@@ -3044,9 +3063,8 @@ try {
             };
             const setDark = async (dark) => {
                 await page.evaluate((value) => {
-                    localStorage.setItem('theme', value ? 'dark' : 'light');
+                    document.documentElement.classList.toggle('dark', value);
                 }, dark);
-                await reload();
                 await page.locator('[data-slot="app-header"]').waitFor();
             };
             await goto(base);
@@ -3395,7 +3413,10 @@ try {
                     step(`screenshot ${name}-${theme}.png`);
                 }
                 await tab.evaluate(() =>
-                    document.documentElement.classList.toggle('dark', localStorage.getItem('theme') === 'dark'),
+                    document.documentElement.classList.toggle(
+                        'dark',
+                        document.documentElement.dataset.scheme === 'dark',
+                    ),
                 );
             };
             await page.setViewportSize({ width: 1440, height: 900 });
@@ -4214,7 +4235,10 @@ try {
                     await tab.screenshot({ path: `${args.shots}/${name}-${theme}.png` });
                 }
                 await tab.evaluate(() =>
-                    document.documentElement.classList.toggle('dark', localStorage.getItem('theme') === 'dark'),
+                    document.documentElement.classList.toggle(
+                        'dark',
+                        document.documentElement.dataset.scheme === 'dark',
+                    ),
                 );
             };
             const record = async (tab, who, name) => {
@@ -4350,7 +4374,10 @@ try {
                     await tab.screenshot({ path: `${shots}/${name}-${theme}.png` });
                 }
                 await tab.evaluate(() =>
-                    document.documentElement.classList.toggle('dark', localStorage.getItem('theme') === 'dark'),
+                    document.documentElement.classList.toggle(
+                        'dark',
+                        document.documentElement.dataset.scheme === 'dark',
+                    ),
                 );
                 step(`screenshots ${name}-light.png, ${name}-dark.png`);
             };
