@@ -25,6 +25,11 @@ on:
   schedule:
     - cron: '23 * * * *'
   workflow_dispatch:
+    inputs:
+      force:
+        description: Send the import even when it matches the last one sent to this translation app.
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -100,10 +105,14 @@ jobs:
         if: steps.config.outputs.enabled == 'true'
         env:
           HASH: ${{ steps.payload.outputs.hash }}
+          FORCE: ${{ github.event_name == 'workflow_dispatch' && inputs.force == true }}
         run: |
           set -euo pipefail
           last="$(cat "$RUNNER_TEMP/i18n-import-last/hash" 2>/dev/null || true)"
-          if [ "$last" = "$HASH" ]; then
+          if [ "$FORCE" = true ]; then
+            echo "::notice::Sending the import as asked (force), whatever the last one was."
+            echo "unchanged=false" >> "$GITHUB_OUTPUT"
+          elif [ "$last" = "$HASH" ]; then
             echo "::notice::The translations, glossary, context notes and pull requests are unchanged since the last import. Nothing to send."
             echo "unchanged=true" >> "$GITHUB_OUTPUT"
           else
