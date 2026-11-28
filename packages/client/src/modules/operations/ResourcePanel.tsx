@@ -1,31 +1,48 @@
+import { useTranslation } from '@socio/i18n/react';
+import { dateTimeFormat, numberFormat } from '@socio/shared/locale';
 import {
     RESOURCE_METRICS,
     type ResourceHistory,
     type ResourceMetric,
 } from '@socio/shared/operations/operations-resources';
 
+import { onDemand } from '../../i18n/on-demand';
 import { SettingsCard } from '../settings/AccountSettings';
 
 import { useOpsAnswer } from './use-ops';
+
+// In the reader's locale (`@socio/shared/locale`), not the runtime's.
+const oneDecimal = numberFormat({ maximumFractionDigits: 1 });
+const twoDecimals = numberFormat({ maximumFractionDigits: 2 });
+const when = dateTimeFormat({ dateStyle: 'medium', timeStyle: 'medium' });
 
 const observed = (key: ResourceMetric, value: number | null) =>
     value === null
         ? '—'
         : key.endsWith('Bytes')
-          ? `${(value / 1048576).toLocaleString(undefined, { maximumFractionDigits: 1 })} MiB`
-          : `${value.toLocaleString(undefined, { maximumFractionDigits: 2 })}${key === 'cpuPercent' ? '%' : ''}`;
-export function ResourcePanel() {
+          ? `${oneDecimal.format(value / 1048576)} MiB`
+          : `${twoDecimals.format(value)}${key === 'cpuPercent' ? '%' : ''}`;
+
+/**
+ * The workspace server's own resources, host-wide: the latest sample, the
+ * metrics that stopped being collected, and the last day's hourly
+ * averages. Below the Health page's numbers, so its words load on demand
+ * (operations.resources).
+ */
+export const ResourcePanel = onDemand(['operations.resources'], HostResources);
+
+function HostResources() {
+    const { t } = useTranslation(['operations.resources']);
     const { data, error } = useOpsAnswer<ResourceHistory>('/operations/resources');
     return (
         <SettingsCard>
             <div className="grid min-w-0 gap-4" data-slot="ops-resource-history">
                 <div>
-                    <h3 className="font-medium">Server resources (host-wide)</h3>
+                    <h3 className="font-medium">{t('operations.resources:host.title')}</h3>
                     <p className="text-muted-foreground">
-                        Workspace server measurements, independent of the person and source filters. Load and system
-                        memory are the whole host’s as the app sees it, other tenants included; this deployment’s own
-                        use is under Deployment services. Collected every {data?.collectedEverySeconds ?? '…'} seconds;
-                        storage totals are collected daily. No history is inferred before collection starts.
+                        {t('operations.resources:host.description', {
+                            seconds: data ? String(data.collectedEverySeconds) : '…',
+                        })}
                     </p>
                 </div>
                 {error && (
@@ -36,8 +53,11 @@ export function ResourcePanel() {
                 {data && (
                     <>
                         <p>
-                            Last sample:{' '}
-                            {data.latest ? new Date(data.latest.at).toLocaleString() : 'No samples collected yet.'}
+                            {t('operations.resources:host.last-sample', {
+                                when: data.latest
+                                    ? when.format(data.latest.at)
+                                    : t('operations.resources:host.no-samples'),
+                            })}
                         </p>
                         <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                             {(Object.keys(RESOURCE_METRICS) as ResourceMetric[]).map((key) => {
@@ -47,42 +67,52 @@ export function ResourcePanel() {
                                     null;
                                 return (
                                     <div key={key} className="min-w-0">
-                                        <dt className="text-sm text-muted-foreground">{RESOURCE_METRICS[key]}</dt>
+                                        <dt className="text-sm text-muted-foreground">
+                                            {t(`operations.resources:host.metric.${key}`)}
+                                        </dt>
                                         <dd className="m-0 tabular-nums">{observed(key, value)}</dd>
                                     </div>
                                 );
                             })}
                         </dl>
                         <div data-slot="ops-collection-gaps">
-                            <h4 className="font-medium">Collection gaps</h4>
+                            <h4 className="font-medium">{t('operations.resources:host.gaps')}</h4>
                             {data.gaps.length ? (
                                 <ul className="m-0 grid gap-1 pl-5">
                                     {data.gaps.map((gap) => (
                                         <li key={gap.metric}>
-                                            {gap.label}:{' '}
                                             {gap.state === 'missing'
-                                                ? 'no history'
-                                                : `last collected ${new Date(gap.lastAt!).toLocaleString()}`}
+                                                ? t('operations.resources:host.gap-missing', {
+                                                      metric: t(`operations.resources:host.metric.${gap.metric}`),
+                                                  })
+                                                : t('operations.resources:host.gap-stale', {
+                                                      metric: t(`operations.resources:host.metric.${gap.metric}`),
+                                                      when: when.format(gap.lastAt!),
+                                                  })}
                                         </li>
                                     ))}
                                 </ul>
                             ) : (
-                                <p className="m-0 text-muted-foreground">Every resource metric has recent history.</p>
+                                <p className="m-0 text-muted-foreground">{t('operations.resources:host.no-gaps')}</p>
                             )}
                         </div>
                         {data.hourly.length > 0 && (
                             <div className="min-w-0 overflow-x-auto">
                                 <table className="w-full text-left text-sm">
-                                    <caption className="text-left">Most recent 24 hourly averages</caption>
+                                    <caption className="text-left">{t('operations.resources:hourly.caption')}</caption>
                                     <thead>
                                         <tr>
-                                            {['Hour', 'Samples', 'Process memory', 'CPU', 'Volume free'].map(
-                                                (label) => (
-                                                    <th className="px-2 py-1" key={label}>
-                                                        {label}
-                                                    </th>
-                                                ),
-                                            )}
+                                            {[
+                                                t('operations.resources:hourly.hour'),
+                                                t('operations.resources:host.samples'),
+                                                t('operations.resources:host.metric.rssBytes'),
+                                                t('operations.resources:hourly.cpu'),
+                                                t('operations.resources:host.volume-free'),
+                                            ].map((label) => (
+                                                <th className="px-2 py-1" key={label}>
+                                                    {label}
+                                                </th>
+                                            ))}
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -92,7 +122,7 @@ export function ResourcePanel() {
                                             .map((hour) => (
                                                 <tr key={hour.at}>
                                                     <td className="whitespace-nowrap px-2 py-1">
-                                                        {new Date(hour.at).toLocaleString()}
+                                                        {when.format(hour.at)}
                                                     </td>
                                                     <td className="px-2 py-1">{hour.samples}</td>
                                                     <td className="px-2 py-1">

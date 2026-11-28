@@ -1,0 +1,95 @@
+{
+    "tiles": {
+        "people": "Active people",
+        "returning": "Returning people",
+        "stickiness": "Stickiness",
+        "sessions": "Sessions",
+        "chats": "Chats with people",
+        "length": "Messages per session"
+    },
+    "sessions-note": "A session is a chat’s messages with less than {{minutes, number}} minutes between them; a shared one counts once here and for each person in it. Stickiness is daily people over the people of the last 7 days.",
+    "metrics": {
+        "people": "Active people",
+        "sessions": "Sessions",
+        "messages": "Messages from people"
+    },
+    "axis": {
+        "people": "active people",
+        "sessions": "sessions",
+        "messages": "messages from people"
+    },
+    "chart": "Chart",
+    "no-chart": "Nothing to chart in this range.",
+    "empty": "Nothing in this range.",
+    "sources": {
+        "title": "Channels",
+        "description": "Turns and people’s messages by where they came from. Automation, such as schedules, is counted apart from people.",
+        "kind": {
+            "human": "People",
+            "automation": "Automation",
+            "unknown": "Unregistered"
+        }
+    },
+    "participation": {
+        "title": "Who takes part",
+        "description": "Chats can have several people and several socios. Turns one socio starts for another are collaboration, not use.",
+        "chats": "Chats with people",
+        "several-people": "With several people",
+        "several-socios": "With several socios",
+        "collaboration": "Socio-to-socio turns"
+    },
+    "features": {
+        "title": "Feature use",
+        "description": "Tool calls by capability. Pick a person below to see theirs.",
+        "description_person": "Tool calls by capability. Only the turns this person started."
+    },
+    "spaces": {
+        "title": "Spaces",
+        "description": "Pages made and edited in each Space, by people and by socios, and who works with its socios."
+    },
+    "lists": {
+        "title": "Who and where",
+        "description": "Last active first, without what anyone wrote. Opening a chat is recorded in the access log.",
+        "people": "People",
+        "socios": "Socios",
+        "chats": "Chats",
+        "people-empty": "No one wrote to a socio in this range.",
+        "socios-empty": "No socio had people’s messages in this range.",
+        "chats-empty": "No chats with people in this range.",
+        "a-chat": "A chat",
+        "shared": "Shared",
+        "room": "Room",
+        "resumed": "Resumed"
+    },
+    "count": {
+        "turns_one": "{{count, number}} turn",
+        "turns_other": "{{count, number}} turns",
+        "people_one": "{{count, number}} person",
+        "people_other": "{{count, number}} people",
+        "calls_one": "{{count, number}} call",
+        "calls_other": "{{count, number}} calls",
+        "errors_one": "{{count, number}} error",
+        "errors_other": "{{count, number}} errors",
+        "refusals_one": "{{count, number}} refusal",
+        "refusals_other": "{{count, number}} refusals",
+        "writes-by-people_one": "{{count, number}} write by people",
+        "writes-by-people_other": "{{count, number}} writes by people",
+        "writes-by-socios_one": "{{count, number}} by socios",
+        "writes-by-socios_other": "{{count, number}} by socios",
+        "sessions_one": "{{count, number}} session",
+        "sessions_other": "{{count, number}} sessions",
+        "messages_one": "{{count, number}} message",
+        "messages_other": "{{count, number}} messages",
+        "days_one": "{{count, number}} day",
+        "days_other": "{{count, number}} days",
+        "socios_one": "{{count, number}} socio",
+        "socios_other": "{{count, number}} socios",
+        "tool-calls_one": "{{count, number}} tool call",
+        "tool-calls_other": "{{count, number}} tool calls",
+        "chats_one": "{{count, number}} chat",
+        "chats_other": "{{count, number}} chats",
+        "per-chat": "{{n, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}} messages a chat",
+        "turns-for-socios_one": "{{count, number}} turn for socios",
+        "turns-for-socios_other": "{{count, number}} turns for socios"
+    }
+}

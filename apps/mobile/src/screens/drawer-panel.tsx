@@ -1,20 +1,33 @@
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
+import { accessibilityActionsOf } from '../chat/long-press';
 import type { WorkspaceRow } from '../data/registry';
 import { useHasWorkspaceScope, useWorkspaceScope } from '../live';
 import type { MoreItem } from '../navigation/tabs';
 import { listWorkspaces, startAdding, storeRoot, switchTo } from '../platform/active-scope';
 import { OPENS_ON_THE_WEB } from '../shell/account';
 import { moduleEntry } from '../shell/modules';
-import { DRAWER_FOOTER, type DrawerFooterRow, type DrawerWorkspace, drawerWorkspaces } from '../shell/workspaces';
+import { LONG_PRESS_TO_MENU } from '../shell/native-menu';
+import {
+    DRAWER_FOOTER,
+    DRAWER_SETTINGS,
+    type DrawerFooterRow,
+    type DrawerWorkspace,
+    drawerWorkspaces,
+    REMOVE_WORKSPACE,
+    WORKSPACE_SETTINGS,
+    workspaceMenu,
+} from '../shell/workspaces';
 import { useScheme } from '../theme/scheme';
 import { colorsOf } from '../theme/theme';
 import { Button, AppSymbol, rowMinHeight, Text } from '../ui';
 import { cx } from '../ui/cx';
 import type { SymbolName } from '../ui/symbols';
 
+import { ActionMenu } from './action-menu';
 import { useOpenLink } from './open-link';
+import { askThenRemoveWorkspace } from './remove-workspace';
 import { CountBadge } from './shell-parts';
 import { WorkspaceLogo } from './workspace-logo';
 
@@ -28,6 +41,12 @@ import { WorkspaceLogo } from './workspace-logo';
 // Tapping another workspace switches to it through the active scope:
 // the app mounts again on that workspace's last screen. The list is read from
 // the registry each time the drawer opens.
+// A long-press on a row opens the system's menu (CB-573; src/shell/workspaces.ts
+// `workspaceMenu`): the open workspace's Settings, and Remove from this device,
+// which closes the drawer, asks first (Cancel the default), then signs out of
+// that workspace on the phone (platform/sign-out.ts): the signing-out screen,
+// then the open workspace again, or the most recently used one left when it
+// was the open one, or Add workspace.
 
 const FOOTER_ICONS: Readonly<Record<DrawerFooterRow['key'], SymbolName>> = {
     'add-workspace': 'plus',
@@ -81,6 +100,14 @@ function PanelBody(props: DrawerPanelProps & { openId: string | null; onWeb: ((h
                 return;
         }
     };
+    const act = (row: DrawerWorkspace, name: string) => {
+        if (name === WORKSPACE_SETTINGS.name) {
+            footer(DRAWER_SETTINGS);
+        } else if (name === REMOVE_WORKSPACE.name) {
+            props.onClose();
+            void askThenRemoveWorkspace(row.id, row.name);
+        }
+    };
     // A web row needs an open workspace: with none, it isn't shown.
     const footerRows = DRAWER_FOOTER.filter((row) => row.action.kind !== 'web' || onWeb !== null);
     return (
@@ -107,7 +134,12 @@ function PanelBody(props: DrawerPanelProps & { openId: string | null; onWeb: ((h
                     />
                 </View>
                 {workspaces.map((row) => (
-                    <WorkspaceRowView key={row.id} row={row} onPress={() => choose(row)} />
+                    <WorkspaceRowView
+                        key={row.id}
+                        row={row}
+                        onPress={() => choose(row)}
+                        onAction={(name) => act(row, name)}
+                    />
                 ))}
             </ScrollView>
             <View className="border-t border-tab-bar-border px-2 py-2" testID="drawer-footer">
@@ -133,40 +165,62 @@ function PanelBody(props: DrawerPanelProps & { openId: string | null; onWeb: ((h
     );
 }
 
-/** One workspace: its logo with its unread on the corner, its name and host; the open one highlighted. */
-function WorkspaceRowView({ row, onPress }: { row: DrawerWorkspace; onPress: () => void }) {
+/**
+ * One workspace: its logo with its unread on the corner, its name and host; the
+ * open one highlighted. A long-press opens its menu, whose items are its
+ * accessibility actions too.
+ */
+function WorkspaceRowView({
+    row,
+    onPress,
+    onAction,
+}: {
+    row: DrawerWorkspace;
+    onPress: () => void;
+    onAction: (name: string) => void;
+}) {
     const colors = colorsOf(useScheme());
+    const actions = workspaceMenu(row);
     return (
-        <Pressable
-            testID={row.testID}
-            accessibilityRole="button"
-            accessibilityLabel={row.accessibilityLabel}
-            accessibilityState={{ selected: row.active }}
-            onPress={onPress}
-            className={cx(
-                'flex-row items-center gap-3 rounded-xl px-2 py-2',
-                row.active ? 'bg-tab-bar-active' : 'active:bg-tab-bar-active',
-            )}
-            style={rowMinHeight(68)}
-        >
-            <View>
-                {/* The 44 pt logo and its ring (52 pt), with 8 pt above and below, as at the sides. */}
-                <WorkspaceLogo path={row.logoPath} size={44} ring={row.active ? colors.foreground : 'transparent'} />
-                {row.unreadLabel === null ? null : (
-                    <View className="absolute -top-1 -right-1">
-                        <CountBadge label={row.unreadLabel} />
-                    </View>
+        <ActionMenu request={{ title: row.name, actions, onAction }} trigger="longPress">
+            <Pressable
+                testID={row.testID}
+                accessibilityRole="button"
+                accessibilityLabel={row.accessibilityLabel}
+                accessibilityState={{ selected: row.active }}
+                accessibilityActions={accessibilityActionsOf(actions)}
+                onAccessibilityAction={(event) => onAction(event.nativeEvent.actionName)}
+                onPress={onPress}
+                onLongPress={LONG_PRESS_TO_MENU}
+                className={cx(
+                    'flex-row items-center gap-3 rounded-xl px-2 py-2',
+                    row.active ? 'bg-tab-bar-active' : 'active:bg-tab-bar-active',
                 )}
-            </View>
-            <View className="min-w-0 flex-1 gap-0.5">
-                <Text weight="semibold" numberOfLines={1}>
-                    {row.name}
-                </Text>
-                <Text variant="footnote" tone="muted" numberOfLines={1}>
-                    {row.notice === null ? row.host : `${row.host} · ${row.notice}`}
-                </Text>
-            </View>
-        </Pressable>
+                style={rowMinHeight(68)}
+            >
+                <View>
+                    {/* The 44 pt logo and its ring (52 pt), with 8 pt above and below, as at the sides. */}
+                    <WorkspaceLogo
+                        path={row.logoPath}
+                        size={44}
+                        ring={row.active ? colors.foreground : 'transparent'}
+                    />
+                    {row.unreadLabel === null ? null : (
+                        <View className="absolute -top-1 -right-1">
+                            <CountBadge label={row.unreadLabel} />
+                        </View>
+                    )}
+                </View>
+                <View className="min-w-0 flex-1 gap-0.5">
+                    <Text weight="semibold" numberOfLines={1}>
+                        {row.name}
+                    </Text>
+                    <Text variant="footnote" tone="muted" numberOfLines={1}>
+                        {row.notice === null ? row.host : `${row.host} · ${row.notice}`}
+                    </Text>
+                </View>
+            </Pressable>
+        </ActionMenu>
     );
 }
 

@@ -2,6 +2,7 @@ import { BellOff, Mail, MessagesSquare, MoreHorizontal, Plus } from 'lucide-reac
 import { useState } from 'react';
 import { useMatch } from 'react-router';
 
+import { useTranslation } from '@socio/i18n/react';
 import { isRoom, roomsOn } from '@socio/shared/rooms/room-view';
 import { unreadLabel } from '@socio/shared/rooms/rooms';
 import type { Conversation } from '@socio/shared/types';
@@ -37,7 +38,8 @@ export const RECENT_ROOMS = 5;
 
 /** A room's icon: speech bubbles, named for screen readers where it says. */
 export function RoomIcon({ className }: { className?: string }) {
-    return <MessagesSquare aria-label="Room" className={className} />;
+    const { t } = useTranslation(['rooms.nav']);
+    return <MessagesSquare aria-label={t('rooms.nav:room')} className={className} />;
 }
 
 /**
@@ -46,6 +48,7 @@ export function RoomIcon({ className }: { className?: string }) {
  * in. Hidden entirely while Rooms are off, invitations and all.
  */
 export function RoomsGroup() {
+    const { t } = useTranslation(['rooms.nav']);
     const nav = useSidebarNav();
     const { workspace, state } = nav.context;
     const on = roomsOn(state);
@@ -65,10 +68,10 @@ export function RoomsGroup() {
     return (
         // Titles need the width: hidden while collapsed to icons.
         <SidebarGroup className="group-data-[collapsible=icon]:hidden" data-slot="rooms-group">
-            <SidebarGroupLabel>Rooms</SidebarGroupLabel>
+            <SidebarGroupLabel>{t('rooms.nav:group')}</SidebarGroupLabel>
             <SidebarGroupAction
-                aria-label="New room"
-                title="New room"
+                aria-label={t('rooms.nav:new-room')}
+                title={t('rooms.nav:new-room')}
                 // Not `nav.go`: on a phone the dialog opens over the sidebar's
                 // sheet, which closes once it leads to the new room.
                 onClick={() => setCreating(true)}
@@ -83,17 +86,17 @@ export function RoomsGroup() {
                             {/* The count is said with the name: the badge is outside
                   the button, and a label on a plain div is never read. */}
                             <span>
-                                Invitations
-                                <span className="sr-only">{`, ${invites.length} waiting`}</span>
+                                {t('rooms.nav:invitations')}
+                                <span className="sr-only">
+                                    {t('rooms.nav:invitations-waiting', { n: invites.length })}
+                                </span>
                             </span>
                         </SidebarMenuButton>
                         <SidebarMenuBadge aria-hidden>{invites.length}</SidebarMenuBadge>
                     </SidebarMenuItem>
                 )}
                 {!rooms.length ? (
-                    <SidebarNote>
-                        Rooms you create or join show here: one conversation for several people and a socio.
-                    </SidebarNote>
+                    <SidebarNote>{t('rooms.nav:empty')}</SidebarNote>
                 ) : (
                     shown.map((room) => (
                         <RoomRow
@@ -113,7 +116,9 @@ export function RoomsGroup() {
                             onClick={() => setAll(!all)}
                         >
                             <MoreHorizontal />
-                            <span>{all ? 'Show fewer' : `Show all ${rooms.length}`}</span>
+                            <span>
+                                {all ? t('rooms.nav:show-fewer') : t('rooms.nav:show-all', { count: rooms.length })}
+                            </span>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 )}
@@ -138,6 +143,7 @@ export function RoomsGroup() {
  * and focus, always on touch screens, and on right-click) is the room menu.
  */
 function RoomRow({ room, unread }: { room: Conversation; unread: number }) {
+    const { t } = useTranslation(['rooms.nav']);
     const nav = useSidebarNav();
     const [menu, setMenu] = useState(false);
     // Muted for the reader (CB-216): what's new shows, quietly.
@@ -169,7 +175,7 @@ function RoomRow({ room, unread }: { room: Conversation; unread: number }) {
                 {muted && (
                     <span className={cn(underMenu, 'text-sidebar-muted-foreground')}>
                         <BellOff className="size-3.5" aria-hidden />
-                        <span className="sr-only">, muted</span>
+                        <span className="sr-only">{t('rooms.nav:muted')}</span>
                     </span>
                 )}
                 {unread > 0 && (
@@ -186,11 +192,13 @@ function RoomRow({ room, unread }: { room: Conversation; unread: number }) {
                         >
                             {unreadLabel(unread)}
                         </span>
-                        <span className="sr-only">{`, ${unreadLabel(unread)} unread`}</span>
+                        <span className="sr-only">{t('rooms.nav:unread', { unread: unreadLabel(unread) })}</span>
                     </span>
                 )}
                 {room.roomRole === 'admin' && (
-                    <span className={cn(underMenu, 'text-xs text-sidebar-muted-foreground')}>Admin</span>
+                    <span className={cn(underMenu, 'text-xs text-sidebar-muted-foreground')}>
+                        {t('rooms.nav:admin')}
+                    </span>
                 )}
             </NavButton>
             <RoomMenu
@@ -201,7 +209,7 @@ function RoomRow({ room, unread }: { room: Conversation; unread: number }) {
                 trigger={
                     <SidebarMenuAction
                         showOnHover
-                        aria-label={`Options for ${room.title}`}
+                        aria-label={t('rooms.nav:options-for', { title: room.title })}
                         className="pointer-coarse:opacity-100"
                     >
                         <MoreHorizontal />

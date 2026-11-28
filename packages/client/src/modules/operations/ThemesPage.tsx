@@ -2,7 +2,8 @@ import { ChevronDown, ChevronRight } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 
-import { THEME_OUTCOME_LABELS, type ClassifyUseView, type SessionLabelRow } from '@socio/shared/classify';
+import { Trans, useTranslation } from '@socio/i18n/react';
+import type { ClassifyUseView, SessionLabelRow } from '@socio/shared/classify';
 import { formatNumber } from '@socio/shared/locale';
 import { intentName, type OpsThemeRow, type OpsThemes } from '@socio/shared/operations/operations-themes';
 
@@ -11,8 +12,8 @@ import { InfiniteList } from '../../components/infinite-list/InfiniteList';
 import { useCursorList } from '../../components/infinite-list/use-cursor-list';
 import { api } from '../../lib/api';
 
-import { counts, formatShare, StatusNote } from './activity-parts';
-import { bucketLabel, formatWhen } from './format';
+import { formatShare, StatusNote } from './activity-parts';
+import { formatWhen, useOpsFormat } from './format';
 import { IntentTable, OutcomeBar, OutcomeLegend } from './outcome-parts';
 import { opsPath } from './sections';
 import { SessionLabelPanel } from './SessionLabelPanel';
@@ -38,24 +39,19 @@ function useUseView(use: 'intent' | 'themes') {
     return view;
 }
 
-function UseNote({ name, view }: { name: string; view: ClassifyUseView | undefined }) {
-    if (!view) {
-        return null;
-    }
-    const text = !view.enabled
-        ? `${name} labels are off, so new sessions get none. Turn them on in`
-        : !view.versionPassed
-          ? `${name} labels are on, but the model’s answers are suggestions until its version passes an evaluation: review sessions below, then evaluate it in`
-          : null;
-    if (!text) {
+function UseNote({ use, view }: { use: 'intent' | 'themes'; view: ClassifyUseView | undefined }) {
+    const { t } = useTranslation(['operations.themes']);
+    if (!view || (view.enabled && view.versionPassed)) {
         return null;
     }
     return (
         <li>
-            {text}{' '}
-            <Link to={opsPath('settings')} className="underline">
-                Settings
-            </Link>
+            <Trans
+                t={t}
+                i18nKey={view.enabled ? 'operations.themes:notes.unevaluated' : 'operations.themes:notes.off'}
+                context={use}
+                components={{ link: <Link to={opsPath('settings')} className="underline" /> }}
+            />
         </li>
     );
 }
@@ -69,6 +65,7 @@ function UseNote({ name, view }: { name: string; view: ClassifyUseView | undefin
  * against.
  */
 export function ThemesPage() {
+    const { t } = useTranslation(['operations.themes', 'operations', 'operations.dashboard']);
     const { search } = useOpsQuery();
     const { timeZone } = useOpsSettings();
     const answer = useOpsAnswer<OpsThemes>(`/operations/themes${search}`);
@@ -84,51 +81,48 @@ export function ThemesPage() {
                     data-slot="ops-themes-notes"
                     className="m-0 grid list-disc gap-1 pl-5 text-sm text-muted-foreground empty:hidden"
                 >
-                    <UseNote name="Intent" view={intentUse} />
-                    <UseNote name="Theme" view={themesUse} />
+                    <UseNote use="intent" view={intentUse} />
+                    <UseNote use="themes" view={themesUse} />
                 </ul>
             )}
             <section
-                aria-label="Totals"
+                aria-label={t('operations.dashboard:totals')}
                 className="grid grid-cols-2 gap-3 sm:grid-cols-3"
                 data-slot="ops-themes-totals"
             >
                 {(
                     [
-                        ['People’s sessions', facts ? formatNumber(facts.sessions) : null],
+                        ['sessions', facts ? formatNumber(facts.sessions) : null],
                         [
-                            'With an intent',
+                            'with-intent',
                             facts ? formatShare(facts.sessions ? facts.withIntent / facts.sessions : null) : null,
                         ],
                         [
-                            'With themes',
+                            'with-themes',
                             facts ? formatShare(facts.sessions ? facts.withThemes / facts.sessions : null) : null,
                         ],
                     ] as const
-                ).map(([label, value]) =>
+                ).map(([id, value]) =>
                     data ? (
-                        <Card key={label} className="gap-1 px-4 py-3 shadow-xs">
-                            <span className="text-xs text-muted-foreground">{label}</span>
+                        <Card key={id} className="gap-1 px-4 py-3 shadow-xs">
+                            <span className="text-xs text-muted-foreground">{t(`operations.themes:totals.${id}`)}</span>
                             <strong className="text-2xl font-semibold tabular-nums">{value ?? '–'}</strong>
                         </Card>
                     ) : (
-                        <Skeleton key={label} className="h-18 rounded-xl" />
+                        <Skeleton key={id} className="h-18 rounded-xl" />
                     ),
                 )}
             </section>
             <Card data-slot="ops-themes-intents" className="gap-4">
                 <CardHeader>
-                    <CardTitle>Intents</CardTitle>
-                    <CardDescription>
-                        What people came for, by session, and how those sessions ended. A session takes the intent of
-                        the first labelled turn in it.
-                    </CardDescription>
+                    <CardTitle>{t('operations.themes:intents.title')}</CardTitle>
+                    <CardDescription>{t('operations.themes:intents.description')}</CardDescription>
                 </CardHeader>
                 <CardContent>
                     {facts?.intents.length ? (
                         <IntentTable rows={facts.intents} />
                     ) : data ? (
-                        <p className="m-0 py-2 text-sm text-muted-foreground">No sessions in this range.</p>
+                        <p className="m-0 py-2 text-sm text-muted-foreground">{t('operations.themes:intents.empty')}</p>
                     ) : (
                         <Skeleton className="h-32 w-full" />
                     )}
@@ -141,6 +135,8 @@ export function ThemesPage() {
 }
 
 function ThemesCard({ answer }: { answer: OpsThemes | undefined }) {
+    const { t } = useTranslation(['operations.themes']);
+    const { bucketLabel } = useOpsFormat();
     const facts = answer?.facts;
     const [chart, setChart] = useState('all');
     const theme = facts?.themes.find((row) => row.key === chart);
@@ -148,12 +144,9 @@ function ThemesCard({ answer }: { answer: OpsThemes | undefined }) {
     return (
         <Card data-slot="ops-themes" className="gap-4">
             <CardHeader>
-                <CardTitle>Themes</CardTitle>
+                <CardTitle>{t('operations.themes:themes.title')}</CardTitle>
                 <CardDescription>
-                    Topics the model named for people’s sessions, grouped when they use the same words. A theme is named
-                    only when at least {facts?.minPeople ?? 3} different people had sessions on it in this range;
-                    smaller ones are counted together. The hint is the model’s read of the first messages; the outcome
-                    is what happened.
+                    {t('operations.themes:themes.description', { count: facts?.minPeople ?? 3 })}
                 </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4">
@@ -161,14 +154,20 @@ function ThemesCard({ answer }: { answer: OpsThemes | undefined }) {
                     <>
                         <div className="flex flex-wrap items-center justify-between gap-2">
                             <span className="text-sm font-medium">
-                                {theme ? `“${theme.topic}”` : 'Sessions with themes'} by week
+                                {theme
+                                    ? t('operations.themes:themes.chart-topic', { topic: theme.topic })
+                                    : t('operations.themes:themes.chart-all')}
                             </span>
                             <Select value={chart} onValueChange={setChart}>
-                                <SelectTrigger size="sm" aria-label="Chart" className="w-56">
+                                <SelectTrigger
+                                    size="sm"
+                                    aria-label={t('operations.themes:themes.chart')}
+                                    className="w-56"
+                                >
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="all">Every theme</SelectItem>
+                                    <SelectItem value="all">{t('operations.themes:themes.every')}</SelectItem>
                                     {facts.themes.map((row) => (
                                         <SelectItem key={row.key} value={row.key}>
                                             {row.topic}
@@ -180,9 +179,13 @@ function ThemesCard({ answer }: { answer: OpsThemes | undefined }) {
                         {series && series.some(Boolean) && answer ? (
                             <SeriesChart
                                 kind="bar"
-                                label={`${theme ? theme.topic : 'Sessions with themes'} by week`}
+                                label={
+                                    theme
+                                        ? t('operations.themes:themes.series-topic', { topic: theme.topic })
+                                        : t('operations.themes:themes.chart-all')
+                                }
                                 xName="week"
-                                yName="sessions"
+                                yName={t('operations.themes:themes.axis')}
                                 points={facts.weeks.map((at, index) => ({
                                     label: bucketLabel(at, 'week', answer.window.timeZone),
                                     value: series[index] ?? 0,
@@ -190,23 +193,33 @@ function ThemesCard({ answer }: { answer: OpsThemes | undefined }) {
                             />
                         ) : (
                             <p className="m-0 py-6 text-center text-sm text-muted-foreground">
-                                No sessions with themes in this range.
+                                {t('operations.themes:themes.empty')}
                             </p>
                         )}
                         {facts.themes.length > 0 && <ThemeTable rows={facts.themes} />}
                         {(facts.hidden.themes > 0 || facts.more > 0) && (
                             <p className="m-0 text-xs text-muted-foreground" data-slot="ops-themes-hidden">
-                                {facts.hidden.themes > 0 &&
-                                    `${counts([facts.hidden.themes, 'smaller theme', 'smaller themes'])} not named: fewer than ${facts.minPeople} people each. `}
-                                {facts.more > 0 &&
-                                    `${counts([facts.more, 'more theme', 'more themes'])} past the first ${facts.themes.length}. `}
-                                {facts.hidden.sessions > 0 &&
-                                    `${counts([facts.hidden.sessions, 'session is', 'sessions are'])} on none of the themes shown.`}
+                                {[
+                                    facts.hidden.themes > 0 &&
+                                        t('operations.themes:hidden.themes', {
+                                            count: facts.hidden.themes,
+                                            min: facts.minPeople,
+                                        }),
+                                    facts.more > 0 &&
+                                        t('operations.themes:hidden.more', {
+                                            count: facts.more,
+                                            shown: facts.themes.length,
+                                        }),
+                                    facts.hidden.sessions > 0 &&
+                                        t('operations.themes:hidden.sessions', { count: facts.hidden.sessions }),
+                                ]
+                                    .filter(Boolean)
+                                    .join(' ')}
                             </p>
                         )}
                     </>
                 ) : answer ? (
-                    <p className="m-0 py-2 text-sm text-muted-foreground">Analytics has no answer yet.</p>
+                    <p className="m-0 py-2 text-sm text-muted-foreground">{t('operations.themes:themes.no-answer')}</p>
                 ) : (
                     <Skeleton className="h-60 w-full" />
                 )}
@@ -216,18 +229,19 @@ function ThemesCard({ answer }: { answer: OpsThemes | undefined }) {
 }
 
 function ThemeTable({ rows }: { rows: OpsThemeRow[] }) {
+    const { t } = useTranslation(['operations.themes', 'operations', 'operations.dashboard']);
     return (
         <div className="grid gap-3">
-            <Table aria-label="Themes">
+            <Table aria-label={t('operations.themes:themes.title')}>
                 <TableHeader>
                     <TableRow>
-                        <TableHead>Theme</TableHead>
-                        <TableHead className="text-right">Sessions</TableHead>
-                        <TableHead className="text-right">People</TableHead>
-                        <TableHead className="text-right">Abandoned</TableHead>
-                        <TableHead>Mostly</TableHead>
-                        <TableHead>Hint</TableHead>
-                        <TableHead className="w-32">Outcomes</TableHead>
+                        <TableHead>{t('operations.themes:table.theme')}</TableHead>
+                        <TableHead className="text-right">{t('operations.dashboard:intents.sessions')}</TableHead>
+                        <TableHead className="text-right">{t('operations.dashboard:intents.people')}</TableHead>
+                        <TableHead className="text-right">{t('operations.dashboard:intents.abandoned')}</TableHead>
+                        <TableHead>{t('operations.themes:table.mostly')}</TableHead>
+                        <TableHead>{t('operations.themes:table.hint')}</TableHead>
+                        <TableHead className="w-32">{t('operations.dashboard:intents.outcomes')}</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -243,11 +257,17 @@ function ThemeTable({ rows }: { rows: OpsThemeRow[] }) {
                                 <TableCell className="text-right tabular-nums">
                                     {formatShare(row.sessions ? row.abandoned / row.sessions : null)}
                                 </TableCell>
-                                <TableCell>{intentName(row.intents[0]?.intent ?? null)}</TableCell>
+                                <TableCell>
+                                    {row.intents[0]?.intent
+                                        ? intentName(row.intents[0].intent)
+                                        : t('operations.dashboard:intents.none')}
+                                </TableCell>
                                 <TableCell className="text-xs text-muted-foreground">
                                     {hinted
-                                        ? `${formatShare(row.hints.unresolved / hinted)} ${THEME_OUTCOME_LABELS.unresolved.toLowerCase()}`
-                                        : THEME_OUTCOME_LABELS.unclear}
+                                        ? t('operations.themes:table.unresolved', {
+                                              share: formatShare(row.hints.unresolved / hinted),
+                                          })
+                                        : t('operations.themes:outcome.unclear')}
                                 </TableCell>
                                 <TableCell>
                                     <OutcomeBar row={row} />
@@ -268,39 +288,36 @@ function ThemeTable({ rows }: { rows: OpsThemeRow[] }) {
  * admin's label is in force at once and joins the use's golden set.
  */
 function ReviewCard({ timeZone }: { timeZone: string }) {
+    const { t } = useTranslation(['operations.themes']);
     const [use, setUse] = useState<'intent' | 'themes'>('intent');
     const [unreviewed, setUnreviewed] = useState(true);
     return (
         <Card data-slot="ops-session-review" className="gap-4">
             <CardHeader>
-                <CardTitle>Review</CardTitle>
-                <CardDescription>
-                    Sessions the model labelled. Open one to read its title and first messages, scrubbed as the model
-                    got them, and set its intent or topics: yours count at once and form the golden set the model is
-                    evaluated against. Opening one, and this list, is recorded in the access log.
-                </CardDescription>
+                <CardTitle>{t('operations.themes:review.title')}</CardTitle>
+                <CardDescription>{t('operations.themes:review.description')}</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-3">
                 <div className="flex flex-wrap items-center gap-3">
                     <Select value={use} onValueChange={(value) => setUse(value as 'intent' | 'themes')}>
-                        <SelectTrigger size="sm" aria-label="Labels" className="w-40">
+                        <SelectTrigger size="sm" aria-label={t('operations.themes:review.labels')} className="w-40">
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="intent">Intent</SelectItem>
-                            <SelectItem value="themes">Themes</SelectItem>
+                            <SelectItem value="intent">{t('operations.themes:review.intent')}</SelectItem>
+                            <SelectItem value="themes">{t('operations.themes:review.themes')}</SelectItem>
                         </SelectContent>
                     </Select>
                     <Select
                         value={unreviewed ? 'unreviewed' : 'all'}
                         onValueChange={(value) => setUnreviewed(value === 'unreviewed')}
                     >
-                        <SelectTrigger size="sm" aria-label="Which sessions" className="w-48">
+                        <SelectTrigger size="sm" aria-label={t('operations.themes:review.which')} className="w-48">
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="unreviewed">Not reviewed yet</SelectItem>
-                            <SelectItem value="all">Every labeled session</SelectItem>
+                            <SelectItem value="unreviewed">{t('operations.themes:review.unreviewed')}</SelectItem>
+                            <SelectItem value="all">{t('operations.themes:review.all')}</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
@@ -319,6 +336,7 @@ function ReviewList({
     unreviewed: boolean;
     timeZone: string;
 }) {
+    const { t } = useTranslation(['operations.themes']);
     const list = useCursorList<SessionLabelRow>(
         `/classify/sessions?use=${use}${unreviewed ? '&unreviewed=1' : ''}&via=themes`,
         { limit: 20 },
@@ -326,19 +344,16 @@ function ReviewList({
     return (
         <InfiniteList
             list={list}
-            label="Sessions to review"
+            label={t('operations.themes:review.list')}
             itemKey={(row) => row.runId}
-            empty={
-                unreviewed
-                    ? 'Nothing waits for review. Sessions appear here once the model has labeled them.'
-                    : 'No session has a label yet.'
-            }
+            empty={unreviewed ? t('operations.themes:review.empty-unreviewed') : t('operations.themes:review.empty')}
             renderItem={(row) => <ReviewItem row={row} use={use} timeZone={timeZone} />}
         />
     );
 }
 
 function ReviewItem({ row, use, timeZone }: { row: SessionLabelRow; use: 'intent' | 'themes'; timeZone: string }) {
+    const { t } = useTranslation(['operations.themes', 'operations', 'operations.dashboard']);
     const [open, setOpen] = useState(false);
     const Icon = open ? ChevronDown : ChevronRight;
     const intent = row.intent.label ?? row.intent.suggestion;
@@ -357,21 +372,20 @@ function ReviewItem({ row, use, timeZone }: { row: SessionLabelRow; use: 'intent
                     {use === 'intent'
                         ? intent
                             ? intentName(intent.value)
-                            : 'No intent'
+                            : t('operations.dashboard:intents.none')
                         : themes
                           ? themes.topics.join(' · ')
-                          : 'No topics'}
+                          : t('operations.themes:review.no-topics')}
                 </span>
                 {reviewed ? (
-                    <Badge variant="secondary">Reviewed</Badge>
+                    <Badge variant="secondary">{t('operations.themes:review.reviewed')}</Badge>
                 ) : (
                     (use === 'intent' ? row.intent.suggestion : row.themes.suggestion) && (
                         <span className="text-xs text-muted-foreground">
-                            {Math.round(
-                                ((use === 'intent' ? row.intent.suggestion : row.themes.suggestion)?.confidence ?? 0) *
-                                    100,
-                            )}
-                            % sure
+                            {t('operations.themes:sure', {
+                                confidence:
+                                    (use === 'intent' ? row.intent.suggestion : row.themes.suggestion)?.confidence ?? 0,
+                            })}
                         </span>
                     )
                 )}

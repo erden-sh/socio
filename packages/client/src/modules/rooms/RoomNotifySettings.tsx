@@ -1,6 +1,7 @@
 import { useId, useState } from 'react';
 import { toast } from 'sonner';
 
+import { useTranslation } from '@socio/i18n/react';
 import {
     DEFAULT_ROOM_NOTIFY_LEVEL,
     ROOM_NOTIFY_CHOICES,
@@ -42,6 +43,7 @@ const isLevel = (value: string): value is RoomNotifyLevel => (ROOM_NOTIFY_LEVELS
  * follow at their next poll.
  */
 export function RoomNotifyItems({ thread }: { thread: Conversation }) {
+    const { t } = useTranslation(['rooms.nav']);
     const shell = useShell();
     const labelId = useId();
     const [level, setLevel] = useState(roomNotifyLevel(thread));
@@ -69,14 +71,14 @@ export function RoomNotifyItems({ thread }: { thread: Conversation }) {
             shell.patchConversation(thread.id, {
                 roomNotify: previous === DEFAULT_ROOM_NOTIFY_LEVEL ? undefined : previous,
             });
-            toast.error(failure(error, 'Could not change this room’s notifications.'));
+            toast.error(failure(error, t('rooms.nav:errors.notify')));
         }
     };
     return (
         <>
             <DropdownMenuSeparator />
             <DropdownMenuLabel id={labelId} className="text-xs font-normal text-muted-foreground">
-                Notify me about
+                {t('rooms.nav:menu.notify')}
             </DropdownMenuLabel>
             <DropdownMenuRadioGroup
                 aria-labelledby={labelId}
@@ -107,6 +109,7 @@ export function RoomNotifyItems({ thread }: { thread: Conversation }) {
  * room's own notifications are chosen.
  */
 export function RoomNotificationsCard() {
+    const { t } = useTranslation(['rooms.notify']);
     const { state, workspace, mutate } = useShell();
     const [busy, setBusy] = useState(false);
     // A shell without its state yet (a test's) shows none of it.
@@ -117,21 +120,15 @@ export function RoomNotificationsCard() {
     return (
         <SettingsCard>
             <section className="grid gap-3" data-slot="room-notifications">
-                <h3 className="font-medium">Rooms</h3>
-                <p className="text-muted-foreground">
-                    In a room you hear when someone mentions you and when your own turns finish while you’re away.
-                    Choose more or less for each room in its ⋯ menu, under Notify me about.
-                </p>
+                <h3 className="font-medium">{t('rooms.notify:title')}</h3>
+                <p className="text-muted-foreground">{t('rooms.notify:body')}</p>
                 <label className="flex items-center gap-3">
                     <span className="min-w-0 flex-1">
-                        <span className="font-medium">Show when I’m in a room</span>
-                        <span className="block text-muted-foreground">
-                            The room’s members see your avatar while you have it open. Turn this off to look without
-                            showing.
-                        </span>
+                        <span className="font-medium">{t('rooms.notify:presence.label')}</span>
+                        <span className="block text-muted-foreground">{t('rooms.notify:presence.hint')}</span>
                     </span>
                     <Switch
-                        aria-label="Show when I’m in a room"
+                        aria-label={t('rooms.notify:presence.label')}
                         checked={shown}
                         disabled={busy}
                         onCheckedChange={async (show) => {
@@ -141,7 +138,9 @@ export function RoomNotificationsCard() {
                                     roomPresence: show ? 'shown' : 'hidden',
                                 })
                             ) {
-                                toast.success(show ? 'Rooms show when you’re in them' : 'Your presence is hidden');
+                                toast.success(
+                                    show ? t('rooms.notify:presence.shown') : t('rooms.notify:presence.hidden'),
+                                );
                             }
                             setBusy(false);
                         }}

@@ -1,17 +1,12 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 
+import { useTranslation } from '@socio/i18n/react';
 import { formatNumber, numberFormat } from '@socio/shared/locale';
-import {
-    OPS_RANGE_LABELS,
-    opsSearch,
-    type OpsAnswer,
-    type OpsFilters,
-    type OpsQuery,
-} from '@socio/shared/operations/operations';
+import { opsSearch, type OpsAnswer, type OpsFilters, type OpsQuery } from '@socio/shared/operations/operations';
 import { OPS_SHARE_TILES, type OpsValueTile } from '@socio/shared/operations/operations-activity';
 
-import { statusLine, tileChange } from './format';
+import { useOpsFormat } from './format';
 import { opsPath, type OpsSectionId } from './sections';
 
 import { Card } from '@/components/ui/card';
@@ -35,22 +30,21 @@ function tileText(id: string, value: number | null) {
     return Number.isInteger(value) ? formatNumber(value) : decimal.format(value);
 }
 
-/** A person's name; a shared Telegram topic's team, or the id, when there is none. */
-export function personLabel(id: string, name: string | null) {
-    if (name) {
-        return name;
-    }
-    if (id.startsWith('telegram-team:')) {
-        return 'A Telegram team';
-    }
-    return id;
-}
-
-/** What the tiles compare with: "the 7 days before". */
-export function previousLabel(query: OpsQuery) {
-    return query.from || query.range === 'all'
-        ? 'the period before'
-        : `the ${OPS_RANGE_LABELS[query.range].toLowerCase()} before`;
+/**
+ * A person's name; a shared Telegram topic's team, or the id, when there
+ * is none (`personLabel`), and what the tiles compare with, "the 7 days
+ * before" (`previousLabel`), in the reader's words.
+ */
+export function useActivityWords() {
+    const { t } = useTranslation(['operations', 'operations.dashboard']);
+    return {
+        personLabel: (id: string, name: string | null) =>
+            name || (id.startsWith('telegram-team:') ? t('operations.dashboard:telegram-team') : id),
+        previousLabel: (query: OpsQuery) =>
+            t('operations.dashboard:previous', {
+                context: query.from || query.range === 'all' ? undefined : query.range,
+            }),
+    };
 }
 
 /** The same section narrowed further: a filter link that can be shared. */
@@ -68,6 +62,7 @@ export function StatusNote({
     timeZone: string;
     error: string;
 }) {
+    const { statusLine } = useOpsFormat();
     return (
         <>
             {answer && (
@@ -103,13 +98,19 @@ export function Tiles<Id extends string>({
     tiles: OpsValueTile<Id>[] | undefined;
     labels: Record<Id, string>;
     against: string;
-    /** Whether more is better; undefined leaves its change uncoloured. */
+    /** Whether more is better; undefined leaves its change uncolored. */
     upIsGood?: (id: Id) => boolean | undefined;
     loading: boolean;
     count: number;
 }) {
+    const { t } = useTranslation(['operations', 'operations.dashboard']);
+    const { tileChange } = useOpsFormat();
     return (
-        <section aria-label="Totals" aria-busy={loading} className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <section
+            aria-label={t('operations.dashboard:totals')}
+            aria-busy={loading}
+            className="grid grid-cols-2 gap-3 sm:grid-cols-3"
+        >
             {tiles
                 ? tiles.map((tile) => {
                       const change = tileChange(tile.value, tile.previous);
@@ -136,7 +137,7 @@ export function Tiles<Id extends string>({
                                       good === false && 'text-destructive',
                                   )}
                               >
-                                  {change && `${change.text} vs ${against}`}
+                                  {change && t('operations.dashboard:change.versus', { change: change.text, against })}
                               </span>
                           </Card>
                       );
@@ -176,6 +177,5 @@ export function RowLink({ to, children }: { to: string; children: ReactNode }) {
     );
 }
 
-/** "3 people · 12 messages": counts joined, zero ones kept. */
-export const counts = (...parts: [number, string, string][]) =>
-    parts.map(([n, one, many]) => `${formatNumber(n)} ${n === 1 ? one : many}`).join(' · ');
+/** "3 people · 12 messages": counts (each a plural string from `t`), joined; zero ones kept. */
+export const counts = (...parts: string[]) => parts.join(' · ');

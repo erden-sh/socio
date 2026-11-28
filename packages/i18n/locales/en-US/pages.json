@@ -1,0 +1,124 @@
+{
+    "document": {
+        "label": "Document workspace",
+        "all-pages": "All pages",
+        "toggle-outline": "Toggle page outline",
+        "editor-loading": "Loading editor…",
+        "download-name": "page",
+        "status": {
+            "saving": "Saving…",
+            "saved": "All changes saved",
+            "dirty": "Unsaved changes",
+            "conflict": "Changes need review",
+            "error": "Could not save"
+        },
+        "menu": {
+            "label": "Page actions",
+            "save": "Save now · ⌘/Ctrl S",
+            "visual": "Visual editor",
+            "source": "Markdown source",
+            "to-page": "Turn into page",
+            "to-folder": "Turn into folder",
+            "move-within": "Move within Space",
+            "move-to": "Move to…",
+            "new-inside": "New page inside",
+            "new-subpage": "New subpage",
+            "follow-up": "Create follow-up…",
+            "download": "Download Markdown",
+            "source-thread": "Open source conversation",
+            "delete": "Delete page"
+        },
+        "notices": {
+            "folder-save-first": "Save your changes before turning this page into a folder.",
+            "folder-failed": "Could not change this page. Try again.",
+            "latest-confirm": "Load the latest saved page and replace this draft? Download your draft first if you want to keep it.",
+            "latest-failed": "Could not load the latest page. Your draft is unchanged.",
+            "retry": "Retry save",
+            "download": "Download draft",
+            "load-latest": "Load latest",
+            "dismiss": "Dismiss"
+        },
+        "save-errors": {
+            "conflict": "This page changed elsewhere. Your draft is safe. Copy it before loading the latest version.",
+            "newer": "A newer revision exists. Your draft is preserved.",
+            "timeout": "Saving timed out. Your draft is safe; retry when connected.",
+            "failed": "Could not save. Your draft is safe.",
+            "invalid": "Use a title up to {{title, number}} characters and a document up to {{content, number}} characters. Your draft is still here."
+        },
+        "move": {
+            "label": "Move under",
+            "parent": "Parent page",
+            "root": "Space root",
+            "done": "Done"
+        },
+        "source": {
+            "heading": "Markdown source",
+            "label": "Page Markdown",
+            "reasons": {
+                "extended": "This document contains extended Markdown. Source mode preserves it exactly.",
+                "unsupported": "This document contains images, HTML, or formatting that needs Markdown source mode. Nothing has been changed.",
+                "round-trip": "Some formatting cannot be safely round-tripped. Source mode keeps the original document intact.",
+                "unreadable": "This Markdown needs source mode to preserve its contents."
+            }
+        }
+    },
+    "title": {
+        "label": "Page title"
+    },
+    "folder": {
+        "new-page": "New page",
+        "new-folder": "New folder",
+        "contents": "In this folder",
+        "empty": "This folder is empty.",
+        "kept": "This folder keeps its page text. Turn it back into a page to see it."
+    },
+    "hierarchy": {
+        "parents": "Parent pages",
+        "children": "Child pages"
+    },
+    "outline": {
+        "label": "Pages in this Space",
+        "heading": "Pages",
+        "new": "New page in outline",
+        "close": "Close page outline"
+    },
+    "missing": {
+        "crumb": "Deleted page",
+        "loading": "Loading page…",
+        "deleted": "This page was deleted",
+        "deleted-detail": "It was deleted from this Space, so links to it no longer open a page.",
+        "not-found": "Page not found",
+        "not-found-detail": "It isn’t in this Space. Check the link, or find the page in the library.",
+        "back": "Back to all pages"
+    },
+    "chat": {
+        "label": "Page conversation",
+        "close": "Close page chat",
+        "ask-label": "Ask about this page",
+        "ask-placeholder": "Ask about this page…",
+        "specialist": "Page specialist",
+        "paused": "Assistant paused",
+        "uses-saved": "Uses this saved page",
+        "send": "Send to page assistant",
+        "save-first": "Save or resolve your document changes before starting page chat.",
+        "failed": "Could not open page chat.",
+        "setup": {
+            "add-specialist": "Add a specialist to work with this Space.",
+            "ask-admin": "Ask an admin to add a specialist to this Space.",
+            "create-specialist": "Create specialist",
+            "connect": "Connect your assistant to chat about this page.",
+            "set-up": "Set up assistant"
+        }
+    },
+    "cover": {
+        "add": "Add cover",
+        "change": "Change cover",
+        "remove": "Remove",
+        "gone": "This cover’s image is no longer available.",
+        "picker": "Cover",
+        "removed": "Cover removed",
+        "undo": "Undo",
+        "undo-failed": "Could not put the cover back.",
+        "remove-failed": "Could not remove the cover."
+    }
+}

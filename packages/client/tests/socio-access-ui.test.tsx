@@ -4,6 +4,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { MemoryRouter } from 'react-router';
 import { afterEach, expect, it, vi } from 'vitest';
 
+import OPS from '@socio/i18n/locales/en-US/operations.json';
 import type { ApprovalView, ApprovalsState } from '@socio/shared/approvals';
 import type { CodingSessionCard } from '@socio/shared/coding/coding-sessions';
 import type { AppAccessCard, AppActionCard, SocioGrantView } from '@socio/shared/socio-access';
@@ -399,5 +400,6 @@ it('lists Socio access in Settings and Operations only while the flag is on', ()
     expect(listed(entry, { ...access, flags: ['socio-actor-access'] })).toBe(true);
     const ops = OPS_GROUPS.flatMap((group) => group.sections).find((item) => item.id === 'socio-access');
     expect(ops?.flag).toBe('socio-actor-access');
-    expect(findOpsSection('socio-access')?.label).toBe('Socio access');
+    expect(findOpsSection('socio-access')?.id).toBe('socio-access');
+    expect(OPS.sections['socio-access'].label).toBe('Socio access');
 });

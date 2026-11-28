@@ -168,10 +168,19 @@ describe("the editor's drift from the web", () => {
 
     it("has the web's ARIA and paste rule", () => {
         const web = readFileSync(join(webEditor, 'RichEditor.tsx'), 'utf8');
-        for (const [name, value] of Object.entries(EDITOR_ATTRIBUTES)) {
+        // The web's words are its en-US dictionary's (pages.editor).
+        const words = JSON.parse(
+            readFileSync(join(root, 'packages/i18n/locales/en-US/pages.editor.json'), 'utf8'),
+        ) as Record<string, unknown>;
+        const { 'aria-label': label, ...fixed } = EDITOR_ATTRIBUTES;
+        for (const [name, value] of Object.entries(fixed)) {
             expect(web, name).toContain(`${/^[a-z]+$/.test(name) ? name : `'${name}'`}: '${value}'`);
         }
+        expect(web).toContain("'aria-label': label");
+        expect(web).toContain("const label = t('pages.editor:content-label');");
+        expect(words['content-label']).toBe(label);
         expect(web).toContain(`${REFUSED_PASTE}.test(html)`);
-        expect(web).toContain(`'${REFUSED_PASTE_NOTICE}'`);
+        expect(web).toContain("t('pages.editor:paste-refused')");
+        expect(words['paste-refused']).toBe(REFUSED_PASTE_NOTICE);
     });
 });

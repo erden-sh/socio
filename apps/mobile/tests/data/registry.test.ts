@@ -775,6 +775,24 @@ describe('the registry', () => {
         await again.close();
     });
 
+    it('keeps a refreshed logo name, the mascot as null, and ignores a row that is gone (CB-574)', async () => {
+        const keys = new Map<string, string>();
+        const { registry } = await opened(keys);
+        const ada = await newWorkspace('u-1');
+        const bob = await newWorkspace('u-2');
+        await registry.add({ ...ada, logo: 'logo.png' });
+        await registry.add({ ...bob, logo: 'logo.png' });
+        await registry.setLogo(ada.id, 'logo-0123456789abcdef.webp');
+        expect((await registry.get(ada.id))?.logo).toBe('logo-0123456789abcdef.webp');
+        expect((await registry.get(bob.id))?.logo).toBe('logo.png');
+        await registry.setLogo(bob.id, null);
+        expect((await registry.get(bob.id))?.logo).toBeNull();
+        await registry.remove(ada.id);
+        await registry.setLogo(ada.id, 'logo.png');
+        expect(await registry.get(ada.id)).toBeNull();
+        await registry.close();
+    });
+
     it('keeps its rows across a relaunch', async () => {
         const keys = new Map<string, string>();
         const { registry } = await opened(keys);

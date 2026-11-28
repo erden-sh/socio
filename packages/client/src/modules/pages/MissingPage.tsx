@@ -1,6 +1,8 @@
 import { FileX } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
+import { useTranslation } from '@socio/i18n/react';
+
 import { api, ApiError } from '../../lib/api';
 import { useCrumbTitle } from '../../shell/crumb-title';
 
@@ -31,6 +33,7 @@ export function MissingPage({
     /** Opens the page in the Space it moved to. */
     onMoved: (spaceId: string, pageId: string) => void;
 }) {
+    const { t } = useTranslation(['pages']);
     const moved = useRef(onMoved);
     useEffect(() => {
         moved.current = onMoved;
@@ -77,20 +80,18 @@ export function MissingPage({
     const shown = deleted ? 'deleted' : loaded ? state : 'checking';
     // The breadcrumb says "Deleted page"; otherwise a key that matches no
     // page leaves it at "Pages".
-    useCrumbTitle(shown === 'deleted' ? pageId : '', 'Deleted page');
+    useCrumbTitle(shown === 'deleted' ? pageId : '', t('pages:missing.crumb'));
     if (shown === 'checking') {
-        return <LibraryEmpty title="Loading page…" />;
+        return <LibraryEmpty title={t('pages:missing.loading')} />;
     }
     return (
         <LibraryEmpty
             role="status"
             icon={<FileX size={30} strokeWidth={1.3} />}
-            title={shown === 'deleted' ? 'This page was deleted' : 'Page not found'}
-            action={<PagePrimaryButton onClick={onHome}>Back to all pages</PagePrimaryButton>}
+            title={shown === 'deleted' ? t('pages:missing.deleted') : t('pages:missing.not-found')}
+            action={<PagePrimaryButton onClick={onHome}>{t('pages:missing.back')}</PagePrimaryButton>}
         >
-            {shown === 'deleted'
-                ? 'It was deleted from this Space, so links to it no longer open a page.'
-                : 'It isn’t in this Space. Check the link, or find the page in the library.'}
+            {shown === 'deleted' ? t('pages:missing.deleted-detail') : t('pages:missing.not-found-detail')}
         </LibraryEmpty>
     );
 }

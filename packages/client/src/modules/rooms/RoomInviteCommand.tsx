@@ -1,7 +1,10 @@
 import { useEffect, useId, useState, type KeyboardEvent, type RefObject } from 'react';
 import { toast } from 'sonner';
 
+import { useTranslation } from '@socio/i18n/react';
 import type { RoomPerson, RoomRole } from '@socio/shared/rooms/rooms';
+
+import { useOnDemand } from '../../i18n/on-demand';
 
 import { failure, roomsApi } from './api';
 import { PersonAvatar } from './RoomSpeaker';
@@ -77,6 +80,9 @@ export function useRoomInviteCommand({
     /** Two people with one name, in words (`personLabels`). */
     labels?: ReadonlyMap<string, string>;
 }) {
+    const { t } = useTranslation(['rooms']);
+    // Its words are the room's (rooms), which RoomChat waits for.
+    const ready = useOnDemand(['rooms']);
     const listId = useId();
     const [people, setPeople] = useState<RoomPerson[]>();
     const [active, setActive] = useState(0);
@@ -100,15 +106,15 @@ export function useRoomInviteCommand({
             })
             .catch((error) => {
                 if (!controller.signal.aborted) {
-                    setProblem(failure(error, 'Could not list people to invite.'));
+                    setProblem(failure(error, t('rooms:invite-command.list-failed')));
                 }
             });
         return () => controller.abort();
-    }, [admin, roomId, members]);
+    }, [admin, roomId, members, t]);
 
     // `query === ''` is `/invite` with nothing after it: show everyone invitable.
     const candidates = query !== undefined ? matchingInvitees(people ?? [], query) : [];
-    const open = query !== undefined && candidates.length > 0;
+    const open = ready && query !== undefined && candidates.length > 0;
     const current = Math.min(active, Math.max(candidates.length - 1, 0));
 
     const send = async (person: RoomPerson, role: RoomRole = 'member') => {
@@ -116,11 +122,11 @@ export function useRoomInviteCommand({
         setProblem('');
         try {
             await roomsApi.invite(roomId, person.userId, role);
-            toast.message(`Invited ${person.name}. They join once they accept.`);
+            toast.message(t('rooms:invite-command.invited', { name: person.name }));
             setDraft('');
             onInvited();
         } catch (error) {
-            setProblem(failure(error, 'Could not invite them.'));
+            setProblem(failure(error, t('rooms:invite-command.failed')));
         } finally {
             setBusy(false);
         }
@@ -159,7 +165,7 @@ export function useRoomInviteCommand({
         <ul
             id={listId}
             role="listbox"
-            aria-label="People to invite"
+            aria-label={t('rooms:invite-command.list')}
             data-slot="room-invite-menu"
             className="mb-1 max-h-48 overflow-y-auto rounded-lg border bg-popover p-1 text-sm text-popover-foreground shadow-md keyboard-short:max-h-28"
         >
@@ -186,7 +192,7 @@ export function useRoomInviteCommand({
         </ul>
     ) : null;
 
-    const said = open ? `${candidates.length} ${candidates.length === 1 ? 'person' : 'people'} to invite` : '';
+    const said = open ? t('rooms:invite-command.count', { count: candidates.length }) : '';
     const status = (
         <span role="status" className="sr-only" data-slot="room-invite-status">
             {said}
@@ -198,7 +204,7 @@ export function useRoomInviteCommand({
         menu: (
             <div data-slot="room-invite-anchor" className="relative">
                 {list}
-                {problem && (
+                {ready && problem && (
                     <p
                         role="alert"
                         data-slot="room-invite-problem"

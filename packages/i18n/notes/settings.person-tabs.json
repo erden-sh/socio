@@ -1,0 +1,14 @@
+{
+    "signIn.by": "How a session signed in, such as \"by Passkey\" or \"by Sign-in link\". {{method}} is a method's name.",
+    "signIn.lastUsed": "{{ago}} is a lowercase time phrase (\"now\", \"25 min ago\", \"yesterday\").",
+    "signIn.app": "Card title: the Socio mobile app's devices signed in to this account. \"Socio\" is the product name.",
+    "signIn.passkeyAdded": "Appended to a passkey's name, starting with a comma: when it was added.",
+    "signIn.noLink": "Muted note: no password link has been made for this person yet.",
+    "owns.owns": "{{list}} is a comma-separated list of counted kinds (\"3 schedules, 1 app\").",
+    "owns.transferKind": "Accessible name of one kind's Transfer button. {{kind}} is the kind's title (Apps, Schedules…).",
+    "owns.deletedKept": "Beside an owned item: its type, and that it was deleted but is kept.",
+    "owns.keys": "Card title: the service keys (API keys for service accounts) the person made.",
+    "owns.used": "{{ago}} is a lowercase time phrase (\"now\", \"3 days ago\").",
+    "activity.at": "When an audit trail line happened: date and time.",
+    "activity.sources.workspace": "Badge on an audit trail line: which part of Socio recorded it. A Room is a group chat."
+}

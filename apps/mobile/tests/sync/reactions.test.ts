@@ -1,7 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { reportMark } from '../../src/chat/reply-reports';
 import type { AuthedFetch } from '../../src/net/authed-fetch';
-import { createReactionsStore, OPEN_REACTIONS } from '../../src/sync/reactions';
+import { createReactionsStore, OPEN_REACTIONS, REPORT_POLL_MS } from '../../src/sync/reactions';
 
 // The scope's reactions store: GET on use, a write's view newer than a GET in flight.
 
@@ -57,5 +58,92 @@ describe('reactions store', () => {
         }
         expect(store.reactions('kept')).toBe(kept);
         expect(store.reactions('c0').state.ready).toBe(false);
+    });
+
+    it('keeps a report’s outcome with the view, numbered, and the replies to offer "Report it now?" (CB-382)', () => {
+        const store = createReactionsStore({ fetch: deferredFetch().fetch });
+        const chat = store.reactions('c1');
+        const seen: unknown[] = [];
+        chat.subscribe(() => seen.push(chat.state.report));
+        store.take(
+            'c1',
+            { ...view(['down']), report: 'consent-changed' },
+            { messageId: 'a1', outcome: 'consent-changed' },
+        );
+        expect(chat.state.report).toEqual({ messageId: 'a1', outcome: 'consent-changed', seq: 1 });
+        // The view's own `report` (the answer's) isn't kept as a field of the view.
+        expect(chat.state.view).toEqual(view(['down']));
+        store.take('c1', view(['down']));
+        expect(chat.state.report?.seq).toBe(1);
+        store.take('c1', view(['down']), { messageId: 'a1', outcome: 'consent-changed' });
+        expect(chat.state.report?.seq).toBe(2);
+        chat.offer('a1', true);
+        chat.offer('a1', true);
+        expect(chat.state.offers).toEqual(['a1']);
+        store.take('c1', view([]));
+        expect(chat.state.offers).toEqual(['a1']);
+        chat.offer('a1', false);
+        expect(chat.state.offers).toEqual([]);
+        expect(seen.length).toBe(6);
+    });
+
+    describe('a queued report while the chat stays open (CB-382)', () => {
+        afterEach(() => {
+            vi.useRealTimers();
+        });
+        const withReport = (report: string) => ({
+            shared: false,
+            messages: { a1: { counts: { down: 1 }, mine: ['down'], report } },
+        });
+
+        it('asks again until the collector has it, so the reply shows shared without reopening', async () => {
+            vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+            const { fetch, pending } = deferredFetch();
+            const store = createReactionsStore({ fetch });
+            const chat = store.reactions('c1');
+            const release = chat.use();
+            const unwatch = chat.watchQueued();
+            pending[0]!.resolve(ok(withReport('queued')));
+            await vi.advanceTimersByTimeAsync(0);
+            expect(reportMark(chat.state.view, 'a1')).toBeNull();
+            // Still queued: asked again after the interval, and again after that.
+            await vi.advanceTimersByTimeAsync(REPORT_POLL_MS);
+            expect(pending).toHaveLength(2);
+            pending[1]!.resolve(ok(withReport('queued')));
+            await vi.advanceTimersByTimeAsync(REPORT_POLL_MS);
+            expect(pending).toHaveLength(3);
+            // The collector took it: shared, and no more asking.
+            pending[2]!.resolve(ok(withReport('shared')));
+            await vi.advanceTimersByTimeAsync(0);
+            expect(reportMark(chat.state.view, 'a1')).toBe('Shared with Ingenio');
+            await vi.advanceTimersByTimeAsync(REPORT_POLL_MS * 4);
+            expect(pending).toHaveLength(3);
+            unwatch();
+            release();
+        });
+
+        it('starts from a write’s queued answer, and asks nothing unwatched or with none queued', async () => {
+            vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+            const { fetch, pending } = deferredFetch();
+            const store = createReactionsStore({ fetch });
+            const chat = store.reactions('c1');
+            store.take('c1', withReport('queued'));
+            await vi.advanceTimersByTimeAsync(REPORT_POLL_MS * 2);
+            expect(pending).toHaveLength(0);
+            const unwatch = chat.watchQueued();
+            await vi.advanceTimersByTimeAsync(REPORT_POLL_MS);
+            expect(pending).toHaveLength(1);
+            // Leaving (the screen, the foreground or the connection) stops it.
+            unwatch();
+            pending[0]!.resolve(ok(withReport('queued')));
+            await vi.advanceTimersByTimeAsync(REPORT_POLL_MS * 2);
+            expect(pending).toHaveLength(1);
+            // Watched with nothing queued: nothing.
+            store.take('c1', withReport('shared'));
+            const again = chat.watchQueued();
+            await vi.advanceTimersByTimeAsync(REPORT_POLL_MS * 2);
+            expect(pending).toHaveLength(1);
+            again();
+        });
     });
 });

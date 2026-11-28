@@ -1,0 +1,120 @@
+{
+    "a-socio": "A socio",
+    "you": "You",
+    "status": "Room",
+    "gone": "You are no longer in this room, so you can’t read it here.",
+    "pinned": "Pinned",
+    "members": "Members",
+    "empty": "No messages yet. Everyone in the room reads what is written here.",
+    "reading": "{{name}} is reading this",
+    "queued": {
+        "next": "{{name}} reads this after its current step",
+        "later": "{{name}} reads this once the reply is done",
+        "others": "{{name}} reads it in turn"
+    },
+    "archived": {
+        "notice": "This room is archived.",
+        "unarchive": "Unarchive"
+    },
+    "composer": {
+        "label": "Message the room",
+        "placeholder": "Message the room and {{name}}…",
+        "placeholder-several": "Message the room, or @ a socio…",
+        "placeholder-admin": "Message the room and {{name}}, or /invite…",
+        "placeholder-admin-several": "Message the room, @ a socio, or /invite…",
+        "to-targets": "To {{targets}} · everyone in the room reads it",
+        "to-lead": "To {{name}}, the lead · everyone in the room reads it",
+        "waits": "Waits for the current step",
+        "everyone": "Everyone in the room reads it",
+        "stop": "Stop the answer",
+        "stop-title": "Stop the answer (yours, or any as a room admin)",
+        "queue": "Queue message",
+        "send": "Send message",
+        "send-failed": "Your message wasn’t sent. Try again.",
+        "stop-failed": "Could not stop the answer."
+    },
+    "speaker": {
+        "socio": "socio",
+        "team-member": "Team member"
+    },
+    "mentions": {
+        "list": "People and socios in the room",
+        "socio": "socio",
+        "socio-lead": "socio · lead",
+        "people_one": "{{count, number}} person",
+        "people_other": "{{count, number}} people",
+        "socios_one": "{{count, number}} socio",
+        "socios_other": "{{count, number}} socios",
+        "status": "{{parts, list}} to mention",
+        "you": "you",
+        "you-sr": "mentions you"
+    },
+    "presence": {
+        "here_one": "{{names, list}} is here",
+        "here_other": "{{names, list}} are here",
+        "more_one": "{{first}}, {{second}} and {{count, number}} other are here",
+        "more_other": "{{first}}, {{second}} and {{count, number}} others are here"
+    },
+    "topic": {
+        "status": "Team conversation in Telegram · read-only here",
+        "empty": "No messages yet.",
+        "reply": "Reply in the Telegram topic to continue this conversation.",
+        "convert": "Make this topic a room…",
+        "load-failed": "Could not load this topic."
+    },
+    "usage": {
+        "limits": "Each message: {{parts, list(type: unit; style: short)}}. {{perMinute}}, {{waiting}}.",
+        "work": "up to {{time}} of work",
+        "tokens_one": "{{count, number}} token",
+        "tokens_other": "{{count, number}} tokens",
+        "handoffs_one": "{{count, number}} handoff",
+        "handoffs_other": "{{count, number}} handoffs",
+        "spend-limit": "{{amount}} of spend",
+        "per-minute_one": "{{count, number}} message a minute",
+        "per-minute_other": "{{count, number}} messages a minute",
+        "waiting": "{{n, number}} waiting at most",
+        "tokens-of": "{{used}} of {{limit, number}}",
+        "time-of": "{{elapsed}} of work of {{limit}}",
+        "handoffs-of": "{{n, number}} of {{limit, number}} handoffs",
+        "spend": "Spend: {{amount}}",
+        "spend-of": "Spend: {{amount}} of {{limit}}",
+        "spend-private": "Spend: on the sender’s own model subscription",
+        "spend-unknown": "Spend: not reported by the model",
+        "stopped": "Stopped at a limit",
+        "stopped_deadline": "Stopped at the time limit",
+        "stopped_tokens": "Stopped at the token limit",
+        "stopped_handoffs": "Stopped at the handoff limit",
+        "stopped_spend": "Stopped at the spend limit",
+        "heading": {
+            "running": "Working now",
+            "running-mine": "Your message, working now",
+            "last": "The last message",
+            "last-mine": "Your last message"
+        },
+        "messages_one": "{{count, number}} message",
+        "messages_other": "{{count, number}} messages",
+        "day": "Last 24 hours: {{messages}} worked on, {{tokens}}.",
+        "day-stopped": "Last 24 hours: {{messages}} worked on, {{tokens}}, {{stopped, number}} stopped at a limit.",
+        "day-hidden": "The last 24 hours’ total shows once at least {{n, number}} people have sent messages, so it never shows one person’s use.",
+        "loading": "Loading…",
+        "load-failed": "Could not load the room’s use."
+    },
+    "errors": {
+        "load-room": "Could not load this room.",
+        "read-room": "Could not load the room."
+    },
+    "picker": {
+        "label": "Mention a socio",
+        "title": "Mention a socio: it answers instead of the lead",
+        "heading": "Mention a socio",
+        "lead": "lead"
+    },
+    "invite-command": {
+        "list": "People to invite",
+        "count_one": "{{count, number}} person to invite",
+        "count_other": "{{count, number}} people to invite",
+        "invited": "Invited {{name}}. They join once they accept.",
+        "failed": "Could not invite them.",
+        "list-failed": "Could not list people to invite."
+    }
+}

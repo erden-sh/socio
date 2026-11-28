@@ -59,7 +59,7 @@ import { createPageSaves, type PageLanding, type PageText, type PageTheirs } fro
 import { createPagesStore, type PageMove, type PagesStore } from './page-store';
 import { pageBodyKey } from './pages';
 import { createPresence, type Presence, PRESENCE_POLL_MS } from './presence';
-import { createReactionsStore, type ReactionsStore } from './reactions';
+import { createReactionsStore, type ReactionReport, type ReactionsStore } from './reactions';
 import { createReviewDrafts, dropEdits } from './review-edits';
 import { createRoomActions, type RoomActions } from './room-actions';
 import { createRoomCreate, type RoomCreate } from './room-create';
@@ -262,8 +262,8 @@ export interface OutboxKindScope {
     afterWrite(path: string): void;
     /** Each event of a run this device started, with its turn: the scope's `turns` keep it for the chat. */
     onTurn(threadId: string, turn: LiveTurn): void;
-    /** A reaction write's answer: the chat's view, for the scope's `reactions`. */
-    onReactions(threadId: string, view: unknown): void;
+    /** A reaction write's answer: the chat's view, and what became of a report it carried, for the scope's `reactions`. */
+    onReactions(threadId: string, view: unknown, report?: ReactionReport): void;
     /** The outbox's refused rows (empty until it opens): the page review's hold lets a refused Skip go. */
     unsent(): readonly UnsentWrite[];
     /**

@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 
+import { useTranslation } from '@socio/i18n/react';
 import { roomsOn } from '@socio/shared/rooms/room-view';
 import type { RoomView } from '@socio/shared/rooms/rooms';
 import type { Conversation } from '@socio/shared/types';
@@ -32,6 +33,7 @@ import {
  * Undo. The room stays open where it is, read-only, with Unarchive.
  */
 export function useArchiveRoom() {
+    const { t } = useTranslation(['rooms.nav']);
     const shell = useShell();
     const patch = async (id: string, archived: boolean) => {
         try {
@@ -39,7 +41,7 @@ export function useArchiveRoom() {
             await shell.refresh();
             return true;
         } catch (error) {
-            toast.error(failure(error, archived ? 'Could not archive the room.' : 'Could not unarchive the room.'));
+            toast.error(failure(error, archived ? t('rooms.nav:errors.archive') : t('rooms.nav:errors.unarchive')));
             return false;
         }
     };
@@ -48,8 +50,8 @@ export function useArchiveRoom() {
             if (!(await patch(thread.id, true))) {
                 return false;
             }
-            toast('Room archived', {
-                action: { label: 'Undo', onClick: () => void patch(thread.id, false) },
+            toast(t('rooms.nav:toasts.archived'), {
+                action: { label: t('rooms.nav:toasts.undo'), onClick: () => void patch(thread.id, false) },
             });
             return true;
         },
@@ -57,7 +59,7 @@ export function useArchiveRoom() {
             if (!(await patch(thread.id, false))) {
                 return false;
             }
-            toast.success('Room unarchived');
+            toast.success(t('rooms.nav:toasts.unarchived'));
             return true;
         },
     };
@@ -76,6 +78,7 @@ function LeaveFromMenu({
     onClose: () => void;
     onLeft?: () => void;
 }) {
+    const { t } = useTranslation(['rooms.nav']);
     const shell = useShell();
     const [room, setRoom] = useState<RoomView>();
     const close = useRef(onClose);
@@ -86,11 +89,11 @@ function LeaveFromMenu({
             if (controller.signal.aborted) {
                 return;
             }
-            toast.error(failure(error, 'Could not read the room.'));
+            toast.error(failure(error, t('rooms.nav:errors.read')));
             close.current();
         });
         return () => controller.abort();
-    }, [thread.id]);
+    }, [thread.id, t]);
     if (!room) {
         return null;
     }
@@ -124,6 +127,7 @@ function RoomMenuItems({
     onDialog: (dialog: RoomDialog) => void;
     onLeave?: () => void;
 }) {
+    const { t } = useTranslation(['rooms.nav']);
     const { state } = useShell();
     const navigate = useNavigate();
     const { archive, unarchive } = useArchiveRoom();
@@ -137,30 +141,30 @@ function RoomMenuItems({
                     void navigate(membersPath(thread.id));
                 }}
             >
-                <Users /> Members
+                <Users /> {t('rooms.nav:menu.members')}
             </DropdownMenuItem>
             <DropdownMenuItem className={touchTarget} onSelect={() => onDialog('topic')}>
-                <Send /> Telegram topic
+                <Send /> {t('rooms.nav:menu.topic')}
             </DropdownMenuItem>
             {admin && !thread.archivedAt && (
                 <DropdownMenuItem className={touchTarget} onSelect={() => onDialog('rename')}>
-                    <Pencil /> Rename
+                    <Pencil /> {t('rooms.nav:menu.rename')}
                 </DropdownMenuItem>
             )}
             {admin &&
                 (thread.archivedAt ? (
                     <DropdownMenuItem className={touchTarget} onSelect={() => void unarchive(thread)}>
-                        <ArchiveRestore /> Unarchive
+                        <ArchiveRestore /> {t('rooms.nav:menu.unarchive')}
                     </DropdownMenuItem>
                 ) : (
                     <DropdownMenuItem className={touchTarget} onSelect={() => void archive(thread)}>
-                        <Archive /> Archive
+                        <Archive /> {t('rooms.nav:menu.archive')}
                     </DropdownMenuItem>
                 ))}
             <RoomNotifyItems thread={thread} />
             <DropdownMenuSeparator />
             <DropdownMenuItem variant="destructive" className={touchTarget} onSelect={() => onDialog('leave')}>
-                <LogOut /> Leave room
+                <LogOut /> {t('rooms.nav:menu.leave')}
             </DropdownMenuItem>
         </>
     );
@@ -233,10 +237,13 @@ export function RoomMenuSection({
     thread: Conversation;
     onDialog: (dialog: RoomDialog, from: HTMLElement | null) => void;
 }) {
+    const { t } = useTranslation(['rooms.nav']);
     const { defer } = useHeaderMenu();
     return (
         <DropdownMenuGroup data-slot="header-room-items">
-            <DropdownMenuLabel className="text-xs text-muted-foreground">Room</DropdownMenuLabel>
+            <DropdownMenuLabel className="text-xs text-muted-foreground">
+                {t('rooms.nav:menu.section')}
+            </DropdownMenuLabel>
             <RoomMenuItems thread={thread} onDialog={(dialog) => defer((from) => onDialog(dialog, from))} />
         </DropdownMenuGroup>
     );

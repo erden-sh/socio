@@ -54,7 +54,7 @@ export function WorkspaceDialog({
 }) {
     // Loaded on demand (route-namespaces.json inlines it nowhere): the
     // dialog opens only after a click.
-    const { t, ready } = useTranslation(['settings', 'settings.dialogs', 'chat.model']);
+    const { t, ready } = useTranslation(['settings', 'settings.dialogs', 'chat.model', 'spaces.audience']);
     const [name, setName] = useState(dialog.type === 'dot' ? (dialog.dot?.name ?? '') : '');
     const [text, setText] = useState(
         dialog.type === 'dot'

@@ -16,6 +16,11 @@
 //   refuse-unavailable   503, Retry-After 1    (provider_unavailable)
 //
 // Every other account verifies, with `<account>@example.test` as its email.
+//
+// With `reports` (servers.mjs --reports, CB-382) the issuer grants `reports:write` too and the same
+// origin is the reports collector (`POST /v1/reports`): it keeps each report it took in memory
+// (`reports`), answers 201, or holds them unsent with 503 while `holdReports()` is on, so a report
+// stays queued on the server. Nothing leaves the machine.
 import { createHash, createPublicKey, generateKeyPairSync, randomUUID, sign, verify } from 'node:crypto';
 import { createServer } from 'node:http';
 
@@ -23,6 +28,8 @@ import { createServer } from 'node:http';
 export const E2E_SERVER_CLIENT_ID = '000000000000-e2e.apps.googleusercontent.test';
 /** What a deployment this fake registers may use. */
 export const E2E_SCOPES = 'social:verify';
+/** With --reports, AI reply reports too (CB-382). */
+export const E2E_REPORT_SCOPES = `${E2E_SCOPES} reports:write`;
 
 const encode = (value) => Buffer.from(JSON.stringify(value)).toString('base64url');
 const json = (response, status, body, headers = {}) =>
@@ -72,8 +79,13 @@ export function verdict(body) {
 /**
  * Starts the fake on 127.0.0.1:`port`. `provision()` gives an enrollment token for one server.
  * @param {number} port
+ * @param {{ reports?: boolean }} [options]
  */
-export async function fakeCloud(port) {
+export async function fakeCloud(port, options = {}) {
+    const scopes = options.reports ? E2E_REPORT_SCOPES : E2E_SCOPES;
+    /** @type {unknown[]} */
+    const reports = [];
+    let holding = false;
     // Set once it listens: port 0 takes a free one (the harness's test).
     let origin = `http://127.0.0.1:${port}`;
     const { privateKey } = generateKeyPairSync('ed25519');
@@ -128,7 +140,7 @@ export async function fakeCloud(port) {
                     client_id: id,
                     token_endpoint_auth_method: 'private_key_jwt',
                     deployment_mode: 'hosted',
-                    scope: E2E_SCOPES,
+                    scope: scopes,
                     terms_version: '2026-11-01',
                 });
             }
@@ -161,11 +173,18 @@ export async function fakeCloud(port) {
             if (route === 'POST /v1/sync') {
                 return json(response, 200, {
                     deployment_mode: 'hosted',
-                    scope: E2E_SCOPES,
+                    scope: scopes,
                     status: 'active',
                     accepts: [],
                     notices: [],
                 });
+            }
+            if (route === 'POST /v1/reports' && options.reports) {
+                if (holding) {
+                    return json(response, 503, {}, { 'retry-after': '60' });
+                }
+                reports.push(JSON.parse(raw));
+                return json(response, 201, {});
             }
             if (route === 'GET /v1/social/config') {
                 return json(response, 200, { google: { serverClientId: E2E_SERVER_CLIENT_ID }, apple: {} });
@@ -200,6 +219,12 @@ export async function fakeCloud(port) {
     return {
         origin,
         verified,
+        /** The reports the collector took (--reports), as the servers sent them. */
+        reports,
+        /** Holds reports unsent (503) while `on`, so they stay queued; off takes them again. */
+        holdReports(/** @type {boolean} */ on) {
+            holding = on;
+        },
         /** A single-use enrollment token for one deployment. */
         provision() {
             const token = `iat_${randomUUID()}${randomUUID()}`;

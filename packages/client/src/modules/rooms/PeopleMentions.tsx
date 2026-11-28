@@ -11,6 +11,7 @@ import {
     type SyntheticEvent,
 } from 'react';
 
+import { useTranslation } from '@socio/i18n/react';
 import type { TranscriptMention } from '@socio/shared/rooms/room-notices';
 import {
     insertMention,
@@ -74,6 +75,7 @@ export function usePeopleMentions({
     /** A socio candidate's avatar (its mascot), for the list (CB-284). */
     renderSocio?: (socio: MentionCandidate) => ReactNode;
 }) {
+    const { t } = useTranslation(['rooms']);
     const listId = useId();
     const [picked, setPicked] = useState<PersonMention[]>([]);
     const [caret, setCaret] = useState<number>();
@@ -171,7 +173,7 @@ export function usePeopleMentions({
         <ul
             id={listId}
             role="listbox"
-            aria-label="People and socios in the room"
+            aria-label={t('rooms:mentions.list')}
             data-slot="people-mentions"
             // Shorter while a phone's keyboard leaves little room (CB-219).
             className="mb-1 max-h-48 overflow-y-auto rounded-lg border bg-popover p-1 text-sm text-popover-foreground shadow-md keyboard-short:max-h-28"
@@ -206,7 +208,7 @@ export function usePeopleMentions({
                         </span>
                         {socio && (
                             <span className="ml-auto shrink-0 rounded-sm border px-1 text-[10px] leading-4 font-normal text-muted-foreground">
-                                {candidate.lead ? 'socio · lead' : 'socio'}
+                                {candidate.lead ? t('rooms:mentions.socio-lead') : t('rooms:mentions.socio')}
                             </span>
                         )}
                     </li>
@@ -224,12 +226,12 @@ export function usePeopleMentions({
               const socioCount = candidates.filter((c) => c.kind === 'socio').length;
               const parts: string[] = [];
               if (peopleCount) {
-                  parts.push(`${peopleCount} ${peopleCount === 1 ? 'person' : 'people'}`);
+                  parts.push(t('rooms:mentions.people', { count: peopleCount }));
               }
               if (socioCount) {
-                  parts.push(`${socioCount} ${socioCount === 1 ? 'socio' : 'socios'}`);
+                  parts.push(t('rooms:mentions.socios', { count: socioCount }));
               }
-              return `${parts.join(' and ')} to mention`;
+              return t('rooms:mentions.status', { parts });
           })()
         : '';
     const status = (
@@ -268,6 +270,7 @@ export function usePeopleMentions({
  * mentions show, never `@Name` text alone.
  */
 export function MentionedYou({ mentions }: { mentions?: readonly TranscriptMention[] }) {
+    const { t } = useTranslation(['rooms']);
     if (!mentions?.some((mention) => mention.you)) {
         return null;
     }
@@ -279,8 +282,8 @@ export function MentionedYou({ mentions }: { mentions?: readonly TranscriptMenti
             className="inline-flex shrink-0 items-center gap-0.5 rounded-sm bg-primary/10 px-1 text-[10px] leading-4 font-medium text-[#357360] dark:text-primary"
         >
             <AtSign className="size-3" aria-hidden />
-            <span aria-hidden>you</span>
-            <span className="sr-only">mentions you</span>
+            <span aria-hidden>{t('rooms:mentions.you')}</span>
+            <span className="sr-only">{t('rooms:mentions.you-sr')}</span>
         </span>
     );
 }

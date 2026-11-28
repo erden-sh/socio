@@ -1,0 +1,109 @@
+{
+    "saved": "Settings saved",
+    "save": "Save",
+    "save-failed": "Could not save.",
+    "load-failed": "Could not load these settings.",
+    "unsure": "Unsure",
+    "card": {
+        "threshold": "Threshold, percent",
+        "per-day": "Most calls a day",
+        "limits": "The threshold is how sure the model must be for a label to count, and how often it must be right, when that sure, in an evaluation. From {{min, number}} to {{max, number}}. The server’s are {{defaults}}; 0 calls asks about none.",
+        "defaults": "…",
+        "defaults_known_one": "{{threshold, number(style: percent; maximumFractionDigits: 0)}} and {{count, number}} call",
+        "defaults_known_other": "{{threshold, number(style: percent; maximumFractionDigits: 0)}} and {{count, number}} calls",
+        "reset": "Use the server’s",
+        "status": "Model and evaluation",
+        "model": "Model",
+        "no-model": "None: set up a default shared model first.",
+        "its-labels": "Its labels",
+        "passed": "Count: this version passed an evaluation.",
+        "not-passed": "Suggestions only, until this version passes an evaluation.",
+        "golden": "Golden set",
+        "golden-count_one": "{{count, number}} admin label",
+        "golden-count_other": "{{count, number}} admin labels",
+        "golden-needs": "{{golden}} (an evaluation needs {{min, number}})",
+        "day": "Last 24 hours",
+        "calls": "{{calls, number}} of {{perDay, number}} calls, {{evaluating, number}} evaluating · {{tokens, number}} tokens · {{cost}}",
+        "cost-unknown": "cost not reported",
+        "no-cost_one": "{{text}} ({{count, number}} call without a cost)",
+        "no-cost_other": "{{text}} ({{count, number}} calls without a cost)",
+        "evaluate": "Evaluate",
+        "evaluating": "Evaluating…",
+        "evaluate-help": "Asks the model about every golden label: one call each."
+    },
+    "eval": {
+        "running": "Running…",
+        "failed": "Failed: {{error}}",
+        "unknown": "unknown",
+        "passed": "Passed",
+        "few-answered": "Did not pass: it was sure of {{answered, number}}, fewer than {{min, number}}",
+        "imprecise": "Did not pass: {{precision}} right, under {{threshold}}",
+        "summary": "<strong>Last evaluation</strong>, {{when}}, of {{version}}: {{verdict}}. {{golden, number}} labels, {{answered, number}} answered, {{precision}} of those right, {{accuracy}} right overall.",
+        "per-label": "Per label",
+        "label": "Label",
+        "admin-labels": "Admin labels",
+        "model-said": "Model said",
+        "precision": "Precision",
+        "recall": "Recall"
+    },
+    "failures": {
+        "title": "Failure labels",
+        "intro": "The rules in Reliability can’t sort every failure: a generic error code stays {{unclassified}}. With this on, the workspace’s model reads the failure’s error text, scrubbed of contact details and secrets and cut to 300 characters, and suggests a category. Suggestions count only when the model is sure enough and has passed an evaluation against admins’ labels.",
+        "switch": "Suggest labels for Unclassified failures",
+        "switch-help": "Off by default. Each failure is asked about once; a failed or invalid answer is not retried. Labels you set in Reliability always count.",
+        "categories": {
+            "stopped": "Stopped",
+            "permissions": "Permissions and approvals",
+            "quotas": "Quotas and limits",
+            "not_available": "Not available or not set up",
+            "model_provider": "Model provider",
+            "external_service": "Other external services",
+            "invalid_input": "Invalid input",
+            "runtime_error": "Runtime error",
+            "unclassified": "Unclassified"
+        }
+    },
+    "intent": {
+        "title": "Session intent",
+        "intro": "What people come to socios for: the workspace’s model reads a chat’s title and the first three messages a person wrote in a session, scrubbed of contact details and secrets and cut to 300 characters each, and picks one intent from the list below. Value and Themes show how sessions of each intent end. Its labels count only when it is sure enough and has passed an evaluation against intents admins set in Themes.",
+        "switch": "Label each session’s intent",
+        "switch-help": "Off by default. Each session is asked about once, after its first three messages or when it ends.",
+        "list": {
+            "title": "Intents",
+            "description": "{{min, number}} to {{max, number}} intents. Changing the list starts a new golden set: the model must pass an evaluation on it again before its labels count. Labels already given keep their value.",
+            "value": "Value",
+            "meaning": "Meaning",
+            "bad-value": "A short lowercase word: letters, digits or dashes.",
+            "duplicate": "Each value once.",
+            "no-meaning": "Say what it means.",
+            "remove": "Remove",
+            "remove-label": "Remove {{value}}",
+            "remove-label_unnamed": "Remove this intent",
+            "add": "Add an intent",
+            "save": "Save intents",
+            "saved": "Intents saved",
+            "reset": "Use the default list"
+        }
+    },
+    "themes": {
+        "title": "Session themes",
+        "intro": "What sessions are about: the workspace’s model reads the same scrubbed title and first messages and names one to three topics in a few words, never people, and whether the person seems to have got what they came for. Operations → Themes groups the topics into themes by week. A theme is named only when at least {{min, number}} different people had sessions on it. Its topics count only once it has passed an evaluation against topics admins set in Themes.",
+        "switch": "Find each session’s themes",
+        "switch-help": "Off by default. Each session is asked about once, after its first three messages or when it ends.",
+        "outcomes": {
+            "resolved": "Seems resolved",
+            "unresolved": "Seems unresolved",
+            "unclear": "Unclear"
+        }
+    },
+    "learning": {
+        "title": "Learning triage",
+        "intro": "Which finished conversations Learning analyzes: the workspace’s model reads each new conversation’s title and what people asked in it, never the replies, scrubbed of contact details and secrets and cut to {{chars, number}} characters, and says whether it shows a procedure the team would repeat. Conversations it is sure are one-off stay out of the analysis, so fewer transcripts leave the store. It also checks each proposal for a repeat of a rejected or published skill and for private details, after Learning’s own checks, and starts an analysis when one intent (from Session intent) recurs in five sessions of Learning’s new conversations. Its answers count only once it has passed an evaluation against labels admins set in Learning; a sure “private” drops a proposal even before that.",
+        "switch": "Triage Learning’s conversations",
+        "switch-help": "Off by default: Learning then works as before. Each conversation is asked about once each time it finishes; each proposal costs one or two calls.",
+        "labels": {
+            "repeatable": "Shows a repeatable procedure",
+            "one-off": "One-off"
+        }
+    }
+}

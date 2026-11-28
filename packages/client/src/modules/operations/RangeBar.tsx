@@ -1,11 +1,9 @@
 import { X } from 'lucide-react';
 import { useState } from 'react';
 
+import { useTranslation } from '@socio/i18n/react';
 import {
-    OPS_BUCKET_LABELS,
-    OPS_FILTER_LABELS,
     OPS_FILTERS,
-    OPS_RANGE_LABELS,
     OPS_RANGES,
     opsWindow,
     type OpsBucket,
@@ -20,14 +18,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-const SHORT: Record<(typeof OPS_RANGES)[number], string> = {
-    '24h': '24h',
-    '7d': '7d',
-    '30d': '30d',
-    '90d': '90d',
-    '12m': '12m',
-    all: 'All',
-};
 const DAY = 86_400_000;
 /** A day as a date input has it, in UTC. */
 const isoDay = (at: number) => new Date(at).toISOString().slice(0, 10);
@@ -53,6 +43,7 @@ function useFilterName() {
  * in the address, so the view can be shared.
  */
 export function RangeBar() {
+    const { t } = useTranslation(['operations', 'operations.dashboard']);
     const { query, update } = useOpsQuery();
     const { timeZone } = useOpsSettings();
     const filterName = useFilterName();
@@ -67,7 +58,7 @@ export function RangeBar() {
             <div className="flex flex-wrap items-center gap-2">
                 <div
                     role="group"
-                    aria-label="Range"
+                    aria-label={t('operations.dashboard:range.label')}
                     className="flex max-w-full gap-0.5 overflow-x-auto rounded-lg border bg-muted/60 p-0.5 [scrollbar-width:none] dark:bg-input/20"
                 >
                     {OPS_RANGES.map((range) => (
@@ -77,7 +68,7 @@ export function RangeBar() {
                             data-slot="ops-range"
                             className={segment}
                             aria-pressed={!query.from && !custom && query.range === range}
-                            title={OPS_RANGE_LABELS[range]}
+                            title={t(`operations.dashboard:range.long.${range}`)}
                             onClick={() => {
                                 setCustom(false);
                                 update({
@@ -88,7 +79,7 @@ export function RangeBar() {
                                 });
                             }}
                         >
-                            {SHORT[range]}
+                            {t(`operations.dashboard:range.short.${range}`)}
                         </button>
                     ))}
                     <button
@@ -106,23 +97,23 @@ export function RangeBar() {
                             setCustom(true);
                         }}
                     >
-                        Custom
+                        {t('operations.dashboard:range.custom')}
                     </button>
                 </div>
                 <Select value={window.bucket} onValueChange={(bucket) => update({ bucket: bucket as OpsBucket })}>
-                    <SelectTrigger size="sm" aria-label="Chart points" className="w-32">
+                    <SelectTrigger size="sm" aria-label={t('operations.dashboard:range.points')} className="w-32">
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                         {window.buckets.map((bucket) => (
                             <SelectItem key={bucket} value={bucket}>
-                                {OPS_BUCKET_LABELS[bucket]}
+                                {t(`operations.dashboard:range.bucket.${bucket}`)}
                             </SelectItem>
                         ))}
                     </SelectContent>
                 </Select>
                 <span data-slot="ops-time-zone" className="text-xs text-muted-foreground">
-                    Days in {timeZone}
+                    {t('operations.dashboard:range.time-zone', { zone: timeZone })}
                 </span>
             </div>
             {custom && (
@@ -138,7 +129,7 @@ export function RangeBar() {
                     }}
                 >
                     <label className="grid gap-1 text-xs text-muted-foreground">
-                        From
+                        {t('operations.dashboard:range.from')}
                         <Input
                             type="date"
                             required
@@ -149,7 +140,7 @@ export function RangeBar() {
                         />
                     </label>
                     <label className="grid gap-1 text-xs text-muted-foreground">
-                        To
+                        {t('operations.dashboard:range.to')}
                         <Input
                             type="date"
                             value={to}
@@ -159,14 +150,20 @@ export function RangeBar() {
                         />
                     </label>
                     <Button type="submit" size="sm" variant="outline">
-                        Show
+                        {t('operations.dashboard:range.show')}
                     </Button>
                 </form>
             )}
             {filters.length > 0 && (
-                <ul aria-label="Filters" className="m-0 flex list-none flex-wrap gap-1.5 p-0">
+                <ul
+                    aria-label={t('operations.dashboard:range.filters')}
+                    className="m-0 flex list-none flex-wrap gap-1.5 p-0"
+                >
                     {filters.map((name) => {
-                        const text = `${OPS_FILTER_LABELS[name]}: ${filterName(name, query.filters[name]!)}`;
+                        const text = t('operations.dashboard:range.filter-value', {
+                            filter: t(`operations.dashboard:range.filter.${name}`),
+                            value: filterName(name, query.filters[name]!),
+                        });
                         return (
                             <li
                                 key={name}
@@ -177,7 +174,7 @@ export function RangeBar() {
                                 <button
                                     type="button"
                                     data-slot="ops-filter-clear"
-                                    aria-label={`Clear ${text}`}
+                                    aria-label={t('operations.dashboard:range.clear', { filter: text })}
                                     className="grid size-5 place-items-center rounded-full text-muted-foreground outline-none hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
                                     onClick={() =>
                                         update({

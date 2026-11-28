@@ -2,6 +2,7 @@ import { Copy } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
+import { Trans, useTranslation } from '@socio/i18n/react';
 import {
     ROOM_TOPIC_AUDIENCE,
     ROOM_TOPIC_CONVERT_TEXT,
@@ -13,12 +14,13 @@ import {
 import type { RoomPerson } from '@socio/shared/rooms/rooms';
 import type { Conversation } from '@socio/shared/types';
 
+import { onDemand } from '../../i18n/on-demand';
 import { LocalTime } from '../../lib/local-time';
 import { useShell } from '../../shell/shell-context';
 
 import { failure, roomsApi } from './api';
 import { useFocusReturn } from './focus-return';
-import { Confirm, FormDialog, Problem } from './RoomDialogs';
+import { Confirm, FormDialog, Problem, ROOM_DIALOG_NAMESPACES } from './RoomDialogs';
 import { touchTarget } from './touch';
 
 import { Button } from '@/components/ui/button';
@@ -31,30 +33,27 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 
-/** "3:42 PM", in the reader's words once hydrated. */
-const clock = (value: number) =>
-    new Date(value).toLocaleTimeString(undefined, {
-        hour: 'numeric',
-        minute: '2-digit',
-    });
-/** "Oct 12", in the reader's words once hydrated. */
-const day = (value: number) =>
-    new Date(value).toLocaleDateString(undefined, {
-        month: 'short',
-        day: 'numeric',
-    });
-
-const topicName = (topic: Pick<RoomTopic, 'topicId'>) =>
-    topic.topicId === 'general' ? 'the General topic' : `topic #${topic.topicId}`;
+/** "the General topic", "topic #12": a topic as a sentence names it. */
+function useTopicName() {
+    const { t } = useTranslation(['rooms.dialogs']);
+    return (topic: Pick<RoomTopic, 'topicId'>) =>
+        t('rooms.dialogs:topic.name', {
+            id: topic.topicId,
+            context: topic.topicId === 'general' ? 'general' : undefined,
+        });
+}
 
 /**
  * What to post in the Telegram topic (CB-214): the command with its
  * one-time code, to copy, and how long it works.
  */
 export function TopicCodeSteps({ issued }: { issued: RoomTopicCode }) {
+    const { t } = useTranslation(['rooms.dialogs']);
+    // "3:42 PM", in the reader's words once hydrated.
+    const clock = (value: number) => t('rooms.dialogs:clock', { at: new Date(value) });
     return (
         <div data-slot="topic-code" className="grid gap-2 text-sm">
-            <p>In the Telegram topic, from your linked account and as an admin of the group, send:</p>
+            <p>{t('rooms.dialogs:steps.send')}</p>
             <div className="flex items-center gap-2">
                 <code className="min-w-0 flex-1 rounded-md border bg-muted/50 px-2.5 py-2 font-mono text-xs break-all">
                     {issued.command}
@@ -66,20 +65,24 @@ export function TopicCodeSteps({ issued }: { issued: RoomTopicCode }) {
                     className={touchTarget}
                     // The code just came: focus on it, so it is read out (CB-219).
                     autoFocus
-                    aria-label="Copy the command"
+                    aria-label={t('rooms.dialogs:steps.copy-label')}
                     onClick={() =>
                         void navigator.clipboard?.writeText(issued.command).then(
-                            () => toast.success('Copied'),
-                            () => toast.error('Could not copy. Select the command instead.'),
+                            () => toast.success(t('rooms.dialogs:steps.copied')),
+                            () => toast.error(t('rooms.dialogs:steps.copy-failed')),
                         )
                     }
                 >
-                    <Copy /> Copy
+                    <Copy /> {t('rooms.dialogs:steps.copy')}
                 </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-                It works once, until <LocalTime value={issued.expiresAt} format={clock} />. The bot (@
-                {issued.bot}) answers in the topic.
+                <Trans
+                    t={t}
+                    i18nKey="rooms.dialogs:steps.expires"
+                    values={{ bot: issued.bot }}
+                    components={{ time: <LocalTime value={issued.expiresAt} format={clock} /> }}
+                />
             </p>
         </div>
     );
@@ -97,6 +100,7 @@ function InviteRow({
     note?: string;
     onInvited: () => void;
 }) {
+    const { t } = useTranslation(['rooms.dialogs']);
     const [busy, setBusy] = useState(false);
     return (
         <li className="flex items-center justify-between gap-2">
@@ -114,27 +118,31 @@ function InviteRow({
                     setBusy(true);
                     try {
                         await roomsApi.invite(roomId, person.userId);
-                        toast.success(`Invited ${person.name}`);
+                        toast.success(t('rooms.dialogs:topic.invited', { name: person.name }));
                         onInvited();
                     } catch (error) {
-                        toast.error(failure(error, 'Could not invite them.'));
+                        toast.error(failure(error, t('rooms.dialogs:topic.invite-failed')));
                     } finally {
                         setBusy(false);
                     }
                 }}
             >
-                Invite
+                {t('rooms.dialogs:topic.invite')}
             </Button>
         </li>
     );
 }
 
-const senderLabel = (sender: RoomTopicSender) =>
-    sender.person
-        ? sender.person.name
-        : sender.username
-          ? `@${sender.username}`
-          : 'A Telegram account without a username';
+/** Who wrote in the topic: their Socio name, their @username, or neither. */
+function useSenderLabel() {
+    const { t } = useTranslation(['rooms.dialogs']);
+    return (sender: RoomTopicSender) =>
+        sender.person
+            ? sender.person.name
+            : sender.username
+              ? `@${sender.username}`
+              : t('rooms.dialogs:topic.no-username');
+}
 
 /**
  * A room's Telegram topic (CB-214), from its ⋯ menu: whether one is
@@ -142,7 +150,12 @@ const senderLabel = (sender: RoomTopicSender) =>
  * unlinking it, who the socio did not answer there and people seen in
  * the group to invite. Nobody is ever added without accepting.
  */
-export function RoomTopicDialog({ thread, onClose }: { thread: Conversation; onClose: () => void }) {
+function RoomTopic({ thread, onClose }: { thread: Conversation; onClose: () => void }) {
+    const { t } = useTranslation(['rooms.dialogs']);
+    const topicName = useTopicName();
+    const senderLabel = useSenderLabel();
+    // "Oct 12", in the reader's words once hydrated.
+    const day = (value: number) => t('rooms.dialogs:day', { at: new Date(value) });
     const focus = useFocusReturn();
     const [view, setView] = useState<RoomTopicView>();
     const [issued, setIssued] = useState<RoomTopicCode>();
@@ -162,12 +175,12 @@ export function RoomTopicDialog({ thread, onClose }: { thread: Conversation; onC
                     if (signal?.aborted) {
                         return undefined;
                     }
-                    toast.error(failure(error, 'Could not read the room’s topic.'));
+                    toast.error(failure(error, t('rooms.dialogs:topic.read-failed')));
                     close.current();
                     return undefined;
                 },
             ),
-        [thread.id],
+        [thread.id, t],
     );
     useEffect(() => {
         const controller = new AbortController();
@@ -185,11 +198,11 @@ export function RoomTopicDialog({ thread, onClose }: { thread: Conversation; onC
                     return;
                 }
                 setIssued(undefined);
-                toast.success('The Telegram topic is linked to this room.');
+                toast.success(t('rooms.dialogs:topic.now-linked'));
             });
         }, 3000);
         return () => clearInterval(timer);
-    }, [issued, load]);
+    }, [issued, load, t]);
     const admin = thread.roomRole === 'admin';
     const topic = view?.topic;
     const active = topic?.status === 'active';
@@ -215,46 +228,44 @@ export function RoomTopicDialog({ thread, onClose }: { thread: Conversation; onC
             >
                 {focus.mark}
                 <DialogHeader>
-                    <DialogTitle>Telegram topic</DialogTitle>
-                    <DialogDescription>
-                        In a linked forum topic, room members talk to the room’s socio by mentioning the bot or replying
-                        to it. It answers no one else.
-                    </DialogDescription>
+                    <DialogTitle>{t('rooms.dialogs:topic.title')}</DialogTitle>
+                    <DialogDescription>{t('rooms.dialogs:topic.description')}</DialogDescription>
                 </DialogHeader>
                 {!view ? (
-                    <p className="text-sm text-muted-foreground">Loading…</p>
+                    <p className="text-sm text-muted-foreground">{t('rooms.dialogs:topic.loading')}</p>
                 ) : (
                     <div className="grid gap-4 text-sm">
                         <p data-slot="room-topic-status">
                             {topic && active ? (
-                                <>
-                                    Linked to {topicName(topic)} in the Telegram group
-                                    {topic.boundByName ? ` by ${topic.boundByName}` : ''},{' '}
-                                    <LocalTime value={topic.boundAt} format={day} />.
-                                </>
+                                <Trans
+                                    t={t}
+                                    i18nKey="rooms.dialogs:topic.linked"
+                                    context={topic.boundByName ? 'by' : undefined}
+                                    values={{ topic: topicName(topic), name: topic.boundByName ?? '' }}
+                                    components={{ date: <LocalTime value={topic.boundAt} format={day} /> }}
+                                />
                             ) : topic?.endedAt ? (
-                                <>
-                                    Not linked. It was linked to {topicName(topic)} until{' '}
-                                    <LocalTime value={topic.endedAt} format={day} />.
-                                </>
+                                <Trans
+                                    t={t}
+                                    i18nKey="rooms.dialogs:topic.ended"
+                                    values={{ topic: topicName(topic) }}
+                                    components={{ date: <LocalTime value={topic.endedAt} format={day} /> }}
+                                />
                             ) : (
-                                'Not linked to a Telegram topic.'
+                                t('rooms.dialogs:topic.not-linked')
                             )}
                         </p>
                         {admin && !active && !issued && (
                             <>
                                 {!view.available ? (
-                                    <p className="text-muted-foreground">Telegram isn’t connected on this server.</p>
+                                    <p className="text-muted-foreground">{t('rooms.dialogs:topic.unavailable')}</p>
                                 ) : !view.linked ? (
-                                    <p className="text-muted-foreground">
-                                        Link your Telegram account first: choose Telegram in the sidebar. The code works
-                                        only from your account.
-                                    </p>
+                                    <p className="text-muted-foreground">{t('rooms.dialogs:topic.link-account')}</p>
                                 ) : (
                                     <>
                                         <p className="rounded-md border bg-muted/50 p-3">{ROOM_TOPIC_AUDIENCE}</p>
                                         <Confirm checked={confirmed} onChange={setConfirmed}>
-                                            I understand who reads the topic.
+                                            {t('rooms.dialogs:topic.understood')}
                                         </Confirm>
                                     </>
                                 )}
@@ -263,7 +274,7 @@ export function RoomTopicDialog({ thread, onClose }: { thread: Conversation; onC
                         {issued && <TopicCodeSteps issued={issued} />}
                         {admin && view.unanswered && view.unanswered.length > 0 && (
                             <section className="grid gap-1.5">
-                                <h3 className="font-medium">Not answered in the topic</h3>
+                                <h3 className="font-medium">{t('rooms.dialogs:topic.unanswered')}</h3>
                                 <ul className="grid gap-1.5">
                                     {view.unanswered.map((sender) =>
                                         sender.person ? (
@@ -271,7 +282,7 @@ export function RoomTopicDialog({ thread, onClose }: { thread: Conversation; onC
                                                 key={`p:${sender.person.userId}`}
                                                 roomId={thread.id}
                                                 person={sender.person}
-                                                note="not in the room"
+                                                note={t('rooms.dialogs:topic.not-in-room')}
                                                 onInvited={refresh}
                                             />
                                         ) : (
@@ -279,7 +290,9 @@ export function RoomTopicDialog({ thread, onClose }: { thread: Conversation; onC
                                                 key={`u:${sender.username ?? sender.lastSeenAt}`}
                                                 className="text-muted-foreground"
                                             >
-                                                {senderLabel(sender)} · not linked to Socio
+                                                {t('rooms.dialogs:topic.not-on-socio', {
+                                                    sender: senderLabel(sender),
+                                                })}
                                             </li>
                                         ),
                                     )}
@@ -288,11 +301,8 @@ export function RoomTopicDialog({ thread, onClose }: { thread: Conversation; onC
                         )}
                         {admin && view.suggested && view.suggested.length > 0 && (
                             <section className="grid gap-1.5">
-                                <h3 className="font-medium">Seen in the Telegram group</h3>
-                                <p className="text-xs text-muted-foreground">
-                                    People with a linked account who wrote in the group and aren’t in the room. They
-                                    join only if they accept.
-                                </p>
+                                <h3 className="font-medium">{t('rooms.dialogs:topic.seen')}</h3>
+                                <p className="text-xs text-muted-foreground">{t('rooms.dialogs:topic.seen-hint')}</p>
                                 <ul className="grid gap-1.5">
                                     {view.suggested.map((person) => (
                                         <InviteRow
@@ -310,7 +320,7 @@ export function RoomTopicDialog({ thread, onClose }: { thread: Conversation; onC
                 )}
                 <DialogFooter>
                     <Button type="button" variant="outline" className={touchTarget} disabled={busy} onClick={onClose}>
-                        Close
+                        {t('rooms.dialogs:topic.close')}
                     </Button>
                     {view && admin && active && (
                         <Button
@@ -321,11 +331,11 @@ export function RoomTopicDialog({ thread, onClose }: { thread: Conversation; onC
                             onClick={() =>
                                 void act(async () => {
                                     await roomsApi.unbindTopic(thread.id);
-                                    toast.success('The Telegram topic is unlinked.');
-                                }, 'Could not unlink the topic.')
+                                    toast.success(t('rooms.dialogs:topic.unlinked'));
+                                }, t('rooms.dialogs:topic.unlink-failed'))
                             }
                         >
-                            Unlink topic
+                            {t('rooms.dialogs:topic.unlink')}
                         </Button>
                     )}
                     {view && admin && !active && !issued && view.available && view.linked && (
@@ -336,11 +346,11 @@ export function RoomTopicDialog({ thread, onClose }: { thread: Conversation; onC
                             onClick={() =>
                                 void act(
                                     async () => setIssued(await roomsApi.topicCode(thread.id)),
-                                    'Could not get a code.',
+                                    t('rooms.dialogs:topic.code-failed'),
                                 )
                             }
                         >
-                            Get a code
+                            {t('rooms.dialogs:topic.get-code')}
                         </Button>
                     )}
                 </DialogFooter>
@@ -348,6 +358,7 @@ export function RoomTopicDialog({ thread, onClose }: { thread: Conversation; onC
         </Dialog>
     );
 }
+export const RoomTopicDialog = onDemand([...ROOM_DIALOG_NAMESPACES], RoomTopic);
 
 /**
  * A legacy team topic made a room by one of its readers (CB-214): a new
@@ -355,7 +366,8 @@ export function RoomTopicDialog({ thread, onClose }: { thread: Conversation; onC
  * there as an admin of the group. The topic's transcript stays here as it
  * is, for the people who read it; nobody is added to the room.
  */
-export function ConvertTopicDialog({ thread, onClose }: { thread: Conversation; onClose: () => void }) {
+function ConvertTopic({ thread, onClose }: { thread: Conversation; onClose: () => void }) {
+    const { t } = useTranslation(['rooms.dialogs']);
     const shell = useShell();
     const [confirmed, setConfirmed] = useState(false);
     const [busy, setBusy] = useState(false);
@@ -372,11 +384,8 @@ export function ConvertTopicDialog({ thread, onClose }: { thread: Conversation; 
                     className="max-h-[90svh] overflow-y-auto sm:max-w-md"
                 >
                     <DialogHeader>
-                        <DialogTitle>Make this topic a room</DialogTitle>
-                        <DialogDescription>
-                            The room appears under Rooms once the bot confirms it in the topic. Then invite people from
-                            its Members. This transcript stays as it is, for the people who can read it now.
-                        </DialogDescription>
+                        <DialogTitle>{t('rooms.dialogs:convert-topic.code-title')}</DialogTitle>
+                        <DialogDescription>{t('rooms.dialogs:convert-topic.code-description')}</DialogDescription>
                     </DialogHeader>
                     <TopicCodeSteps issued={issued} />
                     <DialogFooter>
@@ -388,7 +397,7 @@ export function ConvertTopicDialog({ thread, onClose }: { thread: Conversation; 
                                 onClose();
                             }}
                         >
-                            Done
+                            {t('rooms.dialogs:convert-topic.done')}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -399,11 +408,11 @@ export function ConvertTopicDialog({ thread, onClose }: { thread: Conversation; 
         <FormDialog
             open
             onOpenChange={(open) => !open && onClose()}
-            title="Make this topic a room?"
+            title={t('rooms.dialogs:convert-topic.title')}
             slot="convert-topic"
             focus={focus}
-            description="A new room you are the admin of, with this topic’s socio, linked to the Telegram topic."
-            action={busy ? 'Getting a code…' : 'Get a code'}
+            description={t('rooms.dialogs:convert-topic.description')}
+            action={busy ? t('rooms.dialogs:convert-topic.busy') : t('rooms.dialogs:convert-topic.action')}
             busy={busy}
             disabled={!confirmed}
             problem={problem}
@@ -413,7 +422,7 @@ export function ConvertTopicDialog({ thread, onClose }: { thread: Conversation; 
                 try {
                     setIssued(await roomsApi.convertTopicCode(thread.id));
                 } catch (error) {
-                    setProblem(failure(error, 'Could not get a code.'));
+                    setProblem(failure(error, t('rooms.dialogs:topic.code-failed')));
                 } finally {
                     setBusy(false);
                 }
@@ -424,8 +433,9 @@ export function ConvertTopicDialog({ thread, onClose }: { thread: Conversation; 
             </p>
             <p className="rounded-md border bg-muted/50 p-3 text-sm">{ROOM_TOPIC_AUDIENCE}</p>
             <Confirm checked={confirmed} onChange={setConfirmed}>
-                I understand who reads the topic.
+                {t('rooms.dialogs:topic.understood')}
             </Confirm>
         </FormDialog>
     );
 }
+export const ConvertTopicDialog = onDemand([...ROOM_DIALOG_NAMESPACES], ConvertTopic);

@@ -58,18 +58,23 @@ describe('the buttons', () => {
             new URL('../../../../packages/client/src/modules/pages/editor/RichEditor.tsx', import.meta.url),
             'utf8',
         );
-        for (const label of [
-            'Bold',
-            'Italic',
-            'Bullet list',
-            'Numbered list',
-            'Quote',
-            'Code block',
-            'Add link',
-            'Undo',
-            'Redo',
+        // The web's words are its en-US dictionary's (pages.editor).
+        const { toolbar } = JSON.parse(
+            readFileSync(new URL('../../../../packages/i18n/locales/en-US/pages.editor.json', import.meta.url), 'utf8'),
+        ) as { toolbar: Record<string, string> };
+        for (const [key, label] of [
+            ['bold', 'Bold'],
+            ['italic', 'Italic'],
+            ['bullet-list', 'Bullet list'],
+            ['numbered-list', 'Numbered list'],
+            ['quote', 'Quote'],
+            ['code-block', 'Code block'],
+            ['link', 'Add link'],
+            ['undo', 'Undo'],
+            ['redo', 'Redo'],
         ]) {
-            expect(web).toContain(`label="${label}"`);
+            expect(web).toContain(`label={t('pages.editor:toolbar.${key}')}`);
+            expect(toolbar[key!]).toBe(label);
         }
     });
 
@@ -172,6 +177,10 @@ describe('the link prompt', () => {
             'utf8',
         );
         expect(web).toContain(`if (!${LINK_HREF.toString()}.test(url))`);
-        expect(web).toContain(`onNotice('${LINK_INVALID}')`);
+        expect(web).toContain("onNotice(t('pages.editor:link-invalid'))");
+        const words = JSON.parse(
+            readFileSync(new URL('../../../../packages/i18n/locales/en-US/pages.editor.json', import.meta.url), 'utf8'),
+        ) as { 'link-invalid': string };
+        expect(words['link-invalid']).toBe(LINK_INVALID);
     });
 });

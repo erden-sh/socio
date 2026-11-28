@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 
+import { useTranslation } from '@socio/i18n/react';
 import {
     OPS_RETENTION,
-    type ResourcePolicy,
+    type OpsRetentionKey,
     type ResourcePolicyView,
 } from '@socio/shared/operations/operations-resources';
 
@@ -13,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
 export function ResourceSettings() {
+    const { t } = useTranslation(['operations.settings', 'operations']);
     const [view, setView] = useState<ResourcePolicyView>();
     const [values, setValues] = useState<Record<string, string>>({});
     const [busy, setBusy] = useState(false);
@@ -27,11 +29,11 @@ export function ResourceSettings() {
             .then(loaded)
             .catch((error: unknown) => {
                 if (!controller.signal.aborted) {
-                    setError(error instanceof Error ? error.message : 'Could not load retention settings.');
+                    setError(error instanceof Error ? error.message : t('operations.settings:retention.load-failed'));
                 }
             });
         return () => controller.abort();
-    }, [loaded]);
+    }, [loaded, t]);
     const valid =
         Object.entries(values).length > 0 &&
         Object.entries(values).every(([key, raw]) => {
@@ -53,7 +55,7 @@ export function ResourceSettings() {
             );
             loaded(await api<ResourcePolicyView>('/operations/retention', 'PUT', change));
         } catch (error) {
-            setError(error instanceof Error ? error.message : 'Could not save.');
+            setError(error instanceof Error ? error.message : t('operations.settings:save-failed'));
         } finally {
             setBusy(false);
         }
@@ -71,37 +73,37 @@ export function ResourceSettings() {
                 }}
             >
                 <div>
-                    <h3 className="font-medium">Collection and retention</h3>
-                    <p className="text-muted-foreground">
-                        Retention is in days. Zero disables pruning for that setting. Analytics rollups also depend on
-                        retained analytics facts; source agent runs are always kept. Changes are recorded in the
-                        workspace audit.
-                    </p>
+                    <h3 className="font-medium">{t('operations.settings:retention.title')}</h3>
+                    <p className="text-muted-foreground">{t('operations.settings:retention.description')}</p>
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2">
-                    {(
-                        [
-                            ...Object.entries(OPS_RETENTION).map(([key, spec]) => [key, spec.label] as const),
-                            ['sampleEverySeconds', 'Sampling interval (seconds)'],
-                        ] as Array<[keyof ResourcePolicy, string]>
-                    ).map(([key, label]) => (
-                        <label key={key} className="grid gap-1.5">
-                            <span>{label}</span>
-                            <Input
-                                type="number"
-                                min={key === 'sampleEverySeconds' ? 60 : 0}
-                                max={key === 'sampleEverySeconds' ? 3600 : 36500}
-                                step={key === 'sampleEverySeconds' ? 60 : 1}
-                                value={values[key] ?? ''}
-                                disabled={!view || busy}
-                                onChange={(event) => setValues({ ...values, [key]: event.target.value })}
-                            />
-                            <small className="text-muted-foreground">
-                                Server default: {view?.defaults[key] ?? '…'}
-                                {key === 'sampleEverySeconds' ? ' seconds' : ' days'}
-                            </small>
-                        </label>
-                    ))}
+                    {[...(Object.keys(OPS_RETENTION) as OpsRetentionKey[]), 'sampleEverySeconds' as const].map(
+                        (key) => (
+                            <label key={key} className="grid gap-1.5">
+                                <span>{t(`operations.settings:retention.fields.${key}`)}</span>
+                                <Input
+                                    type="number"
+                                    min={key === 'sampleEverySeconds' ? 60 : 0}
+                                    max={key === 'sampleEverySeconds' ? 3600 : 36500}
+                                    step={key === 'sampleEverySeconds' ? 60 : 1}
+                                    value={values[key] ?? ''}
+                                    disabled={!view || busy}
+                                    onChange={(event) => setValues({ ...values, [key]: event.target.value })}
+                                />
+                                <small className="text-muted-foreground">
+                                    {view
+                                        ? key === 'sampleEverySeconds'
+                                            ? t('operations.settings:retention.default-seconds', {
+                                                  count: view.defaults[key],
+                                              })
+                                            : t('operations.settings:retention.default-days', {
+                                                  count: view.defaults[key],
+                                              })
+                                        : t('operations.settings:retention.default')}
+                                </small>
+                            </label>
+                        ),
+                    )}
                 </div>
                 {error && (
                     <p role="alert" className="text-destructive">
@@ -110,10 +112,10 @@ export function ResourceSettings() {
                 )}
                 <div className="flex flex-wrap gap-2">
                     <Button type="submit" disabled={busy || !view || !valid}>
-                        Save retention
+                        {t('operations.settings:retention.save')}
                     </Button>
                     <Button type="button" variant="outline" disabled={busy || !view} onClick={() => void save(true)}>
-                        Use server defaults
+                        {t('operations.settings:retention.reset')}
                     </Button>
                 </div>
             </form>

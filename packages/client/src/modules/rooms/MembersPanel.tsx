@@ -2,6 +2,7 @@ import { MoreHorizontal } from 'lucide-react';
 import { useEffect, useId, useState, type ReactNode } from 'react';
 import { toast } from 'sonner';
 
+import { Trans, useTranslation } from '@socio/i18n/react';
 import { personLabels } from '@socio/shared/rooms/room-speakers';
 import {
     roomEligibleSocio,
@@ -18,7 +19,7 @@ import { Mascot } from '../../locals/Mascot';
 import { useShell } from '../../shell/shell-context';
 
 import { failure, roomsApi } from './api';
-import { LeaveRoomDialog } from './RoomDialogs';
+import { LeaveRoomDialog, openedOnDemand } from './RoomDialogs';
 import { PersonAvatar } from './RoomSpeaker';
 import { RoomUsage } from './RoomUsage';
 import { touchIcon, touchTarget } from './touch';
@@ -34,13 +35,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
-
-/** "Oct 12", in the reader's words once hydrated. */
-const day = (value: number) =>
-    new Date(value).toLocaleDateString(undefined, {
-        month: 'short',
-        day: 'numeric',
-    });
 
 /** Active admins, of the people listed. */
 export const activeAdmins = (room: Pick<RoomView, 'members'>) =>
@@ -75,7 +69,7 @@ export const successorsOf = (room: RoomView, userId: string) => {
  * leave; the last admin hands the role on as they do. Room admins, and
  * members when Settings → Rooms shows them, see its use and limits.
  */
-export function MembersPanel({
+function Members({
     room,
     open,
     onOpenChange,
@@ -102,6 +96,7 @@ export function MembersPanel({
      */
     labels?: ReadonlyMap<string, string>;
 }) {
+    const { t } = useTranslation(['rooms.members']);
     const shell = useShell();
     const me = shell.workspace.user.id;
     const live = room.roomsEnabled && !room.archivedAt;
@@ -124,19 +119,21 @@ export function MembersPanel({
                 className="w-full gap-0 overflow-y-auto sm:max-w-md"
             >
                 <SheetHeader className="border-b pr-12">
-                    <SheetTitle>Members</SheetTitle>
+                    <SheetTitle>{t('rooms.members:title')}</SheetTitle>
                     <SheetDescription>
-                        {room.archivedAt
-                            ? 'This room is archived: nothing changes in it until an admin unarchives it.'
-                            : !room.roomsEnabled
-                              ? 'Rooms are turned off in Settings: this room is read-only.'
-                              : room.role === 'admin'
-                                ? 'You are an admin here: you invite and remove people, and choose the socios.'
-                                : 'Room admins invite people and choose the socios.'}
+                        {t('rooms.members:description', {
+                            context: room.archivedAt
+                                ? 'archived'
+                                : !room.roomsEnabled
+                                  ? 'off'
+                                  : room.role === 'admin'
+                                    ? 'admin'
+                                    : undefined,
+                        })}
                     </SheetDescription>
                 </SheetHeader>
-                <Section title={`People (${active.length})`}>
-                    <ul className="grid gap-1" aria-label="People in the room">
+                <Section title={t('rooms.members:people', { n: active.length })}>
+                    <ul className="grid gap-1" aria-label={t('rooms.members:people-list')}>
                         {active.map((member) => (
                             <MemberRow
                                 key={member.userId}
@@ -152,8 +149,8 @@ export function MembersPanel({
                     </ul>
                 </Section>
                 {invited.length > 0 && (
-                    <Section title={`Invited (${invited.length})`}>
-                        <ul className="grid gap-1" aria-label="Invited people">
+                    <Section title={t('rooms.members:invited', { n: invited.length })}>
+                        <ul className="grid gap-1" aria-label={t('rooms.members:invited-list')}>
                             {invited.map((member) => (
                                 <MemberRow
                                     key={member.userId}
@@ -169,22 +166,22 @@ export function MembersPanel({
                     </Section>
                 )}
                 {manage && (
-                    <Section title="Invite someone">
+                    <Section title={t('rooms.members:invite-someone')}>
                         <InviteForm room={room} onChanged={onChanged} />
                     </Section>
                 )}
-                <Section title="Socios">
+                <Section title={t('rooms.members:socios')}>
                     <SocioList room={room} manage={manage} onChanged={onChanged} />
                     <HandoffLimit room={room} manage={manage} />
                 </Section>
                 {room.usageVisible && (
-                    <Section title="Use and limits">
+                    <Section title={t('rooms.members:usage')}>
                         <RoomUsage roomId={room.id} />
                     </Section>
                 )}
                 <div className="mt-auto border-t p-4">
                     <Button variant="outline" className={cn('w-full', touchTarget)} onClick={() => setLeaving(true)}>
-                        Leave room
+                        {t('rooms.members:leave')}
                     </Button>
                 </div>
                 {leaving && (
@@ -199,6 +196,7 @@ export function MembersPanel({
         </Sheet>
     );
 }
+export const MembersPanel = openedOnDemand(['rooms.members'], Members);
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
     const id = useId();
@@ -235,7 +233,10 @@ function useChange(onChanged: (next?: RoomView) => void) {
     return { busy, run };
 }
 
-const roleWord: Record<RoomRole, string> = { admin: 'Admin', member: 'Member' };
+const ROLE_KEYS = {
+    admin: 'rooms.members:member.role.admin',
+    member: 'rooms.members:member.role.member',
+} as const satisfies Record<RoomRole, string>;
 
 /** One person: avatar, name, role, and the admin's ⋯ menu. */
 function MemberRow({
@@ -256,7 +257,9 @@ function MemberRow({
     /** Their name with their number, when another shares it. */
     shownName?: string;
 }) {
+    const { t } = useTranslation(['rooms.members']);
     const { busy, run } = useChange(onChanged);
+    const day = (value: number) => t('rooms.members:day', { at: new Date(value) });
     const name = shownName ?? member.name;
     const invited = member.status === 'invited';
     const lastAdmin = member.role === 'admin' && member.status === 'active' && activeAdmins(room).length === 1;
@@ -267,21 +270,21 @@ function MemberRow({
             <div className="grid min-w-0 flex-1">
                 <span className="truncate text-sm font-medium">
                     {name}
-                    {you && <span className="text-muted-foreground"> (you)</span>}
+                    {you && <span className="text-muted-foreground"> {t('rooms.members:member.you')}</span>}
                 </span>
                 <span className="truncate text-xs text-muted-foreground">
                     {invited ? (
-                        <>
-                            Invited
-                            {member.inviteExpiresAt ? (
-                                <>
-                                    {' '}
-                                    · until <LocalTime value={member.inviteExpiresAt} format={day} />
-                                </>
-                            ) : null}
-                        </>
+                        member.inviteExpiresAt ? (
+                            <Trans
+                                t={t}
+                                i18nKey="rooms.members:member.invited-until"
+                                components={{ date: <LocalTime value={member.inviteExpiresAt} format={day} /> }}
+                            />
+                        ) : (
+                            t('rooms.members:member.invited')
+                        )
                     ) : (
-                        roleWord[member.role]
+                        t(ROLE_KEYS[member.role])
                     )}
                 </span>
             </div>
@@ -293,7 +296,7 @@ function MemberRow({
                             size="icon"
                             className={cn('size-9 shrink-0', touchIcon)}
                             disabled={busy}
-                            aria-label={`Options for ${name}`}
+                            aria-label={t('rooms.members:member.options', { name })}
                         >
                             <MoreHorizontal />
                         </Button>
@@ -305,12 +308,12 @@ function MemberRow({
                                 onSelect={() =>
                                     void run(
                                         () => roomsApi.setRole(room.id, member.userId, 'admin'),
-                                        `${name} is now an admin.`,
-                                        'Could not change the role.',
+                                        t('rooms.members:member.now-admin', { name }),
+                                        t('rooms.members:member.role-failed'),
                                     )
                                 }
                             >
-                                Make admin
+                                {t('rooms.members:member.make-admin')}
                             </DropdownMenuItem>
                         )}
                         {!invited && member.role === 'admin' && !lastAdmin && (
@@ -319,12 +322,15 @@ function MemberRow({
                                 onSelect={() =>
                                     void run(
                                         () => roomsApi.setRole(room.id, member.userId, 'member'),
-                                        you ? 'You are no longer an admin.' : `${name} is no longer an admin.`,
-                                        'Could not change the role.',
+                                        t('rooms.members:member.not-admin', {
+                                            name,
+                                            context: you ? 'you' : undefined,
+                                        }),
+                                        t('rooms.members:member.role-failed'),
                                     )
                                 }
                             >
-                                {you ? 'Step down as admin' : 'Make member'}
+                                {you ? t('rooms.members:member.step-down') : t('rooms.members:member.make-member')}
                             </DropdownMenuItem>
                         )}
                         {!you && (
@@ -334,12 +340,14 @@ function MemberRow({
                                 onSelect={() =>
                                     void run(
                                         () => roomsApi.remove(room.id, member.userId),
-                                        invited ? `Invite to ${name} taken back.` : `${name} was removed.`,
-                                        'Could not remove them.',
+                                        invited
+                                            ? t('rooms.members:member.taken-back', { name })
+                                            : t('rooms.members:member.removed', { name }),
+                                        t('rooms.members:member.remove-failed'),
                                     )
                                 }
                             >
-                                {invited ? 'Take back invite' : 'Remove from room'}
+                                {invited ? t('rooms.members:member.take-back') : t('rooms.members:member.remove')}
                             </DropdownMenuItem>
                         )}
                     </DropdownMenuContent>
@@ -354,6 +362,7 @@ function MemberRow({
  * their role. They are told what joining shares before they accept.
  */
 function InviteForm({ room, onChanged }: { room: RoomView; onChanged: (next?: RoomView) => void }) {
+    const { t } = useTranslation(['rooms.members']);
     const [people, setPeople] = useState<RoomPerson[]>();
     const [userId, setUserId] = useState('');
     const [role, setRole] = useState<RoomRole>('member');
@@ -373,17 +382,17 @@ function InviteForm({ room, onChanged }: { room: RoomView; onChanged: (next?: Ro
             })
             .catch((error) => {
                 if (!controller.signal.aborted) {
-                    setProblem(failure(error, 'Could not list people to invite.'));
+                    setProblem(failure(error, t('rooms.members:invite.list-failed')));
                 }
             });
         return () => controller.abort();
-    }, [room.id, members]);
+    }, [room.id, members, t]);
     const chosen = people?.some((person) => person.userId === userId) ? userId : (people?.[0]?.userId ?? '');
     if (!people) {
-        return <p className="text-sm text-muted-foreground">{problem || 'Loading people…'}</p>;
+        return <p className="text-sm text-muted-foreground">{problem || t('rooms.members:invite.loading')}</p>;
     }
     if (!people.length) {
-        return <p className="text-sm text-muted-foreground">Everyone who uses Socio is in this room or invited.</p>;
+        return <p className="text-sm text-muted-foreground">{t('rooms.members:invite.everyone')}</p>;
     }
     return (
         <form
@@ -396,14 +405,14 @@ function InviteForm({ room, onChanged }: { room: RoomView; onChanged: (next?: Ro
                 }
                 void run(
                     () => roomsApi.invite(room.id, person.userId, role),
-                    `Invited ${person.name}. They join once they accept.`,
-                    'Could not invite them.',
+                    t('rooms.members:invite.invited', { name: person.name }),
+                    t('rooms.members:invite.failed'),
                 );
             }}
         >
             <div className="grid gap-1.5">
                 <label htmlFor={personId} className="text-xs font-medium">
-                    Person
+                    {t('rooms.members:invite.person')}
                 </label>
                 <select
                     id={personId}
@@ -422,7 +431,7 @@ function InviteForm({ room, onChanged }: { room: RoomView; onChanged: (next?: Ro
             <div className="flex items-end gap-2">
                 <div className="grid min-w-0 flex-1 gap-1.5">
                     <label htmlFor={roleId} className="text-xs font-medium">
-                        Role
+                        {t('rooms.members:invite.role')}
                     </label>
                     <select
                         id={roleId}
@@ -431,12 +440,12 @@ function InviteForm({ room, onChanged }: { room: RoomView; onChanged: (next?: Ro
                         value={role}
                         onChange={(event) => setRole(event.target.value as RoomRole)}
                     >
-                        <option value="member">Member</option>
-                        <option value="admin">Admin</option>
+                        <option value="member">{t(ROLE_KEYS.member)}</option>
+                        <option value="admin">{t(ROLE_KEYS.admin)}</option>
                     </select>
                 </div>
                 <Button type="submit" disabled={busy || !chosen} className={cn('h-10', touchTarget)}>
-                    {busy ? 'Inviting…' : 'Invite'}
+                    {busy ? t('rooms.members:invite.busy') : t('rooms.members:invite.action')}
                 </Button>
             </div>
             {problem && (
@@ -444,19 +453,17 @@ function InviteForm({ room, onChanged }: { room: RoomView; onChanged: (next?: Ro
                     {problem}
                 </p>
             )}
-            <p className="text-xs text-muted-foreground">
-                An invite works for 7 days. Before joining they are told they will read the room’s whole history.
-            </p>
+            <p className="text-xs text-muted-foreground">{t('rooms.members:invite.note')}</p>
         </form>
     );
 }
 
-const socioStatus: Record<RoomSocioView['status'], string> = {
-    active: 'Answers in this room',
-    requested: 'Waiting for a workspace admin to let it in',
-    withdrawn: 'Taken out by a workspace admin',
-    removed: 'Removed',
-};
+const SOCIO_STATUS_KEYS = {
+    active: 'rooms.members:socio.status.active',
+    requested: 'rooms.members:socio.status.requested',
+    withdrawn: 'rooms.members:socio.status.withdrawn',
+    removed: 'rooms.members:socio.status.removed',
+} as const satisfies Record<RoomSocioView['status'], string>;
 
 /**
  * The room's socios: the lead answers, others wait for a workspace
@@ -472,6 +479,7 @@ function SocioList({
     manage: boolean;
     onChanged: (next?: RoomView) => void;
 }) {
+    const { t } = useTranslation(['rooms.members']);
     const shell = useShell();
     const { busy, run } = useChange(onChanged);
     const live = room.roomsEnabled && !room.archivedAt;
@@ -483,7 +491,7 @@ function SocioList({
     const chosen = askable.some((dot) => dot.id === ask) ? ask : (askable[0]?.id ?? '');
     return (
         <div className="grid gap-3">
-            <ul className="grid gap-1" aria-label="Socios in the room">
+            <ul className="grid gap-1" aria-label={t('rooms.members:socio.list')}>
                 {room.socios.map((socio) => {
                     const dot = shell.workspace.dots.find((item) => item.id === socio.dotId);
                     return (
@@ -502,11 +510,13 @@ function SocioList({
                             />
                             <div className="grid min-w-0 flex-1">
                                 <span className="truncate text-sm font-medium">{socio.name}</span>
-                                <span className="text-xs text-muted-foreground">{socioStatus[socio.status]}</span>
+                                <span className="text-xs text-muted-foreground">
+                                    {t(SOCIO_STATUS_KEYS[socio.status])}
+                                </span>
                             </div>
                             {socio.lead && (
                                 <Badge variant="outline" className="shrink-0">
-                                    Lead
+                                    {t('rooms.members:socio.lead')}
                                 </Badge>
                             )}
                             <div className="flex shrink-0 flex-wrap gap-1">
@@ -518,12 +528,12 @@ function SocioList({
                                         onClick={() =>
                                             void run(
                                                 () => roomsApi.authorizeSocio(room.id, socio.dotId),
-                                                `${socio.name} can answer in this room.`,
-                                                'Could not let it in.',
+                                                t('rooms.members:socio.let-in-done', { name: socio.name }),
+                                                t('rooms.members:socio.let-in-failed'),
                                             )
                                         }
                                     >
-                                        Let in
+                                        {t('rooms.members:socio.let-in')}
                                     </Button>
                                 )}
                                 {manage && socio.status === 'active' && !socio.lead && (
@@ -535,12 +545,12 @@ function SocioList({
                                         onClick={() =>
                                             void run(
                                                 () => roomsApi.setLead(room.id, socio.dotId),
-                                                `${socio.name} now leads this room.`,
-                                                'Could not change the lead.',
+                                                t('rooms.members:socio.lead-done', { name: socio.name }),
+                                                t('rooms.members:socio.lead-failed'),
                                             )
                                         }
                                     >
-                                        Make lead
+                                        {t('rooms.members:socio.make-lead')}
                                     </Button>
                                 )}
                                 {manage && !socio.lead && (
@@ -549,16 +559,16 @@ function SocioList({
                                         variant="ghost"
                                         className={touchTarget}
                                         disabled={busy}
-                                        aria-label={`Remove ${socio.name}`}
+                                        aria-label={t('rooms.members:socio.remove-label', { name: socio.name })}
                                         onClick={() =>
                                             void run(
                                                 () => roomsApi.removeSocio(room.id, socio.dotId),
-                                                `${socio.name} left the room.`,
-                                                'Could not remove it.',
+                                                t('rooms.members:socio.removed', { name: socio.name }),
+                                                t('rooms.members:socio.remove-failed'),
                                             )
                                         }
                                     >
-                                        Remove
+                                        {t('rooms.members:socio.remove')}
                                     </Button>
                                 )}
                                 {workspaceAdmin &&
@@ -571,18 +581,19 @@ function SocioList({
                                             variant="ghost"
                                             className={cn('text-destructive hover:text-destructive', touchTarget)}
                                             disabled={busy}
-                                            aria-label={`Take ${socio.name} out`}
+                                            aria-label={t('rooms.members:socio.take-out-label', { name: socio.name })}
                                             onClick={() =>
                                                 void run(
                                                     () => roomsApi.withdrawSocio(room.id, socio.dotId),
-                                                    socio.lead
-                                                        ? `${socio.name} was taken out: the room has no socio answering until another leads.`
-                                                        : `${socio.name} was taken out.`,
-                                                    'Could not take it out.',
+                                                    t('rooms.members:socio.taken-out', {
+                                                        name: socio.name,
+                                                        context: socio.lead ? 'lead' : undefined,
+                                                    }),
+                                                    t('rooms.members:socio.take-out-failed'),
                                                 )
                                             }
                                         >
-                                            Take out
+                                            {t('rooms.members:socio.take-out')}
                                         </Button>
                                     )}
                             </div>
@@ -601,14 +612,14 @@ function SocioList({
                         }
                         void run(
                             () => roomsApi.requestSocio(room.id, dot.id),
-                            `Asked for ${dot.name}. A workspace admin lets it in.`,
-                            'Could not ask for it.',
+                            t('rooms.members:socio.asked', { name: dot.name }),
+                            t('rooms.members:socio.ask-failed'),
                         );
                     }}
                 >
                     <div className="grid min-w-0 flex-1 gap-1.5">
                         <label htmlFor={askId} className="text-xs font-medium">
-                            Ask for a company socio
+                            {t('rooms.members:socio.ask-label')}
                         </label>
                         <select
                             id={askId}
@@ -625,7 +636,7 @@ function SocioList({
                         </select>
                     </div>
                     <Button type="submit" variant="outline" disabled={busy} className={cn('h-10', touchTarget)}>
-                        Ask
+                        {t('rooms.members:socio.ask')}
                     </Button>
                 </form>
             )}
@@ -641,6 +652,7 @@ function SocioList({
  * and budget (its own read, `handoffLimit`).
  */
 function HandoffLimit({ room, manage }: { room: RoomView; manage: boolean }) {
+    const { t } = useTranslation(['rooms.members']);
     const active = room.socios.filter((socio) => socio.status === 'active');
     const [view, setView] = useState<RoomHandoffLimitView>();
     const [busy, setBusy] = useState(false);
@@ -679,9 +691,9 @@ function HandoffLimit({ room, manage }: { room: RoomView; manage: boolean }) {
                 room: saved.room.handoffsPerCycle ?? null,
                 effective: saved.effective.handoffsPerCycle,
             });
-            toast.success('Handoffs per message saved.');
+            toast.success(t('rooms.members:handoffs.saved'));
         } catch (error) {
-            toast.error(failure(error, 'Could not save the handoffs.'));
+            toast.error(failure(error, t('rooms.members:handoffs.save-failed')));
         } finally {
             setBusy(false);
         }
@@ -690,15 +702,15 @@ function HandoffLimit({ room, manage }: { room: RoomView; manage: boolean }) {
         return (
             <p className="text-xs text-muted-foreground" data-slot="room-handoffs">
                 {effective === 0
-                    ? 'Socios here can’t hand a message’s work to each other.'
-                    : `A message’s work can pass between socios up to ${effective} ${effective === 1 ? 'time' : 'times'}.`}
+                    ? t('rooms.members:handoffs.none')
+                    : t('rooms.members:handoffs.up-to', { count: effective })}
             </p>
         );
     }
     return (
         <div className="grid gap-1.5" data-slot="room-handoffs">
             <label htmlFor={id} className="text-xs font-medium">
-                Handoffs per message
+                {t('rooms.members:handoffs.label')}
             </label>
             <select
                 id={id}
@@ -709,7 +721,7 @@ function HandoffLimit({ room, manage }: { room: RoomView; manage: boolean }) {
                 value={own === undefined || own >= most ? '' : String(own)}
                 onChange={(event) => void save(event.target.value ? Number(event.target.value) : undefined)}
             >
-                <option value="">{`The workspace’s (${most})`}</option>
+                <option value="">{t('rooms.members:handoffs.workspace', { n: most })}</option>
                 {Array.from({ length: most - 1 }, (_, at) => at + 1).map((value) => (
                     <option key={value} value={value}>
                         {value}
@@ -717,8 +729,7 @@ function HandoffLimit({ room, manage }: { room: RoomView; manage: boolean }) {
                 ))}
             </select>
             <p id={`${id}-note`} className="text-xs text-muted-foreground">
-                How many times one message’s work may pass between this room’s socios. You can only lower the
-                workspace’s limit.
+                {t('rooms.members:handoffs.note')}
             </p>
         </div>
     );

@@ -1,0 +1,21 @@
+{
+    "heading": "Cover",
+    "upload": "Upload an image",
+    "hint": "or drop one here · PNG, JPEG or WebP, up to {{size, number}} MB",
+    "uploading-progress": "Uploading… {{progress, number(style: percent)}}",
+    "setting": "Setting the cover…",
+    "from-space": "From this Space",
+    "loading": "Loading images…",
+    "use": "Use {{name}}",
+    "none": "No images in this Space yet. Link-card images and other pages’ covers show here.",
+    "advice": "Wide images work best (about 3:1). Everyone who can see the page sees its cover.",
+    "problems": {
+        "type": "Choose a PNG, JPEG or WebP image.",
+        "size": "Covers can be at most {{size, number}} MB."
+    },
+    "errors": {
+        "list": "Could not load this Space’s images.",
+        "upload": "Could not upload the image.",
+        "set": "Could not set the cover."
+    }
+}

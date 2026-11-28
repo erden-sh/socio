@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router';
 
+import { useTranslation } from '@socio/i18n/react';
 import {
     OPS_FILTERS,
     opsSearch,
@@ -86,6 +87,7 @@ export function useOpsSettingsState(): OpsSettingsState {
  * screen while the next loads, so a new range doesn't blank the page.
  */
 export function useOpsAnswer<T>(path: string | null) {
+    const { t } = useTranslation(['operations']);
     const [answer, setAnswer] = useState<{ path: string; data: T }>();
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -112,7 +114,7 @@ export function useOpsAnswer<T>(path: string | null) {
                     if (current.signal.aborted) {
                         return;
                     }
-                    setError(e instanceof Error ? e.message : 'Could not load.');
+                    setError(e instanceof Error ? e.message : t('operations:load-failed'));
                 })
                 .finally(() => !current.signal.aborted && setLoading(false));
         };
@@ -127,7 +129,7 @@ export function useOpsAnswer<T>(path: string | null) {
             controller?.abort();
         };
         // A new reporting time zone cuts the answer differently.
-    }, [path, timeZone]);
+    }, [path, timeZone, t]);
     return {
         data: answer?.data,
         /** The answer on screen is for another path (a new range is loading). */

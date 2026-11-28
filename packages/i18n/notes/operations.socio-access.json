@@ -1,0 +1,8 @@
+{
+    "intro": "Intro of Operations › Socio access. A grant is a person's permission for a socio (an AI agent; a product noun) to use an app (such as a CRM) on their behalf.",
+    "list": "Accessible name of the list of grants still in force.",
+    "empty": "Shown in place of the list when no grant is in force.",
+    "ended": "Toast after an admin ended a socio's access to an app.",
+    "load-failed": "Shown when the grants didn't load and the server gave no reason.",
+    "end-failed": "Toast when ending a grant failed and the server gave no reason."
+}

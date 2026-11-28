@@ -19,10 +19,10 @@ import { BUILD_VARIANT } from './variant';
 // and opening a workspace already on the phone. The logic is src/net's and
 // src/data's, under Node; this binds it.
 
-const publicFetch = createPublicFetch({ fetch: appFetch, userAgent: APP_USER_AGENT });
+export const publicFetch = createPublicFetch({ fetch: appFetch, userAgent: APP_USER_AGENT });
 
-/** The store's FileSystem plus expo-file-system's byte writes and moves. */
-function logoFiles(): LogoFiles {
+/** The store's FileSystem plus expo-file-system's byte writes and moves (also workspace-logo.ts). */
+export function logoFiles(): LogoFiles {
     const fs = createExpoFileSystem();
     return {
         mkdir: fs.mkdir,

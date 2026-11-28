@@ -82,10 +82,23 @@ describe('where New room is', () => {
 describe('the form', () => {
     it('has the web dialog’s words', () => {
         const dialog = web('modules/rooms/RoomDialogs.tsx');
-        expect(dialog).toContain(`description="${NEW_ROOM_INTRO}"`);
-        expect(dialog).toContain(`placeholder="${ROOM_NAME_PLACEHOLDER}"`);
+        // The web's words are its en-US dictionary's (rooms.dialogs).
+        const words = (
+            JSON.parse(
+                readFileSync(
+                    new URL('../../../../packages/i18n/locales/en-US/rooms.dialogs.json', import.meta.url),
+                    'utf8',
+                ),
+            ) as { create: Record<string, string> }
+        ).create;
+        expect(dialog).toContain("description={t('rooms.dialogs:create.description')}");
+        expect(dialog).toContain("placeholder={t('rooms.dialogs:create.name-placeholder')}");
+        expect(words.description).toBe(NEW_ROOM_INTRO);
+        expect(words['name-placeholder']).toBe(ROOM_NAME_PLACEHOLDER);
         expect(dialog).toContain('const socios = shell.workspace.dots.filter((dot) => roomEligibleSocio(dot));');
-        expect(dialog).toContain('You are a member and admin already. Invited people get an invite to accept.');
+        expect(words['people-hint']).toBe(
+            'You are a member and admin already. Invited people get an invite to accept.',
+        );
         expect(PEOPLE_HINT).toBe('You are a member and admin already. People you add get an invite to accept.');
     });
 

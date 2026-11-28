@@ -8,7 +8,7 @@ export default layout('modules/spaces/gate.route.tsx', { id: 'module:spaces' }, 
     }),
     route('spaces/:spaceId', 'modules/spaces/SpaceRoute.route.tsx', { id: 'spaces:space' }, [
         index('views/Empty.route.tsx', { id: 'spaces:library' }),
-        route('pages/:pageId', 'views/Empty.route.tsx', { id: 'spaces:page' }),
+        route('pages/:pageId', 'modules/pages/Page.route.tsx', { id: 'spaces:page' }),
         // The Space's shared memory (CB-181).
         route('memory', 'modules/spaces/SpaceMemory.route.tsx', {
             id: 'spaces:memory',

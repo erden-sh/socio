@@ -1,0 +1,53 @@
+{
+    "saved": "Settings saved",
+    "save-failed": "Could not save.",
+    "save": "Save",
+    "time-zone": {
+        "title": "Reporting time zone",
+        "description": "Where a day starts in Operations: every tile, chart and range cuts its days, weeks and months in this time zone, for every admin. The server’s is {{zone}}.",
+        "label": "Time zone",
+        "invalid": "Not a time zone name. Pick one from the list, like Europe/Madrid.",
+        "reset": "Use the server’s ({{zone}})"
+    },
+    "session-gap": {
+        "title": "Sessions",
+        "description_one": "Activity and Value count a chat’s messages as one session until nobody writes for this long. A change applies to every range at once. The server’s is {{count, number}} minute.",
+        "description_other": "Activity and Value count a chat’s messages as one session until nobody writes for this long. A change applies to every range at once. The server’s is {{count, number}} minutes.",
+        "label": "Gap in minutes",
+        "invalid": "A whole number from {{min, number}} to {{max, number}}.",
+        "reset_one": "Use the server’s ({{count, number}} minute)",
+        "reset_other": "Use the server’s ({{count, number}} minutes)"
+    },
+    "retention": {
+        "title": "Collection and retention",
+        "description": "Retention is in days. Zero disables pruning for that setting. Analytics rollups also depend on retained analytics facts; source agent runs are always kept. Changes are recorded in the workspace audit.",
+        "load-failed": "Could not load retention settings.",
+        "fields": {
+            "pageUseDays": "Page use days",
+            "pageSearchDays": "Daily search statistics",
+            "notificationDays": "Notification records",
+            "deliveryDays": "Notification deliveries",
+            "noticeDays": "In-app notices",
+            "sampleDays": "Resource samples and hourly rollups",
+            "factDays": "Derived analytics facts",
+            "hourlyDays": "Hourly analytics rollups (within retained facts)",
+            "sampleEverySeconds": "Sampling interval (seconds)"
+        },
+        "default": "Server default: …",
+        "default-days_one": "Server default: {{count, number}} day",
+        "default-days_other": "Server default: {{count, number}} days",
+        "default-seconds_one": "Server default: {{count, number}} second",
+        "default-seconds_other": "Server default: {{count, number}} seconds",
+        "save": "Save retention",
+        "reset": "Use server defaults"
+    },
+    "price-sync": {
+        "title": "Price sync",
+        "description": "Once a day, Socio downloads the public price lists of model providers (OpenRouter, DeepInfra, Azure, AWS) and community lists (models.dev, LiteLLM) and keeps the prices of the models in use, so Cost can price turns. The requests carry a generic user agent and nothing about this workspace, its people or this server. Turn it off for an offline install: then no list is read, and turns are priced by the prices kept and admins’ own. The server’s is {{state}}.",
+        "state": "…",
+        "state_on": "on",
+        "state_off": "off",
+        "switch": "Sync prices daily",
+        "reset": "Use the server’s ({{state}})"
+    }
+}

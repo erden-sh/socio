@@ -1,0 +1,42 @@
+{
+    "tiles": {
+        "turns": "Turns",
+        "failed": "Failed turns",
+        "people": "Active people",
+        "messages": "Messages from people",
+        "chats": "Chats with activity",
+        "tokens": "Tokens"
+    },
+    "metrics": {
+        "turns": "Turns",
+        "messages": "Messages from people",
+        "people": "Active people",
+        "failed": "Failed turns",
+        "tokens": "Tokens"
+    },
+    "axis": {
+        "turns": "turns",
+        "messages": "messages from people",
+        "people": "active people",
+        "failed": "failed turns",
+        "tokens": "tokens"
+    },
+    "chart": "Chart",
+    "no-chart": "Nothing to chart in this range.",
+    "turns": {
+        "title": "Turns",
+        "description": "Newest first, without their content. Pick a socio to see only its turns, or open a turn’s chat to read it: that is written to the access log.",
+        "empty": "No turns in this range.",
+        "tokens_one": "{{count, number}} token",
+        "tokens_other": "{{count, number}} tokens",
+        "open": "Open chat",
+        "open-label": "Open the chat of {{socio}}’s turn at {{when}}"
+    },
+    "status": {
+        "running": "Running",
+        "finished": "Finished",
+        "stopped": "Stopped",
+        "failed": "Failed",
+        "interrupted": "Interrupted"
+    }
+}

@@ -65,12 +65,20 @@ describe('the form', () => {
         expect(words).toContain(`"${NEW_SPACE_TITLE}"`);
         expect(words).toContain(`"${DESCRIPTION_LABEL}"`);
         expect(dialog).toContain('body = { name, description: text, private: privateSpace };');
-        const settings = web('modules/spaces/SpaceAudienceField.tsx');
-        expect(settings).toContain(`legend = '${AUDIENCE_LEGEND}'`);
+        // The audience cards' words are their en-US dictionary's (spaces.audience).
+        const audience = JSON.parse(
+            readFileSync(
+                new URL('../../../../packages/i18n/locales/en-US/spaces.audience.json', import.meta.url),
+                'utf8',
+            ),
+        ) as { legend: string; whole: Record<string, string>; private: Record<string, string> };
+        expect(audience.legend).toBe(AUDIENCE_LEGEND);
         const [whole, mine] = audienceChoices(false);
-        expect(settings).toContain(whole!.title);
-        expect(settings).toContain('Everyone in the workspace sees it and everything in it.');
-        expect(settings).toContain("' Only workspace admins make a Space for everyone.'");
+        expect(audience.whole.title).toBe(whole!.title);
+        expect(audience.whole.detail_member).toBe(whole!.detail);
+        expect(audience.whole.detail).toBe(audienceChoices(true)[0]!.detail);
+        expect(audience.private.title).toBe(mine!.title);
+        expect(audience.private.detail).toBe(mine!.detail);
         expect(mine!.detail).toContain(PRIVATE_SPACE_COVERS);
         expect(web('components/private-space.tsx')).toContain(`'${PRIVATE_SPACE_COVERS}'`);
     });

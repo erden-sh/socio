@@ -1,5 +1,6 @@
 import { Folder, Plus } from 'lucide-react';
 
+import { useTranslation } from '@socio/i18n/react';
 import { MODULE_IDS } from '@socio/shared/modules';
 import type { PageTitle } from '@socio/shared/pages/page-library';
 import { pageReviewTool } from '@socio/shared/pages/page-review';
@@ -19,15 +20,20 @@ import { SidebarGroup, SidebarGroupAction, SidebarGroupLabel, SidebarMenu } from
 
 /** The sidebar's Spaces, each with its page tree. */
 function SpacesGroup() {
+    const { t } = useTranslation(['spaces.nav']);
     const nav = useSidebarNav();
     const { workspace } = nav.context;
     const datasets = useFlag('datasets-in-spaces');
     return (
-        <SidebarGroup>
-            <SidebarGroupLabel>Spaces</SidebarGroupLabel>
+        <SidebarGroup data-slot="spaces-group">
+            <SidebarGroupLabel>{t('spaces.nav:group')}</SidebarGroupLabel>
             {/* Whoever the server's "create Spaces" permission lets in; a member's is private (CB-181). */}
             {workspace.permissions?.createSpaces && (
-                <SidebarGroupAction aria-label="Create Space" title="Create Space" onClick={nav.go(nav.onCreateSpace)}>
+                <SidebarGroupAction
+                    aria-label={t('spaces.nav:create')}
+                    title={t('spaces.nav:create')}
+                    onClick={nav.go(nav.onCreateSpace)}
+                >
                     <Plus />
                 </SidebarGroupAction>
             )}

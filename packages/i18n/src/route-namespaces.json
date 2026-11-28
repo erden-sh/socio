@@ -1,6 +1,15 @@
 {
-    "$comment": "The namespaces each page route inlines into its HTML, by route id (routes.ts); /settings/:section has one entry per section (settings:section:<section>). The root's go with every page, so they hold only what any page may show (settings: the Settings nav, autosave status and home widget other modules render too; shell and chat.nav: the header, the sidebar, the error pages and the chat's loading state); a route's only with its own. shell:signed-out is the sign-in screen's, which the shell's loader inlines signed out and for a one-time link. Namespaces only a dialog opened by a click, a card below the fold or a client-only panel needs (settings.dialogs, settings.person-dialogs, settings.workspace-limits, -apps, -github, -rooms, -setup; settings.devices on a person's page; shell.palette, shell.help (the theme's words too), shell.add-device, shell.status; chat.report, chat.result, chat.drafts) are in no entry, and the live chat's (chat.composer, chat.model, chat.trace; client-only) only where a page shows them on the server: they load on demand (i18n/on-demand.tsx). scripts/i18n-build.mjs reports each route's size against the budget.",
-    "root": ["common", "settings", "settings.shared", "settings.backups", "shell", "chat.nav"],
+    "$comment": "The namespaces each page route inlines into its HTML, by route id (routes.ts); /settings/:section has one entry per section (settings:section:<section>). The root's go with every page, so they hold only what any page may show (settings: the Settings nav, autosave status and home widget other modules render too; shell and chat.nav: the header, the sidebar, the error pages and the chat's loading state); a route's only with its own. shell:signed-out is the sign-in screen's, which the shell's loader inlines signed out and for a one-time link. Namespaces only a dialog opened by a click, a card below the fold or a client-only panel needs (settings.dialogs, settings.person-dialogs, settings.workspace-limits, -apps, -github, -rooms, -setup; settings.devices on a person's page; shell.palette, shell.help (the theme's words too), shell.add-device, shell.status; chat.report, chat.result, chat.drafts; pages.dialogs, pages.cover, pages.review, and pages.editor, the page editor's, which a page's clientLoader starts with the route's data) are in no entry, and the live chat's (chat.composer, chat.model, chat.trace; client-only) only where a page shows them on the server: they load on demand (i18n/on-demand.tsx). scripts/i18n-build.mjs reports each route's size against the budget.",
+    "root": [
+        "common",
+        "settings",
+        "settings.shared",
+        "settings.backups",
+        "shell",
+        "chat.nav",
+        "rooms.nav",
+        "spaces.nav"
+    ],
     "settings:section:workspace": ["settings.workspace", "settings.appearance"],
     "settings:section:people": ["settings.people", "settings.service-accounts"],
     "settings:section:access": ["settings.access"],
@@ -17,7 +26,7 @@
         "settings.language",
         "settings.mcp"
     ],
-    "settings:section:notifications": ["settings.notifications"],
+    "settings:section:notifications": ["settings.notifications", "rooms.notify"],
     "settings:section:inference": ["settings.inference"],
     "settings:section:archived-chats": ["settings.archived-chats"],
     "settings:section:connected-agents": ["settings.connected-agents"],
@@ -36,5 +45,27 @@
     "chat:dot": ["chat.composer", "chat.model", "chat.menu"],
     "chat:dot-home": ["chat.dot-home", "chat.menu", "shell.dot-state"],
     "chat:dot-soul": ["chat.soul"],
-    "operations:chat": ["chat", "chat.trace"]
+    "operations": ["operations", "operations.dashboard", "operations.overview"],
+    "operations:section:activity": ["operations", "operations.dashboard", "operations.activity"],
+    "operations:section:value": ["operations", "operations.dashboard", "operations.value"],
+    "operations:section:themes": ["operations", "operations.dashboard", "operations.themes"],
+    "operations:section:knowledge": [
+        "operations",
+        "operations.dashboard",
+        "operations.knowledge",
+        "operations.grounding"
+    ],
+    "operations:section:reliability": ["operations", "operations.dashboard", "operations.reliability"],
+    "operations:section:capabilities": ["operations", "operations.dashboard", "operations.capabilities"],
+    "operations:section:health": ["operations", "operations.dashboard", "operations.health"],
+    "operations:section:cost": ["operations", "operations.dashboard", "operations.cost"],
+    "operations:section:access-log": ["operations", "operations.dashboard", "operations.access-log"],
+    "operations:section:socio-access": ["operations", "operations.dashboard", "operations.socio-access"],
+    "operations:section:settings": ["operations", "operations.dashboard", "operations.settings"],
+    "operations:chat": ["chat", "chat.trace", "operations", "operations.transcript"],
+    "spaces:space": ["spaces"],
+    "spaces:page": ["pages"],
+    "spaces:memory": ["spaces.memory"],
+    "spaces:radar": ["spaces.radar"],
+    "spaces:settings": ["spaces.settings", "spaces.audience"]
 }

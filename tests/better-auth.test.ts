@@ -2213,6 +2213,11 @@ it("gives admins a roster: each person's status, last use, sign-in methods, invi
         later(invite.createdAt, 1000) as string,
         later(invite.createdAt, 1000) as string,
     );
+    // Finn and Eve created in the same instant: the roster still lists them in the order they were added.
+    db.prepare('UPDATE auth_user SET createdAt=(SELECT createdAt FROM auth_user WHERE email=?) WHERE email=?').run(
+        'finn@example.com',
+        'eve@example.com',
+    );
     db.close();
 
     expect((await b.call(bobJar2, '/api/accounts/roster')).status).toBe(403);

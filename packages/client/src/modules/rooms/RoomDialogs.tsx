@@ -1,10 +1,12 @@
-import { useEffect, useId, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useId, useState, type ComponentType, type FormEvent, type ReactNode } from 'react';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 
+import { Trans, useTranslation } from '@socio/i18n/react';
 import { ROOM_CONVERT_TEXT, roomEligibleSocio, type RoomInvite, type RoomPerson } from '@socio/shared/rooms/rooms';
 import { MAX_CHAT_TITLE, type Conversation } from '@socio/shared/types';
 
+import { onDemand } from '../../i18n/on-demand';
 import { LocalTime } from '../../lib/local-time';
 import { useShell } from '../../shell/shell-context';
 
@@ -31,12 +33,30 @@ export const roomPath = (id: string) => `/chats/${encodeURIComponent(id)}`;
 /** A room's path with its Members panel open. */
 export const membersPath = (id: string) => `${roomPath(id)}?members=1`;
 
-/** "Oct 12", in the reader's words once hydrated. */
-const day = (value: number) =>
-    new Date(value).toLocaleDateString(undefined, {
-        month: 'short',
-        day: 'numeric',
-    });
+/** The words these dialogs show: loaded as one first opens (docs/I18N.md). */
+export const ROOM_DIALOG_NAMESPACES = ['rooms.dialogs'] as const satisfies Parameters<typeof onDemand>[0];
+
+/**
+ * `Component` once its words are in (`onDemand`), mounted the first time
+ * it opens and kept after, so it closes with its animation and gives the
+ * focus back (`useFocusReturn`). A dialog that is always on the page with
+ * `open={false}` (the sidebar's, Home's) loads nothing until it opens.
+ */
+export function openedOnDemand<P extends { open: boolean }>(
+    namespaces: Parameters<typeof onDemand>[0],
+    Component: ComponentType<P>,
+) {
+    const Loaded = onDemand(namespaces, Component);
+    function OpenedOnDemand(props: P) {
+        const [opened, setOpened] = useState(props.open);
+        if (props.open && !opened) {
+            setOpened(true);
+        }
+        return opened ? <Loaded {...props} /> : null;
+    }
+    OpenedOnDemand.displayName = `OpenedOnDemand(${Component.displayName ?? Component.name})`;
+    return OpenedOnDemand;
+}
 
 /** An error under a dialog's fields, said once as it shows. */
 export function Problem({ children }: { children: ReactNode }) {
@@ -87,6 +107,7 @@ export function FormDialog({
     /** A dialog with a step after this one gives its own, for both. */
     focus?: ReturnType<typeof useFocusReturn>;
 }) {
+    const { t } = useTranslation(['rooms.dialogs']);
     const own = useFocusReturn();
     const focus = given ?? own;
     return (
@@ -120,7 +141,7 @@ export function FormDialog({
                             disabled={busy}
                             onClick={() => onOpenChange(false)}
                         >
-                            Cancel
+                            {t('rooms.dialogs:cancel')}
                         </Button>
                         <Button type="submit" className={touchTarget} disabled={busy || disabled}>
                             {action}
@@ -225,7 +246,7 @@ function Checklist({
  * and an optional description. The maker is its first admin; then they
  * invite people.
  */
-export function CreateRoomDialog({
+function CreateRoom({
     open,
     onOpenChange,
     onNavigate,
@@ -235,6 +256,7 @@ export function CreateRoomDialog({
     /** Before it opens the new room (closes the mobile sidebar). */
     onNavigate?: () => void;
 }) {
+    const { t } = useTranslation(['rooms.dialogs']);
     const shell = useShell();
     const navigate = useNavigate();
     const socios = shell.workspace.dots.filter((dot) => roomEligibleSocio(dot));
@@ -279,10 +301,10 @@ export function CreateRoomDialog({
         <FormDialog
             open={open}
             onOpenChange={close}
-            title="New room"
+            title={t('rooms.dialogs:create.title')}
             slot="create-room"
-            description="A room is one conversation for several people and company socios. Each message runs as the person who sent it; nobody’s private memories or data are shared."
-            action={busy ? 'Creating…' : 'Create room'}
+            description={t('rooms.dialogs:create.description')}
+            action={busy ? t('rooms.dialogs:create.busy') : t('rooms.dialogs:create.action')}
             busy={busy}
             disabled={!title.trim() || !chosen}
             problem={problem}
@@ -298,35 +320,31 @@ export function CreateRoomDialog({
                     await shell.refresh();
                     onOpenChange(false);
                     setTitle('');
-                    toast.success(`Created “${room.title}”. Invite people from Members.`);
+                    toast.success(t('rooms.dialogs:create.created', { title: room.title }));
                     onNavigate?.();
                     void navigate(membersPath(room.id));
                 } catch (error) {
-                    setProblem(failure(error, 'Could not create the room.'));
+                    setProblem(failure(error, t('rooms.dialogs:create.failed')));
                 } finally {
                     setBusy(false);
                 }
             }}
         >
-            <Field label="Name">
+            <Field label={t('rooms.dialogs:create.name')}>
                 {(id) => (
                     <Input
                         id={id}
                         value={title}
                         autoFocus
                         maxLength={MAX_CHAT_TITLE}
-                        placeholder="Launch planning"
+                        placeholder={t('rooms.dialogs:create.name-placeholder')}
                         onChange={(event) => setTitle(event.target.value)}
                     />
                 )}
             </Field>
             <Field
-                label="Lead socio"
-                hint={
-                    socios.length
-                        ? 'Company socios only. A room admin can ask for more later.'
-                        : 'There is no company socio yet: ask an admin to add one.'
-                }
+                label={t('rooms.dialogs:create.lead')}
+                hint={t('rooms.dialogs:create.lead-hint', { context: socios.length ? undefined : 'none' })}
             >
                 {(id, hint) => (
                     <select
@@ -351,7 +369,7 @@ export function CreateRoomDialog({
                 )}
             </Field>
             {further.length > 0 && (
-                <Field label="More socios (optional)" hint="Each starts as a request a workspace admin approves.">
+                <Field label={t('rooms.dialogs:create.more')} hint={t('rooms.dialogs:create.more-hint')}>
                     {() => (
                         <Checklist
                             choices={further.map((dot) => ({ id: dot.id, name: dot.name }))}
@@ -364,10 +382,7 @@ export function CreateRoomDialog({
                 </Field>
             )}
             {people.length > 0 && (
-                <Field
-                    label="Invite people (optional)"
-                    hint="You are a member and admin already. Invited people get an invite to accept."
-                >
+                <Field label={t('rooms.dialogs:create.people')} hint={t('rooms.dialogs:create.people-hint')}>
                     {() => (
                         <Checklist
                             choices={people.map((person) => ({
@@ -382,14 +397,14 @@ export function CreateRoomDialog({
                     )}
                 </Field>
             )}
-            <Field label="Description / purpose (optional)" hint="Shown to the room’s members. What is this room for?">
+            <Field label={t('rooms.dialogs:create.purpose')} hint={t('rooms.dialogs:create.purpose-hint')}>
                 {(id) => (
                     <Textarea
                         id={id}
                         value={description}
                         rows={3}
                         maxLength={2_000}
-                        placeholder="What this room is for, in a sentence or two"
+                        placeholder={t('rooms.dialogs:create.purpose-placeholder')}
                         // On mobile the virtual keyboard can cover a field at the
                         // bottom of a scrolling dialog (CB-278): scroll it into view
                         // as it is focused, so the field stays visible above the
@@ -408,13 +423,15 @@ export function CreateRoomDialog({
         </FormDialog>
     );
 }
+export const CreateRoomDialog = openedOnDemand([...ROOM_DIALOG_NAMESPACES], CreateRoom);
 
 /**
  * A private chat as a room (CB-212): the owner confirms that everyone
  * they invite will read its whole history. Nothing is shared until they
  * invite someone, who is told so again before joining.
  */
-export function ConvertRoomDialog({ thread, onClose }: { thread: Conversation; onClose: () => void }) {
+function ConvertRoom({ thread, onClose }: { thread: Conversation; onClose: () => void }) {
+    const { t } = useTranslation(['rooms.dialogs']);
     const shell = useShell();
     const [confirmed, setConfirmed] = useState(false);
     const [busy, setBusy] = useState(false);
@@ -423,10 +440,10 @@ export function ConvertRoomDialog({ thread, onClose }: { thread: Conversation; o
         <FormDialog
             open
             onOpenChange={(open) => !open && onClose()}
-            title="Share this chat as a room?"
+            title={t('rooms.dialogs:convert.title')}
             slot="convert-room"
-            description={`“${thread.title}” becomes a room you are the admin of, with the same link and history. You can then invite people.`}
-            action={busy ? 'Sharing…' : 'Make it a room'}
+            description={t('rooms.dialogs:convert.description', { title: thread.title })}
+            action={busy ? t('rooms.dialogs:convert.busy') : t('rooms.dialogs:convert.action')}
             busy={busy}
             disabled={!confirmed}
             problem={problem}
@@ -436,10 +453,10 @@ export function ConvertRoomDialog({ thread, onClose }: { thread: Conversation; o
                 try {
                     await roomsApi.convert(thread.id);
                     await shell.refresh();
-                    toast.success('This chat is now a room. Invite people from Members.');
+                    toast.success(t('rooms.dialogs:convert.done'));
                     onClose();
                 } catch (error) {
-                    setProblem(failure(error, 'Could not make it a room.'));
+                    setProblem(failure(error, t('rooms.dialogs:convert.failed')));
                 } finally {
                     setBusy(false);
                 }
@@ -447,20 +464,16 @@ export function ConvertRoomDialog({ thread, onClose }: { thread: Conversation; o
         >
             <p className="rounded-md border bg-muted/50 p-3 text-sm">{ROOM_CONVERT_TEXT}</p>
             <Confirm checked={confirmed} onChange={setConfirmed}>
-                I understand: everyone I invite reads this whole chat.
+                {t('rooms.dialogs:convert.confirm')}
             </Confirm>
         </FormDialog>
     );
 }
+export const ConvertRoomDialog = onDemand([...ROOM_DIALOG_NAMESPACES], ConvertRoom);
 
 /** A room's new name (room admins). */
-export function RenameRoomDialog({
-    thread,
-    onClose,
-}: {
-    thread: Pick<Conversation, 'id' | 'title'>;
-    onClose: () => void;
-}) {
+function RenameRoom({ thread, onClose }: { thread: Pick<Conversation, 'id' | 'title'>; onClose: () => void }) {
+    const { t } = useTranslation(['rooms.dialogs']);
     const shell = useShell();
     const [title, setTitle] = useState(thread.title);
     const [busy, setBusy] = useState(false);
@@ -469,10 +482,10 @@ export function RenameRoomDialog({
         <FormDialog
             open
             onOpenChange={(open) => !open && onClose()}
-            title="Rename room"
+            title={t('rooms.dialogs:rename.title')}
             slot="rename-room"
-            description="Everyone in the room sees the new name."
-            action={busy ? 'Saving…' : 'Save'}
+            description={t('rooms.dialogs:rename.description')}
+            action={busy ? t('rooms.dialogs:rename.busy') : t('rooms.dialogs:rename.action')}
             busy={busy}
             disabled={!title.trim() || title.trim() === thread.title}
             problem={problem}
@@ -484,13 +497,13 @@ export function RenameRoomDialog({
                     await shell.refresh();
                     onClose();
                 } catch (error) {
-                    setProblem(failure(error, 'Could not rename the room.'));
+                    setProblem(failure(error, t('rooms.dialogs:rename.failed')));
                 } finally {
                     setBusy(false);
                 }
             }}
         >
-            <Field label="Name">
+            <Field label={t('rooms.dialogs:rename.name')}>
                 {(id) => (
                     <Input
                         id={id}
@@ -505,13 +518,14 @@ export function RenameRoomDialog({
         </FormDialog>
     );
 }
+export const RenameRoomDialog = onDemand([...ROOM_DIALOG_NAMESPACES], RenameRoom);
 
 /**
  * Leaving a room: it leaves the reader's lists and they stop reading it.
  * The last admin hands the role on first (the server refuses otherwise,
  * `last_admin`): they pick who, and both happen here.
  */
-export function LeaveRoomDialog({
+function LeaveRoom({
     thread,
     lastAdmin,
     successors = [],
@@ -527,26 +541,22 @@ export function LeaveRoomDialog({
     /** Before it leaves the room's page (closes the mobile sidebar). */
     onLeft?: () => void;
 }) {
+    const { t } = useTranslation(['rooms.dialogs']);
     const shell = useShell();
     const navigate = useNavigate();
     const [successor, setSuccessor] = useState(successors[0]?.userId ?? '');
     const [busy, setBusy] = useState(false);
     const [problem, setProblem] = useState('');
     const stuck = lastAdmin && !successors.length;
+    const context = stuck ? 'stuck' : lastAdmin ? 'handover' : undefined;
     return (
         <FormDialog
             open
             onOpenChange={(open) => !open && onClose()}
-            title={`Leave “${thread.title}”?`}
+            title={t('rooms.dialogs:leave.title', { title: thread.title })}
             slot="leave-room"
-            description={
-                stuck
-                    ? 'You are the only person in this room. Archive it instead: it is kept, and you can bring it back.'
-                    : lastAdmin
-                      ? 'A room always keeps an admin. Choose who takes the role on: you leave once they have it.'
-                      : 'You stop reading the room and it leaves your sidebar. An admin can invite you again.'
-            }
-            action={busy ? 'Leaving…' : stuck ? 'Archive room' : lastAdmin ? 'Hand over and leave' : 'Leave room'}
+            description={t('rooms.dialogs:leave.description', { context })}
+            action={busy ? t('rooms.dialogs:leave.busy') : t('rooms.dialogs:leave.action', { context })}
             busy={busy}
             disabled={lastAdmin && !stuck && !successor}
             problem={problem}
@@ -557,7 +567,7 @@ export function LeaveRoomDialog({
                     if (stuck) {
                         await roomsApi.archive(thread.id);
                         await shell.refresh();
-                        toast.success(`Archived “${thread.title}”.`);
+                        toast.success(t('rooms.dialogs:leave.archived', { title: thread.title }));
                         onClose();
                         return;
                     }
@@ -567,18 +577,18 @@ export function LeaveRoomDialog({
                     await roomsApi.leave(thread.id);
                     onClose();
                     onLeft?.();
-                    toast.success(`You left “${thread.title}”.`);
+                    toast.success(t('rooms.dialogs:leave.left', { title: thread.title }));
                     void navigate('/');
                     await shell.refresh();
                 } catch (error) {
-                    setProblem(failure(error, 'Could not leave the room.'));
+                    setProblem(failure(error, t('rooms.dialogs:leave.failed')));
                 } finally {
                     setBusy(false);
                 }
             }}
         >
             {lastAdmin && !stuck && (
-                <Field label="New admin">
+                <Field label={t('rooms.dialogs:leave.new-admin')}>
                     {(id) => (
                         <select
                             id={id}
@@ -599,6 +609,7 @@ export function LeaveRoomDialog({
         </FormDialog>
     );
 }
+export const LeaveRoomDialog = onDemand([...ROOM_DIALOG_NAMESPACES], LeaveRoom);
 
 /**
  * The reader's invitations (CB-212): each room's name, who asked, how
@@ -606,7 +617,7 @@ export function LeaveRoomDialog({
  * Joining shows what it shares (`disclosure`) and waits for the reader
  * to say they understand; declining needs nothing.
  */
-export function InvitesDialog({
+function Invites({
     open,
     onOpenChange,
     invites,
@@ -621,6 +632,7 @@ export function InvitesDialog({
     /** Before it opens a room just joined (closes the mobile sidebar). */
     onNavigate?: () => void;
 }) {
+    const { t } = useTranslation(['rooms.dialogs']);
     const focus = useFocusReturn();
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -631,15 +643,13 @@ export function InvitesDialog({
             >
                 {focus.mark}
                 <DialogHeader>
-                    <DialogTitle>Room invitations</DialogTitle>
-                    <DialogDescription>
-                        Join to read and write in a room, or decline. Nobody sees the room’s messages before they join.
-                    </DialogDescription>
+                    <DialogTitle>{t('rooms.dialogs:invites.title')}</DialogTitle>
+                    <DialogDescription>{t('rooms.dialogs:invites.description')}</DialogDescription>
                 </DialogHeader>
                 {invites.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">You have no invitations.</p>
+                    <p className="text-sm text-muted-foreground">{t('rooms.dialogs:invites.none')}</p>
                 ) : (
-                    <ul className="grid gap-3" aria-label="Invitations">
+                    <ul className="grid gap-3" aria-label={t('rooms.dialogs:invites.list')}>
                         {invites.map((invite) => (
                             <InviteCard
                                 key={invite.roomId}
@@ -659,8 +669,10 @@ export function InvitesDialog({
         </Dialog>
     );
 }
+export const InvitesDialog = openedOnDemand([...ROOM_DIALOG_NAMESPACES], Invites);
 
 function InviteCard({ invite, onDone, onJoined }: { invite: RoomInvite; onDone: () => void; onJoined: () => void }) {
+    const { t } = useTranslation(['rooms.dialogs']);
     const shell = useShell();
     const navigate = useNavigate();
     const [understood, setUnderstood] = useState(false);
@@ -675,22 +687,23 @@ function InviteCard({ invite, onDone, onJoined }: { invite: RoomInvite; onDone: 
                 await roomsApi.accept(invite.roomId, invite.disclosure.version);
                 await shell.refresh();
                 onJoined();
-                toast.success(`You joined “${invite.title}”.`);
+                toast.success(t('rooms.dialogs:invites.joined', { title: invite.title }));
                 void navigate(roomPath(invite.roomId));
             } else {
                 await roomsApi.decline(invite.roomId);
-                toast(`Declined “${invite.title}”.`);
+                toast(t('rooms.dialogs:invites.declined', { title: invite.title }));
                 await shell.refresh();
             }
             onDone();
         } catch (error) {
-            setProblem(failure(error, 'That didn’t work. Try again.'));
+            setProblem(failure(error, t('rooms.dialogs:invites.failed')));
             onDone();
         } finally {
             setBusy(undefined);
         }
     };
-    const people = invite.memberCount === 1 ? 'person' : 'people';
+    const day = (value: number) => t('rooms.dialogs:day', { at: new Date(value) });
+    const role = invite.role === 'admin' ? 'admin' : undefined;
     return (
         <li aria-labelledby={headingId} data-room-invite={invite.roomId} className="grid gap-3 rounded-lg border p-3">
             <div className="grid gap-0.5">
@@ -698,19 +711,26 @@ function InviteCard({ invite, onDone, onJoined }: { invite: RoomInvite; onDone: 
                     {invite.title}
                 </h3>
                 <p className="text-xs text-muted-foreground">
-                    {invite.invitedByName ? `${invite.invitedByName} invited you` : 'You were invited'}
-                    {invite.role === 'admin' ? ' as an admin' : ''} · {invite.memberCount} {people} in it
+                    {invite.invitedByName
+                        ? t('rooms.dialogs:invites.invited-by', { name: invite.invitedByName, context: role })
+                        : t('rooms.dialogs:invites.invited', { context: role })}
+                    {' · '}
+                    {t('rooms.dialogs:invites.members', { count: invite.memberCount })}
                     {invite.inviteExpiresAt ? (
                         <>
-                            {' '}
-                            · until <LocalTime value={invite.inviteExpiresAt} format={day} />
+                            {' · '}
+                            <Trans
+                                t={t}
+                                i18nKey="rooms.dialogs:invites.until"
+                                components={{ date: <LocalTime value={invite.inviteExpiresAt} format={day} /> }}
+                            />
                         </>
                     ) : null}
                 </p>
             </div>
             <p className="rounded-md bg-muted/60 p-2.5 text-sm">{invite.disclosure.text}</p>
             <Confirm checked={understood} onChange={setUnderstood}>
-                I understand what joining shares.
+                {t('rooms.dialogs:invites.understood')}
             </Confirm>
             <Problem>{problem}</Problem>
             <div className="flex flex-wrap justify-end gap-2">
@@ -718,20 +738,20 @@ function InviteCard({ invite, onDone, onJoined }: { invite: RoomInvite; onDone: 
                     variant="outline"
                     className={touchTarget}
                     disabled={!!busy}
-                    aria-label={`Decline ${invite.title}`}
+                    aria-label={t('rooms.dialogs:invites.decline-label', { title: invite.title })}
                     onClick={() => void act('decline')}
                 >
-                    {busy === 'decline' ? 'Declining…' : 'Decline'}
+                    {busy === 'decline' ? t('rooms.dialogs:invites.declining') : t('rooms.dialogs:invites.decline')}
                 </Button>
                 <Button
                     className={touchTarget}
                     disabled={!!busy || !understood}
                     // Its name starts with the words it shows (CB-219), so "Join
                     // room" said aloud finds it.
-                    aria-label={`Join room ${invite.title}`}
+                    aria-label={t('rooms.dialogs:invites.join-label', { title: invite.title })}
                     onClick={() => void act('accept')}
                 >
-                    {busy === 'accept' ? 'Joining…' : 'Join room'}
+                    {busy === 'accept' ? t('rooms.dialogs:invites.joining') : t('rooms.dialogs:invites.join')}
                 </Button>
             </div>
         </li>

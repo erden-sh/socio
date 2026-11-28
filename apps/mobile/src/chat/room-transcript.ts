@@ -264,7 +264,12 @@ export function roomRows(
                 });
             }
         } else if (row.kind === 'reply' && message !== undefined) {
-            rows.push({ ...row, speaker: socioSpeaker(socioIdOf(message), context, lead) });
+            const socioId = socioIdOf(message);
+            rows.push({
+                ...row,
+                speaker: socioSpeaker(socioId, context, lead),
+                ...(socioId === undefined ? {} : { socioId }),
+            });
         } else {
             rows.push(row);
         }

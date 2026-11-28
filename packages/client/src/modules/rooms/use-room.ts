@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { useTranslation } from '@socio/i18n/react';
 import type { RoomInvite, RoomView } from '@socio/shared/rooms/rooms';
 
 import { useLiveTopic } from '../../lib/change-channel';
@@ -19,6 +20,7 @@ export const ROOM_VIEW_POLL_MS = 10_000;
  * answer at once.
  */
 export function useRoom(roomId: string | undefined) {
+    const { t } = useTranslation(['rooms']);
     const { workspace } = useShell();
     const [room, setRoom] = useState<RoomView>();
     const [error, setError] = useState('');
@@ -36,10 +38,10 @@ export function useRoom(roomId: string | undefined) {
             }
         } catch (cause) {
             if (read === reads.current) {
-                setError(cause instanceof Error ? cause.message : 'Could not load the room.');
+                setError(cause instanceof Error ? cause.message : t('rooms:errors.read-room'));
             }
         }
-    }, [roomId]);
+    }, [roomId, t]);
     useEffect(() => {
         setRoom(undefined);
         setError('');

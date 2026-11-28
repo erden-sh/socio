@@ -1,3 +1,4 @@
+import { useTranslation } from '@socio/i18n/react';
 import { activeLocale, dateTimeFormat, formatNumber, numberFormat } from '@socio/shared/locale';
 import type { OpsStatus, OpsBucket, OpsTileId } from '@socio/shared/operations/operations';
 
@@ -35,15 +36,18 @@ const format = (timeZone: string, shape: 'hour' | 'day' | 'month' | 'time') => {
     return found;
 };
 
-/** A chart point's label: "Oct 22, 14:00", "Oct 22", "Week of Oct 19", "Oct 2026". */
-export function bucketLabel(at: number, bucket: OpsBucket, timeZone: string) {
+/**
+ * A chart point's date: "Oct 22, 14:00", "Oct 22", "Oct 2026"; a week's
+ * first day ("Oct 19"). On screen, a week reads "Week of Oct 19"
+ * (`useOpsFormat().bucketLabel`).
+ */
+export function bucketDate(at: number, bucket: OpsBucket, timeZone: string) {
     switch (bucket) {
         case 'hour':
             return format(timeZone, 'hour').format(at);
         case 'day':
-            return format(timeZone, 'day').format(at);
         case 'week':
-            return `Week of ${format(timeZone, 'day').format(at)}`;
+            return format(timeZone, 'day').format(at);
         case 'month':
             return format(timeZone, 'month').format(at);
     }
@@ -64,41 +68,59 @@ export function tileValue(id: OpsTileId, value: number | null) {
 }
 
 /**
- * A tile's change against the period before: "+12%", "−3%", "Same", or
- * "New" from nothing. Undefined when either side has no data.
+ * The dashboard's words that format.ts's numbers and dates go in, in the
+ * reader's language: a chart point's label ("Oct 22, 14:00", "Week of
+ * Oct 19"), a tile's change against the period before ("+12%", "−3%",
+ * "Same", or "New" from nothing; undefined when either side has no data),
+ * and what the store's status says above the numbers, in the reporting
+ * time zone.
  */
-export function tileChange(
-    value: number | null,
-    previous: number | null,
-): { text: string; direction: 'up' | 'down' | 'same' } | undefined {
-    if (value === null || previous === null) {
-        return undefined;
-    }
-    if (value === previous) {
-        return { text: 'Same', direction: 'same' };
-    }
-    if (previous === 0) {
-        return { text: 'New', direction: 'up' };
-    }
-    const change = (value - previous) / previous;
+export function useOpsFormat() {
+    const { t } = useTranslation(['operations', 'operations.dashboard']);
     return {
-        text: `${change > 0 ? '+' : '−'}${percent.format(Math.abs(change))}`,
-        direction: change > 0 ? 'up' : 'down',
+        bucketLabel: (at: number, bucket: OpsBucket, timeZone: string) =>
+            bucket === 'week'
+                ? t('operations.dashboard:week-of', { day: bucketDate(at, bucket, timeZone) })
+                : bucketDate(at, bucket, timeZone),
+        tileChange: (
+            value: number | null,
+            previous: number | null,
+        ): { text: string; direction: 'up' | 'down' | 'same' } | undefined => {
+            if (value === null || previous === null) {
+                return undefined;
+            }
+            if (value === previous) {
+                return { text: t('operations.dashboard:change.same'), direction: 'same' };
+            }
+            if (previous === 0) {
+                return { text: t('operations.dashboard:change.new'), direction: 'up' };
+            }
+            const change = (value - previous) / previous;
+            return {
+                text: `${change > 0 ? '+' : '−'}${percent.format(Math.abs(change))}`,
+                direction: change > 0 ? 'up' : 'down',
+            };
+        },
+        statusLine: (status: OpsStatus, timeZone: string) => {
+            switch (status.state) {
+                case 'unavailable':
+                    return t('operations.dashboard:status.unavailable');
+                case 'starting':
+                    return t('operations.dashboard:status.starting');
+                case 'rebuilding':
+                    return status.progress === undefined
+                        ? t('operations.dashboard:status.rebuilding')
+                        : t('operations.dashboard:status.rebuilding-progress', {
+                              progress: Math.round(status.progress) / 100,
+                          });
+                case 'ready':
+                    return status.asOf === null
+                        ? t('operations.dashboard:status.empty')
+                        : t('operations.dashboard:status.as-of', {
+                              when: formatWhen(status.asOf, timeZone),
+                              zone: timeZone,
+                          });
+            }
+        },
     };
-}
-
-/** What the store's status says above the numbers, in the reporting time zone. */
-export function statusLine(status: OpsStatus, timeZone: string) {
-    switch (status.state) {
-        case 'unavailable':
-            return 'Analytics isn’t running yet, so there are no numbers to show. They appear here once it is set up.';
-        case 'starting':
-            return 'Analytics is starting. Numbers appear in a moment.';
-        case 'rebuilding':
-            return `Analytics is rebuilding${status.progress === undefined ? '' : ` (${Math.round(status.progress)}%)`}. Numbers appear when it is done.`;
-        case 'ready':
-            return status.asOf === null
-                ? 'No data yet.'
-                : `Data as of ${formatWhen(status.asOf, timeZone)} (${timeZone}).`;
-    }
 }

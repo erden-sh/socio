@@ -1,10 +1,12 @@
 import { AtSign, ArrowRightLeft } from 'lucide-react';
 import { useRef } from 'react';
 
+import { useTranslation } from '@socio/i18n/react';
 import { handoffLine, type TranscriptHandoff } from '@socio/shared/rooms/room-handoffs';
 import { answeringSocios } from '@socio/shared/rooms/room-view';
 import type { RoomSocioView } from '@socio/shared/rooms/rooms';
 
+import { useOnDemand } from '../../i18n/on-demand';
 import { ChatIconButton } from '../chat/chat-chrome';
 
 import { touchTarget } from './touch';
@@ -32,19 +34,22 @@ export function SocioPicker({
     onPick: (socio: RoomSocioView) => void;
     disabled?: boolean;
 }) {
+    const { t } = useTranslation(['rooms']);
+    // Its words are the room's (rooms), which RoomChat waits for.
+    const ready = useOnDemand(['rooms']);
     const active = answeringSocios(socios);
     // A socio picked: focus goes back to the message (`onPick`), not to
     // the picker, so the person types on after the name.
     const picked = useRef(false);
-    if (active.length < 2) {
+    if (!ready || active.length < 2) {
         return null;
     }
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild disabled={disabled}>
                 <ChatIconButton
-                    aria-label="Mention a socio"
-                    title="Mention a socio: it answers instead of the lead"
+                    aria-label={t('rooms:picker.label')}
+                    title={t('rooms:picker.title')}
                     className="size-11"
                     data-slot="socio-picker"
                 >
@@ -62,7 +67,7 @@ export function SocioPicker({
                 }}
             >
                 <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-                    Mention a socio
+                    {t('rooms:picker.heading')}
                 </DropdownMenuLabel>
                 {active.map((socio) => (
                     <DropdownMenuItem
@@ -75,7 +80,9 @@ export function SocioPicker({
                         }}
                     >
                         <span className="min-w-0 flex-1 truncate">{socio.name}</span>
-                        {socio.lead && <span className="shrink-0 text-[11px] text-muted-foreground">lead</span>}
+                        {socio.lead && (
+                            <span className="shrink-0 text-[11px] text-muted-foreground">{t('rooms:picker.lead')}</span>
+                        )}
                     </DropdownMenuItem>
                 ))}
             </DropdownMenuContent>

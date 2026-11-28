@@ -53,6 +53,7 @@ import {
     WEB_SETTINGS_ROW,
 } from '../shell/settings';
 import { TECHNICAL_DETAILS_ROW } from '../shell/technical-details';
+import { REMOVE_SECTION_TITLE, REMOVE_WORKSPACE, removeWorkspaceNote } from '../shell/workspaces';
 import { readAnswer } from '../sync/outbox-answers';
 import { useScheme } from '../theme/scheme';
 import { colorsOf } from '../theme/theme';
@@ -62,6 +63,7 @@ import { LegalSection } from './legal-links';
 import { MODULE_ICONS } from './module-icons';
 import { NotificationPermissionRow } from './notification-permission-row';
 import { useOpenLink } from './open-link';
+import { askThenRemoveWorkspace } from './remove-workspace';
 import { ListRow, PageIntro, Section } from './shell-parts';
 import { SignInMethodsSection } from './sign-in-methods';
 
@@ -121,6 +123,7 @@ export function SettingsScreen() {
                 {settings.advanced ? <TechnicalDetailsRow /> : null}
             </Section>
             {open ? <WebSettingsSection /> : null}
+            {open ? <RemoveWorkspaceSection /> : null}
             <LegalSection />
             {open ? <WorkspaceBuildFooter /> : <BuildFooter server={null} />}
         </Screen>
@@ -176,6 +179,31 @@ function AccountSection() {
                     </Text>
                 )}
             </View>
+        </Section>
+    );
+}
+
+/** Remove from this device (CB-573): the open workspace, after the drawer's question. */
+function RemoveWorkspaceSection() {
+    const scope = useWorkspaceScope();
+    const { data: shell } = useLiveQuery({ query: shellQuery(useCollections()) });
+    const { workspace, state } = shellRows(shell);
+    const name = accountView(scope.workspace, workspace, state).workspaceName;
+    return (
+        <Section title={REMOVE_SECTION_TITLE} testID="settings-remove-workspace" footer={removeWorkspaceNote(name)}>
+            <Pressable
+                testID="settings-remove-workspace-row"
+                accessibilityRole="button"
+                accessibilityLabel={`${REMOVE_WORKSPACE.label}, ${name}`}
+                onPress={() => void askThenRemoveWorkspace(scope.workspace.id, name)}
+                className="flex-row items-center gap-3 p-3 active:bg-accent"
+                style={{ minHeight: 44 }}
+            >
+                <AppSymbol name="log-out" color="destructive" />
+                <Text tone="destructive" className="min-w-0 flex-1">
+                    {REMOVE_WORKSPACE.label}
+                </Text>
+            </Pressable>
         </Section>
     );
 }

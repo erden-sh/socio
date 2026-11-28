@@ -1,5 +1,7 @@
+import { useTranslation } from '@socio/i18n/react';
+
 import { DialogFieldset } from '@/components/form-fields';
-import { PRIVATE_SPACE_COVERS, PrivateSpaceIcon } from '@/components/private-space';
+import { PrivateSpaceIcon } from '@/components/private-space';
 import { cn } from '@/lib/utils';
 
 // Its own module, apart from SpaceSettings: the socio and Space dialogs
@@ -17,15 +19,17 @@ export function SpaceAudienceField({
     value,
     onChange,
     disabled = false,
-    legend = 'Who can see it',
+    legend,
 }: {
     admin: boolean;
     /** Private: only its people. */
     value: boolean;
     onChange: (privateSpace: boolean) => void;
     disabled?: boolean;
+    /** The fieldset's legend; "Who can see it" (`spaces.audience:legend`) by default. */
     legend?: string;
 }) {
+    const { t } = useTranslation(['spaces.audience']);
     const option = (checked: boolean) =>
         cn(
             'flex items-start gap-3 rounded-lg border p-3 text-[13px] has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ring',
@@ -33,7 +37,7 @@ export function SpaceAudienceField({
             !disabled && 'cursor-pointer',
         );
     return (
-        <DialogFieldset legend={legend}>
+        <DialogFieldset legend={legend ?? t('spaces.audience:legend')}>
             <div className="grid gap-2" data-slot="space-audience">
                 <label className={cn(option(!value), !admin && 'opacity-60')}>
                     <input
@@ -45,10 +49,9 @@ export function SpaceAudienceField({
                         onChange={() => onChange(false)}
                     />
                     <span className="grid gap-0.5">
-                        <strong className="font-medium">Whole workspace</strong>
+                        <strong className="font-medium">{t('spaces.audience:whole.title')}</strong>
                         <small className="text-xs leading-[1.6] text-muted-foreground">
-                            Everyone in the workspace sees it and everything in it.
-                            {!admin && ' Only workspace admins make a Space for everyone.'}
+                            {t('spaces.audience:whole.detail', { context: admin ? undefined : 'member' })}
                         </small>
                     </span>
                 </label>
@@ -63,11 +66,10 @@ export function SpaceAudienceField({
                     />
                     <span className="grid gap-0.5">
                         <strong className="inline-flex items-center gap-1.5 font-medium">
-                            Only its people <PrivateSpaceIcon className="size-3.5" />
+                            {t('spaces.audience:private.title')} <PrivateSpaceIcon className="size-3.5" />
                         </strong>
                         <small className="text-xs leading-[1.6] text-muted-foreground">
-                            Private: only the people added to it, and workspace admins, see it, {PRIVATE_SPACE_COVERS}.
-                            Socios use it only when everyone in the chat may. Anyone else doesn’t see it exists.
+                            {t('spaces.audience:private.detail')}
                         </small>
                     </span>
                 </label>

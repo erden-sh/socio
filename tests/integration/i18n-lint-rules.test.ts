@@ -33,7 +33,7 @@ const FILES: Record<string, string> = {
         '',
     ].join('\n'),
     // Outside the ratchet's folders: literal text is still allowed.
-    'packages/client/src/modules/rooms/Literal.tsx': 'export const A = () => <p title="Help">Hello there</p>;\n',
+    'packages/client/src/modules/schedules/Literal.tsx': 'export const A = () => <p title="Help">Hello there</p>;\n',
     'packages/client/src/modules/chat/translate.tsx': [
         "import i18n from 'i18next';",
         "import { useTranslation } from 'react-i18next';",
@@ -118,7 +118,7 @@ describe('socio/no-literal-text', () => {
     });
 
     it('isn’t on outside the folders it lists', () => {
-        expect(of('packages/client/src/modules/rooms/Literal.tsx')).toEqual([]);
+        expect(of('packages/client/src/modules/schedules/Literal.tsx')).toEqual([]);
     });
 
     it('covers all of Settings (Settings › Language first), and its list only grows', () => {
@@ -128,10 +128,13 @@ describe('socio/no-literal-text', () => {
         const folders = overrides
             .filter((entry) => 'socio/no-literal-text' in entry.rules)
             .flatMap((entry) => entry.files);
-        // What has moved to t(): Settings, Language included, the shell and chat.
+        // What has moved to t(): Settings, Language included, the shell, chat, Rooms and Spaces.
         expect(folders).toContain('packages/client/src/modules/settings/**');
         expect(folders).toContain('packages/client/src/shell/**');
         expect(folders).toContain('packages/client/src/modules/chat/**');
+        expect(folders).toContain('packages/client/src/modules/rooms/**');
+        expect(folders).toContain('packages/client/src/modules/spaces/**');
+        expect(folders).toContain('packages/client/src/modules/operations/**');
         expect(folders.some((glob) => `${LANGUAGE}/`.startsWith(glob.replace(/\*\*$/, '')))).toBe(true);
     });
 });

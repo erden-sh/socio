@@ -1,0 +1,36 @@
+{
+    "label": "Review page draft",
+    "phase": {
+        "deleted": { "title": "Saved, then deleted", "badge": "Deleted" },
+        "conflict": { "title": "Review changed", "badge": "Needs new review" },
+        "saved": { "title": "Saved to your Space", "badge": "Approved" },
+        "checking": { "title": "Checking saved review…", "badge": "Checking" },
+        "ended": { "title": "Review ended", "badge": "Not saved" },
+        "invalid": { "title": "Draft needs fixing", "badge": "Cannot save" },
+        "waiting": { "title": "Draft on its way", "badge": "Waiting" },
+        "ready": { "title": "Ready for your review", "badge": "You decide" }
+    },
+    "preparing": "Preparing your draft…",
+    "untitled": "Untitled draft",
+    "conflict": "This review was saved with a different draft. Start a new review for the changed draft.",
+    "invalid": "This draft cannot be saved as sent ({{problem}}). Send it back and the socio will fix it.",
+    "retry": "Retry review",
+    "open-saved": "Open saved page",
+    "open": "Open page",
+    "saving": "Saving…",
+    "continue": "Continue conversation",
+    "approve": "Approve & save",
+    "send-back": "Send back",
+    "decline": "Decline",
+    "hint": {
+        "deleted": "The page saved from this review was deleted.",
+        "checking": "Checking whether this draft was already saved.",
+        "not-saved": "No page was saved.",
+        "waiting": "This draft opens for review once the socio finishes it and any review above it is decided.",
+        "ready": "Nothing is saved until you approve."
+    },
+    "errors": {
+        "restore": "Could not restore this review.",
+        "save": "Could not save the approved draft."
+    }
+}

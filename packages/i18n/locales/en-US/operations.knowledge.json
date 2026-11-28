@@ -1,0 +1,84 @@
+{
+    "totals": "Knowledge totals",
+    "none": "No numbers yet.",
+    "ms": "{{n, number(maximumFractionDigits: 1)}} ms",
+    "tiles": {
+        "pages": "Pages",
+        "pages-note": "{{n, number}} new",
+        "chars": "Average length",
+        "chars-note": "characters a page",
+        "edits": "Edits",
+        "edits-note": "by {{n, number}}",
+        "stale": "Stale pages",
+        "stale-note": "untouched {{days, number}} days",
+        "searches": "Searches",
+        "searches-note": "{{n, number}} found nothing",
+        "search-p95": "Search time (95%)",
+        "search-p95-note": "half under {{time}}",
+        "access": "Dataset access",
+        "access-note_one": "{{count, number}} dataset",
+        "access-note_other": "{{count, number}} datasets",
+        "denied": "Access denied",
+        "denied-note_one": "{{count, number}} error",
+        "denied-note_other": "{{count, number}} errors"
+    },
+    "spaces": {
+        "title": "Spaces",
+        "description": "Pages now, and what was created and edited in the range. Pick a Space to see only its pages.",
+        "show-all": "Show every Space",
+        "space": "Space",
+        "pages": "Pages",
+        "length": "Avg length",
+        "edits": "Edits",
+        "stale": "Stale"
+    },
+    "pages": {
+        "title": "Pages",
+        "description": "Least recently edited or used first: the top of the list is what goes stale. Titles only.",
+        "empty": "No pages.",
+        "stale": "Stale",
+        "chars_one": "{{count, number}} character",
+        "chars_other": "{{count, number}} characters",
+        "edits_one": "{{count, number}} edit",
+        "edits_other": "{{count, number}} edits",
+        "active": "active {{when}}"
+    },
+    "search": {
+        "title": "Page search",
+        "description": "Searches a day across the workspace (days in UTC); no query text is kept.",
+        "chart": "Searches a day",
+        "x": "day",
+        "y": "searches",
+        "empty": "No searches in this range."
+    },
+    "access": {
+        "title": "Dataset access",
+        "description": "What people, socios and apps did with datasets in the range, and how it went.",
+        "actor": "{{actor}}: {{n, number}}",
+        "actors": {
+            "user": "People",
+            "dot": "Socios",
+            "token": "Apps and computers",
+            "system": "The app"
+        },
+        "chats_one": "In {{count, number}} chat",
+        "chats_other": "In {{count, number}} chats",
+        "action": "Action",
+        "outcome": "Outcome",
+        "times": "Times",
+        "empty": "No dataset access in this range."
+    },
+    "datasets": {
+        "title": "Datasets",
+        "description": "Largest first, row history included, with their access in the range.",
+        "empty": "No datasets.",
+        "scratch": "Scratch",
+        "history": "{{size}} + {{history}} history",
+        "tables_one": "{{count, number}} table",
+        "tables_other": "{{count, number}} tables",
+        "uses_one": "{{count, number}} use",
+        "uses_other": "{{count, number}} uses",
+        "denied": "{{uses}}, {{n, number}} denied",
+        "last": "last {{when}}"
+    }
+}

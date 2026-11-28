@@ -1,0 +1,7 @@
+{
+    "title": "Heading of the Rooms card on Settings › Account › Notifications. \"Room\" is a product noun: a conversation several people and a socio share.",
+    "body": "The card's explanation. \"Notify me about\" is the label in a room's ⋯ menu (rooms.nav menu.notify): keep the two the same.",
+    "presence.label": "Switch label: whether the room's other members see the reader's avatar while the reader has the room open.",
+    "presence.shown": "Toast after the switch was turned on.",
+    "presence.hidden": "Toast after the switch was turned off."
+}

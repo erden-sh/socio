@@ -1,0 +1,10 @@
+{
+    "title": "The name of the Operations dashboard (admins see how the workspace is used, what fails and what it costs): its page title, breadcrumb and section nav's accessible name.",
+    "crumbs.chat": "Breadcrumb for a chat's admin transcript, while the chat has no title.",
+    "groups.dashboard": "Heading of the section nav's first group: the dashboard's pages of numbers.",
+    "groups.oversight": "Heading of the section nav's second group: who looked at what, which access socios have, and the dashboard's settings.",
+    "sections.overview.label": "Each sections.*.label: a page of the Operations dashboard, in its section nav, page title and breadcrumb. Short. \"Socio\" is a product noun (an AI agent), \"Space\" one too (a shared area of pages).",
+    "sections.access-log.label": "The log of admins opening people's activity, chats and traces.",
+    "sections.socio-access.label": "Which socios (AI agents) may act in which apps on behalf of which people.",
+    "load-failed": "Shown when a page's numbers didn't load and the server gave no reason."
+}

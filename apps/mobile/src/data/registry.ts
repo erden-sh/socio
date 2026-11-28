@@ -428,6 +428,12 @@ export interface Registry {
      * A field left out stays. Nothing happens when there's no such row.
      */
     setSummary(id: string, summary: WorkspaceSummary): Promise<void>;
+    /**
+     * The logo's file name in the workspace's directory (null: the mascot), as
+     * the open workspace's branding says it now (CB-574, `refreshLogo`).
+     * Nothing happens when there's no such row.
+     */
+    setLogo(id: string, logo: string | null): Promise<void>;
     /** The phone's own settings; the defaults when the row is missing. */
     settings(): Promise<DeviceSettings>;
     /** Stores the settings given; one left out stays. Resolves with all of them as stored. */
@@ -725,6 +731,9 @@ function registryOn(db: SqlConnection, version: number, now: () => number): Regi
                 'UPDATE workspaces SET name = coalesce(?, name), unread = coalesce(?, unread), waiting = coalesce(?, waiting) WHERE id = ?',
                 [name, unread, waiting, id],
             );
+        },
+        setLogo: async (id, logo) => {
+            await db.run('UPDATE workspaces SET logo = ? WHERE id = ?', [logo, id]);
         },
         settings,
         setSettings: async ({ advanced, haptics, appearance }) => {

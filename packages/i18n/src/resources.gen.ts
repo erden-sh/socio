@@ -1186,6 +1186,2707 @@ export interface EnglishResources {
             note: '({{note}})';
         };
     };
+    operations: {
+        title: 'Operations';
+        crumbs: {
+            chat: 'Chat';
+        };
+        groups: {
+            dashboard: 'Dashboard';
+            oversight: 'Oversight';
+        };
+        sections: {
+            overview: {
+                label: 'Overview';
+            };
+            activity: {
+                label: 'Activity';
+            };
+            value: {
+                label: 'Value';
+            };
+            themes: {
+                label: 'Themes';
+            };
+            knowledge: {
+                label: 'Knowledge';
+            };
+            reliability: {
+                label: 'Reliability';
+            };
+            capabilities: {
+                label: 'Capabilities';
+            };
+            health: {
+                label: 'Health';
+            };
+            cost: {
+                label: 'Cost';
+            };
+            'access-log': {
+                label: 'Access log';
+            };
+            'socio-access': {
+                label: 'Socio access';
+            };
+            settings: {
+                label: 'Settings';
+            };
+        };
+        'load-failed': 'Could not load.';
+    };
+    'operations.access-log': {
+        title: 'Who opened what';
+        description: 'Lists of people’s turns are written once per admin and filters every {{minutes, number}} minutes; every chat or turn trace opened is written each time. Entries can’t be edited or removed, and the people whose chats were read aren’t told.';
+        empty: 'No one has opened a person’s activity or a chat here yet.';
+        content: 'Content';
+        request: 'Request {{id}}';
+        subject: {
+            workspace: 'Every turn';
+            'removed-room': 'A removed room';
+            'deleted-chat': 'A deleted chat';
+            room: 'Room';
+        };
+        context: {
+            from: 'from {{section}}';
+            filter_socio: 'socio {{value}}';
+            filter_person: 'person {{value}}';
+            filter_space: 'space {{value}}';
+            filter_source: 'source {{value}}';
+            filter_room: 'room {{value}}';
+            filter_initiator: 'started by {{value}}';
+            other: '{{name}} {{value}}';
+        };
+        surfaces: {
+            turns: 'Turns list';
+            chat: 'Chat transcript';
+            trace: 'Turn trace';
+            activity: 'Activity, for one person';
+            value: 'Value, for one person';
+            'activity-people': 'Activity: people';
+            'activity-socios': 'Activity: socios';
+            'activity-chats': 'Activity: chats';
+            'value-sessions': 'Value: sessions';
+            failures: 'Reliability: recent failures';
+            'failure-label': 'Reliability: a failure’s label';
+            health: 'Health, tokens by person';
+            'health-schedules': 'Health: schedules';
+            'health-long-runs': 'Health: long runs';
+            'knowledge-datasets': 'Knowledge: datasets';
+            'chat-grounding': 'Chat grounding';
+            cost: 'Cost, by person';
+            themes: 'Themes, for one person';
+            'session-labels': 'Themes: sessions to review';
+            'session-label': 'Themes: a session’s labels';
+            'room-events': 'Room audit';
+        };
+    };
+    'operations.activity': {
+        tiles: {
+            people: 'Active people';
+            returning: 'Returning people';
+            stickiness: 'Stickiness';
+            sessions: 'Sessions';
+            chats: 'Chats with people';
+            length: 'Messages per session';
+        };
+        'sessions-note': 'A session is a chat’s messages with less than {{minutes, number}} minutes between them; a shared one counts once here and for each person in it. Stickiness is daily people over the people of the last 7 days.';
+        metrics: {
+            people: 'Active people';
+            sessions: 'Sessions';
+            messages: 'Messages from people';
+        };
+        axis: {
+            people: 'active people';
+            sessions: 'sessions';
+            messages: 'messages from people';
+        };
+        chart: 'Chart';
+        'no-chart': 'Nothing to chart in this range.';
+        empty: 'Nothing in this range.';
+        sources: {
+            title: 'Channels';
+            description: 'Turns and people’s messages by where they came from. Automation, such as schedules, is counted apart from people.';
+            kind: {
+                human: 'People';
+                automation: 'Automation';
+                unknown: 'Unregistered';
+            };
+        };
+        participation: {
+            title: 'Who takes part';
+            description: 'Chats can have several people and several socios. Turns one socio starts for another are collaboration, not use.';
+            chats: 'Chats with people';
+            'several-people': 'With several people';
+            'several-socios': 'With several socios';
+            collaboration: 'Socio-to-socio turns';
+        };
+        features: {
+            title: 'Feature use';
+            description: 'Tool calls by capability. Pick a person below to see theirs.';
+            description_person: 'Tool calls by capability. Only the turns this person started.';
+        };
+        spaces: {
+            title: 'Spaces';
+            description: 'Pages made and edited in each Space, by people and by socios, and who works with its socios.';
+        };
+        lists: {
+            title: 'Who and where';
+            description: 'Last active first, without what anyone wrote. Opening a chat is recorded in the access log.';
+            people: 'People';
+            socios: 'Socios';
+            chats: 'Chats';
+            'people-empty': 'No one wrote to a socio in this range.';
+            'socios-empty': 'No socio had people’s messages in this range.';
+            'chats-empty': 'No chats with people in this range.';
+            'a-chat': 'A chat';
+            shared: 'Shared';
+            room: 'Room';
+            resumed: 'Resumed';
+        };
+        count: {
+            turns_one: '{{count, number}} turn';
+            turns_other: '{{count, number}} turns';
+            people_one: '{{count, number}} person';
+            people_other: '{{count, number}} people';
+            calls_one: '{{count, number}} call';
+            calls_other: '{{count, number}} calls';
+            errors_one: '{{count, number}} error';
+            errors_other: '{{count, number}} errors';
+            refusals_one: '{{count, number}} refusal';
+            refusals_other: '{{count, number}} refusals';
+            'writes-by-people_one': '{{count, number}} write by people';
+            'writes-by-people_other': '{{count, number}} writes by people';
+            'writes-by-socios_one': '{{count, number}} by socios';
+            'writes-by-socios_other': '{{count, number}} by socios';
+            sessions_one: '{{count, number}} session';
+            sessions_other: '{{count, number}} sessions';
+            messages_one: '{{count, number}} message';
+            messages_other: '{{count, number}} messages';
+            days_one: '{{count, number}} day';
+            days_other: '{{count, number}} days';
+            socios_one: '{{count, number}} socio';
+            socios_other: '{{count, number}} socios';
+            'tool-calls_one': '{{count, number}} tool call';
+            'tool-calls_other': '{{count, number}} tool calls';
+            chats_one: '{{count, number}} chat';
+            chats_other: '{{count, number}} chats';
+            'per-chat': '{{n, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}} messages a chat';
+            'turns-for-socios_one': '{{count, number}} turn for socios';
+            'turns-for-socios_other': '{{count, number}} turns for socios';
+        };
+    };
+    'operations.capabilities': {
+        totals: 'Capability totals';
+        tiles: {
+            tools: 'Socio tools';
+            'tools-note_one': '{{count, number}} capability';
+            'tools-note_other': '{{count, number}} capabilities';
+            used: 'Used in the range';
+            'used-note': '{{n, number}} not used';
+            unregistered: 'Without an entry';
+            'unregistered-note': 'socios can’t discover them';
+            unoffered: 'Not given here';
+            'unoffered-note': 'declared, but off in this deployment';
+        };
+        gaps: {
+            title: 'Gaps';
+            description: 'Tools no capability declares don’t show in what socios learn they can do. Declared tools nothing gives here usually wait for a service, such as computers.';
+            unregistered: 'Without a registry entry';
+            'unregistered-empty': 'Every tool is declared.';
+            unoffered: 'Declared, not given here';
+            'unoffered-empty': 'Every declared tool is given.';
+            'no-tools': 'Features with no socio tools';
+            'no-tools-empty': 'Every feature gives tools.';
+            unlisted: 'Couldn’t list the tools of {{modules, list(type: unit; style: short)}}.';
+        };
+        coverage: {
+            title: 'Coverage';
+            description: 'Each socio tool, the feature that gives it, the capability that declares it, and its calls in the range. Gaps first.';
+            tool: 'Tool';
+            feature: 'Feature';
+            capability: 'Capability';
+            calls: 'Calls';
+            failed: 'Failed';
+            'not-given': 'Not given';
+            registry: 'The registry';
+            'no-entry': 'No entry';
+        };
+        requests: {
+            title: 'Capability requests';
+            description: 'What socios asked for and couldn’t do, latest asked first, whatever the range. Each is an item on the Improvements board.';
+            empty: 'No socio has asked for a capability yet.';
+            statuses: {
+                triage: 'Triage';
+                open: 'Open';
+                ready: 'Ready';
+                'in-progress': 'In progress';
+                'in-review': 'In review';
+                blocked: 'Blocked';
+                done: 'Done';
+                'wont-fix': 'Won’t fix';
+            };
+            people_one: '{{count, number}} person';
+            people_other: '{{count, number}} people';
+            socios_one: '{{count, number}} socio';
+            socios_other: '{{count, number}} socios';
+            last: 'last {{when}}';
+        };
+    };
+    'operations.chat-grounding': {
+        unavailable: 'Analytics isn’t answering yet; try again shortly.';
+        nothing: 'Its turns read no pages or datasets that were recorded. Turns before this was recorded show nothing.';
+        did: {
+            page: 'read';
+            search: 'in a search';
+            context: 'the chat’s page';
+            dataset: 'queried';
+            recall: 'recalled';
+        };
+        turns_one: '{{count, number}} turn · last {{when}}';
+        turns_other: '{{count, number}} turns · last {{when}}';
+        recalls_one: 'Recalled {{count, number}} earlier part of this chat.';
+        recalls_other: 'Recalled {{count, number}} earlier parts of this chat.';
+        more: 'Showing the most recent; older references are left out.';
+        'removed-page': 'A removed page';
+        'removed-dataset': 'A removed dataset';
+        kinds: {
+            page: 'Page reads';
+            search: 'Search results';
+            context: 'The chat’s page';
+            dataset: 'Dataset queries';
+            recall: 'Recalls of the chat';
+        };
+    };
+    'operations.cost': {
+        'load-failed': 'Could not load prices.';
+        'per-million': '{{price}} / M';
+        stats: {
+            label: 'Cost totals';
+            cost: 'Cost';
+            priced: 'Priced turns';
+            'priced-of_one': 'of {{count, number}} turn';
+            'priced-of_other': 'of {{count, number}} turns';
+            unpriced: 'Turns without a price';
+            'unpriced-note': 'their cost is unknown, not zero';
+            idle: 'Idle capacity';
+            'idle-note': 'cost pools’ hours without turns';
+        };
+        change: {
+            new: 'new vs the period before';
+            same: 'same as before';
+            percent: '{{change, number(style: percent; signDisplay: exceptZero; maximumFractionDigits: 0)}} vs the period before';
+        };
+        chart: {
+            title: 'Cost over the range';
+            description: 'Turns’ cost per {{bucket}}, priced and pooled together. Idle capacity is not in it.';
+            x: 'bucket';
+            x_hour: 'hour';
+            x_day: 'day';
+            x_week: 'week';
+            x_month: 'month';
+            y: 'US dollars';
+        };
+        empty: {
+            none: 'No numbers yet.';
+            'no-turns': 'No turns in this range.';
+        };
+        columns: {
+            model: 'Model';
+            socio: 'Socio';
+            person: 'Person';
+            'paid-by': 'Paid by';
+            room: 'Room';
+            backend: 'Backend';
+            cycles: 'Cycles';
+            turns: 'Turns';
+            tokens: 'Tokens';
+            cost: 'Cost';
+            'self-hosted': 'Self-hosted';
+            'cloud-price': 'Cloud price';
+        };
+        unpriced_one: '{{count, number}} unpriced';
+        unpriced_other: '{{count, number}} unpriced';
+        'not-recorded': 'Not recorded';
+        'by-model': {
+            title: 'By model';
+            description: 'What each model’s turns cost.';
+        };
+        'by-socio': {
+            title: 'By socio';
+        };
+        'by-person': {
+            title: 'By person';
+            description: 'Turns a person started.';
+        };
+        payers: {
+            title: 'Who paid';
+            description: 'A person’s own model subscription, or the workspace’s models. Turns before work cycles didn’t record it.';
+            workspace: 'The workspace';
+            person: 'A person';
+        };
+        cycles: {
+            title: 'Work cycles';
+            description: 'A cycle is one person’s message and everything it led to. Time working leaves out waits, such as for an approval.';
+            cycles: 'Work cycles';
+            'cycles-value': '{{cycles, number}} ({{rooms, number}} in rooms)';
+            steps: 'Steps';
+            'steps-value': '{{steps, number}}, {{handoffs, number}} handed on';
+            deadline: 'Stopped at the time limit';
+            tokens: 'Stopped at the token limit';
+            handoffs: 'Stopped at the handoff limit';
+            spend: 'Stopped at the spend limit';
+            stopped: 'Stopped by a person';
+            'spend-unknown': 'Spend not reported';
+            running: 'Time working';
+            wall: 'Start to end';
+        };
+        rooms: {
+            title: 'By room';
+            description: 'Each room’s turns, people and socios, and its work cycles: one per message a person sent there.';
+            unnamed: 'A room';
+            people_one: '{{count, number}} person';
+            people_other: '{{count, number}} people';
+            socios_one: '{{count, number}} socio';
+            socios_other: '{{count, number}} socios';
+            'hit-limit_one': '{{count, number}} hit a limit';
+            'hit-limit_other': '{{count, number}} hit a limit';
+            'handed-on_one': '{{count, number}} handed on';
+            'handed-on_other': '{{count, number}} handed on';
+        };
+        backends: {
+            title: 'Backends';
+            description: 'What each backend’s turns cost. For a self-hosted backend, its cost pools’ share per million tokens beside what the cheapest listed cloud provider charges for the same turns.';
+            shared: 'A shared backend (older turns)';
+            connections: '{{name}} connections';
+            removed: 'Removed backend ({{id}})';
+        };
+        'unpriced-models': {
+            title: 'Models without a price';
+            description: 'Turns on these show as unpriced. Add a price below, or a cost pool for a self-hosted backend.';
+            on_one: 'on {{backend}} · {{count, number}} turn';
+            on_other: 'on {{backend}} · {{count, number}} turns';
+            add: 'Add a price';
+        };
+    };
+    'operations.cost-admin': {
+        'save-failed': 'Could not save.';
+        categories: {
+            hardware: 'Hardware';
+            power: 'Power';
+            hosting: 'Hosting';
+            subscription: 'Subscription';
+            other: 'Other';
+        };
+        periods: {
+            hour: 'hour';
+            day: 'day';
+            month: 'month';
+            year: 'year';
+        };
+        sources: {
+            admin: 'Admin';
+            openrouter: 'OpenRouter';
+            deepinfra: 'DeepInfra';
+            azure: 'Azure Retail Prices';
+            aws: 'AWS Price List (Bedrock)';
+            'models.dev': 'models.dev';
+            litellm: 'LiteLLM price list';
+        };
+        actions: 'Actions';
+        remove: 'Remove';
+        pools: {
+            title: 'Cost pools';
+            description: 'What self-hosted backends and subscriptions cost: each hour’s cost is shared among that hour’s turns on the pool’s backends by weighted tokens; hours without turns are idle capacity. Pools are the workspace’s, whatever the filters. Subscription pools are estimates.';
+            pool: 'Pool';
+            cost: 'Cost';
+            took: 'Turns took';
+            idle: 'Idle';
+            estimate: 'Estimate';
+            gpu: 'By GPU time: no meter yet';
+            'no-backends': 'no backends';
+            terms: {
+                variable: '{{amount}} a unit, from meter readings';
+                depreciated_one: '{{amount}} written off over {{count, number}} month';
+                depreciated_other: '{{amount}} written off over {{count, number}} months';
+                per_hour: '{{amount}} an hour';
+                per_day: '{{amount}} a day';
+                per_month: '{{amount}} a month';
+                per_year: '{{amount}} a year';
+            };
+            readings: 'Readings';
+            edit: 'Edit';
+            removed: 'Cost pool removed';
+            none: 'No cost pools yet. Add one for a self-hosted backend (its hardware, power, hosting) or for ChatGPT subscriptions.';
+            add: 'Add a cost pool';
+        };
+        'pool-form': {
+            change: 'Change {{name}}';
+            new: 'New cost pool';
+            name: 'Name';
+            category: 'Category';
+            metered: 'Metered: its cost comes from meter readings (power, for one)';
+            amount: 'US dollars';
+            amount_metered: 'US dollars a unit (unless a reading says)';
+            amount_purchase: 'Purchase price, US dollars';
+            per: 'Per';
+            months: 'Write off over months (a purchase; empty for a running cost)';
+            from: 'From (UTC)';
+            until: 'Until (UTC, optional)';
+            backends: 'Backends it pays for';
+            'no-backends': 'No backends yet: add one on the Platform page.';
+            weights: 'Token weights for sharing an hour';
+            input: 'Input';
+            cached: 'Cached input';
+            output: 'Output';
+            save: 'Save';
+            add: 'Add';
+            cancel: 'Cancel';
+            saved: 'Cost pool saved';
+            added: 'Cost pool added';
+        };
+        readings: {
+            title: '{{name}}: meter readings';
+            description: 'Each reading is what was used since the one before (or since the pool started), spread evenly over that time.';
+            reading: '{{quantity, number}} {{measure}} at {{price}}';
+            removed: 'Reading removed';
+            added: 'Reading added';
+            'read-on': 'Read on (UTC)';
+            used: 'Used';
+            unit: 'Unit';
+            'unit-price': 'US dollars a unit (optional)';
+            add: 'Add reading';
+        };
+        sync: {
+            title: 'Price sync';
+            on_one: 'On: once a day Socio reads providers’ and community price lists and keeps the prices of the {{count, number}} model in use. The requests carry nothing about this workspace.';
+            on_other: 'On: once a day Socio reads providers’ and community price lists and keeps the prices of the {{count, number}} models in use. The requests carry nothing about this workspace.';
+            off: 'Off: Socio reads no price lists, and turns are priced only by the prices it already has and admins’ own.';
+            switch: 'Switch it in Settings';
+            list: 'List';
+            'last-read': 'Last read';
+            kept: 'Models kept';
+            failed: 'Failed: {{error}}';
+            never: 'Never';
+            matched: '{{matched, number}} of {{fetched, number}}';
+            started: 'Price sync started';
+            syncing: 'Syncing…';
+            now: 'Sync now';
+            next: 'Next: {{when}}';
+        };
+        prices: {
+            title: 'Prices';
+            description: 'US dollars per million tokens. A turn takes its provider’s price in force when it started: an admin’s from its date onward, then the provider’s own list, then a community list. Provider * holds for every provider, such as a self-hosted one.';
+            find: 'Find a model or provider';
+            model: 'Model';
+            provider: 'Provider';
+            input: 'Input';
+            cached: 'Cached';
+            output: 'Output';
+            from: 'From';
+            source: 'Source';
+            removed: 'Price removed';
+            'no-match': 'No price matches.';
+            none: 'No prices yet. Turn the price sync on, or add a price.';
+        };
+        'price-form': {
+            title: 'Add a price';
+            model: 'Model';
+            provider: 'Provider (* for any)';
+            from: 'From (UTC)';
+            input: 'Input, $ per million';
+            cached: 'Cached input (optional)';
+            output: 'Output, $ per million';
+            saved: 'Price saved';
+            save: 'Save price';
+        };
+    };
+    'operations.dashboard': {
+        descriptions: {
+            overview: 'The workspace at a glance: turns, people, failures and tokens, against the period before.';
+            activity: 'Who works with which socios, how often, and through which channels.';
+            value: 'Which work gets finished, which is left, and what people come back for.';
+            themes: 'What people come to socios for: intents and recurring topics, and which get left unfinished.';
+            knowledge: 'Spaces and pages, datasets and storage: what is written, searched and used, what goes stale, and how full the limits are.';
+            reliability: 'What fails and why: turns, tools, retries and fallbacks.';
+            capabilities: 'What socios can do, what they are asked for and can’t, and what gets used.';
+            health: 'Models, queues, schedules, backups, and how fresh these numbers are.';
+            cost: 'What turns cost, by model, socio, person and backend; self-hosted backends’ cost pools; and the prices behind them.';
+            'access-log': 'Each time an admin opened a person’s activity, a chat or a turn’s trace. Every admin sees every entry.';
+            'socio-access': 'Which socios may use which apps for whom, right now, and ending that access.';
+            settings: 'The reporting time zone the dashboard cuts days in, how sessions are cut, retention, the price sync, and what the model may label.';
+        };
+        pending: '{{section}} comes in a later release. Like Overview, it will follow the range and filters above, and its links will open the same view for another admin.';
+        range: {
+            label: 'Range';
+            short: {
+                '24h': '24h';
+                '7d': '7d';
+                '30d': '30d';
+                '90d': '90d';
+                '12m': '12m';
+                all: 'All';
+            };
+            long: {
+                '24h': '24 hours';
+                '7d': '7 days';
+                '30d': '30 days';
+                '90d': '90 days';
+                '12m': '12 months';
+                all: 'All time';
+            };
+            custom: 'Custom';
+            points: 'Chart points';
+            bucket: {
+                hour: 'By hour';
+                day: 'By day';
+                week: 'By week';
+                month: 'By month';
+            };
+            'time-zone': 'Days in {{zone}}';
+            from: 'From';
+            to: 'To';
+            show: 'Show';
+            filters: 'Filters';
+            filter: {
+                socio: 'Socio';
+                person: 'Person';
+                space: 'Space';
+                source: 'Source';
+            };
+            'filter-value': '{{filter}}: {{value}}';
+            clear: 'Clear {{filter}}';
+        };
+        status: {
+            unavailable: 'Analytics isn’t running yet, so there are no numbers to show. They appear here once it is set up.';
+            starting: 'Analytics is starting. Numbers appear in a moment.';
+            rebuilding: 'Analytics is rebuilding. Numbers appear when it is done.';
+            'rebuilding-progress': 'Analytics is rebuilding ({{progress, number(style: percent; maximumFractionDigits: 0)}}). Numbers appear when it is done.';
+            empty: 'No data yet.';
+            'as-of': 'Data as of {{when}} ({{zone}}).';
+        };
+        'week-of': 'Week of {{day}}';
+        change: {
+            same: 'Same';
+            new: 'New';
+            versus: '{{change}} vs {{against}}';
+        };
+        previous: 'the period before';
+        previous_24h: 'the 24 hours before';
+        previous_7d: 'the 7 days before';
+        previous_30d: 'the 30 days before';
+        previous_90d: 'the 90 days before';
+        previous_12m: 'the 12 months before';
+        'telegram-team': 'A Telegram team';
+        totals: 'Totals';
+        outcomes: {
+            completed: 'Completed';
+            answered: 'Answered';
+            abandoned: 'Abandoned';
+            share: '{{outcome}} {{share}}';
+        };
+        intents: {
+            label: 'Sessions by intent';
+            intent: 'Intent';
+            sessions: 'Sessions';
+            people: 'People';
+            completed: 'Completed';
+            abandoned: 'Abandoned';
+            outcomes: 'Outcomes';
+            none: 'No intent';
+        };
+    };
+    'operations.failure-label': {
+        name: 'Label';
+        'load-failed': 'Could not load its label.';
+        'save-failed': 'Could not save the label.';
+        saved: 'Label saved. Reliability counts it within a minute.';
+        subject: 'Turn: the rules say {{category}} (<code>{{rule}}</code>)';
+        subject_tool: '{{tool}}: the rules say {{category}} (<code>{{rule}}</code>)';
+        'subject_tool-call': 'Tool call: the rules say {{category}} (<code>{{rule}}</code>)';
+        input: 'What the model reads, scrubbed of contact details and secrets';
+        'no-input': 'No error text was recorded.';
+        suggests: 'The model suggests <strong>{{category}}</strong>, {{confidence, number(style: percent; maximumFractionDigits: 0)}} sure; it counts.';
+        suggests_only: 'The model suggests <strong>{{category}}</strong>, {{confidence, number(style: percent; maximumFractionDigits: 0)}} sure; a suggestion only: it wasn’t sure enough, or its version hasn’t passed an evaluation.';
+        'in-force': 'Labeled <strong>{{category}}</strong> by {{name}}, {{when}}.';
+        'in-force_an-admin': 'Labeled <strong>{{category}}</strong> by an admin, {{when}}.';
+        'in-force_model': 'Labeled <strong>{{category}}</strong> by the model, {{when}}.';
+        choose: 'Choose a category';
+        save: 'Save label';
+        counts: 'Your label counts within a minute and joins the golden set.';
+        'rules-only': 'The rules sort this one; labels apply only to Unclassified failures.';
+    };
+    'operations.grounding': {
+        title: 'What grounded chats';
+        description: 'What socios read to answer in the range: pages they read, found in a search or had open as the chat’s page, by Space; dataset queries and recalls of the chat are counted below the map. Titles and counts only.';
+        none: 'No numbers yet.';
+        'removed-space': 'A removed Space';
+        'removed-page': 'A removed page';
+        kinds: {
+            turns: 'Turns grounded';
+            chats: 'Chats';
+            page: 'Page reads';
+            search: 'Search results';
+            context: 'The chat’s page';
+            dataset: 'Dataset queries';
+            recall: 'Recalls of the chat';
+            'in-turns_one': 'in {{count, number}} turn';
+            'in-turns_other': 'in {{count, number}} turns';
+        };
+        heatmap: {
+            empty: 'No Space’s pages grounded a chat in this range.';
+            label: 'Reads by Space over the range';
+            caption_hour: 'Reads of each Space’s pages per hour: each turn and page once.';
+            caption_day: 'Reads of each Space’s pages per day: each turn and page once.';
+            caption_week: 'Reads of each Space’s pages per week: each turn and page once.';
+            caption_month: 'Reads of each Space’s pages per month: each turn and page once.';
+            space: 'Space';
+            reads: 'Reads';
+            cell: '{{space}}, {{when}}: {{reads}}';
+            'cell-reads_one': '{{count, number}} read';
+            'cell-reads_other': '{{count, number}} reads';
+            pages_one: '{{count, number}} page';
+            pages_other: '{{count, number}} pages';
+            chats_one: '{{count, number}} chat';
+            chats_other: '{{count, number}} chats';
+            fewer: 'Fewer';
+            more: 'More';
+            top: 'the {{shown, number}} Spaces read most of {{total, number}}';
+        };
+        pages: {
+            title: 'Pages that grounded most chats';
+            page: 'Page';
+            space: 'Space';
+            chats: 'Chats';
+            turns: 'Turns';
+            last: 'Last read';
+        };
+    };
+    'operations.health': {
+        'status-note': 'The source filter narrows model, tool and turn numbers; jobs and schedules follow the socio, Space and person.';
+        empty: 'Latency, tokens, schedules and long runs show here once analytics has copied this server’s data. Backups above are read live.';
+        'not-yet': 'not yet';
+        failed: 'Failed';
+        freshness: {
+            title: 'Backups and data freshness';
+            description: 'Read live from this server, so it shows even while analytics is down.';
+            label: 'Backups and freshness';
+            analytics: 'Analytics';
+            state: {
+                ready: 'Ready';
+                starting: 'Starting';
+                rebuilding: 'Rebuilding';
+                down: 'Down';
+            };
+            'rebuilding-progress': 'Rebuilding {{progress, number(style: percent; maximumFractionDigits: 0)}}';
+            'mode-service': 'Its own service';
+            'mode-process': 'A process of this server';
+            'caught-up': 'caught up {{ago}}';
+            'analytics-off': 'Not running on this server (OPS_ANALYTICS_MODE=off).';
+            deployment: 'Deployment metrics';
+            'deployment-off': 'Unavailable: they need the read-only disk usage proxy (COMPUTER_DISK_USAGE_URL).';
+            'deployment-state': {
+                ok: 'Current';
+                pending: 'Not yet';
+                unavailable: 'Unavailable';
+            };
+            measured: 'Measured {{ago}}';
+            'not-measured': 'Not measured yet';
+            services_one: '{{count, number}} service';
+            services_other: '{{count, number}} services';
+            unlimited: '{{n, number}} without a memory limit';
+            backups: 'Backups';
+            'backup-off': 'Backups aren’t set up on this server.';
+            'backup-failed': 'The last backup failed: {{error}}';
+            'backup-none': 'No backup has run yet.';
+            'backup-none_off': 'Scheduled backups are off; none has run.';
+            'backup-last': 'Last backup {{when}} ({{ago}}), every {{hours, number}} h.';
+            'backup-last_off': 'Last backup {{when}} ({{ago}}), scheduled backups off.';
+            'backup-last_offsite': 'Last backup {{when}} ({{ago}}), every {{hours, number}} h; off-site {{offsite}}.';
+            'backup-last_off-offsite': 'Last backup {{when}} ({{ago}}), scheduled backups off; off-site {{offsite}}.';
+            copy: 'Continuous copy';
+            'copy-state': {
+                critical: 'Critical';
+                warning: 'Warning';
+                behind: 'Behind';
+                current: 'Current';
+            };
+            'last-copied': 'Last copied {{ago}}';
+            'nothing-copied': 'Nothing copied yet';
+            lag: '{{time}} behind the newest write';
+            wal: 'write-ahead log {{size}}';
+            offsite: 'off-site {{ago}}';
+            drill: 'Restore drill';
+            passed: 'Passed';
+            'every-days_one': 'every {{count, number}} day';
+            'every-days_other': 'every {{count, number}} days';
+            'by-hand': 'only when run by hand';
+            'not-run': 'Not run yet.';
+            'not-run-every_one': 'Not run yet; every {{count, number}} day.';
+            'not-run-every_other': 'Not run yet; every {{count, number}} days.';
+            stale: 'Stale';
+            copied: 'Copied {{ago}}';
+            source: {
+                agent_runs: 'Turns, messages and tool calls';
+                dimensions: 'People, socios, Spaces and chats';
+                job_runs: 'Job runs';
+                runs: 'Scheduled runs';
+                schedules: 'Schedules, goals and long runs';
+                retention: 'Retention';
+                taxonomy: 'Failure categories';
+                labels: 'Failure labels';
+                session_labels: 'Session intent and themes';
+                issues: 'The Improvements board';
+                approval_audit: 'Approvals';
+                space_writes: 'Pages made in Spaces';
+                message_reactions: 'Reactions';
+                memories: 'Memories';
+                pages: 'Space pages';
+                page_revisions: 'Page edits';
+                data_audit: 'Dataset access';
+                data_dataset_days: 'Dataset sizes';
+                storage: 'Storage';
+                dot_requests: 'Capability requests';
+                run_refs: 'What turns read';
+                issue_runs: 'Items filed from turns';
+                cost: 'Turn cost and cost pools';
+                work_cycles: 'Work cycles';
+            };
+        };
+        apps: {
+            title: 'Mini apps';
+            'check-failing': 'Check failing';
+            'not-healthy': '{{n, number}} not healthy';
+            'failing-since': 'The check of workspace apps fails since {{ago}}: {{error}}';
+            watched: '{{watched, number}} watched · {{recovered, number}} recovered by themselves today';
+            checked: 'checked {{ago}}';
+            state: {
+                healthy: 'Healthy';
+                recovering: 'Recovering';
+                degraded: 'Degraded';
+                failed: 'Failed';
+            };
+            attempt: 'attempt {{n, number}} of {{max, number}}';
+            'last-error': 'last error: {{error}}';
+            'admins-told': 'admins told {{ago}}';
+            'last-recovered': 'last recovered {{ago}}';
+        };
+    };
+    'operations.health-numbers': {
+        'none-in-range': 'None in this range';
+        'no-turns': 'No turns in this range.';
+        'not-recorded': 'Not recorded';
+        'in-range': '{{n, number}} in this range';
+        failed: 'Failed';
+        latency: {
+            title: 'Latency and queues';
+            description: 'How long people wait: for a model’s first output, for tools, and for queued turns, jobs and schedules. p95 is the slow end: 1 in 20 waited longer.';
+            stats: 'Latency';
+            'first-output': 'First output, p95';
+            tools: 'Tool calls, p95';
+            'turn-queue': 'Turn queue, p95';
+            'job-wait': 'Job queue wait, p95';
+            'job-wake': 'Computer wake, p95';
+            'schedule-late': 'Schedule lateness, p95';
+            spread: {
+                rounds_one: 'p50 {{p50}} · {{count, number}} round';
+                rounds_other: 'p50 {{p50}} · {{count, number}} rounds';
+                calls_one: 'p50 {{p50}} · {{count, number}} call';
+                calls_other: 'p50 {{p50}} · {{count, number}} calls';
+                turns_one: 'p50 {{p50}} · {{count, number}} turn';
+                turns_other: 'p50 {{p50}} · {{count, number}} turns';
+                runs_one: 'p50 {{p50}} · {{count, number}} run';
+                runs_other: 'p50 {{p50}} · {{count, number}} runs';
+            };
+            metric: {
+                first_output: 'Model time to first output';
+                tool_duration: 'Tool call time';
+                turn_queue: 'Turn queue time';
+                job_wait: 'Job queue wait';
+                schedule_late: 'Schedule lateness';
+            };
+            'chart-title': '{{metric}}, p95';
+            chart: 'Chart';
+            y: 'milliseconds';
+            empty: 'Nothing timed in this range.';
+            'by-model': 'First output by model';
+            'by-model-empty': 'No timed model rounds in this range.';
+            'tools-title': 'Tools';
+            'tools-label': 'Tool call times';
+            'tools-empty': 'No tool calls in this range.';
+            row: 'p50 {{p50}} · p95 {{p95}} · {{n, number}}';
+            'row-failed': '{{n, number}} failed';
+        };
+        tokens: {
+            title: 'Tokens';
+            description: 'The largest users of tokens in this range.';
+            view: {
+                model: 'By model';
+                socio: 'By socio';
+                person: 'By person';
+                reasoning: 'By reasoning kind';
+            };
+            list: {
+                model: 'Tokens by model';
+                socio: 'Tokens by socio';
+                person: 'Tokens by person';
+                reasoning: 'Tokens by reasoning kind';
+            };
+            reasoning: {
+                summary: 'Summary';
+                raw: 'Raw';
+                hidden: 'Hidden';
+                none: 'None';
+                mixed: 'Mixed';
+                unknown: 'Unknown';
+            };
+            turns_one: '{{count, number}} turn';
+            turns_other: '{{count, number}} turns';
+            output: '{{n, number}} output';
+            'not-reported': 'reasoning not reported';
+            'reasoning-in_one': '{{reasoning, number}} reasoning in {{count, number}} turn';
+            'reasoning-in_other': '{{reasoning, number}} reasoning in {{count, number}} turns';
+            'reasoning-note': 'Each kind is counted on its own: a summary’s tokens and raw reasoning aren’t comparable. Reasoning tokens count only turns whose model reported them apart from its output.';
+            'in-out': '{{input, number}} in · {{output, number}} out';
+        };
+        schedules: {
+            title: 'Schedules and goals';
+            description: 'Schedules as they are now, and their runs in this range. A run is late when it starts over 5 minutes after it came due.';
+            stats: 'Schedules';
+            'failing-note': 'Their last run failed';
+            'overdue-note': 'Due, but not started';
+            'on-time': '{{n, number}} on time';
+            runs: 'Runs in range';
+            'runs-note': '{{failed, number}} failed · {{late, number}} late';
+            goals: 'Goals';
+            goal: {
+                stalled: 'Goals stalled';
+                active: 'Goals active';
+                done: 'Goals done';
+                cancelled: 'Goals canceled';
+            };
+            'stalled-note': 'Schedule failing or paused, or no change in 14 days';
+            state: {
+                failing: 'Failing';
+                paused: 'Paused';
+                overdue: 'Overdue';
+                ok: 'On time';
+                stopped: 'Stopped';
+            };
+            'need-look': 'Need a look';
+            'need-look-label': 'Schedules that need a look';
+            'all-on-time': 'Every schedule is on time.';
+            untitled: 'Untitled schedule';
+            'was-due': 'Was due {{when}}';
+            changed: 'Changed {{when}}';
+            'late-runs': 'Late or failed runs';
+            'late-runs-label': 'Late or failed scheduled runs';
+            'late-runs-empty': 'No late or failed runs in this range.';
+            removed: 'A removed schedule';
+            interrupted: 'Interrupted';
+            late: 'Late';
+            'late-by': '{{time}} late';
+        };
+        'long-runs': {
+            title: 'Jobs and long runs';
+            description: 'Jobs that run until done, worked through in batches. Dead items are ones set aside after their last try.';
+            stats: 'Jobs';
+            open: 'Long runs open';
+            waiting: '{{n, number}} waiting';
+            dead: 'Dead items';
+            'dead-note': 'In open long runs';
+            finished: 'Finished in range';
+            'finished-note': '{{failed, number}} failed · {{canceled, number}} canceled';
+            'job-runs': 'Job runs in range';
+            'job-failed': '{{n, number}} failed';
+            list: 'Long runs';
+            empty: 'No long runs open or changed in this range.';
+            status: {
+                running: 'Running';
+                waiting: 'Waiting';
+                done: 'Done';
+                failed: 'Failed';
+                cancelled: 'Canceled';
+            };
+            items: '{{done, number}} done · {{pending, number}} to go';
+            'dead-items': '{{n, number}} dead';
+            batches_one: '{{count, number}} batch';
+            batches_other: '{{count, number}} batches';
+            retries_one: '{{count, number}} retry';
+            retries_other: '{{count, number}} retries';
+            changed: 'changed {{when}}';
+            'waiting-for': 'Waiting: {{reason}}';
+        };
+        coverage: {
+            title: 'Collection coverage';
+            description: 'How much of this range records each signal. Where coverage is short, the numbers above count only what was recorded.';
+            share: '{{share}} · {{covered, number}} of {{total, number}}';
+            trace: 'Turns with a trace';
+            'trace-gap': 'Older turns kept no timings or tokens.';
+            firstOutput: 'Model rounds timed to first output';
+            'firstOutput-gap': 'Some models and older rounds weren’t timed.';
+            reasoningKind: 'Traced turns that say their reasoning kind';
+            'reasoningKind-gap': 'Older turns show as Unknown.';
+            reasoningTokens: 'Traced turns with reasoning tokens reported';
+            'reasoningTokens-gap': 'Some models count reasoning in their output tokens.';
+            receivedAt: 'Turns with a queue time';
+            'receivedAt-gap': 'Older turns didn’t record when their message came in.';
+            trigger: 'Turns that say who started them';
+            'trigger-gap': 'Older turns are credited to the chat’s owner.';
+            dueAt: 'Scheduled runs with a due time';
+            'dueAt-gap': 'Older runs didn’t record when they came due, so lateness skips them.';
+        };
+    };
+    'operations.knowledge': {
+        totals: 'Knowledge totals';
+        none: 'No numbers yet.';
+        ms: '{{n, number(maximumFractionDigits: 1)}} ms';
+        tiles: {
+            pages: 'Pages';
+            'pages-note': '{{n, number}} new';
+            chars: 'Average length';
+            'chars-note': 'characters a page';
+            edits: 'Edits';
+            'edits-note': 'by {{n, number}}';
+            stale: 'Stale pages';
+            'stale-note': 'untouched {{days, number}} days';
+            searches: 'Searches';
+            'searches-note': '{{n, number}} found nothing';
+            'search-p95': 'Search time (95%)';
+            'search-p95-note': 'half under {{time}}';
+            access: 'Dataset access';
+            'access-note_one': '{{count, number}} dataset';
+            'access-note_other': '{{count, number}} datasets';
+            denied: 'Access denied';
+            'denied-note_one': '{{count, number}} error';
+            'denied-note_other': '{{count, number}} errors';
+        };
+        spaces: {
+            title: 'Spaces';
+            description: 'Pages now, and what was created and edited in the range. Pick a Space to see only its pages.';
+            'show-all': 'Show every Space';
+            space: 'Space';
+            pages: 'Pages';
+            length: 'Avg length';
+            edits: 'Edits';
+            stale: 'Stale';
+        };
+        pages: {
+            title: 'Pages';
+            description: 'Least recently edited or used first: the top of the list is what goes stale. Titles only.';
+            empty: 'No pages.';
+            stale: 'Stale';
+            chars_one: '{{count, number}} character';
+            chars_other: '{{count, number}} characters';
+            edits_one: '{{count, number}} edit';
+            edits_other: '{{count, number}} edits';
+            active: 'active {{when}}';
+        };
+        search: {
+            title: 'Page search';
+            description: 'Searches a day across the workspace (days in UTC); no query text is kept.';
+            chart: 'Searches a day';
+            x: 'day';
+            y: 'searches';
+            empty: 'No searches in this range.';
+        };
+        access: {
+            title: 'Dataset access';
+            description: 'What people, socios and apps did with datasets in the range, and how it went.';
+            actor: '{{actor}}: {{n, number}}';
+            actors: {
+                user: 'People';
+                dot: 'Socios';
+                token: 'Apps and computers';
+                system: 'The app';
+            };
+            chats_one: 'In {{count, number}} chat';
+            chats_other: 'In {{count, number}} chats';
+            action: 'Action';
+            outcome: 'Outcome';
+            times: 'Times';
+            empty: 'No dataset access in this range.';
+        };
+        datasets: {
+            title: 'Datasets';
+            description: 'Largest first, row history included, with their access in the range.';
+            empty: 'No datasets.';
+            scratch: 'Scratch';
+            history: '{{size}} + {{history}} history';
+            tables_one: '{{count, number}} table';
+            tables_other: '{{count, number}} tables';
+            uses_one: '{{count, number}} use';
+            uses_other: '{{count, number}} uses';
+            denied: '{{uses}}, {{n, number}} denied';
+            last: 'last {{when}}';
+        };
+    };
+    'operations.knowledge-storage': {
+        shared: {
+            title: 'Socios’ shared areas';
+            description: 'Storage shared by everyone who uses each company socio.';
+            deleted: 'Deleted socio';
+            empty: 'No shared data yet.';
+            manage: 'Manage shared data';
+        };
+        storage: {
+            title: 'Storage';
+            description: 'What is kept now, deleted items included (they are kept too), and over the range.';
+            'chart-picker': 'Chart';
+            kinds: {
+                datasets: 'Datasets';
+                history: 'Dataset row history';
+                files: 'Files';
+                attachments: 'Chat attachments';
+                apps: 'App versions';
+            };
+            'kind-note': '{{items, number}} · {{deleted}} deleted';
+            database: 'Database';
+            'chat-history': '{{size}} chat history';
+            chart: '{{kind}} over the range';
+            bucket_hour: 'hour';
+            bucket_day: 'day';
+            bucket_week: 'week';
+            bucket_month: 'month';
+            mb: 'MB';
+            empty: 'Nothing to chart in this range.';
+            unit_hour: 'In MB, at the end of each hour.';
+            unit_day: 'In MB, at the end of each day.';
+            unit_week: 'In MB, at the end of each week.';
+            unit_month: 'In MB, at the end of each month.';
+        };
+        quotas: {
+            title: 'Data space limits';
+            description: 'The limits in force (Settings → General), the fullest use of each, and how many people are near one (80%) or at it.';
+            limit: 'Limit';
+            'in-force': 'In force';
+            fullest: 'Fullest';
+            near: 'Near';
+            at: 'At it';
+            labels: {
+                file: 'Largest file';
+                dataset: 'Largest dataset';
+                person: 'Data per person';
+                datasets: 'Datasets per person';
+            };
+            mb: '{{n, number}} MB';
+            datasets_one: '{{count, number}} dataset';
+            datasets_other: '{{count, number}} datasets';
+        };
+    };
+    'operations.labeling': {
+        saved: 'Settings saved';
+        save: 'Save';
+        'save-failed': 'Could not save.';
+        'load-failed': 'Could not load these settings.';
+        unsure: 'Unsure';
+        card: {
+            threshold: 'Threshold, percent';
+            'per-day': 'Most calls a day';
+            limits: 'The threshold is how sure the model must be for a label to count, and how often it must be right, when that sure, in an evaluation. From {{min, number}} to {{max, number}}. The server’s are {{defaults}}; 0 calls asks about none.';
+            defaults: '…';
+            defaults_known_one: '{{threshold, number(style: percent; maximumFractionDigits: 0)}} and {{count, number}} call';
+            defaults_known_other: '{{threshold, number(style: percent; maximumFractionDigits: 0)}} and {{count, number}} calls';
+            reset: 'Use the server’s';
+            status: 'Model and evaluation';
+            model: 'Model';
+            'no-model': 'None: set up a default shared model first.';
+            'its-labels': 'Its labels';
+            passed: 'Count: this version passed an evaluation.';
+            'not-passed': 'Suggestions only, until this version passes an evaluation.';
+            golden: 'Golden set';
+            'golden-count_one': '{{count, number}} admin label';
+            'golden-count_other': '{{count, number}} admin labels';
+            'golden-needs': '{{golden}} (an evaluation needs {{min, number}})';
+            day: 'Last 24 hours';
+            calls: '{{calls, number}} of {{perDay, number}} calls, {{evaluating, number}} evaluating · {{tokens, number}} tokens · {{cost}}';
+            'cost-unknown': 'cost not reported';
+            'no-cost_one': '{{text}} ({{count, number}} call without a cost)';
+            'no-cost_other': '{{text}} ({{count, number}} calls without a cost)';
+            evaluate: 'Evaluate';
+            evaluating: 'Evaluating…';
+            'evaluate-help': 'Asks the model about every golden label: one call each.';
+        };
+        eval: {
+            running: 'Running…';
+            failed: 'Failed: {{error}}';
+            unknown: 'unknown';
+            passed: 'Passed';
+            'few-answered': 'Did not pass: it was sure of {{answered, number}}, fewer than {{min, number}}';
+            imprecise: 'Did not pass: {{precision}} right, under {{threshold}}';
+            summary: '<strong>Last evaluation</strong>, {{when}}, of {{version}}: {{verdict}}. {{golden, number}} labels, {{answered, number}} answered, {{precision}} of those right, {{accuracy}} right overall.';
+            'per-label': 'Per label';
+            label: 'Label';
+            'admin-labels': 'Admin labels';
+            'model-said': 'Model said';
+            precision: 'Precision';
+            recall: 'Recall';
+        };
+        failures: {
+            title: 'Failure labels';
+            intro: 'The rules in Reliability can’t sort every failure: a generic error code stays {{unclassified}}. With this on, the workspace’s model reads the failure’s error text, scrubbed of contact details and secrets and cut to 300 characters, and suggests a category. Suggestions count only when the model is sure enough and has passed an evaluation against admins’ labels.';
+            switch: 'Suggest labels for Unclassified failures';
+            'switch-help': 'Off by default. Each failure is asked about once; a failed or invalid answer is not retried. Labels you set in Reliability always count.';
+            categories: {
+                stopped: 'Stopped';
+                permissions: 'Permissions and approvals';
+                quotas: 'Quotas and limits';
+                not_available: 'Not available or not set up';
+                model_provider: 'Model provider';
+                external_service: 'Other external services';
+                invalid_input: 'Invalid input';
+                runtime_error: 'Runtime error';
+                unclassified: 'Unclassified';
+            };
+        };
+        intent: {
+            title: 'Session intent';
+            intro: 'What people come to socios for: the workspace’s model reads a chat’s title and the first three messages a person wrote in a session, scrubbed of contact details and secrets and cut to 300 characters each, and picks one intent from the list below. Value and Themes show how sessions of each intent end. Its labels count only when it is sure enough and has passed an evaluation against intents admins set in Themes.';
+            switch: 'Label each session’s intent';
+            'switch-help': 'Off by default. Each session is asked about once, after its first three messages or when it ends.';
+            list: {
+                title: 'Intents';
+                description: '{{min, number}} to {{max, number}} intents. Changing the list starts a new golden set: the model must pass an evaluation on it again before its labels count. Labels already given keep their value.';
+                value: 'Value';
+                meaning: 'Meaning';
+                'bad-value': 'A short lowercase word: letters, digits or dashes.';
+                duplicate: 'Each value once.';
+                'no-meaning': 'Say what it means.';
+                remove: 'Remove';
+                'remove-label': 'Remove {{value}}';
+                'remove-label_unnamed': 'Remove this intent';
+                add: 'Add an intent';
+                save: 'Save intents';
+                saved: 'Intents saved';
+                reset: 'Use the default list';
+            };
+        };
+        themes: {
+            title: 'Session themes';
+            intro: 'What sessions are about: the workspace’s model reads the same scrubbed title and first messages and names one to three topics in a few words, never people, and whether the person seems to have got what they came for. Operations → Themes groups the topics into themes by week. A theme is named only when at least {{min, number}} different people had sessions on it. Its topics count only once it has passed an evaluation against topics admins set in Themes.';
+            switch: 'Find each session’s themes';
+            'switch-help': 'Off by default. Each session is asked about once, after its first three messages or when it ends.';
+            outcomes: {
+                resolved: 'Seems resolved';
+                unresolved: 'Seems unresolved';
+                unclear: 'Unclear';
+            };
+        };
+        learning: {
+            title: 'Learning triage';
+            intro: 'Which finished conversations Learning analyzes: the workspace’s model reads each new conversation’s title and what people asked in it, never the replies, scrubbed of contact details and secrets and cut to {{chars, number}} characters, and says whether it shows a procedure the team would repeat. Conversations it is sure are one-off stay out of the analysis, so fewer transcripts leave the store. It also checks each proposal for a repeat of a rejected or published skill and for private details, after Learning’s own checks, and starts an analysis when one intent (from Session intent) recurs in five sessions of Learning’s new conversations. Its answers count only once it has passed an evaluation against labels admins set in Learning; a sure “private” drops a proposal even before that.';
+            switch: 'Triage Learning’s conversations';
+            'switch-help': 'Off by default: Learning then works as before. Each conversation is asked about once each time it finishes; each proposal costs one or two calls.';
+            labels: {
+                repeatable: 'Shows a repeatable procedure';
+                'one-off': 'One-off';
+            };
+        };
+    };
+    'operations.overview': {
+        tiles: {
+            turns: 'Turns';
+            failed: 'Failed turns';
+            people: 'Active people';
+            messages: 'Messages from people';
+            chats: 'Chats with activity';
+            tokens: 'Tokens';
+        };
+        metrics: {
+            turns: 'Turns';
+            messages: 'Messages from people';
+            people: 'Active people';
+            failed: 'Failed turns';
+            tokens: 'Tokens';
+        };
+        axis: {
+            turns: 'turns';
+            messages: 'messages from people';
+            people: 'active people';
+            failed: 'failed turns';
+            tokens: 'tokens';
+        };
+        chart: 'Chart';
+        'no-chart': 'Nothing to chart in this range.';
+        turns: {
+            title: 'Turns';
+            description: 'Newest first, without their content. Pick a socio to see only its turns, or open a turn’s chat to read it: that is written to the access log.';
+            empty: 'No turns in this range.';
+            tokens_one: '{{count, number}} token';
+            tokens_other: '{{count, number}} tokens';
+            open: 'Open chat';
+            'open-label': 'Open the chat of {{socio}}’s turn at {{when}}';
+        };
+        status: {
+            running: 'Running';
+            finished: 'Finished';
+            stopped: 'Stopped';
+            failed: 'Failed';
+            interrupted: 'Interrupted';
+        };
+    };
+    'operations.reliability': {
+        category: {
+            stopped: 'Stopped';
+            permissions: 'Permissions and approvals';
+            quotas: 'Quotas and limits';
+            not_available: 'Not available or not set up';
+            model_provider: 'Model provider';
+            external_service: 'Other external services';
+            invalid_input: 'Invalid input';
+            runtime_error: 'Runtime error';
+            unclassified: 'Unclassified';
+        };
+        hint: {
+            stopped: 'A person or an operator stopped it. Not a failure.';
+            permissions: 'A permission, an approval or a site’s rules said no, or an approval expired.';
+            quotas: 'A rate limit, a plan’s usage limit, or the turn’s round, time or output limit.';
+            not_available: 'Something isn’t connected or set up: no model, a sign-in that ended, a computer that isn’t configured.';
+            model_provider: 'The model was unreachable, busy, refused the request or filtered its answer.';
+            external_service: 'A website or another outside service failed or timed out.';
+            invalid_input: 'The model sent arguments a tool couldn’t read, or asked for something that doesn’t exist.';
+            runtime_error: 'Our own code failed, timed out, or the server stopped mid-turn.';
+            unclassified: 'The rules can’t tell from the code alone (a generic error code).';
+        };
+        span: {
+            minutes: '{{n, number}} min';
+            hours: '{{n, number}} h';
+            days_one: '{{count, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}} day';
+            days_other: '{{count, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}} days';
+        };
+        'versus-before': '{{change}} vs the period before';
+        tiles: {
+            'failure-rate': 'Failure rate';
+            'of-turns_one': '{{failures}} of {{turns}} turn';
+            'of-turns_other': '{{failures}} of {{turns}} turns';
+            points: '{{change}} pts';
+            failures: 'Failed turns';
+            interrupted: 'Interrupted';
+            'interrupted-note': 'The server stopped mid-turn';
+            stopped: 'Stopped';
+            'stopped-note': 'By a person or an operator: not failures';
+            'tool-failures': 'Failed tool calls';
+            'of-calls_one': 'of {{count, number}} call';
+            'of-calls_other': 'of {{count, number}} calls';
+            retries: 'Retries and fallbacks';
+            'retries-note_one': 'in {{count, number}} turn · {{fallbacks}} moved to the shared model';
+            'retries-note_other': 'in {{count, number}} turns · {{fallbacks}} moved to the shared model';
+        };
+        chart: {
+            'category-share': '{{category}}: share of turns';
+            description: 'Percent of the turns that started in each bucket.';
+            description_hour: 'Percent of the turns that started in each hour.';
+            description_day: 'Percent of the turns that started in each day.';
+            description_week: 'Percent of the turns that started in each week.';
+            description_month: 'Percent of the turns that started in each month.';
+            category: 'Category';
+            every: 'Every failure';
+            y: 'percent of turns';
+            empty: 'No turns in this range.';
+        };
+        categories: {
+            title: 'Failures by category';
+            description: 'Sorted by rules over the codes each turn and tool call recorded. What they can’t tell apart stays Unclassified, until an admin or, once it passes an evaluation, the model labels it: open a recent failure to label it.';
+            empty: 'No data yet.';
+            turns_one: '{{count, number}} turn';
+            turns_other: '{{count, number}} turns';
+            'tool-calls_one': '{{count, number}} tool call';
+            'tool-calls_other': '{{count, number}} tool calls';
+            interrupted: '{{count, number}} interrupted';
+        };
+        show: 'Show';
+        'no-code': 'No code';
+        breakdown: {
+            title: 'Where failures happen';
+            description: 'Failed turns, with how long finished turns took.';
+            description_tool: 'Tools that fail most, with how long their calls take.';
+            description_code: 'The codes failed turns ended with.';
+            'group-by': 'Group by';
+            by: {
+                tool: 'Tools';
+                code: 'Error codes';
+                socio: 'Socios';
+                model: 'Models';
+                source: 'Sources';
+            };
+            empty: 'Nothing in this range.';
+            'not-recorded': 'Not recorded';
+            turns_one: '{{count, number}} turn';
+            turns_other: '{{count, number}} turns';
+            failed: '{{failed, number}} of {{total, number}} failed ({{share, number(style: percent; maximumFractionDigits: 1)}})';
+            latency: 'p50 {{p50}} · p95 {{p95}}';
+        };
+        friction: {
+            title: 'Recurring friction';
+            description: 'The same failure for 3 or more people, or 5 or more times for one person, in the last 7 days of the range.';
+            empty: 'Nothing keeps failing for people since {{when}}.';
+            people_one: '{{count, number}} person';
+            people_other: '{{count, number}} people';
+            times_one: '{{count, number}} time (most for one: {{most, number}})';
+            times_other: '{{count, number}} times (most for one: {{most, number}})';
+            last: 'last {{when}}';
+        };
+        failures: {
+            title: 'Recent failures';
+            description: 'Turns that failed, or whose tool calls did, newest first. Open one to see its trace: names, times and codes, never its content.';
+            clear: 'Show every failure, not only {{name}}';
+            empty: 'No failures in this range.';
+            'failed-tools_one': '{{count, number}} failed tool';
+            'failed-tools_other': '{{count, number}} failed tools';
+            status: {
+                running: 'Running';
+                finished: 'Finished';
+                stopped: 'Stopped';
+                failed: 'Failed';
+                interrupted: 'Interrupted';
+            };
+        };
+        label: {
+            by: 'Labeled by the model';
+            by_admin: 'Labeled by an admin';
+        };
+    };
+    'operations.reliability-board': {
+        title: 'The board';
+        description: 'Items filed on the Improvements board, how fast they close, and how soon a failed turn is reported with File issue in Runs. Only the person filter applies: who reported them.';
+        chart: 'Board chart';
+        reported: 'Reported';
+        resolved: 'Resolved';
+        series: {
+            reported: 'Items reported';
+            resolved: 'Items resolved';
+        };
+        axis: {
+            reported: 'items reported';
+            resolved: 'items resolved';
+        };
+        bugs_one: '{{count, number}} bug';
+        bugs_other: '{{count, number}} bugs';
+        'resolve-time': 'Time to resolve';
+        median: 'Median';
+        within: '90% within {{span}}';
+        open: 'Open';
+        'open-note': 'At the end of the range';
+        'report-time': 'Time to report';
+        filed: 'Failed turns filed from Runs';
+        'filed-count_one': '{{count, number}} failed turn filed from Runs';
+        'filed-count_other': '{{count, number}} failed turns filed from Runs';
+        empty: 'No items on the board yet.';
+    };
+    'operations.resources': {
+        hourly: {
+            title: 'Hourly history';
+            caption: 'Most recent 24 hourly averages';
+            hour: 'Hour';
+            cpu: 'CPU';
+            memory: 'Memory';
+        };
+        'memory-limit': 'Memory / limit';
+        'of-limit': '{{share}}% of limit';
+        host: {
+            title: 'Server resources (host-wide)';
+            description: 'Workspace server measurements, independent of the person and source filters. Load and system memory are the whole host’s as the app sees it, other tenants included; this deployment’s own use is under Deployment services. Collected every {{seconds}} seconds; storage totals are collected daily. No history is inferred before collection starts.';
+            'last-sample': 'Last sample: {{when}}';
+            'no-samples': 'No samples collected yet.';
+            metric: {
+                rssBytes: 'Process memory';
+                cpuPercent: 'Process CPU';
+                load1: 'System load (1 minute)';
+                load5: 'System load (5 minutes)';
+                load15: 'System load (15 minutes)';
+                freeMemoryBytes: 'Free system memory';
+                totalMemoryBytes: 'System memory';
+                volumeBytes: 'Data volume capacity';
+                volumeFreeBytes: 'Data volume free space';
+                databasePages: 'Database pages';
+                databaseFreePages: 'Database free pages';
+                walBytes: 'Database WAL';
+                userdataBytes: 'Local userdata size (daily)';
+                datasetBytes: 'Dataset bytes (daily)';
+                fileBytes: 'Stored file bytes (daily)';
+                mediaBytes: 'Media bytes (daily)';
+            };
+            gaps: 'Collection gaps';
+            'gap-missing': '{{metric}}: no history';
+            'gap-stale': '{{metric}}: last collected {{when}}';
+            'no-gaps': 'Every resource metric has recent history.';
+            samples: 'Samples';
+            'volume-free': 'Volume free';
+        };
+        deployment: {
+            title: 'Deployment services';
+            description: 'Every running container of this deployment: its stacks, plugin services and socios’ computers, read through the read-only disk usage proxy with each resource sample. These are this deployment’s own numbers, apart from the host-wide ones below, which include other tenants on a shared host. CPU is a percent of one CPU. Restarts count the replaced tasks the orchestrator still keeps (updates included).';
+            'last-sample': 'Last sample: <time/>';
+            state: {
+                off: 'Deployment metrics are unavailable: they need the read-only disk usage proxy (COMPUTER_DISK_USAGE_URL).';
+                pending: 'Deployment metrics are not measured yet. They are read with each resource sample.';
+                unavailable: 'Deployment metrics are unavailable: the last read through the disk usage proxy failed or is out of date.';
+            };
+            'last-tried': 'Last tried <time/>.';
+            'shown-below': 'The last numbers collected are shown below.';
+            total: {
+                memoryBytes: 'Deployment memory in use';
+                cpuPercent: 'Deployment CPU';
+                services: 'Services';
+                unlimitedServices: 'Services without a memory limit';
+                restarts: 'Restarts';
+            };
+            'of-limits': '{{used}} of {{limit}} limits';
+            'limits-meter': 'Memory in use by limited services, of their limits';
+            'no-limits': 'No service has a memory limit.';
+            'limits-share': '{{share}}% of the sum of limits, by the services that have one.';
+            'of-one-cpu': '{{cpu}} of one CPU';
+            'cpu-meter': "Deployment CPU, of the node's CPUs";
+            'node-cpus-unknown': 'The node’s CPUs are unknown.';
+            'node-cpus_one': '{{share}}% of the node’s {{count, number}} CPU. CPU limits aren’t readable here.';
+            'node-cpus_other': '{{share}}% of the node’s {{count, number}} CPUs. CPU limits aren’t readable here.';
+            'against-node': 'Against the node';
+            'of-node': '{{used}} of {{total}}';
+            'node-meter': "Deployment memory, of the node's memory";
+            'node-shared': 'The node’s memory, shared with other tenants.';
+            computers: 'Socios’ computers';
+            kind: {
+                stack: 'Stack service';
+                plugin: 'Plugin service';
+                computer: 'Socio computers';
+            };
+            containers_one: '{{count, number}} container';
+            containers_other: '{{count, number}} containers';
+            'no-limit-badge': 'No limit: can starve its neighbors';
+            'no-limit': 'no limit';
+            'service-meter': '{{service}} memory, of its limit';
+            service: 'Service';
+            restarts: 'Restarts';
+            node: 'Node';
+            'sum-of-limits': 'Sum of limits';
+        };
+        computers: {
+            title: 'Socio computers';
+            description: 'Current resource readings and hourly history for computers with permissions or retained history. Disk includes workspace, private homes and browser profile volumes. App OOM counts cover retained attempts in the selected period. Socio and Space filters apply; shared computers are independent of the person and source filters.';
+            'disk-missing': {
+                off: 'Not set up';
+                pending: 'Not measured yet';
+                unavailable: 'Unavailable';
+            };
+            'disk-off': 'Disk usage is not set up: it needs the read-only disk usage proxy (COMPUTER_DISK_USAGE_URL).';
+            'disk-unavailable_one': 'Disk usage is unavailable: the last measurement through Docker failed. It is tried again every {{count, number}} minute.';
+            'disk-unavailable_other': 'Disk usage is unavailable: the last measurement through Docker failed. It is tried again every {{count, number}} minutes.';
+            'disk-measured_one': 'Disk usage is measured through Docker every {{count, number}} minute.';
+            'disk-measured_other': 'Disk usage is measured through Docker every {{count, number}} minutes.';
+            'last-measured': 'Last measured <time/>.';
+            running: 'Running';
+            stopped: 'Stopped';
+            'status-unavailable': 'Status unavailable';
+            sampled: 'Sampled <time/>';
+            'no-samples': 'No samples yet';
+            missing: 'Missing or stale: {{metrics}}';
+            metric: {
+                cpuPercent: 'CPU';
+                memoryBytes: 'Memory working set';
+                memoryLimitBytes: 'Memory limit';
+                volumeBytes: 'Owned computer volumes';
+                containerBytes: 'Computer container layer';
+            };
+            disk: 'Disk';
+            unlimited: 'Unlimited';
+            'container-layer': '{{size}} container layer';
+            'last-oom': 'Last <time/>';
+            socio: 'Socio';
+            'volume-disk': 'Volume disk';
+            'app-ooms': 'App OOMs';
+            more: 'Showing the first 100 computers. Narrow the socio or Space filter for more.';
+            empty: 'No computers with permissions or retained resource history in this view.';
+        };
+    };
+    'operations.room-audit': {
+        empty: 'Nothing yet.';
+        refused: 'Refused';
+        events: {
+            create: '<actor>{{actor}}</actor> made the room';
+            convert: '<actor>{{actor}}</actor> made their chat a room';
+            rename: '<actor>{{actor}}</actor> renamed the room';
+            invite: '<actor>{{actor}}</actor> invited';
+            'invite-target': '<actor>{{actor}}</actor> invited {{target}}';
+            accept: '<actor>{{actor}}</actor> joined';
+            decline: '<actor>{{actor}}</actor> declined the invite';
+            expire: '<actor>{{actor}}</actor> let the invite run out';
+            leave: '<actor>{{actor}}</actor> left';
+            remove: '<actor>{{actor}}</actor> removed';
+            'remove-target': '<actor>{{actor}}</actor> removed {{target}}';
+            role: '<actor>{{actor}}</actor> changed the role of';
+            'role-target': '<actor>{{actor}}</actor> changed the role of {{target}}';
+            archive: '<actor>{{actor}}</actor> archived the room';
+            unarchive: '<actor>{{actor}}</actor> brought the room back';
+            'socio-request': '<actor>{{actor}}</actor> asked for socio';
+            'socio-request-target': '<actor>{{actor}}</actor> asked for socio {{target}}';
+            'socio-authorize': '<actor>{{actor}}</actor> let in socio';
+            'socio-authorize-target': '<actor>{{actor}}</actor> let in socio {{target}}';
+            'socio-withdraw': '<actor>{{actor}}</actor> took out socio';
+            'socio-withdraw-target': '<actor>{{actor}}</actor> took out socio {{target}}';
+            lead: '<actor>{{actor}}</actor> made the lead';
+            'lead-target': '<actor>{{actor}}</actor> made the lead {{target}}';
+            'bind-source': '<actor>{{actor}}</actor> bound';
+            'bind-source-target': '<actor>{{actor}}</actor> bound {{target}}';
+            'unbind-source': '<actor>{{actor}}</actor> unbound';
+            'unbind-source-target': '<actor>{{actor}}</actor> unbound {{target}}';
+            limits: '<actor>{{actor}}</actor> changed the limits';
+            denied: '<actor>{{actor}}</actor> was refused';
+            'queue-cancel': '<actor>{{actor}}</actor> canceled a queued message of';
+            'queue-cancel-target': '<actor>{{actor}}</actor> canceled a queued message of {{target}}';
+            pin: '<actor>{{actor}}</actor> changed the pinned facts';
+            other: '<actor>{{actor}}</actor> {{action}}';
+        };
+    };
+    'operations.settings': {
+        saved: 'Settings saved';
+        'save-failed': 'Could not save.';
+        save: 'Save';
+        'time-zone': {
+            title: 'Reporting time zone';
+            description: 'Where a day starts in Operations: every tile, chart and range cuts its days, weeks and months in this time zone, for every admin. The server’s is {{zone}}.';
+            label: 'Time zone';
+            invalid: 'Not a time zone name. Pick one from the list, like Europe/Madrid.';
+            reset: 'Use the server’s ({{zone}})';
+        };
+        'session-gap': {
+            title: 'Sessions';
+            description_one: 'Activity and Value count a chat’s messages as one session until nobody writes for this long. A change applies to every range at once. The server’s is {{count, number}} minute.';
+            description_other: 'Activity and Value count a chat’s messages as one session until nobody writes for this long. A change applies to every range at once. The server’s is {{count, number}} minutes.';
+            label: 'Gap in minutes';
+            invalid: 'A whole number from {{min, number}} to {{max, number}}.';
+            reset_one: 'Use the server’s ({{count, number}} minute)';
+            reset_other: 'Use the server’s ({{count, number}} minutes)';
+        };
+        retention: {
+            title: 'Collection and retention';
+            description: 'Retention is in days. Zero disables pruning for that setting. Analytics rollups also depend on retained analytics facts; source agent runs are always kept. Changes are recorded in the workspace audit.';
+            'load-failed': 'Could not load retention settings.';
+            fields: {
+                pageUseDays: 'Page use days';
+                pageSearchDays: 'Daily search statistics';
+                notificationDays: 'Notification records';
+                deliveryDays: 'Notification deliveries';
+                noticeDays: 'In-app notices';
+                sampleDays: 'Resource samples and hourly rollups';
+                factDays: 'Derived analytics facts';
+                hourlyDays: 'Hourly analytics rollups (within retained facts)';
+                sampleEverySeconds: 'Sampling interval (seconds)';
+            };
+            default: 'Server default: …';
+            'default-days_one': 'Server default: {{count, number}} day';
+            'default-days_other': 'Server default: {{count, number}} days';
+            'default-seconds_one': 'Server default: {{count, number}} second';
+            'default-seconds_other': 'Server default: {{count, number}} seconds';
+            save: 'Save retention';
+            reset: 'Use server defaults';
+        };
+        'price-sync': {
+            title: 'Price sync';
+            description: 'Once a day, Socio downloads the public price lists of model providers (OpenRouter, DeepInfra, Azure, AWS) and community lists (models.dev, LiteLLM) and keeps the prices of the models in use, so Cost can price turns. The requests carry a generic user agent and nothing about this workspace, its people or this server. Turn it off for an offline install: then no list is read, and turns are priced by the prices kept and admins’ own. The server’s is {{state}}.';
+            state: '…';
+            state_on: 'on';
+            state_off: 'off';
+            switch: 'Sync prices daily';
+            reset: 'Use the server’s ({{state}})';
+        };
+    };
+    'operations.socio-access': {
+        intro: 'Each grant lets one socio use one app for one person, from one conversation, until it ends. Ending one stops it at once.';
+        list: 'Live socio access';
+        empty: 'No live socio access.';
+        ended: 'Access ended';
+        'load-failed': 'Could not load socio access.';
+        'end-failed': 'Could not end the access.';
+    };
+    'operations.themes': {
+        notes: {
+            off_intent: 'Intent labels are off, so new sessions get none. Turn them on in <link>Settings</link>';
+            off_themes: 'Theme labels are off, so new sessions get none. Turn them on in <link>Settings</link>';
+            unevaluated_intent: 'Intent labels are on, but the model’s answers are suggestions until its version passes an evaluation: review sessions below, then evaluate it in <link>Settings</link>';
+            unevaluated_themes: 'Theme labels are on, but the model’s answers are suggestions until its version passes an evaluation: review sessions below, then evaluate it in <link>Settings</link>';
+        };
+        totals: {
+            sessions: 'People’s sessions';
+            'with-intent': 'With an intent';
+            'with-themes': 'With themes';
+        };
+        intents: {
+            title: 'Intents';
+            description: 'What people came for, by session, and how those sessions ended. A session takes the intent of the first labeled turn in it.';
+            empty: 'No sessions in this range.';
+        };
+        themes: {
+            title: 'Themes';
+            description_one: 'Topics the model named for people’s sessions, grouped when they use the same words. A theme is named only when at least {{count, number}} person had sessions on it in this range; smaller ones are counted together. The hint is the model’s read of the first messages; the outcome is what happened.';
+            description_other: 'Topics the model named for people’s sessions, grouped when they use the same words. A theme is named only when at least {{count, number}} different people had sessions on it in this range; smaller ones are counted together. The hint is the model’s read of the first messages; the outcome is what happened.';
+            chart: 'Chart';
+            'chart-all': 'Sessions with themes by week';
+            'chart-topic': '“{{topic}}” by week';
+            'series-topic': '{{topic}} by week';
+            axis: 'sessions';
+            every: 'Every theme';
+            empty: 'No sessions with themes in this range.';
+            'no-answer': 'Analytics has no answer yet.';
+        };
+        hidden: {
+            themes_one: '{{count, number}} smaller theme not named: fewer than {{min, number}} people each.';
+            themes_other: '{{count, number}} smaller themes not named: fewer than {{min, number}} people each.';
+            more_one: '{{count, number}} more theme past the first {{shown, number}}.';
+            more_other: '{{count, number}} more themes past the first {{shown, number}}.';
+            sessions_one: '{{count, number}} session is on none of the themes shown.';
+            sessions_other: '{{count, number}} sessions are on none of the themes shown.';
+        };
+        table: {
+            theme: 'Theme';
+            mostly: 'Mostly';
+            hint: 'Hint';
+            unresolved: '{{share}} seems unresolved';
+        };
+        outcome: {
+            resolved: 'Seems resolved';
+            unresolved: 'Seems unresolved';
+            unclear: 'Unclear';
+        };
+        'outcome-inline': {
+            resolved: 'seems resolved';
+            unresolved: 'seems unresolved';
+            unclear: 'unclear';
+        };
+        sure: '{{confidence, number(style: percent; maximumFractionDigits: 0)}} sure';
+        review: {
+            title: 'Review';
+            description: 'Sessions the model labeled. Open one to read its title and first messages, scrubbed as the model got them, and set its intent or topics: yours count at once and form the golden set the model is evaluated against. Opening one, and this list, is recorded in the access log.';
+            labels: 'Labels';
+            intent: 'Intent';
+            themes: 'Themes';
+            which: 'Which sessions';
+            unreviewed: 'Not reviewed yet';
+            all: 'Every labeled session';
+            list: 'Sessions to review';
+            'empty-unreviewed': 'Nothing waits for review. Sessions appear here once the model has labeled them.';
+            empty: 'No session has a label yet.';
+            'no-topics': 'No topics';
+            reviewed: 'Reviewed';
+        };
+        label: {
+            title: 'Session labels';
+            'load-failed': 'Could not load its labels.';
+            saved: 'Saved. Themes counts it within a minute.';
+            'save-failed': 'Could not save.';
+            'by-model': 'the model, {{when}}';
+            'by-admin': '{{name}}, {{when}}';
+            'by-unknown': 'an admin, {{when}}';
+            input: 'What the model reads, scrubbed of contact details and secrets';
+            untitled: 'Untitled';
+            intent: 'Intent';
+            'model-intent': 'The model says <strong>{{intent}}</strong>, {{confidence, number(style: percent; maximumFractionDigits: 0)}} sure; a suggestion only.';
+            'model-intent_applied': 'The model says <strong>{{intent}}</strong>, {{confidence, number(style: percent; maximumFractionDigits: 0)}} sure; it counts.';
+            'in-force': 'In force: {{value}}, by {{by}}.';
+            'choose-intent': 'Choose an intent';
+            'save-intent': 'Save intent';
+            topics: 'Topics';
+            'model-topics': 'The model says <strong>{{topics}}</strong> ({{outcome}}), {{confidence, number(style: percent; maximumFractionDigits: 0)}} sure; a suggestion only.';
+            'model-topics_applied': 'The model says <strong>{{topics}}</strong> ({{outcome}}), {{confidence, number(style: percent; maximumFractionDigits: 0)}} sure; it counts.';
+            topic: 'Topic {{n, number}}';
+            'main-topic': 'Main topic';
+            'another-topic': 'Another topic (optional)';
+            'outcome-hint': 'Outcome hint';
+            'save-topics': 'Save topics';
+            'topics-hint': 'A few plain words each; never a person’s name.';
+        };
+    };
+    'operations.transcript': {
+        'open-failed': 'Could not open the chat.';
+        failed: 'This chat couldn’t be opened.';
+        about: {
+            loading: 'Loading the chat…';
+            since: 'since {{when}}. Read-only.';
+            since_archived: 'since {{when}} · archived. Read-only.';
+            room: 'A room: {{socios}} with {{people}}, {{since}}';
+            'no-socio': 'No socio now';
+            chat: '{{socio}} with {{owner}}, {{since}}';
+            'removed-socio': 'A removed socio';
+            'gone-owner': 'someone no longer here';
+            names: '{{names, list(type: unit; style: short)}}';
+            admin: '{{name}} (admin)';
+            nobody: 'nobody now';
+            invited_one: '{{people}}; {{count, number}} invited';
+            invited_other: '{{people}}; {{count, number}} invited';
+        };
+        note: 'You’re reading this chat as an admin. Opening it was written to the <link>access log</link>, which every admin can see.';
+        note_room: 'You’re reading this room as an admin. Opening it was written to the <link>access log</link>, which every admin can see.';
+        'load-earlier': 'Load earlier turns';
+        'try-again': 'Try again';
+        empty: 'No finished turns in this chat yet.';
+        loading: 'Loading…';
+        'showing-more_one': 'Showing {{count, number}} turn; earlier ones to load.';
+        'showing-more_other': 'Showing {{count, number}} turns; earlier ones to load.';
+        'showing-all_one': 'Showing {{count, number}} turn, all of them.';
+        'showing-all_other': 'Showing {{count, number}} turns, all of them.';
+        grounding: {
+            title: 'What grounded this chat';
+            subtitle: 'pages and datasets its turns read';
+        };
+        audit: {
+            title: 'Room audit';
+            subtitle: 'who joined, left or was refused';
+        };
+    };
+    'operations.value': {
+        tiles: {
+            completed: 'Completed sessions';
+            answered: 'Answered sessions';
+            abandoned: 'Abandoned sessions';
+            completedShare: 'Share completed';
+            resumption: 'Chats resumed';
+        };
+        outcomes: {
+            title: 'How people’s sessions ended';
+            description: 'Completed: the last turn finished and something came of it within a day (a thumbs up, an approval carried out, a page the socio wrote, a memory kept). Abandoned: nobody came back within a day after a failure, a stop, an expired approval or a thumbs down. Answered: the rest.';
+            legend: '{{outcome}}: {{n, number}} ({{share}})';
+        };
+        chart: {
+            title_completed: 'Completed sessions over time';
+            title_answered: 'Answered sessions over time';
+            title_abandoned: 'Abandoned sessions over time';
+            series_completed: 'Completed sessions';
+            series_answered: 'Answered sessions';
+            series_abandoned: 'Abandoned sessions';
+            axis: 'sessions';
+            label: 'Chart';
+            empty: 'Nothing to chart in this range.';
+        };
+        intents: {
+            title: 'Completion by intent';
+            description: 'How sessions ended by what people came for. Intents come from the session intent labels (Operations → Settings); sessions without one are counted apart. <link>Themes</link> breaks them down by topic.';
+            empty: 'No sessions in this range.';
+        };
+        approvals: {
+            title: 'Approvals';
+            description: 'What socios asked to do, what people allowed, and what was carried out, by capability.';
+            row: '{{asked, number}} asked → {{allowed, number}} allowed, {{denied, number}} denied, {{expired, number}} expired → {{done, number}} done';
+            row_failed: '{{asked, number}} asked → {{allowed, number}} allowed, {{denied, number}} denied, {{expired, number}} expired → {{done, number}} done, {{failed, number}} failed';
+            empty: 'No approvals in this range.';
+        };
+        reactions: {
+            title: 'Reactions';
+            description: 'How many socio answers got a reaction, and which. Few reactions say little either way.';
+            reacted: 'Answers with a reaction';
+            'reacted-value': '{{reacted, number}} of {{total, number}} ({{share}})';
+            up: 'Thumbs up';
+            down: 'Thumbs down';
+            retry: 'Retry';
+            'needs-work': 'Needs work';
+        };
+        lists: {
+            title: 'Usefulness and sessions';
+            description: 'Each socio’s completed share next to how often its people come back, and people’s sessions, newest first.';
+            socios: 'Socios';
+            sessions: 'Sessions';
+            'socios-empty': 'No socio had people’s sessions in this range.';
+        };
+        usefulness: {
+            completed_one: '{{share}} completed of {{count, number}} session';
+            completed_other: '{{share}} completed of {{count, number}} sessions';
+            back: '{{share}} back within 7 days';
+            repeat: '{{share}} came on 2+ days of 28';
+        };
+        sessions: {
+            outcome: 'Outcome';
+            'every-outcome': 'Every outcome';
+            empty: 'No sessions like that in this range.';
+            'a-chat': 'A chat';
+            messages_one: '{{count, number}} message';
+            messages_other: '{{count, number}} messages';
+            people_one: '{{count, number}} person';
+            people_other: '{{count, number}} people';
+        };
+    };
+    pages: {
+        document: {
+            label: 'Document workspace';
+            'all-pages': 'All pages';
+            'toggle-outline': 'Toggle page outline';
+            'editor-loading': 'Loading editor…';
+            'download-name': 'page';
+            status: {
+                saving: 'Saving…';
+                saved: 'All changes saved';
+                dirty: 'Unsaved changes';
+                conflict: 'Changes need review';
+                error: 'Could not save';
+            };
+            menu: {
+                label: 'Page actions';
+                save: 'Save now · ⌘/Ctrl S';
+                visual: 'Visual editor';
+                source: 'Markdown source';
+                'to-page': 'Turn into page';
+                'to-folder': 'Turn into folder';
+                'move-within': 'Move within Space';
+                'move-to': 'Move to…';
+                'new-inside': 'New page inside';
+                'new-subpage': 'New subpage';
+                'follow-up': 'Create follow-up…';
+                download: 'Download Markdown';
+                'source-thread': 'Open source conversation';
+                delete: 'Delete page';
+            };
+            notices: {
+                'folder-save-first': 'Save your changes before turning this page into a folder.';
+                'folder-failed': 'Could not change this page. Try again.';
+                'latest-confirm': 'Load the latest saved page and replace this draft? Download your draft first if you want to keep it.';
+                'latest-failed': 'Could not load the latest page. Your draft is unchanged.';
+                retry: 'Retry save';
+                download: 'Download draft';
+                'load-latest': 'Load latest';
+                dismiss: 'Dismiss';
+            };
+            'save-errors': {
+                conflict: 'This page changed elsewhere. Your draft is safe. Copy it before loading the latest version.';
+                newer: 'A newer revision exists. Your draft is preserved.';
+                timeout: 'Saving timed out. Your draft is safe; retry when connected.';
+                failed: 'Could not save. Your draft is safe.';
+                invalid: 'Use a title up to {{title, number}} characters and a document up to {{content, number}} characters. Your draft is still here.';
+            };
+            move: {
+                label: 'Move under';
+                parent: 'Parent page';
+                root: 'Space root';
+                done: 'Done';
+            };
+            source: {
+                heading: 'Markdown source';
+                label: 'Page Markdown';
+                reasons: {
+                    extended: 'This document contains extended Markdown. Source mode preserves it exactly.';
+                    unsupported: 'This document contains images, HTML, or formatting that needs Markdown source mode. Nothing has been changed.';
+                    'round-trip': 'Some formatting cannot be safely round-tripped. Source mode keeps the original document intact.';
+                    unreadable: 'This Markdown needs source mode to preserve its contents.';
+                };
+            };
+        };
+        title: {
+            label: 'Page title';
+        };
+        folder: {
+            'new-page': 'New page';
+            'new-folder': 'New folder';
+            contents: 'In this folder';
+            empty: 'This folder is empty.';
+            kept: 'This folder keeps its page text. Turn it back into a page to see it.';
+        };
+        hierarchy: {
+            parents: 'Parent pages';
+            children: 'Child pages';
+        };
+        outline: {
+            label: 'Pages in this Space';
+            heading: 'Pages';
+            new: 'New page in outline';
+            close: 'Close page outline';
+        };
+        missing: {
+            crumb: 'Deleted page';
+            loading: 'Loading page…';
+            deleted: 'This page was deleted';
+            'deleted-detail': 'It was deleted from this Space, so links to it no longer open a page.';
+            'not-found': 'Page not found';
+            'not-found-detail': 'It isn’t in this Space. Check the link, or find the page in the library.';
+            back: 'Back to all pages';
+        };
+        chat: {
+            label: 'Page conversation';
+            close: 'Close page chat';
+            'ask-label': 'Ask about this page';
+            'ask-placeholder': 'Ask about this page…';
+            specialist: 'Page specialist';
+            paused: 'Assistant paused';
+            'uses-saved': 'Uses this saved page';
+            send: 'Send to page assistant';
+            'save-first': 'Save or resolve your document changes before starting page chat.';
+            failed: 'Could not open page chat.';
+            setup: {
+                'add-specialist': 'Add a specialist to work with this Space.';
+                'ask-admin': 'Ask an admin to add a specialist to this Space.';
+                'create-specialist': 'Create specialist';
+                connect: 'Connect your assistant to chat about this page.';
+                'set-up': 'Set up assistant';
+            };
+        };
+        cover: {
+            add: 'Add cover';
+            change: 'Change cover';
+            remove: 'Remove';
+            gone: 'This cover’s image is no longer available.';
+            picker: 'Cover';
+            removed: 'Cover removed';
+            undo: 'Undo';
+            'undo-failed': 'Could not put the cover back.';
+            'remove-failed': 'Could not remove the cover.';
+        };
+    };
+    'pages.cover': {
+        heading: 'Cover';
+        upload: 'Upload an image';
+        hint: 'or drop one here · PNG, JPEG or WebP, up to {{size, number}} MB';
+        'uploading-progress': 'Uploading… {{progress, number(style: percent)}}';
+        setting: 'Setting the cover…';
+        'from-space': 'From this Space';
+        loading: 'Loading images…';
+        use: 'Use {{name}}';
+        none: 'No images in this Space yet. Link-card images and other pages’ covers show here.';
+        advice: 'Wide images work best (about 3:1). Everyone who can see the page sees its cover.';
+        problems: {
+            type: 'Choose a PNG, JPEG or WebP image.';
+            size: 'Covers can be at most {{size, number}} MB.';
+        };
+        errors: {
+            list: 'Could not load this Space’s images.';
+            upload: 'Could not upload the image.';
+            set: 'Could not set the cover.';
+        };
+    };
+    'pages.dialogs': {
+        delete: {
+            title: 'Delete “{{title}}”?';
+            subpages_one: 'Its subpage will be deleted with it.';
+            subpages_other: 'Its {{count}} subpages will be deleted with it.';
+            description: 'It’s removed for everyone in this Space, and links to it say it was deleted. Conversations about it stay in your chats.';
+            list: 'Subpages deleted with it';
+            cancel: 'Cancel';
+            action_one: 'Delete page';
+            action_other: 'Delete pages';
+            deleting: 'Deleting…';
+            deleted: 'Deleted “{{title}}”';
+            failed: 'Could not delete the page.';
+        };
+        move: {
+            title: 'Move “{{title}}”';
+            description: 'It goes to the top of the Space you pick. Its history goes with it, and links to it keep working.';
+            'description-subpages_one': 'It goes to the top of the Space you pick, with its subpage. Its history goes with it, and links to it keep working.';
+            'description-subpages_other': 'It goes to the top of the Space you pick, with its {{count}} subpages. Its history goes with it, and links to it keep working.';
+            none: 'There is no other Space to move it to.';
+            to: 'Move to';
+            destination: 'Destination Space';
+            list: 'Subpages moved with it';
+            cancel: 'Cancel';
+            action_one: 'Move page';
+            action_other: 'Move pages';
+            moving: 'Moving…';
+            moved: 'Moved “{{title}}” to {{space}}';
+            'save-first': 'Your latest changes could not be saved. Save them, then move the page.';
+            failed: 'Could not move the page.';
+        };
+        folder: {
+            title: 'New folder';
+            description: 'A folder holds pages and other folders.';
+            name: 'Folder name';
+            cancel: 'Cancel';
+            create: 'Create folder';
+            failed: 'Could not create the folder.';
+        };
+    };
+    'pages.editor': {
+        'content-label': 'Page content';
+        placeholder: 'Start writing, or type / for blocks…';
+        'paste-refused': 'Images and embedded content are not supported here. Use Markdown source to keep their original markup.';
+        'link-prompt': 'Link URL (https:// or an internal page link)';
+        'link-invalid': 'Use a public http(s) URL or an internal page link.';
+        hint: 'Type <kbd>/</kbd> for blocks · ⌘/Ctrl + S to save';
+        toolbar: {
+            label: 'Text formatting';
+            bold: 'Bold';
+            'bold-hint': 'Bold (⌘/Ctrl B)';
+            italic: 'Italic';
+            'italic-hint': 'Italic (⌘/Ctrl I)';
+            'bullet-list': 'Bullet list';
+            'numbered-list': 'Numbered list';
+            quote: 'Quote';
+            'code-block': 'Code block';
+            link: 'Add link';
+            undo: 'Undo';
+            redo: 'Redo';
+        };
+        slash: {
+            heading: 'Insert block';
+            label: 'Insert block';
+            empty: 'No matching blocks';
+        };
+        blocks: {
+            text: {
+                title: 'Text';
+                description: 'Start with a plain paragraph';
+            };
+            'heading-1': {
+                title: 'Heading 1';
+                description: 'A large section heading';
+            };
+            'heading-2': {
+                title: 'Heading 2';
+                description: 'A medium section heading';
+            };
+            'heading-3': {
+                title: 'Heading 3';
+                description: 'A small section heading';
+            };
+            'bullet-list': {
+                title: 'Bullet list';
+                description: 'A simple unordered list';
+            };
+            'numbered-list': {
+                title: 'Numbered list';
+                description: 'An ordered sequence';
+            };
+            checklist: {
+                title: 'Checklist';
+                description: 'Track things to do';
+            };
+            quote: {
+                title: 'Quote';
+                description: 'Highlight a passage';
+            };
+            code: {
+                title: 'Code';
+                description: 'A code block';
+            };
+            divider: {
+                title: 'Divider';
+                description: 'Separate sections';
+            };
+            table: {
+                title: 'Table';
+                description: 'Three columns with a header';
+            };
+            'dataset-view': {
+                title: 'Dataset view';
+                description: 'A live table or chart of a dataset';
+            };
+        };
+        view: {
+            title: 'Dataset view';
+            rows_one: '{{count, number}} row';
+            rows_other: '{{count, number}} rows';
+            'rows-more_one': '{{count, number}}+ row';
+            'rows-more_other': '{{count, number}}+ rows';
+            'as-of': 'as of {{at, datetime(hour: 2-digit; minute: 2-digit; second: 2-digit)}}';
+            'show-chart': 'Show the chart';
+            'show-table': 'Show as a table';
+            refresh: 'Refresh view';
+            'refresh-hint': 'Refresh';
+            edit: 'Edit view';
+            'incomplete-editable': 'Choose a dataset and write a query, then run it.';
+            incomplete: 'This view isn’t set up yet.';
+            loading: 'Loading view…';
+            private: 'Only you can see this data. Others see a placeholder until you <link>share the dataset with this Space</link>.';
+            displays: {
+                table: 'Table';
+                bar: 'Bar chart';
+                line: 'Line chart';
+            };
+            'refresh-every': {
+                off: 'Off';
+                seconds_one: 'Every second';
+                seconds_other: 'Every {{count, number}} seconds';
+                minutes_one: 'Every minute';
+                minutes_other: 'Every {{count, number}} minutes';
+                hours_one: 'Every hour';
+                hours_other: 'Every {{count, number}} hours';
+            };
+            form: {
+                label: 'Edit dataset view';
+                dataset: 'Dataset';
+                choose: 'Choose a dataset';
+                loading: 'Loading datasets…';
+                'shared-here': '{{name}} (shared with this Space)';
+                'shared-by': '{{name}} (shared by {{owner}})';
+                'another-user': 'another user';
+                unknown: 'A dataset you can’t open';
+                display: 'Display';
+                x: 'X axis';
+                values: 'Values';
+                'first-column': 'First column';
+                'first-numbers': 'First numbers';
+                title: 'Title';
+                'title-label': 'View title';
+                'title-placeholder': 'The dataset’s name';
+                'auto-refresh': 'Auto-refresh';
+                query: 'Query';
+                'query-label': 'View query';
+                'query-placeholder': 'SELECT month, total FROM "sales" ORDER BY month';
+                rule: 'One read-only SELECT. Everyone sees the result only if they own the dataset or it is shared with this Space.';
+                run: 'Run';
+                'run-hint': 'Run (⌘/Ctrl Enter)';
+                save: 'Save view';
+                cancel: 'Cancel';
+                remove: 'Remove';
+                'list-failed': 'Could not list datasets.';
+            };
+        };
+        embed: {
+            broken: 'This link card can’t be shown.';
+            label: '{{site}} card';
+            'label-titled': '{{site}} card: {{title}}';
+            'image-missing': 'Image not available here';
+            'image-missing-alt': 'Image not available here: {{alt}}';
+            'video-missing': 'Video not available here';
+            'video-missing-alt': 'Video not available here: {{alt}}';
+            play: 'Play on {{site}} (opens in a new tab)';
+            open: 'Open on {{host}}';
+            'new-tab': '(opens in a new tab)';
+        };
+        image: {
+            missing: 'Image not available here';
+            'missing-alt': 'Image not available here: {{alt}}';
+        };
+    };
+    'pages.review': {
+        label: 'Review page draft';
+        phase: {
+            deleted: {
+                title: 'Saved, then deleted';
+                badge: 'Deleted';
+            };
+            conflict: {
+                title: 'Review changed';
+                badge: 'Needs new review';
+            };
+            saved: {
+                title: 'Saved to your Space';
+                badge: 'Approved';
+            };
+            checking: {
+                title: 'Checking saved review…';
+                badge: 'Checking';
+            };
+            ended: {
+                title: 'Review ended';
+                badge: 'Not saved';
+            };
+            invalid: {
+                title: 'Draft needs fixing';
+                badge: 'Cannot save';
+            };
+            waiting: {
+                title: 'Draft on its way';
+                badge: 'Waiting';
+            };
+            ready: {
+                title: 'Ready for your review';
+                badge: 'You decide';
+            };
+        };
+        preparing: 'Preparing your draft…';
+        untitled: 'Untitled draft';
+        conflict: 'This review was saved with a different draft. Start a new review for the changed draft.';
+        invalid: 'This draft cannot be saved as sent ({{problem}}). Send it back and the socio will fix it.';
+        retry: 'Retry review';
+        'open-saved': 'Open saved page';
+        open: 'Open page';
+        saving: 'Saving…';
+        continue: 'Continue conversation';
+        approve: 'Approve & save';
+        'send-back': 'Send back';
+        decline: 'Decline';
+        hint: {
+            deleted: 'The page saved from this review was deleted.';
+            checking: 'Checking whether this draft was already saved.';
+            'not-saved': 'No page was saved.';
+            waiting: 'This draft opens for review once the socio finishes it and any review above it is decided.';
+            ready: 'Nothing is saved until you approve.';
+        };
+        errors: {
+            restore: 'Could not restore this review.';
+            save: 'Could not save the approved draft.';
+        };
+    };
+    rooms: {
+        'a-socio': 'A socio';
+        you: 'You';
+        status: 'Room';
+        gone: 'You are no longer in this room, so you can’t read it here.';
+        pinned: 'Pinned';
+        members: 'Members';
+        empty: 'No messages yet. Everyone in the room reads what is written here.';
+        reading: '{{name}} is reading this';
+        queued: {
+            next: '{{name}} reads this after its current step';
+            later: '{{name}} reads this once the reply is done';
+            others: '{{name}} reads it in turn';
+        };
+        archived: {
+            notice: 'This room is archived.';
+            unarchive: 'Unarchive';
+        };
+        composer: {
+            label: 'Message the room';
+            placeholder: 'Message the room and {{name}}…';
+            'placeholder-several': 'Message the room, or @ a socio…';
+            'placeholder-admin': 'Message the room and {{name}}, or /invite…';
+            'placeholder-admin-several': 'Message the room, @ a socio, or /invite…';
+            'to-targets': 'To {{targets}} · everyone in the room reads it';
+            'to-lead': 'To {{name}}, the lead · everyone in the room reads it';
+            waits: 'Waits for the current step';
+            everyone: 'Everyone in the room reads it';
+            stop: 'Stop the answer';
+            'stop-title': 'Stop the answer (yours, or any as a room admin)';
+            queue: 'Queue message';
+            send: 'Send message';
+            'send-failed': 'Your message wasn’t sent. Try again.';
+            'stop-failed': 'Could not stop the answer.';
+        };
+        speaker: {
+            socio: 'socio';
+            'team-member': 'Team member';
+        };
+        mentions: {
+            list: 'People and socios in the room';
+            socio: 'socio';
+            'socio-lead': 'socio · lead';
+            people_one: '{{count, number}} person';
+            people_other: '{{count, number}} people';
+            socios_one: '{{count, number}} socio';
+            socios_other: '{{count, number}} socios';
+            status: '{{parts, list}} to mention';
+            you: 'you';
+            'you-sr': 'mentions you';
+        };
+        presence: {
+            here_one: '{{names, list}} is here';
+            here_other: '{{names, list}} are here';
+            more_one: '{{first}}, {{second}} and {{count, number}} other are here';
+            more_other: '{{first}}, {{second}} and {{count, number}} others are here';
+        };
+        topic: {
+            status: 'Team conversation in Telegram · read-only here';
+            empty: 'No messages yet.';
+            reply: 'Reply in the Telegram topic to continue this conversation.';
+            convert: 'Make this topic a room…';
+            'load-failed': 'Could not load this topic.';
+        };
+        usage: {
+            limits: 'Each message: {{parts, list(type: unit; style: short)}}. {{perMinute}}, {{waiting}}.';
+            work: 'up to {{time}} of work';
+            tokens_one: '{{count, number}} token';
+            tokens_other: '{{count, number}} tokens';
+            handoffs_one: '{{count, number}} handoff';
+            handoffs_other: '{{count, number}} handoffs';
+            'spend-limit': '{{amount}} of spend';
+            'per-minute_one': '{{count, number}} message a minute';
+            'per-minute_other': '{{count, number}} messages a minute';
+            waiting: '{{n, number}} waiting at most';
+            'tokens-of': '{{used}} of {{limit, number}}';
+            'time-of': '{{elapsed}} of work of {{limit}}';
+            'handoffs-of': '{{n, number}} of {{limit, number}} handoffs';
+            spend: 'Spend: {{amount}}';
+            'spend-of': 'Spend: {{amount}} of {{limit}}';
+            'spend-private': 'Spend: on the sender’s own model subscription';
+            'spend-unknown': 'Spend: not reported by the model';
+            stopped: 'Stopped at a limit';
+            stopped_deadline: 'Stopped at the time limit';
+            stopped_tokens: 'Stopped at the token limit';
+            stopped_handoffs: 'Stopped at the handoff limit';
+            stopped_spend: 'Stopped at the spend limit';
+            heading: {
+                running: 'Working now';
+                'running-mine': 'Your message, working now';
+                last: 'The last message';
+                'last-mine': 'Your last message';
+            };
+            messages_one: '{{count, number}} message';
+            messages_other: '{{count, number}} messages';
+            day: 'Last 24 hours: {{messages}} worked on, {{tokens}}.';
+            'day-stopped': 'Last 24 hours: {{messages}} worked on, {{tokens}}, {{stopped, number}} stopped at a limit.';
+            'day-hidden': 'The last 24 hours’ total shows once at least {{n, number}} people have sent messages, so it never shows one person’s use.';
+            loading: 'Loading…';
+            'load-failed': 'Could not load the room’s use.';
+        };
+        errors: {
+            'load-room': 'Could not load this room.';
+            'read-room': 'Could not load the room.';
+        };
+        picker: {
+            label: 'Mention a socio';
+            title: 'Mention a socio: it answers instead of the lead';
+            heading: 'Mention a socio';
+            lead: 'lead';
+        };
+        'invite-command': {
+            list: 'People to invite';
+            count_one: '{{count, number}} person to invite';
+            count_other: '{{count, number}} people to invite';
+            invited: 'Invited {{name}}. They join once they accept.';
+            failed: 'Could not invite them.';
+            'list-failed': 'Could not list people to invite.';
+        };
+    };
+    'rooms.dialogs': {
+        cancel: 'Cancel';
+        day: '{{at, datetime(month: short; day: numeric)}}';
+        clock: '{{at, datetime(hour: numeric; minute: 2-digit)}}';
+        create: {
+            title: 'New room';
+            description: 'A room is one conversation for several people and company socios. Each message runs as the person who sent it; nobody’s private memories or data are shared.';
+            action: 'Create room';
+            busy: 'Creating…';
+            created: 'Created “{{title}}”. Invite people from Members.';
+            failed: 'Could not create the room.';
+            name: 'Name';
+            'name-placeholder': 'Launch planning';
+            lead: 'Lead socio';
+            'lead-hint': 'Company socios only. A room admin can ask for more later.';
+            'lead-hint_none': 'There is no company socio yet: ask an admin to add one.';
+            more: 'More socios (optional)';
+            'more-hint': 'Each starts as a request a workspace admin approves.';
+            people: 'Invite people (optional)';
+            'people-hint': 'You are a member and admin already. Invited people get an invite to accept.';
+            purpose: 'Description / purpose (optional)';
+            'purpose-hint': 'Shown to the room’s members. What is this room for?';
+            'purpose-placeholder': 'What this room is for, in a sentence or two';
+        };
+        convert: {
+            title: 'Share this chat as a room?';
+            description: '“{{title}}” becomes a room you are the admin of, with the same link and history. You can then invite people.';
+            action: 'Make it a room';
+            busy: 'Sharing…';
+            done: 'This chat is now a room. Invite people from Members.';
+            failed: 'Could not make it a room.';
+            confirm: 'I understand: everyone I invite reads this whole chat.';
+        };
+        rename: {
+            title: 'Rename room';
+            description: 'Everyone in the room sees the new name.';
+            action: 'Save';
+            busy: 'Saving…';
+            failed: 'Could not rename the room.';
+            name: 'Name';
+        };
+        leave: {
+            title: 'Leave “{{title}}”?';
+            description: 'You stop reading the room and it leaves your sidebar. An admin can invite you again.';
+            description_stuck: 'You are the only person in this room. Archive it instead: it is kept, and you can bring it back.';
+            description_handover: 'A room always keeps an admin. Choose who takes the role on: you leave once they have it.';
+            action: 'Leave room';
+            action_stuck: 'Archive room';
+            action_handover: 'Hand over and leave';
+            busy: 'Leaving…';
+            archived: 'Archived “{{title}}”.';
+            left: 'You left “{{title}}”.';
+            failed: 'Could not leave the room.';
+            'new-admin': 'New admin';
+        };
+        invites: {
+            title: 'Room invitations';
+            description: 'Join to read and write in a room, or decline. Nobody sees the room’s messages before they join.';
+            none: 'You have no invitations.';
+            list: 'Invitations';
+            joined: 'You joined “{{title}}”.';
+            declined: 'Declined “{{title}}”.';
+            failed: 'That didn’t work. Try again.';
+            'invited-by': '{{name}} invited you';
+            'invited-by_admin': '{{name}} invited you as an admin';
+            invited: 'You were invited';
+            invited_admin: 'You were invited as an admin';
+            members_one: '{{count, number}} person in it';
+            members_other: '{{count, number}} people in it';
+            until: 'until <date></date>';
+            understood: 'I understand what joining shares.';
+            decline: 'Decline';
+            'decline-label': 'Decline {{title}}';
+            declining: 'Declining…';
+            join: 'Join room';
+            'join-label': 'Join room {{title}}';
+            joining: 'Joining…';
+        };
+        topic: {
+            name: 'topic #{{id}}';
+            name_general: 'the General topic';
+            title: 'Telegram topic';
+            description: 'In a linked forum topic, room members talk to the room’s socio by mentioning the bot or replying to it. It answers no one else.';
+            loading: 'Loading…';
+            linked: 'Linked to {{topic}} in the Telegram group, <date></date>.';
+            linked_by: 'Linked to {{topic}} in the Telegram group by {{name}}, <date></date>.';
+            ended: 'Not linked. It was linked to {{topic}} until <date></date>.';
+            'not-linked': 'Not linked to a Telegram topic.';
+            unavailable: 'Telegram isn’t connected on this server.';
+            'link-account': 'Link your Telegram account first: choose Telegram in the sidebar. The code works only from your account.';
+            understood: 'I understand who reads the topic.';
+            unanswered: 'Not answered in the topic';
+            'not-in-room': 'not in the room';
+            'no-username': 'A Telegram account without a username';
+            'not-on-socio': '{{sender}} · not linked to Socio';
+            seen: 'Seen in the Telegram group';
+            'seen-hint': 'People with a linked account who wrote in the group and aren’t in the room. They join only if they accept.';
+            invite: 'Invite';
+            invited: 'Invited {{name}}';
+            'invite-failed': 'Could not invite them.';
+            close: 'Close';
+            unlink: 'Unlink topic';
+            unlinked: 'The Telegram topic is unlinked.';
+            'unlink-failed': 'Could not unlink the topic.';
+            'get-code': 'Get a code';
+            'code-failed': 'Could not get a code.';
+            'now-linked': 'The Telegram topic is linked to this room.';
+            'read-failed': 'Could not read the room’s topic.';
+        };
+        steps: {
+            send: 'In the Telegram topic, from your linked account and as an admin of the group, send:';
+            'copy-label': 'Copy the command';
+            copy: 'Copy';
+            copied: 'Copied';
+            'copy-failed': 'Could not copy. Select the command instead.';
+            expires: 'It works once, until <time></time>. The bot (@{{bot}}) answers in the topic.';
+        };
+        'convert-topic': {
+            title: 'Make this topic a room?';
+            description: 'A new room you are the admin of, with this topic’s socio, linked to the Telegram topic.';
+            busy: 'Getting a code…';
+            action: 'Get a code';
+            'code-title': 'Make this topic a room';
+            'code-description': 'The room appears under Rooms once the bot confirms it in the topic. Then invite people from its Members. This transcript stays as it is, for the people who can read it now.';
+            done: 'Done';
+        };
+    };
+    'rooms.members': {
+        title: 'Members';
+        description: 'Room admins invite people and choose the socios.';
+        description_admin: 'You are an admin here: you invite and remove people, and choose the socios.';
+        description_archived: 'This room is archived: nothing changes in it until an admin unarchives it.';
+        description_off: 'Rooms are turned off in Settings: this room is read-only.';
+        people: 'People ({{n, number}})';
+        'people-list': 'People in the room';
+        invited: 'Invited ({{n, number}})';
+        'invited-list': 'Invited people';
+        'invite-someone': 'Invite someone';
+        socios: 'Socios';
+        usage: 'Use and limits';
+        leave: 'Leave room';
+        day: '{{at, datetime(month: short; day: numeric)}}';
+        member: {
+            you: '(you)';
+            invited: 'Invited';
+            'invited-until': 'Invited · until <date></date>';
+            role: {
+                admin: 'Admin';
+                member: 'Member';
+            };
+            options: 'Options for {{name}}';
+            'make-admin': 'Make admin';
+            'now-admin': '{{name}} is now an admin.';
+            'role-failed': 'Could not change the role.';
+            'step-down': 'Step down as admin';
+            'make-member': 'Make member';
+            'not-admin': '{{name}} is no longer an admin.';
+            'not-admin_you': 'You are no longer an admin.';
+            'take-back': 'Take back invite';
+            remove: 'Remove from room';
+            'taken-back': 'Invite to {{name}} taken back.';
+            removed: '{{name}} was removed.';
+            'remove-failed': 'Could not remove them.';
+        };
+        invite: {
+            'list-failed': 'Could not list people to invite.';
+            loading: 'Loading people…';
+            everyone: 'Everyone who uses Socio is in this room or invited.';
+            invited: 'Invited {{name}}. They join once they accept.';
+            failed: 'Could not invite them.';
+            person: 'Person';
+            role: 'Role';
+            action: 'Invite';
+            busy: 'Inviting…';
+            note: 'An invite works for 7 days. Before joining they are told they will read the room’s whole history.';
+        };
+        socio: {
+            list: 'Socios in the room';
+            status: {
+                active: 'Answers in this room';
+                requested: 'Waiting for a workspace admin to let it in';
+                withdrawn: 'Taken out by a workspace admin';
+                removed: 'Removed';
+            };
+            lead: 'Lead';
+            'let-in': 'Let in';
+            'let-in-done': '{{name}} can answer in this room.';
+            'let-in-failed': 'Could not let it in.';
+            'make-lead': 'Make lead';
+            'lead-done': '{{name}} now leads this room.';
+            'lead-failed': 'Could not change the lead.';
+            remove: 'Remove';
+            'remove-label': 'Remove {{name}}';
+            removed: '{{name}} left the room.';
+            'remove-failed': 'Could not remove it.';
+            'take-out': 'Take out';
+            'take-out-label': 'Take {{name}} out';
+            'taken-out': '{{name}} was taken out.';
+            'taken-out_lead': '{{name}} was taken out: the room has no socio answering until another leads.';
+            'take-out-failed': 'Could not take it out.';
+            'ask-label': 'Ask for a company socio';
+            ask: 'Ask';
+            asked: 'Asked for {{name}}. A workspace admin lets it in.';
+            'ask-failed': 'Could not ask for it.';
+        };
+        handoffs: {
+            saved: 'Handoffs per message saved.';
+            'save-failed': 'Could not save the handoffs.';
+            none: 'Socios here can’t hand a message’s work to each other.';
+            'up-to_one': 'A message’s work can pass between socios up to {{count, number}} time.';
+            'up-to_other': 'A message’s work can pass between socios up to {{count, number}} times.';
+            label: 'Handoffs per message';
+            workspace: 'The workspace’s ({{n, number}})';
+            note: 'How many times one message’s work may pass between this room’s socios. You can only lower the workspace’s limit.';
+        };
+    };
+    'rooms.nav': {
+        group: 'Rooms';
+        room: 'Room';
+        'new-room': 'New room';
+        invitations: 'Invitations';
+        'invitations-waiting': ', {{n, number}} waiting';
+        empty: 'Rooms you create or join show here: one conversation for several people and a socio.';
+        'show-fewer': 'Show fewer';
+        'show-all_one': 'Show all {{count, number}}';
+        'show-all_other': 'Show all {{count, number}}';
+        muted: ', muted';
+        unread: ', {{unread}} unread';
+        admin: 'Admin';
+        'options-for': 'Options for {{title}}';
+        invites: {
+            one: 'You’re invited to the room “{{title}}”.';
+            many_one: 'You’re invited to {{count, number}} room.';
+            many_other: 'You’re invited to {{count, number}} rooms.';
+            review: 'Review';
+        };
+        menu: {
+            section: 'Room';
+            members: 'Members';
+            topic: 'Telegram topic';
+            rename: 'Rename';
+            archive: 'Archive';
+            unarchive: 'Unarchive';
+            leave: 'Leave room';
+            notify: 'Notify me about';
+        };
+        toasts: {
+            archived: 'Room archived';
+            undo: 'Undo';
+            unarchived: 'Room unarchived';
+        };
+        errors: {
+            archive: 'Could not archive the room.';
+            unarchive: 'Could not unarchive the room.';
+            read: 'Could not read the room.';
+            notify: 'Could not change this room’s notifications.';
+        };
+    };
+    'rooms.notify': {
+        title: 'Rooms';
+        body: 'In a room you hear when someone mentions you and when your own turns finish while you’re away. Choose more or less for each room in its ⋯ menu, under Notify me about.';
+        presence: {
+            label: 'Show when I’m in a room';
+            hint: 'The room’s members see your avatar while you have it open. Turn this off to look without showing.';
+            shown: 'Rooms show when you’re in them';
+            hidden: 'Your presence is hidden';
+        };
+    };
+    'rooms.pins': {
+        day: '{{at, datetime(month: short; day: numeric)}}';
+        'load-failed': 'Could not load the pinned facts.';
+        outcome: {
+            pinned: 'Pinned. The socio reads it from the next message.';
+            proposed: 'Proposed. A room admin decides whether to pin it.';
+            unchanged: 'That is pinned or proposed already.';
+            done: 'Done.';
+        };
+        title: 'Pinned facts';
+        description: 'The socio reads these with every message. This room is read-only now, so nothing changes here.';
+        description_loading: 'Facts the room’s socio reads with every message.';
+        description_manage: 'The socio reads these with every message. As a room admin you pin, edit and unpin them, and decide what others propose.';
+        description_propose: 'The socio reads these with every message. Propose a fact and a room admin decides; you can edit or unpin the ones you pinned.';
+        loading: 'Loading…';
+        pinned: 'Pinned ({{pins, number}} of {{max, number}})';
+        'pinned-list': 'Pinned facts';
+        nothing: 'Nothing pinned yet.';
+        chars: '{{chars, number}} of {{max, number}} characters used.';
+        'pin-a-fact': 'Pin a fact';
+        'propose-a-fact': 'Propose a fact';
+        pin: 'Pin';
+        propose: 'Propose';
+        'pin-failed': 'Could not pin that.';
+        proposed: 'Proposed ({{n, number}})';
+        'proposed-list': 'Proposed facts';
+        'pin-row': {
+            save: 'Save';
+            'propose-change': 'Propose change';
+            'change-failed': 'Could not change it.';
+            'pinned-by': 'Pinned by {{name}}';
+            'pinned-by_you': 'Pinned by you';
+            version: 'version {{version, number}}';
+            'from-notes': 'from the notes';
+            edit: 'Edit';
+            suggest: 'Suggest a change';
+            unpin: 'Unpin';
+            'unpin-failed': 'Could not unpin it.';
+            history: 'History';
+            'hide-history': 'Hide history';
+        };
+        'former-member': 'a former member';
+        status: {
+            proposed: 'Proposed';
+            pinned: 'In use';
+            superseded: 'Replaced';
+            unpinned: 'Unpinned';
+            rejected: 'Not pinned';
+            withdrawn: 'Withdrawn';
+        };
+        line: {
+            pinned: 'Pinned by {{name}}';
+            edited: 'Edited by {{name}}';
+            proposed: 'Proposed by {{name}}';
+            'turned-down': 'turned down by {{name}}';
+            approved: 'approved by {{name}}';
+            unpinned: 'unpinned by {{name}}';
+            replaced: 'replaced by {{name}}';
+            joined: '{{parts, list(type: unit; style: short)}}';
+        };
+        history: {
+            failed: 'Could not load its history.';
+            list: 'History';
+            version: 'v{{version}}';
+            proposal: 'proposal';
+        };
+        proposal: {
+            'proposed-by': 'Proposed by {{name}}';
+            'proposed-by_you': 'Proposed by you';
+            changes: 'changes “{{text}}”';
+            'changes-stale': 'changes a pin that has changed since';
+            approve: 'Approve';
+            'approve-failed': 'Could not pin it.';
+            'turn-down': 'Turn down';
+            'turn-down-failed': 'Could not turn it down.';
+            withdraw: 'Withdraw';
+            'withdraw-failed': 'Could not withdraw it.';
+        };
+        fact: {
+            label: 'The fact';
+            placeholder: 'Decision: launch on 3 November';
+            limit: 'One fact, up to {{max, number}} characters.';
+            cancel: 'Cancel';
+        };
+        notes: {
+            title: 'Notes on earlier messages';
+            none: 'None yet. When the room gets long, Socio keeps notes on its earlier messages for everyone in it, with who said what. They never hold what a socio found with someone’s own access.';
+            current_one: 'Version {{version, number}}, covering the first {{count, number}} turn';
+            current_other: 'Version {{version, number}}, covering the first {{count, number}} turns';
+            facts: 'Facts';
+            'pin-fact': 'Pin: {{fact}}';
+            'propose-fact': 'Propose: {{fact}}';
+            versions: 'Versions ({{n, number}})';
+            'version-turns': 'v{{version}} · turns {{from}}–{{to}}';
+            by: 'by {{name}}';
+            'in-turn': 'in {{name}}’s turn';
+            fallback: 'kept plainly (the notes’ model failed)';
+        };
+    };
     settings: {
         title: 'Settings';
         groups: {
@@ -2354,68 +5055,10 @@ export interface EnglishResources {
             revokeFailed: 'Could not revoke the access.';
             disconnectFailed: 'Could not disconnect the agent.';
         };
-        signIn: {
-            sessions: 'Devices signed in';
-            signOutDevice: 'Sign out {{device}}';
-            signOut: 'Sign out';
-            signOutFailed: 'Could not sign the device out.';
-            signedOut: 'Signed out on that device';
-            by: 'by {{method}}';
-            lastUsed: 'last used {{ago}}';
-            since: 'since {{date}}';
-            nowhere: 'Not signed in anywhere now.';
-            nowhere_deactivated: 'Deactivated: signed in nowhere.';
-            app: 'The $t(common:product) app';
-            methods: 'How they sign in';
-            none: 'None';
-            passkeys: 'Passkeys';
-            passkey: 'Passkey';
-            passkeyAdded: ', added {{date}}';
-            password: 'Password';
-            set: 'Set';
-            notSet: 'Not set';
-            providers: 'Sign-in providers';
-            newLink: 'New password link';
-            newestLink: 'Newest password link';
-            noLink: 'none made';
-        };
         dates: {
             revoked: 'revoked {{date}}';
             expires: 'expires {{date}}';
             expired: 'expired {{date}}';
-        };
-        owns: {
-            unknown: 'What {{first}} owns isn’t known here: the account has no workspace user yet.';
-            loadFailed: 'Could not load what they own.';
-            loading: 'Loading what {{first}} owns…';
-            owns: '{{first}} owns {{list}}.';
-            companyOwns: 'The company owns it: hand it to another active person at any time.';
-            nothing: '{{first}} owns nothing that can be transferred.';
-            transferAll: 'Transfer everything…';
-            transferKind: 'Transfer {{kind}}';
-            transfer: 'Transfer…';
-            deletedKept: '{{type}} · deleted, kept';
-            more: 'and {{count}} more';
-            keys: 'Service keys {{first}} made';
-            keysNote: 'revoked if {{first}} is deactivated';
-            keysList: 'Service keys';
-            neverUsed: 'never used';
-            used: 'used {{ago}}';
-            noKeys: '{{first}} made no service keys.';
-        };
-        activity: {
-            title: 'Activity';
-            at: '{{at, datetime(month: short; day: numeric; year: numeric; hour: numeric; minute: 2-digit)}}';
-            loading: 'Loading…';
-            loadFailed: 'Could not load the activity.';
-            empty: 'Nothing recorded yet.';
-            more: 'Load more';
-            sources: {
-                workspace: 'Workspace';
-                access_policy: 'Access';
-                socio_access: 'Socio access';
-                room: 'Room';
-            };
         };
         assets: {
             apps: {
@@ -2628,6 +5271,66 @@ export interface EnglishResources {
             withConfirm: 'Remove {{first}} permanently (development sign-in)';
             back: 'Back to People';
             continue: 'Continue';
+        };
+    };
+    'settings.person-tabs': {
+        signIn: {
+            sessions: 'Devices signed in';
+            signOutDevice: 'Sign out {{device}}';
+            signOut: 'Sign out';
+            signOutFailed: 'Could not sign the device out.';
+            signedOut: 'Signed out on that device';
+            by: 'by {{method}}';
+            lastUsed: 'last used {{ago}}';
+            since: 'since {{date}}';
+            nowhere: 'Not signed in anywhere now.';
+            nowhere_deactivated: 'Deactivated: signed in nowhere.';
+            app: 'The $t(common:product) app';
+            methods: 'How they sign in';
+            none: 'None';
+            passkeys: 'Passkeys';
+            passkey: 'Passkey';
+            passkeyAdded: ', added {{date}}';
+            password: 'Password';
+            set: 'Set';
+            notSet: 'Not set';
+            providers: 'Sign-in providers';
+            newLink: 'New password link';
+            newestLink: 'Newest password link';
+            noLink: 'none made';
+        };
+        owns: {
+            unknown: 'What {{first}} owns isn’t known here: the account has no workspace user yet.';
+            loadFailed: 'Could not load what they own.';
+            loading: 'Loading what {{first}} owns…';
+            owns: '{{first}} owns {{list}}.';
+            companyOwns: 'The company owns it: hand it to another active person at any time.';
+            nothing: '{{first}} owns nothing that can be transferred.';
+            transferAll: 'Transfer everything…';
+            transferKind: 'Transfer {{kind}}';
+            transfer: 'Transfer…';
+            deletedKept: '{{type}} · deleted, kept';
+            more: 'and {{count}} more';
+            keys: 'Service keys {{first}} made';
+            keysNote: 'revoked if {{first}} is deactivated';
+            keysList: 'Service keys';
+            neverUsed: 'never used';
+            used: 'used {{ago}}';
+            noKeys: '{{first}} made no service keys.';
+        };
+        activity: {
+            title: 'Activity';
+            at: '{{at, datetime(month: short; day: numeric; year: numeric; hour: numeric; minute: 2-digit)}}';
+            loading: 'Loading…';
+            loadFailed: 'Could not load the activity.';
+            empty: 'Nothing recorded yet.';
+            more: 'Load more';
+            sources: {
+                workspace: 'Workspace';
+                access_policy: 'Access';
+                socio_access: 'Socio access';
+                room: 'Room';
+            };
         };
     };
     'settings.secrets': {
@@ -3945,5 +6648,378 @@ export interface EnglishResources {
             slow: 'slow';
         };
         'label-measured': 'Connection: {{state}}, {{latency}}, {{quality}}';
+    };
+    spaces: {
+        workspace: {
+            label: 'Space documents';
+            'loading-page': 'Loading page…';
+            errors: {
+                'load-pages': 'Could not load pages.';
+                'load-page': 'Could not load the page.';
+                'create-page': 'Could not create page.';
+            };
+        };
+        tabs: {
+            label: '{{space}} sections';
+            pages: 'Pages';
+            memory: 'Memory';
+            radar: 'Radar';
+            settings: 'Settings';
+        };
+        library: {
+            label: '{{space}} page library';
+            'new-folder': 'New folder';
+            'new-page': 'New page';
+            search: 'Search pages';
+            browse: {
+                label: 'Browse pages';
+                level: 'By level';
+                all: 'All pages';
+            };
+            relevance: 'Sorted by relevance';
+            sort: {
+                label: 'Sort pages';
+                recent: 'Recently edited';
+                name: 'Name A–Z';
+            };
+            view: {
+                label: 'Library view';
+                grid: 'Grid view';
+                list: 'List view';
+            };
+            trail: {
+                label: 'Library level';
+                top: 'Top level';
+                'open-folder': 'Open folder';
+                'open-page': 'Open page';
+            };
+            heading: {
+                search: 'Search results';
+                all: 'All pages';
+                folder: 'In this folder';
+                page: 'Inside this page';
+                top: 'Top level';
+            };
+            count_one: '{{count, number}} page';
+            count_other: '{{count, number}} pages';
+            count_more_one: '{{count, number}} or more pages';
+            count_more_other: '{{count, number}} or more pages';
+            corrected: 'Showing results for <words>{{words}}</words>.';
+            'search-instead': 'Search instead for {{query}}';
+            'empty-page': 'An empty page, ready to write.';
+            searching: 'Searching pages…';
+            'no-matches': 'No matching pages';
+            'try-different': 'Try a different title or phrase.';
+            inside_one: '{{count, number}} inside';
+            inside_other: '{{count, number}} inside';
+            edited: 'Edited <time></time>';
+            empty: {
+                folder: 'This folder is empty';
+                page: 'Nothing inside this page yet';
+                none: 'No pages yet';
+            };
+            'empty-hint': {
+                folder: 'Pages and folders you create here go inside it.';
+                page: 'Pages you create here go inside it.';
+                none: 'Create your first page to start organizing this Space.';
+            };
+            'folder-line_one': 'Folder · {{count, number}} inside';
+            'folder-line_other': 'Folder · {{count, number}} inside';
+            'empty-folder': 'Empty folder';
+            parents: 'Parent pages';
+            delete: 'Delete {{title}}';
+            'delete-title': 'Delete page';
+        };
+        'dataset-menu': {
+            button: 'Dataset';
+            new: 'New dataset';
+            existing: 'Add existing dataset';
+        };
+    };
+    'spaces.audience': {
+        legend: 'Who can see it';
+        whole: {
+            title: 'Whole workspace';
+            detail: 'Everyone in the workspace sees it and everything in it.';
+            detail_member: 'Everyone in the workspace sees it and everything in it. Only workspace admins make a Space for everyone.';
+        };
+        private: {
+            title: 'Only its people';
+            detail: 'Private: only the people added to it, and workspace admins, see it, its pages and their history, page chats, search results, apps, datasets and files shared with it, and its memory. Socios use it only when everyone in the chat may. Anyone else doesn’t see it exists.';
+        };
+    };
+    'spaces.dialogs': {
+        delete: {
+            title: 'Delete “{{name}}”?';
+            description: 'It’s removed for everyone at once, and these go with it:';
+            'goes-with': 'Deleted with it';
+            items: {
+                pages: 'Its pages and their history';
+                chats: 'Page chats and Ask chats about its pages, for everyone';
+                memory: 'Its shared memory';
+                shares: 'Apps, datasets and link cards shared with it (their owners keep them)';
+                socios: 'Socios’ access to it';
+            };
+            restore: 'Nothing is erased: a workspace admin can restore it, with everything in it, from Settings → Deleted Spaces.';
+            confirm: 'Type <name>{{name}}</name> to confirm';
+            cancel: 'Cancel';
+            action: 'Delete Space';
+            deleting: 'Deleting…';
+            deleted: 'Deleted “{{name}}”';
+            failed: 'Could not delete the Space.';
+        };
+        dataset: {
+            new: 'New dataset';
+            existing: 'Add existing dataset';
+            'description-new': 'A dataset of yours in {{space}}: everyone who reads the Space can read it.';
+            'description-existing': 'Everyone who reads {{space}} can read the dataset you add.';
+            'name-label': 'Dataset name';
+            'name-placeholder': 'Name';
+            loading: 'Loading…';
+            'choose-label': 'Dataset';
+            option: '{{title}} ({{note}})';
+            socio: 'Socio';
+            'written-by': 'Written by {{plugin}}';
+            workspace: 'Workspace';
+            none: 'Every dataset you manage is in a Space already.';
+            cancel: 'Cancel';
+            create: 'Create';
+            add: 'Add';
+            placed: '“{{dataset}}” is in {{space}}.';
+            'load-failed': 'Could not load your datasets.';
+            failed: 'Could not place the dataset.';
+        };
+    };
+    'spaces.memory': {
+        label: '{{space}} memory';
+        description: 'Shared memory: what this Space’s socios know for everyone who can read it. Approved by its editors.';
+        add: 'Add entry';
+        propose: 'Propose entry';
+        missing: 'Space not found.';
+        loading: 'Loading memory…';
+        'load-failed': 'Could not load the Space’s memory.';
+        'save-failed': 'Could not save. Try again.';
+        audience: {
+            who: 'Everyone in the workspace reads this Space’s memory.';
+            who_private: 'This Space is private: only its people and workspace admins read its memory.';
+            use: 'Socios with this Space use matching entries in chats, and in a chat with other people only when every one of them can read it.';
+            waits: 'What you propose waits for its editors.';
+            waits_editor: 'Socios’ proposals wait for you or another editor.';
+        };
+        provenance: {
+            proposed: 'Proposed by {{person}}';
+            proposed_socio: 'Proposed by {{socio}} for {{person}}';
+            'proposed-in': 'Proposed by {{person}} in <chat>{{chat}}</chat>';
+            'proposed-in_socio': 'Proposed by {{socio}} for {{person}} in <chat>{{chat}}</chat>';
+        };
+        proposals: {
+            title: 'Your proposals';
+            title_editor: 'Waiting for approval';
+            changes: 'Changes: “{{text}}”';
+            changes_unknown: 'Changes: “an earlier entry”';
+            approve: 'Approve';
+            'edit-approve': 'Edit and approve';
+            reject: 'Reject';
+            withdraw: 'Withdraw';
+        };
+        entries: {
+            title: 'In use';
+            version: 'Version {{version}}';
+            'approved-by': 'Approved by {{name}}';
+            'approved-by_unknown': 'Approved by an editor';
+            history: 'Entry history';
+            edit: 'Suggest a change';
+            edit_editor: 'Edit entry';
+            retire: 'Retire entry';
+            empty: 'Nothing yet. Propose a lasting team fact, convention or decision, like “Invoices go out on the 1st”, or ask a socio with this Space to propose one.';
+        };
+        retired: {
+            title: 'Retired';
+            by: 'Retired by {{name}}';
+            by_unknown: 'Retired by an editor';
+            delete: 'Delete retired entry';
+            kept_one: 'Kept {{count, number}} day after they are retired, with earlier versions and proposals turned down.';
+            kept_other: 'Kept {{count, number}} days after they are retired, with earlier versions and proposals turned down.';
+        };
+        'retire-confirm': {
+            title: 'Retire this entry?';
+            action: 'Retire';
+            body: 'Socios stop using it in every chat at once. Proposals waiting to change it are turned down. It stays under Retired until it is deleted.';
+        };
+        'delete-confirm': {
+            title: 'Delete this entry for good?';
+            body: 'Every version of it goes. Backups keep it until they age out.';
+        };
+        editor: {
+            'title-approve': 'Approve in your words.';
+            'title-change': 'Suggest a change.';
+            'title-change_editor': 'Keep it accurate.';
+            'title-new': 'Propose shared knowledge.';
+            'title-new_editor': 'Something the team knows.';
+            label: 'Entry';
+            note: 'It waits for one of the Space’s editors, and is used only once they approve it.';
+            note_now: 'It is in use as soon as you save: socios with this Space use it with everyone who can read it. The version before is kept in its history.';
+            rule: 'One lasting fact, convention or decision; nothing private about a person, and no secrets.';
+        };
+        history: {
+            title: 'Entry history';
+            description: 'Every version, newest first, with who proposed and approved it.';
+            'load-failed': 'Could not load its history.';
+            version: 'Version {{version}}';
+            proposal: 'Proposal';
+            decided: 'approved by {{name}}';
+            decided_rejected: 'rejected by {{name}}';
+        };
+        status: {
+            proposed: 'Waiting for approval';
+            active: 'In use';
+            superseded: 'Replaced';
+            rejected: 'Rejected';
+            withdrawn: 'Withdrawn';
+            retired: 'Retired';
+        };
+    };
+    'spaces.nav': {
+        group: 'Spaces';
+        create: 'Create Space';
+        'untitled-page': 'Untitled page';
+        crumbs: {
+            spaces: 'Spaces';
+            pages: 'Pages';
+            memory: 'Memory';
+            radar: 'Radar';
+            settings: 'Settings';
+        };
+    };
+    'spaces.promote': {
+        title: 'Create follow-up';
+        description: "Turn this finding into a goal, a recurring schedule, or a board issue. It's prefilled from the page — edit, then confirm. Nothing is created until you do.";
+        untitled: 'Untitled page';
+        fields: {
+            title: 'Title';
+            body: 'Body';
+            destination: 'Destination';
+            kind: 'Kind';
+            priority: 'Priority';
+            area: 'Area';
+            'no-area': 'No area';
+            repeat: 'Repeat after each successful run';
+        };
+        destinations: {
+            issue: 'Board issue';
+            'issue-hint': 'Filed into triage for review.';
+            schedule: 'Recurring schedule';
+            'schedule-hint': 'Runs in a conversation of its own, on a cadence.';
+            goal: 'Goal';
+            'goal-hint': 'Ask this specialist to work toward it; you approve it.';
+        };
+        intervals: {
+            hour: 'Every hour';
+            day: 'Every day';
+            week: 'Every week';
+        };
+        'goal-note': '{{socio}} will propose the goal and work toward it on its own cadence. You approve the request before anything starts — the same way goals are always set.';
+        cancel: 'Cancel';
+        creating: 'Creating…';
+        submit: {
+            issue: 'File issue';
+            schedule: 'Create schedule';
+            goal: 'Ask for goal';
+        };
+        toasts: {
+            filed: 'Filed {{key}}';
+            open: 'Open';
+            scheduled: 'Schedule created';
+            'scheduled-detail': 'It runs in its own conversation.';
+            asked: 'Asked for a goal';
+            'asked-detail': '{{socio}} will propose it; you approve before it starts.';
+        };
+        errors: {
+            'no-specialist': 'No specialist for this Space.';
+            failed: 'Could not create the follow-up.';
+        };
+    };
+    'spaces.radar': {
+        label: '{{space}} change radar';
+        description: "A project change radar: what changed, what stays open, and what may be stale across this Space's pages.";
+        refresh: 'Refresh';
+        'refresh-label': 'Refresh radar';
+        missing: 'Space not found.';
+        loading: 'Loading radar…';
+        'load-failed': 'Could not load the change radar.';
+        scope_one: '{{count, number}} live page in this Space. Stale is older than {{days, number}} days, relative to the most recent change. Markers are a simple heuristic, not deep scan. Dismissals last only this session.';
+        scope_other: '{{count, number}} live pages in this Space. Stale is older than {{days, number}} days, relative to the most recent change. Markers are a simple heuristic, not deep scan. Dismissals last only this session.';
+        recent: {
+            title: 'Recent changes';
+            empty: 'No pages yet.';
+        };
+        open: {
+            title: 'Open decisions & experiments';
+            empty: 'Nothing flagged. A page shows here when its title or excerpt carries a marker like <em>todo</em>, <em>decision</em>, <em>experiment</em>, <em>tbd</em> or <em>unresolved</em>.';
+        };
+        stale: {
+            title: 'Potentially stale';
+            empty_one: 'Nothing stale. Every page was updated within {{count, number}} day of the most recent change.';
+            empty_other: 'Nothing stale. Every page was updated within {{count, number}} days of the most recent change.';
+            today: 'Updated today';
+            age_one: '{{count, number}} day since the last edit';
+            age_other: '{{count, number}} days since the last edit';
+            dismiss: 'Not stale';
+        };
+        resolved: 'Resolved';
+        clear_one: 'Clear {{count, number}} dismissed this session';
+        clear_other: 'Clear {{count, number}} dismissed this session';
+        untitled: 'Untitled page';
+        revisions_one: '{{count, number}} revision kept';
+        revisions_other: '{{count, number}} revisions kept';
+        'ago-days': '{{days, relativetime(range: day)}}';
+        'ago-months': '{{months, relativetime(range: month)}}';
+    };
+    'spaces.settings': {
+        label: '{{space}} settings';
+        description: 'Who sees this Space, and its people.';
+        loading: 'Loading…';
+        'audience-legend': 'Who can see this Space';
+        'audience-note': 'Everyone in the workspace sees this Space and everything in it. Its editors choose.';
+        'audience-note_private': 'Private: only its people and workspace admins see it, its pages and their history, page chats, search results, apps, datasets and files shared with it, and its memory. Its editors choose.';
+        delete: {
+            title: 'Delete this Space';
+            body: 'It goes for everyone at once, with its pages, chats, memory, app shares and socios’ access. A workspace admin can restore it.';
+            action: 'Delete this Space';
+        };
+        confirm: {
+            title: 'Open this Space to the whole workspace?';
+            title_private: 'Make this Space private?';
+            action: 'Open to everyone';
+            action_private: 'Make private';
+            body: 'Everyone in the workspace will see it and everything in it.';
+            body_private: 'From now on only its people and workspace admins see it, its pages and their history, page chats, search results, apps, datasets and files shared with it, and its memory. Everyone else stops seeing it at once, and socios use it only in chats where everyone may.';
+        };
+        name: {
+            title: 'Name';
+            hint: 'Renaming keeps its pages, chats and links as they are.';
+            label: 'Space name';
+            rename: 'Rename';
+            renamed: 'Space renamed.';
+            failed: 'Could not rename the Space. Try again.';
+        };
+        people: {
+            title: 'People';
+            hint: 'Editors manage its people and who sees it, and approve its memory; members read it and propose. Workspace admins are editors of every Space.';
+            'role-of': '{{name}}’s role';
+            remove: 'Remove {{name}}';
+            none: 'No one added yet: workspace admins manage it.';
+            'add-form': 'Add a person';
+            'person-to-add': 'Person to add';
+            choose: 'Choose a person';
+            role: 'Role';
+            add: 'Add';
+            'load-failed': 'Could not load the Space’s people.';
+            'save-failed': 'Could not save. Try again.';
+        };
+        roles: {
+            editor: 'Editor';
+            member: 'Member';
+        };
     };
 }
