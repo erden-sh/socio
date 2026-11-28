@@ -18,7 +18,18 @@ import {
     settlesOpen,
     shownProgress,
 } from '../../src/navigation/drawer';
-import { DRAWER_FOOTER, drawerWorkspaces, workspaceLogoPath } from '../../src/shell/workspaces';
+import { nativeMenuItems } from '../../src/shell/native-menu';
+import {
+    DRAWER_FOOTER,
+    drawerWorkspaces,
+    REMOVE_SECTION_TITLE,
+    REMOVE_WORKSPACE,
+    removeWorkspaceNote,
+    removeWorkspaceQuestion,
+    WORKSPACE_SETTINGS,
+    workspaceLogoPath,
+    workspaceMenu,
+} from '../../src/shell/workspaces';
 import { systemSpring } from '../../src/ui/motion';
 
 // The workspace drawer (Slack's):
@@ -79,6 +90,10 @@ describe('the drawer’s workspace rows', () => {
         // Never a path the registry didn't write: a damaged name shows the mascot.
         expect(workspaceLogoPath(ROOT, id('a'), '../other/logo.png')).toBeNull();
         expect(workspaceLogoPath(ROOT, id('a'), 'logo.svg')).toBeNull();
+        // A logo refreshed after sign-in (CB-574) is named by its bytes.
+        expect(workspaceLogoPath(ROOT, id('a'), 'logo-0123456789abcdef.png')).toBe(
+            `${workspaceLayout(ROOT, id('a')).directory}/logo-0123456789abcdef.png`,
+        );
     });
 
     it('badges the unread the registry kept, capped as the web caps counts, and says it', () => {
@@ -135,6 +150,84 @@ describe('the drawer’s workspace rows', () => {
         expect(panel).toContain('onWeb={(href) => openLink(href, { web: true })}');
         expect(panel).toContain('openId={null} onWeb={null}');
         expect(panel).toContain("row.action.kind !== 'web' || onWeb !== null");
+    });
+});
+
+describe('a workspace row’s long-press menu (CB-573)', () => {
+    it('offers the open workspace’s Settings, and Remove from this device on every row, in red', () => {
+        expect(workspaceMenu({ active: true })).toEqual([WORKSPACE_SETTINGS, REMOVE_WORKSPACE]);
+        expect(workspaceMenu({ active: false })).toEqual([REMOVE_WORKSPACE]);
+        expect(REMOVE_WORKSPACE.label).toBe('Remove from this device');
+        const [settings, remove] = nativeMenuItems(workspaceMenu({ active: true }), 'ios');
+        expect(settings).toMatchObject({ id: 'workspace-settings', title: 'Settings', image: 'gearshape' });
+        expect(remove).toMatchObject({ id: 'remove-workspace', attributes: { destructive: true } });
+        expect(nativeMenuItems([REMOVE_WORKSPACE], 'android')[0]!.image).toBeUndefined();
+    });
+
+    it('always asks first, saying what goes, what stays and the unsent items it loses', () => {
+        const none = removeWorkspaceQuestion('Acme', 0);
+        expect(none).toMatchObject({ title: 'Remove Acme?', confirm: 'Remove', cancel: 'Cancel' });
+        expect(none.message).toBe(
+            'You’ll be signed out of Acme on this device, and its chats, files and drafts here will be deleted. ' +
+                'Your account and the workspace stay as they are; you can add it again anytime.',
+        );
+        expect(removeWorkspaceQuestion('Acme', 1).message).toMatch(/ 1 unsent item will be deleted too\.$/);
+        expect(removeWorkspaceQuestion('Acme', 4).message).toMatch(/ 4 unsent items will be deleted too\.$/);
+        // A count that failed is never taken as none.
+        expect(removeWorkspaceQuestion('Acme', null).message).toMatch(
+            /Anything you haven’t sent yet will be deleted too\.$/,
+        );
+    });
+
+    it('wraps each row in the system’s long-press menu, its actions the row’s accessibility actions too', () => {
+        const panel = read('screens/drawer-panel.tsx');
+        expect(panel).toContain('<ActionMenu request={{ title: row.name, actions, onAction }} trigger="longPress">');
+        expect(panel).toContain('onLongPress={LONG_PRESS_TO_MENU}');
+        expect(panel).toContain('accessibilityActions={accessibilityActionsOf(actions)}');
+        expect(panel).toContain('onAccessibilityAction={(event) => onAction(event.nativeEvent.actionName)}');
+    });
+
+    it('removes through the sign-out, after a destructive confirm whose default is Cancel', () => {
+        expect(read('screens/drawer-panel.tsx')).toContain('void askThenRemoveWorkspace(row.id, row.name);');
+        const ask = read('screens/remove-workspace.ts');
+        expect(ask).toContain('removeWorkspaceQuestion(name, await unsentItems(id))');
+        expect(ask).toContain("{ text: question.cancel, style: 'cancel', onPress: () => resolve(false) }");
+        expect(ask).toContain("{ text: question.confirm, style: 'destructive', onPress: () => resolve(true) }");
+        expect(ask).toContain('await signOut(id);');
+        // Removing another workspace keeps the open one; removing the open one opens the most recent left.
+        const signOut = read('platform/sign-out.ts');
+        expect(signOut).toContain('const wasActive = (await store().registry.active()) === id;');
+        expect(signOut).toContain('if (wasActive || (await store().registry.active()) === null) {');
+    });
+});
+
+describe('Remove from this device without the gesture (CB-573)', () => {
+    it('is a red row of its own in Settings while a workspace is open, with what it does under it', () => {
+        const settings = read('screens/settings.tsx');
+        expect(settings).toContain('{open ? <RemoveWorkspaceSection /> : null}');
+        expect(settings).toContain('onPress={() => void askThenRemoveWorkspace(scope.workspace.id, name)}');
+        expect(REMOVE_SECTION_TITLE).toBe('On this device');
+        expect(removeWorkspaceNote('Acme')).toBe(
+            'Signs you out of Acme on this device and deletes its copy here. Your account and the workspace stay as they are.',
+        );
+    });
+});
+
+describe('the open workspace’s logo kept current (CB-574)', () => {
+    it('takes the branding in force from the synced settings as the scope opens and when it changes', () => {
+        const summary = read('screens/workspace-summary.tsx');
+        expect(summary).toContain('state.settings.branding?.logo');
+        expect(summary).toContain('void refreshWorkspaceLogo(scope, logo);');
+        expect(summary).toContain('}, [scope, logo]);');
+        const binding = read('platform/workspace-logo.ts');
+        expect(binding).toContain('registry: store.registry,');
+        expect(binding).toContain('hash: sha256BytesHex,');
+    });
+
+    it('draws Home’s workspace button from the refreshed logo, not the scope’s snapshot alone', () => {
+        const home = read('screens/home-parts.tsx');
+        expect(home).not.toContain('workspaceLogoPath(storeRoot(), scope.workspace.id, scope.workspace.logo)');
+        expect(home.match(/useWorkspaceLogoPath\(scope\)/g)).toHaveLength(2);
     });
 });
 

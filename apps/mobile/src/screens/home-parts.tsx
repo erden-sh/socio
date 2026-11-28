@@ -7,7 +7,6 @@ import { useCollections, useLiveQuery, useUnsent, useWorkspaceScope } from '../l
 import type { BarMenu } from '../navigation/bar-items';
 import { useDrawer } from '../navigation/drawer-context';
 import { moreItemAction, moreRows, tabAction } from '../navigation/tabs';
-import { storeRoot } from '../platform/active-scope';
 import {
     type HomeMenuName,
     homeMenu,
@@ -26,7 +25,6 @@ import { waitingProposals } from '../shell/memories';
 import { issuesQuery, memoriesQuery, memoryProfileQuery, shellQuery, shellRows, spacesQuery } from '../shell/queries';
 import { NEW_ROOM, NEW_ROOM_HINT } from '../shell/room-invites';
 import { unsentBadge } from '../shell/unsent';
-import { workspaceLogoPath } from '../shell/workspaces';
 import { MEMORY_WRITE_VIEWS } from '../sync/memory-writes';
 import { overlaysOf } from '../sync/outbox-overlay';
 import { BAR_TITLE_MAX_SCALE, GlassSurface, AppSymbol, Text, ToneTile } from '../ui';
@@ -36,7 +34,7 @@ import { ChatListRow } from './chat-rows';
 import { MODULE_ICONS } from './module-icons';
 import { SymbolButton } from './platform-symbol';
 import { CountBadge, ListRow, SocioAvatar, SocioStateLabel, useOpenChat } from './shell-parts';
-import { WorkspaceLogo } from './workspace-logo';
+import { useWorkspaceLogoPath, WorkspaceLogo } from './workspace-logo';
 
 // Home's parts (screens/home.tsx): its bar's items (CB-431:
 // the workspace button, the ⋯ menu with Report issue and, for an admin,
@@ -111,7 +109,7 @@ export function WorkspaceButton({ withName, size = 44 }: { withName: boolean; si
     const collections = useCollections();
     const { data: shell } = useLiveQuery({ query: shellQuery(collections) });
     const name = workspaceName(shellRows(shell).state, scope.workspace);
-    const logo = workspaceLogoPath(storeRoot(), scope.workspace.id, scope.workspace.logo);
+    const logo = useWorkspaceLogoPath(scope);
     return (
         <Pressable
             testID="open-workspaces"
@@ -147,7 +145,7 @@ export function WorkspaceBarButton() {
     const collections = useCollections();
     const { data: shell } = useLiveQuery({ query: shellQuery(collections) });
     const name = workspaceName(shellRows(shell).state, scope.workspace);
-    const logo = workspaceLogoPath(storeRoot(), scope.workspace.id, scope.workspace.logo);
+    const logo = useWorkspaceLogoPath(scope);
     const { width } = useWindowDimensions();
     return (
         <Pressable
@@ -252,8 +250,12 @@ export function Tiles() {
     const { data: spaces } = useLiveQuery({ query: spacesQuery(collections) });
     const { state, workspace } = shellRows(shell);
     const { data: issues } = useLiveQuery({ query: issuesQuery(collections) });
-    const { data: memories } = useLiveQuery({ query: memoriesQuery(collections) });
-    const { data: profile } = useLiveQuery({ query: memoryProfileQuery(collections) });
+    const { data: memories } = useLiveQuery({
+        query: memoriesQuery(collections),
+    });
+    const { data: profile } = useLiveQuery({
+        query: memoryProfileQuery(collections),
+    });
     // The proposals waiting as Memories counts them: this device's approvals and deletes laid over.
     const { outbox } = useWorkspaceScope();
     const [store] = useState(() => outboxStateStore(outbox));
@@ -265,7 +267,12 @@ export function Tiles() {
         waitingProposals: waitingProposals(
             memories,
             profile[0] ?? null,
-            overlaysOf({ rows: writes.rows, unsent: writes.unsent, kinds: MEMORY_WRITE_VIEWS, scope: outbox }),
+            overlaysOf({
+                rows: writes.rows,
+                unsent: writes.unsent,
+                kinds: MEMORY_WRITE_VIEWS,
+                scope: outbox,
+            }),
         ),
     });
     const more = moreRows(workspace?.user.role ?? null);

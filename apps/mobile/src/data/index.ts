@@ -143,9 +143,12 @@ export {
 export {
     commitLogo,
     discardStagedLogos,
+    LOGO_FILE,
     type LogoFiles,
     type LogoSource,
     logoSource,
+    refreshLogo,
+    type RefreshLogoOptions,
     STAGING_DIR,
     type StagedLogo,
     stageLogo,

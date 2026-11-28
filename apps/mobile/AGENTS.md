@@ -180,7 +180,12 @@ A root native stack, with a native stack per tab, in `src/navigation/`:
   so it covers the tab bar), drawn by hand with gesture-handler and reanimated (`GestureHandlerRootView`
   is `src/app.tsx`'s root). It holds only the workspaces (`src/shell/workspaces.ts`,
   `screens/drawer-panel.tsx`): each one's logo, name, host and unread, the open one highlighted, then Add
-  a workspace, Settings and Help (the web's `/docs` through `useOpenLink`, shown while a workspace is open). Choosing one switches through the active scope. Home's
+  a workspace, Settings and Help (the web's `/docs` through `useOpenLink`, shown while a workspace is open). Choosing one switches through the active scope.
+  A long-press on a row (CB-573) is `ActionMenu`'s context menu (`workspaceMenu`): the open
+  workspace's Settings, then Remove from this device (destructive), also the row's accessibility
+  actions. Remove always asks (`removeWorkspaceQuestion`, `screens/remove-workspace.ts`; Cancel the
+  default, the unsent items it loses), then runs the sign-out (below) on that workspace. Settings has
+  the open workspace's Remove from this device too ("On this device"), so it is there without the gesture. Home's
   workspace button opens it (through `drawer-context.ts`), and on iOS a swipe from the left edge while
   Home shows (`drawerPanEnabled`: Android's gesture navigation takes the edge as back). The pan runs on
   the UI thread: its callbacks are worklets made in `drawer-gesture.ts`, a plain function the
@@ -401,6 +406,16 @@ fake fetch:
   goes to `socio/staging/` under a fresh name and shows as `file://` with expo-image's `cachePolicy:
   'memory'`. `commitLogo` moves it into the workspace's directory as `logo.<ext>` (the registry's
   `logo`); leaving Confirm, opening Add workspace and each new stage delete the staging directory.
+  Once added, the logo follows the workspace's branding (CB-574): the open scope's state row carries
+  `settings.branding` (the server's branding in force), and `screens/workspace-summary.tsx` hands its
+  `logo` to `refreshLogo` (bound in `platform/workspace-logo.ts`) as the scope opens and whenever it
+  changes. The same rules pick the image (the default is the mascot; a same-origin logo that gets no
+  answer, a 5xx or a 429 keeps the one on the phone), written as `logo-<first 16 hex of its
+  SHA-256>.<ext>`, so a new logo is a new file:// URL no image cache holds and the same one writes
+  nothing; then the registry's `setLogo`, then the old file goes. `src/data/logo-keeper.ts` keeps
+  each scope's newest name (a new scope starts from its own snapshot of the row; a closed scope's goes)
+  and tells Home's workspace button inside `save`, before the old file is deleted
+  (`tests/data/logo-keeper.test.ts`); the drawer reads the registry.
 - **One cookie jar per workspace** (`cookie-jar.ts`), for one origin, on a store it is given. It
   applies every response's Set-Cookie, whatever the status, keeps expiries in the server's clock, and
   is stored before the response comes back. The session's expiry moves only with a real slide (a day
@@ -663,7 +678,9 @@ Signing out is `src/data/sign-out.ts` under Node, bound in `src/platform/sign-ou
   the same way.
 - **The app navigates only after the wipe is verified:** while it runs, and when it fails (Try again;
   the next launch finishes the marked wipe too), `src/app.tsx` draws `screens/signing-out.tsx` in place
-  of the root stack. Then the most recently used workspace left becomes active, or Add workspace shows.
+  of the root stack. Then the most recently used workspace left becomes active, or Add workspace shows;
+  signing out of a workspace that isn't the active one (the drawer's Remove from this device) keeps
+  the active one.
 - **Leave workspace** (CB-383; shared's `leave-workspace.ts`, the web's Settings → Account → Profile →
   Leave workspace) is `src/data/leave-workspace.ts` under Node, bound as `leave` in
   `src/platform/sign-out.ts`, a destructive row under Sign out (`screens/account.tsx`). The sheet asks

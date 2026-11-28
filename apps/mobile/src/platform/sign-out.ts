@@ -21,7 +21,8 @@ import { APP_USER_AGENT } from './user-agent';
 // fails, the app draws screens/signing-out.tsx in place of the root stack
 // (src/app.tsx), so nothing navigates until the wipe is verified. Then the
 // most recently used workspace left becomes active (or none: Add workspace),
-// and the gate follows.
+// and the gate follows; signing out of a workspace that isn't the open one
+// (the drawer's Remove from this device, CB-573) keeps the open one.
 //
 // Pending revocations (a logout that got no answer) are tried again once the
 // store has opened at launch, and on each return to the foreground.
@@ -76,6 +77,8 @@ export async function signOut(id: string): Promise<void> {
     }
     set({ kind: 'signing-out', workspaceId: id });
     try {
+        // Removing another workspace (the drawer's long-press, CB-573) leaves the open one open.
+        const wasActive = (await store().registry.active()) === id;
         await signOutWorkspace(
             {
                 store: store(),
@@ -92,10 +95,12 @@ export async function signOut(id: string): Promise<void> {
             },
             id,
         );
-        const next = (await store().registry.list())
-            .filter((row) => row.state === 'ready')
-            .sort((a, b) => b.lastUsed - a.lastUsed)[0];
-        await store().registry.setActive(next?.id ?? null);
+        if (wasActive || (await store().registry.active()) === null) {
+            const next = (await store().registry.list())
+                .filter((row) => row.state === 'ready')
+                .sort((a, b) => b.lastUsed - a.lastUsed)[0];
+            await store().registry.setActive(next?.id ?? null);
+        }
         await rootState.refresh();
         await releaseScope(id);
         set({ kind: 'idle' });

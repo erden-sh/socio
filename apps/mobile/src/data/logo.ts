@@ -20,6 +20,12 @@ import { type FileSystem, joinPath, storeDirectory } from './layout';
 //
 // Same-origin logos come through publicFetch: no cookies, no Origin, and a
 // redirect is handed back, which counts as no logo.
+//
+// Once added, the open workspace's synced settings say its branding in force
+// (CB-574): `refreshLogo` takes the logo again whenever that changes and each
+// time the workspace opens, and keeps it under a name made from its bytes
+// (`logo-<16 hex>.<ext>`), so a new logo is a new file:// URL that no image
+// cache holds, and the same logo writes nothing.
 
 /** The staging directory, in the store's folder. */
 export const STAGING_DIR = 'staging';
@@ -103,7 +109,7 @@ export async function stageLogo(logo: string | null, origin: string, options: St
         return MASCOT;
     }
     const image = source.kind === 'data' ? fromDataUrl(source) : await fromOrigin(source.url, options);
-    if (image === null) {
+    if (image === null || image === UNREACHABLE) {
         return MASCOT;
     }
     const directory = stagingDirectory(options.root);
@@ -131,6 +137,75 @@ export async function commitLogo(
         await files.move(staged.path, joinPath(workspaceDirectory, name));
     }
     await discardStagedLogos(root, files);
+    return name;
+}
+
+/** A logo file name the registry may hold: the one sign-in commits, or one `refreshLogo` names by its bytes. */
+export const LOGO_FILE = /^logo(?:-[0-9a-f]{16})?\.(?:png|jpg|webp)$/;
+
+export interface RefreshLogoOptions {
+    readonly files: LogoFiles;
+    /** publicFetch (`createPublicFetch`), for a same-origin logo. */
+    readonly publicFetch: PublicFetch;
+    /** SHA-256 of the bytes, as lowercase hex: the file's name. */
+    readonly hash: (bytes: Uint8Array<ArrayBuffer>) => Promise<string>;
+    /** Keeps the new file name (null: the mascot) in the registry; the old file goes only after it resolves. */
+    readonly save: (name: string | null) => Promise<void>;
+    /** The workspace's scope: once it aborts, nothing is written or kept. */
+    readonly signal?: AbortSignal;
+}
+
+/**
+ * Brings an added workspace's logo up to what its branding says now (CB-574):
+ * `logo` is `branding.logo` from its synced settings, `current` the file name
+ * the registry holds. A new image is written to `workspaceDirectory` under a
+ * name from its bytes, then `save`d, then the old file is deleted; the
+ * default and anything the app can't take are the mascot (null). The same
+ * image writes nothing, and a same-origin logo that gets no answer keeps the
+ * one on the phone. Resolves with the name kept, or `current` when nothing
+ * changed.
+ */
+export async function refreshLogo(
+    logo: string | null,
+    origin: string,
+    workspaceDirectory: string,
+    current: string | null,
+    options: RefreshLogoOptions,
+): Promise<string | null> {
+    const aborted = () => options.signal?.aborted === true;
+    const source = logoSource(logo, origin);
+    let image: Image | null = null;
+    if (source.kind === 'data') {
+        image = fromDataUrl(source);
+    } else if (source.kind === 'fetch') {
+        let fetched: Image | null | typeof UNREACHABLE;
+        try {
+            fetched = await fromOrigin(source.url, options);
+        } catch {
+            return current;
+        }
+        if (fetched === UNREACHABLE) {
+            return current;
+        }
+        image = fetched;
+    }
+    const name =
+        image === null
+            ? null
+            : `logo-${(await options.hash(image.bytes as Uint8Array<ArrayBuffer>)).slice(0, 16)}.${TYPES[image.type]}`;
+    if (name === current || aborted()) {
+        return current;
+    }
+    if (image !== null && name !== null) {
+        await options.files.write(joinPath(workspaceDirectory, name), image.bytes);
+    }
+    if (aborted()) {
+        return current;
+    }
+    await options.save(name);
+    if (current !== null && LOGO_FILE.test(current)) {
+        await options.files.remove(joinPath(workspaceDirectory, current));
+    }
     return name;
 }
 
@@ -162,7 +237,13 @@ function fromDataUrl(source: Extract<LogoSource, { kind: 'data' }>): Image | nul
     return checked(source.type, bytes);
 }
 
-async function fromOrigin(url: string, { publicFetch, signal }: StageLogoOptions): Promise<Image | null> {
+/** A same-origin logo that got no answer: nothing to say about the logo itself. */
+const UNREACHABLE = 'unreachable';
+
+async function fromOrigin(
+    url: string,
+    { publicFetch, signal }: { readonly publicFetch: PublicFetch; readonly signal?: AbortSignal },
+): Promise<Image | null | typeof UNREACHABLE> {
     let response: Response;
     try {
         response = await publicFetch(url, { headers: { accept: Object.keys(TYPES).join(', ') }, signal });
@@ -170,7 +251,11 @@ async function fromOrigin(url: string, { publicFetch, signal }: StageLogoOptions
         if (signal?.aborted) {
             throw error;
         }
-        return null;
+        return UNREACHABLE;
+    }
+    // A failing or busy server says nothing about the logo.
+    if (response.status >= 500 || response.status === 429) {
+        return UNREACHABLE;
     }
     const type = (response.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase();
     const length = Number(response.headers.get('content-length') ?? '0');
@@ -184,7 +269,7 @@ async function fromOrigin(url: string, { publicFetch, signal }: StageLogoOptions
         if (signal?.aborted) {
             throw error;
         }
-        return null;
+        return UNREACHABLE;
     }
     return checked(type as LogoType, bytes);
 }
