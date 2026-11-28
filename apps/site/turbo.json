@@ -12,7 +12,7 @@
             "outputs": []
         },
         "test": {
-            "description": "The site's Vitest suite, under Node. It builds the site itself (into a temporary directory), so it doesn't wait on build. It reads what the site copies or states from elsewhere: the client's tokens (globals.css), tones (shell/tones.ts) and character art (locals/art), and the facts the legal pages state (the session cookie in better-auth.ts and host-cookies.ts, the relay's registration expiry, the phone's lease), the outside model endpoint (inference/openai-compatible.ts) the self-host copy accounts for, removal's refusal and transfer (purge/person.ts, auth/accounts.ts), and the menu labels the pages name (the app's More, Account, Settings and Sign out; the web's user menu, Settings, People and Deactivate).",
+            "description": "The site's Vitest suite, under Node. It builds the site itself (into a temporary directory), so it doesn't wait on build. It reads what the site copies or states from elsewhere: the client's tokens (globals.css), tones (shell/tones.ts) and character art (locals/art), and the facts the legal pages state (the session cookie in better-auth.ts and host-cookies.ts, the relay's registration expiry, the phone's lease), the outside model endpoint (inference/openai-compatible.ts) the self-host copy accounts for, removal's refusal and transfer (purge/person.ts, auth/accounts.ts), and the menu labels the pages name (the app's More, Account, Settings and Sign out; the web's user menu (shell.help's words), Settings, People and Deactivate).",
             "inputs": [
                 "$TURBO_DEFAULT$",
                 "$TURBO_ROOT$/packages/client/src/globals.css",
@@ -34,6 +34,7 @@
                 "$TURBO_ROOT$/packages/client/src/components/nav-user.tsx",
                 "$TURBO_ROOT$/packages/client/src/components/app-sidebar.tsx",
                 "$TURBO_ROOT$/packages/i18n/locales/en-US/settings.json",
+                "$TURBO_ROOT$/packages/i18n/locales/en-US/shell.help.json",
                 "$TURBO_ROOT$/packages/i18n/locales/en-US/settings.people.json",
                 "$TURBO_ROOT$/packages/i18n/locales/en-US/settings.account.json",
                 "!dist/**",

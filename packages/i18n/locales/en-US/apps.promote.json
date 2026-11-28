@@ -1,0 +1,99 @@
+{
+    "title": "Promote {{name}} · version {{version}}",
+    "title-loading": "Promote app",
+    "description": "It moves out of {{socio}}’s computer into the workspace app runtime, at the same address, and keeps its data in your data space.",
+    "description-loading": "It moves out of the socio’s computer into the workspace app runtime, at the same address, and keeps its data in your data space.",
+    "load-failed": "Could not load the app.",
+    "failed": "Could not promote it.",
+    "default-name": "{{name}} data",
+    "size": "{{size, bytes}}",
+    "steps": {
+        "label": "Steps",
+        "step": "{{number}}. {{name}}",
+        "review": "Review",
+        "data": "Data",
+        "promote": "Promote"
+    },
+    "review": {
+        "no-runtime": "The workspace app runtime is not set up on this server (APPS_RUNTIME_URL), so it can’t be promoted yet.",
+        "entry": "Entry",
+        "files": "Files",
+        "files-value": "{{files, number}} · {{size, bytes}}",
+        "reaches": "Reaches",
+        "reaches-nothing": "Nothing outside Socio",
+        "routes": "Routes",
+        "data": "Data",
+        "data-none": "None",
+        "settings": "Settings",
+        "no-secrets": "No secrets here: the values are stored with the app.",
+        "file-list": "Files in this version"
+    },
+    "data": {
+        "none": "This version uses no datasets: nothing to decide here.",
+        "kind": {
+            "shared": "the socio’s shared dataset",
+            "scratch": "the socio’s scratch dataset",
+            "workspace": "a workspace dataset",
+            "missing": "no longer exists",
+            "yours": "your dataset"
+        },
+        "tables": "tables {{tables, list(type: unit; style: short)}}",
+        "table-count_one": "{{count}} table",
+        "table-count_other": "{{count}} tables",
+        "shared-note": "Everyone who uses {{socio}} sees this data. Moving or sharing it takes these tables out of the shared dataset into a new workspace dataset, which belongs to the workspace, not to you, and stays with it. {{socio}} asks to keep writing to it, and can once you approve that request. Keeping it leaves the app on the shared dataset.",
+        "gone": "This dataset is gone; ask the socio to package a version without it.",
+        "share-with": "Share with",
+        "choose-space": "Choose a Space",
+        "new-name": "New dataset name",
+        "socio-asks": "{{socio}} asks to keep writing to it (you approve)",
+        "socio-reads": "{{socio}} keeps read access"
+    },
+    "choices": {
+        "move": {
+            "title": "Move it to your workspace",
+            "line": "Into a new dataset of yours, out of the socio’s scratch space."
+        },
+        "share": {
+            "title": "Share it with a Space",
+            "line": "Its members can read it; the app writes it. Scratch data is moved first."
+        },
+        "keep": {
+            "title": "Keep it where it is",
+            "line": "The app uses it there; nothing moves."
+        }
+    },
+    "shared-choices": {
+        "move": {
+            "title": "Move it to a workspace dataset",
+            "line": "Into a new dataset of the workspace’s, not yours, out of the socio’s shared dataset."
+        },
+        "share": {
+            "title": "Move it and share it with a Space",
+            "line": "Into a new workspace dataset its members can read; the app writes it."
+        },
+        "keep": {
+            "title": "Keep it where it is",
+            "line": "The app uses the socio’s shared dataset; nothing moves."
+        }
+    },
+    "describe": {
+        "none": "No choice yet",
+        "move": "Move into “{{name}}”",
+        "move_reads": "Move into “{{name}}” (the socio keeps read access)",
+        "move-shared": "Move into the workspace dataset “{{name}}”",
+        "move-shared_asks": "Move into the workspace dataset “{{name}}” ({{socio}} can write to it once you approve)",
+        "share": "Share with {{space}}",
+        "share-shared": "Move into the workspace dataset “{{name}}”, shared with {{space}}",
+        "share-shared_asks": "Move into the workspace dataset “{{name}}”, shared with {{space}} ({{socio}} can write to it once you approve)",
+        "keep": "Keep where it is"
+    },
+    "confirm": {
+        "intro": "Version {{version}} runs in the workspace app runtime at its current address; only you can open it until you share it.",
+        "dataset": "{{name}}: {{choice}}",
+        "reaches": "Reaches {{hosts}}",
+        "reaches-nothing": "Reaches nothing outside Socio"
+    },
+    "back": "Back",
+    "next": "Next",
+    "promote": "Promote"
+}

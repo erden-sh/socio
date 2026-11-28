@@ -1,0 +1,9 @@
+{
+    "crumbs.apps": "First crumb: the Apps page (small web apps socios build).",
+    "crumbs.open": "Second crumb: the page that signs the person in to an app and opens it.",
+    "opening": "Title while the app opens.",
+    "signing-in": "Text while the app opens.",
+    "failed": "Error when the app could not open, without a reason from the server.",
+    "error-title": "Title when the app could not open.",
+    "error-detail": "Text after the server's error (in English). <apps> wraps the link to the Apps page; keep the tag around it."
+}

@@ -1,0 +1,65 @@
+{
+    "description": "Features installed on this instance. Some run inside Socio, others as their own service. Nothing is installed until you install it.",
+    "search": "Search plugins",
+    "datasets-failed": "Could not load the plugin’s datasets.",
+    "loading": "Loading plugins",
+    "tabs": {
+        "label": "Plugin sections",
+        "discover": "Discover",
+        "installed": "Installed"
+    },
+    "empty-catalog": {
+        "title": "No plugins in the catalog",
+        "body": "This instance offers no plugins. Whoever operates the server lists them in PLUGIN_CATALOGS."
+    },
+    "featured": "Featured categories",
+    "categories": {
+        "scheduling": "Scheduling",
+        "publishing": "Publishing",
+        "analytics": "Analytics"
+    },
+    "category-count_one": "{{count}} app",
+    "category-count_other": "{{count}} apps",
+    "popular": "Popular",
+    "recent": "Recently added",
+    "empty-view": {
+        "title": "No apps in this view",
+        "body": "Clear the search or pick another category."
+    },
+    "card": {
+        "installed": "Installed",
+        "not-installed": "Not installed",
+        "details": "Details"
+    },
+    "detail": {
+        "meta": "{{author}} · {{version}} · {{display}} · {{mode}}",
+        "back": "Back to the store",
+        "manage": "Manage",
+        "install": "Install",
+        "screenshots": "Screenshots",
+        "permissions": "Permissions",
+        "status_enabled-bundled": "Enabled on this instance. Choose who can use it and open it from Installed.",
+        "status_enabled-service": "Enabled on this instance. Open it and change its settings from its page.",
+        "status_disabled-bundled": "Disabled on this instance. Choose who can use it and open it from Installed.",
+        "status_disabled-service": "Disabled on this instance. Open it and change its settings from its page."
+    },
+    "screenshots": {
+        "week": {
+            "title": "Week",
+            "caption": "Posts sit on a time grid."
+        },
+        "composer": {
+            "title": "Composer",
+            "caption": "A draft on the left, the X card on the right.",
+            "draft": "Write something…",
+            "account": "account",
+            "preview": "Your post shows up here."
+        }
+    },
+    "empty-installed": {
+        "title": "No plugin is installed",
+        "body": "Install one from the catalog on this instance. It stays off everywhere else."
+    },
+    "manage": "Manage",
+    "manage-label": "Manage {{name}}"
+}

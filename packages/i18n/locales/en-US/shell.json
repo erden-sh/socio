@@ -60,5 +60,6 @@
             "back": "Back to your socios",
             "crumb": "Not found"
         }
-    }
+    },
+    "account-menu": "Account: {{name}}"
 }

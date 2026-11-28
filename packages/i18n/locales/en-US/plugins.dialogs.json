@@ -1,0 +1,49 @@
+{
+    "update": {
+        "title": "Update {{name}} to {{version}}?",
+        "adds": "This version can do more than the installed one. Review what it adds.",
+        "adds-nothing": "This version adds no access the installed one doesn’t have.",
+        "additions": "What it adds",
+        "removed": "Settings it deletes",
+        "removed-intro": "The new version no longer has these settings, so their saved values are deleted:",
+        "cancel": "Cancel",
+        "update": "Update",
+        "updating": "Updating…"
+    },
+    "additions": {
+        "egress": "Can now reach {{host}}",
+        "egress-setting": "Can now reach the host in its setting {{field}} (now {{host}})",
+        "egress-setting-any": "Can reach the host you enter in its setting {{field}}",
+        "permission": "Asks for the permission {{permission}}",
+        "bridge-open": "Can ask to open {{url}} in a new tab",
+        "bridge-open-any-https": "Can ask to open any https link, after the person confirms it (a sensitive scope)",
+        "embed": "Now opens inside the workspace instead of in a new tab",
+        "action": "Lets socios ask for its action {{action}} ({{tier}})",
+        "action-changed": "Changes its socio action {{action}} from {{from}} to {{tier}}",
+        "always-ask-dropped": "No longer shows the person’s card on every socio access request",
+        "bridge-routes": "Gets deep links: its own pages get workspace addresses",
+        "secret_required": "Asks for a new required secret {{name}}",
+        "secret_optional": "Asks for a new optional secret {{name}}",
+        "service-secret": "Gets the runtime secret {{name}} mounted into its service",
+        "dataset_read": "Needs a new dataset {{name}}, to read",
+        "dataset_write": "Needs a new dataset {{name}}, to read and write",
+        "dataset-write": "Can now write to the dataset {{name}}, which it only read",
+        "webhook": "Takes public {{method}} requests at {{path}}, with no sign-in",
+        "webhook-limit": "Takes larger or more frequent public requests at {{method}} {{path}}",
+        "public-path": "Serves {{path}} without a socio’s envelope",
+        "cpus": "Requests {{to, number}} CPUs, up from {{from, number}}",
+        "memory": "Requests {{to, number}} MB of memory, up from {{from, number}} MB",
+        "volume": "Keeps data on a new or changed volume {{name}}"
+    },
+    "uninstall": {
+        "title": "Uninstall {{name}}?",
+        "description-bundled": "It is removed from this instance and nobody can open it. The rows it saved stay, and so do its datasets, the workspace’s: installing it again offers them back.",
+        "description-service": "Its service stops and is removed, with its volumes and its identity. The rows it saved stay, and so do its datasets, the workspace’s: installing it again offers them back.",
+        "type": "Type <name>{{name}}</name> to confirm",
+        "name": "Plugin name",
+        "mismatch": "Type it exactly as shown.",
+        "keep": "Keep it",
+        "uninstall": "Uninstall",
+        "uninstalling": "Uninstalling…"
+    }
+}

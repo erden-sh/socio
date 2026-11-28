@@ -218,6 +218,275 @@ export interface EnglishResources {
             description: 'Approve to let it go ahead, or deny. <all>All approvals</all>';
         };
     };
+    apps: {
+        title: 'Apps';
+        refresh: 'Refresh';
+        description: 'Mini apps your socios build, each on its own address behind your sign-in. An ephemeral app runs only while its socio’s computer runs it; once the socio packages it, promote it into a workspace app that runs on its own, with its data in your data space.';
+        'load-failed': 'Could not load apps.';
+        'share-failed': 'Could not change sharing.';
+        'action-failed': 'That didn’t work.';
+        'open-failed': 'Could not open the app.';
+        unregistered: 'Unregistered {{name}}.';
+        'unregister-failed': 'Could not unregister the app.';
+        'not-set-up': {
+            title: 'Mini apps are not set up';
+            description: 'An operator sets APPS_HOST (and a wildcard DNS entry and proxy host for it) to serve mini apps. See docs/SETUP.md.';
+        };
+        empty: {
+            title: 'No apps yet';
+            description: 'Ask a socio to build you a small app (a tracker, a dashboard, a form). It runs it in its computer and registers it here once you approve.';
+        };
+        kind: {
+            ephemeral: 'Ephemeral';
+            packaged: 'Packaged';
+            promoted: 'Workspace app';
+            unpublished: 'Unpublished';
+        };
+        state: {
+            stopped: 'Stopped';
+            running: 'Running';
+            failed: 'Failed';
+            starting: 'Starting';
+            'not-running': 'Not running';
+            'not-answering': 'Not answering';
+            'computer-stopped': 'Computer stopped';
+            unavailable: 'Unavailable';
+        };
+        health: {
+            'last-recovered': 'Last recovered {{when}}: {{reason}}.';
+            repaired: 'repaired';
+            recovering: 'Recovering by itself; its data is kept.';
+            degraded: 'Degraded; it is repaired automatically.';
+            'degraded-next': 'Degraded; it is repaired automatically, next try {{when}}.';
+            'gave-up_one': 'Automatic repair gave up after {{count}} attempt; admins were told. Its data is kept; press Start to try again.';
+            'gave-up_other': 'Automatic repair gave up after {{count}} attempts; admins were told. Its data is kept; press Start to try again.';
+            attempt_one: 'Attempt {{attempt}} of {{count}}.';
+            attempt_other: 'Attempt {{attempt}} of {{count}}.';
+            'last-error': 'Last error: {{error}}';
+        };
+        card: {
+            'shared-by': 'shared by {{name}}';
+            version: 'version {{version}}';
+            port: 'port {{port}}';
+            report: 'Report issue';
+            'report-label': 'Report an issue about {{name}}';
+            open: 'Open';
+            'needs-setup_one': 'Needs setup: {{names, list(type: unit; style: short)}} isn’t set. A workspace admin sets secrets in Settings → Secrets.';
+            'needs-setup_other': 'Needs setup: {{names, list(type: unit; style: short)}} aren’t set. A workspace admin sets secrets in Settings → Secrets.';
+            'build-failed': 'Version {{version}} didn’t build';
+            'start-failed': 'The last start failed';
+            data: 'Data it may use: {{datasets, list(type: unit; style: short)}}';
+            'shared-with': 'Shared with';
+            'only-me': 'Only me';
+            promote: 'Promote…';
+            rollback: 'Roll back to version {{version}}';
+            'rolled-back': '{{name}} is back on version {{version}}.';
+            unpublish: 'Unpublish';
+            unpublished: '{{name}} is unpublished; its data stays.';
+            publish: 'Publish';
+            published: '{{name}} is published again.';
+            logs: 'Logs';
+            delete: 'Delete…';
+            unregister: 'Unregister';
+        };
+        versions: {
+            count_one: '{{count}} version';
+            count_other: '{{count}} versions';
+            line_one: 'Version {{version}} · {{count}} file · {{when}}';
+            line_other: 'Version {{version}} · {{count}} files · {{when}}';
+            line_live_one: 'Version {{version}} (live) · {{count}} file · {{when}}';
+            line_live_other: 'Version {{version}} (live) · {{count}} files · {{when}}';
+            line_previous_one: 'Version {{version}} (previous) · {{count}} file · {{when}}';
+            line_previous_other: 'Version {{version}} (previous) · {{count}} files · {{when}}';
+        };
+        others: {
+            title: 'Other apps in the workspace';
+            description: 'Shown to admins by name and owner. Only the owner and the people of the Space it’s shared with can open one.';
+            by: 'by {{name}}';
+        };
+    };
+    'apps.dialogs': {
+        delete: {
+            title: 'Delete {{name}}?';
+            description: 'Its address stops working, everyone signed in to it is signed out, and it leaves your apps and the launcher.';
+            data: 'Its data';
+            keep: 'Keep it';
+            'keep-named': '{{datasets, list(type: unit; style: short)}} stay in your data space.';
+            'keep-detail': 'Its datasets stay in your data space.';
+            remove: 'Delete the data it brought';
+            'remove-detail': 'Datasets created when it was promoted are deleted; datasets it only used stay.';
+            cancel: 'Cancel';
+            delete: 'Delete';
+            deleted: 'Deleted {{name}}.';
+            'deleted-with': 'Deleted {{name}} and {{datasets, list(type: unit; style: short)}}.';
+            failed: 'Could not delete the app.';
+        };
+        unregister: {
+            title: 'Unregister {{name}}?';
+            description: 'Its address stops working, everyone signed in to it is signed out, and it leaves your apps.';
+            action: 'Unregister';
+        };
+        logs: {
+            title: '{{name}} logs';
+            description: 'Each build and start of a version in the workspace app runtime, with how it ended and its own last lines.';
+            'load-failed': 'Could not load the logs.';
+            none: 'No logs to show.';
+            attempt: 'Attempt';
+            choose: 'Choose one';
+            option: '{{attempt}}. {{label}} · {{when}}';
+            'no-output': 'No output.';
+            started: 'Started {{when}}';
+            answered: 'answered {{when}}';
+            ended: 'ended {{when}}';
+            dropped_one: '[{{count}} earlier line not kept]';
+            dropped_other: '[{{count}} earlier lines not kept]';
+        };
+        attempt: {
+            label_build: 'Build of version {{version}} · {{how}}';
+            label_start: 'Start of version {{version}} · {{how}}';
+            running: 'running';
+            'in-progress': 'in progress';
+            done: 'done';
+            oom: 'out of memory';
+            'never-answered': 'never answered';
+            lost: 'end unknown';
+            stopped: 'stopped';
+            exit: 'failed, exit {{code}}';
+            signal: 'failed, {{signal}}';
+            failed: 'failed';
+        };
+    };
+    'apps.dot': {
+        title: 'Apps';
+        all: 'All apps';
+        failed: 'Could not load its apps.';
+        'empty-archived': 'No apps of {{name}}’s that you can open.';
+        empty: '{{name}} hasn’t built an app you can open yet. Ask it in a chat for a small one, like a tracker or a dashboard.';
+        version: 'Version {{version}}';
+        'shared-with': 'Shared with {{space}}';
+        'only-you': 'Only you';
+        'shared-by': 'Shared by {{name}}';
+        'shared-by-other': 'Shared by another user';
+        stage: {
+            published: 'Published';
+            development: 'In development';
+            unpublished: 'Unpublished';
+        };
+        'manage-hint': '(manage it on the Apps page)';
+        'new-tab-hint': '(opens in a new tab)';
+        report: 'Report issue';
+        'report-label': 'Report an issue about {{name}}';
+    };
+    'apps.open': {
+        crumbs: {
+            apps: 'Apps';
+            open: 'Open';
+        };
+        opening: 'Opening…';
+        'signing-in': 'Signing you in to the app.';
+        failed: 'Could not open the app.';
+        'error-title': 'Can’t open this app';
+        'error-detail': 'It may have been unregistered, or not shared with you. <apps>See your apps</apps>.';
+    };
+    'apps.promote': {
+        title: 'Promote {{name}} · version {{version}}';
+        'title-loading': 'Promote app';
+        description: 'It moves out of {{socio}}’s computer into the workspace app runtime, at the same address, and keeps its data in your data space.';
+        'description-loading': 'It moves out of the socio’s computer into the workspace app runtime, at the same address, and keeps its data in your data space.';
+        'load-failed': 'Could not load the app.';
+        failed: 'Could not promote it.';
+        'default-name': '{{name}} data';
+        size: '{{size, bytes}}';
+        steps: {
+            label: 'Steps';
+            step: '{{number}}. {{name}}';
+            review: 'Review';
+            data: 'Data';
+            promote: 'Promote';
+        };
+        review: {
+            'no-runtime': 'The workspace app runtime is not set up on this server (APPS_RUNTIME_URL), so it can’t be promoted yet.';
+            entry: 'Entry';
+            files: 'Files';
+            'files-value': '{{files, number}} · {{size, bytes}}';
+            reaches: 'Reaches';
+            'reaches-nothing': 'Nothing outside Socio';
+            routes: 'Routes';
+            data: 'Data';
+            'data-none': 'None';
+            settings: 'Settings';
+            'no-secrets': 'No secrets here: the values are stored with the app.';
+            'file-list': 'Files in this version';
+        };
+        data: {
+            none: 'This version uses no datasets: nothing to decide here.';
+            kind: {
+                shared: 'the socio’s shared dataset';
+                scratch: 'the socio’s scratch dataset';
+                workspace: 'a workspace dataset';
+                missing: 'no longer exists';
+                yours: 'your dataset';
+            };
+            tables: 'tables {{tables, list(type: unit; style: short)}}';
+            'table-count_one': '{{count}} table';
+            'table-count_other': '{{count}} tables';
+            'shared-note': 'Everyone who uses {{socio}} sees this data. Moving or sharing it takes these tables out of the shared dataset into a new workspace dataset, which belongs to the workspace, not to you, and stays with it. {{socio}} asks to keep writing to it, and can once you approve that request. Keeping it leaves the app on the shared dataset.';
+            gone: 'This dataset is gone; ask the socio to package a version without it.';
+            'share-with': 'Share with';
+            'choose-space': 'Choose a Space';
+            'new-name': 'New dataset name';
+            'socio-asks': '{{socio}} asks to keep writing to it (you approve)';
+            'socio-reads': '{{socio}} keeps read access';
+        };
+        choices: {
+            move: {
+                title: 'Move it to your workspace';
+                line: 'Into a new dataset of yours, out of the socio’s scratch space.';
+            };
+            share: {
+                title: 'Share it with a Space';
+                line: 'Its members can read it; the app writes it. Scratch data is moved first.';
+            };
+            keep: {
+                title: 'Keep it where it is';
+                line: 'The app uses it there; nothing moves.';
+            };
+        };
+        'shared-choices': {
+            move: {
+                title: 'Move it to a workspace dataset';
+                line: 'Into a new dataset of the workspace’s, not yours, out of the socio’s shared dataset.';
+            };
+            share: {
+                title: 'Move it and share it with a Space';
+                line: 'Into a new workspace dataset its members can read; the app writes it.';
+            };
+            keep: {
+                title: 'Keep it where it is';
+                line: 'The app uses the socio’s shared dataset; nothing moves.';
+            };
+        };
+        describe: {
+            none: 'No choice yet';
+            move: 'Move into “{{name}}”';
+            move_reads: 'Move into “{{name}}” (the socio keeps read access)';
+            'move-shared': 'Move into the workspace dataset “{{name}}”';
+            'move-shared_asks': 'Move into the workspace dataset “{{name}}” ({{socio}} can write to it once you approve)';
+            share: 'Share with {{space}}';
+            'share-shared': 'Move into the workspace dataset “{{name}}”, shared with {{space}}';
+            'share-shared_asks': 'Move into the workspace dataset “{{name}}”, shared with {{space}} ({{socio}} can write to it once you approve)';
+            keep: 'Keep where it is';
+        };
+        confirm: {
+            intro: 'Version {{version}} runs in the workspace app runtime at its current address; only you can open it until you share it.';
+            dataset: '{{name}}: {{choice}}';
+            reaches: 'Reaches {{hosts}}';
+            'reaches-nothing': 'Reaches nothing outside Socio';
+        };
+        back: 'Back';
+        next: 'Next';
+        promote: 'Promote';
+    };
     chat: {
         copy: {
             action: 'Copy';
@@ -3436,6 +3705,337 @@ export interface EnglishResources {
         errors: {
             restore: 'Could not restore this review.';
             save: 'Could not save the approved draft.';
+        };
+    };
+    plugins: {
+        title: 'Plugins';
+        'crumb-fallback': 'Plugin';
+        open: 'Open';
+        'load-failed': 'Could not load plugins.';
+        'update-failed': 'Could not update the plugin.';
+        'update-to': 'Update to {{version}}';
+        meta: '{{author}} · {{version}}';
+        meta_removed: '{{author}} · {{version}} · no longer in the catalog';
+        'no-permissions': 'Asks for no extra permissions.';
+        'permission-sentence': '{{permission}}.';
+        permissions: {
+            'social-read': 'Read planned posts and the reply queue';
+            'social-write': 'Edit planned posts and replies';
+            'calendar-read': 'Read calendar events';
+            'calendar-write': 'Add, change and delete calendar events';
+            'person-read': 'See who is using it: their name, role and time zone (signed by Socio)';
+        };
+        audience: {
+            admins: 'Admins only';
+            members: 'Everyone (members too)';
+        };
+        display: {
+            inside: 'Opens inside Socio';
+            tab: 'Opens in a new tab';
+        };
+        mode: {
+            bundled: 'Runs inside Socio';
+            service: 'Runs as its own service';
+        };
+        run: {
+            disabled: 'Disabled';
+            running_one: '{{running}} of {{count}} running';
+            running_other: '{{running}} of {{count}} running';
+            stopped: 'Stopped';
+            starting: 'Starting';
+        };
+        'backup-badge': {
+            not_backed_up: 'Not backed up';
+            failing: 'Backup failing';
+            stale: 'Backup out of date';
+        };
+        'storage-warning': {
+            'not-backed-up': 'Not backed up';
+            private: 'Private storage';
+            message: '{{message}}.';
+        };
+        sensitive: {
+            badge: 'Sensitive scope';
+            'open-any-https': 'Open any https link in a new tab, after you confirm each one. Links it lists in its manifest open without asking.';
+        };
+    };
+    'plugins.bindings': {
+        table: '{{table}} ({{columns, list(type: unit; style: short)}})';
+        writes: 'writes';
+        reads: 'reads';
+        expects: 'Expects {{columns}}.';
+        new: 'New dataset';
+        'not-now': 'Not now';
+        'bound-now': '{{name}} (bound now)';
+        'used-before': '{{name}} (used before)';
+        'written-by': 'written by {{name}}';
+        'does-not-fit': 'doesn’t fit';
+        why: 'Why some datasets can’t be chosen';
+        problem: '<name>{{name}}</name>: {{problem}}';
+        install: {
+            title: 'Install {{name}}';
+            description: 'Choose the workspace data it uses. The data stays the workspace’s: uninstalling it never deletes a dataset, and each dataset has one plugin that writes it.';
+            cancel: 'Cancel';
+            install: 'Install';
+            installing: 'Installing…';
+        };
+        'load-failed': 'Could not load the plugin’s datasets.';
+        none: 'It uses no workspace datasets.';
+        bound: '{{need}} is bound.';
+        unbound: '{{need}} is unbound.';
+        'change-failed': 'Could not change the binding.';
+        state: {
+            bound_read: 'Bound to {{name}}, read only.';
+            bound_write: 'Bound to {{name}}, which only this plugin writes.';
+            unbound: 'Not bound: the plugin’s data token doesn’t cover it.';
+        };
+    };
+    'plugins.catalog': {
+        description: 'Features installed on this instance. Some run inside Socio, others as their own service. Nothing is installed until you install it.';
+        search: 'Search plugins';
+        'datasets-failed': 'Could not load the plugin’s datasets.';
+        loading: 'Loading plugins';
+        tabs: {
+            label: 'Plugin sections';
+            discover: 'Discover';
+            installed: 'Installed';
+        };
+        'empty-catalog': {
+            title: 'No plugins in the catalog';
+            body: 'This instance offers no plugins. Whoever operates the server lists them in PLUGIN_CATALOGS.';
+        };
+        featured: 'Featured categories';
+        categories: {
+            scheduling: 'Scheduling';
+            publishing: 'Publishing';
+            analytics: 'Analytics';
+        };
+        'category-count_one': '{{count}} app';
+        'category-count_other': '{{count}} apps';
+        popular: 'Popular';
+        recent: 'Recently added';
+        'empty-view': {
+            title: 'No apps in this view';
+            body: 'Clear the search or pick another category.';
+        };
+        card: {
+            installed: 'Installed';
+            'not-installed': 'Not installed';
+            details: 'Details';
+        };
+        detail: {
+            meta: '{{author}} · {{version}} · {{display}} · {{mode}}';
+            back: 'Back to the store';
+            manage: 'Manage';
+            install: 'Install';
+            screenshots: 'Screenshots';
+            permissions: 'Permissions';
+            'status_enabled-bundled': 'Enabled on this instance. Choose who can use it and open it from Installed.';
+            'status_enabled-service': 'Enabled on this instance. Open it and change its settings from its page.';
+            'status_disabled-bundled': 'Disabled on this instance. Choose who can use it and open it from Installed.';
+            'status_disabled-service': 'Disabled on this instance. Open it and change its settings from its page.';
+        };
+        screenshots: {
+            week: {
+                title: 'Week';
+                caption: 'Posts sit on a time grid.';
+            };
+            composer: {
+                title: 'Composer';
+                caption: 'A draft on the left, the X card on the right.';
+                draft: 'Write something…';
+                account: 'account';
+                preview: 'Your post shows up here.';
+            };
+        };
+        'empty-installed': {
+            title: 'No plugin is installed';
+            body: 'Install one from the catalog on this instance. It stays off everywhere else.';
+        };
+        manage: 'Manage';
+        'manage-label': 'Manage {{name}}';
+    };
+    'plugins.dialogs': {
+        update: {
+            title: 'Update {{name}} to {{version}}?';
+            adds: 'This version can do more than the installed one. Review what it adds.';
+            'adds-nothing': 'This version adds no access the installed one doesn’t have.';
+            additions: 'What it adds';
+            removed: 'Settings it deletes';
+            'removed-intro': 'The new version no longer has these settings, so their saved values are deleted:';
+            cancel: 'Cancel';
+            update: 'Update';
+            updating: 'Updating…';
+        };
+        additions: {
+            egress: 'Can now reach {{host}}';
+            'egress-setting': 'Can now reach the host in its setting {{field}} (now {{host}})';
+            'egress-setting-any': 'Can reach the host you enter in its setting {{field}}';
+            permission: 'Asks for the permission {{permission}}';
+            'bridge-open': 'Can ask to open {{url}} in a new tab';
+            'bridge-open-any-https': 'Can ask to open any https link, after the person confirms it (a sensitive scope)';
+            embed: 'Now opens inside the workspace instead of in a new tab';
+            action: 'Lets socios ask for its action {{action}} ({{tier}})';
+            'action-changed': 'Changes its socio action {{action}} from {{from}} to {{tier}}';
+            'always-ask-dropped': 'No longer shows the person’s card on every socio access request';
+            'bridge-routes': 'Gets deep links: its own pages get workspace addresses';
+            secret_required: 'Asks for a new required secret {{name}}';
+            secret_optional: 'Asks for a new optional secret {{name}}';
+            'service-secret': 'Gets the runtime secret {{name}} mounted into its service';
+            dataset_read: 'Needs a new dataset {{name}}, to read';
+            dataset_write: 'Needs a new dataset {{name}}, to read and write';
+            'dataset-write': 'Can now write to the dataset {{name}}, which it only read';
+            webhook: 'Takes public {{method}} requests at {{path}}, with no sign-in';
+            'webhook-limit': 'Takes larger or more frequent public requests at {{method}} {{path}}';
+            'public-path': 'Serves {{path}} without a socio’s envelope';
+            cpus: 'Requests {{to, number}} CPUs, up from {{from, number}}';
+            memory: 'Requests {{to, number}} MB of memory, up from {{from, number}} MB';
+            volume: 'Keeps data on a new or changed volume {{name}}';
+        };
+        uninstall: {
+            title: 'Uninstall {{name}}?';
+            'description-bundled': 'It is removed from this instance and nobody can open it. The rows it saved stay, and so do its datasets, the workspace’s: installing it again offers them back.';
+            'description-service': 'Its service stops and is removed, with its volumes and its identity. The rows it saved stay, and so do its datasets, the workspace’s: installing it again offers them back.';
+            type: 'Type <name>{{name}}</name> to confirm';
+            name: 'Plugin name';
+            mismatch: 'Type it exactly as shown.';
+            keep: 'Keep it';
+            uninstall: 'Uninstall';
+            uninstalling: 'Uninstalling…';
+        };
+    };
+    'plugins.frame': {
+        'crumb-fallback': 'Plugin';
+        'open-tab': 'Open in a new tab';
+        open: {
+            opening: 'Opening in a new tab.';
+            opened: 'Opened in a new tab. You can close this page.';
+            blocked: 'The browser blocked the new tab.';
+            failed: 'Could not open the plugin.';
+        };
+        link: {
+            title: 'Open <host>{{host}}</host> in a new tab?';
+            description: '{{plugin}} asks to open this link. Open it only if you expect to go to {{host}}.';
+            cancel: 'Cancel';
+            open: 'Open';
+        };
+    };
+    'plugins.manage': {
+        back: 'Installed plugins';
+        loading: 'Loading the plugin';
+        'load-failed': 'Could not load the plugin.';
+        report: 'Report issue';
+        missing: {
+            title: 'Plugin not installed';
+            description: 'No plugin with this id is installed on this instance.';
+        };
+        overview: {
+            title: 'Overview';
+            enabled: 'Enabled';
+            'off-bundled': 'Off, nobody can open it. Its data stays.';
+            'off-service': 'Off, its service scales to zero. Its data and settings stay.';
+            enable: 'Enable {{name}}';
+            disable: 'Disable {{name}}';
+        };
+        access: {
+            title: 'Who can use it';
+            intro: 'Admins can always manage it. Members see it in their sidebar only when it is for everyone.';
+            audience: 'Audience';
+        };
+        settings: {
+            title: 'Settings';
+            intro: 'What this plugin lets you change. Changes save as you make them; a field left empty uses its default.';
+            none: 'This plugin has no settings.';
+        };
+        egress: {
+            title: 'Outbound network';
+            intro: 'The hosts outside Socio its settings allow its service to reach, over HTTPS. A host from a setting reaches the service once the settings apply.';
+            'intro-none': 'Its settings allow its service nothing outside Socio, once they apply.';
+            pending: 'From the settings just saved. Until they apply, the running service keeps the hosts it had.';
+            from: 'from the setting {{field}}';
+            problem: 'No host added from {{field}}: {{problem}}. Set it to an https address to allow its host.';
+        };
+        datasets: {
+            title: 'Datasets';
+            intro: 'The workspace datasets it reads or writes, and how many data operations it may make a minute. Each dataset has one plugin that writes it; a read need may stay unbound. Uninstalling keeps them.';
+        };
+        budget: {
+            label: 'Data operations a minute';
+            save: 'Save';
+            'use-default': 'Use the default';
+            default: 'The workspace’s default for plugins, {{limit, number}}, set in Settings → General → Plugin datasets.';
+            override: 'Set for this plugin; the workspace’s default is {{limit, number}}.';
+            counts: 'A query or a read batch counts as one, a write batch as one per statement. Socios and people keep their own limit.';
+            'load-failed': 'Could not load the plugin’s data budget.';
+            'save-failed': 'Could not save the data budget.';
+            saved: 'Data budget saved.';
+            reset: 'It uses the workspace’s default again.';
+        };
+        backup: {
+            last: 'Last backed up {{when}}.';
+            last_size: 'Last backed up {{when}} ({{size, bytes}}).';
+            'none-yet': 'It has no good backup yet.';
+            ok: 'Its own storage ({{volumes, list(type: unit; style: short)}}) is backed up with every scheduled backup. {{last}}';
+            stale: 'Its own storage ({{volumes, list(type: unit; style: short)}}) hasn’t been backed up for more than two backup intervals. {{last}}';
+            failing: 'Its last backup failed: {{reason}} {{last}}';
+            failing_when: 'Its last backup failed ({{when}}): {{reason}} {{last}}';
+            'no-reason': 'no reason given';
+            disabled: 'It is disabled, so it isn’t backed up; its backups stay. {{last}}';
+            disabled_since: 'It is disabled since {{when}}, so it isn’t backed up; its backups stay. {{last}}';
+            first: 'It keeps data on its own storage ({{volumes, list(type: unit; style: short)}}) and declares backups. Its first backup comes with the next scheduled backup, or use Back up now.';
+            undeclared: 'It keeps data on its own storage ({{volumes, list(type: unit; style: short)}}), and the installed version doesn’t declare backups, so the workspace’s backups don’t include it. Once its catalog entry declares service.backup, apply its Update. A later release refuses to install or update it without one.';
+        };
+        backups: {
+            title: 'Backups';
+            intro: 'The workspace backs up this plugin’s own storage with every scheduled backup, sealed under the data key, and off-site with the rest.';
+            running: 'Backing up now…';
+            now: 'Back up now';
+            started: 'Backup started';
+            'load-failed': 'Could not load the plugin’s backups.';
+            'start-failed': 'Could not start the backup.';
+            empty: 'No backups kept yet.';
+            entry: '{{reason}} · {{size, bytes}} · version {{version}}';
+            noted: '{{reason}}: {{note}}';
+            reasons: {
+                scheduled: 'Scheduled';
+                manual: 'Back up now';
+                request: 'Asked for by the plugin';
+                'pre-update': 'Before an update';
+                uninstall: 'Before uninstall';
+            };
+        };
+        danger: {
+            title: 'Danger zone';
+            intro: 'Uninstalling can’t be undone from here. Installing it again starts with default settings.';
+            'uninstall-title': 'Uninstall {{name}}';
+            'uninstall-bundled': 'Removes it from this instance. Rows it saved stay, and its datasets stay the workspace’s.';
+            'uninstall-service': 'Removes its service, volumes and identity. Rows it saved stay, and its datasets stay the workspace’s.';
+            uninstall: 'Uninstall…';
+            failed: 'Could not uninstall the plugin.';
+            done: '{{name}} uninstalled. Its saved rows stay.';
+        };
+    };
+    'plugins.settings': {
+        label: 'Plugin settings';
+        undo: 'Undo';
+        redo: 'Redo';
+        footnote: 'A setting with an error keeps its saved value until it is fixed. Undo and Redo step through this page’s saves.';
+        'save-failed': 'Could not save the settings.';
+        'apply-failed': 'The settings are saved, but the plugin could not be given them.';
+        apply: {
+            pending: 'The plugin restarts with them in a few seconds.';
+            applying: 'Applying…';
+            applied: 'Applied.';
+            failed: 'Not applied yet.';
+            now: 'Apply now';
+        };
+        field: {
+            'default-choice': 'Default ({{value}})';
+            'not-set': 'Not set';
+            choose: 'Choose one';
+            'not-a-choice': '{{value}} (not a choice)';
+            default: 'Default: <code>{{value}}</code>.';
+            required: 'Required.';
         };
     };
     rooms: {
@@ -6993,6 +7593,7 @@ export interface EnglishResources {
                 crumb: 'Not found';
             };
         };
+        'account-menu': 'Account: {{name}}';
     };
     'shell.add-device': {
         title: 'Add a device';
@@ -7089,6 +7690,20 @@ export interface EnglishResources {
             light: 'Light';
             dark: 'Dark';
             system: 'System';
+        };
+        account: {
+            'get-app': 'Get the app';
+            'release-notes': 'Release notes';
+            'add-device': 'Add a device';
+            account: 'Account';
+            'account-security': 'Account & security';
+            'sign-out': 'Sign out';
+            'switch-user': 'Switch user';
+        };
+        passkey: {
+            add: 'Add a passkey';
+            hint: 'Next time, sign in with your fingerprint, face or PIN';
+            'not-now': 'Not now';
         };
     };
     'shell.home': {

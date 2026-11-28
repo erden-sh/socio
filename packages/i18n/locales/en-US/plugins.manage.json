@@ -1,0 +1,95 @@
+{
+    "back": "Installed plugins",
+    "loading": "Loading the plugin",
+    "load-failed": "Could not load the plugin.",
+    "report": "Report issue",
+    "missing": {
+        "title": "Plugin not installed",
+        "description": "No plugin with this id is installed on this instance."
+    },
+    "overview": {
+        "title": "Overview",
+        "enabled": "Enabled",
+        "off-bundled": "Off, nobody can open it. Its data stays.",
+        "off-service": "Off, its service scales to zero. Its data and settings stay.",
+        "enable": "Enable {{name}}",
+        "disable": "Disable {{name}}"
+    },
+    "access": {
+        "title": "Who can use it",
+        "intro": "Admins can always manage it. Members see it in their sidebar only when it is for everyone.",
+        "audience": "Audience"
+    },
+    "settings": {
+        "title": "Settings",
+        "intro": "What this plugin lets you change. Changes save as you make them; a field left empty uses its default.",
+        "none": "This plugin has no settings."
+    },
+    "egress": {
+        "title": "Outbound network",
+        "intro": "The hosts outside Socio its settings allow its service to reach, over HTTPS. A host from a setting reaches the service once the settings apply.",
+        "intro-none": "Its settings allow its service nothing outside Socio, once they apply.",
+        "pending": "From the settings just saved. Until they apply, the running service keeps the hosts it had.",
+        "from": "from the setting {{field}}",
+        "problem": "No host added from {{field}}: {{problem}}. Set it to an https address to allow its host."
+    },
+    "datasets": {
+        "title": "Datasets",
+        "intro": "The workspace datasets it reads or writes, and how many data operations it may make a minute. Each dataset has one plugin that writes it; a read need may stay unbound. Uninstalling keeps them."
+    },
+    "budget": {
+        "label": "Data operations a minute",
+        "save": "Save",
+        "use-default": "Use the default",
+        "default": "The workspace’s default for plugins, {{limit, number}}, set in Settings → General → Plugin datasets.",
+        "override": "Set for this plugin; the workspace’s default is {{limit, number}}.",
+        "counts": "A query or a read batch counts as one, a write batch as one per statement. Socios and people keep their own limit.",
+        "load-failed": "Could not load the plugin’s data budget.",
+        "save-failed": "Could not save the data budget.",
+        "saved": "Data budget saved.",
+        "reset": "It uses the workspace’s default again."
+    },
+    "backup": {
+        "last": "Last backed up {{when}}.",
+        "last_size": "Last backed up {{when}} ({{size, bytes}}).",
+        "none-yet": "It has no good backup yet.",
+        "ok": "Its own storage ({{volumes, list(type: unit; style: short)}}) is backed up with every scheduled backup. {{last}}",
+        "stale": "Its own storage ({{volumes, list(type: unit; style: short)}}) hasn’t been backed up for more than two backup intervals. {{last}}",
+        "failing": "Its last backup failed: {{reason}} {{last}}",
+        "failing_when": "Its last backup failed ({{when}}): {{reason}} {{last}}",
+        "no-reason": "no reason given",
+        "disabled": "It is disabled, so it isn’t backed up; its backups stay. {{last}}",
+        "disabled_since": "It is disabled since {{when}}, so it isn’t backed up; its backups stay. {{last}}",
+        "first": "It keeps data on its own storage ({{volumes, list(type: unit; style: short)}}) and declares backups. Its first backup comes with the next scheduled backup, or use Back up now.",
+        "undeclared": "It keeps data on its own storage ({{volumes, list(type: unit; style: short)}}), and the installed version doesn’t declare backups, so the workspace’s backups don’t include it. Once its catalog entry declares service.backup, apply its Update. A later release refuses to install or update it without one."
+    },
+    "backups": {
+        "title": "Backups",
+        "intro": "The workspace backs up this plugin’s own storage with every scheduled backup, sealed under the data key, and off-site with the rest.",
+        "running": "Backing up now…",
+        "now": "Back up now",
+        "started": "Backup started",
+        "load-failed": "Could not load the plugin’s backups.",
+        "start-failed": "Could not start the backup.",
+        "empty": "No backups kept yet.",
+        "entry": "{{reason}} · {{size, bytes}} · version {{version}}",
+        "noted": "{{reason}}: {{note}}",
+        "reasons": {
+            "scheduled": "Scheduled",
+            "manual": "Back up now",
+            "request": "Asked for by the plugin",
+            "pre-update": "Before an update",
+            "uninstall": "Before uninstall"
+        }
+    },
+    "danger": {
+        "title": "Danger zone",
+        "intro": "Uninstalling can’t be undone from here. Installing it again starts with default settings.",
+        "uninstall-title": "Uninstall {{name}}",
+        "uninstall-bundled": "Removes it from this instance. Rows it saved stay, and its datasets stay the workspace’s.",
+        "uninstall-service": "Removes its service, volumes and identity. Rows it saved stay, and its datasets stay the workspace’s.",
+        "uninstall": "Uninstall…",
+        "failed": "Could not uninstall the plugin.",
+        "done": "{{name}} uninstalled. Its saved rows stay."
+    }
+}

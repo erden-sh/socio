@@ -65,12 +65,12 @@ describe('the menu paths the pages give', () => {
         ],
         'Sign out': [
             ['apps/mobile/src/screens/account.tsx', 'label="Sign out"'],
-            // The web's user menu.
-            ['packages/client/src/components/nav-user.tsx', "{methods ? 'Sign out' : 'Switch user'}"],
+            // The web's user menu (its en-US words).
+            ['packages/i18n/locales/en-US/shell.help.json', '"sign-out": "Sign out",'],
         ],
         'Settings & setup': [['apps/mobile/src/shell/modules.ts', "navLabel: 'Settings & setup'"]],
         Notifications: [['apps/mobile/src/screens/settings.tsx', '<Section title="Notifications"']],
-        'Add a device': [['packages/client/src/components/nav-user.tsx', 'Add a device']],
+        'Add a device': [['packages/i18n/locales/en-US/shell.help.json', '"add-device": "Add a device",']],
         // The web, for admins: Settings, its People entry, and the person page's footer button.
         Settings: [['packages/client/src/components/app-sidebar.tsx', "settings: 'Settings'"]],
         People: [['packages/i18n/locales/en-US/settings.json', '"people": "People",']],

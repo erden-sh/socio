@@ -1,0 +1,21 @@
+{
+    "title": "Apps",
+    "all": "All apps",
+    "failed": "Could not load its apps.",
+    "empty-archived": "No apps of {{name}}’s that you can open.",
+    "empty": "{{name}} hasn’t built an app you can open yet. Ask it in a chat for a small one, like a tracker or a dashboard.",
+    "version": "Version {{version}}",
+    "shared-with": "Shared with {{space}}",
+    "only-you": "Only you",
+    "shared-by": "Shared by {{name}}",
+    "shared-by-other": "Shared by another user",
+    "stage": {
+        "published": "Published",
+        "development": "In development",
+        "unpublished": "Unpublished"
+    },
+    "manage-hint": "(manage it on the Apps page)",
+    "new-tab-hint": "(opens in a new tab)",
+    "report": "Report issue",
+    "report-label": "Report an issue about {{name}}"
+}

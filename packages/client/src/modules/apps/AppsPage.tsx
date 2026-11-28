@@ -1,8 +1,9 @@
 import { Bug, ExternalLink, Power, RefreshCw, Rocket, ScrollText, Trash2, Undo2 } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { toast } from 'sonner';
 
+import { useTranslation } from '@socio/i18n/react';
 import type {
     AppAttemptSummary,
     AppAttemptsState,
@@ -11,8 +12,10 @@ import type {
     AppView,
     AppsState,
 } from '@socio/shared/apps/app-types';
+import { dateTimeFormat } from '@socio/shared/locale';
 import { MODULE_IDS } from '@socio/shared/modules';
 
+import { onDemand } from '../../i18n/on-demand';
 import { api } from '../../lib/api';
 import { useShell } from '../../shell/shell-context';
 import { WorkspacePage } from '../../views/WorkspacePage';
@@ -40,69 +43,93 @@ const failed = (e: unknown, fallback: string) => toast.error(e instanceof Error 
 /** Native selects; `data-slot` keeps the legacy element styles off them. */
 const fieldClass = 'h-9 rounded-md border border-input bg-transparent px-2 text-sm shadow-xs dark:bg-input/30';
 
+/** Each kind's badge; its words are apps' (`kind.<status>`). */
 const KIND = {
-    ephemeral: { label: 'Ephemeral', variant: 'outline' },
-    packaged: { label: 'Packaged', variant: 'outline' },
-    promoted: { label: 'Workspace app', variant: 'secondary' },
-    unpublished: { label: 'Unpublished', variant: 'outline' },
+    ephemeral: 'outline',
+    packaged: 'outline',
+    promoted: 'secondary',
+    unpublished: 'outline',
 } as const;
 
+/** Whether an app runs, as its badge says it (`apps:state.<id>`). */
 function status(app: AppView) {
     if (app.status === 'unpublished') {
-        return { label: 'Stopped', variant: 'outline' as const };
+        return { id: 'stopped', variant: 'outline' } as const;
     }
     if (app.status === 'promoted') {
         return app.runtime === 'running'
-            ? { label: 'Running', variant: 'default' as const }
+            ? ({ id: 'running', variant: 'default' } as const)
             : app.runtime === 'failed'
-              ? { label: 'Failed', variant: 'destructive' as const }
+              ? ({ id: 'failed', variant: 'destructive' } as const)
               : app.runtime === 'starting'
-                ? { label: 'Starting', variant: 'outline' as const }
-                : { label: 'Not running', variant: 'outline' as const };
+                ? ({ id: 'starting', variant: 'outline' } as const)
+                : ({ id: 'not-running', variant: 'outline' } as const);
     }
     if (app.computer === 'running') {
         return app.answering
-            ? { label: 'Running', variant: 'default' as const }
-            : { label: 'Not answering', variant: 'outline' as const };
+            ? ({ id: 'running', variant: 'default' } as const)
+            : ({ id: 'not-answering', variant: 'outline' } as const);
     }
     if (app.computer === 'stopped') {
-        return { label: 'Computer stopped', variant: 'secondary' as const };
+        return { id: 'computer-stopped', variant: 'secondary' } as const;
     }
-    return { label: 'Unavailable', variant: 'outline' as const };
+    return { id: 'unavailable', variant: 'outline' } as const;
 }
+
+/** A time on this page, in the reader's locale and zone. */
+const timeFormat = dateTimeFormat({ dateStyle: 'medium', timeStyle: 'short' });
+const time = (ms: number) => timeFormat.format(ms);
+
+/** A server's sentence, ending with one period. */
+const sentence = (text: string) => text.replace(/\.?$/, '.');
 
 /**
  * Self-healing (CB-291), for its owner and admins: what the platform is
  * doing about it now, and its last repair that held. Nothing when it is
  * healthy and never needed one.
  */
-function healthLine(health: AppHealth | undefined, when: (at: number) => string) {
-    if (!health) {
-        return null;
-    }
-    const last = health.lastRecoveryAt
-        ? `Last recovered ${when(health.lastRecoveryAt)}: ${health.lastRecoveryReason ?? 'repaired'}.`
-        : null;
-    if (health.state === 'healthy') {
-        return last ? { tone: 'muted' as const, text: last } : null;
-    }
-    const why = health.reason ? ` ${health.reason.replace(/\.?$/, '.')}` : '';
-    const error = health.lastError ? ` Last error: ${health.lastError.replace(/\.?$/, '.')}` : '';
-    const tries = health.attempts ? ` Attempt ${health.attempts} of ${health.maxAttempts}.` : '';
-    const text =
-        health.state === 'recovering'
-            ? `Recovering by itself; its data is kept.${why}${tries}`
-            : health.state === 'degraded'
-              ? `Degraded; it is repaired automatically${health.nextAttemptAt ? `, next try ${when(health.nextAttemptAt)}` : ''}.${why}${tries}${error}`
-              : `Automatic repair gave up after ${health.attempts} attempts; admins were told. Its data is kept; press Start to try again.${why}${error}`;
-    return {
-        tone: health.state === 'recovering' ? ('muted' as const) : ('alert' as const),
-        text: last ? `${text} ${last}` : text,
+function useHealthLine() {
+    const { t } = useTranslation(['apps']);
+    return (health: AppHealth | undefined) => {
+        if (!health) {
+            return null;
+        }
+        const last = health.lastRecoveryAt
+            ? t('apps:health.last-recovered', {
+                  when: time(health.lastRecoveryAt),
+                  reason: health.lastRecoveryReason ?? t('apps:health.repaired'),
+              })
+            : null;
+        if (health.state === 'healthy') {
+            return last ? { tone: 'muted' as const, text: last } : null;
+        }
+        const parts = [
+            health.state === 'recovering'
+                ? t('apps:health.recovering')
+                : health.state === 'degraded'
+                  ? health.nextAttemptAt
+                      ? t('apps:health.degraded-next', { when: time(health.nextAttemptAt) })
+                      : t('apps:health.degraded')
+                  : t('apps:health.gave-up', { count: health.attempts }),
+            health.reason ? sentence(health.reason) : '',
+            health.attempts && health.state !== 'failed'
+                ? t('apps:health.attempt', { attempt: health.attempts, count: health.maxAttempts })
+                : '',
+            health.lastError && health.state !== 'recovering'
+                ? t('apps:health.last-error', { error: sentence(health.lastError) })
+                : '',
+            last ?? '',
+        ];
+        return {
+            tone: health.state === 'recovering' ? ('muted' as const) : ('alert' as const),
+            text: parts.filter(Boolean).join(' '),
+        };
     };
 }
 
-/** Deleting a promoted app: what happens to its data is said, not assumed. */
-function DeleteDialog({ app, onClose, onDone }: { app: AppView; onClose: () => void; onDone: () => void }) {
+/** Deleting a promoted app: what happens to its data is said, not assumed. Its words load on demand (apps.dialogs). */
+function DeleteForm({ app, onClose, onDone }: { app: AppView; onClose: () => void; onDone: () => void }) {
+    const { t } = useTranslation(['apps.dialogs']);
     const [data, setData] = useState<'keep' | 'delete'>();
     const [busy, setBusy] = useState(false);
     const remove = async () => {
@@ -118,12 +145,12 @@ function DeleteDialog({ app, onClose, onDone }: { app: AppView; onClose: () => v
             );
             toast.success(
                 result.deletedDatasets?.length
-                    ? `Deleted ${app.name} and ${result.deletedDatasets.join(', ')}.`
-                    : `Deleted ${app.name}.`,
+                    ? t('apps.dialogs:delete.deleted-with', { name: app.name, datasets: result.deletedDatasets })
+                    : t('apps.dialogs:delete.deleted', { name: app.name }),
             );
             onDone();
         } catch (e) {
-            failed(e, 'Could not delete the app.');
+            failed(e, t('apps.dialogs:delete.failed'));
         } finally {
             setBusy(false);
         }
@@ -132,14 +159,11 @@ function DeleteDialog({ app, onClose, onDone }: { app: AppView; onClose: () => v
         <Dialog open onOpenChange={(open) => !open && onClose()}>
             <DialogContent data-slot="delete-app-dialog">
                 <DialogHeader>
-                    <DialogTitle>Delete {app.name}?</DialogTitle>
-                    <DialogDescription>
-                        Its address stops working, everyone signed in to it is signed out, and it leaves your apps and
-                        the launcher.
-                    </DialogDescription>
+                    <DialogTitle>{t('apps.dialogs:delete.title', { name: app.name })}</DialogTitle>
+                    <DialogDescription>{t('apps.dialogs:delete.description')}</DialogDescription>
                 </DialogHeader>
                 <fieldset className="grid gap-2 text-sm">
-                    <legend className="mb-1 font-medium">Its data</legend>
+                    <legend className="mb-1 font-medium">{t('apps.dialogs:delete.data')}</legend>
                     <label className="flex items-start gap-2">
                         <input
                             type="radio"
@@ -148,9 +172,11 @@ function DeleteDialog({ app, onClose, onDone }: { app: AppView; onClose: () => v
                             onChange={() => setData('keep')}
                         />
                         <span>
-                            Keep it
+                            {t('apps.dialogs:delete.keep')}
                             <span className="block text-muted-foreground">
-                                {app.datasetNames.join(', ') || 'Its datasets'} stay in your data space.
+                                {app.datasetNames.length
+                                    ? t('apps.dialogs:delete.keep-named', { datasets: app.datasetNames })
+                                    : t('apps.dialogs:delete.keep-detail')}
                             </span>
                         </span>
                     </label>
@@ -162,19 +188,19 @@ function DeleteDialog({ app, onClose, onDone }: { app: AppView; onClose: () => v
                             onChange={() => setData('delete')}
                         />
                         <span>
-                            Delete the data it brought
+                            {t('apps.dialogs:delete.remove')}
                             <span className="block text-muted-foreground">
-                                Datasets created when it was promoted are deleted; datasets it only used stay.
+                                {t('apps.dialogs:delete.remove-detail')}
                             </span>
                         </span>
                     </label>
                 </fieldset>
                 <DialogFooter>
                     <Button variant="outline" onClick={onClose}>
-                        Cancel
+                        {t('apps.dialogs:delete.cancel')}
                     </Button>
                     <Button variant="destructive" disabled={!data || busy} onClick={() => void remove()}>
-                        Delete
+                        {t('apps.dialogs:delete.delete')}
                     </Button>
                 </DialogFooter>
             </DialogContent>
@@ -182,32 +208,32 @@ function DeleteDialog({ app, onClose, onDone }: { app: AppView; onClose: () => v
     );
 }
 
-const time = (ms: number) => new Date(ms).toLocaleString();
-
 /** An attempt in a line: what it was and how it ended (CB-146). */
-function attemptLabel(attempt: AppAttemptSummary) {
-    const what = attempt.kind === 'build' ? 'Build' : 'Start';
-    const how =
-        attempt.state === 'running'
-            ? attempt.kind === 'start' && attempt.upAt
-                ? 'running'
-                : 'in progress'
-            : attempt.state === 'succeeded'
-              ? 'done'
-              : attempt.reason === 'oom'
-                ? 'out of memory'
-                : attempt.reason === 'health_check'
-                  ? 'never answered'
-                  : attempt.reason === 'lost'
-                    ? 'end unknown'
-                    : attempt.state === 'stopped'
-                      ? 'stopped'
-                      : attempt.exitCode !== null
-                        ? `failed, exit ${attempt.exitCode}`
-                        : attempt.signal
-                          ? `failed, ${attempt.signal}`
-                          : 'failed';
-    return `${what} of version ${attempt.version} · ${how}`;
+function useAttemptLabel() {
+    const { t } = useTranslation(['apps.dialogs']);
+    return (attempt: AppAttemptSummary) => {
+        const how =
+            attempt.state === 'running'
+                ? attempt.kind === 'start' && attempt.upAt
+                    ? t('apps.dialogs:attempt.running')
+                    : t('apps.dialogs:attempt.in-progress')
+                : attempt.state === 'succeeded'
+                  ? t('apps.dialogs:attempt.done')
+                  : attempt.reason === 'oom'
+                    ? t('apps.dialogs:attempt.oom')
+                    : attempt.reason === 'health_check'
+                      ? t('apps.dialogs:attempt.never-answered')
+                      : attempt.reason === 'lost'
+                        ? t('apps.dialogs:attempt.lost')
+                        : attempt.state === 'stopped'
+                          ? t('apps.dialogs:attempt.stopped')
+                          : attempt.exitCode !== null
+                            ? t('apps.dialogs:attempt.exit', { code: attempt.exitCode })
+                            : attempt.signal
+                              ? t('apps.dialogs:attempt.signal', { signal: attempt.signal })
+                              : t('apps.dialogs:attempt.failed');
+        return t('apps.dialogs:attempt.label', { context: attempt.kind, version: attempt.version, how });
+    };
 }
 
 /**
@@ -215,7 +241,12 @@ function attemptLabel(attempt: AppAttemptSummary) {
  * CB-146): each one's exit reason, times and its own last lines; the
  * newest first.
  */
-function LogsDialog({ app, onClose }: { app: AppView; onClose: () => void }) {
+function LogsView({ app, onClose }: { app: AppView; onClose: () => void }) {
+    const { t } = useTranslation(['apps.dialogs']);
+    const attemptLabel = useAttemptLabel();
+    // The latest t, for callbacks and effects that shouldn't run again when the language changes.
+    const latestT = useRef(t);
+    latestT.current = t;
     const [state, setState] = useState<AppAttemptsState>();
     const [chosen, setChosen] = useState<number>();
     useEffect(() => {
@@ -223,8 +254,8 @@ function LogsDialog({ app, onClose }: { app: AppView; onClose: () => void }) {
         api<AppAttemptsState>(`/apps/${encodeURIComponent(app.id)}/attempts${chosen ? `?attempt=${chosen}` : ''}`)
             .then(setState)
             .catch((e) => {
-                failed(e, 'Could not load the logs.');
-                setState({ attempts: [], attempt: null, note: 'No logs to show.' });
+                failed(e, latestT.current('apps.dialogs:logs.load-failed'));
+                setState({ attempts: [], attempt: null, note: latestT.current('apps.dialogs:logs.none') });
             });
     }, [app.id, chosen]);
     const attempt = state?.attempt;
@@ -232,11 +263,8 @@ function LogsDialog({ app, onClose }: { app: AppView; onClose: () => void }) {
         <Dialog open onOpenChange={(open) => !open && onClose()}>
             <DialogContent className="sm:max-w-3xl" data-slot="app-logs-dialog">
                 <DialogHeader>
-                    <DialogTitle>{app.name} logs</DialogTitle>
-                    <DialogDescription>
-                        Each build and start of a version in the workspace app runtime, with how it ended and its own
-                        last lines.
-                    </DialogDescription>
+                    <DialogTitle>{t('apps.dialogs:logs.title', { name: app.name })}</DialogTitle>
+                    <DialogDescription>{t('apps.dialogs:logs.description')}</DialogDescription>
                 </DialogHeader>
                 {!state ? (
                     <Skeleton className="h-40" />
@@ -244,7 +272,7 @@ function LogsDialog({ app, onClose }: { app: AppView; onClose: () => void }) {
                     <div className="grid gap-3 text-sm">
                         {state.attempts.length > 0 && (
                             <label className="flex flex-wrap items-center gap-2">
-                                Attempt
+                                {t('apps.dialogs:logs.attempt')}
                                 <select
                                     data-slot="app-attempt"
                                     className={fieldClass}
@@ -253,12 +281,16 @@ function LogsDialog({ app, onClose }: { app: AppView; onClose: () => void }) {
                                 >
                                     {!attempt && (
                                         <option value="" disabled>
-                                            Choose one
+                                            {t('apps.dialogs:logs.choose')}
                                         </option>
                                     )}
                                     {state.attempts.map((item) => (
                                         <option key={item.attempt} value={item.attempt}>
-                                            {item.attempt}. {attemptLabel(item)} · {time(item.startedAt)}
+                                            {t('apps.dialogs:logs.option', {
+                                                attempt: item.attempt,
+                                                label: attemptLabel(item),
+                                                when: time(item.startedAt),
+                                            })}
                                         </option>
                                     ))}
                                 </select>
@@ -269,7 +301,9 @@ function LogsDialog({ app, onClose }: { app: AppView; onClose: () => void }) {
                                 <p className="text-muted-foreground">{state.note}</p>
                                 {state.runtimeLog && (
                                     <pre className="max-h-[50vh] overflow-auto rounded-md bg-muted p-3 text-xs">
-                                        {state.runtimeLog.length ? state.runtimeLog.join('\n') : 'No output.'}
+                                        {state.runtimeLog.length
+                                            ? state.runtimeLog.join('\n')
+                                            : t('apps.dialogs:logs.no-output')}
                                     </pre>
                                 )}
                             </>
@@ -283,14 +317,24 @@ function LogsDialog({ app, onClose }: { app: AppView; onClose: () => void }) {
                                     </div>
                                     {attempt.message && <div>{attempt.message}</div>}
                                     <div className="text-muted-foreground">
-                                        Started {time(attempt.startedAt)}
-                                        {attempt.upAt ? ` · answered ${time(attempt.upAt)}` : ''}
-                                        {attempt.endedAt ? ` · ended ${time(attempt.endedAt)}` : ''}
+                                        {[
+                                            t('apps.dialogs:logs.started', { when: time(attempt.startedAt) }),
+                                            attempt.upAt
+                                                ? t('apps.dialogs:logs.answered', { when: time(attempt.upAt) })
+                                                : '',
+                                            attempt.endedAt
+                                                ? t('apps.dialogs:logs.ended', { when: time(attempt.endedAt) })
+                                                : '',
+                                        ]
+                                            .filter(Boolean)
+                                            .join(' · ')}
                                     </div>
                                 </div>
                                 <pre className="max-h-[50vh] overflow-auto rounded-md bg-muted p-3 text-xs">
-                                    {attempt.dropped ? `[${attempt.dropped} earlier lines not kept]\n` : ''}
-                                    {attempt.lines.length ? attempt.lines.join('\n') : 'No output.'}
+                                    {attempt.dropped
+                                        ? `${t('apps.dialogs:logs.dropped', { count: attempt.dropped })}\n`
+                                        : ''}
+                                    {attempt.lines.length ? attempt.lines.join('\n') : t('apps.dialogs:logs.no-output')}
                                 </pre>
                             </>
                         )}
@@ -301,27 +345,60 @@ function LogsDialog({ app, onClose }: { app: AppView; onClose: () => void }) {
     );
 }
 
+const DeleteDialog = onDemand(['apps.dialogs'], DeleteForm);
+const LogsDialog = onDemand(['apps.dialogs'], LogsView);
+
+/**
+ * Unregistering an ephemeral or packaged app, confirmed. Its words load on
+ * demand (apps.dialogs).
+ */
+const UnregisterDialog = onDemand(
+    ['apps.dialogs'],
+    function UnregisterConfirm({
+        app,
+        onClose,
+        onConfirm,
+    }: {
+        app: AppView;
+        onClose: () => void;
+        onConfirm: () => Promise<void>;
+    }) {
+        const { t } = useTranslation(['apps.dialogs']);
+        return (
+            <ConfirmDelete
+                title={t('apps.dialogs:unregister.title', { name: app.name })}
+                action={t('apps.dialogs:unregister.action')}
+                slot="unregister-app-dialog"
+                onClose={onClose}
+                onConfirm={onConfirm}
+            >
+                {t('apps.dialogs:unregister.description')}
+            </ConfirmDelete>
+        );
+    },
+);
+
 /**
  * The live apps an admin can't open (CB-442): by name and owner
  * only. No open, logs, settings or report: opening one stays with its owner
  * and the people of the Space it is shared with.
  */
 function OtherApps({ apps }: { apps: readonly AppDirectoryEntry[] }) {
+    const { t } = useTranslation(['apps']);
     return (
         <Card data-slot="apps-others">
             <CardHeader>
-                <CardTitle>Other apps in the workspace</CardTitle>
-                <CardDescription>
-                    Shown to admins by name and owner. Only the owner and the people of the Space it’s shared with can
-                    open one.
-                </CardDescription>
+                <CardTitle>{t('apps:others.title')}</CardTitle>
+                <CardDescription>{t('apps:others.description')}</CardDescription>
             </CardHeader>
             <CardContent>
                 <ul className="grid gap-1 text-sm">
                     {apps.map((app) => (
                         <li key={app.id} data-slot="apps-other" className="flex flex-wrap items-baseline gap-x-2">
                             <span className="font-medium">{app.name}</span>
-                            <span className="text-muted-foreground">by {app.ownerName}</span>
+                            <span className="text-muted-foreground">
+                                {t('apps:others.by', { name: app.ownerName })}
+                            </span>
                         </li>
                     ))}
                 </ul>
@@ -340,6 +417,11 @@ function OtherApps({ apps }: { apps: readonly AppDirectoryEntry[] }) {
  * apart, the apps they can't open, by name and owner only.
  */
 export function AppsPage() {
+    const { t } = useTranslation(['apps']);
+    const healthLine = useHealthLine();
+    // The latest t, for callbacks and effects that shouldn't run again when the language changes.
+    const latestT = useRef(t);
+    latestT.current = t;
     const shell = useShell();
     const [state, setState] = useState<AppsState>();
     const [busy, setBusy] = useState(false);
@@ -365,7 +447,7 @@ export function AppsPage() {
         setBusy(true);
         return api<AppsState>('/apps')
             .then(setState)
-            .catch((e) => failed(e, 'Could not load apps.'))
+            .catch((e) => failed(e, latestT.current('apps:load-failed')))
             .finally(() => setBusy(false));
     }, []);
     useEffect(() => void load(), [load]);
@@ -376,7 +458,7 @@ export function AppsPage() {
             });
             await load();
         } catch (e) {
-            failed(e, 'Could not change sharing.');
+            failed(e, t('apps:share-failed'));
         }
     };
     const act = async (app: AppView, verb: string, done: string) => {
@@ -389,51 +471,45 @@ export function AppsPage() {
             }
             await load();
         } catch (e) {
-            failed(e, 'That didn’t work.');
+            failed(e, t('apps:action-failed'));
         }
     };
     const unregister = async (app: AppView) => {
         try {
             await api(`/apps/${encodeURIComponent(app.id)}`, 'DELETE');
-            toast.success(`Unregistered ${app.name}.`);
+            toast.success(t('apps:unregistered', { name: app.name }));
             setUnregistering(undefined);
             await load();
         } catch (e) {
-            failed(e, 'Could not unregister the app.');
+            failed(e, t('apps:unregister-failed'));
         }
     };
     return (
         <WorkspacePage
             slot="apps-page"
             module={MODULE_IDS.apps}
-            title="Apps"
+            title={t('apps:title')}
             actions={
                 <Button variant="outline" size="sm" onClick={() => void load()} disabled={busy}>
-                    <RefreshCw className="size-4" /> Refresh
+                    <RefreshCw className="size-4" /> {t('apps:refresh')}
                 </Button>
             }
-            description="Mini apps your socios build, each on its own address behind your sign-in. An ephemeral app runs only while its socio’s computer runs it; once the socio packages it, promote it into a workspace app that runs on its own, with its data in your data space."
+            description={t('apps:description')}
         >
             {!state ? (
                 <Skeleton className="h-40" />
             ) : !state.enabled ? (
                 <Card>
                     <CardHeader>
-                        <CardTitle>Mini apps are not set up</CardTitle>
-                        <CardDescription>
-                            An operator sets APPS_HOST (and a wildcard DNS entry and proxy host for it) to serve mini
-                            apps. See docs/SETUP.md.
-                        </CardDescription>
+                        <CardTitle>{t('apps:not-set-up.title')}</CardTitle>
+                        <CardDescription>{t('apps:not-set-up.description')}</CardDescription>
                     </CardHeader>
                 </Card>
             ) : !state.apps.length ? (
                 <Card>
                     <CardHeader>
-                        <CardTitle>No apps yet</CardTitle>
-                        <CardDescription>
-                            Ask a socio to build you a small app (a tracker, a dashboard, a form). It runs it in its
-                            computer and registers it here once you approve.
-                        </CardDescription>
+                        <CardTitle>{t('apps:empty.title')}</CardTitle>
+                        <CardDescription>{t('apps:empty.description')}</CardDescription>
                     </CardHeader>
                 </Card>
             ) : (
@@ -445,22 +521,28 @@ export function AppsPage() {
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2">
                                         {app.name}
-                                        <Badge variant={KIND[app.status].variant}>{KIND[app.status].label}</Badge>
-                                        <Badge variant={badge.variant}>{badge.label}</Badge>
+                                        <Badge variant={KIND[app.status]}>{t(`apps:kind.${app.status}`)}</Badge>
+                                        <Badge variant={badge.variant}>{t(`apps:state.${badge.id}`)}</Badge>
                                     </CardTitle>
                                     <CardDescription>
-                                        {app.description ? `${app.description} · ` : ''}
-                                        {app.dotName}
-                                        {app.owner ? '' : ` · shared by ${app.ownerName}`}
-                                        {app.liveVersion ? ` · version ${app.liveVersion}` : ` · port ${app.port}`}
+                                        {[
+                                            app.description,
+                                            app.dotName,
+                                            app.owner ? '' : t('apps:card.shared-by', { name: app.ownerName ?? '' }),
+                                            app.liveVersion
+                                                ? t('apps:card.version', { version: app.liveVersion })
+                                                : t('apps:card.port', { port: app.port }),
+                                        ]
+                                            .filter(Boolean)
+                                            .join(' · ')}
                                     </CardDescription>
                                     <CardAction className="flex items-center gap-1">
                                         <Button
                                             variant="ghost"
                                             size="icon"
                                             className="size-8"
-                                            aria-label={`Report an issue about ${app.name}`}
-                                            title="Report issue"
+                                            aria-label={t('apps:card.report-label', { name: app.name })}
+                                            title={t('apps:card.report')}
                                             data-slot="app-report-issue"
                                             onClick={(event) =>
                                                 openReport(
@@ -475,10 +557,10 @@ export function AppsPage() {
                                             size="sm"
                                             disabled={app.status === 'unpublished'}
                                             onClick={() =>
-                                                void openApp(app.id).catch((e) => failed(e, 'Could not open the app.'))
+                                                void openApp(app.id).catch((e) => failed(e, t('apps:open-failed')))
                                             }
                                         >
-                                            <ExternalLink className="size-4" /> Open
+                                            <ExternalLink className="size-4" /> {t('apps:card.open')}
                                         </Button>
                                     </CardAction>
                                 </CardHeader>
@@ -486,13 +568,14 @@ export function AppsPage() {
                                     <div className="text-muted-foreground break-all">{app.url}</div>
                                     {!!app.needsSetup?.length && (
                                         <div className="text-destructive" data-slot="app-needs-setup">
-                                            Needs setup: {app.needsSetup.join(', ')}{' '}
-                                            {app.needsSetup.length === 1 ? 'isn’t' : 'aren’t'} set. A workspace admin
-                                            sets secrets in Settings → Secrets.
+                                            {t('apps:card.needs-setup', {
+                                                count: app.needsSetup.length,
+                                                names: app.needsSetup,
+                                            })}
                                         </div>
                                     )}
                                     {(() => {
-                                        const line = healthLine(app.health, time);
+                                        const line = healthLine(app.health);
                                         return line ? (
                                             <div
                                                 className={
@@ -508,19 +591,25 @@ export function AppsPage() {
                                         <>
                                             {app.lastAttempt?.state === 'failed' && (
                                                 <div className="text-destructive" data-slot="app-last-attempt">
-                                                    {app.lastAttempt.kind === 'build'
-                                                        ? `Version ${app.lastAttempt.version} didn’t build`
-                                                        : 'The last start failed'}{' '}
-                                                    · {time(app.lastAttempt.endedAt ?? app.lastAttempt.startedAt)}
-                                                    {app.lastAttempt.message ? ` · ${app.lastAttempt.message}` : ''}
+                                                    {[
+                                                        app.lastAttempt.kind === 'build'
+                                                            ? t('apps:card.build-failed', {
+                                                                  version: app.lastAttempt.version,
+                                                              })
+                                                            : t('apps:card.start-failed'),
+                                                        time(app.lastAttempt.endedAt ?? app.lastAttempt.startedAt),
+                                                        app.lastAttempt.message ?? '',
+                                                    ]
+                                                        .filter(Boolean)
+                                                        .join(' · ')}
                                                 </div>
                                             )}
                                             <div className="text-muted-foreground">
-                                                Data it may use: {app.datasetNames.join(', ')}
+                                                {t('apps:card.data', { datasets: app.datasetNames })}
                                             </div>
                                             <div className="flex flex-wrap items-center gap-3">
                                                 <label className="flex items-center gap-2">
-                                                    Shared with
+                                                    {t('apps:card.shared-with')}
                                                     <select
                                                         data-slot="app-share"
                                                         className={fieldClass}
@@ -529,7 +618,7 @@ export function AppsPage() {
                                                             void share(app, event.target.value || null)
                                                         }
                                                     >
-                                                        <option value="">Only me</option>
+                                                        <option value="">{t('apps:card.only-me')}</option>
                                                         {shell.workspace.spaces.map((space) => (
                                                             <option key={space.id} value={space.id}>
                                                                 {space.name}
@@ -543,7 +632,7 @@ export function AppsPage() {
                                                         variant="outline"
                                                         onClick={() => setPromoting(app.id)}
                                                     >
-                                                        <Rocket className="size-4" /> Promote…
+                                                        <Rocket className="size-4" /> {t('apps:card.promote')}
                                                     </Button>
                                                 )}
                                                 {app.status === 'promoted' && app.previousVersion && (
@@ -554,12 +643,15 @@ export function AppsPage() {
                                                             void act(
                                                                 app,
                                                                 'rollback',
-                                                                `${app.name} is back on version ${app.previousVersion}.`,
+                                                                t('apps:card.rolled-back', {
+                                                                    name: app.name,
+                                                                    version: app.previousVersion ?? '',
+                                                                }),
                                                             )
                                                         }
                                                     >
-                                                        <Undo2 className="size-4" /> Roll back to version{' '}
-                                                        {app.previousVersion}
+                                                        <Undo2 className="size-4" />{' '}
+                                                        {t('apps:card.rollback', { version: app.previousVersion })}
                                                     </Button>
                                                 )}
                                                 {app.status === 'promoted' && (
@@ -570,11 +662,11 @@ export function AppsPage() {
                                                             void act(
                                                                 app,
                                                                 'unpublish',
-                                                                `${app.name} is unpublished; its data stays.`,
+                                                                t('apps:card.unpublished', { name: app.name }),
                                                             )
                                                         }
                                                     >
-                                                        <Power className="size-4" /> Unpublish
+                                                        <Power className="size-4" /> {t('apps:card.unpublish')}
                                                     </Button>
                                                 )}
                                                 {app.status === 'unpublished' && (
@@ -582,17 +674,21 @@ export function AppsPage() {
                                                         size="sm"
                                                         variant="outline"
                                                         onClick={() =>
-                                                            void act(app, 'publish', `${app.name} is published again.`)
+                                                            void act(
+                                                                app,
+                                                                'publish',
+                                                                t('apps:card.published', { name: app.name }),
+                                                            )
                                                         }
                                                     >
-                                                        <Power className="size-4" /> Publish
+                                                        <Power className="size-4" /> {t('apps:card.publish')}
                                                     </Button>
                                                 )}
                                                 {(app.status === 'promoted' ||
                                                     app.status === 'unpublished' ||
                                                     !!app.lastAttempt) && (
                                                     <Button size="sm" variant="ghost" onClick={() => setLogs(app)}>
-                                                        <ScrollText className="size-4" /> Logs
+                                                        <ScrollText className="size-4" /> {t('apps:card.logs')}
                                                     </Button>
                                                 )}
                                                 <Button
@@ -606,27 +702,29 @@ export function AppsPage() {
                                                 >
                                                     <Trash2 className="size-4" />{' '}
                                                     {app.status === 'promoted' || app.status === 'unpublished'
-                                                        ? 'Delete…'
-                                                        : 'Unregister'}
+                                                        ? t('apps:card.delete')
+                                                        : t('apps:card.unregister')}
                                                 </Button>
                                             </div>
                                             {!!app.versions?.length && (
                                                 <details data-slot="app-versions">
                                                     <summary className="cursor-pointer text-muted-foreground">
-                                                        {app.versions.length} version
-                                                        {app.versions.length === 1 ? '' : 's'}
+                                                        {t('apps:versions.count', { count: app.versions.length })}
                                                     </summary>
                                                     <ul className="mt-2 grid gap-1">
                                                         {app.versions.map((version) => (
                                                             <li key={version.version}>
-                                                                Version {version.version}
-                                                                {version.version === app.liveVersion
-                                                                    ? ' (live)'
-                                                                    : version.version === app.previousVersion
-                                                                      ? ' (previous)'
-                                                                      : ''}{' '}
-                                                                · {version.files} files ·{' '}
-                                                                {new Date(version.createdAt).toLocaleString()}
+                                                                {t('apps:versions.line', {
+                                                                    context:
+                                                                        version.version === app.liveVersion
+                                                                            ? 'live'
+                                                                            : version.version === app.previousVersion
+                                                                              ? 'previous'
+                                                                              : undefined,
+                                                                    version: version.version,
+                                                                    count: version.files,
+                                                                    when: time(version.createdAt),
+                                                                })}
                                                                 {version.changes.length > 0 && (
                                                                     <span className="block text-muted-foreground">
                                                                         {version.changes.join(' · ')}
@@ -646,7 +744,7 @@ export function AppsPage() {
                                             !!app.lastAttempt) && (
                                             <div>
                                                 <Button size="sm" variant="ghost" onClick={() => setLogs(app)}>
-                                                    <ScrollText className="size-4" /> Logs
+                                                    <ScrollText className="size-4" /> {t('apps:card.logs')}
                                                 </Button>
                                             </div>
                                         )}
@@ -678,15 +776,11 @@ export function AppsPage() {
                 />
             )}
             {unregistering && (
-                <ConfirmDelete
-                    title={`Unregister ${unregistering.name}?`}
-                    action="Unregister"
-                    slot="unregister-app-dialog"
+                <UnregisterDialog
+                    app={unregistering}
                     onClose={() => setUnregistering(undefined)}
                     onConfirm={() => unregister(unregistering)}
-                >
-                    Its address stops working, everyone signed in to it is signed out, and it leaves your apps.
-                </ConfirmDelete>
+                />
             )}
             {logs && <LogsDialog app={logs} onClose={() => setLogs(undefined)} />}
         </WorkspacePage>

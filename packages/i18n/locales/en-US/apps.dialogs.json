@@ -1,0 +1,51 @@
+{
+    "delete": {
+        "title": "Delete {{name}}?",
+        "description": "Its address stops working, everyone signed in to it is signed out, and it leaves your apps and the launcher.",
+        "data": "Its data",
+        "keep": "Keep it",
+        "keep-named": "{{datasets, list(type: unit; style: short)}} stay in your data space.",
+        "keep-detail": "Its datasets stay in your data space.",
+        "remove": "Delete the data it brought",
+        "remove-detail": "Datasets created when it was promoted are deleted; datasets it only used stay.",
+        "cancel": "Cancel",
+        "delete": "Delete",
+        "deleted": "Deleted {{name}}.",
+        "deleted-with": "Deleted {{name}} and {{datasets, list(type: unit; style: short)}}.",
+        "failed": "Could not delete the app."
+    },
+    "unregister": {
+        "title": "Unregister {{name}}?",
+        "description": "Its address stops working, everyone signed in to it is signed out, and it leaves your apps.",
+        "action": "Unregister"
+    },
+    "logs": {
+        "title": "{{name}} logs",
+        "description": "Each build and start of a version in the workspace app runtime, with how it ended and its own last lines.",
+        "load-failed": "Could not load the logs.",
+        "none": "No logs to show.",
+        "attempt": "Attempt",
+        "choose": "Choose one",
+        "option": "{{attempt}}. {{label}} · {{when}}",
+        "no-output": "No output.",
+        "started": "Started {{when}}",
+        "answered": "answered {{when}}",
+        "ended": "ended {{when}}",
+        "dropped_one": "[{{count}} earlier line not kept]",
+        "dropped_other": "[{{count}} earlier lines not kept]"
+    },
+    "attempt": {
+        "label_build": "Build of version {{version}} · {{how}}",
+        "label_start": "Start of version {{version}} · {{how}}",
+        "running": "running",
+        "in-progress": "in progress",
+        "done": "done",
+        "oom": "out of memory",
+        "never-answered": "never answered",
+        "lost": "end unknown",
+        "stopped": "stopped",
+        "exit": "failed, exit {{code}}",
+        "signal": "failed, {{signal}}",
+        "failed": "failed"
+    }
+}

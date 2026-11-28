@@ -35,5 +35,6 @@
     "error.not-found.title": "Heading when an address shows nothing: a page, a Space (a product noun), a socio (an AI agent) or a conversation that doesn't exist or isn't shared with the person.",
     "error.not-found.why": "Under the not-found page's heading: why the address shows nothing.",
     "error.not-found.back": "Link to the home page, which lists the person's socios.",
-    "error.not-found.crumb": "Breadcrumb and tab title of the not-found page."
+    "error.not-found.crumb": "Breadcrumb and tab title of the not-found page.",
+    "account-menu": "Accessible name of the button at the foot of the sidebar that opens the account menu. {{name}} is the signed-in person's name."
 }

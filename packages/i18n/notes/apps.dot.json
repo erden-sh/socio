@@ -1,0 +1,19 @@
+{
+    "title": "Heading of a socio's apps on its home page. Socios are the product's AI agents; apps are small web apps they build.",
+    "all": "Link to the Apps page.",
+    "failed": "Shown when the socio's apps could not load.",
+    "empty-archived": "Shown for an archived socio with no apps the person can open. {{name}} is the socio's name.",
+    "empty": "Shown when the socio built no app the person can open. {{name}} is the socio's name.",
+    "version": "In an app's details: its live version number.",
+    "shared-with": "In an app's details: the Space it is shared with ({{space}}, its name; Space is a product noun).",
+    "only-you": "In an app's details: shared with nobody else.",
+    "shared-by": "In an app's details: who shared it with you ({{name}}).",
+    "shared-by-other": "The same when the owner's name isn't known.",
+    "stage.published": "Badge: the app was promoted and is published.",
+    "stage.development": "Badge: the app is still being built in the socio's computer.",
+    "stage.unpublished": "Badge: its owner took the app offline.",
+    "manage-hint": "For screen readers, after an unpublished app's row: the link goes to the Apps page. Keep the parentheses.",
+    "new-tab-hint": "For screen readers, after an app's row: the link opens a new tab. Keep the parentheses.",
+    "report": "Tooltip of the button that files an issue about the app.",
+    "report-label": "Accessible name of that button. {{name}} is the app's name."
+}

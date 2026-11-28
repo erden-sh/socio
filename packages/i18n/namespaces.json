@@ -11,6 +11,26 @@
         "label": "Approvals · Request card",
         "where": "The card for one request a socio asks permission for, with Approve and Deny buttons. It shows in the chat, in the bar above the message box, on a request's own page, and in the Waiting for you panel on a socio's page."
     },
+    "apps": {
+        "label": "Apps · Apps page",
+        "where": "The Apps page, listing the small web apps socios build for you: each app's badges, details, health and setup lines, its buttons to open, share, promote, roll back, publish or delete it, its versions, and the apps an admin can see but not open."
+    },
+    "apps.dialogs": {
+        "label": "Apps · Delete, unregister and logs dialogs",
+        "where": "Dialogs opened from an app on the Apps page: deleting a promoted app and choosing what happens to its data, unregistering one in development, and its build and start logs with how each attempt ended."
+    },
+    "apps.dot": {
+        "label": "Apps · A socio's apps",
+        "where": "The Apps panel on a socio's home page: the apps it built that you can open, each with its stage (published, in development, unpublished), version and sharing, and a link to the Apps page."
+    },
+    "apps.open": {
+        "label": "Apps · Opening an app",
+        "where": "The short page shown while an app signs you in and opens on its own address, and the message when it can't open, with a link back to your apps."
+    },
+    "apps.promote": {
+        "label": "Apps · Promotion wizard",
+        "where": "The three-step dialog that promotes an app a socio packaged into the workspace: a review of its files and what it reaches, a choice for each dataset it uses (move, share or keep), and a final summary."
+    },
     "chat": {
         "label": "Chat · Conversation",
         "where": "An open conversation with a socio: the chat header (status, model, voice call, save as page), the messages with their copy, quote and feedback buttons, attachments and their viewer, and messages waiting in the queue."
@@ -202,6 +222,34 @@
     "pages.review": {
         "label": "Chat · Page review card",
         "where": "The card in a conversation where you approve or decline a page a socio drafted; once approved, the draft is saved as a page in the Space."
+    },
+    "plugins": {
+        "label": "Plugins · Shared words",
+        "where": "Words the Plugins page and a plugin's admin page share: the page title, badges for how a plugin opens and runs and whether its storage is backed up, what each permission lets it do, who can use it, and the Open button."
+    },
+    "plugins.bindings": {
+        "label": "Plugins · Dataset choices",
+        "where": "Choosing which workspace datasets a plugin reads or writes: the install dialog an admin sees before installing it, and the Datasets section of its admin page, with each need, the datasets offered and why some can't be chosen."
+    },
+    "plugins.catalog": {
+        "label": "Plugins · Plugins page",
+        "where": "The admin-only Plugins page: the catalog of plugins to install with its search, categories and rows, a plugin's details with its permissions and Install or Manage, and the Installed tab listing what is installed."
+    },
+    "plugins.dialogs": {
+        "label": "Plugins · Update and uninstall dialogs",
+        "where": "Dialogs on a plugin's admin page: the review of an update, listing in plain words what the new version may do that the installed one can't, and uninstalling a plugin after typing its name."
+    },
+    "plugins.frame": {
+        "label": "Plugins · Around a plugin's page",
+        "where": "What Socio shows around an installed plugin's own page: the Open in a new tab button beside its name in the header, the page that opens a plugin in a new tab, and the confirmation before a plugin opens a link."
+    },
+    "plugins.manage": {
+        "label": "Plugins · Plugin admin page",
+        "where": "An installed plugin's admin page under Settings: its overview and on/off switch, who can use it, the hosts it may reach, its datasets and data budget, its backups, and the danger zone with Uninstall."
+    },
+    "plugins.settings": {
+        "label": "Plugins · Plugin settings form",
+        "where": "The Settings section of a plugin's admin page: the settings its maker declares, which save as you change them, with Undo and Redo, each field's default and required hints, and whether the running plugin has them yet."
     },
     "rooms": {
         "label": "Rooms · Room conversation",
@@ -404,8 +452,8 @@
         "where": "The short status word beside a socio (Idle, Working, Paused) on the home page and on the socio's own home page."
     },
     "shell.help": {
-        "label": "App · Help menu",
-        "where": "The Help menu in the header (guides, what's new, keyboard shortcuts and the light or dark theme), the keyboard shortcuts dialog, and the banner and dialog offering the Socio mobile app."
+        "label": "App · Help and account menus",
+        "where": "The Help menu in the header (guides, what's new, keyboard shortcuts), the account menu under your name in the sidebar (theme, Add a device, Sign out), the passkey suggestion, and the banner and dialog offering the Socio mobile app."
     },
     "shell.home": {
         "label": "App · Home page",

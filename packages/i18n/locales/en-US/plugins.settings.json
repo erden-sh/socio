@@ -1,0 +1,23 @@
+{
+    "label": "Plugin settings",
+    "undo": "Undo",
+    "redo": "Redo",
+    "footnote": "A setting with an error keeps its saved value until it is fixed. Undo and Redo step through this page’s saves.",
+    "save-failed": "Could not save the settings.",
+    "apply-failed": "The settings are saved, but the plugin could not be given them.",
+    "apply": {
+        "pending": "The plugin restarts with them in a few seconds.",
+        "applying": "Applying…",
+        "applied": "Applied.",
+        "failed": "Not applied yet.",
+        "now": "Apply now"
+    },
+    "field": {
+        "default-choice": "Default ({{value}})",
+        "not-set": "Not set",
+        "choose": "Choose one",
+        "not-a-choice": "{{value}} (not a choice)",
+        "default": "Default: <code>{{value}}</code>.",
+        "required": "Required."
+    }
+}

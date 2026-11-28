@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
+import { getI18n } from 'react-i18next';
 import { createMemoryRouter, Outlet, RouterProvider, useParams, type RouteObject } from 'react-router';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
@@ -94,7 +95,8 @@ const settled = () => act(() => new Promise((resolve) => setTimeout(resolve, 20)
 /** The header's last crumb (what AppHeader renders) beside the page. */
 function Crumb({ workspace }: { workspace: WorkspaceState }) {
     const params = useParams();
-    const crumbs = (handle as Required<RouteHandle>).crumb({ workspace, params } as never);
+    // The header's t (CrumbContext): the tests' en-US instance.
+    const crumbs = (handle as Required<RouteHandle>).crumb({ workspace, params, t: getI18n().t } as never);
     return <div data-slot="test-header">{crumbs.at(-1)?.node}</div>;
 }
 

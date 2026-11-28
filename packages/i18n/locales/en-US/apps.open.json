@@ -1,0 +1,11 @@
+{
+    "crumbs": {
+        "apps": "Apps",
+        "open": "Open"
+    },
+    "opening": "Opening…",
+    "signing-in": "Signing you in to the app.",
+    "failed": "Could not open the app.",
+    "error-title": "Can’t open this app",
+    "error-detail": "It may have been unregistered, or not shared with you. <apps>See your apps</apps>."
+}

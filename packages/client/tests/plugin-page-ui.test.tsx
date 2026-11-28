@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
+import { getI18n } from 'react-i18next';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
@@ -492,6 +493,28 @@ it('undoes and redoes this page’s saves with buttons and the keyboard (CB-398)
     expect(note.value).toBe('hello');
 });
 
+it('keeps the page and its undo history when the language changes', async () => {
+    open('/settings/plugins/typed');
+    await until(() => !!slot('plugin-settings'), 'the settings');
+    const sync = setting('SYNC').querySelector<HTMLButtonElement>('[role="switch"]')!;
+    act(() => sync.click());
+    await until(() => puts().length === 1, 'the save');
+    const undo = () => document.querySelector<HTMLButtonElement>('[aria-keyshortcuts="Control+Z Meta+Z"]');
+    expect(undo()!.disabled).toBe(false);
+    const form = slot('plugin-settings');
+    const i18n = getI18n();
+    const before = i18n.language;
+    try {
+        await act(async () => void (await i18n.changeLanguage('en-XA')));
+        await act(() => new Promise((resolve) => setTimeout(resolve, 50)));
+        // The same form, not one loaded again: Undo still has this page's save.
+        expect(slot('plugin-settings')).toBe(form);
+        expect(undo()!.disabled).toBe(false);
+    } finally {
+        await act(async () => void (await i18n.changeLanguage(before)));
+    }
+});
+
 it('leaves undo alone with nothing to undo, and puts a failed undo back (CB-398)', async () => {
     open('/settings/plugins/typed');
     await until(() => !!slot('plugin-settings'), 'the settings');
@@ -953,15 +976,15 @@ it('shows a plugin’s backups, starts Back up now, and lists what the workspace
     const status = slot('plugin-backup-status', section)!;
     expect(status.getAttribute('data-state')).toBe('ok');
     expect(status.textContent).toContain('is backed up with every scheduled backup');
-    expect(status.textContent).toContain('(3.0 MB)');
+    expect(status.textContent).toContain('(3.1 MB)');
     expect(status.className).not.toContain('text-destructive');
     const rows = [...slot('plugin-backup-history', section)!.querySelectorAll('li')];
     expect(rows.map((row) => row.getAttribute('data-snapshot'))).toEqual([
         '01JREQUEST00000000000000000',
         '01JSCHEDULED000000000000000',
     ]);
-    expect(rows[0]!.textContent).toContain('Asked for by the plugin: Imported 1,200 notes · 3.0 MB · version 1.2.0');
-    expect(rows[1]!.textContent).toContain('Scheduled · 2.0 KB');
+    expect(rows[0]!.textContent).toContain('Asked for by the plugin: Imported 1,200 notes · 3.1 MB · version 1.2.0');
+    expect(rows[1]!.textContent).toContain('Scheduled · 2 kB');
     // Healthy: no badge in the overview.
     expect(slot('plugin-not-backed-up')).toBeNull();
     expect(slot('plugin-backup-failing')).toBeNull();

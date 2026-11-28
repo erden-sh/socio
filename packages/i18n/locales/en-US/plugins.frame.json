@@ -1,0 +1,16 @@
+{
+    "crumb-fallback": "Plugin",
+    "open-tab": "Open in a new tab",
+    "open": {
+        "opening": "Opening in a new tab.",
+        "opened": "Opened in a new tab. You can close this page.",
+        "blocked": "The browser blocked the new tab.",
+        "failed": "Could not open the plugin."
+    },
+    "link": {
+        "title": "Open <host>{{host}}</host> in a new tab?",
+        "description": "{{plugin}} asks to open this link. Open it only if you expect to go to {{host}}.",
+        "cancel": "Cancel",
+        "open": "Open"
+    }
+}

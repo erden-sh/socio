@@ -139,12 +139,16 @@
                 "packages/client/src/modules/schedules/**",
                 "packages/client/src/modules/runs/**",
                 "packages/client/src/modules/activity/**",
+                "packages/client/src/modules/plugins/**",
+                "packages/client/src/modules/apps/**",
                 "packages/client/src/shell/**",
                 "packages/client/src/root.tsx",
+                "packages/client/src/components/nav-user.tsx",
                 "packages/client/src/views/ChatViews.tsx",
                 "packages/client/src/views/NotFound.tsx",
                 "packages/client/src/views/RouteError.tsx"
             ],
+            "excludeFiles": ["packages/client/src/modules/plugins/PluginFrame.tsx"],
             "rules": {
                 "socio/no-literal-text": "error"
             }
