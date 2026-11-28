@@ -343,7 +343,11 @@ describe('i18n-export.yml', () => {
             mkdirSync(dirname(path), { recursive: true });
             writeFileSync(path, typeof json === 'string' ? json : `${JSON.stringify(json, null, 4)}\n`);
         };
-        const BRANCH = 'i18n/es-419-2026-11-27';
+        // The day the export runs, as both jobs see it: prepare reads the shimmed
+        // `date -u +%F` (bin() below), publish gets it as prepare's output (DATE).
+        // A fixed day keeps the branch name the same whatever the machine's clock.
+        const TODAY = '2026-11-27';
+        const BRANCH = `i18n/es-419-${TODAY}`;
         let next = 0;
         const candidate = (key: string, value: string) => ({
             id: `k_${String(next++).padStart(26, '0')}`,
@@ -396,6 +400,8 @@ describe('i18n-export.yml', () => {
                 writeFileSync(join(dir, name), `#!/bin/sh\necho "${name} $*" >> "${log}"\n${body}\n`, { mode: 0o755 });
             };
             script('pnpm', 'exit 0');
+            // Only the call the prepare step makes; anything else fails loudly.
+            script('date', `[ "$*" = "-u +%F" ] && echo ${TODAY} || { echo "unexpected date $*" >&2; exit 2; }`);
             script(
                 'gh',
                 [
@@ -472,7 +478,7 @@ describe('i18n-export.yml', () => {
                 GH_TOKEN: 'test',
                 APP_SLUG: 'translate-test',
                 LOCALES: 'es-419',
-                DATE: '2026-11-27',
+                DATE: TODAY,
                 BASE_URL: 'https://translate.example.com',
                 CLIENT_ID: 'id',
                 CLIENT_SECRET: 'secret',
@@ -537,9 +543,9 @@ describe('i18n-export.yml', () => {
                 van: 'Furgoneta',
                 truck: 'Camión',
             });
-            expect(
-                tools.calls().some((call) => call.startsWith('gh pr create --base main --head i18n/es-419-2026-11-27')),
-            ).toBe(true);
+            expect(tools.calls().some((call) => call.startsWith(`gh pr create --base main --head ${BRANCH}`))).toBe(
+                true,
+            );
             expect(tools.calls().filter((call) => call.includes('/export/ack'))).toHaveLength(1);
         });
 
@@ -626,6 +632,9 @@ describe('i18n-export.yml', () => {
             'git push --quiet origin "HEAD:refs/heads/$branch"',
         ]);
         expect(run).toContain('branch="i18n/$locale-$DATE"');
+        // Prepare names the branch from UTC's day, the call the tests' `date` shim answers.
+        const write = prepare!.steps.find((step) => step.id === 'write')!.run!;
+        expect(write).toContain('date="$(date -u +%F)"');
         expect(run).not.toMatch(/git push[^\n]*(--force|\s-f\b|\+)/);
         expect(run).toContain('gh pr create --base main --head "$branch"');
     });
