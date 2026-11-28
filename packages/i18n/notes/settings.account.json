@@ -18,5 +18,10 @@
     "leave.confirmTitle": "Title of the confirmation dialog before leaving the workspace.",
     "leave.confirmAction": "The confirmation dialog's destructive button.",
     "leave.confirmBody": "The phone app is the Socio mobile app; it deletes its local copy of the workspace when signed out.",
-    "leave.left": "Toast after the person left the workspace; they are signed out next."
+    "leave.left": "Toast after the person left the workspace; they are signed out next.",
+    "social.title": "Heading of the card where a person links Google or Apple accounts to sign in with. Google and Apple are brand names.",
+    "social.linked": "One linked account. {{name}} is Google or Apple; {{at}} is when it was linked; {{email}} is that account's address.",
+    "social.link": "Button; {{name}} is Google or Apple.",
+    "social.unlinked": "Toast; {{name}} is Google or Apple.",
+    "social.result.nonce-invalid": "After coming back from Google's or Apple's page when the attempt can't be used."
 }

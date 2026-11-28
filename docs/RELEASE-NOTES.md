@@ -29,6 +29,10 @@ How this file is kept (scripts/release.mjs and the app's build read it):
 
 ## Unreleased
 
+### New
+
+- **Sign in with Google or Apple on the website.** The sign-in page offers **Continue with Google** and **Continue with Apple** for people who linked one of those accounts, and anyone signed in can link or unlink Google and Apple under **Settings → Account**, so a link works on the website and in the Socio app alike. It goes through Socio's sign-in page at auth.socio.sh, so the server still holds no Google or Apple client id; as in the app, it finds only an account that linked that Google or Apple account and never makes one. It needs the cloud connection with `social:verify` and the cloud's website flow, and a provider shows only while the cloud offers it for the web. The access policy keeps one switch per provider, now named **Google (app and website)** and **Apple (app and website)**.
+
 ### Changed
 
 - In **Add a device**, the code from the new device now goes in six boxes, three and three, instead of one plain field. It still sends itself on the last digit or a paste, and a pasted "123 456" or "123-456" still works (CB-575).

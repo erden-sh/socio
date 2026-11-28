@@ -4512,10 +4512,10 @@ export interface EnglishResources {
             offIn_telegram: 'off in the Telegram bot';
             offIn_email: 'off in this server: no email channel';
             offIn_cloud: 'off in the cloud connection';
-            google: 'Google in the Socio app';
-            googleHelp: 'For people who linked a Google account. Works while this server is connected to Socio’s cloud services.';
-            apple: 'Sign in with Apple in the Socio app';
-            appleHelp: 'For people who linked an Apple account. Works while this server is connected to Socio’s cloud services.';
+            google: 'Google (app and website)';
+            googleHelp: 'For people who linked a Google account, in the Socio app or on this website. Works while this server is connected to Socio’s cloud services.';
+            apple: 'Apple (app and website)';
+            appleHelp: 'For people who linked an Apple account, in the Socio app or on this website. Works while this server is connected to Socio’s cloud services.';
             openSignUp: 'Open sign-up';
         };
         lists: {
@@ -4612,6 +4612,32 @@ export interface EnglishResources {
             change: 'Change';
             changed: 'Password changed; other sessions signed out';
             failed: 'Could not change the password.';
+        };
+        social: {
+            title: 'Google and Apple';
+            description: 'Sign in with a Google or Apple account you link here, on this website and in the $t(common:product) app. Linking never shares your password with them.';
+            list: 'Your linked accounts';
+            linked: '{{name}}: linked {{at, datetime(dateStyle: medium)}}';
+            linked_email: '{{name}} ({{email}}): linked {{at, datetime(dateStyle: medium)}}';
+            link: 'Link {{name}}';
+            unlink: 'Unlink';
+            unlinked: '{{name}} unlinked';
+            loadFailed: 'Could not load your linked accounts.';
+            unlinkFailed: 'Could not unlink it.';
+            linkFailed: 'Could not start linking.';
+            result: {
+                linked: 'Account linked. You can sign in with it now.';
+                canceled: 'Linking canceled.';
+                expired: 'Linking took too long and expired. Try again.';
+                'provider-unavailable': 'Linking isn’t available on this server right now.';
+                'nonce-invalid': 'This link attempt expired, was used already, or was started in another browser or session. Try again.';
+                'not-authorized': 'Sign in again, then link the account.';
+                'already-linked-other': 'That account is already linked to another person here.';
+                'method-off': 'That way of signing in is turned off here.';
+                deactivated: 'This account is deactivated.';
+                'too-many': 'Too many tries. Try again in a minute.';
+                failed: 'Could not link the account. Try again.';
+            };
         };
         sessions: {
             title: 'Sessions';
@@ -7122,6 +7148,7 @@ export interface EnglishResources {
         'sign-in-to': 'Sign in to {{name}}.';
         passkey: 'Sign in with a passkey';
         provider: 'Sign in with {{name}}';
+        social: 'Continue with {{name}}';
         'send-link': 'Send me a sign-in link';
         form: 'Sign in with email';
         name: 'Name';
@@ -7170,6 +7197,17 @@ export interface EnglishResources {
             'method-off': 'That way of signing in is turned off here. Sign in another way, or ask an operator.';
             'not-linked': 'An account with this email exists, but the provider did not confirm the address. Sign in another way, or ask an admin.';
             failed: 'Sign-in failed. Try again, or ask an admin.';
+        };
+        'social-errors': {
+            canceled: 'Sign-in canceled.';
+            expired: 'This sign-in took too long and expired. Try again.';
+            'provider-unavailable': 'This way of signing in isn’t available on this server right now.';
+            'nonce-invalid': 'This sign-in expired, was used already, or was started in another browser. Try again from this browser.';
+            'not-linked': 'No account here is linked to that account. Sign in another way, then link it in Settings.';
+            'method-off': 'That way of signing in is turned off here.';
+            deactivated: 'This account is deactivated. Ask an admin to reactivate it.';
+            'too-many': 'Too many tries. Try again in a minute.';
+            failed: 'Sign-in failed. Try again, or sign in another way.';
         };
     };
     'shell.status': {

@@ -178,7 +178,7 @@ it('offers the sign-in view through AuthViews', async () => {
         auth,
     );
     expect(views.signInView).toBe(signInView);
-    expect(views.signInView(auth)).toEqual(signInView(auth));
+    expect(await views.signInView(auth)).toEqual(await signInView(auth));
 });
 
 it('ends what acts for a deactivated person over the other features tags, in order', async () => {

@@ -111,7 +111,7 @@ const toIso = (value: unknown) => {
  * Auth's transaction when one is open (as devices.ts and groups.ts do):
  * synchronous, so nothing else on the connection runs in between.
  */
-function atomically<T>(db: DatabaseSync, work: () => T): T {
+export function atomically<T>(db: DatabaseSync, work: () => T): T {
     db.exec('SAVEPOINT socio_social');
     try {
         const result = work();
@@ -354,6 +354,22 @@ export class SocialSignIn {
         if (!checked.ok) {
             return checked;
         }
+        return this.linkChecked(provider, checked, session, () =>
+            this.claim(nonce, provider, 'link', session.sessionId),
+        );
+    }
+
+    /**
+     * Makes the link the cloud vouched for, in one unit of work with the
+     * nonce's `claim`: the app's link and the website's share it, and so
+     * their rules.
+     */
+    linkChecked(
+        provider: SocialProvider,
+        checked: { sub: string; email?: string },
+        session: { sessionId: string; accountId: string },
+        claim: () => boolean,
+    ): { ok: true; changed: boolean; link: SocialLink; sessionsEnded: number } | SocialRefusal {
         const providerId = NATIVE_PROVIDER_IDS[provider];
         return atomically(this.db, () => {
             // The verification awaited the cloud: what it vouched for links only
@@ -367,7 +383,7 @@ export class SocialSignIn {
             if (!sessionAllowed(provider, this.deps.saved())) {
                 return socialRefusal('method_off');
             }
-            if (!this.claim(nonce, provider, 'link', session.sessionId)) {
+            if (!claim()) {
                 return socialRefusal('nonce_invalid');
             }
             const existing = this.db

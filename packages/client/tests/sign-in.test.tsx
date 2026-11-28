@@ -49,7 +49,9 @@ beforeEach(() => {
                     ]
                   : path === '/api/auth/sign-in/social'
                     ? { url: 'https://auth.example.com/oidc/auth?state=s' }
-                    : { ok: true };
+                    : path === '/api/auth/web/social/start'
+                      ? { url: 'https://auth.socio.test/s?t=ticket' }
+                      : { ok: true };
         return new Response(JSON.stringify(body), {
             headers: { 'Content-Type': 'application/json' },
         });
@@ -146,6 +148,59 @@ it('sends the browser to the provider, and explains a refused sign-in', async ()
         body: { provider: 'logto', callbackURL: '/', errorCallbackURL: '/' },
     });
     expect(assign).toHaveBeenCalledWith('https://auth.example.com/oidc/auth?state=s');
+});
+
+it('offers Google and Apple from the website list, and starts there', async () => {
+    session = { ...betterAuth, methods: { ...betterAuth.methods!, social: ['google', 'apple'] } };
+    window.history.replaceState(null, '', '/connect/agent?x=1');
+    const assign = vi.fn();
+    vi.stubGlobal('location', {
+        pathname: window.location.pathname,
+        search: window.location.search,
+        hash: '',
+        assign,
+    });
+    act(() => show());
+    await until(() => !!host.textContent?.includes('Continue with Google'));
+    expect(button('Continue with Apple')).toBeTruthy();
+    await act(async () => button('Continue with Google').click());
+    await until(() => assign.mock.calls.length > 0);
+    expect(requests.at(-1)).toEqual({
+        path: '/api/auth/web/social/start',
+        method: 'POST',
+        body: { provider: 'google', purpose: 'signin', next: '/connect/agent?x=1' },
+    });
+    expect(assign).toHaveBeenCalledWith('https://auth.socio.test/s?t=ticket');
+});
+
+it('offers no website Google or Apple without the list, or in the app’s sign-in sheet', async () => {
+    session = { ...betterAuth, methods: { ...betterAuth.methods!, social: ['apple'] } };
+    window.history.replaceState(null, '', '/device/continue?request=r1&app=1');
+    act(() => show());
+    await until(() => !!host.textContent?.includes('Sign in with Logto'));
+    expect(host.textContent).not.toContain('Continue with');
+    act(() => root.unmount());
+    root = createRoot(host);
+    session = betterAuth;
+    window.history.replaceState(null, '', '/');
+    act(() => show());
+    await until(() => !!host.textContent?.includes('Sign in with Logto'));
+    expect(host.textContent).not.toContain('Continue with');
+});
+
+it.each([
+    ['social_not_linked', 'No account here is linked to that account'],
+    ['social_canceled', 'Sign-in canceled.'],
+    ['social_nonce_invalid', 'started in another browser'],
+    ['social_<b>made-up</b>', 'Sign-in failed. Try again, or sign in another way.'],
+])('explains ?error=%s in words, never echoing it', async (code, words) => {
+    session = { ...betterAuth, methods: { ...betterAuth.methods!, social: ['google'] } };
+    window.history.replaceState(null, '', `/?error=${encodeURIComponent(code)}&error_description=echo-me`);
+    act(() => show());
+    await until(() => !!host.textContent?.includes('Continue with Google'));
+    expect(host.textContent).toContain(words);
+    expect(host.textContent).not.toContain('made-up');
+    expect(host.textContent).not.toContain('echo-me');
 });
 
 it('offers reset and sign-up only when they are on', async () => {

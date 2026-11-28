@@ -126,6 +126,8 @@ const TABLES: Record<string, string> = {
     // CB-570: the app's Google and Apple sign-in. A nonce lives 5 minutes and
     // is used once; a link is the person's own, unlinked or replaced by them.
     auth_social_nonce: 'used or expired single-use sign-in nonces, a day after they expired',
+    auth_social_web_nonce:
+        'the website’s single-use sign-in nonces: a day after they expired, or at once when the cloud made no page for one',
     auth_account: 'a Google or Apple link its person unlinked or replaced; the log says so',
     // CB-376: a group an admin deleted; its members' roles drop it at once.
     auth_organization_role: 'a deleted group (settings); the change is logged',

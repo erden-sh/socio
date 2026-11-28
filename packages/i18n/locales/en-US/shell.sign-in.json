@@ -3,6 +3,7 @@
     "sign-in-to": "Sign in to {{name}}.",
     "passkey": "Sign in with a passkey",
     "provider": "Sign in with {{name}}",
+    "social": "Continue with {{name}}",
     "send-link": "Send me a sign-in link",
     "form": "Sign in with email",
     "name": "Name",
@@ -51,5 +52,16 @@
         "method-off": "That way of signing in is turned off here. Sign in another way, or ask an operator.",
         "not-linked": "An account with this email exists, but the provider did not confirm the address. Sign in another way, or ask an admin.",
         "failed": "Sign-in failed. Try again, or ask an admin."
+    },
+    "social-errors": {
+        "canceled": "Sign-in canceled.",
+        "expired": "This sign-in took too long and expired. Try again.",
+        "provider-unavailable": "This way of signing in isn’t available on this server right now.",
+        "nonce-invalid": "This sign-in expired, was used already, or was started in another browser. Try again from this browser.",
+        "not-linked": "No account here is linked to that account. Sign in another way, then link it in Settings.",
+        "method-off": "That way of signing in is turned off here.",
+        "deactivated": "This account is deactivated. Ask an admin to reactivate it.",
+        "too-many": "Too many tries. Try again in a minute.",
+        "failed": "Sign-in failed. Try again, or sign in another way."
     }
 }

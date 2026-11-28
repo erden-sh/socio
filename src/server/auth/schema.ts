@@ -304,5 +304,21 @@ CREATE INDEX auth_social_nonce_expiresAt_idx ON auth_social_nonce(expiresAt);
 ALTER TABLE "auth_account" ADD COLUMN "linkEmail" text;
 CREATE UNIQUE INDEX auth_account_native_uq ON auth_account(providerId, accountId) WHERE providerId IN ('google-native', 'apple-native');`,
         },
+        {
+            // Google and Apple sign-in and linking on the website, through
+            // Socio's sign-in page. Its nonces live apart from the app's:
+            // version 17's purpose check allows only the app's purposes, and
+            // a table can't change its checks without being rebuilt. A row
+            // holds the nonce's SHA-256, the SHA-256 of the browser's binding
+            // cookie, where to go after (a same-origin path), and for a link
+            // the session that asked, and when its one redeem began (a flow
+            // gets one call to the cloud, whatever it answers). Only adds: the previous release
+            // ignores the table.
+            version: 18,
+            name: 'website google and apple sign-in',
+            phase: 'expand',
+            up: `CREATE TABLE auth_social_web_nonce(nonceHash TEXT PRIMARY KEY, bindHash TEXT NOT NULL UNIQUE, provider TEXT NOT NULL CHECK(provider IN ('google','apple')), purpose TEXT NOT NULL CHECK(purpose IN ('web-signin','web-link')), sessionId TEXT, next TEXT NOT NULL, createdAt INTEGER NOT NULL, expiresAt INTEGER NOT NULL, redeemStartedAt INTEGER, usedAt INTEGER);
+CREATE INDEX auth_social_web_nonce_expiresAt_idx ON auth_social_web_nonce(expiresAt);`,
+        },
     ],
 };

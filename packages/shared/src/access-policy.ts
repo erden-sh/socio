@@ -242,8 +242,8 @@ const FLAG_LABELS: Record<(typeof FLAG_KEYS)[number], [string, string]> = {
     passkey: ['Passkeys', 'AUTH_PASSKEY'],
     signInLink: ['Sign-in links by Telegram', 'the Telegram bot'],
     openSignUp: ['Open sign-up', 'AUTH_OPEN_SIGNUP'],
-    google: ['Google in the Socio app', 'the cloud connection'],
-    apple: ['Sign in with Apple in the Socio app', 'the cloud connection'],
+    google: ['Google (app and website)', 'the cloud connection'],
+    apple: ['Apple (app and website)', 'the cloud connection'],
 };
 /** The opt-in key's words (CB-352). */
 export const EMAIL_LINKS_LABEL = 'Sign-in links by email';

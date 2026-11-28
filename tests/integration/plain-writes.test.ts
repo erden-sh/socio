@@ -70,6 +70,10 @@ const KNOWN = new Map<string, number>([
     // replaced and an unlink, and the sessions an unlinked one made, each in one
     // SAVEPOINT (social-sign-in.ts `atomically`).
     ['src/server/auth/social-sign-in.ts', 7],
+    // Google and Apple on the website, the same way: a flow's nonce made (with
+    // the day-old ones cleaned up, in one SAVEPOINT), dropped when the cloud
+    // made no page, its one redeem taken, and used up (or spent on a refusal).
+    ['src/server/auth/web-social-sign-in.ts', 6],
     ['src/server/telegram/channel-state.ts', 11],
     // CB-292: a suggestion's insert, settle and clear, each a prepared write.
     ['src/server/chat-name-suggestions/repository.ts', 3],

@@ -1,10 +1,18 @@
 import { useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
+import { useLocation, useNavigate } from 'react-router';
 import { toast } from 'sonner';
 
 import { useTranslation } from '@socio/i18n/react';
 import type { SignInMethods } from '@socio/shared/auth';
+import type { SocialLink, SocialProvider } from '@socio/shared/device-sign-in';
 import type { LeaveWorkspaceCheck } from '@socio/shared/leave-workspace';
 import { roleLabel } from '@socio/shared/roles';
+import {
+    SOCIAL_PROVIDER_NAMES,
+    WEB_SOCIAL_LINK_PARAM,
+    webSocialLinkResult,
+    type WebSocialLinkResult,
+} from '@socio/shared/web-social';
 
 import {
     addPasskey,
@@ -13,7 +21,10 @@ import {
     leaveWorkspace,
     leaveWorkspaceCheck,
     listPasskeys,
+    listSocialLinks,
     signOutEverywhere,
+    startWebSocial,
+    unlinkSocial,
     updateName,
     type Passkey,
 } from '../../shell/auth-client';
@@ -76,6 +87,7 @@ export function AccountSections({
                     <PasswordChange />
                 </SettingsCard>
             )}
+            <SocialLinks offered={methods.social ?? []} />
             <SettingsCard>
                 <DevicesCard />
             </SettingsCard>
@@ -156,6 +168,140 @@ function LeaveWorkspace({ onLeft }: { onLeft: () => void }) {
                 </ConfirmDelete>
             )}
         </section>
+    );
+}
+
+const LINK_RESULT_KEYS = {
+    linked: 'linked',
+    canceled: 'canceled',
+    expired: 'expired',
+    provider_unavailable: 'provider-unavailable',
+    nonce_invalid: 'nonce-invalid',
+    not_authorized: 'not-authorized',
+    already_linked_other: 'already-linked-other',
+    method_off: 'method-off',
+    deactivated: 'deactivated',
+    too_many: 'too-many',
+    failed: 'failed',
+} as const satisfies Record<WebSocialLinkResult, string>;
+
+/**
+ * Settings → Account → Google and Apple: the person's links (made here or
+ * in the Socio app), Link for each provider the website offers that isn't
+ * linked yet, and Unlink. Linking goes through Socio's sign-in page and
+ * comes back here with `?social_link=…`, shown once as a toast.
+ */
+export function SocialLinks({ offered }: { offered: readonly SocialProvider[] }) {
+    const { t } = useTranslation(['settings.account']);
+    const location = useLocation();
+    const navigate = useNavigate();
+    const [links, setLinks] = useState<SocialLink[]>();
+    const [busy, setBusy] = useState(false);
+    const load = useCallback(
+        () =>
+            listSocialLinks()
+                // Anything but a list (a server without the route): no links.
+                .then((found) => setLinks(Array.isArray(found) ? found : []))
+                .catch((e) => failed(e, t('settings.account:social.loadFailed'))),
+        [t],
+    );
+    useEffect(() => void load(), [load]);
+    // Back from linking: say how it went, once, and drop it from the address.
+    const returned = new URLSearchParams(location.search).get(WEB_SOCIAL_LINK_PARAM);
+    useEffect(() => {
+        const result = webSocialLinkResult(returned);
+        if (!result) {
+            return;
+        }
+        const words = t(`settings.account:social.result.${LINK_RESULT_KEYS[result]}`);
+        if (result === 'linked') {
+            toast.success(words);
+        } else {
+            toast.error(words);
+        }
+        const rest = new URLSearchParams(location.search);
+        rest.delete(WEB_SOCIAL_LINK_PARAM);
+        void navigate(`${location.pathname}${rest.size ? `?${rest}` : ''}${location.hash}`, { replace: true });
+        // Once per return: the address no longer carries it after.
+        // oxlint-disable-next-line react-hooks/exhaustive-deps
+    }, [returned]);
+    const linked = new Set(links?.map((link) => link.provider));
+    const toLink = offered.filter((provider) => !linked.has(provider));
+    if (!links?.length && !offered.length) {
+        return null;
+    }
+    return (
+        <SettingsCard>
+            <section className="grid gap-2" id="sign-in-methods" data-slot="social-links">
+                <h3 className="font-medium">{t('settings.account:social.title')}</h3>
+                <p className="text-muted-foreground">{t('settings.account:social.description')}</p>
+                <ul className="grid gap-1" aria-label={t('settings.account:social.list')}>
+                    {links?.map((link) => (
+                        <li key={link.provider} className="flex items-center gap-2">
+                            <span className="flex-1">
+                                {link.email
+                                    ? t('settings.account:social.linked', {
+                                          context: 'email',
+                                          name: SOCIAL_PROVIDER_NAMES[link.provider],
+                                          email: link.email,
+                                          at: new Date(link.linkedAt),
+                                      })
+                                    : t('settings.account:social.linked', {
+                                          name: SOCIAL_PROVIDER_NAMES[link.provider],
+                                          at: new Date(link.linkedAt),
+                                      })}
+                            </span>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                disabled={busy}
+                                onClick={async () => {
+                                    setBusy(true);
+                                    try {
+                                        await unlinkSocial(link.provider);
+                                        toast.success(
+                                            t('settings.account:social.unlinked', {
+                                                name: SOCIAL_PROVIDER_NAMES[link.provider],
+                                            }),
+                                        );
+                                        await load();
+                                    } catch (e) {
+                                        failed(e, t('settings.account:social.unlinkFailed'));
+                                    } finally {
+                                        setBusy(false);
+                                    }
+                                }}
+                            >
+                                {t('settings.account:social.unlink')}
+                            </Button>
+                        </li>
+                    ))}
+                </ul>
+                {links && toLink.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                        {toLink.map((provider) => (
+                            <Button
+                                key={provider}
+                                variant="outline"
+                                data-slot={`link-${provider}`}
+                                disabled={busy}
+                                onClick={async () => {
+                                    setBusy(true);
+                                    try {
+                                        await startWebSocial(provider, 'link', `${location.pathname}#sign-in-methods`);
+                                    } catch (e) {
+                                        failed(e, t('settings.account:social.linkFailed'));
+                                        setBusy(false);
+                                    }
+                                }}
+                            >
+                                {t('settings.account:social.link', { name: SOCIAL_PROVIDER_NAMES[provider] })}
+                            </Button>
+                        ))}
+                    </div>
+                )}
+            </section>
+        </SettingsCard>
     );
 }
 
