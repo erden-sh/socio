@@ -11,10 +11,10 @@ import type { AuthProvider } from './contract.js';
  */
 
 /** `GET /api/auth/session` without the user: what the sign-in screen offers. */
-export function signInView(provider: AuthProvider, branding?: Branding): SignInView {
+export async function signInView(provider: AuthProvider, branding?: Branding): Promise<SignInView> {
     return {
         provider: provider.kind,
         branding,
-        ...(provider.signInMethods ? { methods: provider.signInMethods() } : {}),
+        ...(provider.signInMethods ? { methods: await provider.signInMethods() } : {}),
     };
 }

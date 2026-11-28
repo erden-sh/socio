@@ -71,6 +71,12 @@ import {
 import type { PersonDetail, PersonTrail } from '@socio/shared/people';
 import { isAdmin, normalizeRole, ROLES } from '@socio/shared/roles';
 import type { Role, User } from '@socio/shared/types';
+import {
+    WEB_SOCIAL_CALLBACK_PATH,
+    WEB_SOCIAL_ERROR_PREFIX,
+    WEB_SOCIAL_LINK_PARAM,
+    WEB_SOCIAL_START_PATH,
+} from '@socio/shared/web-social';
 
 import { AgentGrantError, type GrantsShape } from '../agents/contract.js';
 
@@ -126,6 +132,12 @@ import { acceptableUrl, type OAuthProviderSettings } from './settings.js';
 import type { BetterAuthSettings } from './settings.js';
 import { NATIVE_PROVIDER_IDS, SocialSignIn, socialRefusal } from './social-sign-in.js';
 import { expiredStepUp, STEP_UP_LOCKED, STEP_UP_SECONDS, StepUpChallenges } from './step-up.js';
+import {
+    WEB_SOCIAL_FINISH_PATH,
+    WebSocialSignIn,
+    webSocialPlugin,
+    type WebSocialFinished,
+} from './web-social-sign-in.js';
 
 /** A Better Auth date column's value (ISO text, or epoch milliseconds) in milliseconds; 0 when unreadable. */
 function toMs(value: unknown): number {
@@ -157,6 +169,8 @@ const LINK_SECONDS = 3 * 24 * 60 * 60;
 const MIN_PASSWORD = 10;
 /** Better Auth's `cookiePrefix`: `cb.session_token`, `__Host-cb.…` over https. */
 const COOKIE_PREFIX = 'cb';
+/** Website Google and Apple sign-in starts per client address per minute. */
+const WEB_SOCIAL_STARTS_PER_MINUTE = 5;
 /**
  * "Send me a sign-in link": requests per client address, and links per
  * account (admins' sends count too), per 15 minutes.
@@ -484,6 +498,9 @@ export class BetterAuthProvider implements AuthProvider {
     private social?: SocialSignIn;
     /** Links made per session per minute (CB-570). */
     private socialLinks = new RateLimits(10, 60_000);
+    /** Google and Apple on the website: its flows, and starts per address per minute. */
+    private webSocial?: WebSocialSignIn;
+    private webSocialStarts = new RateLimits(WEB_SOCIAL_STARTS_PER_MINUTE, 60_000);
 
     constructor(
         private settings: BetterAuthSettings,
@@ -504,6 +521,8 @@ export class BetterAuthProvider implements AuthProvider {
             `${AUTH_PATH}/oauth2/authorize`,
             // The app's sign-in sheet opens it straight from the app (CB-352).
             `${AUTH_PATH}/device/start`,
+            // Socio's sign-in page sends the browser back here, from its own site.
+            WEB_SOCIAL_CALLBACK_PATH,
         ];
     }
 
@@ -820,6 +839,17 @@ export class BetterAuthProvider implements AuthProvider {
                             // came in. One with no method makes none either.
                             // A device endpoint chose the method (the approving
                             // session's, CB-352) and the device itself.
+                            // A website Google or Apple sign-in: the finish chose the method.
+                            if (ctx?.path === WEB_SOCIAL_FINISH_PATH) {
+                                const method = (session as { signInMethod?: SignInMethodId | null }).signInMethod;
+                                if (
+                                    (method !== 'google' && method !== 'apple') ||
+                                    !sessionAllowed(method, readStoredPolicy(this.database()).saved)
+                                ) {
+                                    return false;
+                                }
+                                return { data: { ...session, signInMethod: method } };
+                            }
                             if (ctx?.path && DEVICE_SIGN_IN_PATHS.has(ctx.path)) {
                                 const chosen = session as {
                                     signInMethod?: SignInMethodId | null;
@@ -1009,6 +1039,13 @@ export class BetterAuthProvider implements AuthProvider {
                     codeTarget: (email) => this.codeTarget(email),
                     channelReaches: (accountId, method, recipient) => this.channelReaches(accountId, method, recipient),
                     social: this.socialSignIn(),
+                }),
+                // Google and Apple on the website: the callback's session.
+                webSocialPlugin(api, cookieApi, {
+                    web: () => this.webSocialSignIn(),
+                    social: () => this.socialSignIn(),
+                    saved: () => readStoredPolicy(this.database()).saved,
+                    isBanned: (accountId) => this.isBanned(accountId),
                 }),
                 // Groups (CB-376): the one workspace organization, its runtime
                 // roles. Its endpoints are never served (`routes`); groups
@@ -1688,8 +1725,9 @@ export class BetterAuthProvider implements AuthProvider {
         }
     }
 
-    signInMethods(): SignInMethods {
+    async signInMethods(): Promise<SignInMethods> {
         const { settings, mailer } = this;
+        const social = await this.webSocialSignIn().offered();
         const inForce = this.inForce();
         return {
             passkey: inForce.passkey,
@@ -1701,6 +1739,8 @@ export class BetterAuthProvider implements AuthProvider {
             providers: settings.providers
                 .filter(({ id }) => inForce.providers.includes(id))
                 .map(({ id, name }) => ({ id, name })),
+            // Google and Apple through Socio's sign-in page (not the app's list).
+            social,
         };
     }
 
@@ -1753,6 +1793,19 @@ export class BetterAuthProvider implements AuthProvider {
             log: (line) => console.log(line),
         });
         return this.social;
+    }
+
+    /** Google and Apple on the website, through Socio's sign-in page. */
+    webSocialSignIn() {
+        this.webSocial ??= new WebSocialSignIn({
+            db: () => this.database(),
+            saved: () => readStoredPolicy(this.database()).saved,
+            verifier: () => this.socialVerifier,
+            social: this.socialSignIn(),
+            origin: this.settings.origin,
+            log: (line) => console.log(line),
+        });
+        return this.webSocial;
     }
 
     useSavedInviteLinks(read: () => boolean | undefined) {
@@ -2165,6 +2218,101 @@ export class BetterAuthProvider implements AuthProvider {
         return clientAddress(c, this.settings.trustProxy, this.settings.network);
     }
 
+    /**
+     * The website flow's binding cookie: `__Host-` over https (Secure,
+     * Path=/, no Domain), so a page on a subdomain (a mini app) can't plant
+     * its own binding in a victim's browser, as for the session
+     * (host-cookies.ts). `SameSite=Lax`: it comes along on the top-level
+     * GET back from Socio's sign-in page.
+     */
+    private get webSocialCookie() {
+        return this.settings.secure ? '__Host-socio-social' : 'socio-social';
+    }
+
+    private webSocialCookieHeader(value: string, maxAgeS: number) {
+        return [
+            `${this.webSocialCookie}=${value}`,
+            `Max-Age=${maxAgeS}`,
+            'Path=/',
+            'HttpOnly',
+            ...(this.settings.secure ? ['Secure'] : []),
+            'SameSite=Lax',
+        ].join('; ');
+    }
+
+    /**
+     * Google and Apple on the website, through Socio's sign-in page: the
+     * page's start, and the browser's return from Socio's sign-in page.
+     */
+    private webSocialRoutes(app: Hono<AppEnv>) {
+        app.post(WEB_SOCIAL_START_PATH, async (c) => {
+            c.header('cache-control', 'no-store');
+            if (!this.webSocialStarts.take(`ip:${this.clientIp(c) ?? 'unknown'}`)) {
+                const refusal = socialRefusal('too_many');
+                c.header('retry-after', '60');
+                return c.json(refusal.body, refusal.status);
+            }
+            const body = await c.req.json().catch(() => null);
+            const started = await this.webSocialSignIn().start(body, await this.sessionOf(c.req.raw));
+            if (!started.ok) {
+                if (started.retryAfterS) {
+                    c.header('retry-after', String(started.retryAfterS));
+                }
+                return c.json(started.body, started.status);
+            }
+            c.header('set-cookie', this.webSocialCookieHeader(started.binding, started.maxAgeS));
+            return c.json({ url: started.url });
+        });
+        app.get(WEB_SOCIAL_CALLBACK_PATH, async (c) => {
+            const name = `${this.webSocialCookie}=`;
+            const binding = (c.req.header('cookie') ?? '')
+                .split(';')
+                .map((part) => part.trim())
+                .find((part) => part.startsWith(name))
+                ?.slice(name.length);
+            const query = (key: string) => {
+                const value = c.req.query(key);
+                return value !== undefined && value.length <= 8192 ? value : undefined;
+            };
+            let answer: { headers: Headers; response: WebSocialFinished };
+            try {
+                answer = await (
+                    await this.auth()
+                ).api.webSocialFinish({
+                    body: { binding, result: query('r'), error: query('error') },
+                    headers: this.cookies.incoming(c.req.raw.headers),
+                    returnHeaders: true,
+                });
+            } catch (error) {
+                reportFailure('Website social sign-in failed', [safeFailure(error)]);
+                answer = {
+                    headers: new Headers(),
+                    response: { ok: false, purpose: 'signin', code: 'failed', next: '/' },
+                };
+            }
+            const done = answer.response;
+            const to = new URL(done.next, this.settings.origin);
+            if (done.purpose === 'link') {
+                to.searchParams.set(WEB_SOCIAL_LINK_PARAM, done.ok ? 'linked' : done.code);
+                if (done.ok && done.changed) {
+                    console.log(`Auth: account=${done.accountId} linked ${done.provider} sign-in on the website.`);
+                }
+                if (done.ok && done.sessionsEnded) {
+                    this.socialSessionsEnded(done.sessionsEnded);
+                }
+            } else if (!done.ok) {
+                to.searchParams.set('error', `${WEB_SOCIAL_ERROR_PREFIX}${done.code}`);
+            }
+            const headers = new Headers({ location: to.href, 'cache-control': 'no-store' });
+            // The binding is spent, whatever happened.
+            headers.append('set-cookie', this.webSocialCookieHeader('', 0));
+            for (const cookie of this.cookies.outgoing(answer.headers.getSetCookie())) {
+                headers.append('set-cookie', cookie);
+            }
+            return new Response(null, { status: 302, headers });
+        });
+    }
+
     routes(app: Hono<AppEnv>) {
         // Connected agents (CB-90): an MCP client finds the authorization
         // server from /mcp's Protected Resource Metadata (RFC 9728), then the
@@ -2201,6 +2349,7 @@ export class BetterAuthProvider implements AuthProvider {
             );
             return c.json({ ok: true, message: SIGN_IN_LINK_SENT });
         });
+        this.webSocialRoutes(app);
         app.on(['GET', 'POST'], '/api/auth/*', async (c, next) => {
             const path = c.req.path.slice('/api/auth'.length);
             // The Devices list is an ordinary route behind the session check.
@@ -2226,6 +2375,8 @@ export class BetterAuthProvider implements AuthProvider {
             // plugin's endpoints are not built (see `deactivation`).
             if (
                 path === '/sign-in/magic-link' ||
+                // The website's Google and Apple finish: the callback's alone.
+                path === WEB_SOCIAL_FINISH_PATH ||
                 path.startsWith('/admin/') ||
                 // Groups (CB-376) change only through the admin routes.
                 /^\/+organization(\/|$)/i.test(path) ||

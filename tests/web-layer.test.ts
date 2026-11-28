@@ -145,6 +145,6 @@ it('gives the pages the views the app runtime built: each feature’s tag and th
     expect(await services.workspace()).toEqual(await views.workspace.workspaceView(user));
     expect((await services.state()).version).toBe(releaseData().version);
     expect(await services.signIn()).toEqual(
-        signInView(testAuth().provider, brandingInForce(store.settings().branding)),
+        await signInView(testAuth().provider, brandingInForce(store.settings().branding)),
     );
 });

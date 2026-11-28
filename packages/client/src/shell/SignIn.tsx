@@ -6,6 +6,7 @@ import type { SignInMethods } from '@socio/shared/auth';
 import { DEFAULT_BRANDING, type Branding } from '@socio/shared/branding';
 import { roleLabel } from '@socio/shared/roles';
 import type { User } from '@socio/shared/types';
+import { SOCIAL_PROVIDER_NAMES } from '@socio/shared/web-social';
 import type { SignInView } from '@socio/shared/web/web';
 
 import { api } from '../lib/api';
@@ -24,6 +25,7 @@ import {
     signInWithPassword,
     signInWithProvider,
     signUp,
+    startWebSocial,
 } from './auth-client';
 
 const message = (e: unknown, fallback: string) => (e instanceof Error ? e.message : fallback);
@@ -193,8 +195,11 @@ function AccountSignIn({
     const [notice, setNotice] = useState(initialNotice);
     const [busy, setBusy] = useState(false);
     const [mode, setMode] = useState<'sign-in' | 'sign-up' | 'forgot' | 'link'>('sign-in');
-    // The Socio app's sign-in sheet (`app=1`, CB-352): no sign-up there.
-    const offerSignUp = methods.signUp && !(location.pathname === '/device/continue' && query.get('app') === '1');
+    // The Socio app's sign-in sheet (`app=1`, CB-352): no sign-up there, and
+    // no website Google or Apple sign-in either (the app has its own).
+    const sheet = location.pathname === '/device/continue' && query.get('app') === '1';
+    const offerSignUp = methods.signUp && !sheet;
+    const social = sheet ? [] : (methods.social ?? []);
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -257,6 +262,22 @@ function AccountSignIn({
                         {t('shell.sign-in:passkey')}
                     </button>
                 )}
+                {mode === 'sign-in' &&
+                    social.map((provider) => (
+                        <button
+                            key={`social-${provider}`}
+                            data-slot={`social-${provider}`}
+                            disabled={busy}
+                            onClick={() =>
+                                void run(
+                                    () => startWebSocial(provider, 'signin'),
+                                    () => {},
+                                )
+                            }
+                        >
+                            {t('shell.sign-in:social', { name: SOCIAL_PROVIDER_NAMES[provider] })}
+                        </button>
+                    ))}
                 {methods.providers.map((provider) => (
                     <button
                         key={provider.id}

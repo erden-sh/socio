@@ -36,6 +36,32 @@
         "changed": "Password changed; other sessions signed out",
         "failed": "Could not change the password."
     },
+    "social": {
+        "title": "Google and Apple",
+        "description": "Sign in with a Google or Apple account you link here, on this website and in the $t(common:product) app. Linking never shares your password with them.",
+        "list": "Your linked accounts",
+        "linked": "{{name}}: linked {{at, datetime(dateStyle: medium)}}",
+        "linked_email": "{{name}} ({{email}}): linked {{at, datetime(dateStyle: medium)}}",
+        "link": "Link {{name}}",
+        "unlink": "Unlink",
+        "unlinked": "{{name}} unlinked",
+        "loadFailed": "Could not load your linked accounts.",
+        "unlinkFailed": "Could not unlink it.",
+        "linkFailed": "Could not start linking.",
+        "result": {
+            "linked": "Account linked. You can sign in with it now.",
+            "canceled": "Linking canceled.",
+            "expired": "Linking took too long and expired. Try again.",
+            "provider-unavailable": "Linking isn’t available on this server right now.",
+            "nonce-invalid": "This link attempt expired, was used already, or was started in another browser or session. Try again.",
+            "not-authorized": "Sign in again, then link the account.",
+            "already-linked-other": "That account is already linked to another person here.",
+            "method-off": "That way of signing in is turned off here.",
+            "deactivated": "This account is deactivated.",
+            "too-many": "Too many tries. Try again in a minute.",
+            "failed": "Could not link the account. Try again."
+        }
+    },
     "sessions": {
         "title": "Sessions",
         "description": "Signs this account out on every device, this one included.",

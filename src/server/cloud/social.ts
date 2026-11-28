@@ -18,6 +18,13 @@
  *   `emailVerified` when the token had them. A 403 (`insufficient_scope`)
  *   means the deployment lacks `social:verify`.
  *
+ * - `POST /v1/social/web/start` `{provider, purpose, nonce}` → 200
+ *   `{url, expiresAt}`: the cloud's one-time sign-in page for the website.
+ *   409 `origin_unavailable` and 422 `provider_unavailable` mean it can't
+ *   now; 429 carries `Retry-After`.
+ * - `POST /v1/social/web/redeem` `{result}` → 200 `{statement}`, as verify's;
+ *   422 `result_invalid` for one unknown, used, too old or not ours.
+ *
  * Only while the connection is connected (not paused) with the
  * `social:verify` scope. The ID token, its email and the statement are
  * never logged: a line names the check that failed, nothing more.
@@ -30,6 +37,8 @@ import {
     type SocialRefusal,
     type SocialVerdict,
     type SocialVerificationShape,
+    type SocialWebStart,
+    type SocialWebStartInput,
 } from './contract.js';
 import { bounded } from './issuer-client.js';
 import { verifyIssuerJws } from './issuer-jws.js';
@@ -78,7 +87,7 @@ function retryAfter(header: string | null, now: number): number {
     return Math.min(RETRY_AFTER_MAX, Math.max(RETRY_AFTER_MIN, ms));
 }
 
-/** The config's answer, or undefined when it isn't one. */
+/** The config's answer, or undefined when it isn't one. `web` counts only as `true`. */
 function parseConfig(value: unknown): SocialProviderConfig | undefined {
     if (!value || typeof value !== 'object' || Array.isArray(value)) {
         return undefined;
@@ -91,16 +100,33 @@ function parseConfig(value: unknown): SocialProviderConfig | undefined {
         if (!serverClientId || !/^[\x21-\x7e]+$/.test(serverClientId)) {
             return undefined;
         }
-        config.google = { serverClientId };
+        config.google = { serverClientId, ...(google.web === true ? { web: true as const } : {}) };
     }
     if (answer.apple !== undefined) {
         if (!answer.apple || typeof answer.apple !== 'object') {
             return undefined;
         }
-        config.apple = {};
+        config.apple = (answer.apple as Record<string, unknown>).web === true ? { web: true } : {};
     }
     return config;
 }
+
+/** The website flow's page, as the cloud answers it: an https address, nothing else. */
+function pageUrl(value: unknown): string | undefined {
+    const raw = text(value, 4096);
+    if (!raw) {
+        return undefined;
+    }
+    try {
+        const url = new URL(raw);
+        return url.protocol === 'https:' && !url.username && !url.password ? url.href : undefined;
+    } catch {
+        return undefined;
+    }
+}
+
+/** A sealed result as the browser brings it: base64url, bounded. */
+const RESULT = /^[A-Za-z0-9_-]{16,4096}$/;
 
 export class CloudSocial implements SocialVerificationShape {
     private readonly transport: typeof fetch;
@@ -214,62 +240,90 @@ export class CloudSocial implements SocialVerificationShape {
         this.kept = { value, at };
     }
 
-    async verify(input: { provider: SocialProviderId; idToken: string; nonce: string }): Promise<SocialVerdict> {
-        const refuse = (code: SocialRefusal, check?: string): SocialVerdict => {
-            if (check) {
-                this.options.log(`Social sign-in: refused (${check}).`);
-            }
-            return { ok: false, code };
-        };
+    private refuse(code: SocialRefusal, check?: string): SocialVerdict {
+        if (check) {
+            this.options.log(`Social sign-in: refused (${check}).`);
+        }
+        return { ok: false, code };
+    }
+
+    /**
+     * Posts JSON to the service, when it may be asked now: its status, its
+     * JSON (null when it sent none), the error code it named, and its
+     * headers. A string: why nothing could be asked or read.
+     */
+    private async post(
+        path: string,
+        payload: unknown,
+    ): Promise<
+        | {
+              status: number;
+              json: Record<string, unknown> | null;
+              code?: string;
+              headers: Headers;
+              deploymentId: string;
+          }
+        | string
+    > {
         if (!this.available()) {
-            return refuse('provider_unavailable');
+            return '';
         }
         if (this.now() < this.coolUntil) {
-            return refuse('provider_unavailable', 'the service asked to wait');
+            return 'the service asked to wait';
         }
         const deploymentId = this.options.cloud.status().deploymentId;
         if (!deploymentId) {
-            return refuse('provider_unavailable');
+            return '';
         }
         const answer = await this.send(
-            '/v1/social/verify',
-            {
-                method: 'POST',
-                headers: { 'content-type': 'application/json' },
-                body: JSON.stringify({ provider: input.provider, idToken: input.idToken, nonce: input.nonce }),
-            },
+            path,
+            { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) },
             VERIFY_TIMEOUT_MS,
         );
         if (answer.kind !== 'answer') {
-            return refuse('provider_unavailable', answer.why);
+            return answer.why;
         }
         const { response } = answer;
         let body: string;
         try {
             body = await bounded(response);
         } catch {
-            return refuse('provider_unavailable', 'unreadable answer');
+            return 'unreadable answer';
         }
-        const status = response.status;
+        let json: Record<string, unknown> | null = null;
+        try {
+            const parsed = JSON.parse(body) as unknown;
+            json =
+                parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+                    ? (parsed as Record<string, unknown>)
+                    : null;
+        } catch {
+            json = null;
+        }
+        const code = text(json?.code, 40) ?? text(json?.error, 40);
+        if (response.status === 503) {
+            this.coolUntil = this.now() + retryAfter(response.headers.get('retry-after'), this.now());
+        }
+        return { status: response.status, json, ...(code ? { code } : {}), headers: response.headers, deploymentId };
+    }
+
+    async verify(input: { provider: SocialProviderId; idToken: string; nonce: string }): Promise<SocialVerdict> {
+        const refuse = (code: SocialRefusal, check?: string) => this.refuse(code, check);
+        const answer = await this.post('/v1/social/verify', {
+            provider: input.provider,
+            idToken: input.idToken,
+            nonce: input.nonce,
+        });
+        if (typeof answer === 'string') {
+            return refuse('provider_unavailable', answer || undefined);
+        }
+        const { status, code, deploymentId } = answer;
         if (status === 200) {
-            let statement: string | undefined;
-            try {
-                const json = JSON.parse(body) as { statement?: unknown } | null;
-                statement = text(json?.statement, 16 * 1024);
-            } catch {
-                statement = undefined;
-            }
+            const statement = text(answer.json?.statement, 16 * 1024);
             if (!statement) {
                 return refuse('provider_unavailable', 'an answer with no statement');
             }
             return this.statement(statement, input, deploymentId);
-        }
-        let code: string | undefined;
-        try {
-            const json = JSON.parse(body) as { code?: unknown; error?: unknown } | null;
-            code = text(json?.code, 40) ?? text(json?.error, 40);
-        } catch {
-            code = undefined;
         }
         if (status === 400) {
             return refuse('invalid_token', 'http 400');
@@ -286,8 +340,64 @@ export class CloudSocial implements SocialVerificationShape {
         if (status === 429) {
             return refuse('too_many', 'http 429');
         }
-        if (status === 503) {
-            this.coolUntil = this.now() + retryAfter(response.headers.get('retry-after'), this.now());
+        return refuse('provider_unavailable', `http ${status}`);
+    }
+
+    async webStart(input: SocialWebStartInput): Promise<SocialWebStart> {
+        const unavailable = (check?: string): SocialWebStart => {
+            if (check) {
+                this.options.log(`Social sign-in: the website's start was refused (${check}).`);
+            }
+            return { ok: false, code: 'provider_unavailable' };
+        };
+        const answer = await this.post('/v1/social/web/start', {
+            provider: input.provider,
+            purpose: input.purpose,
+            nonce: input.nonce,
+        });
+        if (typeof answer === 'string') {
+            return unavailable(answer || undefined);
+        }
+        const { status, code } = answer;
+        if (status === 200) {
+            const url = pageUrl(answer.json?.url);
+            return url ? { ok: true, url } : unavailable('an answer with no https page');
+        }
+        if (status === 429) {
+            const wait = retryAfter(answer.headers.get('retry-after'), this.now());
+            this.options.log(`Social sign-in: the website's start was refused (http 429).`);
+            return { ok: false, code: 'too_many', retryAfterS: Math.ceil(wait / 1000) };
+        }
+        // 409 origin_unavailable (no https origin on record, or paused) and
+        // 422 provider_unavailable both mean: not on this website now.
+        return unavailable(
+            `http ${status}${code === 'origin_unavailable' || code === 'provider_unavailable' ? ` ${code}` : ''}`,
+        );
+    }
+
+    async redeemWeb(input: { provider: SocialProviderId; result: string }): Promise<SocialVerdict> {
+        const refuse = (code: SocialRefusal, check?: string) => this.refuse(code, check);
+        // Something that was never a result costs no call out.
+        if (!RESULT.test(input.result)) {
+            return refuse('nonce_invalid', 'not a result');
+        }
+        const answer = await this.post('/v1/social/web/redeem', { result: input.result });
+        if (typeof answer === 'string') {
+            return refuse('provider_unavailable', answer || undefined);
+        }
+        const { status, code, deploymentId } = answer;
+        if (status === 200) {
+            const statement = text(answer.json?.statement, 16 * 1024);
+            if (!statement) {
+                return refuse('provider_unavailable', 'an answer with no statement');
+            }
+            return this.statement(statement, { provider: input.provider }, deploymentId);
+        }
+        if (status === 400 || (status === 422 && code === 'result_invalid')) {
+            return refuse('nonce_invalid', `http ${status}${status === 422 ? ' result_invalid' : ''}`);
+        }
+        if (status === 429) {
+            return refuse('too_many', 'http 429');
         }
         return refuse('provider_unavailable', `http ${status}`);
     }
@@ -295,7 +405,8 @@ export class CloudSocial implements SocialVerificationShape {
     /** The service's statement, checked: the issuer's signature and type, then every claim. */
     private async statement(
         token: string,
-        input: { provider: SocialProviderId; nonce: string },
+        /** The nonce the statement must carry; without one (the website's), any, for the caller to match. */
+        input: { provider: SocialProviderId; nonce?: string },
         deploymentId: string,
     ): Promise<SocialVerdict> {
         const bad = (check: string): SocialVerdict => {
@@ -340,7 +451,8 @@ export class CloudSocial implements SocialVerificationShape {
         if (claims.provider !== input.provider) {
             return bad('provider');
         }
-        if (claims.nonce !== input.nonce) {
+        const nonce = text(claims.nonce, 256);
+        if (!nonce || (input.nonce !== undefined && nonce !== input.nonce)) {
             return bad('nonce');
         }
         const sub = text(claims.sub, 255);
@@ -352,7 +464,7 @@ export class CloudSocial implements SocialVerificationShape {
             ok: true,
             provider: input.provider,
             sub,
-            nonce: input.nonce,
+            nonce,
             ...(email ? { email } : {}),
             ...(typeof claims.emailVerified === 'boolean' ? { emailVerified: claims.emailVerified } : {}),
         };

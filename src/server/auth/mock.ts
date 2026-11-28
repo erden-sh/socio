@@ -113,7 +113,7 @@ export function sessionRoutes(
 ) {
     app.get('/api/auth/session', async (c) => {
         const view = {
-            ...signInView(provider, branding?.()),
+            ...(await signInView(provider, branding?.())),
             user: await provider.resolve(c.req.raw, (name, value) => c.header(name, value, { append: true })),
         };
         // The app's request (with an install id) whose device was refused

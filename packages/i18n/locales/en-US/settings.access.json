@@ -16,10 +16,10 @@
         "offIn_telegram": "off in the Telegram bot",
         "offIn_email": "off in this server: no email channel",
         "offIn_cloud": "off in the cloud connection",
-        "google": "Google in the Socio app",
-        "googleHelp": "For people who linked a Google account. Works while this server is connected to Socio’s cloud services.",
-        "apple": "Sign in with Apple in the Socio app",
-        "appleHelp": "For people who linked an Apple account. Works while this server is connected to Socio’s cloud services.",
+        "google": "Google (app and website)",
+        "googleHelp": "For people who linked a Google account, in the Socio app or on this website. Works while this server is connected to Socio’s cloud services.",
+        "apple": "Apple (app and website)",
+        "appleHelp": "For people who linked an Apple account, in the Socio app or on this website. Works while this server is connected to Socio’s cloud services.",
         "openSignUp": "Open sign-up"
     },
     "lists": {

@@ -141,10 +141,14 @@ export const SOCIAL_VERIFY_SCOPE = 'social:verify';
 
 export type SocialProviderId = 'google' | 'apple';
 
-/** `GET /v1/social/config`: the providers the cloud verifies, and Google's server client id. */
+/**
+ * `GET /v1/social/config`: the providers the cloud verifies, and Google's
+ * server client id. `web: true`: the provider also works on the website,
+ * through the cloud's sign-in page.
+ */
 export interface SocialProviderConfig {
-    google?: { serverClientId: string };
-    apple?: Record<string, never>;
+    google?: { serverClientId: string; web?: true };
+    apple?: { web?: true };
 }
 
 /** Why a verification gave no person: the server's refusal codes. */
@@ -173,7 +177,29 @@ export interface SocialVerificationShape {
     config(): Promise<SocialProviderConfig | null>;
     /** Has the cloud verify an ID token made with `nonce`; never throws. */
     verify(input: { provider: SocialProviderId; idToken: string; nonce: string }): Promise<SocialVerdict>;
+    /**
+     * The website's flow: a one-time sign-in page for this nonce, made by
+     * the cloud (which picks the return address itself). Never throws.
+     */
+    webStart(input: SocialWebStartInput): Promise<SocialWebStart>;
+    /**
+     * Redeems the sealed result the browser brought back for the cloud's
+     * statement, checked as `verify`'s is. Its nonce is the statement's, for
+     * the caller to match. Never throws.
+     */
+    redeemWeb(input: { provider: SocialProviderId; result: string }): Promise<SocialVerdict>;
 }
+
+export interface SocialWebStartInput {
+    provider: SocialProviderId;
+    purpose: 'signin' | 'link';
+    nonce: string;
+}
+
+/** A started website flow: the page's address, or why not (with the cloud's wait, in seconds). */
+export type SocialWebStart =
+    | { ok: true; url: string }
+    | { ok: false; code: 'provider_unavailable' | 'too_many'; retryAfterS?: number };
 
 export class SocialVerification extends Context.Service<SocialVerification, SocialVerificationShape>()(
     'socio/cloud/SocialVerification',

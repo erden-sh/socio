@@ -259,6 +259,7 @@ it('signs in with email and password: a Strict HttpOnly session for the linked a
             emailReset: false,
             signInLink: false,
             providers: [],
+            social: [],
         },
     });
     expect((await b.call(jar, '/api/state')).status).toBe(200);
@@ -657,7 +658,7 @@ it('turns mock sign-in off, and honours no owner token', async () => {
     expect(forged.status).toBe(401);
 });
 
-it('validates Better Auth settings at startup', () => {
+it('validates Better Auth settings at startup', async () => {
     const start = (env: Record<string, string>, host = '127.0.0.1') =>
         authFromEnv(
             {
@@ -694,7 +695,7 @@ it('validates Better Auth settings at startup', () => {
         AUTH_OAUTH_GOOGLE_CLIENT_ID: 'google-client',
     });
     const provider = ok.provider as BetterAuthProvider;
-    expect(provider.signInMethods().providers).toEqual([
+    expect((await provider.signInMethods()).providers).toEqual([
         { id: 'logto', name: 'Logto' },
         { id: 'google', name: 'google' },
     ]);
@@ -705,6 +706,8 @@ it('validates Better Auth settings at startup', () => {
         '/api/auth/oauth2/authorize',
         // The app's sign-in sheet opens it straight from the app (CB-352).
         '/api/auth/device/start',
+        // Socio's sign-in page sends the browser back from its own site.
+        '/api/auth/web/social/callback',
     ]);
     provider.close();
 });

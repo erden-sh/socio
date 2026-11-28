@@ -485,6 +485,8 @@ it('gives socios and connected agents no tool for the access policy', () => {
         'src/server/auth/device-sign-in.ts',
         // CB-570: the app's Google and Apple sign-in check their methods against it.
         'src/server/auth/social-sign-in.ts',
+        // The website's Google and Apple sign-in, the same way.
+        'src/server/auth/web-social-sign-in.ts',
     ]);
     const root = join(import.meta.dirname, '..');
     const touching = ['src/server', 'packages/foundation/src', 'packages/data/src']

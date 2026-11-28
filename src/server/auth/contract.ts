@@ -207,11 +207,30 @@ export interface DeviceSignInEvent {
  */
 export interface SocialVerifier {
     /** The providers offered now, with Google's server client id; null while none can be verified. */
-    config(): Promise<{ google?: { serverClientId: string }; apple?: Record<string, never> } | null>;
+    config(): Promise<{ google?: { serverClientId: string; web?: true }; apple?: { web?: true } } | null>;
     verify(input: {
         provider: SocialProvider;
         idToken: string;
         nonce: string;
+    }): Promise<
+        | { ok: true; provider: SocialProvider; sub: string; email?: string; emailVerified?: boolean; nonce: string }
+        | { ok: false; code: 'invalid_token' | 'nonce_invalid' | 'too_many' | 'provider_unavailable' }
+    >;
+    /**
+     * The website's flow (through Socio's sign-in page): the page for this
+     * nonce. Absent: the website offers no Google or Apple sign-in.
+     */
+    webStart?(input: {
+        provider: SocialProvider;
+        purpose: 'signin' | 'link';
+        nonce: string;
+    }): Promise<
+        { ok: true; url: string } | { ok: false; code: 'provider_unavailable' | 'too_many'; retryAfterS?: number }
+    >;
+    /** The result the browser brought back, redeemed for the person; the nonce is the statement's. */
+    redeemWeb?(input: {
+        provider: SocialProvider;
+        result: string;
     }): Promise<
         | { ok: true; provider: SocialProvider; sub: string; email?: string; emailVerified?: boolean; nonce: string }
         | { ok: false; code: 'invalid_token' | 'nonce_invalid' | 'too_many' | 'provider_unavailable' }
@@ -256,7 +275,7 @@ export interface AuthProvider {
     /** Provider endpoints that need a signed-in user (account management). */
     protectedRoutes?(app: Hono<AppEnv>): void;
     /** What the sign-in screen offers, when it isn't the mock picker. */
-    signInMethods?(): SignInMethods;
+    signInMethods?(): Promise<SignInMethods>;
     /** Ends the request's session; returns the Set-Cookie headers to send. */
     logout?(request: Request): Promise<string[]>;
     /**
@@ -521,7 +540,7 @@ export class CodeAccess extends Context.Service<CodeAccess, CodeAccessShape>()('
 /** What the pages and live state read of auth: the sign-in screen's view. */
 export interface AuthViewsShape {
     /** `GET /api/auth/session` without the user: what the sign-in screen offers. */
-    readonly signInView: (provider: AuthProvider, branding?: Branding) => SignInView;
+    readonly signInView: (provider: AuthProvider, branding?: Branding) => Promise<SignInView>;
 }
 
 /**

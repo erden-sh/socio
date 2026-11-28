@@ -35,7 +35,7 @@
     "history.codeRunsStopped": "After a past change's description: how many code runs it stopped.",
     "errors.start": "Shown in the confirmation dialog when the server couldn't start the confirmation (step-up).",
     "errors.check": "Shown when the preview of a pending change's effects failed.",
-    "methods.google": "A sign-in method admins switch on or off: people sign in to the Socio mobile app with a Google account they linked. \"Socio\" is the product name.",
-    "methods.apple": "A sign-in method admins switch on or off: \"Sign in with Apple\" is Apple's own name for its sign-in; use Apple's official wording in your language.",
+    "methods.google": "A sign-in method admins switch on or off: people sign in with a Google account they linked, in the Socio mobile app and on the workspace's website. \"Google\" is a brand name.",
+    "methods.apple": "A sign-in method admins switch on or off: people sign in with an Apple account they linked (Sign in with Apple), in the Socio mobile app and on the workspace's website. \"Apple\" is a brand name.",
     "methods.offIn_cloud": "Badge on a sign-in method this server can't offer now: it needs the server's connection to Socio's cloud services."
 }

@@ -5,7 +5,15 @@
  * registered public key, so a test sees the signature, the audience and
  * the lifetime the client really sent.
  */
-import { createPublicKey, generateKeyPairSync, randomUUID, sign, verify, type KeyObject } from 'node:crypto';
+import {
+    createPublicKey,
+    generateKeyPairSync,
+    randomBytes,
+    randomUUID,
+    sign,
+    verify,
+    type KeyObject,
+} from 'node:crypto';
 
 export const ISSUER = 'https://cloud.socio.test';
 export const PUSH = 'https://push.socio.test';
@@ -66,9 +74,37 @@ export interface FakeIssuer {
      * subject `sub-<idToken's last segment>`.
      */
     socialVerify: (body: { provider: string; idToken: string; nonce: string }, deploymentId: string) => Response;
+    /**
+     * `POST /v1/social/web/start`: the answer, given the request's body and
+     * the caller. The default makes a ticket and answers its page.
+     */
+    socialWebStart: (body: { provider: string; purpose: string; nonce: string }, deploymentId: string) => Response;
+    /** `POST /v1/social/web/redeem`: the default redeems a result `completeWeb` made, once. */
+    socialWebRedeem: (body: { result: string }, deploymentId: string) => Response;
+    /** The tickets the website starts made, by ticket. */
+    webTickets: Map<string, WebTicket>;
+    /**
+     * What Socio's sign-in page does once the person signed in at Google or
+     * Apple: seals the subject (and claims) into a result for the ticket in
+     * this page address. The result, as the browser brings it back.
+     */
+    completeWeb(pageUrl: string, sub: string, extra?: Record<string, unknown>): string;
     /** Signs a statement (or anything) with the issuer's key, or another. */
     signStatement(claims: Record<string, unknown>, header?: Record<string, unknown>, key?: KeyObject): string;
 }
+
+export interface WebTicket {
+    deploymentId: string;
+    provider: string;
+    purpose: string;
+    nonce: string;
+    sub?: string;
+    extra?: Record<string, unknown>;
+    used: boolean;
+}
+
+/** Socio's sign-in page, as the tests address it. */
+export const AUTH_PAGE = 'https://auth.socio.test';
 
 /** A statement's claims for a verify request, as the real service makes them. */
 export function statementClaims(
@@ -131,7 +167,57 @@ export function fakeIssuer(): FakeIssuer {
     const pending = new Map<string, string>();
     const { privateKey } = generateKeyPairSync('ed25519');
     const tokens = new Map<string, { clientId: string; audience: string }>();
+    /** Results by value: the ticket each seals. */
+    const results = new Map<string, string>();
     const issuer: FakeIssuer = {
+        webTickets: new Map(),
+        socialWebStart: (body, deploymentId) => {
+            const ticket = randomUUID().replaceAll('-', '');
+            issuer.webTickets.set(ticket, {
+                deploymentId,
+                provider: body.provider,
+                purpose: body.purpose,
+                nonce: body.nonce,
+                used: false,
+            });
+            return json(200, {
+                url: `${AUTH_PAGE}/s?t=${ticket}`,
+                expiresAt: new Date(Date.now() + 600_000).toISOString(),
+            });
+        },
+        socialWebRedeem: (body, deploymentId) => {
+            const ticketId = results.get(body.result);
+            const ticket = ticketId ? issuer.webTickets.get(ticketId) : undefined;
+            if (!ticket || ticket.used || ticket.deploymentId !== deploymentId || !ticket.sub) {
+                return json(422, { error: 'result_invalid' });
+            }
+            ticket.used = true;
+            const iat = Math.floor(Date.now() / 1000);
+            return json(200, {
+                statement: issuer.signStatement({
+                    iss: ISSUER,
+                    aud: deploymentId,
+                    provider: ticket.provider,
+                    sub: ticket.sub,
+                    nonce: ticket.nonce,
+                    iat,
+                    exp: iat + 60,
+                    ...ticket.extra,
+                }),
+            });
+        },
+        completeWeb(pageUrl, sub, extra) {
+            const ticketId = new URL(pageUrl).searchParams.get('t') ?? '';
+            const ticket = issuer.webTickets.get(ticketId);
+            if (!ticket) {
+                throw new Error('No such ticket.');
+            }
+            ticket.sub = sub;
+            ticket.extra = extra;
+            const result = randomBytes(48).toString('base64url');
+            results.set(result, ticketId);
+            return result;
+        },
         requests: [],
         clients: new Map(),
         synced: [],
@@ -269,6 +355,12 @@ export function fakeIssuer(): FakeIssuer {
                 }
                 if (url.pathname === '/v1/social/verify' && init?.method === 'POST') {
                     return issuer.socialVerify(JSON.parse(body), client.id);
+                }
+                if (url.pathname === '/v1/social/web/start' && init?.method === 'POST') {
+                    return issuer.socialWebStart(JSON.parse(body), client.id);
+                }
+                if (url.pathname === '/v1/social/web/redeem' && init?.method === 'POST') {
+                    return issuer.socialWebRedeem(JSON.parse(body), client.id);
                 }
             }
             if (url.pathname === '/v1/sync' && init?.method === 'POST') {

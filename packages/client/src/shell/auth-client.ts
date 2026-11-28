@@ -1,10 +1,18 @@
 import { useTranslation } from '@socio/i18n/react';
 import { DEACTIVATED_MESSAGE, type AuthSession } from '@socio/shared/auth';
+import type { SocialLink, SocialProvider } from '@socio/shared/device-sign-in';
 import {
     LEAVE_WORKSPACE_PATH,
     type LeaveWorkspaceCheck,
     type LeaveWorkspaceRequest,
 } from '@socio/shared/leave-workspace';
+import {
+    WEB_SOCIAL_START_PATH,
+    webSocialSignInError,
+    type WebSocialPurpose,
+    type WebSocialSignInError,
+    type WebSocialStartAnswer,
+} from '@socio/shared/web-social';
 
 import { api } from '../lib/api';
 
@@ -100,6 +108,28 @@ export async function signInWithProvider(provider: string) {
     globalThis.location.assign(url);
 }
 
+/**
+ * Google or Apple on the website, through Socio's sign-in page: the
+ * server starts the flow and answers the page's address. It comes back to
+ * `next` (this page by default), or with `?error=social_…` to sign-in.
+ */
+export async function startWebSocial(provider: SocialProvider, purpose: WebSocialPurpose, next?: string) {
+    const here = globalThis.location;
+    const { url } = await api<WebSocialStartAnswer>(WEB_SOCIAL_START_PATH.replace(/^\/api/, ''), 'POST', {
+        provider,
+        purpose,
+        next: next ?? `${here.pathname}${here.search}${here.hash}`,
+    });
+    if (purpose === 'signin') {
+        signedInWithoutPasskey();
+    }
+    globalThis.location.assign(url);
+}
+
+/** The account's Google and Apple links, and unlinking one (the app's routes, CB-570). */
+export const listSocialLinks = () => api<SocialLink[]>('/auth/social/links');
+export const unlinkSocial = (provider: SocialProvider) => api(`/auth/social/link/${provider}`, 'DELETE');
+
 /** "Send me a sign-in link": the answer is the same for every address. */
 export const requestSignInLink = (email: string) => api('/auth/sign-in-link', 'POST', { email });
 /**
@@ -139,6 +169,18 @@ export const leaveWorkspaceCheck = () => api<LeaveWorkspaceCheck>(LEAVE_PATH);
 export const leaveWorkspace = () =>
     api<{ ok: true }>(LEAVE_PATH, 'POST', { confirm: 'leave' } satisfies LeaveWorkspaceRequest);
 
+const SOCIAL_ERROR_KEYS = {
+    canceled: 'canceled',
+    expired: 'expired',
+    provider_unavailable: 'provider-unavailable',
+    nonce_invalid: 'nonce-invalid',
+    not_linked: 'not-linked',
+    method_off: 'method-off',
+    deactivated: 'deactivated',
+    too_many: 'too-many',
+    failed: 'failed',
+} as const satisfies Record<WebSocialSignInError, string>;
+
 /** Messages for the `?error=` codes an OAuth sign-in comes back with (`shell.sign-in`). */
 export function useSignInError() {
     const { t } = useTranslation(['shell.sign-in']);
@@ -163,6 +205,11 @@ export function useSignInError() {
         }
         if (code === 'account_not_linked') {
             return t('shell.sign-in:errors.not-linked');
+        }
+        // Google or Apple on the website: a closed list, never the code's own text.
+        const social = webSocialSignInError(code);
+        if (social) {
+            return t(`shell.sign-in:social-errors.${SOCIAL_ERROR_KEYS[social]}`);
         }
         return description || t('shell.sign-in:errors.failed');
     };

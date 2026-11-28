@@ -1,3 +1,4 @@
+import type { SocialProvider } from './device-sign-in.js';
 import type { KeyMadeBy } from './service-accounts.js';
 import type { Role, User } from './types.js';
 
@@ -18,6 +19,12 @@ export interface SignInMethods {
     /** "Send me a sign-in link": a channel (Telegram) can deliver links. */
     signInLink: boolean;
     providers: SignInProvider[];
+    /**
+     * Google and Apple on the website, through Socio's sign-in page: on in
+     * the access policy, offered for the web by the cloud, while the cloud
+     * connection is connected. Absent from older servers.
+     */
+    social?: SocialProvider[];
 }
 
 /** How a one-time sign-in link reaches a person. */

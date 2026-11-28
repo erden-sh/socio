@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
+import { MemoryRouter } from 'react-router';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
 import type { SignInMethods } from '@socio/shared/auth';
@@ -79,9 +80,11 @@ afterEach(() => {
 async function profile(user: User) {
     act(() =>
         root.render(
-            <CurrentUser.Provider value={user}>
-                <AccountSections methods={methods} onSignedOut={() => {}} />
-            </CurrentUser.Provider>,
+            <MemoryRouter>
+                <CurrentUser.Provider value={user}>
+                    <AccountSections methods={methods} onSignedOut={() => {}} />
+                </CurrentUser.Provider>
+            </MemoryRouter>,
         ),
     );
     for (let i = 0; i < 100 && !document.querySelector('input[aria-label="Your name"]'); i++) {
