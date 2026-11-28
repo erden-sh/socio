@@ -218,6 +218,275 @@ export interface EnglishResources {
             description: 'Approve to let it go ahead, or deny. <all>All approvals</all>';
         };
     };
+    apps: {
+        title: 'Apps';
+        refresh: 'Refresh';
+        description: 'Mini apps your socios build, each on its own address behind your sign-in. An ephemeral app runs only while its socio’s computer runs it; once the socio packages it, promote it into a workspace app that runs on its own, with its data in your data space.';
+        'load-failed': 'Could not load apps.';
+        'share-failed': 'Could not change sharing.';
+        'action-failed': 'That didn’t work.';
+        'open-failed': 'Could not open the app.';
+        unregistered: 'Unregistered {{name}}.';
+        'unregister-failed': 'Could not unregister the app.';
+        'not-set-up': {
+            title: 'Mini apps are not set up';
+            description: 'An operator sets APPS_HOST (and a wildcard DNS entry and proxy host for it) to serve mini apps. See docs/SETUP.md.';
+        };
+        empty: {
+            title: 'No apps yet';
+            description: 'Ask a socio to build you a small app (a tracker, a dashboard, a form). It runs it in its computer and registers it here once you approve.';
+        };
+        kind: {
+            ephemeral: 'Ephemeral';
+            packaged: 'Packaged';
+            promoted: 'Workspace app';
+            unpublished: 'Unpublished';
+        };
+        state: {
+            stopped: 'Stopped';
+            running: 'Running';
+            failed: 'Failed';
+            starting: 'Starting';
+            'not-running': 'Not running';
+            'not-answering': 'Not answering';
+            'computer-stopped': 'Computer stopped';
+            unavailable: 'Unavailable';
+        };
+        health: {
+            'last-recovered': 'Last recovered {{when}}: {{reason}}.';
+            repaired: 'repaired';
+            recovering: 'Recovering by itself; its data is kept.';
+            degraded: 'Degraded; it is repaired automatically.';
+            'degraded-next': 'Degraded; it is repaired automatically, next try {{when}}.';
+            'gave-up_one': 'Automatic repair gave up after {{count}} attempt; admins were told. Its data is kept; press Start to try again.';
+            'gave-up_other': 'Automatic repair gave up after {{count}} attempts; admins were told. Its data is kept; press Start to try again.';
+            attempt_one: 'Attempt {{attempt}} of {{count}}.';
+            attempt_other: 'Attempt {{attempt}} of {{count}}.';
+            'last-error': 'Last error: {{error}}';
+        };
+        card: {
+            'shared-by': 'shared by {{name}}';
+            version: 'version {{version}}';
+            port: 'port {{port}}';
+            report: 'Report issue';
+            'report-label': 'Report an issue about {{name}}';
+            open: 'Open';
+            'needs-setup_one': 'Needs setup: {{names, list(type: unit; style: short)}} isn’t set. A workspace admin sets secrets in Settings → Secrets.';
+            'needs-setup_other': 'Needs setup: {{names, list(type: unit; style: short)}} aren’t set. A workspace admin sets secrets in Settings → Secrets.';
+            'build-failed': 'Version {{version}} didn’t build';
+            'start-failed': 'The last start failed';
+            data: 'Data it may use: {{datasets, list(type: unit; style: short)}}';
+            'shared-with': 'Shared with';
+            'only-me': 'Only me';
+            promote: 'Promote…';
+            rollback: 'Roll back to version {{version}}';
+            'rolled-back': '{{name}} is back on version {{version}}.';
+            unpublish: 'Unpublish';
+            unpublished: '{{name}} is unpublished; its data stays.';
+            publish: 'Publish';
+            published: '{{name}} is published again.';
+            logs: 'Logs';
+            delete: 'Delete…';
+            unregister: 'Unregister';
+        };
+        versions: {
+            count_one: '{{count}} version';
+            count_other: '{{count}} versions';
+            line_one: 'Version {{version}} · {{count}} file · {{when}}';
+            line_other: 'Version {{version}} · {{count}} files · {{when}}';
+            line_live_one: 'Version {{version}} (live) · {{count}} file · {{when}}';
+            line_live_other: 'Version {{version}} (live) · {{count}} files · {{when}}';
+            line_previous_one: 'Version {{version}} (previous) · {{count}} file · {{when}}';
+            line_previous_other: 'Version {{version}} (previous) · {{count}} files · {{when}}';
+        };
+        others: {
+            title: 'Other apps in the workspace';
+            description: 'Shown to admins by name and owner. Only the owner and the people of the Space it’s shared with can open one.';
+            by: 'by {{name}}';
+        };
+    };
+    'apps.dialogs': {
+        delete: {
+            title: 'Delete {{name}}?';
+            description: 'Its address stops working, everyone signed in to it is signed out, and it leaves your apps and the launcher.';
+            data: 'Its data';
+            keep: 'Keep it';
+            'keep-named': '{{datasets, list(type: unit; style: short)}} stay in your data space.';
+            'keep-detail': 'Its datasets stay in your data space.';
+            remove: 'Delete the data it brought';
+            'remove-detail': 'Datasets created when it was promoted are deleted; datasets it only used stay.';
+            cancel: 'Cancel';
+            delete: 'Delete';
+            deleted: 'Deleted {{name}}.';
+            'deleted-with': 'Deleted {{name}} and {{datasets, list(type: unit; style: short)}}.';
+            failed: 'Could not delete the app.';
+        };
+        unregister: {
+            title: 'Unregister {{name}}?';
+            description: 'Its address stops working, everyone signed in to it is signed out, and it leaves your apps.';
+            action: 'Unregister';
+        };
+        logs: {
+            title: '{{name}} logs';
+            description: 'Each build and start of a version in the workspace app runtime, with how it ended and its own last lines.';
+            'load-failed': 'Could not load the logs.';
+            none: 'No logs to show.';
+            attempt: 'Attempt';
+            choose: 'Choose one';
+            option: '{{attempt}}. {{label}} · {{when}}';
+            'no-output': 'No output.';
+            started: 'Started {{when}}';
+            answered: 'answered {{when}}';
+            ended: 'ended {{when}}';
+            dropped_one: '[{{count}} earlier line not kept]';
+            dropped_other: '[{{count}} earlier lines not kept]';
+        };
+        attempt: {
+            label_build: 'Build of version {{version}} · {{how}}';
+            label_start: 'Start of version {{version}} · {{how}}';
+            running: 'running';
+            'in-progress': 'in progress';
+            done: 'done';
+            oom: 'out of memory';
+            'never-answered': 'never answered';
+            lost: 'end unknown';
+            stopped: 'stopped';
+            exit: 'failed, exit {{code}}';
+            signal: 'failed, {{signal}}';
+            failed: 'failed';
+        };
+    };
+    'apps.dot': {
+        title: 'Apps';
+        all: 'All apps';
+        failed: 'Could not load its apps.';
+        'empty-archived': 'No apps of {{name}}’s that you can open.';
+        empty: '{{name}} hasn’t built an app you can open yet. Ask it in a chat for a small one, like a tracker or a dashboard.';
+        version: 'Version {{version}}';
+        'shared-with': 'Shared with {{space}}';
+        'only-you': 'Only you';
+        'shared-by': 'Shared by {{name}}';
+        'shared-by-other': 'Shared by another user';
+        stage: {
+            published: 'Published';
+            development: 'In development';
+            unpublished: 'Unpublished';
+        };
+        'manage-hint': '(manage it on the Apps page)';
+        'new-tab-hint': '(opens in a new tab)';
+        report: 'Report issue';
+        'report-label': 'Report an issue about {{name}}';
+    };
+    'apps.open': {
+        crumbs: {
+            apps: 'Apps';
+            open: 'Open';
+        };
+        opening: 'Opening…';
+        'signing-in': 'Signing you in to the app.';
+        failed: 'Could not open the app.';
+        'error-title': 'Can’t open this app';
+        'error-detail': 'It may have been unregistered, or not shared with you. <apps>See your apps</apps>.';
+    };
+    'apps.promote': {
+        title: 'Promote {{name}} · version {{version}}';
+        'title-loading': 'Promote app';
+        description: 'It moves out of {{socio}}’s computer into the workspace app runtime, at the same address, and keeps its data in your data space.';
+        'description-loading': 'It moves out of the socio’s computer into the workspace app runtime, at the same address, and keeps its data in your data space.';
+        'load-failed': 'Could not load the app.';
+        failed: 'Could not promote it.';
+        'default-name': '{{name}} data';
+        size: '{{size, bytes}}';
+        steps: {
+            label: 'Steps';
+            step: '{{number}}. {{name}}';
+            review: 'Review';
+            data: 'Data';
+            promote: 'Promote';
+        };
+        review: {
+            'no-runtime': 'The workspace app runtime is not set up on this server (APPS_RUNTIME_URL), so it can’t be promoted yet.';
+            entry: 'Entry';
+            files: 'Files';
+            'files-value': '{{files, number}} · {{size, bytes}}';
+            reaches: 'Reaches';
+            'reaches-nothing': 'Nothing outside Socio';
+            routes: 'Routes';
+            data: 'Data';
+            'data-none': 'None';
+            settings: 'Settings';
+            'no-secrets': 'No secrets here: the values are stored with the app.';
+            'file-list': 'Files in this version';
+        };
+        data: {
+            none: 'This version uses no datasets: nothing to decide here.';
+            kind: {
+                shared: 'the socio’s shared dataset';
+                scratch: 'the socio’s scratch dataset';
+                workspace: 'a workspace dataset';
+                missing: 'no longer exists';
+                yours: 'your dataset';
+            };
+            tables: 'tables {{tables, list(type: unit; style: short)}}';
+            'table-count_one': '{{count}} table';
+            'table-count_other': '{{count}} tables';
+            'shared-note': 'Everyone who uses {{socio}} sees this data. Moving or sharing it takes these tables out of the shared dataset into a new workspace dataset, which belongs to the workspace, not to you, and stays with it. {{socio}} asks to keep writing to it, and can once you approve that request. Keeping it leaves the app on the shared dataset.';
+            gone: 'This dataset is gone; ask the socio to package a version without it.';
+            'share-with': 'Share with';
+            'choose-space': 'Choose a Space';
+            'new-name': 'New dataset name';
+            'socio-asks': '{{socio}} asks to keep writing to it (you approve)';
+            'socio-reads': '{{socio}} keeps read access';
+        };
+        choices: {
+            move: {
+                title: 'Move it to your workspace';
+                line: 'Into a new dataset of yours, out of the socio’s scratch space.';
+            };
+            share: {
+                title: 'Share it with a Space';
+                line: 'Its members can read it; the app writes it. Scratch data is moved first.';
+            };
+            keep: {
+                title: 'Keep it where it is';
+                line: 'The app uses it there; nothing moves.';
+            };
+        };
+        'shared-choices': {
+            move: {
+                title: 'Move it to a workspace dataset';
+                line: 'Into a new dataset of the workspace’s, not yours, out of the socio’s shared dataset.';
+            };
+            share: {
+                title: 'Move it and share it with a Space';
+                line: 'Into a new workspace dataset its members can read; the app writes it.';
+            };
+            keep: {
+                title: 'Keep it where it is';
+                line: 'The app uses the socio’s shared dataset; nothing moves.';
+            };
+        };
+        describe: {
+            none: 'No choice yet';
+            move: 'Move into “{{name}}”';
+            move_reads: 'Move into “{{name}}” (the socio keeps read access)';
+            'move-shared': 'Move into the workspace dataset “{{name}}”';
+            'move-shared_asks': 'Move into the workspace dataset “{{name}}” ({{socio}} can write to it once you approve)';
+            share: 'Share with {{space}}';
+            'share-shared': 'Move into the workspace dataset “{{name}}”, shared with {{space}}';
+            'share-shared_asks': 'Move into the workspace dataset “{{name}}”, shared with {{space}} ({{socio}} can write to it once you approve)';
+            keep: 'Keep where it is';
+        };
+        confirm: {
+            intro: 'Version {{version}} runs in the workspace app runtime at its current address; only you can open it until you share it.';
+            dataset: '{{name}}: {{choice}}';
+            reaches: 'Reaches {{hosts}}';
+            'reaches-nothing': 'Reaches nothing outside Socio';
+        };
+        back: 'Back';
+        next: 'Next';
+        promote: 'Promote';
+    };
     chat: {
         copy: {
             action: 'Copy';

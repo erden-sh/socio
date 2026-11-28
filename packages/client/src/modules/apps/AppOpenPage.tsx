@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router';
 
+import { Trans, useTranslation } from '@socio/i18n/react';
 import { MODULE_IDS } from '@socio/shared/modules';
 
 import { WorkspacePage } from '../../views/WorkspacePage';
@@ -13,6 +14,7 @@ import { launchUrl } from './launch';
  * straight back to the app with it.
  */
 export function AppOpenPage() {
+    const { t } = useTranslation(['apps.open']);
     const { appId = '' } = useParams();
     const [params] = useSearchParams();
     const [error, setError] = useState<string>();
@@ -26,26 +28,26 @@ export function AppOpenPage() {
             })
             .catch((e) => {
                 if (!cancelled) {
-                    setError(e instanceof Error ? e.message : 'Could not open the app.');
+                    setError(e instanceof Error ? e.message : t('apps.open:failed'));
                 }
             });
         return () => {
             cancelled = true;
         };
-    }, [appId, params]);
+    }, [appId, params, t]);
     return (
         <WorkspacePage
             slot="app-open-page"
             module={MODULE_IDS.apps}
-            title={error ? 'Can’t open this app' : 'Opening…'}
+            title={error ? t('apps.open:error-title') : t('apps.open:opening')}
             description={
                 error ? (
                     <>
-                        {error} It may have been unregistered, or not shared with you.{' '}
-                        <Link to="/apps">See your apps</Link>.
+                        {error}{' '}
+                        <Trans t={t} i18nKey="apps.open:error-detail" components={{ apps: <Link to="/apps" /> }} />
                     </>
                 ) : (
-                    'Signing you in to the app.'
+                    t('apps.open:signing-in')
                 )
             }
         />
