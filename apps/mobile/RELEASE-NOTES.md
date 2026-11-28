@@ -7,7 +7,15 @@ words, grouped by screen.
 
 ## 0.2.10 (build pending)
 
+Your two notes on 0.2.9: remove a workspace from this phone, and workspace logos that follow the web; plus reply reports and a full-screen Update Socio.
+
 **What to test**
+
+Your notes
+
+- Open the Workspaces list and press and hold a workspace: a menu shows Remove from this device (and Settings on the one that's open). It asks first, then signs you out of that workspace on this phone and deletes its copy here. Removing the open one switches to another workspace, or to Add a workspace if it was the last.
+- The same Remove from this device is at the bottom of Settings, under On this device.
+- A workspace that changes its logo on the web now shows the new logo in the Workspaces list and on Home the next time you open it, without adding it again. Setting it back to Socio's logo shows the default again.
 
 Chats
 
@@ -16,12 +24,6 @@ Chats
 Update Socio
 
 - The Update Socio screen now covers the whole screen on iPhone, down to the bottom edge.
-
-Workspaces
-
-- Open the Workspaces list and press and hold a workspace: a menu shows Remove from this device (and Settings on the one that's open). It asks first, then signs you out of that workspace on this phone and deletes its copy here. Removing the open one switches to another workspace, or to Add a workspace if it was the last.
-- The same Remove from this device is at the bottom of Settings, under On this device.
-- A workspace that changes its logo on the web now shows the new logo in the Workspaces list and on Home the next time you open it, without adding it again. Setting it back to Socio's logo shows the default again.
 
 ## 0.2.9 (build 3974, 2026-11-27)
 
