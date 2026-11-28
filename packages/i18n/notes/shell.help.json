@@ -16,5 +16,15 @@
     "theme.title": "Label of the color theme choice (light, dark or the system's).",
     "theme.light": "Theme choice, in the Help menu and the command palette: always use the light colors.",
     "theme.dark": "Theme choice, in the Help menu and the command palette: always use the dark colors.",
-    "theme.system": "Theme choice: follow the device's light or dark setting."
+    "theme.system": "Theme choice: follow the device's light or dark setting.",
+    "account.get-app": "Account menu item (the menu under the person's name in the sidebar): opens a QR code for the Socio mobile app.",
+    "account.release-notes": "Account menu item: opens the release notes.",
+    "account.add-device": "Account menu item: opens the dialog that signs a phone or another device in to this workspace with a code.",
+    "account.account": "Account menu item, for a test user: opens their account settings.",
+    "account.account-security": "Account menu item: opens the person's account and sign-in security settings (passkeys, password).",
+    "account.sign-out": "Account menu item: signs the person out.",
+    "account.switch-user": "Account menu item, for test users: signs in as another one.",
+    "passkey.add": "Sidebar row suggesting a passkey after a sign-in without one; it opens the account settings. A passkey signs in with a fingerprint, face or PIN.",
+    "passkey.hint": "Tooltip of that row.",
+    "passkey.not-now": "Tooltip and accessible name of the × that hides that row for good."
 }

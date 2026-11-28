@@ -452,8 +452,8 @@
         "where": "The short status word beside a socio (Idle, Working, Paused) on the home page and on the socio's own home page."
     },
     "shell.help": {
-        "label": "App · Help menu",
-        "where": "The Help menu in the header (guides, what's new, keyboard shortcuts and the light or dark theme), the keyboard shortcuts dialog, and the banner and dialog offering the Socio mobile app."
+        "label": "App · Help and account menus",
+        "where": "The Help menu in the header (guides, what's new, keyboard shortcuts), the account menu under your name in the sidebar (theme, Add a device, Sign out), the passkey suggestion, and the banner and dialog offering the Socio mobile app."
     },
     "shell.home": {
         "label": "App · Home page",

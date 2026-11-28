@@ -7593,6 +7593,7 @@ export interface EnglishResources {
                 crumb: 'Not found';
             };
         };
+        'account-menu': 'Account: {{name}}';
     };
     'shell.add-device': {
         title: 'Add a device';
@@ -7689,6 +7690,20 @@ export interface EnglishResources {
             light: 'Light';
             dark: 'Dark';
             system: 'System';
+        };
+        account: {
+            'get-app': 'Get the app';
+            'release-notes': 'Release notes';
+            'add-device': 'Add a device';
+            account: 'Account';
+            'account-security': 'Account & security';
+            'sign-out': 'Sign out';
+            'switch-user': 'Switch user';
+        };
+        passkey: {
+            add: 'Add a passkey';
+            hint: 'Next time, sign in with your fingerprint, face or PIN';
+            'not-now': 'Not now';
         };
     };
     'shell.home': {

@@ -143,6 +143,7 @@
                 "packages/client/src/modules/apps/**",
                 "packages/client/src/shell/**",
                 "packages/client/src/root.tsx",
+                "packages/client/src/components/nav-user.tsx",
                 "packages/client/src/views/ChatViews.tsx",
                 "packages/client/src/views/NotFound.tsx",
                 "packages/client/src/views/RouteError.tsx"

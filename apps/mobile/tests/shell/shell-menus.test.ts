@@ -100,7 +100,12 @@ describe('the account sheet’s links', () => {
         expect(client('modules/settings/sections.ts')).toContain('`/settings/${section}`');
         expect(client('modules/onboarding/guides.ts')).toContain("'getting-started',");
         expect(client('modules/onboarding/guides.ts')).toContain("article: '/docs/' + article");
-        expect(client('components/nav-user.tsx')).toContain('Account &amp; security');
+        // The web's account menu item, in its en-US words (shell.help).
+        const help = JSON.parse(
+            readFileSync(new URL('../../../../packages/i18n/locales/en-US/shell.help.json', import.meta.url), 'utf8'),
+        ) as { account: Record<string, string> };
+        expect(help.account['account-security']).toBe('Account & security');
+        expect(client('components/nav-user.tsx')).toContain("t('shell.help:account.account-security')");
     });
 
     it('sit over Sign out, which keeps Leave workspace (CB-383) under it; the web ones in the in-app browser', () => {
