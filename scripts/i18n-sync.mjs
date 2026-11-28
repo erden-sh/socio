@@ -4,8 +4,8 @@
 // only files; the workflows make the requests.
 //
 //   node scripts/i18n-sync.mjs payload --commit <sha> --out <file> [--pull-requests <file>]
-//       Writes the import's body (en-US, the translations, the glossary, the context notes and
-//       the state of the i18n/ pull requests) and prints its content hash, which leaves the
+//       Writes the import's body (en-US, the translations, the glossary, the context notes, each
+//       namespace's label and where it appears, and the state of the i18n/ pull requests) and prints its content hash, which leaves the
 //       commit out: an import whose hash is unchanged has nothing new to send.
 //   node scripts/i18n-sync.mjs locales --export <file>
 //       Prints the locales the export has candidates for, one per line, and how many candidates
@@ -79,7 +79,8 @@ export function pullRequestStates(list) {
 /**
  * The import's body: every locale folder's dictionaries (en-US and the translations, not the
  * pseudo-locale), the context notes `packages/i18n/notes/<ns>.json` ({ key: note }, the folder
- * i18n-build checks) and
+ * i18n-build checks), each namespace's label and where it appears (`packages/i18n/namespaces.json`,
+ * { ns: { label, where } }, which i18n-build checks too) and
  * `packages/i18n/glossary/<locale>.json` ([{ term, translation, note, doNotTranslate }]).
  */
 export function importPayload({ commit, localesDir, i18nDir, pullRequests = [] }) {
@@ -109,7 +110,14 @@ export function importPayload({ commit, localesDir, i18nDir, pullRequests = [] }
             .map((name) => [name.slice(0, -5), readJson(join(i18nDir, 'glossary', name))])
             .filter(([locale]) => isTranslatedLocale(locale)),
     );
-    const content = { locales, context, glossary, pullRequests };
+    const namespacesFile = join(i18nDir, 'namespaces.json');
+    const namespaces = Object.fromEntries(
+        Object.entries(existsSync(namespacesFile) ? readJson(namespacesFile) : {}).map(([ns, { label, where }]) => [
+            ns,
+            { label, where },
+        ]),
+    );
+    const content = { locales, context, namespaces, glossary, pullRequests };
     return { body: { commit, ...content }, hash: createHash('sha256').update(JSON.stringify(content)).digest('hex') };
 }
 
