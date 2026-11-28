@@ -7,6 +7,8 @@
  * Copyright (c) Sat Naing.
  *
  * Install, enable, and scale stay with the page that owns the catalog API.
+ * Their own words are English unless the page passes its `labels` (the
+ * web client's, in the reader's language).
  */
 import type { LucideIcon } from 'lucide-react';
 import { ArrowLeft, Puzzle } from 'lucide-react';
@@ -48,6 +50,15 @@ export function CategoryCard({
     );
 }
 
+/** An app card's own words. */
+export interface AppCardLabels {
+    installed: string;
+    notInstalled: string;
+    details: string;
+}
+
+const APP_CARD_LABELS: AppCardLabels = { installed: 'Installed', notInstalled: 'Not installed', details: 'Details' };
+
 export function AppCard({
     name,
     author,
@@ -56,6 +67,7 @@ export function AppCard({
     installed,
     icon,
     onOpen,
+    labels = APP_CARD_LABELS,
 }: {
     name: string;
     author: string;
@@ -64,6 +76,7 @@ export function AppCard({
     installed: boolean;
     icon: ReactNode;
     onOpen: () => void;
+    labels?: AppCardLabels;
 }) {
     return (
         <article
@@ -81,14 +94,33 @@ export function AppCard({
             </div>
             <p className="line-clamp-3 flex-1 text-sm text-muted-foreground">{description}</p>
             <div className="flex items-center justify-between gap-2">
-                <Badge variant={installed ? 'default' : 'secondary'}>{installed ? 'Installed' : 'Not installed'}</Badge>
+                <Badge variant={installed ? 'default' : 'secondary'}>
+                    {installed ? labels.installed : labels.notInstalled}
+                </Badge>
                 <Button type="button" variant="outline" size="sm" onClick={onOpen}>
-                    Details
+                    {labels.details}
                 </Button>
             </div>
         </article>
     );
 }
+
+/** An app detail's own words. */
+export interface AppDetailLabels {
+    back: string;
+    manage: string;
+    install: string;
+    screenshots: string;
+    permissions: string;
+}
+
+const APP_DETAIL_LABELS: AppDetailLabels = {
+    back: 'Back to the store',
+    manage: 'Manage',
+    install: 'Install',
+    screenshots: 'Screenshots',
+    permissions: 'Permissions',
+};
 
 export function AppDetail({
     icon,
@@ -102,6 +134,7 @@ export function AppDetail({
     screenshots,
     permissions,
     status,
+    labels = APP_DETAIL_LABELS,
 }: {
     icon: ReactNode;
     name: string;
@@ -114,11 +147,12 @@ export function AppDetail({
     screenshots?: ReactNode;
     permissions?: ReactNode;
     status?: ReactNode;
+    labels?: AppDetailLabels;
 }) {
     return (
         <article className="grid gap-6">
             <Button type="button" variant="ghost" size="sm" className="justify-self-start" onClick={onBack}>
-                <ArrowLeft /> Back to the store
+                <ArrowLeft /> {labels.back}
             </Button>
             <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="flex items-start gap-4">
@@ -131,23 +165,23 @@ export function AppDetail({
                 </div>
                 {installed ? (
                     <Button type="button" onClick={onManage}>
-                        Manage
+                        {labels.manage}
                     </Button>
                 ) : (
                     <Button type="button" onClick={onInstall}>
-                        Install
+                        {labels.install}
                     </Button>
                 )}
             </div>
             {screenshots && (
                 <section className="grid gap-3">
-                    <h3 className="text-sm font-medium">Screenshots</h3>
+                    <h3 className="text-sm font-medium">{labels.screenshots}</h3>
                     {screenshots}
                 </section>
             )}
             {permissions && (
                 <section className="grid gap-2">
-                    <h3 className="text-sm font-medium">Permissions</h3>
+                    <h3 className="text-sm font-medium">{labels.permissions}</h3>
                     {permissions}
                     {status}
                 </section>

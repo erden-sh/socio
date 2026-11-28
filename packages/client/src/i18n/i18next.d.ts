@@ -14,5 +14,7 @@ declare module 'i18next' {
         returnNull: false;
         returnEmptyString: false;
         strictInterpolationChecks: true;
+        // `{{size, bytes}}` formats a byte count (@socio/i18n's formatters).
+        interpolationFormatTypeMap: { bytes: number };
     }
 }
