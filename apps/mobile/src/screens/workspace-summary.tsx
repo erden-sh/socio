@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { useCollections, useHasWorkspaceScope, useLiveQuery, useWorkspaceScope } from '../live';
 import { keepSummary } from '../platform/active-scope';
 import { setPushBadge } from '../platform/push';
+import { refreshWorkspaceLogo } from '../platform/workspace-logo';
 import { badgeCount } from '../push/badge';
 import { workspaceSummary } from '../shell/account';
 import { chatList } from '../shell/chat-list';
@@ -11,7 +12,9 @@ import { chatsQuery, shellQuery, shellRows, sociosQuery } from '../shell/queries
 // The registry's summary of the open workspace: its name and its
 // unread, kept as they change, so the switcher shows them for a workspace that
 // isn't open, and the app icon's badge. It draws nothing, and waits for
-// the state row, which holds the name and says whether rooms are on.
+// the state row, which holds the name and says whether rooms are on. The
+// row's settings also say the branding in force: its logo is taken again as
+// the scope opens and whenever it changes (CB-574, platform/workspace-logo.ts).
 
 export function WorkspaceSummary() {
     return useHasWorkspaceScope() ? <Summary /> : null;
@@ -30,6 +33,8 @@ function Summary() {
     // The app icon's badge: this workspace's approvals waiting and rooms' unread, set as each pull lands.
     const badge = rows === null ? null : badgeCount(approvals, rows);
     const id = scope.workspace.id;
+    // Undefined until the state row is in, or from a server whose rows don't carry branding: nothing to refresh.
+    const logo = state === null ? undefined : state.settings.branding?.logo;
     const name = summary?.name;
     const unread = summary?.unread;
     useEffect(() => {
@@ -39,6 +44,11 @@ function Summary() {
             );
         }
     }, [id, name, unread]);
+    useEffect(() => {
+        if (logo !== undefined) {
+            void refreshWorkspaceLogo(scope, logo);
+        }
+    }, [scope, logo]);
     useEffect(() => {
         if (badge !== null) {
             setPushBadge(badge);

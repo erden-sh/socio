@@ -53,6 +53,8 @@ export const MENU_SYMBOLS: Readonly<Record<string, string>> = {
     'new-folder': 'folder.badge.plus',
     'keep-draft': 'square.and.arrow.down',
     'discard-draft': 'trash',
+    'workspace-settings': 'gearshape',
+    'remove-workspace': 'rectangle.portrait.and.arrow.right',
 };
 
 /** The symbols' colors: the label's, and the destructive red. */

@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { mkdtemp, readdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -9,8 +10,10 @@ import { BRAND_LOGO_MAX_BYTES } from '@socio/shared/branding';
 import {
     commitLogo,
     discardStagedLogos,
+    LOGO_FILE,
     type LogoFiles,
     logoSource,
+    refreshLogo,
     stageLogo,
     stagingDirectory,
 } from '../../src/data';
@@ -202,5 +205,115 @@ describe('the staging cleanup', () => {
 
     it('stages beside the workspace directories, never as one: launch ignores it', () => {
         expect(stagingDirectory(root)).toBe(join(root, 'socio', 'staging'));
+    });
+});
+
+describe('refreshLogo (CB-574: a workspace that changes its logo after it was added)', () => {
+    const sha = (bytes: Uint8Array) => createHash('sha256').update(bytes).digest('hex');
+    const named = (bytes: Uint8Array, extension: string) => `logo-${sha(bytes).slice(0, 16)}.${extension}`;
+    let workspace: string;
+    let saved: (string | null)[];
+
+    beforeEach(async () => {
+        workspace = join(root, 'socio', 'c'.repeat(64));
+        await files.mkdir(workspace);
+        saved = [];
+    });
+
+    const refresh = (logo: string | null, current: string | null, fetch = fakeFetch(), signal?: AbortSignal) =>
+        refreshLogo(logo, ORIGIN, workspace, current, {
+            files,
+            publicFetch: createPublicFetch({ fetch, userAgent: 'Socio/0.0.0 (test)' }),
+            hash: async (bytes) => sha(bytes),
+            save: async (name) => {
+                saved.push(name);
+            },
+            signal,
+        });
+
+    it('replaces the logo kept at sign-in with the new one, under a new name, and deletes the old file', async () => {
+        await writeFile(join(workspace, 'logo.png'), PNG);
+        const name = await refresh(dataUrl('image/jpeg', JPEG), 'logo.png');
+        expect(name).toBe(named(JPEG, 'jpg'));
+        expect(saved).toEqual([name]);
+        expect(await readdir(workspace)).toEqual([name]);
+        expect(new Uint8Array(await readFile(join(workspace, name!)))).toEqual(JPEG);
+    });
+
+    it('names the file from its bytes, so a new logo is a new URL no image cache holds', async () => {
+        const first = await refresh(dataUrl('image/png', PNG), null);
+        const other = Uint8Array.from([...PNG, 9]);
+        const second = await refresh(dataUrl('image/png', other), first);
+        expect(first).not.toBe(second);
+        expect(LOGO_FILE.test(first!)).toBe(true);
+        expect(LOGO_FILE.test(second!)).toBe(true);
+        expect(await readdir(workspace)).toEqual([second]);
+    });
+
+    it('writes and keeps nothing when the logo is the one on the phone', async () => {
+        const name = await refresh(dataUrl('image/png', PNG), null);
+        saved = [];
+        expect(await refresh(dataUrl('image/png', PNG), name)).toBe(name);
+        expect(saved).toEqual([]);
+        expect(await readdir(workspace)).toEqual([name]);
+    });
+
+    it('goes back to the mascot when the workspace uses the default logo again', async () => {
+        const name = await refresh(dataUrl('image/png', PNG), null);
+        saved = [];
+        expect(await refresh('/favicon.svg', name)).toBeNull();
+        expect(saved).toEqual([null]);
+        expect(await readdir(workspace)).toEqual([]);
+        // Already the mascot: nothing to do.
+        saved = [];
+        expect(await refresh('/favicon.svg', null)).toBeNull();
+        expect(saved).toEqual([]);
+    });
+
+    it('fetches a same-origin logo through publicFetch, and keeps the one on the phone when it gets no answer', async () => {
+        const fetched = await refresh(
+            '/uploads/logo.webp',
+            null,
+            fakeFetch(() => image(WEBP, 'image/webp')),
+        );
+        expect(fetched).toBe(named(WEBP, 'webp'));
+        saved = [];
+        for (const respond of [
+            () => {
+                throw new TypeError('Network request failed');
+            },
+            () => new Response('busy', { status: 503 }),
+            () => new Response('slow down', { status: 429 }),
+        ]) {
+            expect(await refresh('/uploads/logo.webp', fetched, fakeFetch(respond))).toBe(fetched);
+        }
+        expect(saved).toEqual([]);
+        expect(await readdir(workspace)).toEqual([fetched]);
+        // A definite answer the app can't take is the mascot, as at sign-in.
+        expect(
+            await refresh(
+                '/uploads/logo.webp',
+                fetched,
+                fakeFetch(() => new Response('gone', { status: 404 })),
+            ),
+        ).toBeNull();
+        expect(await readdir(workspace)).toEqual([]);
+    });
+
+    it('writes and keeps nothing once the scope has closed', async () => {
+        const controller = new AbortController();
+        controller.abort();
+        expect(await refresh(dataUrl('image/png', PNG), 'logo.png', fakeFetch(), controller.signal)).toBe('logo.png');
+        expect(saved).toEqual([]);
+        expect(await readdir(workspace)).toEqual([]);
+    });
+
+    it('takes only plain logo names from the registry, never a path', () => {
+        for (const name of ['logo.png', 'logo.jpg', 'logo.webp', 'logo-0123456789abcdef.png']) {
+            expect(LOGO_FILE.test(name), name).toBe(true);
+        }
+        for (const name of ['../logo.png', 'logo.svg', 'logo-xyz.png', 'logo-0123456789ABCDEF.png', 'a/logo.png']) {
+            expect(LOGO_FILE.test(name), name).toBe(false);
+        }
     });
 });
