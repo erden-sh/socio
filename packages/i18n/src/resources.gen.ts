@@ -3002,6 +3002,404 @@ export interface EnglishResources {
             people_other: '{{count, number}} people';
         };
     };
+    pages: {
+        document: {
+            label: 'Document workspace';
+            'all-pages': 'All pages';
+            'toggle-outline': 'Toggle page outline';
+            'editor-loading': 'Loading editor…';
+            'download-name': 'page';
+            status: {
+                saving: 'Saving…';
+                saved: 'All changes saved';
+                dirty: 'Unsaved changes';
+                conflict: 'Changes need review';
+                error: 'Could not save';
+            };
+            menu: {
+                label: 'Page actions';
+                save: 'Save now · ⌘/Ctrl S';
+                visual: 'Visual editor';
+                source: 'Markdown source';
+                'to-page': 'Turn into page';
+                'to-folder': 'Turn into folder';
+                'move-within': 'Move within Space';
+                'move-to': 'Move to…';
+                'new-inside': 'New page inside';
+                'new-subpage': 'New subpage';
+                'follow-up': 'Create follow-up…';
+                download: 'Download Markdown';
+                'source-thread': 'Open source conversation';
+                delete: 'Delete page';
+            };
+            notices: {
+                'folder-save-first': 'Save your changes before turning this page into a folder.';
+                'folder-failed': 'Could not change this page. Try again.';
+                'latest-confirm': 'Load the latest saved page and replace this draft? Download your draft first if you want to keep it.';
+                'latest-failed': 'Could not load the latest page. Your draft is unchanged.';
+                retry: 'Retry save';
+                download: 'Download draft';
+                'load-latest': 'Load latest';
+                dismiss: 'Dismiss';
+            };
+            'save-errors': {
+                conflict: 'This page changed elsewhere. Your draft is safe. Copy it before loading the latest version.';
+                newer: 'A newer revision exists. Your draft is preserved.';
+                timeout: 'Saving timed out. Your draft is safe; retry when connected.';
+                failed: 'Could not save. Your draft is safe.';
+                invalid: 'Use a title up to {{title, number}} characters and a document up to {{content, number}} characters. Your draft is still here.';
+            };
+            move: {
+                label: 'Move under';
+                parent: 'Parent page';
+                root: 'Space root';
+                done: 'Done';
+            };
+            source: {
+                heading: 'Markdown source';
+                label: 'Page Markdown';
+                reasons: {
+                    extended: 'This document contains extended Markdown. Source mode preserves it exactly.';
+                    unsupported: 'This document contains images, HTML, or formatting that needs Markdown source mode. Nothing has been changed.';
+                    'round-trip': 'Some formatting cannot be safely round-tripped. Source mode keeps the original document intact.';
+                    unreadable: 'This Markdown needs source mode to preserve its contents.';
+                };
+            };
+        };
+        title: {
+            label: 'Page title';
+        };
+        folder: {
+            'new-page': 'New page';
+            'new-folder': 'New folder';
+            contents: 'In this folder';
+            empty: 'This folder is empty.';
+            kept: 'This folder keeps its page text. Turn it back into a page to see it.';
+        };
+        hierarchy: {
+            parents: 'Parent pages';
+            children: 'Child pages';
+        };
+        outline: {
+            label: 'Pages in this Space';
+            heading: 'Pages';
+            new: 'New page in outline';
+            close: 'Close page outline';
+        };
+        missing: {
+            crumb: 'Deleted page';
+            loading: 'Loading page…';
+            deleted: 'This page was deleted';
+            'deleted-detail': 'It was deleted from this Space, so links to it no longer open a page.';
+            'not-found': 'Page not found';
+            'not-found-detail': 'It isn’t in this Space. Check the link, or find the page in the library.';
+            back: 'Back to all pages';
+        };
+        chat: {
+            label: 'Page conversation';
+            close: 'Close page chat';
+            'ask-label': 'Ask about this page';
+            'ask-placeholder': 'Ask about this page…';
+            specialist: 'Page specialist';
+            paused: 'Assistant paused';
+            'uses-saved': 'Uses this saved page';
+            send: 'Send to page assistant';
+            'save-first': 'Save or resolve your document changes before starting page chat.';
+            failed: 'Could not open page chat.';
+            setup: {
+                'add-specialist': 'Add a specialist to work with this Space.';
+                'ask-admin': 'Ask an admin to add a specialist to this Space.';
+                'create-specialist': 'Create specialist';
+                connect: 'Connect your assistant to chat about this page.';
+                'set-up': 'Set up assistant';
+            };
+        };
+        cover: {
+            add: 'Add cover';
+            change: 'Change cover';
+            remove: 'Remove';
+            gone: 'This cover’s image is no longer available.';
+            picker: 'Cover';
+            removed: 'Cover removed';
+            undo: 'Undo';
+            'undo-failed': 'Could not put the cover back.';
+            'remove-failed': 'Could not remove the cover.';
+        };
+    };
+    'pages.cover': {
+        heading: 'Cover';
+        upload: 'Upload an image';
+        hint: 'or drop one here · PNG, JPEG or WebP, up to {{size, number}} MB';
+        'uploading-progress': 'Uploading… {{progress, number(style: percent)}}';
+        setting: 'Setting the cover…';
+        'from-space': 'From this Space';
+        loading: 'Loading images…';
+        use: 'Use {{name}}';
+        none: 'No images in this Space yet. Link-card images and other pages’ covers show here.';
+        advice: 'Wide images work best (about 3:1). Everyone who can see the page sees its cover.';
+        problems: {
+            type: 'Choose a PNG, JPEG or WebP image.';
+            size: 'Covers can be at most {{size, number}} MB.';
+        };
+        errors: {
+            list: 'Could not load this Space’s images.';
+            upload: 'Could not upload the image.';
+            set: 'Could not set the cover.';
+        };
+    };
+    'pages.dialogs': {
+        delete: {
+            title: 'Delete “{{title}}”?';
+            subpages_one: 'Its subpage will be deleted with it.';
+            subpages_other: 'Its {{count}} subpages will be deleted with it.';
+            description: 'It’s removed for everyone in this Space, and links to it say it was deleted. Conversations about it stay in your chats.';
+            list: 'Subpages deleted with it';
+            cancel: 'Cancel';
+            action_one: 'Delete page';
+            action_other: 'Delete pages';
+            deleting: 'Deleting…';
+            deleted: 'Deleted “{{title}}”';
+            failed: 'Could not delete the page.';
+        };
+        move: {
+            title: 'Move “{{title}}”';
+            description: 'It goes to the top of the Space you pick. Its history goes with it, and links to it keep working.';
+            'description-subpages_one': 'It goes to the top of the Space you pick, with its subpage. Its history goes with it, and links to it keep working.';
+            'description-subpages_other': 'It goes to the top of the Space you pick, with its {{count}} subpages. Its history goes with it, and links to it keep working.';
+            none: 'There is no other Space to move it to.';
+            to: 'Move to';
+            destination: 'Destination Space';
+            list: 'Subpages moved with it';
+            cancel: 'Cancel';
+            action_one: 'Move page';
+            action_other: 'Move pages';
+            moving: 'Moving…';
+            moved: 'Moved “{{title}}” to {{space}}';
+            'save-first': 'Your latest changes could not be saved. Save them, then move the page.';
+            failed: 'Could not move the page.';
+        };
+        folder: {
+            title: 'New folder';
+            description: 'A folder holds pages and other folders.';
+            name: 'Folder name';
+            cancel: 'Cancel';
+            create: 'Create folder';
+            failed: 'Could not create the folder.';
+        };
+    };
+    'pages.editor': {
+        'content-label': 'Page content';
+        placeholder: 'Start writing, or type / for blocks…';
+        'paste-refused': 'Images and embedded content are not supported here. Use Markdown source to keep their original markup.';
+        'link-prompt': 'Link URL (https:// or an internal page link)';
+        'link-invalid': 'Use a public http(s) URL or an internal page link.';
+        hint: 'Type <kbd>/</kbd> for blocks · ⌘/Ctrl + S to save';
+        toolbar: {
+            label: 'Text formatting';
+            bold: 'Bold';
+            'bold-hint': 'Bold (⌘/Ctrl B)';
+            italic: 'Italic';
+            'italic-hint': 'Italic (⌘/Ctrl I)';
+            'bullet-list': 'Bullet list';
+            'numbered-list': 'Numbered list';
+            quote: 'Quote';
+            'code-block': 'Code block';
+            link: 'Add link';
+            undo: 'Undo';
+            redo: 'Redo';
+        };
+        slash: {
+            heading: 'Insert block';
+            label: 'Insert block';
+            empty: 'No matching blocks';
+        };
+        blocks: {
+            text: {
+                title: 'Text';
+                description: 'Start with a plain paragraph';
+            };
+            'heading-1': {
+                title: 'Heading 1';
+                description: 'A large section heading';
+            };
+            'heading-2': {
+                title: 'Heading 2';
+                description: 'A medium section heading';
+            };
+            'heading-3': {
+                title: 'Heading 3';
+                description: 'A small section heading';
+            };
+            'bullet-list': {
+                title: 'Bullet list';
+                description: 'A simple unordered list';
+            };
+            'numbered-list': {
+                title: 'Numbered list';
+                description: 'An ordered sequence';
+            };
+            checklist: {
+                title: 'Checklist';
+                description: 'Track things to do';
+            };
+            quote: {
+                title: 'Quote';
+                description: 'Highlight a passage';
+            };
+            code: {
+                title: 'Code';
+                description: 'A code block';
+            };
+            divider: {
+                title: 'Divider';
+                description: 'Separate sections';
+            };
+            table: {
+                title: 'Table';
+                description: 'Three columns with a header';
+            };
+            'dataset-view': {
+                title: 'Dataset view';
+                description: 'A live table or chart of a dataset';
+            };
+        };
+        view: {
+            title: 'Dataset view';
+            rows_one: '{{count, number}} row';
+            rows_other: '{{count, number}} rows';
+            'rows-more_one': '{{count, number}}+ row';
+            'rows-more_other': '{{count, number}}+ rows';
+            'as-of': 'as of {{at, datetime(hour: 2-digit; minute: 2-digit; second: 2-digit)}}';
+            'show-chart': 'Show the chart';
+            'show-table': 'Show as a table';
+            refresh: 'Refresh view';
+            'refresh-hint': 'Refresh';
+            edit: 'Edit view';
+            'incomplete-editable': 'Choose a dataset and write a query, then run it.';
+            incomplete: 'This view isn’t set up yet.';
+            loading: 'Loading view…';
+            private: 'Only you can see this data. Others see a placeholder until you <link>share the dataset with this Space</link>.';
+            displays: {
+                table: 'Table';
+                bar: 'Bar chart';
+                line: 'Line chart';
+            };
+            'refresh-every': {
+                off: 'Off';
+                seconds_one: 'Every second';
+                seconds_other: 'Every {{count, number}} seconds';
+                minutes_one: 'Every minute';
+                minutes_other: 'Every {{count, number}} minutes';
+                hours_one: 'Every hour';
+                hours_other: 'Every {{count, number}} hours';
+            };
+            form: {
+                label: 'Edit dataset view';
+                dataset: 'Dataset';
+                choose: 'Choose a dataset';
+                loading: 'Loading datasets…';
+                'shared-here': '{{name}} (shared with this Space)';
+                'shared-by': '{{name}} (shared by {{owner}})';
+                'another-user': 'another user';
+                unknown: 'A dataset you can’t open';
+                display: 'Display';
+                x: 'X axis';
+                values: 'Values';
+                'first-column': 'First column';
+                'first-numbers': 'First numbers';
+                title: 'Title';
+                'title-label': 'View title';
+                'title-placeholder': 'The dataset’s name';
+                'auto-refresh': 'Auto-refresh';
+                query: 'Query';
+                'query-label': 'View query';
+                'query-placeholder': 'SELECT month, total FROM "sales" ORDER BY month';
+                rule: 'One read-only SELECT. Everyone sees the result only if they own the dataset or it is shared with this Space.';
+                run: 'Run';
+                'run-hint': 'Run (⌘/Ctrl Enter)';
+                save: 'Save view';
+                cancel: 'Cancel';
+                remove: 'Remove';
+                'list-failed': 'Could not list datasets.';
+            };
+        };
+        embed: {
+            broken: 'This link card can’t be shown.';
+            label: '{{site}} card';
+            'label-titled': '{{site}} card: {{title}}';
+            'image-missing': 'Image not available here';
+            'image-missing-alt': 'Image not available here: {{alt}}';
+            'video-missing': 'Video not available here';
+            'video-missing-alt': 'Video not available here: {{alt}}';
+            play: 'Play on {{site}} (opens in a new tab)';
+            open: 'Open on {{host}}';
+            'new-tab': '(opens in a new tab)';
+        };
+        image: {
+            missing: 'Image not available here';
+            'missing-alt': 'Image not available here: {{alt}}';
+        };
+    };
+    'pages.review': {
+        label: 'Review page draft';
+        phase: {
+            deleted: {
+                title: 'Saved, then deleted';
+                badge: 'Deleted';
+            };
+            conflict: {
+                title: 'Review changed';
+                badge: 'Needs new review';
+            };
+            saved: {
+                title: 'Saved to your Space';
+                badge: 'Approved';
+            };
+            checking: {
+                title: 'Checking saved review…';
+                badge: 'Checking';
+            };
+            ended: {
+                title: 'Review ended';
+                badge: 'Not saved';
+            };
+            invalid: {
+                title: 'Draft needs fixing';
+                badge: 'Cannot save';
+            };
+            waiting: {
+                title: 'Draft on its way';
+                badge: 'Waiting';
+            };
+            ready: {
+                title: 'Ready for your review';
+                badge: 'You decide';
+            };
+        };
+        preparing: 'Preparing your draft…';
+        untitled: 'Untitled draft';
+        conflict: 'This review was saved with a different draft. Start a new review for the changed draft.';
+        invalid: 'This draft cannot be saved as sent ({{problem}}). Send it back and the socio will fix it.';
+        retry: 'Retry review';
+        'open-saved': 'Open saved page';
+        open: 'Open page';
+        saving: 'Saving…';
+        continue: 'Continue conversation';
+        approve: 'Approve & save';
+        'send-back': 'Send back';
+        decline: 'Decline';
+        hint: {
+            deleted: 'The page saved from this review was deleted.';
+            checking: 'Checking whether this draft was already saved.';
+            'not-saved': 'No page was saved.';
+            waiting: 'This draft opens for review once the socio finishes it and any review above it is decided.';
+            ready: 'Nothing is saved until you approve.';
+        };
+        errors: {
+            restore: 'Could not restore this review.';
+            save: 'Could not save the approved draft.';
+        };
+    };
     rooms: {
         'a-socio': 'A socio';
         you: 'You';

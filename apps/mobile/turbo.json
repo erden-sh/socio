@@ -45,6 +45,7 @@
                 "$TURBO_ROOT$/packages/i18n/locales/en-US/shell*.json",
                 "$TURBO_ROOT$/packages/i18n/locales/en-US/chat*.json",
                 "$TURBO_ROOT$/packages/i18n/locales/en-US/issues*.json",
+                "$TURBO_ROOT$/packages/i18n/locales/en-US/pages*.json",
                 "$TURBO_ROOT$/packages/client/src/modules/issues/IssueComponents.tsx",
                 "$TURBO_ROOT$/packages/client/src/modules/issues/IssueDetail.tsx",
                 "$TURBO_ROOT$/packages/client/src/modules/issues/IssueToolbar.tsx",

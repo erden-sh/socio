@@ -5,6 +5,7 @@ import { EditorContent, ReactNodeViewRenderer, useEditor, useEditorState } from 
 import { Bold, Italic, List, ListOrdered, Quote, Code2, Undo2, Redo2, Link2 } from 'lucide-react';
 import { useEffect, useRef, type ReactNode } from 'react';
 
+import { Trans, useTranslation } from '@socio/i18n/react';
 import { simpleHtmlToMarkdown } from '@socio/shared/text/simple-html';
 
 import { followLink } from '../page-navigation';
@@ -18,7 +19,7 @@ import { EmbedCardBlock } from './EmbedCardBlock';
 import { documentExtensions, preservedMarkdown, rememberLoadedMarkdown } from './markdown';
 import { PageImageNode } from './page-image-node';
 import { PageImageBlock } from './PageImageBlock';
-import { SlashCommands } from './slash-commands';
+import { SlashCommands, type BlockWords } from './slash-commands';
 
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -71,10 +72,24 @@ export default function RichEditor({
     /** The page being edited: dataset views read through its Space. */
     page?: DatasetViewPage;
 }) {
+    const { t } = useTranslation(['pages.editor']);
+    // The "/" menu's words, read when it opens: the latest language's, though the editor is made once.
+    const words = useRef<BlockWords>(undefined);
+    words.current = (id) => ({
+        title: t(`pages.editor:blocks.${id}.title`),
+        description: t(`pages.editor:blocks.${id}.description`),
+    });
     const change = useRef(onChange);
     change.current = onChange;
     const notice = useRef(onNotice);
     notice.current = onNotice;
+    // Words the editor reads after it's made (it is made once): the current language's.
+    const placeholder = t('pages.editor:placeholder');
+    const label = t('pages.editor:content-label');
+    const refused = useRef('');
+    refused.current = t('pages.editor:paste-refused');
+    const shown = useRef(placeholder);
+    shown.current = placeholder;
     const emitted = useRef(value);
     // The Markdown the editor last loaded: what an edit keeps of it, untouched blocks byte for byte.
     const source = useRef<string | null>(null);
@@ -84,9 +99,9 @@ export default function RichEditor({
             ...documentExtensions().map((extension) => LIVE_NODES[extension.name] ?? extension),
             Markdown,
             Placeholder.configure({
-                placeholder: 'Start writing, or type / for blocks…',
+                placeholder: () => shown.current,
             }),
-            SlashCommands,
+            SlashCommands.configure({ words: (id) => words.current!(id) }),
         ],
         // Simple HTML reads as its Markdown; the page keeps its text until an edit.
         content: source.current,
@@ -95,7 +110,9 @@ export default function RichEditor({
         editorProps: {
             attributes: {
                 class: 'document-prose',
-                'aria-label': 'Page content',
+                'aria-label': label,
+                // What the title's Enter moves to (PageTitleField).
+                'data-page-body': '',
                 role: 'textbox',
                 'aria-multiline': 'true',
             },
@@ -139,9 +156,7 @@ export default function RichEditor({
                 const html = event.clipboardData?.getData('text/html') ?? '';
                 if (/<(img|iframe|script)\b/i.test(html)) {
                     event.preventDefault();
-                    notice.current(
-                        'Images and embedded content are not supported here. Use Markdown source to keep their original markup.',
-                    );
+                    notice.current(refused.current);
                     return true;
                 }
                 return false;
@@ -173,6 +188,17 @@ export default function RichEditor({
                   }
                 : null,
     });
+    // A language change: the textbox's name in the new words (the placeholder reads `shown` as it draws).
+    useEffect(() => {
+        if (editor && !editor.isDestroyed) {
+            editor.setOptions({
+                editorProps: {
+                    ...editor.options.editorProps,
+                    attributes: { ...editor.options.editorProps.attributes, 'aria-label': label },
+                },
+            });
+        }
+    }, [editor, label]);
     useEffect(() => {
         if (editor && value !== emitted.current) {
             emitted.current = value;
@@ -188,10 +214,7 @@ export default function RichEditor({
         return <EditorLoading />;
     }
     const addLink = () => {
-        const url = window.prompt(
-            'Link URL (https:// or an internal page link)',
-            editor.getAttributes('link').href ?? '',
-        );
+        const url = window.prompt(t('pages.editor:link-prompt'), editor.getAttributes('link').href ?? '');
         if (url === null) {
             return;
         }
@@ -200,7 +223,7 @@ export default function RichEditor({
             return;
         }
         if (!/^(https?:\/\/|\/#\/spaces\/)/i.test(url)) {
-            onNotice('Use a public http(s) URL or an internal page link.');
+            onNotice(t('pages.editor:link-invalid'));
             return;
         }
         editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
@@ -215,19 +238,19 @@ export default function RichEditor({
                     data-slot="format-toolbar"
                     className="mb-[27px] flex flex-wrap items-center gap-0.5 border-b border-border/70 py-1 max-[700px]:gap-0"
                     role="toolbar"
-                    aria-label="Text formatting"
+                    aria-label={t('pages.editor:toolbar.label')}
                 >
                     <ToolbarButton
-                        label="Bold"
-                        hint="Bold (⌘/Ctrl B)"
+                        label={t('pages.editor:toolbar.bold')}
+                        hint={t('pages.editor:toolbar.bold-hint')}
                         pressed={state?.bold}
                         onClick={() => editor.chain().focus().toggleBold().run()}
                     >
                         <Bold size={16} />
                     </ToolbarButton>
                     <ToolbarButton
-                        label="Italic"
-                        hint="Italic (⌘/Ctrl I)"
+                        label={t('pages.editor:toolbar.italic')}
+                        hint={t('pages.editor:toolbar.italic-hint')}
                         pressed={state?.italic}
                         onClick={() => editor.chain().focus().toggleItalic().run()}
                     >
@@ -235,46 +258,46 @@ export default function RichEditor({
                     </ToolbarButton>
                     {divider}
                     <ToolbarButton
-                        label="Bullet list"
+                        label={t('pages.editor:toolbar.bullet-list')}
                         pressed={state?.bullet}
                         onClick={() => editor.chain().focus().toggleBulletList().run()}
                     >
                         <List size={17} />
                     </ToolbarButton>
                     <ToolbarButton
-                        label="Numbered list"
+                        label={t('pages.editor:toolbar.numbered-list')}
                         pressed={state?.ordered}
                         onClick={() => editor.chain().focus().toggleOrderedList().run()}
                     >
                         <ListOrdered size={17} />
                     </ToolbarButton>
                     <ToolbarButton
-                        label="Quote"
+                        label={t('pages.editor:toolbar.quote')}
                         pressed={state?.quote}
                         onClick={() => editor.chain().focus().toggleBlockquote().run()}
                     >
                         <Quote size={15} />
                     </ToolbarButton>
                     <ToolbarButton
-                        label="Code block"
+                        label={t('pages.editor:toolbar.code-block')}
                         pressed={state?.code}
                         onClick={() => editor.chain().focus().toggleCodeBlock().run()}
                     >
                         <Code2 size={17} />
                     </ToolbarButton>
-                    <ToolbarButton label="Add link" onClick={addLink}>
+                    <ToolbarButton label={t('pages.editor:toolbar.link')} onClick={addLink}>
                         <Link2 size={16} />
                     </ToolbarButton>
                     {divider}
                     <ToolbarButton
-                        label="Undo"
+                        label={t('pages.editor:toolbar.undo')}
                         disabled={!state?.undo}
                         onClick={() => editor.chain().focus().undo().run()}
                     >
                         <Undo2 size={16} />
                     </ToolbarButton>
                     <ToolbarButton
-                        label="Redo"
+                        label={t('pages.editor:toolbar.redo')}
                         disabled={!state?.redo}
                         onClick={() => editor.chain().focus().redo().run()}
                     >
@@ -286,8 +309,11 @@ export default function RichEditor({
                 <EditorContent editor={editor} />
             </DatasetViewContext.Provider>
             <p data-slot="editor-hint" className="mt-9 mb-[1em] text-[11px] text-muted-foreground">
-                Type <kbd className="rounded-[3px] border bg-muted/40 px-1 [font:inherit]">/</kbd> for blocks · ⌘/Ctrl +
-                S to save
+                <Trans
+                    t={t}
+                    i18nKey="pages.editor:hint"
+                    components={{ kbd: <kbd className="rounded-[3px] border bg-muted/40 px-1 [font:inherit]" /> }}
+                />
             </p>
         </>
     );

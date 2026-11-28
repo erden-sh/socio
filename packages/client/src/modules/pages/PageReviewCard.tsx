@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
+import { useTranslation } from '@socio/i18n/react';
 import type { ReviewedPage } from '@socio/shared/pages/page-library';
 import {
     draftProblem,
@@ -13,6 +14,7 @@ import {
 } from '@socio/shared/pages/page-review';
 import { simpleHtmlToMarkdown } from '@socio/shared/text/simple-html';
 
+import { onDemand } from '../../i18n/on-demand';
 import { ApiError } from '../../lib/api';
 
 import { openAppPath, spacePath } from './page-navigation';
@@ -25,7 +27,16 @@ import { cn } from '@/lib/utils';
 const reviewButton =
     "h-auto gap-1.5 rounded-[9px] px-[13px] py-[9px] text-xs font-normal disabled:opacity-55 [&_svg:not([class*='size-'])]:size-[15px]";
 const alertLine = 'px-4.5 text-destructive';
-export function PageReviewCard({
+
+/** Where a review stands, for its header's words (pages.review:phase). */
+type ReviewPhase = 'deleted' | 'conflict' | 'saved' | 'checking' | 'ended' | 'invalid' | 'waiting' | 'ready';
+
+/**
+ * A socio's page draft for the person to approve or decline, in a chat.
+ * Its words load on demand (pages.review): the live chat is client-only.
+ * Exported for tests that render it where its words are in.
+ */
+export function PageReviewBody({
     args,
     status,
     result,
@@ -42,6 +53,7 @@ export function PageReviewCard({
     toolCallId: string;
     onSaved: () => void;
 }) {
+    const { t } = useTranslation(['pages.review']);
     const draft = parsePageReviewArgs(args);
     // In progress: the Dot is still writing the draft, or it waits for an
     // earlier review in the same turn. After that the arguments are final, so
@@ -84,13 +96,13 @@ export function PageReviewCard({
                 if (active && cause instanceof ApiError && cause.status === 410) {
                     setDeleted(true);
                 } else if (active) {
-                    setError(cause instanceof Error ? cause.message : 'Could not restore this review.');
+                    setError(cause instanceof Error ? cause.message : t('pages.review:errors.restore'));
                 }
             });
         return () => {
             active = false;
         };
-    }, [threadId, toolCallId, restoreAttempt]);
+    }, [threadId, toolCallId, restoreAttempt, t]);
     const decide = async (approved: boolean) => {
         if (!respond || !receiptReady || conflict || pending.current) {
             return;
@@ -109,59 +121,44 @@ export function PageReviewCard({
             await respond(pageReviewApproved(page, spacePath(page.spaceId, page.id)));
         } catch (cause) {
             setReceiptReady(false);
-            setError(cause instanceof Error ? cause.message : 'Could not save the approved draft.');
+            setError(cause instanceof Error ? cause.message : t('pages.review:errors.save'));
         } finally {
             pending.current = false;
             setBusy(false);
         }
     };
+    const phase: ReviewPhase = deleted
+        ? 'deleted'
+        : conflict
+          ? 'conflict'
+          : saved
+            ? 'saved'
+            : !receiptReady
+              ? 'checking'
+              : finished
+                ? 'ended'
+                : invalid
+                  ? 'invalid'
+                  : waiting
+                    ? 'waiting'
+                    : 'ready';
     return (
         // No data-slot on the card or its body: the draft's Markdown keeps the
         // legacy resets (lists, headings), as in the transcript around it.
         <section
             className="my-3 w-full flex-none overflow-hidden rounded-2xl border border-border bg-card text-card-foreground"
-            aria-label="Review page draft"
+            aria-label={t('pages.review:label')}
         >
             <header className="flex items-center gap-[9px] border-b border-border/70 px-4.5 py-3.5 text-xs text-foreground/80">
                 <FileText size={17} />
-                <strong>
-                    {deleted
-                        ? 'Saved, then deleted'
-                        : conflict
-                          ? 'Review changed'
-                          : saved
-                            ? 'Saved to your Space'
-                            : !receiptReady
-                              ? 'Checking saved review…'
-                              : finished
-                                ? 'Review ended'
-                                : invalid
-                                  ? 'Draft needs fixing'
-                                  : waiting
-                                    ? 'Draft on its way'
-                                    : 'Ready for your review'}
-                </strong>
+                <strong>{t(`pages.review:phase.${phase}.title`)}</strong>
                 <span className="ml-auto text-[11px] text-muted-foreground">
-                    {deleted
-                        ? 'Deleted'
-                        : conflict
-                          ? 'Needs new review'
-                          : saved
-                            ? 'Approved'
-                            : !receiptReady
-                              ? 'Checking'
-                              : finished
-                                ? 'Not saved'
-                                : invalid
-                                  ? 'Cannot save'
-                                  : waiting
-                                    ? 'Waiting'
-                                    : 'You decide'}
+                    {t(`pages.review:phase.${phase}.badge`)}
                 </span>
             </header>
             <div className="max-h-77.5 overflow-auto px-5.5 py-4.5 text-[13px]/[1.65] [&_h2]:mt-4 [&_h2]:mb-2 [&_h2]:text-[15px] [&_p]:my-2">
                 <h3 className="mt-0 mb-3 text-xl tracking-[-0.5px]">
-                    {shown.title || (waiting ? 'Preparing your draft…' : 'Untitled draft')}
+                    {shown.title || (waiting ? t('pages.review:preparing') : t('pages.review:untitled'))}
                 </h3>
                 {shown.content && (
                     <ReactMarkdown
@@ -181,13 +178,12 @@ export function PageReviewCard({
             </div>
             {conflict && (
                 <p role="alert" className={alertLine}>
-                    This review was saved with a different draft. Start a new review for the changed draft.
+                    {t('pages.review:conflict')}
                 </p>
             )}
             {invalid && !finished && !saved && !conflict && (
                 <p role="alert" className={alertLine}>
-                    This draft cannot be saved as sent ({draftProblem(draft.error)}). Send it back and the socio will
-                    fix it.
+                    {t('pages.review:invalid', { problem: draftProblem(draft.error) })}
                 </p>
             )}
             {error && (
@@ -202,7 +198,7 @@ export function PageReviewCard({
                     className={cn(reviewButton, 'mx-4.5 mb-3')}
                     onClick={() => setRestoreAttempt((attempt) => attempt + 1)}
                 >
-                    Retry review
+                    {t('pages.review:retry')}
                 </Button>
             )}
             <footer className="flex flex-wrap items-center gap-2.5 border-t border-border/70 bg-muted/40 px-4.5 py-3.5">
@@ -212,7 +208,7 @@ export function PageReviewCard({
                         className={reviewButton}
                         onClick={() => openAppPath(spacePath(spaceId, pageId))}
                     >
-                        {conflict ? 'Open saved page' : 'Open page'} <ArrowUpRight />
+                        {conflict ? t('pages.review:open-saved') : t('pages.review:open')} <ArrowUpRight />
                     </Button>
                 )}
                 {!finished && respond && receiptReady && !conflict && (
@@ -225,7 +221,11 @@ export function PageReviewCard({
                                 onClick={() => void decide(true)}
                             >
                                 <Check />
-                                {busy ? 'Saving…' : saved ? 'Continue conversation' : 'Approve & save'}
+                                {busy
+                                    ? t('pages.review:saving')
+                                    : saved
+                                      ? t('pages.review:continue')
+                                      : t('pages.review:approve')}
                             </Button>
                         )}
                         {!saved && (
@@ -236,7 +236,7 @@ export function PageReviewCard({
                                 className={reviewButton}
                                 onClick={() => void decide(false)}
                             >
-                                {invalid ? 'Send back' : 'Decline'}
+                                {invalid ? t('pages.review:send-back') : t('pages.review:decline')}
                             </Button>
                         )}
                     </>
@@ -244,20 +244,23 @@ export function PageReviewCard({
                 {!saved && !conflict && (
                     <small className="text-[11px] text-muted-foreground">
                         {deleted
-                            ? 'The page saved from this review was deleted.'
+                            ? t('pages.review:hint.deleted')
                             : !receiptReady
-                              ? 'Checking whether this draft was already saved.'
+                              ? t('pages.review:hint.checking')
                               : finished || invalid
-                                ? 'No page was saved.'
+                                ? t('pages.review:hint.not-saved')
                                 : waiting
-                                  ? 'This draft opens for review once the socio finishes it and any review above it is decided.'
-                                  : 'Nothing is saved until you approve.'}
+                                  ? t('pages.review:hint.waiting')
+                                  : t('pages.review:hint.ready')}
                     </small>
                 )}
             </footer>
         </section>
     );
 }
+/** The page review card (`PageReviewBody`), once its words are in. */
+export const PageReviewCard = onDemand(['pages.review'], PageReviewBody);
+
 /** Whatever title and text a draft that does not validate still has. */
 function readable(args: unknown) {
     const { title, content } = (args ?? {}) as Record<string, unknown>;

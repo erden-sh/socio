@@ -26,7 +26,7 @@ function Harness() {
                     setTitle(next);
                 }}
             />
-            <div aria-label="Page content" tabIndex={0} />
+            <div aria-label="Page content" data-page-body tabIndex={0} />
         </article>
     );
 }

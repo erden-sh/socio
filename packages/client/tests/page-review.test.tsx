@@ -4,7 +4,7 @@ import { beforeEach, expect, it, vi } from 'vitest';
 vi.mock('../src/lib/api', () => ({ api: vi.fn() }));
 import { api } from '../src/lib/api';
 import { decidePageReview } from '../src/modules/pages/page-review-decision';
-import { PageReviewCard } from '../src/modules/pages/PageReviewCard';
+import { PageReviewBody as PageReviewCard } from '../src/modules/pages/PageReviewCard';
 
 beforeEach(() => {
     vi.mocked(api).mockReset();

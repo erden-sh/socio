@@ -1,6 +1,7 @@
 import { ArrowUp, X, MessageCircle } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
+import { useTranslation } from '@socio/i18n/react';
 import type { Page } from '@socio/shared/pages/page-library';
 import type { Conversation, WorkspaceState } from '@socio/shared/types';
 
@@ -46,6 +47,7 @@ export function PageConversation({
     seed?: { prompt: string; dotId: string } | null;
     onSeedConsumed?: () => void;
 }) {
+    const { t } = useTranslation(['pages']);
     const dots = workspace.dots.filter((dot) => !dot.archivedAt && dot.spaceIds.includes(page.spaceId));
     const [dotId, setDotId] = useState('');
     const dot = dots.find((dot) => dot.id === dotId) ?? dots[0];
@@ -79,7 +81,7 @@ export function PageConversation({
             scope,
             async () => {
                 if (!(await beforeChat())) {
-                    throw new Error('Save or resolve your document changes before starting page chat.');
+                    throw new Error(t('pages:chat.save-first'));
                 }
                 return api<Conversation>(`/spaces/${page.spaceId}/pages/${page.id}/conversation`, 'POST', {
                     dotId: dot.id,
@@ -93,7 +95,7 @@ export function PageConversation({
                     onOpenChange(true);
                     onRefresh();
                 },
-                failure: (e) => setError(e instanceof Error ? e.message : 'Could not open page chat.'),
+                failure: (e) => setError(e instanceof Error ? e.message : t('pages:chat.failed')),
                 settled: () => setBusy(false),
             },
         );
@@ -118,7 +120,7 @@ export function PageConversation({
             // No data-slot here: the transcript's Markdown keeps its legacy resets.
             <aside
                 className="flex h-full min-h-0 flex-col bg-card"
-                aria-label="Page conversation"
+                aria-label={t('pages:chat.label')}
                 data-tour="page-conversation"
             >
                 <div
@@ -126,10 +128,10 @@ export function PageConversation({
                     className="flex min-h-15.5 items-center justify-between border-b border-border/70 px-4 py-2.5"
                 >
                     <span className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-                        <MessageCircle size={16} /> Page conversation
+                        <MessageCircle size={16} /> {t('pages:chat.label')}
                     </span>
                     <PageIconButton
-                        aria-label="Close page chat"
+                        aria-label={t('pages:chat.close')}
                         onClick={() => {
                             setThread(undefined);
                             onOpenChange(false);
@@ -157,12 +159,8 @@ export function PageConversation({
     if (!dot) {
         return (
             <ChatSetup
-                text={
-                    admin
-                        ? 'Add a specialist to work with this Space.'
-                        : 'Ask an admin to add a specialist to this Space.'
-                }
-                action={admin ? 'Create specialist' : undefined}
+                text={admin ? t('pages:chat.setup.add-specialist') : t('pages:chat.setup.ask-admin')}
+                action={admin ? t('pages:chat.setup.create-specialist') : undefined}
                 onAction={onCreateDot}
             />
         );
@@ -170,8 +168,8 @@ export function PageConversation({
     if (workspace.setup.missing.length) {
         return (
             <ChatSetup
-                text="Connect your assistant to chat about this page."
-                action="Set up assistant"
+                text={t('pages:chat.setup.connect')}
+                action={t('pages:chat.setup.set-up')}
                 onAction={onSettings}
             />
         );
@@ -194,11 +192,11 @@ export function PageConversation({
                 }}
             >
                 <label className="sr-only" htmlFor="page-prompt">
-                    Ask about this page
+                    {t('pages:chat.ask-label')}
                 </label>
                 <Input
                     id="page-prompt"
-                    placeholder="Ask about this page…"
+                    placeholder={t('pages:chat.ask-placeholder')}
                     className="h-auto rounded-none border-0 bg-transparent px-1.5 pt-[3px] pb-[15px] text-base text-foreground shadow-none focus-visible:ring-0 md:text-sm dark:bg-transparent"
                     value={draft}
                     onChange={(e) => setDraft(e.target.value)}
@@ -208,7 +206,7 @@ export function PageConversation({
                     {/* shadcn Select, like the chat's model picker (CB-257). */}
                     <Select value={dot.id} disabled={busy} onValueChange={setDotId}>
                         <SelectTrigger
-                            aria-label="Page specialist"
+                            aria-label={t('pages:chat.specialist')}
                             className="max-w-40 min-w-0 gap-1 rounded-[7px] border-0 bg-muted py-[7px] pr-2 pl-[9px] text-base text-muted-foreground shadow-none data-[size=default]:h-auto md:text-[11px] dark:bg-muted dark:hover:bg-muted max-[700px]:min-h-10 [&>svg]:size-3 [&>svg]:opacity-100"
                         >
                             <SelectValue />
@@ -222,11 +220,11 @@ export function PageConversation({
                         </SelectContent>
                     </Select>
                     <span className="flex-1 text-[10px] text-muted-foreground">
-                        {paused ? 'Assistant paused' : 'Uses this saved page'}
+                        {paused ? t('pages:chat.paused') : t('pages:chat.uses-saved')}
                     </span>
                     <Button
                         type="submit"
-                        aria-label="Send to page assistant"
+                        aria-label={t('pages:chat.send')}
                         disabled={busy || paused}
                         className="size-8 rounded-full bg-foreground p-0 text-background hover:bg-foreground/90 max-[700px]:size-10 [&_svg:not([class*='size-'])]:size-4.5"
                     >

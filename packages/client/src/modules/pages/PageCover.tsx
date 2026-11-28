@@ -2,6 +2,7 @@ import { ImageOff, ImagePlus, ImageUp, LoaderCircle, Trash2 } from 'lucide-react
 import { useEffect, useId, useRef, useState, type DragEvent, type ReactNode } from 'react';
 import { toast } from 'sonner';
 
+import { useTranslation } from '@socio/i18n/react';
 import {
     COVER_MAX_BYTES,
     COVER_UPLOAD_TYPES,
@@ -10,6 +11,7 @@ import {
     type PageCover,
 } from '@socio/shared/pages/page-library';
 
+import { onDemand } from '../../i18n/on-demand';
 import { api } from '../../lib/api';
 import { uploadToFolder } from '../chat/attachments/upload';
 
@@ -30,13 +32,16 @@ export type CoverChoice = { fileId: string } | { embedId: string };
 
 const MB = 1048576;
 
-/** Why a file can't be a cover, or undefined when it can. */
-export function coverFileProblem(file: Pick<File, 'type' | 'size'>) {
+/** The largest cover, in MB as the picker words it. */
+const MAX_MB = COVER_MAX_BYTES / MB;
+
+/** Why a file can't be a cover (pages.cover:problems), or undefined when it can. */
+export function coverFileProblem(file: Pick<File, 'type' | 'size'>): 'type' | 'size' | undefined {
     if (!COVER_UPLOAD_TYPES.includes(file.type)) {
-        return 'Choose a PNG, JPEG or WebP image.';
+        return 'type';
     }
     if (file.size > COVER_MAX_BYTES) {
-        return `Covers can be at most ${COVER_MAX_BYTES / MB} MB.`;
+        return 'size';
     }
     return undefined;
 }
@@ -69,6 +74,7 @@ export function PageCoverArea({
     /** After a change here: the cover now, and the page when the server sent it. */
     onChange: (cover: PageCover | null, page?: Page) => void;
 }) {
+    const { t } = useTranslation(['pages']);
     const [picking, setPicking] = useState(false);
     const [removing, setRemoving] = useState(false);
     // The image failed to load (its file deleted since the page was read).
@@ -85,20 +91,20 @@ export function PageCoverArea({
         try {
             const { previous } = await api<{ previous: string | null }>(coverPath(spaceId, pageId), 'DELETE');
             onChange(null);
-            toast('Cover removed', {
+            toast(t('pages:cover.removed'), {
                 ...(previous && {
                     action: {
-                        label: 'Undo',
+                        label: t('pages:cover.undo'),
                         onClick: () => {
                             set({ embedId: previous }).catch((error: unknown) =>
-                                toast.error(failure(error, 'Could not put the cover back.')),
+                                toast.error(failure(error, t('pages:cover.undo-failed'))),
                             );
                         },
                     },
                 }),
             });
         } catch (error) {
-            toast.error(failure(error, 'Could not remove the cover.'));
+            toast.error(failure(error, t('pages:cover.remove-failed')));
         } finally {
             setRemoving(false);
         }
@@ -112,7 +118,7 @@ export function PageCoverArea({
                 sideOffset={6}
                 collisionPadding={12}
                 className="w-[min(21.5rem,calc(100vw-1.5rem))] rounded-xl p-3.5"
-                aria-label="Cover"
+                aria-label={t('pages:cover.picker')}
             >
                 <CoverPicker
                     spaceId={spaceId}
@@ -135,7 +141,7 @@ export function PageCoverArea({
                         size="sm"
                         className={cn('-ml-2.5 font-normal text-muted-foreground hover:text-foreground', revealed)}
                     >
-                        <ImagePlus /> Add cover
+                        <ImagePlus /> {t('pages:cover.add')}
                     </Button>,
                 )}
             </div>
@@ -150,7 +156,7 @@ export function PageCoverArea({
             {gone ? (
                 <div className="flex size-full flex-col items-center justify-center gap-2 text-[13px] text-muted-foreground">
                     <ImageOff className="size-5" aria-hidden />
-                    This cover’s image is no longer available.
+                    {t('pages:cover.gone')}
                 </div>
             ) : (
                 <img
@@ -165,7 +171,7 @@ export function PageCoverArea({
                 <div className="absolute right-3 bottom-3 flex gap-2">
                     {picker(
                         <Button size="sm" className={cn(overImage, revealed)}>
-                            <ImageUp /> Change cover
+                            <ImageUp /> {t('pages:cover.change')}
                         </Button>,
                         'end',
                     )}
@@ -176,7 +182,7 @@ export function PageCoverArea({
                         onClick={() => void remove()}
                     >
                         {removing ? <LoaderCircle className="animate-spin motion-reduce:animate-none" /> : <Trash2 />}
-                        Remove
+                        {t('pages:cover.remove')}
                     </Button>
                 </div>
             )}
@@ -193,14 +199,16 @@ const overImage =
 
 /**
  * The cover picker's two sources: an upload (or a drop) into the person's
- * Files, and the images already in the Space.
+ * Files, and the images already in the Space. Its words load on demand
+ * (pages.cover), as it opens with a click.
  */
-export function CoverPicker({ spaceId, onPick }: { spaceId: string; onPick: (choice: CoverChoice) => Promise<void> }) {
+function CoverPickerBody({ spaceId, onPick }: { spaceId: string; onPick: (choice: CoverChoice) => Promise<void> }) {
+    const { t } = useTranslation(['pages.cover']);
     const input = useRef<HTMLInputElement>(null);
     const hint = useId();
     const [images, setImages] = useState<CoverImage[]>();
     const [listError, setListError] = useState('');
-    const [busy, setBusy] = useState<{ label: string; progress?: number }>();
+    const [busy, setBusy] = useState<{ progress?: number }>();
     const [error, setError] = useState('');
     const [dragging, setDragging] = useState(false);
     useEffect(() => {
@@ -212,13 +220,13 @@ export function CoverPicker({ spaceId, onPick }: { spaceId: string; onPick: (cho
             controller.signal,
         ).then(setImages, (e: unknown) => {
             if (!controller.signal.aborted) {
-                setListError(failure(e, 'Could not load this Space’s images.'));
+                setListError(failure(e, t('pages.cover:errors.list')));
             }
         });
         return () => controller.abort();
-    }, [spaceId]);
+    }, [spaceId, t]);
     const pick = async (choice: CoverChoice) => {
-        setBusy({ label: 'Setting the cover…' });
+        setBusy({});
         try {
             await onPick(choice);
         } finally {
@@ -231,19 +239,19 @@ export function CoverPicker({ spaceId, onPick }: { spaceId: string; onPick: (cho
         }
         const problem = coverFileProblem(file);
         if (problem) {
-            setError(problem);
+            setError(t(`pages.cover:problems.${problem}`, { size: MAX_MB }));
             return;
         }
         setError('');
-        setBusy({ label: 'Uploading…', progress: 0 });
+        setBusy({ progress: 0 });
         try {
             // Into the person's Files, like any upload there; then the cover.
             const { item } = await uploadToFolder(file, '', {
-                onProgress: (progress) => setBusy({ label: 'Uploading…', progress }),
+                onProgress: (progress) => setBusy({ progress }),
             });
             await pick({ fileId: item.id });
         } catch (e) {
-            setError(failure(e, 'Could not upload the image.'));
+            setError(failure(e, t('pages.cover:errors.upload')));
             setBusy(undefined);
         }
     };
@@ -252,7 +260,7 @@ export function CoverPicker({ spaceId, onPick }: { spaceId: string; onPick: (cho
         try {
             await pick({ embedId: image.id });
         } catch (e) {
-            setError(failure(e, 'Could not set the cover.'));
+            setError(failure(e, t('pages.cover:errors.set')));
         }
     };
     const drop = (event: DragEvent) => {
@@ -262,7 +270,7 @@ export function CoverPicker({ spaceId, onPick }: { spaceId: string; onPick: (cho
     };
     return (
         <div data-slot="cover-picker" className="grid gap-3 text-sm" aria-busy={!!busy}>
-            <h2 className="m-0 text-[13px] font-medium text-muted-foreground">Cover</h2>
+            <h2 className="m-0 text-[13px] font-medium text-muted-foreground">{t('pages.cover:heading')}</h2>
             <button
                 type="button"
                 data-slot="cover-upload"
@@ -287,12 +295,14 @@ export function CoverPicker({ spaceId, onPick }: { spaceId: string; onPick: (cho
                     <ImageUp className="size-4.5 text-muted-foreground" aria-hidden />
                 )}
                 <span className="font-medium text-foreground">
-                    {busy
-                        ? `${busy.label}${busy.progress !== undefined ? ` ${Math.round(busy.progress * 100)}%` : ''}`
-                        : 'Upload an image'}
+                    {!busy
+                        ? t('pages.cover:upload')
+                        : busy.progress === undefined
+                          ? t('pages.cover:setting')
+                          : t('pages.cover:uploading-progress', { progress: Math.round(busy.progress * 100) / 100 })}
                 </span>
                 <span id={hint} className="text-xs/5 text-muted-foreground">
-                    or drop one here · PNG, JPEG or WebP, up to {COVER_MAX_BYTES / MB} MB
+                    {t('pages.cover:hint', { size: MAX_MB })}
                 </span>
             </button>
             <input
@@ -314,12 +324,12 @@ export function CoverPicker({ spaceId, onPick }: { spaceId: string; onPick: (cho
                     {error}
                 </p>
             )}
-            <section aria-label="From this Space" className="grid gap-2">
-                <h3 className="m-0 text-[13px] font-medium text-muted-foreground">From this Space</h3>
+            <section aria-label={t('pages.cover:from-space')} className="grid gap-2">
+                <h3 className="m-0 text-[13px] font-medium text-muted-foreground">{t('pages.cover:from-space')}</h3>
                 {listError ? (
                     <p className="m-0 text-xs/5 text-destructive">{listError}</p>
                 ) : !images ? (
-                    <p className="m-0 text-xs/5 text-muted-foreground">Loading images…</p>
+                    <p className="m-0 text-xs/5 text-muted-foreground">{t('pages.cover:loading')}</p>
                 ) : images.length ? (
                     <ul className="m-0 grid max-h-40 list-none grid-cols-4 gap-1.5 overflow-y-auto p-0.5">
                         {images.map((image) => (
@@ -327,7 +337,7 @@ export function CoverPicker({ spaceId, onPick }: { spaceId: string; onPick: (cho
                                 <button
                                     type="button"
                                     data-slot="cover-image"
-                                    aria-label={`Use ${image.name}`}
+                                    aria-label={t('pages.cover:use', { name: image.name })}
                                     title={image.name}
                                     disabled={!!busy}
                                     className="block aspect-[4/3] w-full overflow-hidden rounded-md bg-muted outline-none ring-offset-2 ring-offset-popover hover:ring-2 hover:ring-border focus-visible:ring-[3px] focus-visible:ring-ring disabled:opacity-60"
@@ -339,14 +349,13 @@ export function CoverPicker({ spaceId, onPick }: { spaceId: string; onPick: (cho
                         ))}
                     </ul>
                 ) : (
-                    <p className="m-0 text-xs/5 text-muted-foreground">
-                        No images in this Space yet. Link-card images and other pages’ covers show here.
-                    </p>
+                    <p className="m-0 text-xs/5 text-muted-foreground">{t('pages.cover:none')}</p>
                 )}
             </section>
-            <p className="m-0 text-xs/5 text-muted-foreground">
-                Wide images work best (about 3:1). Everyone who can see the page sees its cover.
-            </p>
+            <p className="m-0 text-xs/5 text-muted-foreground">{t('pages.cover:advice')}</p>
         </div>
     );
 }
+
+/** The cover picker (`CoverPickerBody`), once its words are in. */
+export const CoverPicker = onDemand(['pages.cover'], CoverPickerBody);

@@ -1,0 +1,40 @@
+{
+    "delete": {
+        "title": "Delete “{{title}}”?",
+        "subpages_one": "Its subpage will be deleted with it.",
+        "subpages_other": "Its {{count}} subpages will be deleted with it.",
+        "description": "It’s removed for everyone in this Space, and links to it say it was deleted. Conversations about it stay in your chats.",
+        "list": "Subpages deleted with it",
+        "cancel": "Cancel",
+        "action_one": "Delete page",
+        "action_other": "Delete pages",
+        "deleting": "Deleting…",
+        "deleted": "Deleted “{{title}}”",
+        "failed": "Could not delete the page."
+    },
+    "move": {
+        "title": "Move “{{title}}”",
+        "description": "It goes to the top of the Space you pick. Its history goes with it, and links to it keep working.",
+        "description-subpages_one": "It goes to the top of the Space you pick, with its subpage. Its history goes with it, and links to it keep working.",
+        "description-subpages_other": "It goes to the top of the Space you pick, with its {{count}} subpages. Its history goes with it, and links to it keep working.",
+        "none": "There is no other Space to move it to.",
+        "to": "Move to",
+        "destination": "Destination Space",
+        "list": "Subpages moved with it",
+        "cancel": "Cancel",
+        "action_one": "Move page",
+        "action_other": "Move pages",
+        "moving": "Moving…",
+        "moved": "Moved “{{title}}” to {{space}}",
+        "save-first": "Your latest changes could not be saved. Save them, then move the page.",
+        "failed": "Could not move the page."
+    },
+    "folder": {
+        "title": "New folder",
+        "description": "A folder holds pages and other folders.",
+        "name": "Folder name",
+        "cancel": "Cancel",
+        "create": "Create folder",
+        "failed": "Could not create the folder."
+    }
+}

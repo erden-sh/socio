@@ -1,8 +1,12 @@
 import { useLayoutEffect, useRef } from 'react';
 
+import { useTranslation } from '@socio/i18n/react';
+
 import { Command, CommandEmpty, CommandItem, CommandList } from '@/components/ui/command';
 
 export interface SlashMenuItem {
+    id: string;
+    /** The block's words, in the page's language (slash-commands.ts). */
     title: string;
     description: string;
 }
@@ -25,6 +29,7 @@ export function SlashMenu({
     dom: HTMLElement;
     onChoose: (item: SlashMenuItem) => void;
 }) {
+    const { t } = useTranslation(['pages.editor']);
     const root = useRef<HTMLDivElement>(null);
     useLayoutEffect(() => {
         const list = root.current?.querySelector('[role="listbox"]');
@@ -44,20 +49,20 @@ export function SlashMenu({
             ref={root}
             shouldFilter={false}
             disablePointerSelection
-            value={items[index]?.title ?? ''}
+            value={items[index]?.id ?? ''}
             className="h-auto max-h-86 w-[min(320px,calc(100vw-24px))] overflow-y-auto rounded-[12px] border p-[7px] shadow-[0_10px_35px_rgb(0_0_0/0.13)]"
         >
-            <div className="px-2.5 pt-[9px] pb-[7px] text-xs font-semibold tracking-[0.09em] text-muted-foreground">
-                INSERT BLOCK
+            <div className="px-2.5 pt-[9px] pb-[7px] text-xs font-semibold tracking-[0.09em] text-muted-foreground uppercase">
+                {t('pages.editor:slash.heading')}
             </div>
-            <CommandList label="Insert block" className="max-h-none overflow-visible">
+            <CommandList label={t('pages.editor:slash.label')} className="max-h-none overflow-visible">
                 <CommandEmpty className="p-3 text-left text-[10px]/[1.45] text-muted-foreground">
-                    No matching blocks
+                    {t('pages.editor:slash.empty')}
                 </CommandEmpty>
                 {items.map((item) => (
                     <CommandItem
-                        key={item.title}
-                        value={item.title}
+                        key={item.id}
+                        value={item.id}
                         className="min-h-[51px] cursor-pointer flex-col items-start justify-center gap-0.5 rounded-[7px] px-3 py-[9px] hover:bg-accent/60"
                         // Keep the focus (and the selection) in the editor.
                         onMouseDown={(event) => event.preventDefault()}

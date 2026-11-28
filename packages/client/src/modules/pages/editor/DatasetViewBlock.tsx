@@ -2,6 +2,7 @@ import { NodeViewWrapper, type ReactNodeViewProps } from '@tiptap/react';
 import { BarChart3, Database, LineChart, Lock, Pencil, RefreshCw, Table2 } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
 
+import { Trans, useTranslation } from '@socio/i18n/react';
 import type { DatasetView } from '@socio/shared/data-types';
 import { VIEW_DISPLAYS, type ViewDisplay, type ViewDraft } from '@socio/shared/dataset-view';
 
@@ -20,19 +21,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
-const DISPLAY_LABEL: Record<ViewDisplay, string> = {
-    table: 'Table',
-    bar: 'Bar chart',
-    line: 'Line chart',
-};
-const REFRESH_CHOICES = [
-    [0, 'Off'],
-    [30, 'Every 30 seconds'],
-    [60, 'Every minute'],
-    [300, 'Every 5 minutes'],
-    [900, 'Every 15 minutes'],
-    [3600, 'Every hour'],
-] as const;
+/** Auto-refresh's choices, in seconds (0 is off). */
+const REFRESH_CHOICES = [0, 30, 60, 300, 900, 3600] as const;
 
 /**
  * The live "Dataset view" block in the page editor. It reads its
@@ -42,6 +32,7 @@ const REFRESH_CHOICES = [
  * the dataset, the query and how it is drawn.
  */
 export function DatasetViewBlock({ node, editor, updateAttributes, deleteNode, selected }: ReactNodeViewProps) {
+    const { t } = useTranslation(['pages.editor']);
     const page = useDatasetViewPage();
     const saved = nodeDraft(node.attrs);
     const editable = editor.isEditable;
@@ -53,7 +44,7 @@ export function DatasetViewBlock({ node, editor, updateAttributes, deleteNode, s
     const [asTable, setAsTable] = useState(false);
     const result = 'result' in state ? state.result : undefined;
     const display: ViewDisplay = asTable ? 'table' : shown.display;
-    const title = shown.title || result?.dataset.name || 'Dataset view';
+    const title = shown.title || result?.dataset.name || t('pages.editor:view.title');
     return (
         <NodeViewWrapper
             className={`dataset-view${selected ? ' selected' : ''}`}
@@ -77,8 +68,10 @@ export function DatasetViewBlock({ node, editor, updateAttributes, deleteNode, s
                         <span>
                             {[
                                 shown.title ? result.dataset.name : '',
-                                `${result.rows.length}${result.truncated ? '+' : ''} row${result.rows.length === 1 ? '' : 's'}`,
-                                `as of ${new Date(result.at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`,
+                                result.truncated
+                                    ? t('pages.editor:view.rows-more', { count: result.rows.length })
+                                    : t('pages.editor:view.rows', { count: result.rows.length }),
+                                t('pages.editor:view.as-of', { at: new Date(result.at) }),
                             ]
                                 .filter(Boolean)
                                 .join(' · ')}
@@ -89,7 +82,7 @@ export function DatasetViewBlock({ node, editor, updateAttributes, deleteNode, s
                     <div className="flex gap-0.5">
                         {result && shown.display !== 'table' && (
                             <ViewAction
-                                label={asTable ? 'Show the chart' : 'Show as a table'}
+                                label={asTable ? t('pages.editor:view.show-chart') : t('pages.editor:view.show-table')}
                                 pressed={asTable}
                                 onClick={() => setAsTable(!asTable)}
                             >
@@ -98,8 +91,8 @@ export function DatasetViewBlock({ node, editor, updateAttributes, deleteNode, s
                         )}
                         {state.status !== 'incomplete' && state.status !== 'denied' && (
                             <ViewAction
-                                label="Refresh view"
-                                hint="Refresh"
+                                label={t('pages.editor:view.refresh')}
+                                hint={t('pages.editor:view.refresh-hint')}
                                 disabled={state.status === 'loading'}
                                 onClick={refresh}
                             >
@@ -114,7 +107,7 @@ export function DatasetViewBlock({ node, editor, updateAttributes, deleteNode, s
                         )}
                         {editable && !editing && (
                             <ViewAction
-                                label="Edit view"
+                                label={t('pages.editor:view.edit')}
                                 onClick={() => {
                                     setPreview(undefined);
                                     setEditing(true);
@@ -151,7 +144,7 @@ export function DatasetViewBlock({ node, editor, updateAttributes, deleteNode, s
             <div className="dataset-view-body" data-reloading={state.status === 'loading' && !!result}>
                 {state.status === 'incomplete' ? (
                     <p className="dataset-view-state" data-state="incomplete">
-                        {editable ? 'Choose a dataset and write a query, then run it.' : 'This view isn’t set up yet.'}
+                        {editable ? t('pages.editor:view.incomplete-editable') : t('pages.editor:view.incomplete')}
                     </p>
                 ) : state.status === 'denied' ? (
                     <p className="dataset-view-state" data-state="denied" role="note">
@@ -176,26 +169,30 @@ export function DatasetViewBlock({ node, editor, updateAttributes, deleteNode, s
                     <DatasetViewDisplay result={result} display={display} x={shown.x} y={shown.y} title={title} />
                 ) : (
                     <div className="dataset-view-loading" data-state="loading" aria-busy="true">
-                        Loading view…
+                        {t('pages.editor:view.loading')}
                     </div>
                 )}
             </div>
             {result?.dataset.owned && !result.dataset.sharedHere && (
                 <p className="dataset-view-note" data-slot="view-private">
-                    Only you can see this data. Others see a placeholder until you{' '}
-                    <a
-                        href={`/data/datasets/${result.dataset.id}`}
-                        onClick={(event) => {
-                            if (event.button || event.metaKey || event.ctrlKey) {
-                                return;
-                            }
-                            event.preventDefault();
-                            openAppPath(`/data/datasets/${result.dataset.id}`);
+                    <Trans
+                        t={t}
+                        i18nKey="pages.editor:view.private"
+                        components={{
+                            link: (
+                                <a
+                                    href={`/data/datasets/${result.dataset.id}`}
+                                    onClick={(event) => {
+                                        if (event.button || event.metaKey || event.ctrlKey) {
+                                            return;
+                                        }
+                                        event.preventDefault();
+                                        openAppPath(`/data/datasets/${result.dataset.id}`);
+                                    }}
+                                />
+                            ),
                         }}
-                    >
-                        share the dataset with this Space
-                    </a>
-                    .
+                    />
                 </p>
             )}
         </NodeViewWrapper>
@@ -266,6 +263,7 @@ function ViewEditor({
     onCancel?: () => void;
     onRemove: () => void;
 }) {
+    const { t } = useTranslation(['pages.editor']);
     const [draft, setDraft] = useState<ViewDraft>(saved);
     const [datasets, setDatasets] = useState<DatasetView[]>();
     const [loadError, setLoadError] = useState('');
@@ -274,12 +272,21 @@ function ViewEditor({
         api<DatasetView[]>('/data/datasets').then(
             (all) => live && setDatasets(usableDatasets(all, spaceId)),
             (error: unknown) =>
-                live && setLoadError(error instanceof Error ? error.message : 'Could not list datasets.'),
+                live && setLoadError(error instanceof Error ? error.message : t('pages.editor:view.form.list-failed')),
         );
         return () => {
             live = false;
         };
-    }, [spaceId]);
+    }, [spaceId, t]);
+    /** Auto-refresh's choice, in words: off, or every so many seconds, minutes or hours. */
+    const every = (seconds: number) =>
+        !seconds
+            ? t('pages.editor:view.refresh-every.off')
+            : seconds % 3600 === 0
+              ? t('pages.editor:view.refresh-every.hours', { count: seconds / 3600 })
+              : seconds % 60 === 0
+                ? t('pages.editor:view.refresh-every.minutes', { count: seconds / 60 })
+                : t('pages.editor:view.refresh-every.seconds', { count: seconds });
     const set = (patch: Partial<ViewDraft>) => setDraft({ ...draft, ...patch });
     const ready = !!(draft.datasetId && draft.query.trim());
     const known = datasets?.some((dataset) => dataset.id === draft.datasetId);
@@ -293,7 +300,11 @@ function ViewEditor({
                     value={draft[key] ?? ''}
                     onChange={(event) => set({ [key]: event.target.value || undefined })}
                 >
-                    <option value="">{key === 'x' ? 'First column' : 'First numbers'}</option>
+                    <option value="">
+                        {key === 'x'
+                            ? t('pages.editor:view.form.first-column')
+                            : t('pages.editor:view.form.first-numbers')}
+                    </option>
                     {columns.map((column) => (
                         <option key={column} value={column}>
                             {column}
@@ -308,7 +319,11 @@ function ViewEditor({
                 <Input
                     className={field}
                     value={draft[key] ?? ''}
-                    placeholder={key === 'x' ? 'First column' : 'First numbers'}
+                    placeholder={
+                        key === 'x'
+                            ? t('pages.editor:view.form.first-column')
+                            : t('pages.editor:view.form.first-numbers')
+                    }
                     onChange={(event) => set({ [key]: event.target.value || undefined })}
                 />
             </label>
@@ -316,7 +331,7 @@ function ViewEditor({
     return (
         <form
             className="grid gap-2.5 border-b bg-muted p-3"
-            aria-label="Edit dataset view"
+            aria-label={t('pages.editor:view.form.label')}
             onSubmit={(event) => {
                 event.preventDefault();
                 if (ready) {
@@ -332,93 +347,99 @@ function ViewEditor({
         >
             <div className="flex flex-wrap gap-2.5">
                 <label className={fieldLabel}>
-                    Dataset
+                    {t('pages.editor:view.form.dataset')}
                     <select
                         data-slot="native-select"
                         className={field}
-                        aria-label="Dataset"
+                        aria-label={t('pages.editor:view.form.dataset')}
                         value={draft.datasetId}
                         onChange={(event) => set({ datasetId: event.target.value })}
                     >
-                        <option value="">{datasets ? 'Choose a dataset' : 'Loading datasets…'}</option>
+                        <option value="">
+                            {datasets ? t('pages.editor:view.form.choose') : t('pages.editor:view.form.loading')}
+                        </option>
                         {datasets?.map((dataset) => (
                             <option key={dataset.id} value={dataset.id}>
-                                {dataset.name}
-                                {dataset.access === 'owner'
-                                    ? dataset.sharedSpaceId === spaceId
-                                        ? ' (shared with this Space)'
-                                        : ''
-                                    : ` (shared by ${dataset.ownerName ?? 'another user'})`}
+                                {dataset.access !== 'owner'
+                                    ? t('pages.editor:view.form.shared-by', {
+                                          name: dataset.name,
+                                          owner: dataset.ownerName ?? t('pages.editor:view.form.another-user'),
+                                      })
+                                    : dataset.sharedSpaceId === spaceId
+                                      ? t('pages.editor:view.form.shared-here', { name: dataset.name })
+                                      : dataset.name}
                             </option>
                         ))}
                         {draft.datasetId && datasets && !known && (
-                            <option value={draft.datasetId}>A dataset you can’t open</option>
+                            <option value={draft.datasetId}>{t('pages.editor:view.form.unknown')}</option>
                         )}
                     </select>
                 </label>
                 <label className={fieldLabel}>
-                    Display
+                    {t('pages.editor:view.form.display')}
                     <select
                         data-slot="native-select"
                         className={field}
-                        aria-label="Display"
+                        aria-label={t('pages.editor:view.form.display')}
                         value={draft.display}
                         onChange={(event) => set({ display: event.target.value as ViewDisplay })}
                     >
                         {VIEW_DISPLAYS.map((display) => (
                             <option key={display} value={display}>
-                                {DISPLAY_LABEL[display]}
+                                {t(`pages.editor:view.displays.${display}`)}
                             </option>
                         ))}
                     </select>
                 </label>
                 {draft.display !== 'table' && (
                     <>
-                        {columnField('x', 'X axis')}
-                        {columnField('y', 'Values')}
+                        {columnField('x', t('pages.editor:view.form.x'))}
+                        {columnField('y', t('pages.editor:view.form.values'))}
                     </>
                 )}
                 <label className={fieldLabel}>
-                    Title
+                    {t('pages.editor:view.form.title')}
                     <Input
                         className={field}
-                        aria-label="View title"
+                        aria-label={t('pages.editor:view.form.title-label')}
                         value={draft.title ?? ''}
                         maxLength={160}
-                        placeholder="The dataset’s name"
+                        placeholder={t('pages.editor:view.form.title-placeholder')}
                         onChange={(event) => set({ title: event.target.value || undefined })}
                     />
                 </label>
                 <label className={fieldLabel}>
-                    Auto-refresh
+                    {t('pages.editor:view.form.auto-refresh')}
                     <select
                         data-slot="native-select"
                         className={field}
-                        aria-label="Auto-refresh"
+                        aria-label={t('pages.editor:view.form.auto-refresh')}
                         value={draft.refresh ?? 0}
                         onChange={(event) => set({ refresh: Number(event.target.value) || undefined })}
                     >
-                        {REFRESH_CHOICES.map(([seconds, label]) => (
+                        {REFRESH_CHOICES.map((seconds) => (
                             <option key={seconds} value={seconds}>
-                                {label}
+                                {every(seconds)}
                             </option>
                         ))}
-                        {draft.refresh && !REFRESH_CHOICES.some(([s]) => s === draft.refresh) && (
-                            <option value={draft.refresh}>Every {draft.refresh} seconds</option>
+                        {draft.refresh && !REFRESH_CHOICES.some((s) => s === draft.refresh) && (
+                            <option value={draft.refresh}>
+                                {t('pages.editor:view.refresh-every.seconds', { count: draft.refresh })}
+                            </option>
                         )}
                     </select>
                 </label>
             </div>
             <label className={fieldLabel}>
-                Query
+                {t('pages.editor:view.form.query')}
                 <Textarea
                     className={cn(field, 'field-sizing-fixed h-auto min-h-0 resize-y py-2 font-mono')}
-                    aria-label="View query"
+                    aria-label={t('pages.editor:view.form.query-label')}
                     spellCheck={false}
                     rows={3}
                     maxLength={20_000}
                     value={draft.query}
-                    placeholder='SELECT month, total FROM "sales" ORDER BY month'
+                    placeholder={t('pages.editor:view.form.query-placeholder')}
                     onChange={(event) => set({ query: event.target.value })}
                     onKeyDown={(event) => {
                         if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
@@ -430,10 +451,7 @@ function ViewEditor({
                     }}
                 />
             </label>
-            <p className="m-0 text-xs text-muted-foreground">
-                One read-only SELECT. Everyone sees the result only if they own the dataset or it is shared with this
-                Space.
-            </p>
+            <p className="m-0 text-xs text-muted-foreground">{t('pages.editor:view.form.rule')}</p>
             {loadError && (
                 <p className="dataset-view-state" data-state="error" role="alert">
                     {loadError}
@@ -446,16 +464,16 @@ function ViewEditor({
                     className={formButton}
                     disabled={!ready}
                     onClick={() => onRun(draft)}
-                    title="Run (⌘/Ctrl Enter)"
+                    title={t('pages.editor:view.form.run-hint')}
                 >
-                    Run
+                    {t('pages.editor:view.form.run')}
                 </Button>
                 <Button type="submit" className={formButton} disabled={!ready}>
-                    Save view
+                    {t('pages.editor:view.form.save')}
                 </Button>
                 {onCancel && (
                     <Button type="button" variant="outline" className={formButton} onClick={onCancel}>
-                        Cancel
+                        {t('pages.editor:view.form.cancel')}
                     </Button>
                 )}
                 <Button
@@ -464,7 +482,7 @@ function ViewEditor({
                     className={cn(formButton, 'ml-auto text-destructive hover:text-destructive')}
                     onClick={onRemove}
                 >
-                    Remove
+                    {t('pages.editor:view.form.remove')}
                 </Button>
             </div>
         </form>

@@ -8,13 +8,25 @@ import {
 import type { Page } from '@socio/shared/pages/page-library';
 
 export type { PageDraft };
+/**
+ * Why the last save didn't go, in the page view's words (pages:
+ * document.save-errors): the page changed elsewhere, a newer revision came
+ * back, the save timed out, it failed with no reason given, or the draft
+ * isn't one the server takes.
+ */
+export type SaveProblem = 'conflict' | 'newer' | 'timeout' | 'failed' | 'invalid';
 export type SaveState = {
     page?: Page;
     draft?: PageDraft;
     remote?: Page;
     status: 'saved' | 'dirty' | 'saving' | 'error' | 'conflict';
+    /** The server's reason a save failed, as it gave it. */
     error?: string;
+    /** Or one of ours (`SaveProblem`), which the view words. */
+    problem?: SaveProblem;
 };
+/** A save that took too long: the view says so in its words. */
+class SaveTimeout extends Error {}
 export type SavePage = (
     id: string,
     patch: PageDraft & { expectedRevision: number },
@@ -59,6 +71,7 @@ export class PageAutosave {
                 remote: page,
                 status: 'saved',
                 error: undefined,
+                problem: undefined,
             });
             return;
         }
@@ -74,7 +87,8 @@ export class PageAutosave {
             this.publish({
                 remote: page,
                 status: 'conflict',
-                error: 'This page changed elsewhere. Your draft is safe. Copy it before loading the latest version.',
+                error: undefined,
+                problem: 'conflict',
             });
         } else {
             this.publish({
@@ -83,6 +97,7 @@ export class PageAutosave {
                 draft: fields(page),
                 status: 'saved',
                 error: undefined,
+                problem: undefined,
             });
         }
     }
@@ -97,6 +112,7 @@ export class PageAutosave {
         this.publish({
             status: this.pending ? 'saving' : this.changed ? 'dirty' : 'saved',
             error: undefined,
+            problem: undefined,
         });
         this.schedule();
     }
@@ -119,20 +135,19 @@ export class PageAutosave {
             return false;
         }
         if (!this.changed && this.state.status !== 'error') {
-            this.publish({ status: 'saved', error: undefined });
+            this.publish({ status: 'saved', error: undefined, problem: undefined });
             return true;
         }
         const page = this.state.page,
             draft = { ...this.state.draft },
             generation = this.generation;
-        const invalid = pageDraftError(draft);
-        if (invalid) {
-            this.publish({ status: 'error', error: invalid });
+        if (pageDraftError(draft)) {
+            this.publish({ status: 'error', error: undefined, problem: 'invalid' });
             return false;
         }
         this.controller = new AbortController();
         const controller = this.controller;
-        this.publish({ status: 'saving', error: undefined });
+        this.publish({ status: 'saving', error: undefined, problem: undefined });
         const pending = (async () => {
             let deadline: ReturnType<typeof setTimeout> | undefined;
             try {
@@ -141,7 +156,7 @@ export class PageAutosave {
                     new Promise<never>((_, reject) => {
                         deadline = setTimeout(() => {
                             controller.abort();
-                            reject(new Error('Saving timed out. Your draft is safe; retry when connected.'));
+                            reject(new SaveTimeout());
                         }, 10000);
                     }),
                 ]);
@@ -158,10 +173,8 @@ export class PageAutosave {
                 });
                 this.publish({
                     status: remote.revision > result.revision ? 'conflict' : this.changed ? 'dirty' : 'saved',
-                    error:
-                        remote.revision > result.revision
-                            ? 'A newer revision exists. Your draft is preserved.'
-                            : undefined,
+                    error: undefined,
+                    problem: remote.revision > result.revision ? 'newer' : undefined,
                 });
                 return this.state.status !== 'conflict';
             } catch (error) {
@@ -169,13 +182,17 @@ export class PageAutosave {
                     return false;
                 }
                 const conflict = error && typeof error === 'object' && 'status' in error && error.status === 409;
+                const reason = !conflict && !(error instanceof SaveTimeout) && error instanceof Error && error.message;
                 this.publish({
                     status: conflict ? 'conflict' : 'error',
-                    error: conflict
-                        ? 'This page changed elsewhere. Your draft is safe. Copy it before loading the latest version.'
-                        : error instanceof Error
-                          ? error.message
-                          : 'Could not save. Your draft is safe.',
+                    error: reason || undefined,
+                    problem: conflict
+                        ? 'conflict'
+                        : error instanceof SaveTimeout
+                          ? 'timeout'
+                          : reason
+                            ? undefined
+                            : 'failed',
                 });
                 return false;
             } finally {
@@ -209,6 +226,7 @@ export class PageAutosave {
             remote: page,
             status: 'saved',
             error: undefined,
+            problem: undefined,
         });
     }
     dispose() {

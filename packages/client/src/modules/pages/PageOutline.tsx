@@ -1,5 +1,6 @@
 import { FileText, Plus, X } from 'lucide-react';
 
+import { useTranslation } from '@socio/i18n/react';
 import type { PageSummary } from '@socio/shared/pages/page-library';
 
 import { PageIconButton } from './page-chrome';
@@ -17,6 +18,7 @@ export function PageOutline({
     onNew: () => void;
     onClose: () => void;
 }) {
+    const { t } = useTranslation(['pages']);
     const render = (parentId: string | null, depth = 0): React.ReactNode =>
         pages
             .filter((page) => page.parentId === parentId)
@@ -40,14 +42,14 @@ export function PageOutline({
         <nav
             data-slot="page-outline"
             className="w-[205px] shrink-0 overflow-auto border-r bg-sidebar px-2 py-3.5 max-[1150px]:w-45 max-[900px]:absolute max-[900px]:inset-y-0 max-[900px]:left-0 max-[900px]:z-25 max-[900px]:w-55 max-[900px]:shadow-[5px_0_20px_rgb(0_0_0/0.04)]"
-            aria-label="Pages in this Space"
+            aria-label={t('pages:outline.label')}
         >
             <div className="flex items-center px-1 pb-3">
-                <strong className="flex-1 pl-2 text-xs text-muted-foreground">Pages</strong>
-                <PageIconButton aria-label="New page in outline" onClick={onNew}>
+                <strong className="flex-1 pl-2 text-xs text-muted-foreground">{t('pages:outline.heading')}</strong>
+                <PageIconButton aria-label={t('pages:outline.new')} onClick={onNew}>
                     <Plus className="size-4" />
                 </PageIconButton>
-                <PageIconButton aria-label="Close page outline" onClick={onClose}>
+                <PageIconButton aria-label={t('pages:outline.close')} onClick={onClose}>
                     <X className="size-4" />
                 </PageIconButton>
             </div>

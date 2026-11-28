@@ -8,6 +8,8 @@ import { coverUrl, pageSummary, type CoverImage, type PageCover, type Page } fro
 import type { Role, Space, State, WorkspaceState } from '@socio/shared/types';
 
 import { coverFileProblem, PageCoverArea } from '../../packages/client/src/modules/pages/PageCover';
+// The page's and the picker's words (pages, pages.cover), as the client's tests read them.
+import '../../packages/client/tests/setup/en-us-i18n';
 import { SpaceLibrary } from '../../packages/client/src/modules/spaces/SpaceLibrary';
 import { createTestRouter } from '../../packages/client/tests/helpers/app-router';
 
@@ -278,9 +280,9 @@ it('uploads an image into the person’s Files and sets it, refusing other files
 
 it('tells what a cover may be', () => {
     expect(coverFileProblem({ type: 'image/webp', size: 5 * 1048576 })).toBeUndefined();
-    expect(coverFileProblem({ type: 'image/svg+xml', size: 10 })).toBe('Choose a PNG, JPEG or WebP image.');
-    expect(coverFileProblem({ type: 'image/gif', size: 10 })).toBe('Choose a PNG, JPEG or WebP image.');
-    expect(coverFileProblem({ type: 'image/png', size: 5 * 1048576 + 1 })).toBe('Covers can be at most 5 MB.');
+    expect(coverFileProblem({ type: 'image/svg+xml', size: 10 })).toBe('type');
+    expect(coverFileProblem({ type: 'image/gif', size: 10 })).toBe('type');
+    expect(coverFileProblem({ type: 'image/png', size: 5 * 1048576 + 1 })).toBe('size');
 });
 
 it('shows an editor Change cover and Remove over the band, and a cover whose image is gone', async () => {

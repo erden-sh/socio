@@ -1,6 +1,8 @@
 import { MoreHorizontal } from 'lucide-react';
 import { useRef } from 'react';
 
+import { useTranslation } from '@socio/i18n/react';
+
 import { PageIconButton } from '../page-chrome';
 
 import {
@@ -16,18 +18,19 @@ import {
  * takes the focus from there, and gives it back to ⋯ when it closes.
  */
 export function DocumentMenu({ items }: { items: { label: string; action: () => void }[] }) {
+    const { t } = useTranslation(['pages']);
     const chosen = useRef<() => void>(undefined);
     const trigger = useRef<HTMLButtonElement>(null);
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <PageIconButton ref={trigger} aria-label="Page actions">
+                <PageIconButton ref={trigger} aria-label={t('pages:document.menu.label')}>
                     <MoreHorizontal className="size-5" />
                 </PageIconButton>
             </DropdownMenuTrigger>
             <DropdownMenuContent
                 align="end"
-                aria-label="Page actions"
+                aria-label={t('pages:document.menu.label')}
                 className="w-55 rounded-[10px] p-1.5 shadow-[0_8px_25px_rgb(0_0_0/0.09)]"
                 onCloseAutoFocus={(event) => {
                     event.preventDefault();

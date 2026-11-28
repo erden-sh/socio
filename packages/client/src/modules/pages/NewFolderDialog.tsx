@@ -1,5 +1,9 @@
 import { useState } from 'react';
 
+import { useTranslation } from '@socio/i18n/react';
+
+import { onDemand } from '../../i18n/on-demand';
+
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -17,9 +21,9 @@ const NAME_MAX = 160;
 /**
  * New folder (CB-426): its name, then `onCreate`, which makes it where the
  * person is (the library's level, or the folder open). A refusal keeps the
- * dialog open with the reason.
+ * dialog open with the reason. Its words load on demand (pages.dialogs).
  */
-export function NewFolderDialog({
+function NewFolderForm({
     open,
     onOpenChange,
     onCreate,
@@ -28,6 +32,7 @@ export function NewFolderDialog({
     onOpenChange: (open: boolean) => void;
     onCreate: (title: string) => Promise<unknown>;
 }) {
+    const { t } = useTranslation(['pages.dialogs']);
     const [name, setName] = useState('');
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
@@ -55,7 +60,7 @@ export function NewFolderDialog({
             onOpenChange(false);
         } catch (e) {
             setBusy(false);
-            setError(e instanceof Error ? e.message : 'Could not create the folder.');
+            setError(e instanceof Error ? e.message : t('pages.dialogs:folder.failed'));
         }
     };
     return (
@@ -69,12 +74,12 @@ export function NewFolderDialog({
                     }}
                 >
                     <DialogHeader>
-                        <DialogTitle>New folder</DialogTitle>
-                        <DialogDescription>A folder holds pages and other folders.</DialogDescription>
+                        <DialogTitle>{t('pages.dialogs:folder.title')}</DialogTitle>
+                        <DialogDescription>{t('pages.dialogs:folder.description')}</DialogDescription>
                     </DialogHeader>
                     <Input
-                        aria-label="Folder name"
-                        placeholder="Folder name"
+                        aria-label={t('pages.dialogs:folder.name')}
+                        placeholder={t('pages.dialogs:folder.name')}
                         value={name}
                         maxLength={NAME_MAX}
                         onChange={(event) => setName(event.target.value)}
@@ -88,10 +93,10 @@ export function NewFolderDialog({
                     )}
                     <DialogFooter>
                         <Button type="button" variant="ghost" disabled={busy} onClick={() => close(false)}>
-                            Cancel
+                            {t('pages.dialogs:folder.cancel')}
                         </Button>
                         <Button type="submit" disabled={busy || !title}>
-                            Create folder
+                            {t('pages.dialogs:folder.create')}
                         </Button>
                     </DialogFooter>
                 </form>
@@ -99,3 +104,6 @@ export function NewFolderDialog({
         </Dialog>
     );
 }
+
+/** New folder (`NewFolderForm`), once its words are in. */
+export const NewFolderDialog = onDemand(['pages.dialogs'], NewFolderForm);

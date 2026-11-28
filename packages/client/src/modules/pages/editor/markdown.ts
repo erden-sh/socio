@@ -156,13 +156,23 @@ const allowed = new Set([
     'taskItem',
 ]);
 /**
+ * Why a page needs Markdown source mode, for the web's words
+ * (pages:document.source.reasons): extended Markdown, content the editor
+ * can't show, formatting that wouldn't survive a round trip, or Markdown it
+ * couldn't read.
+ */
+export type SourceReason = 'extended' | 'unsupported' | 'round-trip' | 'unreadable';
+
+/**
  * Whether the rich editor can open this page. Simple HTML (a <blockquote>)
  * is read as its Markdown equivalent; the stored text is not rewritten
- * until the person edits (CB-201).
+ * until the person edits (CB-201). `reason` is in English, for the app;
+ * the web words `code`.
  */
 export function inspectMarkdown(stored: string): {
     supported: boolean;
     reason?: string;
+    code?: SourceReason;
 } {
     const source = simpleHtmlToMarkdown(stored);
     try {
@@ -174,6 +184,7 @@ export function inspectMarkdown(stored: string): {
             return {
                 supported: false,
                 reason: 'This document contains extended Markdown. Source mode preserves it exactly.',
+                code: 'extended',
             };
         }
         const tokens = markdownManager.instance.lexer(source);
@@ -201,6 +212,7 @@ export function inspectMarkdown(stored: string): {
             return {
                 supported: false,
                 reason: 'This document contains images, HTML, or formatting that needs Markdown source mode. Nothing has been changed.',
+                code: 'unsupported',
             };
         }
         const parsed = markdownManager.parse(source);
@@ -209,6 +221,7 @@ export function inspectMarkdown(stored: string): {
             return {
                 supported: false,
                 reason: 'Some formatting cannot be safely round-tripped. Source mode keeps the original document intact.',
+                code: 'round-trip',
             };
         }
         return { supported: true };
@@ -216,6 +229,7 @@ export function inspectMarkdown(stored: string): {
         return {
             supported: false,
             reason: 'This Markdown needs source mode to preserve its contents.',
+            code: 'unreadable',
         };
     }
 }
